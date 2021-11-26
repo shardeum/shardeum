@@ -1,4 +1,0 @@
-[2021-11-26T20:36:47.027] [FATAL] fatal - shrd_sync_syncStatement-tempdebug {"cycleEnded":0,"cycleStarted":0,"discardedTXs":0,"failAndRestart":0,"failedAccountLoops":0,"failedAccounts":0,"internalFlag":false,"nonDiscardedTXs":0,"numAccounts":0,"numCycles":1,"numGlobalAccounts":0,"numNodesOnStart":0,"numSyncedState":0,"p2pJoinTime":29.978,"syncComplete":true,"syncEndTime":1637935607025,"syncRanges":0,"syncSeconds":0,"syncStartTime":1637935607025,"timeBeforeDataSync":0.001,"timeBeforeDataSync2":0.001,"totalSyncTime":29.979}
-[2021-11-26T20:37:57.033] [FATAL] fatal - debug shardTrie temp shardTrie votes c:2: []
-[2021-11-26T20:38:27.025] [FATAL] fatal - debug shardTrie temp shardTrie votes c:3: []
-[2021-11-26T20:38:57.025] [FATAL] fatal - debug shardTrie temp shardTrie votes c:4: []
