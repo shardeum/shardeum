@@ -1,0 +1,93 @@
+[2021-11-26T20:37:47.030] [DEBUG] snapshot - Accounts in partition:  0 []
+[2021-11-26T20:37:47.031] [DEBUG] snapshot - 
+        MEM ACCOUNTS C1:
+          PARTITION 0
+    ID: 0xa1e438 HASH: 0x56e81f
+    ID: 0x5df9b8 HASH: 0x56e81f
+        
+[2021-11-26T20:37:47.032] [DEBUG] snapshot - Global Accounts:  []
+[2021-11-26T20:37:47.032] [DEBUG] snapshot - Partition Hashes:  Map(2) {
+  0 => '78c7d4bfca718a92b57a31832c1c8460f43dee960b5f4cf4bbdae3bcce2deb6d',
+  -1 => '78c7d4bfca718a92b57a31832c1c8460f43dee960b5f4cf4bbdae3bcce2deb6d'
+}
+[2021-11-26T20:38:17.021] [DEBUG] snapshot - Accounts in partition:  0 [
+  {
+    accountId: '0x5df9b87991262f6ba471f09758cde1c0fc1de734',
+    data: '{"balance":"100000000000000000000","codeHash":"0xc5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470","hash":"0794516dc49e31574d7e460c9ba0827c5e18030c0ca1feba68a6c654dfc21340","nonce":"0","stateRoot":"0x56e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421"}',
+    timestamp: 1637935648693,
+    hash: '0794516dc49e31574d7e460c9ba0827c5e18030c0ca1feba68a6c654dfc21340',
+    isGlobal: 0
+  },
+  {
+    accountId: '0xa1e4380a3b1f749673e270229993ee55f35663b4',
+    data: '{"balance":"100000000000000000000","codeHash":"0xc5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470","hash":"0794516dc49e31574d7e460c9ba0827c5e18030c0ca1feba68a6c654dfc21340","nonce":"0","stateRoot":"0x56e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421"}',
+    timestamp: 1637935648693,
+    hash: '0794516dc49e31574d7e460c9ba0827c5e18030c0ca1feba68a6c654dfc21340',
+    isGlobal: 0
+  }
+]
+[2021-11-26T20:38:17.022] [DEBUG] snapshot - 
+        MEM ACCOUNTS C2:
+          PARTITION 0
+    ID: 0xa1e438 HASH: 0x56e81f
+    ID: 0x5df9b8 HASH: 0x56e81f
+        
+[2021-11-26T20:38:17.022] [DEBUG] snapshot - Global Accounts:  []
+[2021-11-26T20:38:17.022] [DEBUG] snapshot - Partition Hashes:  Map(2) {
+  0 => 'e982aa7f163e8022e72312fd440eecc6a853b1f8174b8e179614fbf5948d8ba2',
+  -1 => '78c7d4bfca718a92b57a31832c1c8460f43dee960b5f4cf4bbdae3bcce2deb6d'
+}
+[2021-11-26T20:38:47.029] [DEBUG] snapshot - Accounts in partition:  0 [
+  {
+    accountId: '0x5df9b87991262f6ba471f09758cde1c0fc1de734',
+    data: '{"balance":"100000000000000000000","codeHash":"0xc5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470","hash":"0794516dc49e31574d7e460c9ba0827c5e18030c0ca1feba68a6c654dfc21340","nonce":"0","stateRoot":"0x56e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421"}',
+    timestamp: 1637935648693,
+    hash: '0794516dc49e31574d7e460c9ba0827c5e18030c0ca1feba68a6c654dfc21340',
+    isGlobal: 0
+  },
+  {
+    accountId: '0xa1e4380a3b1f749673e270229993ee55f35663b4',
+    data: '{"balance":"100000000000000000000","codeHash":"0xc5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470","hash":"0794516dc49e31574d7e460c9ba0827c5e18030c0ca1feba68a6c654dfc21340","nonce":"0","stateRoot":"0x56e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421"}',
+    timestamp: 1637935648693,
+    hash: '0794516dc49e31574d7e460c9ba0827c5e18030c0ca1feba68a6c654dfc21340',
+    isGlobal: 0
+  }
+]
+[2021-11-26T20:38:47.034] [DEBUG] snapshot - 
+        MEM ACCOUNTS C3:
+          PARTITION 0
+    ID: 0xa1e438 HASH: 0x56e81f
+    ID: 0x5df9b8 HASH: 0x56e81f
+        
+[2021-11-26T20:38:47.036] [DEBUG] snapshot - Global Accounts:  []
+[2021-11-26T20:38:47.036] [DEBUG] snapshot - Partition Hashes:  Map(2) {
+  0 => 'e982aa7f163e8022e72312fd440eecc6a853b1f8174b8e179614fbf5948d8ba2',
+  -1 => '78c7d4bfca718a92b57a31832c1c8460f43dee960b5f4cf4bbdae3bcce2deb6d'
+}
+[2021-11-26T20:39:17.034] [DEBUG] snapshot - Accounts in partition:  0 [
+  {
+    accountId: '0x5df9b87991262f6ba471f09758cde1c0fc1de734',
+    data: '{"balance":"100000000000000000000","codeHash":"0xc5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470","hash":"0794516dc49e31574d7e460c9ba0827c5e18030c0ca1feba68a6c654dfc21340","nonce":"0","stateRoot":"0x56e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421"}',
+    timestamp: 1637935648693,
+    hash: '0794516dc49e31574d7e460c9ba0827c5e18030c0ca1feba68a6c654dfc21340',
+    isGlobal: 0
+  },
+  {
+    accountId: '0xa1e4380a3b1f749673e270229993ee55f35663b4',
+    data: '{"balance":"100000000000000000000","codeHash":"0xc5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470","hash":"0794516dc49e31574d7e460c9ba0827c5e18030c0ca1feba68a6c654dfc21340","nonce":"0","stateRoot":"0x56e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421"}',
+    timestamp: 1637935648693,
+    hash: '0794516dc49e31574d7e460c9ba0827c5e18030c0ca1feba68a6c654dfc21340',
+    isGlobal: 0
+  }
+]
+[2021-11-26T20:39:17.034] [DEBUG] snapshot - 
+        MEM ACCOUNTS C4:
+          PARTITION 0
+    ID: 0xa1e438 HASH: 0x56e81f
+    ID: 0x5df9b8 HASH: 0x56e81f
+        
+[2021-11-26T20:39:17.034] [DEBUG] snapshot - Global Accounts:  []
+[2021-11-26T20:39:17.035] [DEBUG] snapshot - Partition Hashes:  Map(2) {
+  0 => 'e982aa7f163e8022e72312fd440eecc6a853b1f8174b8e179614fbf5948d8ba2',
+  -1 => '78c7d4bfca718a92b57a31832c1c8460f43dee960b5f4cf4bbdae3bcce2deb6d'
+}

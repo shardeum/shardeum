@@ -1,0 +1,473 @@
+[2021-11-26T20:36:16.901] [INFO] main - Logger initialized.
+[2021-11-26T20:36:16.903] [INFO] main - Server started with pid: 93495
+[2021-11-26T20:36:16.903] [INFO] main - ===== Server config: =====
+[2021-11-26T20:36:16.904] [INFO] main - {
+  "heartbeatInterval": 5,
+  "baseDir": ".",
+  "transactionExpireTime": 5,
+  "crypto": {
+    "hashKey": "69fa4195670576c0160d660c3be36556ff8d504725be8a59b5a96509e0c994bc"
+  },
+  "mode": "debug",
+  "p2p": {
+    "ipServer": "api.ipify.org/?format=json",
+    "timeServers": [
+      "0.pool.ntp.org",
+      "1.pool.ntp.org",
+      "2.pool.ntp.org",
+      "3.pool.ntp.org"
+    ],
+    "existingArchivers": [
+      {
+        "ip": "127.0.0.1",
+        "port": 4000,
+        "publicKey": "758b1c119412298802cd28dbfa394cdfeecc4074492d60844cc192d632d84de3"
+      },
+      {
+        "ip": "127.0.0.1",
+        "port": 4001,
+        "publicKey": "e4b5e3d51e727f897786a1bb176a028ecfe1941bfa5beefd3c6209c3dbc07cf7"
+      }
+    ],
+    "syncLimit": 180,
+    "cycleDuration": 30,
+    "maxRejoinTime": 20,
+    "difficulty": 2,
+    "queryDelay": 1,
+    "gossipRecipients": 8,
+    "gossipFactor": 4,
+    "gossipStartSeed": 15,
+    "gossipSeedFallof": 15,
+    "gossipTimeout": 180,
+    "maxSeedNodes": 10,
+    "minNodesToAllowTxs": 1,
+    "minNodes": 15,
+    "maxNodes": 30,
+    "seedNodeOffset": 4,
+    "nodeExpiryAge": 30,
+    "maxJoinedPerCycle": 5,
+    "maxSyncingPerCycle": 5,
+    "maxRotatedPerCycle": 0,
+    "maxPercentOfDelta": 40,
+    "minScaleReqsNeeded": 5,
+    "maxScaleReqs": 200,
+    "scaleConsensusRequired": 0.25,
+    "amountToGrow": 1,
+    "amountToShrink": 1,
+    "startInWitnessMode": false,
+    "seedList": "http://localhost:4000/api/seednodes"
+  },
+  "ip": {
+    "externalIp": "127.0.0.1",
+    "externalPort": 9001,
+    "internalIp": "127.0.0.1",
+    "internalPort": 9001
+  },
+  "network": {
+    "timeout": 5
+  },
+  "reporting": {
+    "report": true,
+    "recipient": "http://localhost:3000/api",
+    "interval": 2,
+    "console": false
+  },
+  "debug": {
+    "loseReceiptChance": 0,
+    "loseTxChance": 0,
+    "canDataRepair": false
+  },
+  "statistics": {
+    "save": true,
+    "interval": 1
+  },
+  "loadDetection": {
+    "queueLimit": 1000,
+    "desiredTxTime": 15,
+    "highThreshold": 0.5,
+    "lowThreshold": 0.2
+  },
+  "rateLimiting": {
+    "limitRate": true,
+    "loadLimit": {
+      "internal": 0.5,
+      "external": 0.4,
+      "txTimeInQueue": 0.2,
+      "queueLength": 0.2
+    }
+  },
+  "stateManager": {
+    "stateTableBucketSize": 500,
+    "accountBucketSize": 200
+  },
+  "sharding": {
+    "nodesPerConsensusGroup": 5
+  },
+  "dapp": {
+    "globalAccount": true
+  }
+}
+[2021-11-26T20:36:16.910] [DEBUG] main - Start of _getApplicationInterfaces()
+[2021-11-26T20:36:16.910] [DEBUG] main - End of _getApplicationInterfaces()
+[2021-11-26T20:36:16.911] [INFO] main - This nodes ipInfo:
+[2021-11-26T20:36:16.911] [INFO] main - {
+  "externalIp": "127.0.0.1",
+  "externalPort": 9001,
+  "internalIp": "127.0.0.1",
+  "internalPort": 9001
+}
+[2021-11-26T20:36:16.939] [INFO] main - Network: External server running on port 9001...
+[2021-11-26T20:36:16.964] [INFO] main - Keypair unable to be loaded from database. Generating new keypair...
+[2021-11-26T20:36:16.965] [INFO] main - New keypair generated.
+[2021-11-26T20:36:16.966] [INFO] main - New keypair successfully generated and saved to database.
+[2021-11-26T20:36:47.025] [DEBUG] main - DATASYNC: isFirstSeed = true. skipping sync
+[2021-11-26T20:37:17.022] [DEBUG] main - updateShardValues: getOrderedSyncingNeighbors
+[2021-11-26T20:37:17.026] [DEBUG] main - updateShardValues: getOrderedSyncingNeighbors
+[2021-11-26T20:37:18.020] [INFO] main - rss: 49.66 MB nds:1 qCt:0 aAr:0
+
+[2021-11-26T20:37:18.026] [DEBUG] main - no app.sync() function defined
+[2021-11-26T20:37:19.025] [INFO] main - rss: 50.22 MB nds:1 qCt:0 aAr:0
+
+[2021-11-26T20:37:20.027] [INFO] main - rss: 50.43 MB nds:1 qCt:0 aAr:0
+
+[2021-11-26T20:37:21.033] [INFO] main - rss: 50.54 MB nds:1 qCt:0 aAr:0
+
+[2021-11-26T20:37:22.036] [INFO] main - rss: 49.53 MB nds:1 qCt:0 aAr:0
+
+[2021-11-26T20:37:22.159] [DEBUG] main - Start of injectTransaction {"raw":"0xf86780862d79883d2000825208945df9b87991262f6ba471f09758cde1c0fc1de734827a69801ca088ff6cf0fefd94db46111149ae4bfc179e9b94721fffd821d38d16464b3f71d0a045e0aff800961cfce805daef7016b9b675c137a6a41a548f7b60a3484c06a33a","timestamp":1637935642158} set:false global:false
+[2021-11-26T20:37:22.159] [DEBUG] main - Performing initial validation of the transaction
+[2021-11-26T20:37:22.159] [DEBUG] main - InitialValidationResponse: {"reason":"","success":true,"txnTimestamp":1637935642158}
+[2021-11-26T20:37:22.159] [DEBUG] main - Transaction Timestamp: 1637935642158 CurrNodeTimestamp: 1637935642159
+    txnExprationTime: 5   TransactionAge: 1
+[2021-11-26T20:37:22.160] [DEBUG] main - shardusTx. shortTxID: 9810c37cc3bf1dc56c1cb7da871ea5e3a84d49b036e90fcf1622335d44737658 txID: 9810x37658 TX data: {"inTransaction":{"raw":"0xf86780862d79883d2000825208945df9b87991262f6ba471f09758cde1c0fc1de734827a69801ca088ff6cf0fefd94db46111149ae4bfc179e9b94721fffd821d38d16464b3f71d0a045e0aff800961cfce805daef7016b9b675c137a6a41a548f7b60a3484c06a33a","timestamp":1637935642158},"receivedTimestamp":1637935642159}
+[2021-11-26T20:37:22.160] [DEBUG] main - Transaction validated
+[2021-11-26T20:37:22.163] [DEBUG] main - Start of inject(globalModification:false  ts: 1637935642158 noConsensus:false dbg: undefined  tx: {"inTransaction":{"raw":"0xf86780862d79883d2000825208945df9b87991262f6ba471f09758cde1c0fc1de734827a69801ca088ff6cf0fefd94db46111149ae4bfc179e9b94721fffd821d38d16464b3f71d0a045e0aff800961cfce805daef7016b9b675c137a6a41a548f7b60a3484c06a33a","timestamp":1637935642158},"receivedTimestamp":1637935642159,"sign":{"owner":"4e67xcecb9","sig":"e591xx185c4"}})
+[2021-11-26T20:37:22.163] [DEBUG] main - sourceAddress: 0xa1e4380a3b1f749673e270229993ee55f35663b4 targetAddress: 0x5df9b87991262f6ba471f09758cde1c0fc1de734
+[2021-11-26T20:37:22.163] [DEBUG] main - get source state id for 0xa1e4380a3b1f749673e270229993ee55f35663b4
+[2021-11-26T20:37:22.163] [DEBUG] main - StateID: null short stateID: null 
+[2021-11-26T20:37:22.163] [DEBUG] main - get target state id for 0x5df9b87991262f6ba471f09758cde1c0fc1de734
+[2021-11-26T20:37:22.163] [DEBUG] main - targetStateId null
+[2021-11-26T20:37:22.163] [DEBUG] main - Creating the receipt for the transaction: StateID: null short stateID: null 
+[2021-11-26T20:37:22.163] [DEBUG] main - Done Creating the receipt for the transaction: StateID: null short stateID: null 
+[2021-11-26T20:37:22.166] [DEBUG] main - End of inject(1637935642158  debugInfo: undefined)
+[2021-11-26T20:37:22.166] [DEBUG] main - End of injectTransaction {"raw":"0xf86780862d79883d2000825208945df9b87991262f6ba471f09758cde1c0fc1de734827a69801ca088ff6cf0fefd94db46111149ae4bfc179e9b94721fffd821d38d16464b3f71d0a045e0aff800961cfce805daef7016b9b675c137a6a41a548f7b60a3484c06a33a","timestamp":1637935642158}
+[2021-11-26T20:37:22.167] [DEBUG] main - Received Consensus. Receipt: {"sign":{"owner":"4e67xcecb9","sig":"8981xxdd337"},"stateId":null,"targetStateId":null,"time":1637935642163,"txHash":"9810x37658"}
+[2021-11-26T20:37:23.040] [INFO] main - rss: 56.36 MB nds:1 qCt:1 aAr:0
+
+[2021-11-26T20:37:24.044] [INFO] main - rss: 51.58 MB nds:1 qCt:1 aAr:0
+
+[2021-11-26T20:37:25.044] [INFO] main - rss: 52.35 MB nds:1 qCt:1 aAr:0
+
+[2021-11-26T20:37:26.047] [INFO] main - rss: 53.62 MB nds:1 qCt:1 aAr:0
+
+[2021-11-26T20:37:27.047] [INFO] main - rss: 51.95 MB nds:1 qCt:1 aAr:0
+
+[2021-11-26T20:37:28.051] [INFO] main - rss: 55.64 MB nds:1 qCt:1 aAr:0
+
+[2021-11-26T20:37:28.685] [DEBUG] main - preApplyTransaction 1637935642158 debugInfo:undefined
+[2021-11-26T20:37:28.685] [DEBUG] main - preApplyTransaction  txid:"9810x37658" ts:1637935642158 isGlobalModifyingTX:false  Applying! debugInfo: undefined
+[2021-11-26T20:37:28.685] [DEBUG] main - preApplyTransaction  filter: {"0x5df9b87991262f6ba471f09758cde1c0fc1de734":true,"0xa1e4380a3b1f749673e270229993ee55f35663b4":true}
+[2021-11-26T20:37:28.685] [DEBUG] main - preApplyTransaction  acceptedTX: {"data":{"raw":"0xf86780862d79883d2000825208945df9b87991262f6ba471f09758cde1c0fc1de734827a69801ca088ff6cf0fefd94db46111149ae4bfc179e9b94721fffd821d38d16464b3f71d0a045e0aff800961cfce805daef7016b9b675c137a6a41a548f7b60a3484c06a33a","timestamp":1637935642158},"id":"9810x37658","receipt":{"sign":{"owner":"4e67xcecb9","sig":"8981xxdd337"},"stateId":null,"targetStateId":null,"time":1637935642163,"txHash":"9810x37658"},"status":1,"timestamp":1637935642158}
+[2021-11-26T20:37:28.685] [DEBUG] main - preApplyTransaction  wrappedStates: {"0x5df9b87991262f6ba471f09758cde1c0fc1de734":{"accountCreated":true,"accountId":"0x5df9b87991262f6ba471f09758cde1c0fc1de734","data":{"balance":"100000000000000000000","codeHash":"0xc5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470","nonce":"0","stateRoot":"0x56e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421"},"isPartial":false,"prevDataCopy":{"balance":"100000000000000000000","codeHash":"0xc5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470","nonce":"0","stateRoot":"0x56e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421"},"prevStateId":"0x56e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421","stateId":"0x56e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421","timestamp":0},"0xa1e4380a3b1f749673e270229993ee55f35663b4":{"accountCreated":true,"accountId":"0xa1e4380a3b1f749673e270229993ee55f35663b4","data":{"balance":"100000000000000000000","codeHash":"0xc5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470","nonce":"0","stateRoot":"0x56e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421"},"isPartial":false,"prevDataCopy":{"balance":"100000000000000000000","codeHash":"0xc5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470","nonce":"0","stateRoot":"0x56e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421"},"prevStateId":"0x56e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421","stateId":"0x56e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421","timestamp":0}}
+[2021-11-26T20:37:28.686] [DEBUG] main - preApplyTransaction  localCachedData: {}
+[2021-11-26T20:37:28.686] [DEBUG] main -  preApplyTransaction FIFO lock outer: ["0xa1e4380a3b1f749673e270229993ee55f35663b4","0x5df9b87991262f6ba471f09758cde1c0fc1de734"] 
+[2021-11-26T20:37:28.686] [DEBUG] main - fifoLock: atomicWrapper 
+[2021-11-26T20:37:28.686] [DEBUG] main - fifoLock: 0xa1e4380a3b1f749673e270229993ee55f35663b4 
+[2021-11-26T20:37:28.687] [DEBUG] main - fifoLock: 0x5df9b87991262f6ba471f09758cde1c0fc1de734 
+[2021-11-26T20:37:28.687] [DEBUG] main - fifoUnlock: atomicWrapper 
+[2021-11-26T20:37:28.687] [DEBUG] main -  preApplyTransaction FIFO lock inner: ["0xa1e4380a3b1f749673e270229993ee55f35663b4","0x5df9b87991262f6ba471f09758cde1c0fc1de734"] ourLocks: [1,1]
+[2021-11-26T20:37:28.687] [DEBUG] main - fifoLock: accountModification 
+[2021-11-26T20:37:28.735] [DEBUG] main - preApplyTransaction  post apply wrappedStates: {"0x5df9b87991262f6ba471f09758cde1c0fc1de734":{"accountCreated":true,"accountId":"0x5df9b87991262f6ba471f09758cde1c0fc1de734","data":{"balance":"100000000000000000000","codeHash":"0xc5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470","nonce":"0","stateRoot":"0x56e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421"},"isPartial":false,"prevDataCopy":{"balance":"100000000000000000000","codeHash":"0xc5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470","nonce":"0","stateRoot":"0x56e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421"},"prevStateId":"0x56e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421","stateId":"0x56e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421","timestamp":0},"0xa1e4380a3b1f749673e270229993ee55f35663b4":{"accountCreated":true,"accountId":"0xa1e4380a3b1f749673e270229993ee55f35663b4","data":{"balance":"100000000000000000000","codeHash":"0xc5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470","nonce":"0","stateRoot":"0x56e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421"},"isPartial":false,"prevDataCopy":{"balance":"100000000000000000000","codeHash":"0xc5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470","nonce":"0","stateRoot":"0x56e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421"},"prevStateId":"0x56e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421","stateId":"0x56e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421","timestamp":0}}
+[2021-11-26T20:37:28.735] [DEBUG] main - fifoUnlock: accountModification 
+[2021-11-26T20:37:28.735] [DEBUG] main - fifoUnlock: 0xa1e4380a3b1f749673e270229993ee55f35663b4 
+[2021-11-26T20:37:28.735] [DEBUG] main - fifoUnlock: 0x5df9b87991262f6ba471f09758cde1c0fc1de734 
+[2021-11-26T20:37:28.735] [DEBUG] main -  preApplyTransaction FIFO unlock inner: ["0xa1e4380a3b1f749673e270229993ee55f35663b4","0x5df9b87991262f6ba471f09758cde1c0fc1de734"] ourLocks: [1,1]
+[2021-11-26T20:37:28.735] [DEBUG] main - preApplyTransaction 1637935642158
+[2021-11-26T20:37:28.735] [DEBUG] main - processAcceptedTxQueue2 createAndShareVote : 9810x37658 
+[2021-11-26T20:37:28.736] [DEBUG] main - tryAppendVote collectedVotes: 9810x37658   0 
+[2021-11-26T20:37:28.736] [DEBUG] main - createAndShareVote numNodes: 1 ourVote: {"account_id":["0xa1e4380a3b1f749673e270229993ee55f35663b4","0x5df9b87991262f6ba471f09758cde1c0fc1de734"],"account_state_hash_after":["0x56e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421","0x56e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421"],"cant_apply":false,"node_id":"04faxe8c5c","sign":{"owner":"4e67xcecb9","sig":"b5f8xxe9a82"},"transaction_result":true,"txid":"9810x37658"} 
+[2021-11-26T20:37:28.736] [DEBUG] main - isNodeUpRecentOverride: NaN no recent TX, but this is not a fail conditions
+[2021-11-26T20:37:28.942] [DEBUG] main - processAcceptedTxQueue2 consensing : 9810x37658 receiptRcv:false
+[2021-11-26T20:37:28.944] [DEBUG] main - tryProduceReceipt canProduceReceipt: true passed: true passCount: 1 failCount: 0 
+[2021-11-26T20:37:28.944] [DEBUG] main - hasAppliedReceiptMatchingPreApply  9810x37658 Good Match
+[2021-11-26T20:37:29.056] [INFO] main - rss: 59.92 MB nds:1 qCt:1 aAr:0
+
+[2021-11-26T20:37:29.144] [DEBUG] main - processAcceptedTxQueue2 commiting : 9810x37658 
+[2021-11-26T20:37:29.146] [DEBUG] main - commitConsensedTransaction  ts:1637935642158 isGlobalModifyingTX:false  Applying! debugInfo: undefined
+[2021-11-26T20:37:29.146] [DEBUG] main - commitConsensedTransaction  filter: {"0x5df9b87991262f6ba471f09758cde1c0fc1de734":true,"0xa1e4380a3b1f749673e270229993ee55f35663b4":true}
+[2021-11-26T20:37:29.146] [DEBUG] main - commitConsensedTransaction  acceptedTX: {"data":{"raw":"0xf86780862d79883d2000825208945df9b87991262f6ba471f09758cde1c0fc1de734827a69801ca088ff6cf0fefd94db46111149ae4bfc179e9b94721fffd821d38d16464b3f71d0a045e0aff800961cfce805daef7016b9b675c137a6a41a548f7b60a3484c06a33a","timestamp":1637935642158},"id":"9810x37658","receipt":{"sign":{"owner":"4e67xcecb9","sig":"8981xxdd337"},"stateId":null,"targetStateId":null,"time":1637935642163,"txHash":"9810x37658"},"status":1,"timestamp":1637935642158}
+[2021-11-26T20:37:29.146] [DEBUG] main - commitConsensedTransaction  wrappedStates: {"0x5df9b87991262f6ba471f09758cde1c0fc1de734":{"accountCreated":true,"accountId":"0x5df9b87991262f6ba471f09758cde1c0fc1de734","data":{"balance":"100000000000000000000","codeHash":"0xc5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470","nonce":"0","stateRoot":"0x56e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421"},"isPartial":false,"prevDataCopy":{"balance":"100000000000000000000","codeHash":"0xc5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470","nonce":"0","stateRoot":"0x56e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421"},"prevStateId":"0x56e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421","stateId":"0x56e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421","timestamp":0},"0xa1e4380a3b1f749673e270229993ee55f35663b4":{"accountCreated":true,"accountId":"0xa1e4380a3b1f749673e270229993ee55f35663b4","data":{"balance":"100000000000000000000","codeHash":"0xc5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470","nonce":"0","stateRoot":"0x56e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421"},"isPartial":false,"prevDataCopy":{"balance":"100000000000000000000","codeHash":"0xc5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470","nonce":"0","stateRoot":"0x56e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421"},"prevStateId":"0x56e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421","stateId":"0x56e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421","timestamp":0}}
+[2021-11-26T20:37:29.146] [DEBUG] main - commitConsensedTransaction  localCachedData: {}
+[2021-11-26T20:37:29.146] [DEBUG] main - commitConsensedTransaction FIFO lock outer: ["0xa1e4380a3b1f749673e270229993ee55f35663b4","0x5df9b87991262f6ba471f09758cde1c0fc1de734"] 
+[2021-11-26T20:37:29.146] [DEBUG] main - fifoLock: atomicWrapper 
+[2021-11-26T20:37:29.147] [DEBUG] main - fifoLock: 0xa1e4380a3b1f749673e270229993ee55f35663b4 
+[2021-11-26T20:37:29.147] [DEBUG] main - fifoLock: 0x5df9b87991262f6ba471f09758cde1c0fc1de734 
+[2021-11-26T20:37:29.147] [DEBUG] main - fifoUnlock: atomicWrapper 
+[2021-11-26T20:37:29.147] [DEBUG] main - commitConsensedTransaction FIFO lock inner: ["0xa1e4380a3b1f749673e270229993ee55f35663b4","0x5df9b87991262f6ba471f09758cde1c0fc1de734"] ourLocks: [2,2]
+[2021-11-26T20:37:29.147] [DEBUG] main - fifoLock: accountModification 
+[2021-11-26T20:37:29.147] [DEBUG] main - commitConsensedTransaction  post apply wrappedStates: {"0x5df9b87991262f6ba471f09758cde1c0fc1de734":{"accountCreated":true,"accountId":"0x5df9b87991262f6ba471f09758cde1c0fc1de734","data":{"balance":"100000000000000000000","codeHash":"0xc5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470","nonce":"0","stateRoot":"0x56e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421"},"isPartial":false,"prevDataCopy":{"balance":"100000000000000000000","codeHash":"0xc5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470","nonce":"0","stateRoot":"0x56e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421"},"prevStateId":"0x56e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421","stateId":"0x56e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421","timestamp":0},"0xa1e4380a3b1f749673e270229993ee55f35663b4":{"accountCreated":true,"accountId":"0xa1e4380a3b1f749673e270229993ee55f35663b4","data":{"balance":"100000000000000000000","codeHash":"0xc5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470","nonce":"0","stateRoot":"0x56e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421"},"isPartial":false,"prevDataCopy":{"balance":"100000000000000000000","codeHash":"0xc5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470","nonce":"0","stateRoot":"0x56e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421"},"prevStateId":"0x56e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421","stateId":"0x56e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421","timestamp":0}}
+[2021-11-26T20:37:29.148] [DEBUG] main - setAccountData: tx:9810x37658 in commitConsensedTransaction.  setAccount partial:false key:0x5df9b87991262f6ba471f09758cde1c0fc1de734 hash:0x56e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421 ts:0
+[2021-11-26T20:37:29.149] [DEBUG] main - setAccountData: tx:9810x37658 in commitConsensedTransaction.  setAccount partial:false key:0xa1e4380a3b1f749673e270229993ee55f35663b4 hash:0x56e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421 ts:0
+[2021-11-26T20:37:29.149] [DEBUG] main - commitConsensedTransaction  savedSomething: true
+[2021-11-26T20:37:29.150] [DEBUG] main - commitConsensedTransaction  accountData[2]: [{"accountId":"0x5df9b87991262f6ba471f09758cde1c0fc1de734","data":{"balance":"100000000000000000000","codeHash":"0xc5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470","hash":"0794x21340","nonce":"0","stateRoot":"0x56e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421"},"hash":"0794x21340","localCache":{"balance":"100000000000000000000","codeHash":"0xc5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470","hash":"0794x21340","nonce":"0","stateRoot":"0x56e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421"},"stateId":"0794x21340","timestamp":1637935648693,"txId":"0x5c504ed432cb51138bcf09aa5e8a410dd4a1e204ef84bfed1be16dfba1b22060"},{"accountId":"0xa1e4380a3b1f749673e270229993ee55f35663b4","data":{"balance":"100000000000000000000","codeHash":"0xc5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470","hash":"0794x21340","nonce":"0","stateRoot":"0x56e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421"},"hash":"0794x21340","localCache":{"balance":"100000000000000000000","codeHash":"0xc5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470","hash":"0794x21340","nonce":"0","stateRoot":"0x56e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421"},"stateId":"0794x21340","timestamp":1637935648693,"txId":"0x5c504ed432cb51138bcf09aa5e8a410dd4a1e204ef84bfed1be16dfba1b22060"}]
+[2021-11-26T20:37:29.150] [DEBUG] main - commitConsensedTransaction  stateTableResults[2]: [{"accountId":"0x5df9b87991262f6ba471f09758cde1c0fc1de734","stateAfter":"0794x21340","stateBefore":"0000x00000","txId":"0x5c504ed432cb51138bcf09aa5e8a410dd4a1e204ef84bfed1be16dfba1b22060","txTimestamp":1637935648693},{"accountId":"0xa1e4380a3b1f749673e270229993ee55f35663b4","stateAfter":"0794x21340","stateBefore":"0000x00000","txId":"0x5c504ed432cb51138bcf09aa5e8a410dd4a1e204ef84bfed1be16dfba1b22060","txTimestamp":1637935648693}]
+[2021-11-26T20:37:29.150] [DEBUG] main - writeStateTable 0x5df9b87991262f6ba471f09758cde1c0fc1de734 before: 0x56e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421 after: 0794x21340 txid: 9810x37658 ts: 1637935642158
+[2021-11-26T20:37:29.150] [DEBUG] main - writeStateTable 0xa1e4380a3b1f749673e270229993ee55f35663b4 before: 0x56e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421 after: 0794x21340 txid: 9810x37658 ts: 1637935642158
+[2021-11-26T20:37:29.153] [DEBUG] main - fifoUnlock: accountModification 
+[2021-11-26T20:37:29.153] [DEBUG] main - fifoUnlock: 0xa1e4380a3b1f749673e270229993ee55f35663b4 
+[2021-11-26T20:37:29.153] [DEBUG] main - fifoUnlock: 0x5df9b87991262f6ba471f09758cde1c0fc1de734 
+[2021-11-26T20:37:29.154] [DEBUG] main - commitConsensedTransaction FIFO unlock inner: ["0xa1e4380a3b1f749673e270229993ee55f35663b4","0x5df9b87991262f6ba471f09758cde1c0fc1de734"] ourLocks: [2,2]
+[2021-11-26T20:37:29.154] [ERROR] main - updateAccountsCopyTable timestamps do match txts:1637935642158 acc.ts:1637935648693 
+[2021-11-26T20:37:29.154] [DEBUG] main - updateAccountsCopyTable acc.timestamp: 1637935648693 cycle computed:2 accountId:0x5df9b87991262f6ba471f09758cde1c0fc1de734
+[2021-11-26T20:37:29.157] [DEBUG] main - updateAccountsCopyTable acc.timestamp: 1637935648693 cycle computed:2 accountId:0xa1e4380a3b1f749673e270229993ee55f35663b4
+[2021-11-26T20:37:29.164] [DEBUG] main - processAcceptedTxQueue2 commiting finished : Recpt:pass 9810x37658 
+[2021-11-26T20:37:30.059] [INFO] main - rss: 60.87 MB nds:1 qCt:0 aAr:1
+
+[2021-11-26T20:37:31.064] [INFO] main - rss: 61.16 MB nds:1 qCt:0 aAr:1
+
+[2021-11-26T20:37:32.069] [INFO] main - rss: 61.49 MB nds:1 qCt:0 aAr:1
+
+[2021-11-26T20:37:33.074] [INFO] main - rss: 61.55 MB nds:1 qCt:0 aAr:1
+
+[2021-11-26T20:37:34.080] [INFO] main - rss: 61.88 MB nds:1 qCt:0 aAr:1
+
+[2021-11-26T20:37:35.080] [INFO] main - rss: 61.98 MB nds:1 qCt:0 aAr:1
+
+[2021-11-26T20:37:36.081] [INFO] main - rss: 62.29 MB nds:1 qCt:0 aAr:1
+
+[2021-11-26T20:37:37.085] [INFO] main - rss: 60.56 MB nds:1 qCt:0 aAr:1
+
+[2021-11-26T20:37:38.090] [INFO] main - rss: 60.42 MB nds:1 qCt:0 aAr:1
+
+[2021-11-26T20:37:39.092] [INFO] main - rss: 60.51 MB nds:1 qCt:0 aAr:1
+
+[2021-11-26T20:37:40.097] [INFO] main - rss: 60.85 MB nds:1 qCt:0 aAr:1
+
+[2021-11-26T20:37:41.101] [INFO] main - rss: 61.72 MB nds:1 qCt:0 aAr:1
+
+[2021-11-26T20:37:42.105] [INFO] main - rss: 61.18 MB nds:1 qCt:0 aAr:1
+
+[2021-11-26T20:37:43.108] [INFO] main - rss: 61.26 MB nds:1 qCt:0 aAr:1
+
+[2021-11-26T20:37:44.113] [INFO] main - rss: 61.49 MB nds:1 qCt:0 aAr:1
+
+[2021-11-26T20:37:45.114] [INFO] main - rss: 61.57 MB nds:1 qCt:0 aAr:1
+
+[2021-11-26T20:37:46.114] [INFO] main - rss: 61.83 MB nds:1 qCt:0 aAr:1
+
+[2021-11-26T20:37:47.016] [DEBUG] main - updateShardValues: getOrderedSyncingNeighbors
+[2021-11-26T20:37:47.018] [DEBUG] main - receiptMapResults: [{"cycle":1,"partition":0,"receiptMap":{},"txCount":0}]
+[2021-11-26T20:37:47.027] [DEBUG] main - accountsHashCache3 1: {"accountHashMap":{"dataType":"stringifyReduce_map_2_array","value":[["0x5df9b87991262f6ba471f09758cde1c0fc1de734",{"accountHashList":[{"c":2,"h":"0794x21340","t":1637935648693}],"lastSeenCycle":0,"lastSeenSortIndex":-1,"lastStaleCycle":-1,"lastUpdateCycle":2,"queueIndex":{"id":2,"idx":-1}}],["0xa1e4380a3b1f749673e270229993ee55f35663b4",{"accountHashList":[{"c":2,"h":"0794x21340","t":1637935648693}],"lastSeenCycle":0,"lastSeenSortIndex":-1,"lastStaleCycle":-1,"lastUpdateCycle":2,"queueIndex":{"id":2,"idx":0}}]]},"currentCalculationCycle":0,"futureHistoryList":{"accountHashesSorted":[{"c":2,"h":"0794x21340","t":1637935648693},{"c":2,"h":"0794x21340","t":1637935648693}],"accountIDs":["0x5df9b87991262f6ba471f09758cde1c0fc1de734","0xa1e4380a3b1f749673e270229993ee55f35663b4"]},"workingHistoryList":{"accountHashesSorted":[],"accountIDs":[]}}
+[2021-11-26T20:37:47.119] [INFO] main - rss: 59.24 MB nds:1 qCt:0 aAr:1
+
+[2021-11-26T20:37:47.211] [DEBUG] main - getPartitionReport: insync: true {"cycleNumber":1,"res":[]}
+[2021-11-26T20:37:48.125] [INFO] main - rss: 59.54 MB nds:1 qCt:0 aAr:1
+
+[2021-11-26T20:37:49.129] [INFO] main - rss: 59.60 MB nds:1 qCt:0 aAr:1
+
+[2021-11-26T20:37:50.134] [INFO] main - rss: 60.01 MB nds:1 qCt:0 aAr:1
+
+[2021-11-26T20:37:51.135] [INFO] main - rss: 60.06 MB nds:1 qCt:0 aAr:1
+
+[2021-11-26T20:37:52.137] [INFO] main - rss: 59.26 MB nds:1 qCt:0 aAr:1
+
+[2021-11-26T20:37:53.138] [INFO] main - rss: 59.23 MB nds:1 qCt:0 aAr:1
+
+[2021-11-26T20:37:54.139] [INFO] main - rss: 59.47 MB nds:1 qCt:0 aAr:1
+
+[2021-11-26T20:37:55.144] [INFO] main - rss: 59.56 MB nds:1 qCt:0 aAr:1
+
+[2021-11-26T20:37:56.145] [INFO] main - rss: 58.75 MB nds:1 qCt:0 aAr:1
+
+[2021-11-26T20:37:57.146] [INFO] main - rss: 55.26 MB nds:1 qCt:0 aAr:1
+
+[2021-11-26T20:37:58.152] [INFO] main - rss: 52.90 MB nds:1 qCt:0 aAr:1
+
+[2021-11-26T20:37:59.157] [INFO] main - rss: 52.20 MB nds:1 qCt:0 aAr:1
+
+[2021-11-26T20:38:00.161] [INFO] main - rss: 52.30 MB nds:1 qCt:0 aAr:1
+
+[2021-11-26T20:38:01.161] [INFO] main - rss: 52.05 MB nds:1 qCt:0 aAr:1
+
+[2021-11-26T20:38:02.162] [INFO] main - rss: 49.33 MB nds:1 qCt:0 aAr:1
+
+[2021-11-26T20:38:03.167] [INFO] main - rss: 49.36 MB nds:1 qCt:0 aAr:1
+
+[2021-11-26T20:38:04.170] [INFO] main - rss: 49.76 MB nds:1 qCt:0 aAr:1
+
+[2021-11-26T20:38:05.175] [INFO] main - rss: 49.84 MB nds:1 qCt:0 aAr:1
+
+[2021-11-26T20:38:06.178] [INFO] main - rss: 51.20 MB nds:1 qCt:0 aAr:1
+
+[2021-11-26T20:38:07.180] [INFO] main - rss: 51.27 MB nds:1 qCt:0 aAr:1
+
+[2021-11-26T20:38:08.181] [INFO] main - rss: 51.49 MB nds:1 qCt:0 aAr:1
+
+[2021-11-26T20:38:09.183] [INFO] main - rss: 51.56 MB nds:1 qCt:0 aAr:1
+
+[2021-11-26T20:38:10.184] [INFO] main - rss: 51.84 MB nds:1 qCt:0 aAr:1
+
+[2021-11-26T20:38:11.189] [INFO] main - rss: 51.86 MB nds:1 qCt:0 aAr:1
+
+[2021-11-26T20:38:12.190] [INFO] main - rss: 51.43 MB nds:1 qCt:0 aAr:1
+
+[2021-11-26T20:38:13.192] [INFO] main - rss: 51.51 MB nds:1 qCt:0 aAr:1
+
+[2021-11-26T20:38:14.197] [INFO] main - rss: 51.74 MB nds:1 qCt:0 aAr:1
+
+[2021-11-26T20:38:15.202] [INFO] main - rss: 51.99 MB nds:1 qCt:0 aAr:1
+
+[2021-11-26T20:38:16.205] [INFO] main - rss: 52.23 MB nds:1 qCt:0 aAr:1
+
+[2021-11-26T20:38:17.012] [DEBUG] main - updateShardValues: getOrderedSyncingNeighbors
+[2021-11-26T20:38:17.013] [DEBUG] main - receiptMapResults: [{"cycle":2,"partition":0,"receiptMap":{"9810c37c":["d68bba80","d68bba80"]},"txCount":2}]
+[2021-11-26T20:38:17.016] [DEBUG] main - accountsHashCache3 2: {"accountHashMap":{"dataType":"stringifyReduce_map_2_array","value":[["0x5df9b87991262f6ba471f09758cde1c0fc1de734",{"accountHashList":[{"c":2,"h":"0794x21340","t":1637935648693}],"lastSeenCycle":0,"lastSeenSortIndex":-1,"lastStaleCycle":-1,"lastUpdateCycle":2,"queueIndex":{"id":2,"idx":0}}],["0xa1e4380a3b1f749673e270229993ee55f35663b4",{"accountHashList":[{"c":2,"h":"0794x21340","t":1637935648693}],"lastSeenCycle":0,"lastSeenSortIndex":-1,"lastStaleCycle":-1,"lastUpdateCycle":2,"queueIndex":{"id":2,"idx":1}}]]},"currentCalculationCycle":2,"futureHistoryList":{"accountHashesSorted":[{"c":2,"h":"0794x21340","t":1637935648693},{"c":2,"h":"0794x21340","t":1637935648693}],"accountIDs":["0x5df9b87991262f6ba471f09758cde1c0fc1de734","0xa1e4380a3b1f749673e270229993ee55f35663b4"]},"workingHistoryList":{"accountHashesSorted":[],"accountIDs":[]}}
+[2021-11-26T20:38:17.210] [INFO] main - rss: 54.79 MB nds:1 qCt:0 aAr:1
+
+[2021-11-26T20:38:17.377] [DEBUG] main - getPartitionReport: insync: true {"cycleNumber":2,"res":[{"h":"498fx4fae4","i":0}]}
+[2021-11-26T20:38:18.210] [INFO] main - rss: 55.08 MB nds:1 qCt:0 aAr:1
+
+[2021-11-26T20:38:19.211] [INFO] main - rss: 54.38 MB nds:1 qCt:0 aAr:1
+
+[2021-11-26T20:38:20.216] [INFO] main - rss: 54.61 MB nds:1 qCt:0 aAr:1
+
+[2021-11-26T20:38:21.222] [INFO] main - rss: 54.66 MB nds:1 qCt:0 aAr:1
+
+[2021-11-26T20:38:22.223] [INFO] main - rss: 54.90 MB nds:1 qCt:0 aAr:1
+
+[2021-11-26T20:38:23.224] [INFO] main - rss: 54.13 MB nds:1 qCt:0 aAr:1
+
+[2021-11-26T20:38:24.230] [INFO] main - rss: 54.35 MB nds:1 qCt:0 aAr:1
+
+[2021-11-26T20:38:25.234] [INFO] main - rss: 54.35 MB nds:1 qCt:0 aAr:1
+
+[2021-11-26T20:38:26.238] [INFO] main - rss: 54.59 MB nds:1 qCt:0 aAr:1
+
+[2021-11-26T20:38:27.243] [INFO] main - rss: 54.67 MB nds:1 qCt:0 aAr:1
+
+[2021-11-26T20:38:28.247] [INFO] main - rss: 54.92 MB nds:1 qCt:0 aAr:1
+
+[2021-11-26T20:38:29.252] [INFO] main - rss: 54.18 MB nds:1 qCt:0 aAr:1
+
+[2021-11-26T20:38:30.252] [INFO] main - rss: 54.43 MB nds:1 qCt:0 aAr:1
+
+[2021-11-26T20:38:31.254] [INFO] main - rss: 54.46 MB nds:1 qCt:0 aAr:1
+
+[2021-11-26T20:38:32.259] [INFO] main - rss: 55.12 MB nds:1 qCt:0 aAr:1
+
+[2021-11-26T20:38:33.265] [INFO] main - rss: 54.10 MB nds:1 qCt:0 aAr:1
+
+[2021-11-26T20:38:34.269] [INFO] main - rss: 53.38 MB nds:1 qCt:0 aAr:1
+
+[2021-11-26T20:38:35.272] [INFO] main - rss: 53.44 MB nds:1 qCt:0 aAr:1
+
+[2021-11-26T20:38:36.272] [INFO] main - rss: 53.71 MB nds:1 qCt:0 aAr:1
+
+[2021-11-26T20:38:37.273] [INFO] main - rss: 53.76 MB nds:1 qCt:0 aAr:1
+
+[2021-11-26T20:38:38.274] [INFO] main - rss: 54.00 MB nds:1 qCt:0 aAr:1
+
+[2021-11-26T20:38:39.279] [INFO] main - rss: 53.51 MB nds:1 qCt:0 aAr:1
+
+[2021-11-26T20:38:40.284] [INFO] main - rss: 53.79 MB nds:1 qCt:0 aAr:1
+
+[2021-11-26T20:38:41.286] [INFO] main - rss: 53.87 MB nds:1 qCt:0 aAr:1
+
+[2021-11-26T20:38:42.291] [INFO] main - rss: 54.12 MB nds:1 qCt:0 aAr:1
+
+[2021-11-26T20:38:43.297] [INFO] main - rss: 54.18 MB nds:1 qCt:0 aAr:1
+
+[2021-11-26T20:38:44.300] [INFO] main - rss: 53.71 MB nds:1 qCt:0 aAr:1
+
+[2021-11-26T20:38:45.302] [INFO] main - rss: 53.77 MB nds:1 qCt:0 aAr:1
+
+[2021-11-26T20:38:46.303] [INFO] main - rss: 51.09 MB nds:1 qCt:0 aAr:1
+
+[2021-11-26T20:38:47.012] [DEBUG] main - updateShardValues: getOrderedSyncingNeighbors
+[2021-11-26T20:38:47.013] [DEBUG] main - receiptMapResults: [{"cycle":3,"partition":0,"receiptMap":{},"txCount":0}]
+[2021-11-26T20:38:47.021] [DEBUG] main - accountsHashCache3 3: {"accountHashMap":{"dataType":"stringifyReduce_map_2_array","value":[["0x5df9b87991262f6ba471f09758cde1c0fc1de734",{"accountHashList":[{"c":2,"h":"0794x21340","t":1637935648693}],"lastSeenCycle":0,"lastSeenSortIndex":0,"lastStaleCycle":-1,"lastUpdateCycle":2,"queueIndex":{"id":2,"idx":0}}],["0xa1e4380a3b1f749673e270229993ee55f35663b4",{"accountHashList":[{"c":2,"h":"0794x21340","t":1637935648693}],"lastSeenCycle":0,"lastSeenSortIndex":1,"lastStaleCycle":-1,"lastUpdateCycle":2,"queueIndex":{"id":2,"idx":1}}]]},"currentCalculationCycle":3,"futureHistoryList":{"accountHashesSorted":[],"accountIDs":[]},"workingHistoryList":{"accountHashesSorted":[{"c":2,"h":"0794x21340","t":1637935648693},{"c":2,"h":"0794x21340","t":1637935648693}],"accountIDs":["0x5df9b87991262f6ba471f09758cde1c0fc1de734","0xa1e4380a3b1f749673e270229993ee55f35663b4"]}}
+[2021-11-26T20:38:47.309] [INFO] main - rss: 53.33 MB nds:1 qCt:0 aAr:1
+
+[2021-11-26T20:38:47.570] [DEBUG] main - getPartitionReport: insync: true {"cycleNumber":3,"res":[{"h":"498fx4fae4","i":0}]}
+[2021-11-26T20:38:48.309] [INFO] main - rss: 55.79 MB nds:1 qCt:0 aAr:1
+
+[2021-11-26T20:38:49.314] [INFO] main - rss: 55.75 MB nds:1 qCt:0 aAr:1
+
+[2021-11-26T20:38:50.319] [INFO] main - rss: 56.02 MB nds:1 qCt:0 aAr:1
+
+[2021-11-26T20:38:51.320] [INFO] main - rss: 51.89 MB nds:1 qCt:0 aAr:1
+
+[2021-11-26T20:38:52.320] [INFO] main - rss: 51.20 MB nds:1 qCt:0 aAr:1
+
+[2021-11-26T20:38:53.320] [INFO] main - rss: 51.22 MB nds:1 qCt:0 aAr:1
+
+[2021-11-26T20:38:54.320] [INFO] main - rss: 50.95 MB nds:1 qCt:0 aAr:1
+
+[2021-11-26T20:38:55.322] [INFO] main - rss: 51.12 MB nds:1 qCt:0 aAr:1
+
+[2021-11-26T20:38:56.323] [INFO] main - rss: 52.25 MB nds:1 qCt:0 aAr:1
+
+[2021-11-26T20:38:57.329] [INFO] main - rss: 52.31 MB nds:1 qCt:0 aAr:1
+
+[2021-11-26T20:38:58.334] [INFO] main - rss: 52.54 MB nds:1 qCt:0 aAr:1
+
+[2021-11-26T20:38:59.337] [INFO] main - rss: 52.61 MB nds:1 qCt:0 aAr:1
+
+[2021-11-26T20:39:00.337] [INFO] main - rss: 51.87 MB nds:1 qCt:0 aAr:1
+
+[2021-11-26T20:39:01.343] [INFO] main - rss: 51.94 MB nds:1 qCt:0 aAr:1
+
+[2021-11-26T20:39:02.347] [INFO] main - rss: 53.40 MB nds:1 qCt:0 aAr:1
+
+[2021-11-26T20:39:03.348] [INFO] main - rss: 53.00 MB nds:1 qCt:0 aAr:1
+
+[2021-11-26T20:39:04.352] [INFO] main - rss: 53.23 MB nds:1 qCt:0 aAr:1
+
+[2021-11-26T20:39:05.354] [INFO] main - rss: 48.86 MB nds:1 qCt:0 aAr:1
+
+[2021-11-26T20:39:06.357] [INFO] main - rss: 47.99 MB nds:1 qCt:0 aAr:1
+
+[2021-11-26T20:39:07.357] [INFO] main - rss: 48.02 MB nds:1 qCt:0 aAr:1
+
+[2021-11-26T20:39:08.361] [INFO] main - rss: 48.19 MB nds:1 qCt:0 aAr:1
+
+[2021-11-26T20:39:09.364] [INFO] main - rss: 47.50 MB nds:1 qCt:0 aAr:1
+
+[2021-11-26T20:39:10.365] [INFO] main - rss: 48.46 MB nds:1 qCt:0 aAr:1
+
+[2021-11-26T20:39:11.371] [INFO] main - rss: 47.76 MB nds:1 qCt:0 aAr:1
+
+[2021-11-26T20:39:12.376] [INFO] main - rss: 48.02 MB nds:1 qCt:0 aAr:1
+
+[2021-11-26T20:39:13.382] [INFO] main - rss: 48.09 MB nds:1 qCt:0 aAr:1
+
+[2021-11-26T20:39:14.387] [INFO] main - rss: 48.41 MB nds:1 qCt:0 aAr:1
+
+[2021-11-26T20:39:15.393] [INFO] main - rss: 48.48 MB nds:1 qCt:0 aAr:1
+
+[2021-11-26T20:39:16.397] [INFO] main - rss: 48.71 MB nds:1 qCt:0 aAr:1
+
+[2021-11-26T20:39:17.018] [DEBUG] main - updateShardValues: getOrderedSyncingNeighbors
+[2021-11-26T20:39:17.018] [DEBUG] main - receiptMapResults: [{"cycle":4,"partition":0,"receiptMap":{},"txCount":0}]
+[2021-11-26T20:39:17.028] [DEBUG] main - accountsHashCache3 4: {"accountHashMap":{"dataType":"stringifyReduce_map_2_array","value":[["0x5df9b87991262f6ba471f09758cde1c0fc1de734",{"accountHashList":[{"c":2,"h":"0794x21340","t":1637935648693}],"lastSeenCycle":0,"lastSeenSortIndex":0,"lastStaleCycle":-1,"lastUpdateCycle":2,"queueIndex":{"id":2,"idx":0}}],["0xa1e4380a3b1f749673e270229993ee55f35663b4",{"accountHashList":[{"c":2,"h":"0794x21340","t":1637935648693}],"lastSeenCycle":0,"lastSeenSortIndex":1,"lastStaleCycle":-1,"lastUpdateCycle":2,"queueIndex":{"id":2,"idx":1}}]]},"currentCalculationCycle":4,"futureHistoryList":{"accountHashesSorted":[],"accountIDs":[]},"workingHistoryList":{"accountHashesSorted":[{"c":2,"h":"0794x21340","t":1637935648693},{"c":2,"h":"0794x21340","t":1637935648693}],"accountIDs":["0x5df9b87991262f6ba471f09758cde1c0fc1de734","0xa1e4380a3b1f749673e270229993ee55f35663b4"]}}
+[2021-11-26T20:39:17.397] [INFO] main - rss: 60.06 MB nds:1 qCt:0 aAr:1
+
+[2021-11-26T20:39:17.738] [DEBUG] main - getPartitionReport: insync: true {"cycleNumber":4,"res":[{"h":"498fx4fae4","i":0}]}
+[2021-11-26T20:39:18.403] [INFO] main - rss: 55.64 MB nds:1 qCt:0 aAr:1
+
+[2021-11-26T20:39:19.404] [INFO] main - rss: 53.54 MB nds:1 qCt:0 aAr:1
+
+[2021-11-26T20:39:20.405] [INFO] main - rss: 56.26 MB nds:1 qCt:0 aAr:1
+
+[2021-11-26T20:39:21.412] [INFO] main - rss: 56.39 MB nds:1 qCt:0 aAr:1
+
+[2021-11-26T20:39:22.418] [INFO] main - rss: 46.73 MB nds:1 qCt:0 aAr:1
+
+[2021-11-26T20:39:22.582] [INFO] main - Stopping reporter...
+[2021-11-26T20:39:22.582] [INFO] main - Stopping statistics reporting...
+[2021-11-26T20:39:22.582] [INFO] main - Stopping POW generators...
+[2021-11-26T20:39:22.583] [INFO] main - Shutting down p2p...
+[2021-11-26T20:39:22.584] [INFO] main - Shutting down the application...
+[2021-11-26T20:39:22.584] [INFO] main - Shutting down networking...
+[2021-11-26T20:39:22.585] [INFO] main - Closing Database connections...
+[2021-11-26T20:39:22.586] [INFO] main - Shutting down logs...

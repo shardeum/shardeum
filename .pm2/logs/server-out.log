@@ -1,0 +1,72 @@
+Starting statistics snapshots...
+initLogger
+absoluteClientPath /Users/thantsintoe/shardus/shardium-server/node_modules/monitor-client
+view Directory /Users/thantsintoe/shardus/shardium-server/node_modules/monitor-client/
+static Directory /Users/thantsintoe/shardus/shardium-server/node_modules/monitor-client
+server started on port 3000 (development)
+[0mPOST /api/joining [32m200[0m 9.752 ms - 17[0m
+[0mPOST /api/joined [32m200[0m 1.038 ms - 17[0m
+[0mPOST /api/sync-statement [32m200[0m 1.874 ms - 17[0m
+[0mPOST /api/active [32m200[0m 3.280 ms - 17[0m
+[0mPOST /api/heartbeat [32m200[0m 3.334 ms - 17[0m
+[0mPOST /api/heartbeat [32m200[0m 1.479 ms - 17[0m
+[0mPOST /api/heartbeat [32m200[0m 1.957 ms - 17[0m
+[0mPOST /api/heartbeat [32m200[0m 1.753 ms - 17[0m
+[0mPOST /api/heartbeat [32m200[0m 2.115 ms - 17[0m
+[0mPOST /api/heartbeat [32m200[0m 1.688 ms - 17[0m
+[0mPOST /api/heartbeat [32m200[0m 2.087 ms - 17[0m
+[0mPOST /api/heartbeat [32m200[0m 2.015 ms - 17[0m
+[0mPOST /api/heartbeat [32m200[0m 1.179 ms - 17[0m
+[0mPOST /api/heartbeat [32m200[0m 1.105 ms - 17[0m
+[0mPOST /api/heartbeat [32m200[0m 1.578 ms - 17[0m
+[0mPOST /api/heartbeat [32m200[0m 1.955 ms - 17[0m
+[0mPOST /api/heartbeat [32m200[0m 4.530 ms - 17[0m
+[0mPOST /api/heartbeat [32m200[0m 2.257 ms - 17[0m
+[0mPOST /api/heartbeat [32m200[0m 0.663 ms - 17[0m
+[0mPOST /api/heartbeat [32m200[0m 2.315 ms - 17[0m
+[0mPOST /api/heartbeat [32m200[0m 0.888 ms - 17[0m
+[0mPOST /api/heartbeat [32m200[0m 1.781 ms - 17[0m
+[0mPOST /api/heartbeat [32m200[0m 2.099 ms - 17[0m
+[0mPOST /api/heartbeat [32m200[0m 1.067 ms - 17[0m
+[0mPOST /api/heartbeat [32m200[0m 1.247 ms - 17[0m
+[0mPOST /api/heartbeat [32m200[0m 0.779 ms - 17[0m
+[0mPOST /api/heartbeat [32m200[0m 1.490 ms - 17[0m
+[0mPOST /api/heartbeat [32m200[0m 1.905 ms - 17[0m
+[0mPOST /api/heartbeat [32m200[0m 0.912 ms - 17[0m
+[0mPOST /api/heartbeat [32m200[0m 1.410 ms - 17[0m
+[0mPOST /api/heartbeat [32m200[0m 1.001 ms - 17[0m
+[0mPOST /api/heartbeat [32m200[0m 1.534 ms - 17[0m
+[0mPOST /api/heartbeat [32m200[0m 1.337 ms - 17[0m
+[0mPOST /api/heartbeat [32m200[0m 1.531 ms - 17[0m
+[0mPOST /api/heartbeat [32m200[0m 1.498 ms - 17[0m
+[0mPOST /api/heartbeat [32m200[0m 1.451 ms - 17[0m
+[0mPOST /api/heartbeat [32m200[0m 1.070 ms - 17[0m
+[0mPOST /api/heartbeat [32m200[0m 1.380 ms - 17[0m
+[0mPOST /api/heartbeat [32m200[0m 1.042 ms - 17[0m
+[0mPOST /api/heartbeat [32m200[0m 1.703 ms - 17[0m
+[0mPOST /api/heartbeat [32m200[0m 0.703 ms - 17[0m
+[0mPOST /api/heartbeat [32m200[0m 2.129 ms - 17[0m
+[0mPOST /api/heartbeat [32m200[0m 1.448 ms - 17[0m
+[0mPOST /api/heartbeat [32m200[0m 1.452 ms - 17[0m
+[0mPOST /api/heartbeat [32m200[0m 1.395 ms - 17[0m
+[0mPOST /api/heartbeat [32m200[0m 1.745 ms - 17[0m
+[0mPOST /api/heartbeat [32m200[0m 1.414 ms - 17[0m
+[0mPOST /api/heartbeat [32m200[0m 1.338 ms - 17[0m
+[0mPOST /api/heartbeat [32m200[0m 0.933 ms - 17[0m
+[0mPOST /api/heartbeat [32m200[0m 1.538 ms - 17[0m
+[0mPOST /api/heartbeat [32m200[0m 0.928 ms - 17[0m
+[0mPOST /api/heartbeat [32m200[0m 1.475 ms - 17[0m
+[0mPOST /api/heartbeat [32m200[0m 1.428 ms - 17[0m
+[0mPOST /api/heartbeat [32m200[0m 1.378 ms - 17[0m
+[0mPOST /api/heartbeat [32m200[0m 1.086 ms - 17[0m
+[0mPOST /api/heartbeat [32m200[0m 1.456 ms - 17[0m
+[0mPOST /api/heartbeat [32m200[0m 0.996 ms - 17[0m
+[0mPOST /api/heartbeat [32m200[0m 1.321 ms - 17[0m
+[0mPOST /api/heartbeat [32m200[0m 1.092 ms - 17[0m
+[0mPOST /api/heartbeat [32m200[0m 0.751 ms - 17[0m
+[0mPOST /api/heartbeat [32m200[0m 1.056 ms - 17[0m
+[0mPOST /api/heartbeat [32m200[0m 1.414 ms - 17[0m
+[0mPOST /api/heartbeat [32m200[0m 0.655 ms - 17[0m
+[0mPOST /api/heartbeat [32m200[0m 1.679 ms - 17[0m
+[0mPOST /api/heartbeat [32m200[0m 1.995 ms - 17[0m
+[0mPOST /api/heartbeat [32m200[0m 1.314 ms - 17[0m

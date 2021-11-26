@@ -1,0 +1,86 @@
+[2021-11-26T20:36:47.018] [INFO] cycle - 
+    DIGESTED:   0
+    CHAIN:
+        0:0000:ec01 { actv:0, exp:0, desr:15, joind:[127.0.0.1:9001], actvd:[], lost:[] refu:[] apop:[] rmvd:[], rfshd:[] }
+    NODES:
+      hash:                  aabe5
+      byJoinOrder:           [127.0.0.1:9001-0]
+      byIdOrder:             [127.0.0.1:9001-x04fa]
+      othersByIdOrder:       []
+      activeByIdOrder:       []
+      activeOthersByIdOrder: []
+      
+[2021-11-26T20:37:17.024] [INFO] cycle - 
+    DIGESTED:   1
+    CHAIN:
+        0:0000:ec01 { actv:0, exp:0, desr:15, joind:[127.0.0.1:9001], actvd:[], lost:[] refu:[] apop:[] rmvd:[], rfshd:[] }
+      1:ec01:e7c5 { actv:0, exp:0, desr:15, joind:[], actvd:[127.0.0.1:9001], lost:[] refu:[] apop:[] rmvd:[], rfshd:[] }
+    NODES:
+      hash:                  6f529
+      byJoinOrder:           [127.0.0.1:9001-0]
+      byIdOrder:             [127.0.0.1:9001-x04fa]
+      othersByIdOrder:       []
+      activeByIdOrder:       [127.0.0.1:9001]
+      activeOthersByIdOrder: []
+      
+[2021-11-26T20:37:47.011] [INFO] cycle - 
+    DIGESTED:   2
+    CHAIN:
+        0:0000:ec01 { actv:0, exp:0, desr:15, joind:[127.0.0.1:9001], actvd:[], lost:[] refu:[] apop:[] rmvd:[], rfshd:[] }
+      1:ec01:e7c5 { actv:0, exp:0, desr:15, joind:[], actvd:[127.0.0.1:9001], lost:[] refu:[] apop:[] rmvd:[], rfshd:[] }
+      2:e7c5:f168 { actv:1, exp:1, desr:15, joind:[], actvd:[], lost:[] refu:[] apop:[] rmvd:[], rfshd:[127.0.0.1:9001-0] }
+    NODES:
+      hash:                  877ce
+      byJoinOrder:           [127.0.0.1:9001-2]
+      byIdOrder:             [127.0.0.1:9001-x04fa]
+      othersByIdOrder:       []
+      activeByIdOrder:       [127.0.0.1:9001]
+      activeOthersByIdOrder: []
+      
+[2021-11-26T20:38:17.006] [INFO] cycle - 
+    DIGESTED:   3
+    CHAIN:
+        0:0000:ec01 { actv:0, exp:0, desr:15, joind:[127.0.0.1:9001], actvd:[], lost:[] refu:[] apop:[] rmvd:[], rfshd:[] }
+      1:ec01:e7c5 { actv:0, exp:0, desr:15, joind:[], actvd:[127.0.0.1:9001], lost:[] refu:[] apop:[] rmvd:[], rfshd:[] }
+      2:e7c5:f168 { actv:1, exp:1, desr:15, joind:[], actvd:[], lost:[] refu:[] apop:[] rmvd:[], rfshd:[127.0.0.1:9001-0] }
+      3:f168:e3cc { actv:1, exp:1, desr:15, joind:[], actvd:[], lost:[] refu:[] apop:[] rmvd:[], rfshd:[127.0.0.1:9001-2] }
+    NODES:
+      hash:                  ba2df
+      byJoinOrder:           [127.0.0.1:9001-3]
+      byIdOrder:             [127.0.0.1:9001-x04fa]
+      othersByIdOrder:       []
+      activeByIdOrder:       [127.0.0.1:9001]
+      activeOthersByIdOrder: []
+      
+[2021-11-26T20:38:47.008] [INFO] cycle - 
+    DIGESTED:   4
+    CHAIN:
+        0:0000:ec01 { actv:0, exp:0, desr:15, joind:[127.0.0.1:9001], actvd:[], lost:[] refu:[] apop:[] rmvd:[], rfshd:[] }
+      1:ec01:e7c5 { actv:0, exp:0, desr:15, joind:[], actvd:[127.0.0.1:9001], lost:[] refu:[] apop:[] rmvd:[], rfshd:[] }
+      2:e7c5:f168 { actv:1, exp:1, desr:15, joind:[], actvd:[], lost:[] refu:[] apop:[] rmvd:[], rfshd:[127.0.0.1:9001-0] }
+      3:f168:e3cc { actv:1, exp:1, desr:15, joind:[], actvd:[], lost:[] refu:[] apop:[] rmvd:[], rfshd:[127.0.0.1:9001-2] }
+      4:e3cc:87fe { actv:1, exp:1, desr:15, joind:[], actvd:[], lost:[] refu:[] apop:[] rmvd:[], rfshd:[127.0.0.1:9001-3] }
+    NODES:
+      hash:                  46b4c
+      byJoinOrder:           [127.0.0.1:9001-4]
+      byIdOrder:             [127.0.0.1:9001-x04fa]
+      othersByIdOrder:       []
+      activeByIdOrder:       [127.0.0.1:9001]
+      activeOthersByIdOrder: []
+      
+[2021-11-26T20:39:17.013] [INFO] cycle - 
+    DIGESTED:   5
+    CHAIN:
+        1:ec01:e7c5 { actv:0, exp:0, desr:15, joind:[], actvd:[127.0.0.1:9001], lost:[] refu:[] apop:[] rmvd:[], rfshd:[] }
+      2:e7c5:f168 { actv:1, exp:1, desr:15, joind:[], actvd:[], lost:[] refu:[] apop:[] rmvd:[], rfshd:[127.0.0.1:9001-0] }
+      3:f168:e3cc { actv:1, exp:1, desr:15, joind:[], actvd:[], lost:[] refu:[] apop:[] rmvd:[], rfshd:[127.0.0.1:9001-2] }
+      4:e3cc:87fe { actv:1, exp:1, desr:15, joind:[], actvd:[], lost:[] refu:[] apop:[] rmvd:[], rfshd:[127.0.0.1:9001-3] }
+      5:87fe:870d { actv:1, exp:1, desr:15, joind:[], actvd:[], lost:[] refu:[] apop:[] rmvd:[], rfshd:[127.0.0.1:9001-4] }
+    NODES:
+      hash:                  13cff
+      byJoinOrder:           [127.0.0.1:9001-5]
+      byIdOrder:             [127.0.0.1:9001-x04fa]
+      othersByIdOrder:       []
+      activeByIdOrder:       [127.0.0.1:9001]
+      activeOthersByIdOrder: []
+      

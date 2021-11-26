@@ -1,0 +1,303 @@
+Registering accounts route
+Tester account created Account {
+  nonce: <BN: 0>,
+  balance: <BN: 56bc75e2d63100000>,
+  stateRoot: <Buffer 56 e8 1f 17 1b cc 55 a6 ff 83 45 e6 92 c0 f8 6e 5b 48 e0 1b 99 6c ad c0 01 62 2f b5 e3 63 b4 21>,
+  codeHash: <Buffer c5 d2 46 01 86 f7 23 3c 92 7e 7d b2 dc c7 03 c0 e5 00 b6 53 ca 82 27 3b 7b fa d8 04 5d 85 a4 70>,
+  virtual: false,
+  timestamp: 1637935576938
+}
+Internal server running on port 9001...
+External server running on port 9001...
+this.p2p P2P {
+  _events: [Object: null prototype] {},
+  _eventsCount: 0,
+  _maxListeners: undefined,
+  registerInternal: [Function: registerInternal],
+  registerGossipHandler: [Function: registerGossipHandler],
+  unregisterGossipHandler: [Function: unregisterGossipHandler],
+  unregisterInternal: [Function: unregisterInternal],
+  ask: [AsyncFunction: ask],
+  tell: [AsyncFunction: tell],
+  sendGossipIn: [AsyncFunction: sendGossip],
+  robustQuery: [AsyncFunction: robustQuery],
+  sendGossipAll: [AsyncFunction: sendGossipAll],
+  state: State {
+    _events: [Object: null prototype] {},
+    _eventsCount: 0,
+    _maxListeners: undefined,
+    [Symbol(kCapture)]: false
+  },
+  archiver: {
+    sendPartitionData: [Function: sendPartitionData],
+    sendTransactionData: [Function: sendTransactionData]
+  },
+  [Symbol(kCapture)]: false
+}
+init archiver module
+init archiver module
+Resetting auto-scale module Cycle 0, Quarter: -1
+getTxs: Cycle 0, Quarter: -1 { archivers: [] }
+Resetting auto-scale module Cycle 0, Quarter: -1
+Join request added in cycle 0, quarter -1 {
+  nodeInfo: {
+    curvePk: '363afebb8cca474bd4e3c29d0109ad068736b7802c34ed8b7038cd6a95bb1e24',
+    ip: 'localhost',
+    port: 4000,
+    publicKey: '758b1c119412298802cd28dbfa394cdfeecc4074492d60844cc192d632d84de3'
+  },
+  requestType: 'JOIN',
+  sign: {
+    owner: '758b1c119412298802cd28dbfa394cdfeecc4074492d60844cc192d632d84de3',
+    sig: '8e73aaab0d56826d9ec6208e01cd81a5c86042da57540701a7230d9589fcbc301992ae3313fcc43161f0e72f3c1a63d04a88355f647f0292acf8c970a4e11d0157fffa990209d21a86b8418848ea187058fae7ca6f2f1eaa4a5644a2456f8da6'
+  }
+}
+Adding data recipient.. [Arguments] {
+  '0': {
+    curvePk: '363afebb8cca474bd4e3c29d0109ad068736b7802c34ed8b7038cd6a95bb1e24',
+    ip: 'localhost',
+    port: 4000,
+    publicKey: '758b1c119412298802cd28dbfa394cdfeecc4074492d60844cc192d632d84de3'
+  },
+  '1': [
+    {
+      lastData: -1,
+      publicKey: '758b1c119412298802cd28dbfa394cdfeecc4074492d60844cc192d632d84de3',
+      tag: '8f3b683a322adc51c4a2f58073bf728e00f55cc1ac83755fdd8b152fd96c588a6e4193b99000f9e41c9b867e7e066e1714e8d901a3aca20410a3ec7afeedd9b3',
+      type: 'CYCLE'
+    },
+    {
+      lastData: -1,
+      publicKey: '758b1c119412298802cd28dbfa394cdfeecc4074492d60844cc192d632d84de3',
+      tag: 'ea27c4b78ff8632de7bb1257cd57515c6b941b0e6864c539d79c9bb4735c189c02b77dfb9c134b10800f60c3b8755c2a2b099f089c0df3c8faa4a4cc8b583f8b',
+      type: 'STATE_METADATA'
+    }
+  ]
+}
+dataRequests:  [
+  {
+    lastData: -1,
+    publicKey: '758b1c119412298802cd28dbfa394cdfeecc4074492d60844cc192d632d84de3',
+    tag: '8f3b683a322adc51c4a2f58073bf728e00f55cc1ac83755fdd8b152fd96c588a6e4193b99000f9e41c9b867e7e066e1714e8d901a3aca20410a3ec7afeedd9b3',
+    type: 'CYCLE'
+  },
+  {
+    lastData: -1,
+    publicKey: '758b1c119412298802cd28dbfa394cdfeecc4074492d60844cc192d632d84de3',
+    tag: 'ea27c4b78ff8632de7bb1257cd57515c6b941b0e6864c539d79c9bb4735c189c02b77dfb9c134b10800f60c3b8755c2a2b099f089c0df3c8faa4a4cc8b583f8b',
+    type: 'STATE_METADATA'
+  }
+]
+getTxs: Cycle 0, Quarter: -1 {
+  archivers: [ { nodeInfo: [Object], requestType: 'JOIN', sign: [Object] } ]
+}
+Resetting auto-scale module Cycle 0, Quarter: -1
+Recient List before sending data
+Map(1) {
+  '758b1c119412298802cd28dbfa394cdfeecc4074492d60844cc192d632d84de3' => {
+    nodeInfo: {
+      curvePk: '363afebb8cca474bd4e3c29d0109ad068736b7802c34ed8b7038cd6a95bb1e24',
+      ip: 'localhost',
+      port: 4000,
+      publicKey: '758b1c119412298802cd28dbfa394cdfeecc4074492d60844cc192d632d84de3'
+    },
+    dataRequests: [ [Object], [Object] ],
+    curvePk: '363afebb8cca474bd4e3c29d0109ad068736b7802c34ed8b7038cd6a95bb1e24'
+  }
+}
+STATE_METADATA typedRequest {
+  lastData: -1,
+  publicKey: '758b1c119412298802cd28dbfa394cdfeecc4074492d60844cc192d632d84de3',
+  tag: 'ea27c4b78ff8632de7bb1257cd57515c6b941b0e6864c539d79c9bb4735c189c02b77dfb9c134b10800f60c3b8755c2a2b099f089c0df3c8faa4a4cc8b583f8b',
+  type: 'STATE_METADATA'
+}
+Sending data for cycle 0 to archiver http://localhost:4000/newdata 363afebb8cca474bd4e3c29d0109ad068736b7802c34ed8b7038cd6a95bb1e24
+Resetting auto-scale module Cycle 1, Quarter: 1
+getTxs: Cycle 1, Quarter: 1 { archivers: [] }
+Resetting auto-scale module Cycle 1, Quarter: 1
+syncAppData
+getTxs: Cycle 1, Quarter: 3 { archivers: [] }
+Resetting auto-scale module Cycle 1, Quarter: 3
+registering gossip handler...
+syncAppData - goActive
+updateShardValues  cycle:1 
+Recient List before sending data
+Map(1) {
+  '758b1c119412298802cd28dbfa394cdfeecc4074492d60844cc192d632d84de3' => {
+    nodeInfo: {
+      curvePk: '363afebb8cca474bd4e3c29d0109ad068736b7802c34ed8b7038cd6a95bb1e24',
+      ip: 'localhost',
+      port: 4000,
+      publicKey: '758b1c119412298802cd28dbfa394cdfeecc4074492d60844cc192d632d84de3'
+    },
+    dataRequests: [ [Object], [Object] ],
+    curvePk: '363afebb8cca474bd4e3c29d0109ad068736b7802c34ed8b7038cd6a95bb1e24'
+  }
+}
+STATE_METADATA typedRequest {
+  lastData: -1,
+  publicKey: '758b1c119412298802cd28dbfa394cdfeecc4074492d60844cc192d632d84de3',
+  tag: 'ea27c4b78ff8632de7bb1257cd57515c6b941b0e6864c539d79c9bb4735c189c02b77dfb9c134b10800f60c3b8755c2a2b099f089c0df3c8faa4a4cc8b583f8b',
+  type: 'STATE_METADATA'
+}
+Sending data for cycle 1 to archiver http://localhost:4000/newdata 363afebb8cca474bd4e3c29d0109ad068736b7802c34ed8b7038cd6a95bb1e24
+Resetting auto-scale module Cycle 2, Quarter: 1
+getTxs: Cycle 2, Quarter: 1 { archivers: [] }
+Resetting auto-scale module Cycle 2, Quarter: 1
+updateShardValues  cycle:1 
+syncAppData - sync
+Server ready!
+running getKeyFromTransaction {
+  sourceKeys: [ '0xa1e4380a3b1f749673e270229993ee55f35663b4' ],
+  targetKeys: [ '0x5df9b87991262f6ba471f09758cde1c0fc1de734' ],
+  allKeys: [
+    '0xa1e4380a3b1f749673e270229993ee55f35663b4',
+    '0x5df9b87991262f6ba471f09758cde1c0fc1de734'
+  ],
+  timestamp: 1637935642158
+}
+running getKeyFromTransaction {
+  sourceKeys: [ '0xa1e4380a3b1f749673e270229993ee55f35663b4' ],
+  targetKeys: [ '0x5df9b87991262f6ba471f09758cde1c0fc1de734' ],
+  allKeys: [
+    '0xa1e4380a3b1f749673e270229993ee55f35663b4',
+    '0x5df9b87991262f6ba471f09758cde1c0fc1de734'
+  ],
+  timestamp: 1637935642158
+}
+Cycle number from timestamp 1637935642158 2
+preApplyTransaction 1637935642158 debugInfo:undefined
+DBG attempting to apply tx 0x5c504ed432cb51138bcf09aa5e8a410dd4a1e204ef84bfed1be16dfba1b22060 ...
+evm_runtx: 40.592ms
+DBG applied tx 0x5c504ed432cb51138bcf09aa5e8a410dd4a1e204ef84bfed1be16dfba1b22060 {
+  gasUsed: <BN: 5208>,
+  execResult: {
+    gasUsed: <BN: 0>,
+    exceptionError: undefined,
+    returnValue: <Buffer >,
+    gasRefund: <BN: 0>
+  },
+  bloom: Bloom {
+    bitvector: <Buffer 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 ... 206 more bytes>
+  },
+  amountSpent: <BN: e92596fd6290000>,
+  receipt: {
+    status: 1,
+    gasUsed: <Buffer 52 08>,
+    bitvector: <Buffer 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 ... 206 more bytes>,
+    logs: []
+  }
+}
+commitConsensedTransaction  ts:1637935642158 Applying!
+writeStateTable 0x5df9b87991262f6ba471f09758cde1c0fc1de734 accounts total2
+writeStateTable 0xa1e4380a3b1f749673e270229993ee55f35663b4 accounts total2
+getTxs: Cycle 2, Quarter: 3 { archivers: [] }
+Resetting auto-scale module Cycle 2, Quarter: 3
+Recient List before sending data
+Map(1) {
+  '758b1c119412298802cd28dbfa394cdfeecc4074492d60844cc192d632d84de3' => {
+    nodeInfo: {
+      curvePk: '363afebb8cca474bd4e3c29d0109ad068736b7802c34ed8b7038cd6a95bb1e24',
+      ip: 'localhost',
+      port: 4000,
+      publicKey: '758b1c119412298802cd28dbfa394cdfeecc4074492d60844cc192d632d84de3'
+    },
+    dataRequests: [ [Object], [Object] ],
+    curvePk: '363afebb8cca474bd4e3c29d0109ad068736b7802c34ed8b7038cd6a95bb1e24'
+  }
+}
+STATE_METADATA typedRequest {
+  lastData: -1,
+  publicKey: '758b1c119412298802cd28dbfa394cdfeecc4074492d60844cc192d632d84de3',
+  tag: 'ea27c4b78ff8632de7bb1257cd57515c6b941b0e6864c539d79c9bb4735c189c02b77dfb9c134b10800f60c3b8755c2a2b099f089c0df3c8faa4a4cc8b583f8b',
+  type: 'STATE_METADATA'
+}
+Sending data for cycle 2 to archiver http://localhost:4000/newdata 363afebb8cca474bd4e3c29d0109ad068736b7802c34ed8b7038cd6a95bb1e24
+Resetting auto-scale module Cycle 3, Quarter: 1
+getTxs: Cycle 3, Quarter: 1 { archivers: [] }
+Resetting auto-scale module Cycle 3, Quarter: 1
+updateShardValues  cycle:2 
+Initiating a new collector for cycle 1
+getTxs: Cycle 3, Quarter: 3 { archivers: [] }
+Resetting auto-scale module Cycle 3, Quarter: 3
+Recient List before sending data
+Map(1) {
+  '758b1c119412298802cd28dbfa394cdfeecc4074492d60844cc192d632d84de3' => {
+    nodeInfo: {
+      curvePk: '363afebb8cca474bd4e3c29d0109ad068736b7802c34ed8b7038cd6a95bb1e24',
+      ip: 'localhost',
+      port: 4000,
+      publicKey: '758b1c119412298802cd28dbfa394cdfeecc4074492d60844cc192d632d84de3'
+    },
+    dataRequests: [ [Object], [Object] ],
+    curvePk: '363afebb8cca474bd4e3c29d0109ad068736b7802c34ed8b7038cd6a95bb1e24'
+  }
+}
+STATE_METADATA typedRequest {
+  lastData: -1,
+  publicKey: '758b1c119412298802cd28dbfa394cdfeecc4074492d60844cc192d632d84de3',
+  tag: 'ea27c4b78ff8632de7bb1257cd57515c6b941b0e6864c539d79c9bb4735c189c02b77dfb9c134b10800f60c3b8755c2a2b099f089c0df3c8faa4a4cc8b583f8b',
+  type: 'STATE_METADATA'
+}
+Sending data for cycle 3 to archiver http://localhost:4000/newdata 363afebb8cca474bd4e3c29d0109ad068736b7802c34ed8b7038cd6a95bb1e24
+Resetting auto-scale module Cycle 4, Quarter: 1
+getTxs: Cycle 4, Quarter: 1 { archivers: [] }
+Resetting auto-scale module Cycle 4, Quarter: 1
+updateShardValues  cycle:3 
+Initiating a new collector for cycle 2
+getTxs: Cycle 4, Quarter: 3 { archivers: [] }
+Resetting auto-scale module Cycle 4, Quarter: 3
+Recient List before sending data
+Map(1) {
+  '758b1c119412298802cd28dbfa394cdfeecc4074492d60844cc192d632d84de3' => {
+    nodeInfo: {
+      curvePk: '363afebb8cca474bd4e3c29d0109ad068736b7802c34ed8b7038cd6a95bb1e24',
+      ip: 'localhost',
+      port: 4000,
+      publicKey: '758b1c119412298802cd28dbfa394cdfeecc4074492d60844cc192d632d84de3'
+    },
+    dataRequests: [ [Object], [Object] ],
+    curvePk: '363afebb8cca474bd4e3c29d0109ad068736b7802c34ed8b7038cd6a95bb1e24'
+  }
+}
+STATE_METADATA typedRequest {
+  lastData: -1,
+  publicKey: '758b1c119412298802cd28dbfa394cdfeecc4074492d60844cc192d632d84de3',
+  tag: 'ea27c4b78ff8632de7bb1257cd57515c6b941b0e6864c539d79c9bb4735c189c02b77dfb9c134b10800f60c3b8755c2a2b099f089c0df3c8faa4a4cc8b583f8b',
+  type: 'STATE_METADATA'
+}
+Sending data for cycle 4 to archiver http://localhost:4000/newdata 363afebb8cca474bd4e3c29d0109ad068736b7802c34ed8b7038cd6a95bb1e24
+Resetting auto-scale module Cycle 5, Quarter: 1
+getTxs: Cycle 5, Quarter: 1 { archivers: [] }
+Resetting auto-scale module Cycle 5, Quarter: 1
+updateShardValues  cycle:4 
+Initiating a new collector for cycle 3
+getTxs: Cycle 5, Quarter: 3 { archivers: [] }
+Resetting auto-scale module Cycle 5, Quarter: 3
+/accounts
+Recient List before sending data
+Map(1) {
+  '758b1c119412298802cd28dbfa394cdfeecc4074492d60844cc192d632d84de3' => {
+    nodeInfo: {
+      curvePk: '363afebb8cca474bd4e3c29d0109ad068736b7802c34ed8b7038cd6a95bb1e24',
+      ip: 'localhost',
+      port: 4000,
+      publicKey: '758b1c119412298802cd28dbfa394cdfeecc4074492d60844cc192d632d84de3'
+    },
+    dataRequests: [ [Object], [Object] ],
+    curvePk: '363afebb8cca474bd4e3c29d0109ad068736b7802c34ed8b7038cd6a95bb1e24'
+  }
+}
+STATE_METADATA typedRequest {
+  lastData: -1,
+  publicKey: '758b1c119412298802cd28dbfa394cdfeecc4074492d60844cc192d632d84de3',
+  tag: 'ea27c4b78ff8632de7bb1257cd57515c6b941b0e6864c539d79c9bb4735c189c02b77dfb9c134b10800f60c3b8755c2a2b099f089c0df3c8faa4a4cc8b583f8b',
+  type: 'STATE_METADATA'
+}
+Sending data for cycle 5 to archiver http://localhost:4000/newdata 363afebb8cca474bd4e3c29d0109ad068736b7802c34ed8b7038cd6a95bb1e24
+Resetting auto-scale module Cycle 6, Quarter: 1
+getTxs: Cycle 6, Quarter: 1 { archivers: [] }
+Resetting auto-scale module Cycle 6, Quarter: 1
+updateShardValues  cycle:5 
+Initiating a new collector for cycle 4
+Shutting down...
