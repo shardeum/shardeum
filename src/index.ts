@@ -8,15 +8,16 @@ let { shardusFactory } = require('shardus-global-server')
 
 crypto.init('64f152869ca2d473e4ba64ab53f49ccdb2edae22da192c126850970e788af347')
 
-let {
+import {
   Account,
   Address,
   BN,
   toBuffer,
   bufferToHex
-} = require('ethereumjs-util')
-let { Transaction } = require('@ethereumjs/tx')
-let VM = require('@ethereumjs/vm').default
+} from 'ethereumjs-util'
+
+import {Transaction, TxData} from '@ethereumjs/tx';
+import VM from '@ethereumjs/vm';
 
 const overwriteMerge = (target, source, options) => source
 
@@ -135,7 +136,24 @@ const dapp = shardusFactory(config)
  *   [id: string]: account
  * }
  */
-let accounts = {}
+
+/**
+ * This is for phase 1, there is lots of data not actually held by Account
+ * 
+ */
+interface WrappedEthAccount {
+  ethAddress: string //account address in ethereum space. 
+  account: Account //actual Eth account.  
+  timestamp: number //account timestamp
+  hash: string //account hash
+}
+
+interface WrappedStates {
+  [id: string]: WrappedEthAccount
+}
+
+
+let accounts:WrappedStates = {}
 let appliedTxs = {}
 let EVM = new VM()
 
@@ -145,7 +163,18 @@ createAccount('0x2041B9176A4839dAf7A4DcC6a97BA023953d9ad9').then(result => {
   console.log('Error while creating tester account')
 })
 
-async function createAccount (addressStr) {
+function updateEthAccountHash(wrappedEthAccount:WrappedEthAccount)
+{
+  //just a basic nonce to hash because it will take more work to extract the correct hash  
+  //let hash = wrappedEthAccount.account.nonce.toString()
+  //hash = hash + '0'.repeat(64 - hash.length)
+
+  let hash = bufferToHex(wrappedEthAccount.account.stateRoot)
+
+  wrappedEthAccount.hash = hash
+}
+
+async function createAccount (addressStr) : Promise<WrappedEthAccount> {
   const accountAddress = Address.fromString(addressStr)
   const oneEth = new BN(10).pow(new BN(18))
 
@@ -156,18 +185,21 @@ async function createAccount (addressStr) {
   const account = Account.fromAccountData(acctData)
   await EVM.stateManager.putAccount(accountAddress, account)
   const updatedAccount = await EVM.stateManager.getAccount(accountAddress)
-  updatedAccount.timestamp = Date.now()
-  return updatedAccount
+
+  let wrappedEthAccount = {timestamp : Date.now(), account: updatedAccount, ethAddress: addressStr, hash:'' }
+  updateEthAccountHash(wrappedEthAccount)
+  return wrappedEthAccount
 }
 
 function getTransactionObj (tx) {
-  if (!tx.raw) return
+  if (!tx.raw) return null
   try {
     const serializedInput = toBuffer(tx.raw)
     return Transaction.fromRlpSerializedTx(serializedInput)
   } catch (e) {
     console.log('Unable to get transaction obj', e)
   }
+  return null
 }
 
 function getReadableTransaction (tx) {
@@ -192,7 +224,13 @@ async function getReadableAccountInfo (addressStr) {
   }
 }
 
-function transformAddress (addressStr) {
+//type EthAddress = string
+
+function toShardusAddress (addressStr) {
+  // return addressStr.slice(2).padEnd(42, '0')
+  return addressStr
+}
+function fromShardusAddress (addressStr) {
   // return addressStr.slice(2).padEnd(42, '0')
   return addressStr
 }
@@ -337,8 +375,8 @@ dapp.setup({
       timestamp: tx.timestamp
     }
     try {
-      let transformedSourceKey = transformAddress(transaction.getSenderAddress().toString())
-      let transformedTargetKey = transformAddress(transaction.to.toString())
+      let transformedSourceKey = toShardusAddress(transaction.getSenderAddress().toString())
+      let transformedTargetKey = toShardusAddress(transaction.to.toString())
       result.sourceKeys.push(transformedSourceKey)
       if (transaction.to) result.targetKeys.push(transformedTargetKey)
       result.allKeys = result.allKeys.concat(result.sourceKeys, result.targetKeys)
@@ -349,9 +387,10 @@ dapp.setup({
     return result
   },
   getStateId (accountAddress, mustExist = true) {
-    let account = accounts[accountAddress]
-    if (account && account.stateRoot) {
-      return bufferToHex(account.stateRoot)
+    let wrappedEthAccount = accounts[accountAddress]
+
+    if (wrappedEthAccount && wrappedEthAccount.account.stateRoot) {
+      return bufferToHex(wrappedEthAccount.account.stateRoot)
     } else {
       throw new Error('Could not get stateId for account ' + accountAddress)
     }
@@ -359,6 +398,8 @@ dapp.setup({
   deleteLocalAccountData () {
     accounts = {}
   },
+
+  //this is tricky... how will it work with wrapped accounts
   setAccountData (accountRecords) {
     for (const account of accountRecords) {
       accounts[account.id] = account
@@ -366,19 +407,27 @@ dapp.setup({
   },
   async getRelevantData (accountId, tx) {
     if (!tx.raw) throw new Error('getRelevantData: No raw tx')
-
-    let account = accounts[accountId]
+  
+    let ethAccountID = fromShardusAddress(accountId)
+    let wrappedEthAccount = accounts[accountId]
     let accountCreated = false
 
     // Create the account if it doesn't exist
-    if (typeof account === 'undefined' || account === null) {
-      account = await createAccount(accountId)
-      accounts[accountId] = await getReadableAccountInfo(accountId)
+    if (typeof wrappedEthAccount === 'undefined' || wrappedEthAccount === null) {
+      let account1 = await createAccount(ethAccountID)
+      let updatedAccount = await getReadableAccountInfo(ethAccountID)
+
+      let account = await EVM.stateManager.getAccount(ethAccountID)
+
+      wrappedEthAccount = {timestamp : Date.now(), account, ethAddress: ethAccountID, hash:'' }
+      updateEthAccountHash(wrappedEthAccount)
+
+      accounts[accountId] = wrappedEthAccount
       accountCreated = true
     }
-    let readableAccount = await getReadableAccountInfo(accountId)
+    //let readableAccount = await getReadableAccountInfo(ethAccountID)
     // Wrap it for Shardus
-    return dapp.createWrappedResponse(accountId, accountCreated, bufferToHex(account.stateRoot), account.timestamp, readableAccount)
+    return dapp.createWrappedResponse(accountId, accountCreated, bufferToHex(wrappedEthAccount.account.stateRoot), wrappedEthAccount.timestamp, wrappedEthAccount)//readableAccount)
   },
   getAccountData (accountStart, accountEnd, maxRecords) {
     const results = []
@@ -386,17 +435,17 @@ dapp.setup({
     const end = parseInt(accountEnd, 16)
     // Loop all accounts
     for (let addressStr in accounts) {
-      let account = accounts[addressStr]
+      let wrappedEthAccount = accounts[addressStr]
       // Skip if not in account id range
       const id = parseInt(addressStr, 16)
       if (id < start || id > end) continue
 
-      // Add to results
+      // Add to results (wrapping is redundant?)
       const wrapped = {
         accountId: addressStr,
-        stateId: bufferToHex(account.stateRoot),
-        data: account,
-        timestamp: account.timestamp
+        stateId: bufferToHex(wrappedEthAccount.account.stateRoot), //todo decide on if we use eth hash or our own hash..
+        data: wrappedEthAccount.account,
+        timestamp: wrappedEthAccount.timestamp
       }
       results.push(wrapped)
 
@@ -408,17 +457,26 @@ dapp.setup({
   updateAccountFull (wrappedData, localCache, applyResponse) {
     const accountId = wrappedData.accountId
     const accountCreated = wrappedData.accountCreated
-    const updatedAccount = wrappedData.data
-    // Update hash
-    const hashBefore = updatedAccount.hash
-    const hashAfter = crypto.hashObj(updatedAccount || {})
-    updatedAccount.hash = hashAfter
+    const updatedAccount:WrappedEthAccount = wrappedData.data
+    // Update hash.   currently letting the hash be controlled by the EVM.  
+    //                not sure if we want to hash the WrappedEthAccount instead, but probably not
+    // const hashBefore = updatedAccount.hash
+    // const hashAfter = crypto.hashObj(updatedAccount || {})
+    // updatedAccount.hash = hashAfter
+
+    let hashBefore = updatedAccount.hash
+    updateEthAccountHash(updatedAccount)
+    let hashAfter = updatedAccount.hash
+
     // Save updatedAccount to db / persistent storage
-    accounts[accountId] = updatedAccount
+    accounts[accountId] = updatedAccount //this isn't doing much, and will get reworked when we have a custom EVM:statemanager
+
     // Add data to our required response object
     dapp.applyResponseAddState(applyResponse, updatedAccount, updatedAccount, accountId, applyResponse.txId, applyResponse.txTimestamp, hashBefore, hashAfter, accountCreated)
   },
   updateAccountPartial (wrappedData, localCache, applyResponse) {
+    //I think we may need to utilize this so that shardus is not oblicated to make temporary copies of large CAs
+    //
     this.updateAccountFull(wrappedData, localCache, applyResponse)
   },
   getAccountDataByRange (accountStart, accountEnd, tsStart, tsEnd, maxRecords) {
@@ -427,39 +485,34 @@ dapp.setup({
     const end = parseInt(accountEnd, 16)
     // Loop all accounts
     for (let addressStr in accounts) {
-      let account = accounts[addressStr]
+      let wrappedEthAccount = accounts[addressStr]
       // Skip if not in account id range
       const id = parseInt(addressStr, 16)
       if (id < start || id > end) continue
       // Skip if not in timestamp range
-      const timestamp = account.timestamp
+      const timestamp = wrappedEthAccount.timestamp
       if (timestamp < tsStart || timestamp > tsEnd) continue
       // Add to results
-      const wrapped = { accountId: addressStr, stateId: bufferToHex(account.stateRoot), data: account, timestamp: account.timestamp }
+      const wrapped = { accountId: addressStr, stateId: bufferToHex(wrappedEthAccount.account.stateRoot), data: wrappedEthAccount.account, timestamp: wrappedEthAccount.timestamp }
       results.push(wrapped)
       // Return results early if maxRecords reached
       if (results.length >= maxRecords) return results
     }
     return results
   },
-  calculateAccountHash (account) {
-    if (account.stateRoot) return bufferToHex(account.stateRoot)
+  calculateAccountHash (wrappedEthAccount:WrappedEthAccount) {
+
+    if (wrappedEthAccount.account.stateRoot) return bufferToHex(wrappedEthAccount.account.stateRoot)
     else {
       throw new Error('there is not account.stateRoot')
     }
   },
   resetAccountData (accountBackupCopies) {
     for (let recordData of accountBackupCopies) {
-      // accounts[recordData.id] = recordData
 
-      const account = {
-        id: recordData.accountId,
-        hash: recordData.hash,
-        timestamp: recordData.timestamp,
-        data: recordData.data.data
-      }
-
-      accounts[account.id] = account
+      let wrappedEthAccount = recordData.data as WrappedEthAccount
+      let shardusAddress = toShardusAddress(wrappedEthAccount.ethAddress)
+      accounts[shardusAddress] = wrappedEthAccount
     }
   },
   deleteAccountData (addressList) {
@@ -470,13 +523,13 @@ dapp.setup({
   getAccountDataByList (addressList) {
     const results = []
     for (const address of addressList) {
-      const account = accounts[address]
-      if (account) {
+      const wrappedEthAccount = accounts[address]
+      if (wrappedEthAccount) {
         const wrapped = {
           accountId: address,
-          stateId: bufferToHex(account.stateRoot),
-          data: account,
-          timestamp: account.timestamp
+          stateId: bufferToHex(wrappedEthAccount.account.stateRoot),
+          data: wrappedEthAccount.account,
+          timestamp: wrappedEthAccount.timestamp //todo, timestamp?
         }
         results.push(wrapped)
       }
