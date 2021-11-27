@@ -253,17 +253,21 @@ async function getReadableAccountInfo (addressStr) {
 
 //type EthAddress = string
 
+let useAddressConversion = true
+
 function toShardusAddress (addressStr) {
   //change this:0x665eab3be2472e83e3100b4233952a16eed20c76
   //    to this:665eab3be2472e83e3100b4233952a16eed20c76000000000000000000000000
-  //return addressStr.slice(2)+'0'.repeat(24)
+  if(useAddressConversion)
+    return addressStr.slice(2)+'0'.repeat(24)
 
   return addressStr
 }
 function fromShardusAddress (addressStr) {
   //change this:665eab3be2472e83e3100b4233952a16eed20c76000000000000000000000000
   //    to this:0x665eab3be2472e83e3100b4233952a16eed20c76
-  //return '0x' + addressStr.slice(0,40)
+  if(useAddressConversion)
+    return '0x' + addressStr.slice(0,40)
 
   return addressStr
 }
