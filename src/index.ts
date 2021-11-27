@@ -101,6 +101,24 @@ config = merge(config, {
   }
 })
 
+//some debug settings
+config = merge(
+  config,
+  {
+    server: {
+      mode: 'debug',
+      debug: {
+        startInFatalsLogMode: true, //true setting good for big aws test with nodes joining under stress.
+        startInErrorLogMode: false,
+        fakeNetworkDelay:0,
+        disableSnapshots: true,
+        countEndpointStart: -1  
+      }
+    }
+  },
+  { arrayMerge: overwriteMerge }
+)
+
 const dapp = shardusFactory(config)
 
 /**
@@ -296,7 +314,7 @@ dapp.setup({
     try {
       // Apply the tx
       console.time('evm_runtx')
-      const Receipt = await EVM.runTx({ tx: transaction })
+      const Receipt = await EVM.runTx({ tx: transaction, skipNonce:true, skipBlockGasLimitValidation:true })
       console.timeEnd('evm_runtx')
       console.log('DBG', 'applied tx', txId, Receipt)
       appliedTxs[txId] = {
