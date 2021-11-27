@@ -148,12 +148,12 @@ interface WrappedEthAccount {
   hash: string //account hash
 }
 
-interface WrappedStates {
+interface WrappedEthAccounts {
   [id: string]: WrappedEthAccount
 }
 
 
-let accounts:WrappedStates = {}
+let accounts:WrappedEthAccounts = {}
 let appliedTxs = {}
 let EVM = new VM()
 
@@ -163,13 +163,40 @@ createAccount('0x2041B9176A4839dAf7A4DcC6a97BA023953d9ad9').then(result => {
   console.log('Error while creating tester account')
 })
 
+/**
+ * After a Buffer goes through json stringify/parse it comes out broken
+ *   maybe fix this in shardus-global-server.  for now use this safe function
+ * @param buffer 
+ * @returns 
+ */
+function safeBufferToHex(buffer){
+  if(buffer.data != null){
+    return bufferToHex(buffer.data)
+  }
+  return bufferToHex(buffer)
+}
+
+/**
+ * we need this for now because the stateRoot is a stable key into a trie
+ * this is flawed though and not a good hash.  it does update though
+ *    probably could use balance in the string and get a bit better.
+ * @param wrappedEthAccount 
+ * @returns 
+ */
+function hashFromNonceHack(wrappedEthAccount:WrappedEthAccount):string{
+  //just a basic nonce to hash because it will take more work to extract the correct hash  
+  let hash = wrappedEthAccount.account.nonce.toString()
+  hash = hash + '0'.repeat(64 - hash.length)
+  return hash
+}
+
 function updateEthAccountHash(wrappedEthAccount:WrappedEthAccount)
 {
-  //just a basic nonce to hash because it will take more work to extract the correct hash  
-  //let hash = wrappedEthAccount.account.nonce.toString()
-  //hash = hash + '0'.repeat(64 - hash.length)
+  //this doesnt work since state root is a stable ref to a key in the db
+  //let hash = bufferToHex(wrappedEthAccount.account.stateRoot)
 
-  let hash = bufferToHex(wrappedEthAccount.account.stateRoot)
+  //just a basic nonce to hash because it will take more work to extract the correct hash  
+  let hash = hashFromNonceHack(wrappedEthAccount)
 
   wrappedEthAccount.hash = hash
 }
@@ -227,11 +254,17 @@ async function getReadableAccountInfo (addressStr) {
 //type EthAddress = string
 
 function toShardusAddress (addressStr) {
-  // return addressStr.slice(2).padEnd(42, '0')
+  //change this:0x665eab3be2472e83e3100b4233952a16eed20c76
+  //    to this:665eab3be2472e83e3100b4233952a16eed20c76000000000000000000000000
+  //return addressStr.slice(2)+'0'.repeat(24)
+
   return addressStr
 }
 function fromShardusAddress (addressStr) {
-  // return addressStr.slice(2).padEnd(42, '0')
+  //change this:665eab3be2472e83e3100b4233952a16eed20c76000000000000000000000000
+  //    to this:0x665eab3be2472e83e3100b4233952a16eed20c76
+  //return '0x' + addressStr.slice(0,40)
+
   return addressStr
 }
 
@@ -389,20 +422,22 @@ dapp.setup({
   getStateId (accountAddress, mustExist = true) {
     let wrappedEthAccount = accounts[accountAddress]
 
-    if (wrappedEthAccount && wrappedEthAccount.account.stateRoot) {
-      return bufferToHex(wrappedEthAccount.account.stateRoot)
-    } else {
-      throw new Error('Could not get stateId for account ' + accountAddress)
-    }
+    let hash = hashFromNonceHack(wrappedEthAccount)
+    return hash
+
+    // if (wrappedEthAccount && wrappedEthAccount.account.stateRoot) {
+    //   return bufferToHex(wrappedEthAccount.account.stateRoot)
+    // } else {
+    //   throw new Error('Could not get stateId for account ' + accountAddress)
+    // }
   },
   deleteLocalAccountData () {
     accounts = {}
   },
 
-  //this is tricky... how will it work with wrapped accounts
   setAccountData (accountRecords) {
     for (const account of accountRecords) {
-      accounts[account.id] = account
+      accounts[account.id] = account as WrappedEthAccount
     }
   },
   async getRelevantData (accountId, tx) {
@@ -414,10 +449,12 @@ dapp.setup({
 
     // Create the account if it doesn't exist
     if (typeof wrappedEthAccount === 'undefined' || wrappedEthAccount === null) {
+      //some of this feels a bit redundant, will need to think more on the cleanup
       let account1 = await createAccount(ethAccountID)
-      let updatedAccount = await getReadableAccountInfo(ethAccountID)
+      // let updatedAccount = await getReadableAccountInfo(ethAccountID)
 
-      let account = await EVM.stateManager.getAccount(ethAccountID)
+      const address = Address.fromString(ethAccountID)
+      let account = await EVM.stateManager.getAccount(address)
 
       wrappedEthAccount = {timestamp : Date.now(), account, ethAddress: ethAccountID, hash:'' }
       updateEthAccountHash(wrappedEthAccount)
@@ -425,9 +462,8 @@ dapp.setup({
       accounts[accountId] = wrappedEthAccount
       accountCreated = true
     }
-    //let readableAccount = await getReadableAccountInfo(ethAccountID)
     // Wrap it for Shardus
-    return dapp.createWrappedResponse(accountId, accountCreated, bufferToHex(wrappedEthAccount.account.stateRoot), wrappedEthAccount.timestamp, wrappedEthAccount)//readableAccount)
+    return dapp.createWrappedResponse(accountId, accountCreated, safeBufferToHex(wrappedEthAccount.account.stateRoot), wrappedEthAccount.timestamp, wrappedEthAccount)//readableAccount)
   },
   getAccountData (accountStart, accountEnd, maxRecords) {
     const results = []
@@ -443,7 +479,7 @@ dapp.setup({
       // Add to results (wrapping is redundant?)
       const wrapped = {
         accountId: addressStr,
-        stateId: bufferToHex(wrappedEthAccount.account.stateRoot), //todo decide on if we use eth hash or our own hash..
+        stateId: safeBufferToHex(wrappedEthAccount.account.stateRoot), //todo decide on if we use eth hash or our own hash..
         data: wrappedEthAccount.account,
         timestamp: wrappedEthAccount.timestamp
       }
@@ -493,7 +529,7 @@ dapp.setup({
       const timestamp = wrappedEthAccount.timestamp
       if (timestamp < tsStart || timestamp > tsEnd) continue
       // Add to results
-      const wrapped = { accountId: addressStr, stateId: bufferToHex(wrappedEthAccount.account.stateRoot), data: wrappedEthAccount.account, timestamp: wrappedEthAccount.timestamp }
+      const wrapped = { accountId: addressStr, stateId: safeBufferToHex(wrappedEthAccount.account.stateRoot), data: wrappedEthAccount.account, timestamp: wrappedEthAccount.timestamp }
       results.push(wrapped)
       // Return results early if maxRecords reached
       if (results.length >= maxRecords) return results
@@ -502,10 +538,13 @@ dapp.setup({
   },
   calculateAccountHash (wrappedEthAccount:WrappedEthAccount) {
 
-    if (wrappedEthAccount.account.stateRoot) return bufferToHex(wrappedEthAccount.account.stateRoot)
-    else {
-      throw new Error('there is not account.stateRoot')
-    }
+    let hash = hashFromNonceHack(wrappedEthAccount)
+    return hash
+
+    // if (wrappedEthAccount.account.stateRoot) return bufferToHex(wrappedEthAccount.account.stateRoot)
+    // else {
+    //   throw new Error('there is not account.stateRoot')
+    // }
   },
   resetAccountData (accountBackupCopies) {
     for (let recordData of accountBackupCopies) {
