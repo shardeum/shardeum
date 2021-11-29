@@ -3,29 +3,22 @@ import path from 'path'
 import merge from 'deepmerge'
 import stringify from 'fast-json-stable-stringify'
 import * as crypto from 'shardus-crypto-utils'
-import { add } from 'lodash'
-let { shardusFactory } = require('shardus-global-server')
+import {Account, Address, BN, bufferToHex, toBuffer} from 'ethereumjs-util'
+
+import {Transaction} from '@ethereumjs/tx';
+import VM from '@ethereumjs/vm';
+
+let {shardusFactory} = require('shardus-global-server')
 
 crypto.init('64f152869ca2d473e4ba64ab53f49ccdb2edae22da192c126850970e788af347')
 
-import {
-  Account,
-  Address,
-  BN,
-  toBuffer,
-  bufferToHex
-} from 'ethereumjs-util'
-
-import {Transaction, TxData} from '@ethereumjs/tx';
-import VM from '@ethereumjs/vm';
-
 const overwriteMerge = (target, source, options) => source
 
-let config = { server: { baseDir: './' } }
+let config = {server: {baseDir: './'}}
 
 if (fs.existsSync(path.join(process.cwd(), 'config.json'))) {
   const fileConfig = JSON.parse(fs.readFileSync(path.join(process.cwd(), 'config.json')).toString())
-  config = merge(config, fileConfig, { arrayMerge: overwriteMerge })
+  config = merge(config, fileConfig, {arrayMerge: overwriteMerge})
 }
 
 if (process.env.BASE_DIR) {
@@ -35,7 +28,7 @@ if (process.env.BASE_DIR) {
   if (fs.existsSync(path.join(baseDir, 'config.json'))) {
     baseDirFileConfig = JSON.parse(fs.readFileSync(path.join(baseDir, 'config.json')).toString())
   }
-  config = merge(config, baseDirFileConfig, { arrayMerge: overwriteMerge })
+  config = merge(config, baseDirFileConfig, {arrayMerge: overwriteMerge})
   config.server.baseDir = process.env.BASE_DIR
 }
 
@@ -60,7 +53,7 @@ if (process.env.APP_SEEDLIST) {
         }
       }
     },
-    { arrayMerge: overwriteMerge }
+    {arrayMerge: overwriteMerge}
   )
 }
 
@@ -74,7 +67,7 @@ if (process.env.APP_MONITOR) {
         }
       }
     },
-    { arrayMerge: overwriteMerge }
+    {arrayMerge: overwriteMerge}
   )
 }
 
@@ -89,7 +82,7 @@ if (process.env.APP_IP) {
         }
       }
     },
-    { arrayMerge: overwriteMerge }
+    {arrayMerge: overwriteMerge}
   )
 }
 
@@ -111,13 +104,13 @@ config = merge(
       debug: {
         startInFatalsLogMode: true, //true setting good for big aws test with nodes joining under stress.
         startInErrorLogMode: false,
-        fakeNetworkDelay:0,
+        fakeNetworkDelay: 0,
         disableSnapshots: true,
-        countEndpointStart: -1  
+        countEndpointStart: -1
       }
     }
   },
-  { arrayMerge: overwriteMerge }
+  {arrayMerge: overwriteMerge}
 )
 
 const dapp = shardusFactory(config)
@@ -139,11 +132,11 @@ const dapp = shardusFactory(config)
 
 /**
  * This is for phase 1, there is lots of data not actually held by Account
- * 
+ *
  */
 interface WrappedEthAccount {
-  ethAddress: string //account address in ethereum space. 
-  account: Account //actual Eth account.  
+  ethAddress: string //account address in ethereum space.
+  account: Account //actual Eth account.
   timestamp: number //account timestamp
   hash: string //account hash
 }
@@ -153,7 +146,7 @@ interface WrappedEthAccounts {
 }
 
 
-let accounts:WrappedEthAccounts = {}
+let accounts: WrappedEthAccounts = {}
 let appliedTxs = {}
 let EVM = new VM()
 
@@ -166,11 +159,11 @@ createAccount('0x2041B9176A4839dAf7A4DcC6a97BA023953d9ad9').then(result => {
 /**
  * After a Buffer goes through json stringify/parse it comes out broken
  *   maybe fix this in shardus-global-server.  for now use this safe function
- * @param buffer 
- * @returns 
+ * @param buffer
+ * @returns
  */
-function safeBufferToHex(buffer){
-  if(buffer.data != null){
+function safeBufferToHex(buffer) {
+  if (buffer.data != null) {
     return bufferToHex(buffer.data)
   }
   return bufferToHex(buffer)
@@ -180,28 +173,25 @@ function safeBufferToHex(buffer){
  * we need this for now because the stateRoot is a stable key into a trie
  * this is flawed though and not a good hash.  it does update though
  *    probably could use balance in the string and get a bit better.
- * @param wrappedEthAccount 
- * @returns 
+ * @param wrappedEthAccount
+ * @returns
  */
-function hashFromNonceHack(wrappedEthAccount:WrappedEthAccount):string{
-  //just a basic nonce to hash because it will take more work to extract the correct hash  
+function hashFromNonceHack(wrappedEthAccount: WrappedEthAccount): string {
+  //just a basic nonce to hash because it will take more work to extract the correct hash
   let hash = wrappedEthAccount.account.nonce.toString()
   hash = hash + '0'.repeat(64 - hash.length)
   return hash
 }
 
-function updateEthAccountHash(wrappedEthAccount:WrappedEthAccount)
-{
+function updateEthAccountHash(wrappedEthAccount: WrappedEthAccount) {
   //this doesnt work since state root is a stable ref to a key in the db
   //let hash = bufferToHex(wrappedEthAccount.account.stateRoot)
 
-  //just a basic nonce to hash because it will take more work to extract the correct hash  
-  let hash = hashFromNonceHack(wrappedEthAccount)
-
-  wrappedEthAccount.hash = hash
+  //just a basic nonce to hash because it will take more work to extract the correct hash
+  wrappedEthAccount.hash = hashFromNonceHack(wrappedEthAccount)
 }
 
-async function createAccount (addressStr) : Promise<WrappedEthAccount> {
+async function createAccount(addressStr): Promise<WrappedEthAccount> {
   const accountAddress = Address.fromString(addressStr)
   const oneEth = new BN(10).pow(new BN(18))
 
@@ -213,12 +203,12 @@ async function createAccount (addressStr) : Promise<WrappedEthAccount> {
   await EVM.stateManager.putAccount(accountAddress, account)
   const updatedAccount = await EVM.stateManager.getAccount(accountAddress)
 
-  let wrappedEthAccount = {timestamp : Date.now(), account: updatedAccount, ethAddress: addressStr, hash:'' }
+  let wrappedEthAccount = {timestamp: Date.now(), account: updatedAccount, ethAddress: addressStr, hash: ''}
   updateEthAccountHash(wrappedEthAccount)
   return wrappedEthAccount
 }
 
-function getTransactionObj (tx) {
+function getTransactionObj(tx) {
   if (!tx.raw) return null
   try {
     const serializedInput = toBuffer(tx.raw)
@@ -229,9 +219,9 @@ function getTransactionObj (tx) {
   return null
 }
 
-function getReadableTransaction (tx) {
+function getReadableTransaction(tx) {
   const transaction = getTransactionObj(tx)
-  if (!transaction) return { error: 'not found' }
+  if (!transaction) return {error: 'not found'}
   return {
     from: transaction.getSenderAddress().toString(),
     to: transaction.to ? transaction.to.toString() : '',
@@ -240,42 +230,45 @@ function getReadableTransaction (tx) {
   }
 }
 
-async function getReadableAccountInfo (addressStr) {
-  const address = Address.fromString(addressStr)
-  const account = await EVM.stateManager.getAccount(address)
-  return {
-    nonce: account.nonce.toString(),
-    balance: account.balance.toString(),
-    stateRoot: bufferToHex(account.stateRoot),
-    codeHash: bufferToHex(account.codeHash)
+async function getReadableAccountInfo(addressStr) {
+  try {
+    const address = Address.fromString(addressStr)
+    const account = await EVM.stateManager.getAccount(address)
+    return {
+      nonce: account.nonce.toString(),
+      balance: account.balance.toString(),
+      stateRoot: bufferToHex(account.stateRoot),
+      codeHash: bufferToHex(account.codeHash)
+    }
+  } catch (e) {
+    console.log('Unable to get readable account', e)
   }
+  return null
 }
-
-//type EthAddress = string
 
 let useAddressConversion = true
 
-function toShardusAddress (addressStr) {
+function toShardusAddress(addressStr) {
   //change this:0x665eab3be2472e83e3100b4233952a16eed20c76
   //    to this:665eab3be2472e83e3100b4233952a16eed20c76000000000000000000000000
-  if(useAddressConversion)
-    return addressStr.slice(2)+'0'.repeat(24)
-
+  if (useAddressConversion)
+    return addressStr.slice(2) + '0'.repeat(24)
   return addressStr
 }
-function fromShardusAddress (addressStr) {
+
+function fromShardusAddress(addressStr) {
   //change this:665eab3be2472e83e3100b4233952a16eed20c76000000000000000000000000
   //    to this:0x665eab3be2472e83e3100b4233952a16eed20c76
-  if(useAddressConversion)
-    return '0x' + addressStr.slice(0,40)
+  if (useAddressConversion)
+    return '0x' + addressStr.slice(0, 40)
 
   return addressStr
 }
 
 dapp.registerExternalPost('inject', async (req, res) => {
   let tx = req.body
-  tx.timestamp = Date.now()
   try {
+    console.log('Transaction injected:', tx)
     const response = dapp.put(tx)
     res.json(response)
   } catch (err) {
@@ -286,17 +279,17 @@ dapp.registerExternalPost('inject', async (req, res) => {
 dapp.registerExternalGet('account/:address', async (req, res) => {
   const address = req.params['address']
   let readableAccount = await getReadableAccountInfo(address)
-  res.json({ account: readableAccount })
+  res.json({account: readableAccount})
 })
 
 dapp.registerExternalGet('tx/:hash', async (req, res) => {
   const txHash = req.params['hash']
   if (!appliedTxs[txHash]) {
-    return res.json({ tx: 'Not found' })
+    return res.json({tx: 'Not found'})
   }
   let appliedTx = appliedTxs[txHash]
 
-  if (!appliedTx) return res.json({ tx: 'Not found' })
+  if (!appliedTx) return res.json({tx: 'Not found'})
 
   let result = {
     transactionHash: appliedTx.txId,
@@ -310,13 +303,12 @@ dapp.registerExternalGet('tx/:hash', async (req, res) => {
     status: '0x1',
     detail: getReadableTransaction(appliedTx.injected)
   }
-  res.json({ tx: result })
+  res.json({tx: result})
 })
 
-console.log('Registering accounts route')
 dapp.registerExternalGet('accounts', async (req, res) => {
   console.log('/accounts')
-  res.json({ accounts })
+  res.json({accounts})
 })
 
 /**
@@ -329,7 +321,7 @@ dapp.registerExternalGet('accounts', async (req, res) => {
  * }
  */
 dapp.setup({
-  validateTransaction (tx) {
+  validateTransaction(tx) {
     let txObj = getTransactionObj(tx)
     const response = {
       result: 'fail',
@@ -358,7 +350,7 @@ dapp.setup({
 
     return response
   },
-  validateTxnFields (tx) {
+  validateTxnFields(tx) {
     // Validate tx fields here
     let success = true
     let reason = ''
@@ -372,9 +364,9 @@ dapp.setup({
       txnTimestamp
     }
   },
-  async apply (tx, wrappedStates) {
+  async apply(tx, wrappedStates) {
     // Validate the tx
-    const { result, reason } = this.validateTransaction(tx)
+    const {result, reason} = this.validateTransaction(tx)
     if (result !== 'pass') {
       throw new Error(`invalid transaction, reason: ${reason}. tx: ${JSON.stringify(tx)}`)
     }
@@ -382,15 +374,12 @@ dapp.setup({
     const transaction = getTransactionObj(tx)
     const txId = bufferToHex(transaction.hash())
     // Create an applyResponse which will be used to tell Shardus that the tx has been applied
-    const txTimestamp = Date.now()
-    console.log('DBG', 'attempting to apply tx', txId, '...')
-    const applyResponse = dapp.createApplyResponse(txId, txTimestamp)
+    console.log('DBG', 'attempting to apply tx', txId, tx)
+    const applyResponse = dapp.createApplyResponse(txId, tx.timestamp)
 
     try {
       // Apply the tx
-      console.time('evm_runtx')
-      const Receipt = await EVM.runTx({ tx: transaction, skipNonce:true, skipBlockGasLimitValidation:true })
-      console.timeEnd('evm_runtx')
+      const Receipt = await EVM.runTx({tx: transaction, skipNonce: true, skipBlockGasLimitValidation: true})
       console.log('DBG', 'applied tx', txId, Receipt)
       appliedTxs[txId] = {
         txId,
@@ -403,7 +392,7 @@ dapp.setup({
     }
     return applyResponse
   },
-  getKeyFromTransaction (tx) {
+  getKeyFromTransaction(tx) {
     const transaction = getTransactionObj(tx)
     const result = {
       sourceKeys: [],
@@ -423,11 +412,9 @@ dapp.setup({
     }
     return result
   },
-  getStateId (accountAddress, mustExist = true) {
+  getStateId(accountAddress, mustExist = true) {
     let wrappedEthAccount = accounts[accountAddress]
-
-    let hash = hashFromNonceHack(wrappedEthAccount)
-    return hash
+    return hashFromNonceHack(wrappedEthAccount)
 
     // if (wrappedEthAccount && wrappedEthAccount.account.stateRoot) {
     //   return bufferToHex(wrappedEthAccount.account.stateRoot)
@@ -435,32 +422,31 @@ dapp.setup({
     //   throw new Error('Could not get stateId for account ' + accountAddress)
     // }
   },
-  deleteLocalAccountData () {
+  deleteLocalAccountData() {
     accounts = {}
   },
 
-  setAccountData (accountRecords) {
+  setAccountData(accountRecords) {
     for (const account of accountRecords) {
       accounts[account.id] = account as WrappedEthAccount
     }
   },
-  async getRelevantData (accountId, tx) {
+  async getRelevantData(accountId, tx) {
     if (!tx.raw) throw new Error('getRelevantData: No raw tx')
-  
-    let ethAccountID = fromShardusAddress(accountId)
+
+    let ethAccountID = fromShardusAddress(accountId) // accountId is a shardus address
     let wrappedEthAccount = accounts[accountId]
     let accountCreated = false
 
     // Create the account if it doesn't exist
     if (typeof wrappedEthAccount === 'undefined' || wrappedEthAccount === null) {
       //some of this feels a bit redundant, will need to think more on the cleanup
-      let account1 = await createAccount(ethAccountID)
-      // let updatedAccount = await getReadableAccountInfo(ethAccountID)
+      await createAccount(ethAccountID)
 
       const address = Address.fromString(ethAccountID)
       let account = await EVM.stateManager.getAccount(address)
 
-      wrappedEthAccount = {timestamp : Date.now(), account, ethAddress: ethAccountID, hash:'' }
+      wrappedEthAccount = {timestamp: Date.now(), account, ethAddress: ethAccountID, hash: ''}
       updateEthAccountHash(wrappedEthAccount)
 
       accounts[accountId] = wrappedEthAccount
@@ -469,7 +455,7 @@ dapp.setup({
     // Wrap it for Shardus
     return dapp.createWrappedResponse(accountId, accountCreated, safeBufferToHex(wrappedEthAccount.account.stateRoot), wrappedEthAccount.timestamp, wrappedEthAccount)//readableAccount)
   },
-  getAccountData (accountStart, accountEnd, maxRecords) {
+  getAccountData(accountStart, accountEnd, maxRecords) {
     const results = []
     const start = parseInt(accountStart, 16)
     const end = parseInt(accountEnd, 16)
@@ -494,11 +480,11 @@ dapp.setup({
     }
     return results
   },
-  updateAccountFull (wrappedData, localCache, applyResponse) {
+  updateAccountFull(wrappedData, localCache, applyResponse) {
     const accountId = wrappedData.accountId
     const accountCreated = wrappedData.accountCreated
-    const updatedAccount:WrappedEthAccount = wrappedData.data
-    // Update hash.   currently letting the hash be controlled by the EVM.  
+    const updatedAccount: WrappedEthAccount = wrappedData.data
+    // Update hash.   currently letting the hash be controlled by the EVM.
     //                not sure if we want to hash the WrappedEthAccount instead, but probably not
     // const hashBefore = updatedAccount.hash
     // const hashAfter = crypto.hashObj(updatedAccount || {})
@@ -514,12 +500,12 @@ dapp.setup({
     // Add data to our required response object
     dapp.applyResponseAddState(applyResponse, updatedAccount, updatedAccount, accountId, applyResponse.txId, applyResponse.txTimestamp, hashBefore, hashAfter, accountCreated)
   },
-  updateAccountPartial (wrappedData, localCache, applyResponse) {
+  updateAccountPartial(wrappedData, localCache, applyResponse) {
     //I think we may need to utilize this so that shardus is not oblicated to make temporary copies of large CAs
     //
     this.updateAccountFull(wrappedData, localCache, applyResponse)
   },
-  getAccountDataByRange (accountStart, accountEnd, tsStart, tsEnd, maxRecords) {
+  getAccountDataByRange(accountStart, accountEnd, tsStart, tsEnd, maxRecords) {
     const results = []
     const start = parseInt(accountStart, 16)
     const end = parseInt(accountEnd, 16)
@@ -533,24 +519,28 @@ dapp.setup({
       const timestamp = wrappedEthAccount.timestamp
       if (timestamp < tsStart || timestamp > tsEnd) continue
       // Add to results
-      const wrapped = { accountId: addressStr, stateId: safeBufferToHex(wrappedEthAccount.account.stateRoot), data: wrappedEthAccount.account, timestamp: wrappedEthAccount.timestamp }
+      const wrapped = {
+        accountId: addressStr,
+        stateId: safeBufferToHex(wrappedEthAccount.account.stateRoot),
+        data: wrappedEthAccount.account,
+        timestamp: wrappedEthAccount.timestamp
+      }
       results.push(wrapped)
       // Return results early if maxRecords reached
       if (results.length >= maxRecords) return results
     }
     return results
   },
-  calculateAccountHash (wrappedEthAccount:WrappedEthAccount) {
+  calculateAccountHash(wrappedEthAccount: WrappedEthAccount) {
 
-    let hash = hashFromNonceHack(wrappedEthAccount)
-    return hash
+    return hashFromNonceHack(wrappedEthAccount)
 
     // if (wrappedEthAccount.account.stateRoot) return bufferToHex(wrappedEthAccount.account.stateRoot)
     // else {
     //   throw new Error('there is not account.stateRoot')
     // }
   },
-  resetAccountData (accountBackupCopies) {
+  resetAccountData(accountBackupCopies) {
     for (let recordData of accountBackupCopies) {
 
       let wrappedEthAccount = recordData.data as WrappedEthAccount
@@ -558,12 +548,12 @@ dapp.setup({
       accounts[shardusAddress] = wrappedEthAccount
     }
   },
-  deleteAccountData (addressList) {
+  deleteAccountData(addressList) {
     for (const address of addressList) {
       delete accounts[address]
     }
   },
-  getAccountDataByList (addressList) {
+  getAccountDataByList(addressList) {
     const results = []
     for (const address of addressList) {
       const wrappedEthAccount = accounts[address]
@@ -579,10 +569,10 @@ dapp.setup({
     }
     return results
   },
-  getAccountDebugValue (wrappedAccount) {
+  getAccountDebugValue(wrappedAccount) {
     return `${stringify(wrappedAccount)}`
   },
-  close () {
+  close() {
     console.log('Shutting down...')
   }
 })
