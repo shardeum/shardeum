@@ -137,7 +137,7 @@ async function runTXs(signedTxs:Transaction[]){
   let txRunTimes = []
 
   //filter to only run some tx types with this:
-  let allowedTXTypes:any = {transfer:true,execute:false,create:false }
+  let allowedTXTypes:any = {transfer:true,execute:true,create:true }
 
   for(let k=0; k <batches; k++ ){
     let start = Date.now()
