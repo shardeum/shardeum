@@ -402,13 +402,13 @@ dapp.setup({
     }
     try {
       let transformedSourceKey = toShardusAddress(transaction.getSenderAddress().toString())
-      let transformedTargetKey = toShardusAddress(transaction.to.toString())
+      let transformedTargetKey = transaction.to ? toShardusAddress(transaction.to.toString()) : ''
       result.sourceKeys.push(transformedSourceKey)
       if (transaction.to) result.targetKeys.push(transformedTargetKey)
       result.allKeys = result.allKeys.concat(result.sourceKeys, result.targetKeys)
       console.log('running getKeyFromTransaction', result)
     } catch (e) {
-      console.log('Unable to get keys from tx')
+      console.log('Unable to get keys from tx', e)
     }
     return result
   },
