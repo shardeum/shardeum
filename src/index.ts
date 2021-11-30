@@ -150,12 +150,6 @@ let accounts: WrappedEthAccounts = {}
 let appliedTxs = {}
 let EVM = new VM()
 
-createAccount('0x2041B9176A4839dAf7A4DcC6a97BA023953d9ad9').then(result => {
-  console.log('Tester account created', result)
-}).catch(e => {
-  console.log('Error while creating tester account')
-})
-
 /**
  * After a Buffer goes through json stringify/parse it comes out broken
  *   maybe fix this in shardus-global-server.  for now use this safe function
@@ -192,6 +186,7 @@ function updateEthAccountHash(wrappedEthAccount: WrappedEthAccount) {
 }
 
 async function createAccount(addressStr): Promise<WrappedEthAccount> {
+  console.log('Creating new account', addressStr)
   const accountAddress = Address.fromString(addressStr)
   const oneEth = new BN(10).pow(new BN(18))
 
@@ -264,11 +259,25 @@ function fromShardusAddress(addressStr) {
 
   return addressStr
 }
+async function setupTester() {
+  let ethAccountID = "0x2041B9176A4839dAf7A4DcC6a97BA023953d9ad9"
+  let shardusAccountID = toShardusAddress(ethAccountID)
+  let newAccount = await createAccount(ethAccountID)
+  console.log('Tester account created', newAccount)
+  const address = Address.fromString(ethAccountID)
+  let account = await EVM.stateManager.getAccount(address)
+
+  let wrappedEthAccount = {timestamp: Date.now(), account, ethAddress: ethAccountID, hash: ''}
+  updateEthAccountHash(wrappedEthAccount)
+  accounts[shardusAccountID] = wrappedEthAccount
+}
+
+setupTester()
 
 dapp.registerExternalPost('inject', async (req, res) => {
   let tx = req.body
+  console.log('Transaction injected:', new Date(), tx)
   try {
-    console.log('Transaction injected:', tx)
     const response = dapp.put(tx)
     res.json(response)
   } catch (err) {
@@ -280,6 +289,30 @@ dapp.registerExternalGet('account/:address', async (req, res) => {
   const address = req.params['address']
   let readableAccount = await getReadableAccountInfo(address)
   res.json({account: readableAccount})
+})
+
+dapp.registerExternalPost('contract/call', async (req, res) => {
+  try {
+    const callObj = req.body
+    let opt = {
+      to: Address.fromString(callObj.to),
+      caller: Address.fromString(callObj.from),
+      origin: Address.fromString(callObj.from), // The tx.origin is also the caller here
+      data: toBuffer(callObj.data),
+    }
+    const callResult = await EVM.runCall(opt)
+
+    if (callResult.execResult.exceptionError) {
+      console.log('Execution Error:', callResult.execResult.exceptionError)
+      return res.json({result: null})
+    }
+
+    res.json({result: callResult.execResult.returnValue.toString('hex')})
+
+  } catch (e) {
+    console.log('Error', e)
+    return res.json({result: null})
+  }
 })
 
 dapp.registerExternalGet('tx/:hash', async (req, res) => {
@@ -295,7 +328,7 @@ dapp.registerExternalGet('tx/:hash', async (req, res) => {
     transactionHash: appliedTx.txId,
     transactionIndex: '0x1',
     blockNumber: '0xb',
-    blockHash: '',
+    blockHash: '0xc6ef2fc5426d6ad6fd9e2a26abeab0aa2411b7ab17f30a99d3cb96aed1d1055b',
     cumulativeGasUsed: bufferToHex(appliedTx.receipt.gasUsed),
     gasUsed: bufferToHex(appliedTx.receipt.gasUsed),
     logs: appliedTx.receipt.logs,
@@ -374,13 +407,28 @@ dapp.setup({
     const transaction = getTransactionObj(tx)
     const txId = bufferToHex(transaction.hash())
     // Create an applyResponse which will be used to tell Shardus that the tx has been applied
-    console.log('DBG', 'attempting to apply tx', txId, tx)
+    console.log('DBG', new Date(), 'attempting to apply tx', txId, tx)
     const applyResponse = dapp.createApplyResponse(txId, tx.timestamp)
 
     try {
       // Apply the tx
-      const Receipt = await EVM.runTx({tx: transaction, skipNonce: true, skipBlockGasLimitValidation: true})
+      // const Receipt = await EVM.runTx({tx: transaction, skipNonce: true, skipBlockGasLimitValidation: true})
+      const Receipt = await EVM.runTx({tx: transaction})
+
       console.log('DBG', 'applied tx', txId, Receipt)
+
+      // store contract account
+      if (Receipt.createdAddress) {
+        let ethAccountID = Receipt.createdAddress.toString()
+        let shardusAddress = toShardusAddress(ethAccountID)
+        let contractAccount = await EVM.stateManager.getAccount(Receipt.createdAddress)
+        let wrappedEthAccount = {timestamp: Date.now(), account: contractAccount, ethAddress: ethAccountID, hash: ''}
+
+        updateEthAccountHash(wrappedEthAccount)
+
+        accounts[shardusAddress] = wrappedEthAccount
+        console.log('Contract acocunt stored', accounts[shardusAddress])
+      }
       appliedTxs[txId] = {
         txId,
         injected: tx,
