@@ -421,7 +421,7 @@ dapp.setup({
     try {
       // Apply the tx
       // const Receipt = await EVM.runTx({tx: transaction, skipNonce: true, skipBlockGasLimitValidation: true})
-      const Receipt = await EVM.runTx({tx: transaction})
+      const Receipt = await EVM.runTx({tx: transaction, skipNonce: true})
 
       console.log('DBG', 'applied tx', txId, Receipt)
 
