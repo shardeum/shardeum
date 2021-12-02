@@ -259,8 +259,7 @@ function fromShardusAddress(addressStr) {
 
   return addressStr
 }
-async function setupTester() {
-  let ethAccountID = "0x2041B9176A4839dAf7A4DcC6a97BA023953d9ad9"
+async function setupTester(ethAccountID: string) {
   let shardusAccountID = toShardusAddress(ethAccountID)
   let newAccount = await createAccount(ethAccountID)
   console.log('Tester account created', newAccount)
@@ -272,7 +271,7 @@ async function setupTester() {
   accounts[shardusAccountID] = wrappedEthAccount
 }
 
-setupTester()
+setupTester("0x2041B9176A4839dAf7A4DcC6a97BA023953d9ad9")
 
 dapp.registerExternalPost('inject', async (req, res) => {
   let tx = req.body
@@ -283,6 +282,12 @@ dapp.registerExternalPost('inject', async (req, res) => {
   } catch (err) {
     console.log('Failed to inject tx: ', err)
   }
+})
+
+dapp.registerExternalPost('faucet', async (req, res) => {
+    let tx = req.body
+    await setupTester(tx.address)
+    return res.json({ success: true})
 })
 
 dapp.registerExternalGet('account/:address', async (req, res) => {
@@ -304,6 +309,7 @@ dapp.registerExternalPost('contract/call', async (req, res) => {
 
     if (callResult.execResult.exceptionError) {
       console.log('Execution Error:', callResult.execResult.exceptionError)
+        console.log('Call Result', callResult.execResult.returnValue.toString('hex'))
       return res.json({result: null})
     }
 
