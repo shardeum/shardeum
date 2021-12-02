@@ -8,6 +8,8 @@ import {Account, Address, BN, bufferToHex, toBuffer} from 'ethereumjs-util'
 import {Transaction} from '@ethereumjs/tx';
 import VM from '@ethereumjs/vm';
 import { updateCommaList } from 'typescript'
+import { parse as parseUrl } from 'url'
+import got from 'got'
 
 let {shardusFactory} = require('shardus-global-server')
 
@@ -282,7 +284,7 @@ function fromShardusAddress(addressStr) {
 
 async function setupTester(ethAccountID: string) {
 
-  await sleep(4 * 60 * 1000) // wait 4 minutes to init account
+  //await sleep(4 * 60 * 1000) // wait 4 minutes to init account
 
   let shardusAccountID = toShardusAddress(ethAccountID)
   let newAccount = await createAccount(ethAccountID)
@@ -295,8 +297,62 @@ async function setupTester(ethAccountID: string) {
   accounts[shardusAccountID] = wrappedEthAccount
 }
 
-setupTester("0x2041B9176A4839dAf7A4DcC6a97BA023953d9ad9")
+//setupTester("0x2041B9176A4839dAf7A4DcC6a97BA023953d9ad9")
 //setupTester("0x54E1221e35CfA14e4190092870c92E88033728a3") //andrew
+
+function _normalizeUrl(url: string) {
+  let normalized = url
+  if (!this._containsProtocol(url)) normalized = 'http://' + url
+  return normalized
+}
+async function _internalHackGet(url:string){
+  let normalized = _normalizeUrl(url)
+  let host = parseUrl(normalized, true)
+  try{
+    await got.get(host, {
+      timeout: 1000,   
+      retry: 0,  
+      throwHttpErrors: false,
+      //parseJson: (text:string)=>{},
+      //json: false, // the whole reason for _internalHackGet was because we dont want the text response to mess things up
+                   //  and as a debug non shipping endpoint did not want to add optional parameters to http module
+    })   
+  } catch(e) {
+  }
+}
+
+//?id=<accountID>
+dapp.registerExternalPost('faucet-all', async (req, res) => {
+  let id = req.query.id as string
+  setupTester(id)
+  try{
+    let activeNodes = dapp.p2p.state.getNodes()
+    if(activeNodes){
+      for(let node of activeNodes.values()){
+        _internalHackGet(`${node.externalIp}:${node.externalPort}/faucet-one?id="${id}"`)
+        res.write(`${node.externalIp}:${node.externalPort}/faucet-one?id="${id}"\n`)
+      }        
+    }
+    // res.write(`joining nodes...\n`)  
+    // let joiningNodes = dapp.p2p.state.getNodesRequestingJoin()
+    // if(joiningNodes){
+    //   for(let node of joiningNodes.values()){
+    //     _internalHackGet(`${node.externalIp}:${node.externalPort}/faucet-all`)
+    //     res.write(`${node.externalIp}:${node.externalPort}/faucet-all\n`)
+    //   }        
+    // }
+    res.write(`sending faucet request to all nodes\n`)        
+  } catch(e){
+    res.write(`${e}\n`) 
+  }
+  res.end()
+})
+
+dapp.registerExternalPost('faucet-one', async (req, res) => {
+  let id = req.query.id as string
+  setupTester(id)
+  return res.json({ success: true})
+})
 
 
 dapp.registerExternalPost('inject', async (req, res) => {
