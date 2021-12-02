@@ -323,18 +323,20 @@ dapp.registerExternalGet('tx/:hash', async (req, res) => {
   let appliedTx = appliedTxs[txHash]
 
   if (!appliedTx) return res.json({tx: 'Not found'})
+    let detail = getReadableTransaction(appliedTx.injected)
 
   let result = {
     transactionHash: appliedTx.txId,
     transactionIndex: '0x1',
     blockNumber: '0xb',
+      nonce: '0x0',
     blockHash: '0xc6ef2fc5426d6ad6fd9e2a26abeab0aa2411b7ab17f30a99d3cb96aed1d1055b',
     cumulativeGasUsed: bufferToHex(appliedTx.receipt.gasUsed),
     gasUsed: bufferToHex(appliedTx.receipt.gasUsed),
     logs: appliedTx.receipt.logs,
     contractAddress: bufferToHex(appliedTx.receipt.createdAddress),
     status: '0x1',
-    detail: getReadableTransaction(appliedTx.injected)
+      ...detail,
   }
   res.json({tx: result})
 })
