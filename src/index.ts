@@ -7,6 +7,7 @@ import {Account, Address, BN, bufferToHex, toBuffer} from 'ethereumjs-util'
 
 import {Transaction} from '@ethereumjs/tx';
 import VM from '@ethereumjs/vm';
+import { updateCommaList } from 'typescript'
 
 let {shardusFactory} = require('shardus-global-server')
 
@@ -49,7 +50,7 @@ if (process.env.APP_SEEDLIST) {
           ]
         },
         sharding: {
-          nodesPerConsensus: 10
+          nodesPerConsensus: 50
         }
       }
     },
@@ -90,9 +91,20 @@ if (process.env.APP_IP) {
 config = merge(config, {
   server: {
     p2p: {
-      minNodesToAllowTxs: 1
+      minNodesToAllowTxs: 1,
+      minNodes: 50,
+      maxNodes: 50,
     }
   }
+})
+
+
+config = merge(config, {
+  server: {
+    sharding: {
+      nodesPerConsensusGroup: 50
+    }
+  } 
 })
 
 //some debug settings
@@ -162,6 +174,13 @@ function safeBufferToHex(buffer) {
   }
   return bufferToHex(buffer)
 }
+
+function sleep(ms) {
+  return new Promise((resolve) => {
+    setTimeout(resolve, ms)
+  })
+}
+
 
 /**
  * we need this for now because the stateRoot is a stable key into a trie
@@ -259,7 +278,12 @@ function fromShardusAddress(addressStr) {
 
   return addressStr
 }
+
+
 async function setupTester(ethAccountID: string) {
+
+  await sleep(4 * 60 * 1000) // wait 4 minutes to init account
+
   let shardusAccountID = toShardusAddress(ethAccountID)
   let newAccount = await createAccount(ethAccountID)
   console.log('Tester account created', newAccount)
@@ -272,6 +296,8 @@ async function setupTester(ethAccountID: string) {
 }
 
 setupTester("0x2041B9176A4839dAf7A4DcC6a97BA023953d9ad9")
+//setupTester("0x54E1221e35CfA14e4190092870c92E88033728a3") //andrew
+
 
 dapp.registerExternalPost('inject', async (req, res) => {
   let tx = req.body
