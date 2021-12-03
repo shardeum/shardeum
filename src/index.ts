@@ -300,9 +300,14 @@ async function setupTester(ethAccountID: string) {
 //setupTester("0x2041B9176A4839dAf7A4DcC6a97BA023953d9ad9")
 //setupTester("0x54E1221e35CfA14e4190092870c92E88033728a3") //andrew
 
+function _containsProtocol(url: string) {
+  if (!url.match('https?://*')) return false
+  return true
+}
+
 function _normalizeUrl(url: string) {
   let normalized = url
-  if (!this._containsProtocol(url)) normalized = 'http://' + url
+  if (!_containsProtocol(url)) normalized = 'http://' + url
   return normalized
 }
 async function _internalHackGet(url:string){
@@ -362,7 +367,7 @@ dapp.registerExternalPost('faucet', async (req, res) => {
     // let tx = req.body
     // await setupTester(tx.address)
     // return res.json({ success: true})
-    
+
     let tx = req.body
     let id = tx.address as string
     setupTester(id)
