@@ -329,8 +329,8 @@ dapp.registerExternalGet('faucet-all', async (req, res) => {
     let activeNodes = dapp.p2p.state.getNodes()
     if(activeNodes){
       for(let node of activeNodes.values()){
-        _internalHackGet(`${node.externalIp}:${node.externalPort}/faucet-one?id="${id}"`)
-        res.write(`${node.externalIp}:${node.externalPort}/faucet-one?id="${id}"\n`)
+        _internalHackGet(`${node.externalIp}:${node.externalPort}/faucet-one?id=${id}`)
+        res.write(`${node.externalIp}:${node.externalPort}/faucet-one?id=${id}\n`)
       }        
     }
     res.write(`sending faucet request to all nodes\n`)        
@@ -359,9 +359,26 @@ dapp.registerExternalPost('inject', async (req, res) => {
 })
 
 dapp.registerExternalPost('faucet', async (req, res) => {
+    // let tx = req.body
+    // await setupTester(tx.address)
+    // return res.json({ success: true})
+    
     let tx = req.body
-    await setupTester(tx.address)
-    return res.json({ success: true})
+    let id = tx.address as string
+    setupTester(id)
+    try{
+      let activeNodes = dapp.p2p.state.getNodes()
+      if(activeNodes){
+        for(let node of activeNodes.values()){
+          _internalHackGet(`${node.externalIp}:${node.externalPort}/faucet-one?id=${id}`)
+          res.write(`${node.externalIp}:${node.externalPort}/faucet-one?id=${id}\n`)
+        }        
+      }
+      res.write(`sending faucet request to all nodes\n`)        
+    } catch(e){
+      res.write(`${e}\n`) 
+    }
+    res.end()
 })
 
 dapp.registerExternalGet('account/:address', async (req, res) => {
