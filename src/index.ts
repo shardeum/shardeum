@@ -106,7 +106,7 @@ config = merge(config, {
     sharding: {
       nodesPerConsensusGroup: 50
     }
-  } 
+  }
 })
 
 //some debug settings
@@ -315,13 +315,13 @@ async function _internalHackGet(url:string){
   let host = parseUrl(normalized, true)
   try{
     await got.get(host, {
-      timeout: 1000,   
-      retry: 0,  
+      timeout: 1000,
+      retry: 0,
       throwHttpErrors: false,
       //parseJson: (text:string)=>{},
       //json: false, // the whole reason for _internalHackGet was because we dont want the text response to mess things up
                    //  and as a debug non shipping endpoint did not want to add optional parameters to http module
-    })   
+    })
   } catch(e) {
   }
 }
@@ -336,11 +336,11 @@ dapp.registerExternalGet('faucet-all', async (req, res) => {
       for(let node of activeNodes.values()){
         _internalHackGet(`${node.externalIp}:${node.externalPort}/faucet-one?id=${id}`)
         res.write(`${node.externalIp}:${node.externalPort}/faucet-one?id=${id}\n`)
-      }        
+      }
     }
-    res.write(`sending faucet request to all nodes\n`)        
+    res.write(`sending faucet request to all nodes\n`)
   } catch(e){
-    res.write(`${e}\n`) 
+    res.write(`${e}\n`)
   }
   res.end()
 })
@@ -377,11 +377,11 @@ dapp.registerExternalPost('faucet', async (req, res) => {
         for(let node of activeNodes.values()){
           _internalHackGet(`${node.externalIp}:${node.externalPort}/faucet-one?id=${id}`)
           res.write(`${node.externalIp}:${node.externalPort}/faucet-one?id=${id}\n`)
-        }        
+        }
       }
-      res.write(`sending faucet request to all nodes\n`)        
+      res.write(`sending faucet request to all nodes\n`)
     } catch(e){
-      res.write(`${e}\n`) 
+      res.write(`${e}\n`)
     }
     res.end()
 })
@@ -431,7 +431,7 @@ dapp.registerExternalGet('tx/:hash', async (req, res) => {
     transactionHash: appliedTx.txId,
     transactionIndex: '0x1',
     blockNumber: '0xb',
-      nonce: '0x0',
+      nonce: appliedTx.receipt.nonce,
     blockHash: '0xc6ef2fc5426d6ad6fd9e2a26abeab0aa2411b7ab17f30a99d3cb96aed1d1055b',
     cumulativeGasUsed: bufferToHex(appliedTx.receipt.gasUsed),
     gasUsed: bufferToHex(appliedTx.receipt.gasUsed),
@@ -531,12 +531,12 @@ dapp.setup({
         updateEthAccountHash(wrappedEthAccount)
 
         accounts[shardusAddress] = wrappedEthAccount
-        console.log('Contract acocunt stored', accounts[shardusAddress])
+        console.log('Contract account stored', accounts[shardusAddress])
       }
-      appliedTxs[txId] = {
+        appliedTxs[txId] = {
         txId,
         injected: tx,
-        receipt: Receipt
+        receipt: { ...Receipt, nonce: transaction.nonce.toString('hex') },
       }
     } catch (e) {
       dapp.log('Unable to apply transaction', e)
