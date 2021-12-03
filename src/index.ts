@@ -322,7 +322,7 @@ async function _internalHackGet(url:string){
 }
 
 //?id=<accountID>
-dapp.registerExternalPost('faucet-all', async (req, res) => {
+dapp.registerExternalGet('faucet-all', async (req, res) => {
   let id = req.query.id as string
   setupTester(id)
   try{
@@ -333,14 +333,6 @@ dapp.registerExternalPost('faucet-all', async (req, res) => {
         res.write(`${node.externalIp}:${node.externalPort}/faucet-one?id="${id}"\n`)
       }        
     }
-    // res.write(`joining nodes...\n`)  
-    // let joiningNodes = dapp.p2p.state.getNodesRequestingJoin()
-    // if(joiningNodes){
-    //   for(let node of joiningNodes.values()){
-    //     _internalHackGet(`${node.externalIp}:${node.externalPort}/faucet-all`)
-    //     res.write(`${node.externalIp}:${node.externalPort}/faucet-all\n`)
-    //   }        
-    // }
     res.write(`sending faucet request to all nodes\n`)        
   } catch(e){
     res.write(`${e}\n`) 
@@ -348,7 +340,7 @@ dapp.registerExternalPost('faucet-all', async (req, res) => {
   res.end()
 })
 
-dapp.registerExternalPost('faucet-one', async (req, res) => {
+dapp.registerExternalGet('faucet-one', async (req, res) => {
   let id = req.query.id as string
   setupTester(id)
   return res.json({ success: true})
