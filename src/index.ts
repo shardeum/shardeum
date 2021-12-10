@@ -10,6 +10,7 @@ import VM from '@ethereumjs/vm';
 import { updateCommaList } from 'typescript'
 import { parse as parseUrl } from 'url'
 import got from 'got'
+import {ShardiumState } from './state'
 
 let {shardusFactory} = require('shardus-global-server')
 
@@ -162,7 +163,9 @@ interface WrappedEthAccounts {
 
 let accounts: WrappedEthAccounts = {}
 let appliedTxs = {}
-let EVM = new VM()
+
+let shardiumStateManager = new ShardiumState() //as StateManager
+let EVM = new VM({ stateManager:shardiumStateManager })
 
 /**
  * After a Buffer goes through json stringify/parse it comes out broken

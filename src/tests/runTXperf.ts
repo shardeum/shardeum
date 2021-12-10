@@ -6,6 +6,8 @@ import {readFileSync} from 'fs';
 import fs from 'fs'
 import path from 'path' 
 
+import {ShardiumState } from '../state'
+
 import {  Account,
   Address,
   BN,
@@ -18,7 +20,11 @@ import * as crypto from 'shardus-crypto-utils'
 crypto.init('69fa4195670576c0160d660c3be36556ff8d504725be8a59b5a96509e0c994bc')
 
 const common = new Common({chain: Chain.Mainnet, hardfork: Hardfork.Berlin});
-const vm = new VM({common});
+
+let shardiumStateManager = new ShardiumState() //as StateManager
+const vm = new VM({common, stateManager:shardiumStateManager});
+
+//const vm = new VM({common});
 
 function getTransactionObj (tx: any) : Transaction {
   if (!tx.raw) throw Error('fail')
@@ -137,7 +143,7 @@ async function runTXs(signedTxs:Transaction[]){
   let txRunTimes = []
 
   //filter to only run some tx types with this:
-  let allowedTXTypes:any = {transfer:true,execute:false,create:false }
+  let allowedTXTypes:any = {transfer:true,execute:true,create:true }
 
   for(let k=0; k <batches; k++ ){
     let start = Date.now()
