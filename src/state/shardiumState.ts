@@ -16,6 +16,7 @@ import Cache from './cache'
 //import { getActivePrecompiles, ripemdPrecompileAddress } from '@ethereumjs/vm/src/evm/precompiles'
 //import { short } from '@ethereumjs/vm/src/evm/opcodes'
 import { AccessList, AccessListItem } from '@ethereumjs/tx'
+import TransactionState from './transactionState'
 
 const debug = createDebugLogger('vm:state')
 
@@ -73,6 +74,9 @@ export default class ShardiumState implements StateManager {
   // to also include on access list generation
   _accessedStorageReverted: Map<string, Set<string>>[]
 
+
+  _transactionState: TransactionState
+
   /**
    * StateManager is run in DEBUG mode (default: false)
    * Taken from DEBUG environment variable
@@ -107,7 +111,20 @@ export default class ShardiumState implements StateManager {
     if (process !== undefined && process.env.DEBUG) {
       this.DEBUG = true
     }
+
+    this._transactionState = null
   }
+
+  //critical to function
+  setTransactionState(transactionState:TransactionState){
+    this._transactionState = transactionState
+
+  }
+
+  clearTransactionState(){
+    this._transactionState = null
+  }
+
 
   /**
    * Copies the current instance of the `StateManager`
@@ -126,8 +143,18 @@ export default class ShardiumState implements StateManager {
    * @param address - Address of the `account` to get
    */
   async getAccount(address: Address): Promise<Account> {
+
+    //side run system on the side for now
+    if(this._transactionState != null){
+      let testAccount = await this._transactionState.getAccount(this._trie, address, false, false)
+      //return testAccount      
+    }
+
+
+    // Original implmentation:
     const account = await this._cache.getOrLoad(address)
     return account
+
   }
 
   /**
@@ -136,6 +163,13 @@ export default class ShardiumState implements StateManager {
    * @param account - The account to store
    */
   async putAccount(address: Address, account: Account): Promise<void> {
+
+    if(this._transactionState != null){
+      //side run system on the side for now
+      this._transactionState.putAccount(address, account)
+    }
+
+    // Original implmentation:
     if (this.DEBUG) {
       debug(
         `Save account address=${address} nonce=${account.nonce} balance=${
@@ -248,6 +282,14 @@ export default class ShardiumState implements StateManager {
    * If this does not exist an empty `Buffer` is returned.
    */
   async getContractStorage(address: Address, key: Buffer): Promise<Buffer> {
+
+    if(this._transactionState != null){
+      //side run system on the side for now
+      let testAccount = await this._transactionState.getContractStorage(this._trie, address, key, false, false)
+      //return testAccount
+    }
+
+    // Original implmentation:
     if (key.length !== 32) {
       throw new Error('Storage key must be 32 bytes long')
     }
@@ -267,6 +309,13 @@ export default class ShardiumState implements StateManager {
    * @param key - Key in the account's storage to get the value for. Must be 32 bytes long.
    */
   async getOriginalContractStorage(address: Address, key: Buffer): Promise<Buffer> {
+    if(this._transactionState != null){
+      //side run system on the side for now
+      let testAccount = await this._transactionState.getContractStorage(this._trie, address, key, true, false)
+      //return testAccount
+    }
+
+    // Original implmentation:
     if (key.length !== 32) {
       throw new Error('Storage key must be 32 bytes long')
     }
@@ -391,6 +440,13 @@ export default class ShardiumState implements StateManager {
    * `commit` or `reverted` by calling rollback.
    */
   async checkpoint(): Promise<void> {
+
+
+    //side run: shardeum will no-op this in the future
+    //  investigate: will it be a problem that EVM may call this for failed functions, or does that all bubble up anyhow?
+
+    // Original implementation:
+
     this._trie.checkpoint()
     this._cache.checkpoint()
     this._touchedStack.push(new Set(Array.from(this._touched)))
@@ -427,6 +483,11 @@ export default class ShardiumState implements StateManager {
    * last call to checkpoint.
    */
   async commit(): Promise<void> {
+
+    //side run: shardeum will no-op this in the future
+    //  investigate: will it be a problem that EVM may call this for failed functions, or does that all bubble up anyhow?
+
+    // Original implementation:
     // setup trie checkpointing
     await this._trie.commit()
     // setup cache checkpointing
@@ -451,6 +512,13 @@ export default class ShardiumState implements StateManager {
    * last call to checkpoint.
    */
   async revert(): Promise<void> {
+    
+    //side run: shardeum will no-op this in the future
+    //  investigate: will it be a problem that EVM may call this for failed functions, or does that all bubble up anyhow?
+
+    // Original implementation:
+
+
     // setup trie checkpointing
     await this._trie.revert()
     // setup cache checkpointing

@@ -2,6 +2,17 @@ import { Account, Address } from 'ethereumjs-util'
 const Tree = require('functional-red-black-tree')
 
 /**
+ * Rework needed:
+ * 
+ * We will have one trie per
+ * 
+ * 
+ * 
+*/
+
+
+
+/**
  * @ignore
  */
 export default class Cache {
