@@ -489,7 +489,6 @@ dapp.setup({
     },
     validateTxnFields(txTs) {
         let { tx, tsReceipt } = txTs
-        // Validate tx fields here
         let success = true
         let reason = ''
         let txnTimestamp: number
@@ -569,13 +568,18 @@ dapp.setup({
     },
     getKeyFromTransaction(txTs: any) {
         let { tx, tsReceipt } = txTs
-        const transaction = getTransactionObj(tx)
+        let timestamp
+
+        if (tx.timestamp) timestamp = tx.timestamp
+        else if (tsReceipt && tsReceipt.timestamp) timestamp = tsReceipt.timestamp
+
         const result = {
             sourceKeys: [],
             targetKeys: [],
             allKeys: [],
             timestamp: tx.timestamp ? tx.timestamp : tsReceipt.timestamp
         }
+        const transaction = getTransactionObj(tx)
         try {
             let transformedSourceKey = toShardusAddress(transaction.getSenderAddress().toString())
             let transformedTargetKey = transaction.to ? toShardusAddress(transaction.to.toString()) : ''
