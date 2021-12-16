@@ -9,13 +9,19 @@ import {
     unpadBuffer,
   } from 'ethereumjs-util'
 import { SecureTrie as Trie } from 'merkle-patricia-tree'
+import { ShardiumState } from '.'
 
-export type accountEvent = (linkedTX: string, address: string) => Promise<void>
-export type k2Event = (linkedTX: string, address: string, key: string) => Promise<void>
+
+export type accountEvent = (transactionState: TransactionState, address: string) => Promise<void>
+export type k2Event = (transactionState: TransactionState, address: string, key: string) => Promise<void>
+export type involvedEvent = (transactionState: TransactionState, address: string, isRead: boolean) => boolean
+export type keyInvolvedEvent = (transactionState: TransactionState, address: string, key: string, isRead: boolean) => boolean
 
 export interface ShardeumStorageCallbacks {
   storageMiss: accountEvent
   k2Miss: k2Event
+  accountInvolved: involvedEvent
+  k2Invovled: keyInvolvedEvent
 }
 
 
@@ -28,6 +34,8 @@ export interface ShardeumStorageCallbacks {
 export default class TransactionState {
     linkedTX: string
 
+    shardeumState:ShardiumState
+
     // account data
     firstReads: Map<string, Buffer>
     allWrites: Map<string, Buffer>
@@ -36,12 +44,50 @@ export default class TransactionState {
     firstK2Reads: Map<string,Map<string, Buffer>>
     allK2Writes: Map<string,Map<string, Buffer>>
 
+    // pending K2 commits
+    pendingK2Commits: Map<string,Map<string, Buffer>>
+
     // touched CAs:
     touchedCAs: Set<string>
 
+    // callbacks
     accountStorageMissCB: accountEvent
     k2StorageMissCB: k2Event
+    accountInvolvedCB: involvedEvent
+    k2InvovledCB: keyInvolvedEvent
     
+    initData(shardeumState:ShardiumState, callbacks:ShardeumStorageCallbacks, linkedTX, firstReads: Map<string, Buffer>, firstK2Reads: Map<string,Map<string, Buffer>>) {
+      this.linkedTX = linkedTX
+
+      this.shardeumState = shardeumState
+
+      //callbacks for storage events
+      this.accountStorageMissCB = callbacks.storageMiss
+      this.k2StorageMissCB = callbacks.k2Miss
+      this.accountInvolvedCB = callbacks.accountInvolved
+      this.k2InvovledCB = callbacks.k2Invovled
+
+      this.firstReads = new Map()
+      this.allWrites = new Map()
+
+      this.firstK2Reads = new Map()
+      this.allK2Writes = new Map()
+
+      this.pendingK2Commits = new Map()
+
+      this.touchedCAs = new Set()
+
+      //load in the first reads
+      if(firstReads != null){
+        this.firstReads = firstReads
+      }
+
+      //load in the first k2 reads
+      if(firstK2Reads != null){
+        this.firstK2Reads = firstK2Reads
+      }
+  }
+
     //??
     loadDataFromBuffer(){
 
@@ -52,38 +98,73 @@ export default class TransactionState {
 
     }
 
-    loadData(callbacks:ShardeumStorageCallbacks, linkedTX, firstReads: Map<string, Buffer>, firstK2Reads: Map<string,Map<string, Buffer>>) {
-        this.linkedTX = linkedTX
-
-        //callbacks for storage events
-        this.accountStorageMissCB = callbacks.storageMiss
-        this.k2StorageMissCB = callbacks.k2Miss
-
-        this.firstReads = new Map()
-        this.allWrites = new Map()
-
-        this.firstK2Reads = new Map()
-        this.allK2Writes = new Map()
-
-        this.touchedCAs = new Set()
-
-        //load in the first reads
-        if(firstReads != null){
-
-        }
-
-        //load in the first k2 reads
-        if(firstK2Reads != null){
-
-        }
+    getWrittenAccounts(){
+      //let the apply function take care of wrapping these accounts?
+      return {accounts:this.allWrites, kvPairs:this.allK2Writes}
     }
 
-    // should be per accounts or a list of accounts??
-    commitData(){
-        //store all writes to the persistant trie.
-
+    getTransferBlob(){
+      //this is the data needed to start computation on another shard
+      return {accounts:this.firstReads, kvPairs:this.firstK2Reads}
     }
 
+    /**
+     * Call this from dapp.updateAccountFull / updateAccountPartial to commit changes to the EVM trie
+     * @param addressString 
+     * @param account 
+     */
+    async commitAccount(addressString:string, account:Account){
+      //store all writes to the persistant trie.
+      let address = Address.fromString(addressString)    
+
+      this.shardeumState._trie.checkpoint()
+
+      //IFF this is a contract account we need to update any pending K2 values!!
+      if(this.pendingK2Commits.has(addressString)){
+        let contractK2Commits = this.pendingK2Commits.get(addressString)
+
+        let storageTrie = await this.shardeumState._getStorageTrie(address)
+        //what if storage trie was just created?
+        storageTrie.checkpoint()
+        //walk through all of these
+        for(let entry of contractK2Commits.entries()){
+          let stringKey = entry[0]
+          let value = entry[1]  // need to check wrapping.  Does this need one more layer of toBuffer?/rlp?
+          let keyAddress = Address.fromString(stringKey)//is this correct?
+          let keyKeyBuf = keyAddress.buf
+          storageTrie.put(keyKeyBuf, value)
+        }
+        storageTrie.commit()
+
+        //update the accounts state root!
+        account.stateRoot = storageTrie.root
+        //TODO:  handle key deletion
+      }
+
+      const accountRlp = account.serialize()
+      const accountKeyBuf = address.buf
+      await this.shardeumState._trie.put(accountKeyBuf, accountRlp)
+
+      this.shardeumState._trie.commit()
+
+      //TODO:  handle account deletion, if account is null. This is not a shardus concept yet
+      //await this._trie.del(keyBuf)
+    }  
+
+    commitK2(addressString:string, keyString:string, value:string){
+      //store all writes to the persistant trie.
+
+      //only put this in the pending commit structure. we will do the real commit when updating the account
+      if(this.pendingK2Commits.has(addressString)){
+        let contractK2Commits = this.pendingK2Commits.get(addressString)
+        if(contractK2Commits.has(keyString)){
+            // let storedRlp = contractK2Reads.get(keyString)
+            // return storedRlp ? rlp.decode(storedRlp) : undefined
+            let bufferValue = Buffer.from(value, 'hex')
+            contractK2Commits.set(keyString, bufferValue)
+        }             
+      }
+    }  
 
     async getAccount(storage:Trie, address: Address, originalOnly:boolean, canThrow: boolean): Promise<Account> {
         const addressString = address.buf.toString('hex')
@@ -99,6 +180,10 @@ export default class TransactionState {
             return storedRlp ? Account.fromRlpSerializedAccount(storedRlp) : undefined
         }
 
+        if(this.accountInvolvedCB(this, addressString, true) === false){
+          throw new Error('unable to proceed, cant involve account')
+        }
+
         //see if we can get it from the storage trie.
         let storedRlp = await storage.get(address.buf)
         let account = storedRlp ? Account.fromRlpSerializedAccount(storedRlp) : undefined
@@ -107,7 +192,7 @@ export default class TransactionState {
         if(account == undefined){
           //event callback to inidicate we do not have the account in this shard
           // not 100% if we should await this, may need some group discussion
-          await this.accountStorageMissCB(this.linkedTX, addressString)
+          await this.accountStorageMissCB(this, addressString)
 
           if(canThrow)
             throw new Error('account not available') //todo smarter throw?
@@ -128,6 +213,10 @@ export default class TransactionState {
      */
     putAccount(address: Address, account: Account) {
       const addressString = address.buf.toString('hex')
+
+      if(this.accountInvolvedCB(this, addressString, false) === false){
+        throw new Error('unable to proceed, cant involve account')
+      }
 
       let storedRlp = account.serialize()
       this.allWrites.set(addressString, storedRlp )
@@ -154,6 +243,10 @@ export default class TransactionState {
           }             
         }
 
+        if(this.k2InvovledCB(this, addressString, keyString, false) === false){
+          throw new Error('unable to proceed, cant involve k2')
+        }
+
         //see if we can get it from the storage trie.
         let storedRlp = await storage.get(address.buf)
         let storedValue = storedRlp ? rlp.decode(storedRlp) : undefined
@@ -161,7 +254,7 @@ export default class TransactionState {
         //Storage miss!!!, account not on this shard
         if(storedValue == undefined){
           //event callback to inidicate we do not have the account in this shard
-          await this.k2StorageMissCB(this.linkedTX, addressString, keyString)
+          await this.k2StorageMissCB(this, addressString, keyString)
 
           if(canThrow)
             throw new Error('account not available') //todo smarter throw?
@@ -184,6 +277,11 @@ export default class TransactionState {
     async putContractStorage(address: Address, key: Buffer, value: Buffer): Promise<void> {
 
       const addressString = address.buf.toString('hex')
+      const keyString = key.toString('hex')
+
+      if(this.k2InvovledCB(this, addressString, keyString, true) === false){
+        throw new Error('unable to proceed, cant involve k2')
+      }
 
       // todo research the meaning of this next line!!!!, borrowed from existing ethereumJS code
       value = unpadBuffer(value)
@@ -193,9 +291,9 @@ export default class TransactionState {
       let contractK2Writes = this.allK2Writes.get(addressString)
       if(contractK2Writes == null){
         contractK2Writes = new Map()
-        this.allK2Writes.set(addressString, contractK2Writes)   
+        this.allK2Writes.set(keyString, contractK2Writes)   
       }
-      contractK2Writes.set(addressString, storedRlp )
+      contractK2Writes.set(keyString, storedRlp )
 
       // for refrence this is the orginal code in put:
       // todo.  this next bit is ugly, need to figure out if we HAVE to to update the related account hash immediately.

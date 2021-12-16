@@ -121,7 +121,7 @@ export default class ShardiumState implements StateManager {
 
   }
 
-  clearTransactionState(){
+  unsetTransactionState(){
     this._transactionState = null
   }
 
@@ -615,6 +615,33 @@ export default class ShardiumState implements StateManager {
   }
 
   /**
+   * Get the key value pairs for a contract account, use this when syncing once we eventually flush the in memory account wrappers
+   * 
+   * @param address 
+   * @returns 
+   */
+  async getContractAccountKVPs(address: Address): Promise<StorageDump> {
+    return new Promise((resolve, reject) => {
+      this._getStorageTrie(address)
+        .then((trie) => {
+          const storage: StorageDump = {}
+          const stream = trie.createReadStream()
+
+          stream.on('data', (val: any) => {
+            storage[val.key.toString('hex')] = val.value.toString('hex')
+          })
+          stream.on('end', () => {
+            resolve(storage)
+          })
+        })
+        .catch((e) => {
+          reject(e)
+        })
+    })
+  }
+
+
+  /**
    * Checks whether the current instance has the canonical genesis state
    * for the configured chain parameters.
    * @returns {Promise<boolean>} - Whether the storage trie contains the
@@ -857,4 +884,38 @@ export default class ShardiumState implements StateManager {
     }
     this._touched.clear()
   }
+
+  /**
+   * For use by the shardeum Dapp to set account data from syncing
+   */
+  async setAccountExternal(addressString:string, account:Account){
+
+    //TODO implment this to convert string to address.  
+    //then checkpoint the state trie,
+    //put this state to the trie
+    //commit the trie
+
+    //transactionState:commitAccount  is a good reference, but we dont need to loop the pending k2 values like that code does
+  }
+
+
+  /**
+   * For use by the shardeum Dapp to set account data from syncing
+   */
+  async setContractAccountKeyValueExternal(addressString:string, keyString:string, bufferStr:string){
+
+    //TODO implment this to convert string to address.  
+    //get the trie for this contract account address
+    //checkpoint the trie
+    //put this state to the trie
+    //commit the trie
+
+
+    //TODO, double check how much buffer values are "wrapped" before being committed.  I thought 
+    // I saw some code in ethereumJS where a buffer was getting RLP'd again before being saved
+
+
+     //transactionState:commitAccount  , but specifically the part where CA key value pairs are saved out in the pending loop
+  }
+
 }

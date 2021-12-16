@@ -10,7 +10,8 @@ import VM from '@ethereumjs/vm';
 import { updateCommaList } from 'typescript'
 import { parse as parseUrl } from 'url'
 import got from 'got'
-import {ShardiumState } from './state'
+import {ShardiumState, TransactionState } from './state'
+import { ShardusTypes } from 'shardus-global-server'
 
 let {shardusFactory} = require('shardus-global-server')
 
@@ -145,19 +146,38 @@ const dapp = shardusFactory(config)
  * }
  */
 
+enum AccountType {
+  Account, // Should/can we specify EOA vs CA?
+  CA_KVP,  // Contract account key value pair
+  ContractCode, // Contract code bytes
+}
+
 /**
- * This is for phase 1, there is lots of data not actually held by Account
+ * Still working out the details here.
+ * This has become a variant data type now that can hold an EVM account or a key value pair from CA storage
+ * I think that is the shortest path for now to get syncing and repair functionality working
  *
+ * Long term I am not certain if we will be able to hold these in memory.  They may have to be a temporary thing
+ * that is held in memory for awhile but eventually cleared.  This would mean that we have to be able to pull these
+ * from disk again, and that could be a bit tricky.
  */
-interface WrappedEthAccount {
-  ethAddress: string //account address in ethereum space.
-  account: Account //actual Eth account.
-  timestamp: number //account timestamp
+interface WrappedEVMAccount {
+  accountType: AccountType 
+
+  ethAddress: string //account address in EVM space.
   hash: string //account hash
+
+  timestamp: number //account timestamp.  last time a TX changed it
+
+  // Here is the EVM variant data.  An account:
+  account?: Account //actual EVM account. if this is type Account
+  // <or> this:
+  key?: string   //EVM CA storage key
+  value?: string //EVM buffer value if this is of type CA_KVP
 }
 
 interface WrappedEthAccounts {
-  [id: string]: WrappedEthAccount
+  [id: string]: WrappedEVMAccount
 }
 
 
@@ -166,6 +186,95 @@ let appliedTxs = {}
 
 let shardiumStateManager = new ShardiumState() //as StateManager
 let EVM = new VM({ stateManager:shardiumStateManager })
+
+let transactionStateMap = new Map<string, TransactionState>()
+
+
+/**
+ * This callback is called when the EVM tries to get an account it does not exist in trie storage or TransactionState
+ * We need to build a blob of first read accounts and call SGS so that it can jump the EVM execution to the correct shard
+ * @param linkedTX 
+ * @param address 
+ */
+async function storageMiss(transactionState: TransactionState, address: string) : Promise<void> {
+
+  //Get the first read version of data that we have collected so far
+  let transferBlob = transactionState.getTransferBlob()
+  let txID = transactionState.linkedTX
+
+  // TODO implment this in shardus global server.  It will send the read accounts and TX info to 
+  // to a remote shard so that we can restart the EVM
+  //dapp.jumpToAccount(txID, address, transferBlob )
+
+  throw new Error('this should only happen in a multi sharded environment')
+}
+
+/**
+ * This callback is called when the EVM tries to get an CA KVP it does not exist in trie storage or TransactionState
+ * We need to build a blob of first read accounts and call SGS so that it can jump the EVM execution to the correct shard
+ * @param linkedTX 
+ * @param address 
+ * @param key 
+ */
+async function k2Miss(transactionState: TransactionState, address: string, key: string) : Promise<void> {
+
+  //Get the first read version of data that we have collected so far
+  let transferBlob = transactionState.getTransferBlob()
+  let txID = transactionState.linkedTX
+
+  // TODO implment this in shardus global server.  It will send the read accounts and TX info to 
+  // to a remote shard so that we can restart the EVM
+  //dapp.jumpToAccount(txID, address, transferBlob )
+
+  // depending on how thing work out we may also want to jump to 
+  //dapp.jumpToK2(txID, address, transferBlob )
+  
+  throw new Error('this should only happen in a multi sharded environment')
+}
+
+/**
+ * This callback is called so that we can notify shardus global server that the TX needs to access
+ * an account.  If the shardus queueEntry has not involved the account yet there is a chance the call
+ * will fail in a way that we need to bubble an Error to halt the evm and fail the TX
+ * @param linkedTX 
+ * @param address 
+ * @param isRead 
+ * @returns 
+ */
+function accountInvolved(transactionState: TransactionState, address: string, isRead: boolean) : boolean {
+  //TODO: this will call into shardus global and make sure this TX can continue execution given 
+  // that we may need to invove an additional account
+
+  let txID = transactionState.linkedTX
+
+  //TODO implment this shardus function.
+  //dapp.accountInvolved(txID, address, isRead)
+
+  return true
+}
+
+/**
+ * This callback is called so that we can notify shardus global server that the TX needs to access
+ * an account.  If the shardus queueEntry has not involved the account yet there is a chance the call
+ * will fail in a way that we need to bubble an Error to halt the evm and fail the TX
+ * @param linkedTX 
+ * @param address 
+ * @param key 
+ * @param isRead 
+ * @returns 
+ */
+function k2Invovled(transactionState: TransactionState, address: string, key: string, isRead: boolean) : boolean {
+  //TODO: this will call into shardus global and make sure this TX can continue execution given 
+  // that we may need to invove an additional key
+
+  let txID = transactionState.linkedTX
+
+  //TODO implment this shardus function.
+  //dapp.accountInvolved(txID, address, isRead)
+
+  return true
+}
+
 
 /**
  * After a Buffer goes through json stringify/parse it comes out broken
@@ -194,14 +303,14 @@ function sleep(ms) {
  * @param wrappedEthAccount
  * @returns
  */
-function hashFromNonceHack(wrappedEthAccount: WrappedEthAccount): string {
+function hashFromNonceHack(wrappedEthAccount: WrappedEVMAccount): string {
   //just a basic nonce to hash because it will take more work to extract the correct hash
   let hash = wrappedEthAccount.account.nonce.toString()
   hash = hash + '0'.repeat(64 - hash.length)
   return hash
 }
 
-function updateEthAccountHash(wrappedEthAccount: WrappedEthAccount) {
+function updateEthAccountHash(wrappedEthAccount: WrappedEVMAccount) {
   //this doesnt work since state root is a stable ref to a key in the db
   //let hash = bufferToHex(wrappedEthAccount.account.stateRoot)
 
@@ -209,7 +318,7 @@ function updateEthAccountHash(wrappedEthAccount: WrappedEthAccount) {
   wrappedEthAccount.hash = hashFromNonceHack(wrappedEthAccount)
 }
 
-async function createAccount(addressStr): Promise<WrappedEthAccount> {
+async function createAccount(addressStr): Promise<WrappedEVMAccount> {
   console.log('Creating new account', addressStr)
   const accountAddress = Address.fromString(addressStr)
   const oneEth = new BN(10).pow(new BN(18))
@@ -222,7 +331,7 @@ async function createAccount(addressStr): Promise<WrappedEthAccount> {
   await EVM.stateManager.putAccount(accountAddress, account)
   const updatedAccount = await EVM.stateManager.getAccount(accountAddress)
 
-  let wrappedEthAccount = {timestamp: Date.now(), account: updatedAccount, ethAddress: addressStr, hash: ''}
+  let wrappedEthAccount = {timestamp: Date.now(), account: updatedAccount, ethAddress: addressStr, hash: '', accountType: AccountType.Account}
   updateEthAccountHash(wrappedEthAccount)
   return wrappedEthAccount
 }
@@ -295,7 +404,7 @@ async function setupTester(ethAccountID: string) {
   const address = Address.fromString(ethAccountID)
   let account = await EVM.stateManager.getAccount(address)
 
-  let wrappedEthAccount = {timestamp: Date.now(), account, ethAddress: ethAccountID, hash: ''}
+  let wrappedEthAccount = {timestamp: Date.now(), account, ethAddress: ethAccountID, hash: '', accountType: AccountType.Account}
   updateEthAccountHash(wrappedEthAccount)
   accounts[shardusAccountID] = wrappedEthAccount
 }
@@ -517,6 +626,23 @@ dapp.setup({
     console.log('DBG', new Date(), 'attempting to apply tx', txId, tx)
     const applyResponse = dapp.createApplyResponse(txId, tx.timestamp)
 
+    //Now we need to get a transaction state object.  For single sharded networks this will be a new object.
+    //When we have multiple shards we could have some blob data that wrapped up read accounts.  We will read these accounts
+    //Into the the transaction state init at some point (possibly not here).  This will allow the EVM to run and not have 
+    //A storage miss for accounts that were read on previous shard attempts to exectute this TX
+    let transactionState = transactionStateMap.get(txId)
+    if(transactionState === null){
+      transactionState = new TransactionState()
+      transactionState.initData(shardiumStateManager, {storageMiss, k2Miss, accountInvolved, k2Invovled}, txId, undefined, undefined)
+      transactionStateMap.set(txId, transactionState)
+    } else {
+      //TODO possibly need a blob to re-init with, but that may happen somewhere else.  Will require a slight interface change 
+      //to allow shardus to pass in this extra data blob (unless we find a way to run it through wrapped states??)
+    }
+
+    //ah shoot this binding will not be "thread safe" may need to make it part of the EEI for this tx? idk.
+    shardiumStateManager.setTransactionState(transactionState)
+
     try {
       // Apply the tx
       // const Receipt = await EVM.runTx({tx: transaction, skipNonce: true, skipBlockGasLimitValidation: true})
@@ -529,7 +655,7 @@ dapp.setup({
         let ethAccountID = Receipt.createdAddress.toString()
         let shardusAddress = toShardusAddress(ethAccountID)
         let contractAccount = await EVM.stateManager.getAccount(Receipt.createdAddress)
-        let wrappedEthAccount = {timestamp: Date.now(), account: contractAccount, ethAddress: ethAccountID, hash: ''}
+        let wrappedEthAccount = {timestamp: Date.now(), account: contractAccount, ethAddress: ethAccountID, hash: '', accountType: AccountType.Account}
 
         updateEthAccountHash(wrappedEthAccount)
 
@@ -541,10 +667,44 @@ dapp.setup({
         injected: tx,
         receipt: { ...Receipt, nonce: transaction.nonce.toString('hex') },
       }
+
+      //get a list of accounts or CA keys that have been written to
+      //This is important because the EVM could change many accounts or keys that we are not aware of
+      //the transactionState is what accumulates the writes that we need
+      let {accounts:accountWrites, kvPairs:kvPairWrites } = transactionState.getWrittenAccounts()
+      
+      //wrap these accounts and keys up and add them to the applyResponse as additional involved accounts
+      for(let account of accountWrites){
+
+        //1. wrap and save/update this to shardium accounts[] map
+
+        //2.
+        //Attach the written account data to the apply response.  This will allow it to be shared with other shards if needed.
+        //Also wi
+        //dapp.applyResponseAddChangedAccount(applyResponse, accountId, accountObject ) //account value would be the EVM account object 
+      }
+      for(let kvPair of kvPairWrites){
+        //1. wrap and save/update this to shardium accounts[] map
+
+        //2.
+        //dapp.applyResponseAddChangedAccount(applyResponse, accountId, accountValue ) //account value would be the EVM account object 
+        // <or> possibly:
+        //dapp.applyResponseAddChangedK2(applyResponse, accountId, key, accountValue ) //in this case account value would be the hex string of the value buffer
+      }
+
     } catch (e) {
+
+      //TODO need to detect if an execption here is a result of jumping the TX to another thread!
+      // shardus must be made to handle that
+
       dapp.log('Unable to apply transaction', e)
       console.log('Unable to apply transaction', txId, e)
     }
+
+
+
+    shardiumStateManager.unsetTransactionState()
+
     return applyResponse
   },
   getKeyFromTransaction(tx) {
@@ -583,8 +743,39 @@ dapp.setup({
 
   setAccountData(accountRecords) {
     for (const account of accountRecords) {
-      accounts[account.id] = account as WrappedEthAccount
+      let wrappedEVMAccount = account as WrappedEVMAccount
+      accounts[account.id] = wrappedEVMAccount
     }
+
+    // update shardium state. put this in a separate loop, but maybe that is overkill
+    // I was thinking we could checkpoint and commit the changes on the outer loop,
+    // but now I am not so sure that is safe, and best case may need a mutex
+    // I am not even 100% that we can go without a mutex even one account at time, here or in other spots
+    // where we commit data to tries.  I wouldn't want the awaited code to interleave in a bad way
+    for (const account of accountRecords) {
+
+      let wrappedEVMAccount = account as WrappedEVMAccount
+      accounts[account.id] = wrappedEVMAccount
+
+
+      // hmm this is not awaited yet! needs changes to shardus global server.
+      if(wrappedEVMAccount.accountType === AccountType.Account){
+        let addressString = wrappedEVMAccount.ethAddress
+        let evmAccount = wrappedEVMAccount.account
+
+        shardiumStateManager.setAccountExternal(addressString, evmAccount)
+
+      } else if(wrappedEVMAccount.accountType === AccountType.CA_KVP){
+
+        let addressString = wrappedEVMAccount.ethAddress
+        let keyString = wrappedEVMAccount.key
+        let bufferStr = wrappedEVMAccount.value
+
+        shardiumStateManager.setContractAccountKeyValueExternal(addressString, keyString, bufferStr)
+      }
+
+    }
+
   },
   async getRelevantData(accountId, tx) {
     if (!tx.raw) throw new Error('getRelevantData: No raw tx')
@@ -601,7 +792,7 @@ dapp.setup({
       const address = Address.fromString(ethAccountID)
       let account = await EVM.stateManager.getAccount(address)
 
-      wrappedEthAccount = {timestamp: Date.now(), account, ethAddress: ethAccountID, hash: ''}
+      wrappedEthAccount = {timestamp: Date.now(), account, ethAddress: ethAccountID, hash: '', accountType: AccountType.Account}
       updateEthAccountHash(wrappedEthAccount)
 
       accounts[accountId] = wrappedEthAccount
@@ -635,22 +826,47 @@ dapp.setup({
     }
     return results
   },
-  updateAccountFull(wrappedData, localCache, applyResponse) {
+  updateAccountFull(wrappedData, localCache, applyResponse: ShardusTypes.ApplyResponse) {
     const accountId = wrappedData.accountId
     const accountCreated = wrappedData.accountCreated
-    const updatedAccount: WrappedEthAccount = wrappedData.data
+    const updatedAccount: WrappedEVMAccount = wrappedData.data
     // Update hash.   currently letting the hash be controlled by the EVM.
     //                not sure if we want to hash the WrappedEthAccount instead, but probably not
     // const hashBefore = updatedAccount.hash
     // const hashAfter = crypto.hashObj(updatedAccount || {})
     // updatedAccount.hash = hashAfter
 
+    // oof, we dont have the TXID!!!
+    let txId = applyResponse?.txId
+    let transactionState = transactionStateMap.get(txId)
+    if(transactionState === null){
+      transactionState = new TransactionState()
+      transactionState.initData(shardiumStateManager, {storageMiss, k2Miss, accountInvolved, k2Invovled}, txId, undefined, undefined)
+      transactionStateMap.set(txId, transactionState)
+    } else {
+      //TODO possibly need a blob to re-init with?
+    }
+
+    if(updatedAccount.accountType === AccountType.Account){
+      //if account?
+      let addressStr = updatedAccount.ethAddress
+      let ethAccount = updatedAccount.account
+      transactionState.commitAccount(addressStr, ethAccount) //yikes this wants an await.      
+    } else if(updatedAccount.accountType === AccountType.CA_KVP) {
+      //if k2?
+
+      let addressStr = updatedAccount.ethAddress
+      let key = updatedAccount.key
+      let bufferStr = updatedAccount.value
+      transactionState.commitK2(addressStr, key, bufferStr )      
+    }
+
     let hashBefore = updatedAccount.hash
     updateEthAccountHash(updatedAccount)
     let hashAfter = updatedAccount.hash
 
     // Save updatedAccount to db / persistent storage
-    accounts[accountId] = updatedAccount //this isn't doing much, and will get reworked when we have a custom EVM:statemanager
+    accounts[accountId] = updatedAccount
 
     // Add data to our required response object
     dapp.applyResponseAddState(applyResponse, updatedAccount, updatedAccount, accountId, applyResponse.txId, applyResponse.txTimestamp, hashBefore, hashAfter, accountCreated)
@@ -686,7 +902,7 @@ dapp.setup({
     }
     return results
   },
-  calculateAccountHash(wrappedEthAccount: WrappedEthAccount) {
+  calculateAccountHash(wrappedEthAccount: WrappedEVMAccount) {
 
     return hashFromNonceHack(wrappedEthAccount)
 
@@ -698,9 +914,13 @@ dapp.setup({
   resetAccountData(accountBackupCopies) {
     for (let recordData of accountBackupCopies) {
 
-      let wrappedEthAccount = recordData.data as WrappedEthAccount
+      let wrappedEthAccount = recordData.data as WrappedEVMAccount
       let shardusAddress = toShardusAddress(wrappedEthAccount.ethAddress)
       accounts[shardusAddress] = wrappedEthAccount
+
+      //TODO need to also update shardiumState! probably can do that in a batch outside of this loop
+      // a wrappedEVMAccount could be an EVM Account or a CA key value pair
+      // maybe could just refactor the loop in setAccountData??
     }
   },
   deleteAccountData(addressList) {
