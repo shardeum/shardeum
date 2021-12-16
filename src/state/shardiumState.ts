@@ -895,7 +895,7 @@ export default class ShardiumState implements StateManager {
     //put this state to the trie
     //commit the trie
 
-    //transactionState:commitAccount  is a good reference, but we dont need to loop the pending k2 values like that code does
+    //transactionState:commitAccount  is a good reference, but we dont need to loop the pending contract storage values like that code does
   }
 
 

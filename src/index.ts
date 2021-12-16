@@ -129,7 +129,7 @@ config = merge(
   {arrayMerge: overwriteMerge}
 )
 
-const dapp = shardusFactory(config)
+const shardus = shardusFactory(config)
 
 /**
  * interface account {
@@ -150,6 +150,7 @@ enum AccountType {
   Account, // Should/can we specify EOA vs CA?
   CA_KVP,  // Contract account key value pair
   ContractCode, // Contract code bytes
+  Reciept, //This holds logs for a TX
 }
 
 /**
@@ -204,7 +205,7 @@ async function storageMiss(transactionState: TransactionState, address: string) 
 
   // TODO implment this in shardus global server.  It will send the read accounts and TX info to 
   // to a remote shard so that we can restart the EVM
-  //dapp.jumpToAccount(txID, address, transferBlob )
+  //shardus.jumpToAccount(txID, address, transferBlob )
 
   throw new Error('this should only happen in a multi sharded environment')
 }
@@ -216,7 +217,7 @@ async function storageMiss(transactionState: TransactionState, address: string) 
  * @param address 
  * @param key 
  */
-async function k2Miss(transactionState: TransactionState, address: string, key: string) : Promise<void> {
+async function contractStorageMiss(transactionState: TransactionState, address: string, key: string) : Promise<void> {
 
   //Get the first read version of data that we have collected so far
   let transferBlob = transactionState.getTransferBlob()
@@ -224,10 +225,10 @@ async function k2Miss(transactionState: TransactionState, address: string, key: 
 
   // TODO implment this in shardus global server.  It will send the read accounts and TX info to 
   // to a remote shard so that we can restart the EVM
-  //dapp.jumpToAccount(txID, address, transferBlob )
+  //shardus.jumpToAccount(txID, address, transferBlob )
 
   // depending on how thing work out we may also want to jump to 
-  //dapp.jumpToK2(txID, address, transferBlob )
+  //shardus.jumpToContractStorage(txID, address, transferBlob )
   
   throw new Error('this should only happen in a multi sharded environment')
 }
@@ -248,7 +249,7 @@ function accountInvolved(transactionState: TransactionState, address: string, is
   let txID = transactionState.linkedTX
 
   //TODO implment this shardus function.
-  //dapp.accountInvolved(txID, address, isRead)
+  //shardus.accountInvolved(txID, address, isRead)
 
   return true
 }
@@ -263,14 +264,14 @@ function accountInvolved(transactionState: TransactionState, address: string, is
  * @param isRead 
  * @returns 
  */
-function k2Invovled(transactionState: TransactionState, address: string, key: string, isRead: boolean) : boolean {
+function contractStorageInvolved(transactionState: TransactionState, address: string, key: string, isRead: boolean) : boolean {
   //TODO: this will call into shardus global and make sure this TX can continue execution given 
   // that we may need to invove an additional key
 
   let txID = transactionState.linkedTX
 
   //TODO implment this shardus function.
-  //dapp.accountInvolved(txID, address, isRead)
+  //shardus.accountInvolved(txID, address, isRead)
 
   return true
 }
@@ -393,6 +394,12 @@ function fromShardusAddress(addressStr) {
   return addressStr
 }
 
+  //change contract account :0x665eab3be2472e83e3100b4233952a16eed20c76
+  //         contract key   :0x0b4233952a16eed20c76665eab3be2472e83e310
+  //                 to this:665eab3be2472e83e3100b4233952a16eed20c76000000000000000000000000
+  //                                                 0b4233952a16eed20c76665eab3be2472e83e310
+  //                           665eab3be2472e83e3100b
+
 
 async function setupTester(ethAccountID: string) {
 
@@ -439,11 +446,11 @@ async function _internalHackGet(url:string){
 }
 
 //?id=<accountID>
-dapp.registerExternalGet('faucet-all', async (req, res) => {
+shardus.registerExternalGet('faucet-all', async (req, res) => {
   let id = req.query.id as string
   setupTester(id)
   try{
-    let activeNodes = dapp.p2p.state.getNodes()
+    let activeNodes = shardus.p2p.state.getNodes()
     if(activeNodes){
       for(let node of activeNodes.values()){
         _internalHackGet(`${node.externalIp}:${node.externalPort}/faucet-one?id=${id}`)
@@ -457,25 +464,25 @@ dapp.registerExternalGet('faucet-all', async (req, res) => {
   res.end()
 })
 
-dapp.registerExternalGet('faucet-one', async (req, res) => {
+shardus.registerExternalGet('faucet-one', async (req, res) => {
   let id = req.query.id as string
   setupTester(id)
   return res.json({ success: true})
 })
 
 
-dapp.registerExternalPost('inject', async (req, res) => {
+shardus.registerExternalPost('inject', async (req, res) => {
   let tx = req.body
   console.log('Transaction injected:', new Date(), tx)
   try {
-    const response = dapp.put(tx)
+    const response = shardus.put(tx)
     res.json(response)
   } catch (err) {
     console.log('Failed to inject tx: ', err)
   }
 })
 
-dapp.registerExternalPost('faucet', async (req, res) => {
+shardus.registerExternalPost('faucet', async (req, res) => {
     // let tx = req.body
     // await setupTester(tx.address)
     // return res.json({ success: true})
@@ -484,7 +491,7 @@ dapp.registerExternalPost('faucet', async (req, res) => {
     let id = tx.address as string
     setupTester(id)
     try{
-      let activeNodes = dapp.p2p.state.getNodes()
+      let activeNodes = shardus.p2p.state.getNodes()
       if(activeNodes){
         for(let node of activeNodes.values()){
           _internalHackGet(`${node.externalIp}:${node.externalPort}/faucet-one?id=${id}`)
@@ -498,13 +505,13 @@ dapp.registerExternalPost('faucet', async (req, res) => {
     res.end()
 })
 
-dapp.registerExternalGet('account/:address', async (req, res) => {
+shardus.registerExternalGet('account/:address', async (req, res) => {
   const address = req.params['address']
   let readableAccount = await getReadableAccountInfo(address)
   res.json({account: readableAccount})
 })
 
-dapp.registerExternalPost('contract/call', async (req, res) => {
+shardus.registerExternalPost('contract/call', async (req, res) => {
   try {
     const callObj = req.body
     let opt = {
@@ -529,7 +536,7 @@ dapp.registerExternalPost('contract/call', async (req, res) => {
   }
 })
 
-dapp.registerExternalGet('tx/:hash', async (req, res) => {
+shardus.registerExternalGet('tx/:hash', async (req, res) => {
   const txHash = req.params['hash']
   if (!appliedTxs[txHash]) {
     return res.json({tx: 'Not found'})
@@ -555,7 +562,7 @@ dapp.registerExternalGet('tx/:hash', async (req, res) => {
   res.json({tx: result})
 })
 
-dapp.registerExternalGet('accounts', async (req, res) => {
+shardus.registerExternalGet('accounts', async (req, res) => {
   console.log('/accounts')
   res.json({accounts})
 })
@@ -569,7 +576,7 @@ dapp.registerExternalGet('accounts', async (req, res) => {
  *   timestamp: number
  * }
  */
-dapp.setup({
+shardus.setup({
   validateTransaction(tx) {
     let txObj = getTransactionObj(tx)
     const response = {
@@ -624,7 +631,7 @@ dapp.setup({
     const txId = bufferToHex(transaction.hash())
     // Create an applyResponse which will be used to tell Shardus that the tx has been applied
     console.log('DBG', new Date(), 'attempting to apply tx', txId, tx)
-    const applyResponse = dapp.createApplyResponse(txId, tx.timestamp)
+    const applyResponse = shardus.createApplyResponse(txId, tx.timestamp)
 
     //Now we need to get a transaction state object.  For single sharded networks this will be a new object.
     //When we have multiple shards we could have some blob data that wrapped up read accounts.  We will read these accounts
@@ -633,7 +640,7 @@ dapp.setup({
     let transactionState = transactionStateMap.get(txId)
     if(transactionState === null){
       transactionState = new TransactionState()
-      transactionState.initData(shardiumStateManager, {storageMiss, k2Miss, accountInvolved, k2Invovled}, txId, undefined, undefined)
+      transactionState.initData(shardiumStateManager, {storageMiss, contractStorageMiss, accountInvolved, contractStorageInvolved}, txId, undefined, undefined)
       transactionStateMap.set(txId, transactionState)
     } else {
       //TODO possibly need a blob to re-init with, but that may happen somewhere else.  Will require a slight interface change 
@@ -681,15 +688,15 @@ dapp.setup({
         //2.
         //Attach the written account data to the apply response.  This will allow it to be shared with other shards if needed.
         //Also wi
-        //dapp.applyResponseAddChangedAccount(applyResponse, accountId, accountObject ) //account value would be the EVM account object 
+        //shardus.applyResponseAddChangedAccount(applyResponse, accountId, accountObject ) //account value would be the EVM account object 
       }
       for(let kvPair of kvPairWrites){
         //1. wrap and save/update this to shardium accounts[] map
 
         //2.
-        //dapp.applyResponseAddChangedAccount(applyResponse, accountId, accountValue ) //account value would be the EVM account object 
+        //shardus.applyResponseAddChangedAccount(applyResponse, accountId, accountValue ) //account value would be the EVM account object 
         // <or> possibly:
-        //dapp.applyResponseAddChangedK2(applyResponse, accountId, key, accountValue ) //in this case account value would be the hex string of the value buffer
+        //shardus.applyResponseAddChangedKeyedAccount(applyResponse, accountId, key, accountValue ) //in this case account value would be the hex string of the value buffer
       }
 
     } catch (e) {
@@ -697,7 +704,7 @@ dapp.setup({
       //TODO need to detect if an execption here is a result of jumping the TX to another thread!
       // shardus must be made to handle that
 
-      dapp.log('Unable to apply transaction', e)
+      shardus.log('Unable to apply transaction', e)
       console.log('Unable to apply transaction', txId, e)
     }
 
@@ -799,7 +806,7 @@ dapp.setup({
       accountCreated = true
     }
     // Wrap it for Shardus
-    return dapp.createWrappedResponse(accountId, accountCreated, safeBufferToHex(wrappedEthAccount.account.stateRoot), wrappedEthAccount.timestamp, wrappedEthAccount)//readableAccount)
+    return shardus.createWrappedResponse(accountId, accountCreated, safeBufferToHex(wrappedEthAccount.account.stateRoot), wrappedEthAccount.timestamp, wrappedEthAccount)//readableAccount)
   },
   getAccountData(accountStart, accountEnd, maxRecords) {
     const results = []
@@ -841,7 +848,7 @@ dapp.setup({
     let transactionState = transactionStateMap.get(txId)
     if(transactionState === null){
       transactionState = new TransactionState()
-      transactionState.initData(shardiumStateManager, {storageMiss, k2Miss, accountInvolved, k2Invovled}, txId, undefined, undefined)
+      transactionState.initData(shardiumStateManager, {storageMiss, contractStorageMiss, accountInvolved, contractStorageInvolved}, txId, undefined, undefined)
       transactionStateMap.set(txId, transactionState)
     } else {
       //TODO possibly need a blob to re-init with?
@@ -853,12 +860,12 @@ dapp.setup({
       let ethAccount = updatedAccount.account
       transactionState.commitAccount(addressStr, ethAccount) //yikes this wants an await.      
     } else if(updatedAccount.accountType === AccountType.CA_KVP) {
-      //if k2?
+      //if ContractAccount?
 
       let addressStr = updatedAccount.ethAddress
       let key = updatedAccount.key
       let bufferStr = updatedAccount.value
-      transactionState.commitK2(addressStr, key, bufferStr )      
+      transactionState.commitContractStorage(addressStr, key, bufferStr )      
     }
 
     let hashBefore = updatedAccount.hash
@@ -869,7 +876,7 @@ dapp.setup({
     accounts[accountId] = updatedAccount
 
     // Add data to our required response object
-    dapp.applyResponseAddState(applyResponse, updatedAccount, updatedAccount, accountId, applyResponse.txId, applyResponse.txTimestamp, hashBefore, hashAfter, accountCreated)
+    shardus.applyResponseAddState(applyResponse, updatedAccount, updatedAccount, accountId, applyResponse.txId, applyResponse.txTimestamp, hashBefore, hashAfter, accountCreated)
   },
   updateAccountPartial(wrappedData, localCache, applyResponse) {
     //I think we may need to utilize this so that shardus is not oblicated to make temporary copies of large CAs
@@ -952,6 +959,6 @@ dapp.setup({
   }
 })
 
-dapp.registerExceptionHandler()
+shardus.registerExceptionHandler()
 
-dapp.start()
+shardus.start()
