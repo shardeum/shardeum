@@ -175,6 +175,15 @@ interface WrappedEVMAccount {
   // <or> this:
   key?: string   //EVM CA storage key
   value?: string //EVM buffer value if this is of type CA_KVP
+
+  //What to store for ContractCode?
+
+  //What to store for Reciept?  .. doesn't look like runTX really does much with them.  runBlock seem to do more.
+  //the returned receipt from runTX is seems downcasted, because it actual has more fields than expected.
+      //research question..  does the RPC server have any logs checking endpoints.. 
+        //doesnt seem like it on a quick search.
+        //It does have a hardcoded logsBloom so maybe we need to fill this with correct data.
+
 }
 
 interface WrappedEthAccounts {
@@ -687,9 +696,14 @@ shardus.setup({
       let {accounts:accountWrites, kvPairs:kvPairWrites } = transactionState.getWrittenAccounts()
       
       //wrap these accounts and keys up and add them to the applyResponse as additional involved accounts
-      for(let account of accountWrites){
-
+      for(let account of accountWrites.entries()){
         //1. wrap and save/update this to shardium accounts[] map
+        let addressStr = account[0]
+        let accountObj = Account.fromRlpSerializedAccount(account[1])
+
+        let wrappedAccount = {timestamp: Date.now(), accountObj, ethAddress: addressStr, hash: '', accountType: AccountType.Account}
+
+        accounts[addressStr] = wrappedAccount
 
         //2.
         //Attach the written account data to the apply response.  This will allow it to be shared with other shards if needed.
@@ -704,6 +718,10 @@ shardus.setup({
         // <or> possibly:
         //shardus.applyResponseAddChangedKeyedAccount(applyResponse, accountId, key, accountValue ) //in this case account value would be the hex string of the value buffer
       }
+
+      //TODO also create an account for the receipt (nested in the returned Receipt should be a receipt with a list of logs)
+
+      //TODO also create an account for any created bytecode (contract code)
 
     } catch (e) {
 
