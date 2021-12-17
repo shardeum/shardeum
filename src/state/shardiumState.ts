@@ -1,14 +1,16 @@
+import {add} from "lodash";
+
 const Set = require('core-js-pure/es/set')
 import { debug as createDebugLogger } from 'debug'
 import { SecureTrie as Trie } from 'merkle-patricia-tree'
 import {
-  Account,
-  Address,
-  toBuffer,
-  keccak256,
-  KECCAK256_NULL,
-  rlp,
-  unpadBuffer,
+    Account,
+    Address,
+    toBuffer,
+    keccak256,
+    KECCAK256_NULL,
+    rlp,
+    unpadBuffer, bufferToHex,
 } from 'ethereumjs-util'
 import Common, { Chain, Hardfork } from '@ethereumjs/common'
 import { StateManager, StorageDump } from '@ethereumjs/vm/src/state/interface'
@@ -85,7 +87,7 @@ export default class ShardiumState implements StateManager {
    * performance reasons to avoid string literal evaluation
    * @hidden
    */
-  protected readonly DEBUG: boolean = false
+  protected readonly DEBUG: boolean = true
 
   /**
    * Instantiate the StateManager interface.
@@ -147,7 +149,7 @@ export default class ShardiumState implements StateManager {
     //side run system on the side for now
     if(this._transactionState != null){
       let testAccount = await this._transactionState.getAccount(this._trie, address, false, false)
-      //return testAccount      
+      // return testAccount
     }
 
 
@@ -211,20 +213,30 @@ export default class ShardiumState implements StateManager {
    * @param value - The value of the `code`
    */
   async putContractCode(address: Address, value: Buffer): Promise<void> {
-    const codeHash = keccak256(value)
 
-    if (codeHash.equals(KECCAK256_NULL)) {
-      return
-    }
+      let account: Account = await this.getAccount(address)
+      const codeHash = keccak256(value)
+      if (codeHash.equals(KECCAK256_NULL)) {
+          return
+      }
+      account.codeHash = codeHash
 
-    await this._trie.db.put(codeHash, value)
+      if(this._transactionState != null){
+          //side run system on the side for now
+          this._transactionState.putContractCode(address, account)
+      }
 
-    const account = await this.getAccount(address)
-    if (this.DEBUG) {
-      debug(`Update codeHash (-> ${short(codeHash)}) for account ${address}`)
-    }
-    account.codeHash = codeHash
-    await this.putAccount(address, account)
+      // Original implmentation:
+      if (this.DEBUG) {
+          debug(
+              `Save account address=${address} nonce=${account.nonce} balance=${
+                  account.balance
+              } contract=${account.isContract() ? 'yes' : 'no'} empty=${account.isEmpty() ? 'yes' : 'no'}`
+          )
+      }
+
+      this._cache.put(address, account)
+      this.touchAccount(address)
   }
 
   /**
@@ -234,12 +246,18 @@ export default class ShardiumState implements StateManager {
    * Returns an empty `Buffer` if the account has no associated code.
    */
   async getContractCode(address: Address): Promise<Buffer> {
-    const account = await this.getAccount(address)
-    if (!account.isContract()) {
-      return Buffer.alloc(0)
-    }
-    const code = await this._trie.db.get(account.codeHash)
-    return code ?? Buffer.alloc(0)
+      //side run system on the side for now
+      if(this._transactionState != null){
+          let testAccount = await this._transactionState.getContractCode(this._trie, address, false, false)
+          // return testAccount
+      }
+
+      // Original implmentation:
+      const account = await this._cache.getOrLoad(address)
+      if (!account.isContract() || !account.codeHash) {
+          return Buffer.alloc(0)
+      }
+      return account.codeHash
   }
 
   /**
@@ -512,7 +530,7 @@ export default class ShardiumState implements StateManager {
    * last call to checkpoint.
    */
   async revert(): Promise<void> {
-    
+
     //side run: shardeum will no-op this in the future
     //  investigate: will it be a problem that EVM may call this for failed functions, or does that all bubble up anyhow?
 
@@ -616,9 +634,9 @@ export default class ShardiumState implements StateManager {
 
   /**
    * Get the key value pairs for a contract account, use this when syncing once we eventually flush the in memory account wrappers
-   * 
-   * @param address 
-   * @returns 
+   *
+   * @param address
+   * @returns
    */
   async getContractAccountKVPs(address: Address): Promise<StorageDump> {
     return new Promise((resolve, reject) => {
@@ -890,7 +908,7 @@ export default class ShardiumState implements StateManager {
    */
   async setAccountExternal(addressString:string, account:Account){
 
-    //TODO implment this to convert string to address.  
+    //TODO implment this to convert string to address.
     //then checkpoint the state trie,
     //put this state to the trie
     //commit the trie
@@ -904,14 +922,14 @@ export default class ShardiumState implements StateManager {
    */
   async setContractAccountKeyValueExternal(addressString:string, keyString:string, bufferStr:string){
 
-    //TODO implment this to convert string to address.  
+    //TODO implment this to convert string to address.
     //get the trie for this contract account address
     //checkpoint the trie
     //put this state to the trie
     //commit the trie
 
 
-    //TODO, double check how much buffer values are "wrapped" before being committed.  I thought 
+    //TODO, double check how much buffer values are "wrapped" before being committed.  I thought
     // I saw some code in ethereumJS where a buffer was getting RLP'd again before being saved
 
 

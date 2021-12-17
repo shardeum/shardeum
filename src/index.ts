@@ -163,7 +163,7 @@ enum AccountType {
  * from disk again, and that could be a bit tricky.
  */
 interface WrappedEVMAccount {
-  accountType: AccountType 
+  accountType: AccountType
 
   ethAddress: string //account address in EVM space.
   hash: string //account hash
@@ -180,7 +180,7 @@ interface WrappedEVMAccount {
 
   //What to store for Reciept?  .. doesn't look like runTX really does much with them.  runBlock seem to do more.
   //the returned receipt from runTX is seems downcasted, because it actual has more fields than expected.
-      //research question..  does the RPC server have any logs checking endpoints.. 
+      //research question..  does the RPC server have any logs checking endpoints..
         //doesnt seem like it on a quick search.
         //It does have a hardcoded logsBloom so maybe we need to fill this with correct data.
 
@@ -203,8 +203,8 @@ let transactionStateMap = new Map<string, TransactionState>()
 /**
  * This callback is called when the EVM tries to get an account it does not exist in trie storage or TransactionState
  * We need to build a blob of first read accounts and call SGS so that it can jump the EVM execution to the correct shard
- * @param linkedTX 
- * @param address 
+ * @param linkedTX
+ * @param address
  */
 async function storageMiss(transactionState: TransactionState, address: string) : Promise<boolean> {
 
@@ -212,7 +212,7 @@ async function storageMiss(transactionState: TransactionState, address: string) 
   let transferBlob = transactionState.getTransferBlob()
   let txID = transactionState.linkedTX
 
-  // TODO implment this in shardus global server.  It will send the read accounts and TX info to 
+  // TODO implment this in shardus global server.  It will send the read accounts and TX info to
   // to a remote shard so that we can restart the EVM
   //shardus.jumpToAccount(txID, address, transferBlob )
 
@@ -225,9 +225,9 @@ async function storageMiss(transactionState: TransactionState, address: string) 
 /**
  * This callback is called when the EVM tries to get an CA KVP it does not exist in trie storage or TransactionState
  * We need to build a blob of first read accounts and call SGS so that it can jump the EVM execution to the correct shard
- * @param linkedTX 
- * @param address 
- * @param key 
+ * @param linkedTX
+ * @param address
+ * @param key
  */
 async function contractStorageMiss(transactionState: TransactionState, address: string, key: string) : Promise<boolean> {
 
@@ -235,13 +235,13 @@ async function contractStorageMiss(transactionState: TransactionState, address: 
   let transferBlob = transactionState.getTransferBlob()
   let txID = transactionState.linkedTX
 
-  // TODO implment this in shardus global server.  It will send the read accounts and TX info to 
+  // TODO implment this in shardus global server.  It will send the read accounts and TX info to
   // to a remote shard so that we can restart the EVM
   //shardus.jumpToAccount(txID, address, transferBlob )
 
-  // depending on how thing work out we may also want to jump to 
+  // depending on how thing work out we may also want to jump to
   //shardus.jumpToContractStorage(txID, address, transferBlob )
-  
+
   //throw new Error('this should only happen in a multi sharded environment')
 
   let isRemoteShard = false
@@ -252,13 +252,13 @@ async function contractStorageMiss(transactionState: TransactionState, address: 
  * This callback is called so that we can notify shardus global server that the TX needs to access
  * an account.  If the shardus queueEntry has not involved the account yet there is a chance the call
  * will fail in a way that we need to bubble an Error to halt the evm and fail the TX
- * @param linkedTX 
- * @param address 
- * @param isRead 
- * @returns 
+ * @param linkedTX
+ * @param address
+ * @param isRead
+ * @returns
  */
 function accountInvolved(transactionState: TransactionState, address: string, isRead: boolean) : boolean {
-  //TODO: this will call into shardus global and make sure this TX can continue execution given 
+  //TODO: this will call into shardus global and make sure this TX can continue execution given
   // that we may need to invove an additional account
 
   let txID = transactionState.linkedTX
@@ -273,14 +273,14 @@ function accountInvolved(transactionState: TransactionState, address: string, is
  * This callback is called so that we can notify shardus global server that the TX needs to access
  * an account.  If the shardus queueEntry has not involved the account yet there is a chance the call
  * will fail in a way that we need to bubble an Error to halt the evm and fail the TX
- * @param linkedTX 
- * @param address 
- * @param key 
- * @param isRead 
- * @returns 
+ * @param linkedTX
+ * @param address
+ * @param key
+ * @param isRead
+ * @returns
  */
 function contractStorageInvolved(transactionState: TransactionState, address: string, key: string, isRead: boolean) : boolean {
-  //TODO: this will call into shardus global and make sure this TX can continue execution given 
+  //TODO: this will call into shardus global and make sure this TX can continue execution given
   // that we may need to invove an additional key
 
   let txID = transactionState.linkedTX
@@ -650,7 +650,7 @@ shardus.setup({
 
     //Now we need to get a transaction state object.  For single sharded networks this will be a new object.
     //When we have multiple shards we could have some blob data that wrapped up read accounts.  We will read these accounts
-    //Into the the transaction state init at some point (possibly not here).  This will allow the EVM to run and not have 
+    //Into the the transaction state init at some point (possibly not here).  This will allow the EVM to run and not have
     //A storage miss for accounts that were read on previous shard attempts to exectute this TX
     let transactionState = transactionStateMap.get(txId)
     if(transactionState == null){
@@ -658,7 +658,7 @@ shardus.setup({
       transactionState.initData(shardiumStateManager, {storageMiss, contractStorageMiss, accountInvolved, contractStorageInvolved}, txId, undefined, undefined)
       transactionStateMap.set(txId, transactionState)
     } else {
-      //TODO possibly need a blob to re-init with, but that may happen somewhere else.  Will require a slight interface change 
+      //TODO possibly need a blob to re-init with, but that may happen somewhere else.  Will require a slight interface change
       //to allow shardus to pass in this extra data blob (unless we find a way to run it through wrapped states??)
     }
 
@@ -677,7 +677,7 @@ shardus.setup({
         let ethAccountID = Receipt.createdAddress.toString()
         let shardusAddress = toShardusAddress(ethAccountID)
         let contractAccount = await EVM.stateManager.getAccount(Receipt.createdAddress)
-        let wrappedEthAccount = {timestamp: Date.now(), account: contractAccount, ethAddress: ethAccountID, hash: '', accountType: AccountType.Account}
+        let wrappedEthAccount = {timestamp: Date.now(), account: contractAccount, ethAddress: ethAccountID, hash: '', accountType: AccountType.ContractCode}
 
         updateEthAccountHash(wrappedEthAccount)
 
@@ -694,7 +694,7 @@ shardus.setup({
       //This is important because the EVM could change many accounts or keys that we are not aware of
       //the transactionState is what accumulates the writes that we need
       let {accounts:accountWrites, kvPairs:kvPairWrites } = transactionState.getWrittenAccounts()
-      
+
       //wrap these accounts and keys up and add them to the applyResponse as additional involved accounts
       for(let account of accountWrites.entries()){
         //1. wrap and save/update this to shardium accounts[] map
@@ -720,13 +720,13 @@ shardus.setup({
         //2.
         //Attach the written account data to the apply response.  This will allow it to be shared with other shards if needed.
         //Also wi
-        //shardus.applyResponseAddChangedAccount(applyResponse, accountId, accountObject ) //account value would be the EVM account object 
+        //shardus.applyResponseAddChangedAccount(applyResponse, accountId, accountObject ) //account value would be the EVM account object
       }
       for(let kvPair of kvPairWrites){
         //1. wrap and save/update this to shardium accounts[] map
 
         //2.
-        //shardus.applyResponseAddChangedAccount(applyResponse, accountId, accountValue ) //account value would be the EVM account object 
+        //shardus.applyResponseAddChangedAccount(applyResponse, accountId, accountValue ) //account value would be the EVM account object
         // <or> possibly:
         //shardus.applyResponseAddChangedKeyedAccount(applyResponse, accountId, key, accountValue ) //in this case account value would be the hex string of the value buffer
       }
@@ -894,14 +894,14 @@ shardus.setup({
       //if account?
       let addressStr = updatedAccount.ethAddress
       let ethAccount = updatedAccount.account
-      transactionState.commitAccount(addressStr, ethAccount) //yikes this wants an await.      
+      transactionState.commitAccount(addressStr, ethAccount) //yikes this wants an await.
     } else if(updatedAccount.accountType === AccountType.CA_KVP) {
       //if ContractAccount?
 
       let addressStr = updatedAccount.ethAddress
       let key = updatedAccount.key
       let bufferStr = updatedAccount.value
-      transactionState.commitContractStorage(addressStr, key, bufferStr )      
+      transactionState.commitContractStorage(addressStr, key, bufferStr )
     }
 
     let hashBefore = updatedAccount.hash
