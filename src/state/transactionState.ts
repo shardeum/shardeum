@@ -12,8 +12,8 @@ import { SecureTrie as Trie } from 'merkle-patricia-tree'
 import { ShardiumState } from '.'
 
 
-export type accountEvent = (transactionState: TransactionState, address: string) => Promise<void>
-export type contractStorageEvent = (transactionState: TransactionState, address: string, key: string) => Promise<void>
+export type accountEvent = (transactionState: TransactionState, address: string) => Promise<boolean>
+export type contractStorageEvent = (transactionState: TransactionState, address: string, key: string) => Promise<boolean>
 export type involvedEvent = (transactionState: TransactionState, address: string, isRead: boolean) => boolean
 export type keyInvolvedEvent = (transactionState: TransactionState, address: string, key: string, isRead: boolean) => boolean
 
@@ -131,7 +131,8 @@ export default class TransactionState {
         //TODO:  handle key deletion
       }
 
-      const accountRlp = account.serialize()
+      const accountObj = Account.fromAccountData(account)
+      const accountRlp = accountObj.serialize()
       const accountKeyBuf = address.buf
       await this.shardeumState._trie.put(accountKeyBuf, accountRlp)
 
@@ -180,10 +181,10 @@ export default class TransactionState {
         if(account == undefined){
           //event callback to inidicate we do not have the account in this shard
           // not 100% if we should await this, may need some group discussion
-          await this.accountMissCB(this, addressString)
+          let isRemoteShard = await this.accountMissCB(this, addressString)
 
-          if(canThrow)
-            throw new Error('account not available') //todo smarter throw?
+          if(canThrow && isRemoteShard)
+            throw new Error('account in remote shard, abort') //todo smarter throw?
 
           return undefined //probably not good, can throw is just a temporary test option
         } 
@@ -206,7 +207,8 @@ export default class TransactionState {
         throw new Error('unable to proceed, cant involve account')
       }
 
-      let storedRlp = account.serialize()
+      const accountObj = Account.fromAccountData(account)
+      let storedRlp = accountObj.serialize()
       this.allWrites.set(addressString, storedRlp )
     }
 
@@ -242,9 +244,9 @@ export default class TransactionState {
         //Storage miss!!!, account not on this shard
         if(storedValue == undefined){
           //event callback to inidicate we do not have the account in this shard
-          await this.contractStorageMissCB(this, addressString, keyString)
+          let isRemoteShard = await this.contractStorageMissCB(this, addressString, keyString)
 
-          if(canThrow)
+          if(canThrow && isRemoteShard)
             throw new Error('account not available') //todo smarter throw?
 
           return undefined //probably not good, can throw is just a temporary test option

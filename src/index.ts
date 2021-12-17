@@ -197,7 +197,7 @@ let transactionStateMap = new Map<string, TransactionState>()
  * @param linkedTX 
  * @param address 
  */
-async function storageMiss(transactionState: TransactionState, address: string) : Promise<void> {
+async function storageMiss(transactionState: TransactionState, address: string) : Promise<boolean> {
 
   //Get the first read version of data that we have collected so far
   let transferBlob = transactionState.getTransferBlob()
@@ -207,7 +207,10 @@ async function storageMiss(transactionState: TransactionState, address: string) 
   // to a remote shard so that we can restart the EVM
   //shardus.jumpToAccount(txID, address, transferBlob )
 
-  throw new Error('this should only happen in a multi sharded environment')
+  //throw new Error('this should only happen in a multi sharded environment')
+
+  let isRemoteShard = false
+  return isRemoteShard
 }
 
 /**
@@ -217,7 +220,7 @@ async function storageMiss(transactionState: TransactionState, address: string) 
  * @param address 
  * @param key 
  */
-async function contractStorageMiss(transactionState: TransactionState, address: string, key: string) : Promise<void> {
+async function contractStorageMiss(transactionState: TransactionState, address: string, key: string) : Promise<boolean> {
 
   //Get the first read version of data that we have collected so far
   let transferBlob = transactionState.getTransferBlob()
@@ -230,7 +233,10 @@ async function contractStorageMiss(transactionState: TransactionState, address: 
   // depending on how thing work out we may also want to jump to 
   //shardus.jumpToContractStorage(txID, address, transferBlob )
   
-  throw new Error('this should only happen in a multi sharded environment')
+  //throw new Error('this should only happen in a multi sharded environment')
+
+  let isRemoteShard = false
+  return isRemoteShard
 }
 
 /**
@@ -638,7 +644,7 @@ shardus.setup({
     //Into the the transaction state init at some point (possibly not here).  This will allow the EVM to run and not have 
     //A storage miss for accounts that were read on previous shard attempts to exectute this TX
     let transactionState = transactionStateMap.get(txId)
-    if(transactionState === null){
+    if(transactionState == null){
       transactionState = new TransactionState()
       transactionState.initData(shardiumStateManager, {storageMiss, contractStorageMiss, accountInvolved, contractStorageInvolved}, txId, undefined, undefined)
       transactionStateMap.set(txId, transactionState)
@@ -846,7 +852,7 @@ shardus.setup({
     // oof, we dont have the TXID!!!
     let txId = applyResponse?.txId
     let transactionState = transactionStateMap.get(txId)
-    if(transactionState === null){
+    if(transactionState == null){
       transactionState = new TransactionState()
       transactionState.initData(shardiumStateManager, {storageMiss, contractStorageMiss, accountInvolved, contractStorageInvolved}, txId, undefined, undefined)
       transactionStateMap.set(txId, transactionState)
