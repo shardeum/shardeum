@@ -701,9 +701,21 @@ shardus.setup({
         let addressStr = account[0]
         let accountObj = Account.fromRlpSerializedAccount(account[1])
 
-        let wrappedAccount = {timestamp: Date.now(), accountObj, ethAddress: addressStr, hash: '', accountType: AccountType.Account}
+        let wrappedEVMAccount = {timestamp: Date.now(), accountObj, ethAddress: addressStr, hash: '', accountType: AccountType.Account}
 
-        accounts[addressStr] = wrappedAccount
+        //accounts[addressStr] = wrappedEVMAccount  //OOPS dont commit this yet. this will happen later in updateAccountFull   (or setAccountData)
+
+        //instead we need to wrap it:
+
+        // I think data is unwrapped too much and we should be using wrappedEVMAccount directly as data
+        // const wrapped = {
+        //   accountId: addressStr,
+        //   stateId: safeBufferToHex(wrappedEthAccount.account.stateRoot), //todo decide on if we use eth hash or our own hash..
+        //   data: wrappedEVMAccount.account,
+        //   timestamp: wrappedEthAccount.timestamp
+        // }
+
+        // and the added it to the apply response (not implemented yet)
 
         //2.
         //Attach the written account data to the apply response.  This will allow it to be shared with other shards if needed.
