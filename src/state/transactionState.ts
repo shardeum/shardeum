@@ -33,22 +33,29 @@ export interface ShardeumStorageCallbacks {
    //would be nice if shardus called put account data on a list of accounts for a given TX !!!
 
 export default class TransactionState {
+    //Shardus TXID
     linkedTX: string
 
+    // link to the shardeumState singleton (todo refactor this as non member instance)
     shardeumState:ShardiumState
 
     // account data
-    firstReads: Map<string, Buffer>
-    allWrites: Map<string, Buffer>
+    firstAccountReads: Map<string, Buffer>
+    allAccountWrites: Map<string, Buffer>
 
     // contract account key: value data
     firstContractStorageReads: Map<string,Map<string, Buffer>>
     allContractStorageWrites: Map<string,Map<string, Buffer>>
 
+    // contract account key: value data
+    firstContractBytesReads: Map<string,Map<string, Buffer>>
+    allContractBytesWrites: Map<string,Map<string, Buffer>>
+
     // pending contract storage commits
     pendingContractStorageCommits: Map<string,Map<string, Buffer>>
+    pendingContractBytesCommits: Map<string,Map<string, Buffer>>
 
-    // touched CAs:
+    // touched CAs:  //TBD step 2.+ see docs
     touchedCAs: Set<string>
 
     // callbacks
@@ -68,8 +75,8 @@ export default class TransactionState {
       this.accountInvolvedCB = callbacks.accountInvolved
       this.contractStorageInvolvedCB = callbacks.contractStorageInvolved
 
-      this.firstReads = new Map()
-      this.allWrites = new Map()
+      this.firstAccountReads = new Map()
+      this.allAccountWrites = new Map()
 
       this.firstContractStorageReads = new Map()
       this.allContractStorageWrites = new Map()
@@ -80,7 +87,7 @@ export default class TransactionState {
 
       //load in the first reads
       if(firstReads != null){
-        this.firstReads = firstReads
+        this.firstAccountReads = firstReads
       }
 
       //load in the first contract storage reads
@@ -91,12 +98,12 @@ export default class TransactionState {
 
     getWrittenAccounts(){
       //let the apply function take care of wrapping these accounts?
-      return {accounts:this.allWrites, kvPairs:this.allContractStorageWrites}
+      return {accounts:this.allAccountWrites, kvPairs:this.allContractStorageWrites}
     }
 
     getTransferBlob(){
       //this is the data needed to start computation on another shard
-      return {accounts:this.firstReads, kvPairs:this.firstContractStorageReads}
+      return {accounts:this.firstAccountReads, kvPairs:this.firstContractStorageReads}
     }
 
     /**
@@ -182,13 +189,13 @@ export default class TransactionState {
         const addressString = address.buf.toString('hex')
 
         if(originalOnly === false){
-          if(this.allWrites.has(addressString)){
-              let storedRlp = this.allWrites.get(addressString)
+          if(this.allAccountWrites.has(addressString)){
+              let storedRlp = this.allAccountWrites.get(addressString)
               return storedRlp ? Account.fromRlpSerializedAccount(storedRlp) : undefined
           }
         }
-        if(this.firstReads.has(addressString)){
-            let storedRlp = this.firstReads.get(addressString)
+        if(this.firstAccountReads.has(addressString)){
+            let storedRlp = this.firstAccountReads.get(addressString)
             return storedRlp ? Account.fromRlpSerializedAccount(storedRlp) : undefined
         }
 
@@ -214,7 +221,7 @@ export default class TransactionState {
 
         // storage hit!!! data exists in this shard
         //put this in our first reads map
-        this.firstReads.set(addressString, storedRlp)
+        this.firstAccountReads.set(addressString, storedRlp)
         return account
     }
 
@@ -232,20 +239,20 @@ export default class TransactionState {
 
       const accountObj = Account.fromAccountData(account)
       let storedRlp = accountObj.serialize()
-      this.allWrites.set(addressString, storedRlp )
+      this.allAccountWrites.set(addressString, storedRlp )
     }
 
     async getContractCode(worldStateTrie:Trie, address: Address, originalOnly:boolean, canThrow: boolean): Promise<Buffer> {
         const addressString = address.buf.toString('hex')
 
         if(originalOnly === false){
-            if(this.allWrites.has(addressString)){
-                let storedRlp = this.allWrites.get(addressString)
+            if(this.allAccountWrites.has(addressString)){
+                let storedRlp = this.allAccountWrites.get(addressString)
                 return storedRlp ? Account.fromRlpSerializedAccount(storedRlp).codeHash : undefined
             }
         }
-        if(this.firstReads.has(addressString)){
-            let storedRlp = this.firstReads.get(addressString)
+        if(this.firstAccountReads.has(addressString)){
+            let storedRlp = this.firstAccountReads.get(addressString)
             return storedRlp ? Account.fromRlpSerializedAccount(storedRlp).codeHash : undefined
         }
 
@@ -271,7 +278,7 @@ export default class TransactionState {
 
         // storage hit!!! data exists in this shard
         //put this in our first reads map
-        this.firstReads.set(addressString, storedRlp)
+        this.firstAccountReads.set(addressString, storedRlp)
         return account.codeHash
     }
 
@@ -284,7 +291,7 @@ export default class TransactionState {
 
         const accountObj = Account.fromAccountData(account)
         let storedRlp = accountObj.serialize()
-        this.allWrites.set(addressString, storedRlp )
+        this.allAccountWrites.set(addressString, storedRlp )
     }
 
     async getContractStorage(storage:Trie, address: Address, key: Buffer, originalOnly:boolean, canThrow: boolean): Promise<Buffer> {

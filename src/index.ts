@@ -147,10 +147,10 @@ const shardus = shardusFactory(config)
  */
 
 enum AccountType {
-  Account, // Should/can we specify EOA vs CA?
-  CA_KVP,  // Contract account key value pair
+  Account, //  EOA or CA
+  ContractStorage,  // Contract storage key value pair
   ContractCode, // Contract code bytes
-  Reciept, //This holds logs for a TX
+  Receipt, //This holds logs for a TX
 }
 
 /**
@@ -206,7 +206,7 @@ let transactionStateMap = new Map<string, TransactionState>()
  * @param linkedTX
  * @param address
  */
-async function storageMiss(transactionState: TransactionState, address: string) : Promise<boolean> {
+async function accountMiss(transactionState: TransactionState, address: string) : Promise<boolean> {
 
   //Get the first read version of data that we have collected so far
   let transferBlob = transactionState.getTransferBlob()
@@ -234,6 +234,12 @@ async function contractStorageMiss(transactionState: TransactionState, address: 
   //Get the first read version of data that we have collected so far
   let transferBlob = transactionState.getTransferBlob()
   let txID = transactionState.linkedTX
+
+
+  //let isRemote = shardus.isRemoteShard(address)
+  // if(isRemote === false){
+  //   return false
+  // }
 
   // TODO implment this in shardus global server.  It will send the read accounts and TX info to
   // to a remote shard so that we can restart the EVM
@@ -263,7 +269,7 @@ function accountInvolved(transactionState: TransactionState, address: string, is
 
   let txID = transactionState.linkedTX
 
-  //TODO implment this shardus function.
+  //TODO implement this shardus function.
   //shardus.accountInvolved(txID, address, isRead)
 
   return true
@@ -285,7 +291,7 @@ function contractStorageInvolved(transactionState: TransactionState, address: st
 
   let txID = transactionState.linkedTX
 
-  //TODO implment this shardus function.
+  //TODO implement this shardus function.
   //shardus.accountInvolved(txID, address, isRead)
 
   return true
@@ -655,7 +661,7 @@ shardus.setup({
     let transactionState = transactionStateMap.get(txId)
     if(transactionState == null){
       transactionState = new TransactionState()
-      transactionState.initData(shardiumStateManager, {storageMiss, contractStorageMiss, accountInvolved, contractStorageInvolved}, txId, undefined, undefined)
+      transactionState.initData(shardiumStateManager, {storageMiss: accountMiss, contractStorageMiss, accountInvolved, contractStorageInvolved}, txId, undefined, undefined)
       transactionStateMap.set(txId, transactionState)
     } else {
       //TODO possibly need a blob to re-init with, but that may happen somewhere else.  Will require a slight interface change
@@ -808,7 +814,7 @@ shardus.setup({
 
         shardiumStateManager.setAccountExternal(addressString, evmAccount)
 
-      } else if(wrappedEVMAccount.accountType === AccountType.CA_KVP){
+      } else if(wrappedEVMAccount.accountType === AccountType.ContractStorage){
 
         let addressString = wrappedEVMAccount.ethAddress
         let keyString = wrappedEVMAccount.key
@@ -884,7 +890,7 @@ shardus.setup({
     let transactionState = transactionStateMap.get(txId)
     if(transactionState == null){
       transactionState = new TransactionState()
-      transactionState.initData(shardiumStateManager, {storageMiss, contractStorageMiss, accountInvolved, contractStorageInvolved}, txId, undefined, undefined)
+      transactionState.initData(shardiumStateManager, {storageMiss: accountMiss, contractStorageMiss, accountInvolved, contractStorageInvolved}, txId, undefined, undefined)
       transactionStateMap.set(txId, transactionState)
     } else {
       //TODO possibly need a blob to re-init with?
@@ -895,7 +901,7 @@ shardus.setup({
       let addressStr = updatedAccount.ethAddress
       let ethAccount = updatedAccount.account
       transactionState.commitAccount(addressStr, ethAccount) //yikes this wants an await.
-    } else if(updatedAccount.accountType === AccountType.CA_KVP) {
+    } else if(updatedAccount.accountType === AccountType.ContractStorage) {
       //if ContractAccount?
 
       let addressStr = updatedAccount.ethAddress
