@@ -306,9 +306,6 @@ export default class TransactionState {
         return
       }
 
-      account.codeHash = codeHash
-      this.putAccount(address, account)
-
       let contractBytesWrites = this.allContractBytesWrites.get(addressString)
       if(contractBytesWrites == null){
         contractBytesWrites = new Map()
