@@ -213,30 +213,28 @@ export default class ShardiumState implements StateManager {
    * @param value - The value of the `code`
    */
   async putContractCode(address: Address, value: Buffer): Promise<void> {
-
-      let account: Account = await this.getAccount(address)
-      const codeHash = keccak256(value)
-      if (codeHash.equals(KECCAK256_NULL)) {
-          return
-      }
-      account.codeHash = codeHash
+    const account = await this.getAccount(address)
 
       if(this._transactionState != null){
           //side run system on the side for now
-          this._transactionState.putContractCode(address, account)
+          this._transactionState.putContractCode(address, account, value)
       }
 
       // Original implmentation:
-      if (this.DEBUG) {
-          debug(
-              `Save account address=${address} nonce=${account.nonce} balance=${
-                  account.balance
-              } contract=${account.isContract() ? 'yes' : 'no'} empty=${account.isEmpty() ? 'yes' : 'no'}`
-          )
-      }
 
-      this._cache.put(address, account)
-      this.touchAccount(address)
+    const codeHash = keccak256(value)
+
+    if (codeHash.equals(KECCAK256_NULL)) {
+      return
+    }
+
+    await this._trie.db.put(codeHash, value)
+
+    if (this.DEBUG) {
+      debug(`Update codeHash (-> ${short(codeHash)}) for account ${address}`)
+    }
+    account.codeHash = codeHash
+    await this.putAccount(address, account)
   }
 
   /**
@@ -253,11 +251,12 @@ export default class ShardiumState implements StateManager {
       }
 
       // Original implmentation:
-      const account = await this._cache.getOrLoad(address)
-      if (!account.isContract() || !account.codeHash) {
-          return Buffer.alloc(0)
-      }
-      return account.codeHash
+    const account = await this.getAccount(address)
+    if (!account.isContract()) {
+      return Buffer.alloc(0)
+    }
+    const code = await this._trie.db.get(account.codeHash)
+    return code ?? Buffer.alloc(0)
   }
 
   /**

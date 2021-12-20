@@ -1,13 +1,13 @@
 
 import {
-    Account,
-    Address,
-    toBuffer,
-    keccak256,
-    KECCAK256_NULL,
-    rlp,
-    unpadBuffer,
-  } from 'ethereumjs-util'
+  Account,
+  Address,
+  toBuffer,
+  keccak256,
+  KECCAK256_NULL,
+  rlp,
+  unpadBuffer, bufferToHex,
+} from 'ethereumjs-util'
 import { SecureTrie as Trie } from 'merkle-patricia-tree'
 import { ShardiumState } from '.'
 import {short} from "@ethereumjs/vm/src/evm/opcodes/index";
@@ -81,7 +81,11 @@ export default class TransactionState {
       this.firstContractStorageReads = new Map()
       this.allContractStorageWrites = new Map()
 
+      this.firstContractBytesReads = new Map()
+      this.allContractBytesWrites = new Map()
+
       this.pendingContractStorageCommits = new Map()
+      this.pendingContractBytesCommits = new Map()
 
       this.touchedCAs = new Set()
 
@@ -98,7 +102,7 @@ export default class TransactionState {
 
     getWrittenAccounts(){
       //let the apply function take care of wrapping these accounts?
-      return {accounts:this.allAccountWrites, kvPairs:this.allContractStorageWrites}
+      return {accounts:this.allAccountWrites, contractStorages:this.allContractStorageWrites, contractBytes: this.allContractBytesWrites}
     }
 
     getTransferBlob(){
@@ -118,7 +122,7 @@ export default class TransactionState {
       this.shardeumState._trie.checkpoint()
 
       //IFF this is a contract account we need to update any pending contract storage values!!
-      if(this.pendingContractStorageCommits.has(addressString)){
+      if(this.pendingContractStorageCommits.has(addressString)) {
         let contractStorageCommits = this.pendingContractStorageCommits.get(addressString)
 
         let storageTrie = await this.shardeumState._getStorageTrie(address)
@@ -138,6 +142,20 @@ export default class TransactionState {
         account.stateRoot = storageTrie.root
         //TODO:  handle key deletion
       }
+      if(this.pendingContractBytesCommits.has(addressString)) {
+        let contractBytesCommits = this.pendingContractBytesCommits.get(addressString)
+
+        let storageTrie = await this.shardeumState._getStorageTrie(address)
+        storageTrie.checkpoint()
+        for(let [codeHash, codeByte] of contractBytesCommits){
+          let codeHashBuffer = Buffer.from(codeHash, 'hex')
+          storageTrie.put(codeHashBuffer, codeByte)
+        }
+        storageTrie.commit()
+
+        //update the accounts state root!
+        account.stateRoot = storageTrie.root
+      }
 
       const accountObj = Account.fromAccountData(account)
       const accountRlp = accountObj.serialize()
@@ -153,26 +171,20 @@ export default class TransactionState {
     /**
      * Call this from dapp.updateAccountFull / updateAccountPartial to commit changes to the EVM trie
      * @param addressString
-     * @param account
-     * @param value
+     * @param codeHash
+     * @param contractByte
      */
-    async commitContractCode(addressString:string, account: Account){
-        //store all writes to the persistant trie.
-        this.shardeumState._trie.checkpoint()
-        let address: Address = Address.fromString(addressString)
-
-        const accountObj = Account.fromAccountData(account)
-        const accountRlp = accountObj.serialize()
-        const accountKeyBuf = address.buf
-        await this.shardeumState._trie.put(accountKeyBuf, accountRlp)
-
-        this.shardeumState._trie.commit()
-
-        //TODO:  handle account deletion, if account is null. This is not a shardus concept yet
-        //await this._trie.del(keyBuf)
+    commitContractBytes(addressString:string, codeHash: string, contractByte: Buffer){
+      //only put this in the pending commit structure. we will do the real commit when updating the account
+      if(this.pendingContractBytesCommits.has(addressString)){
+        let contractBytesCommit = this.pendingContractBytesCommits.get(addressString)
+        if(contractBytesCommit.has(codeHash)){
+          contractBytesCommit.set(codeHash, contractByte)
+        }
+      }
     }
 
-    commitContractStorage(addressString:string, keyString:string, value:string){
+    commitContractStorage(addressString:string, keyString:string, value:string) {
       //store all writes to the persistant trie.
 
       //only put this in the pending commit structure. we will do the real commit when updating the account
@@ -282,16 +294,28 @@ export default class TransactionState {
         return account.codeHash
     }
 
-    putContractCode(address: Address, account: Account) {
-        const addressString = address.buf.toString('hex')
+    putContractCode(address: Address, account: Account, value: Buffer) {
+      const addressString = address.buf.toString('hex')
 
-        if(this.accountInvolvedCB(this, addressString, false) === false){
-            throw new Error('unable to proceed, cant involve account')
-        }
+      if(this.accountInvolvedCB(this, addressString, false) === false){
+        throw new Error('unable to proceed, cant involve contract storage')
+      }
 
-        const accountObj = Account.fromAccountData(account)
-        let storedRlp = accountObj.serialize()
-        this.allAccountWrites.set(addressString, storedRlp )
+      const codeHash = keccak256(value)
+      if (codeHash.equals(KECCAK256_NULL)) {
+        return
+      }
+
+      account.codeHash = codeHash
+      this.putAccount(address, account)
+
+      let contractBytesWrites = this.allContractBytesWrites.get(addressString)
+      if(contractBytesWrites == null){
+        contractBytesWrites = new Map()
+        this.allContractBytesWrites.set(addressString, contractBytesWrites)
+      }
+      contractBytesWrites.set(bufferToHex(codeHash), value )
+        this.touchedCAs.add(addressString)
     }
 
     async getContractStorage(storage:Trie, address: Address, key: Buffer, originalOnly:boolean, canThrow: boolean): Promise<Buffer> {
