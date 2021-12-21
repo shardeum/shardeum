@@ -161,8 +161,13 @@ export default class TransactionState {
       //hmm some hacks to fix data after getting copied around..
       if(typeof account.nonce === 'string'){
         //account.nonce = new BN(account.nonce)
+
         //@ts-ignore
-        account.nonce = '0x' + account.nonce
+        if(account.nonce.startsWith('0x') === false){
+          //@ts-ignore
+          account.nonce = '0x' + account.nonce
+        }
+
       }
       // if(typeof account.balance === 'string'){
       //   account.balance = new BN('0x' + account.balance)
@@ -171,7 +176,10 @@ export default class TransactionState {
         
         //account.balance = new BN( account.balance, 'hex')
         //@ts-ignore
-        account.balance = '0x' + account.balance
+        if(account.balance.startsWith('0x') === false){
+          //@ts-ignore
+          account.balance = '0x' + account.balance
+        }
       }
 
       account.codeHash = Buffer.from(account.codeHash)
@@ -387,8 +395,8 @@ export default class TransactionState {
           if(canThrow && isRemoteShard)
             throw new Error('account not available') //todo smarter throw?
 
-          
-          return Buffer.alloc(0) 
+          //rlp.decode(null) returns this:
+          return Buffer.from([]) 
         }
 
         // storage hit!!! data exists in this shard

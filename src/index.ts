@@ -681,11 +681,11 @@ shardus.setup({
 
       console.log('DBG', 'applied tx', txId, Receipt)
 
-      //   appliedTxs[txId] = {
-      //   txId,
-      //   injected: tx,
-      //   receipt: { ...Receipt, nonce: transaction.nonce.toString('hex') },
-      // }
+      appliedTxs[txId] = {
+        txId,
+        injected: tx,
+        receipt: { ...Receipt, nonce: transaction.nonce.toString('hex') },
+      }
 
       //get a list of accounts or CA keys that have been written to
       //This is important because the EVM could change many accounts or keys that we are not aware of
