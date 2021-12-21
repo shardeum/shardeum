@@ -11,6 +11,7 @@ import {
 import { SecureTrie as Trie } from 'merkle-patricia-tree'
 import { ShardiumState } from '.'
 import {short} from "@ethereumjs/vm/src/evm/opcodes/index";
+import { BN } from 'bn.js';
 
 
 export type accountEvent = (transactionState: TransactionState, address: string) => Promise<boolean>
@@ -48,8 +49,8 @@ export default class TransactionState {
     allContractStorageWrites: Map<string,Map<string, Buffer>>
 
     // contract account key: value data
-    firstContractBytesReads: Map<string,Map<string, Buffer>>
-    allContractBytesWrites: Map<string,Map<string, Buffer>>
+    firstContractBytesReads: Map<string, Buffer>
+    allContractBytesWrites: Map<string, Buffer>
 
     // pending contract storage commits
     pendingContractStorageCommits: Map<string,Map<string, Buffer>>
@@ -157,6 +158,25 @@ export default class TransactionState {
         account.stateRoot = storageTrie.root
       }
 
+      //hmm some hacks to fix data after getting copied around..
+      if(typeof account.nonce === 'string'){
+        //account.nonce = new BN(account.nonce)
+        //@ts-ignore
+        account.nonce = '0x' + account.nonce
+      }
+      // if(typeof account.balance === 'string'){
+      //   account.balance = new BN('0x' + account.balance)
+      // }
+      if(typeof account.balance === 'string'){
+        
+        //account.balance = new BN( account.balance, 'hex')
+        //@ts-ignore
+        account.balance = '0x' + account.balance
+      }
+
+      account.codeHash = Buffer.from(account.codeHash)
+      account.stateRoot = Buffer.from(account.stateRoot)
+
       const accountObj = Account.fromAccountData(account)
       const accountRlp = accountObj.serialize()
       const accountKeyBuf = address.buf
@@ -228,7 +248,14 @@ export default class TransactionState {
           if(canThrow && isRemoteShard)
             throw new Error('account in remote shard, abort') //todo smarter throw?
 
-          return undefined //probably not good, can throw is just a temporary test option
+          //return a new unitizlied account
+          account = new Account()
+          //;(account as any).virtual = true
+          //this._update(address, account, false, false, true)
+
+          //todo need to insert it into a map of new / virtual accounts?
+
+          return account
         }
 
         // storage hit!!! data exists in this shard
@@ -257,41 +284,48 @@ export default class TransactionState {
     async getContractCode(worldStateTrie:Trie, address: Address, originalOnly:boolean, canThrow: boolean): Promise<Buffer> {
         const addressString = address.buf.toString('hex')
 
+        //first get the account so we can have the correct code hash to look at
+        let contractAccount = await this.getAccount(worldStateTrie, address, originalOnly, canThrow)
+        let codeHash = contractAccount.codeHash
+        let codeHashStr = codeHash.toString('hex')
+
         if(originalOnly === false){
-            if(this.allAccountWrites.has(addressString)){
-                let storedRlp = this.allAccountWrites.get(addressString)
-                return storedRlp ? Account.fromRlpSerializedAccount(storedRlp).codeHash : undefined
+            if(this.allContractBytesWrites.has(codeHashStr)){
+                let storedRlp = this.allContractBytesWrites.get(codeHashStr)
+                return storedRlp
             }
         }
-        if(this.firstAccountReads.has(addressString)){
-            let storedRlp = this.firstAccountReads.get(addressString)
-            return storedRlp ? Account.fromRlpSerializedAccount(storedRlp).codeHash : undefined
+        if(this.firstContractBytesReads.has(codeHashStr)){
+            let storedRlp = this.firstContractBytesReads.get(codeHashStr)
+            return storedRlp
         }
 
-        if(this.accountInvolvedCB(this, addressString, true) === false){
-            throw new Error('unable to proceed, cant involve account')
+        if(this.accountInvolvedCB(this, codeHashStr, true) === false){
+            throw new Error('unable to proceed, cant involve contract bytes')
         }
 
         //see if we can get it from the storage trie.
-        let storedRlp = await worldStateTrie.get(address.buf)
-        let account = storedRlp ? Account.fromRlpSerializedAccount(storedRlp) : undefined
+        let storedRlp = await worldStateTrie.get(codeHash)
+        let codeBytes = storedRlp // seems to be no conversio needed for codebytes.
 
         //Storage miss!!!, account not on this shard
-        if(account == undefined){
+        if(codeBytes == undefined){
             //event callback to inidicate we do not have the account in this shard
             // not 100% if we should await this, may need some group discussion
-            let isRemoteShard = await this.accountMissCB(this, addressString)
+            let isRemoteShard = await this.accountMissCB(this, codeHashStr)
 
             if(canThrow && isRemoteShard)
-                throw new Error('account in remote shard, abort') //todo smarter throw?
+                throw new Error('codeBytes in remote shard, abort') //todo smarter throw?
 
-            return undefined //probably not good, can throw is just a temporary test option
+            //return unitiazlied new code bytes
+            //todo need to insert it into a map of new / virtual accounts?
+            return Buffer.alloc(0) 
         }
 
         // storage hit!!! data exists in this shard
         //put this in our first reads map
-        this.firstAccountReads.set(addressString, storedRlp)
-        return account.codeHash
+        this.firstContractBytesReads.set(codeHashStr, storedRlp)
+        return codeBytes
     }
 
     putContractCode(address: Address, account: Account, value: Buffer) {
@@ -306,13 +340,14 @@ export default class TransactionState {
         return
       }
 
-      let contractBytesWrites = this.allContractBytesWrites.get(addressString)
-      if(contractBytesWrites == null){
-        contractBytesWrites = new Map()
-        this.allContractBytesWrites.set(addressString, contractBytesWrites)
-      }
-      contractBytesWrites.set(bufferToHex(codeHash), value )
-        this.touchedCAs.add(addressString)
+      // let contractBytesWrites = this.allContractBytesWrites.get(addressString)
+      // if(contractBytesWrites == null){
+      //   contractBytesWrites = new Map()
+      //   this.allContractBytesWrites.set(addressString, contractBytesWrites)
+      // }
+
+      this.allContractBytesWrites.set(bufferToHex(codeHash), value )
+      this.touchedCAs.add(addressString)
     }
 
     async getContractStorage(storage:Trie, address: Address, key: Buffer, originalOnly:boolean, canThrow: boolean): Promise<Buffer> {
@@ -352,7 +387,8 @@ export default class TransactionState {
           if(canThrow && isRemoteShard)
             throw new Error('account not available') //todo smarter throw?
 
-          return undefined //probably not good, can throw is just a temporary test option
+          
+          return Buffer.alloc(0) 
         }
 
         // storage hit!!! data exists in this shard

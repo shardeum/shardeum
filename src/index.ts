@@ -690,8 +690,50 @@ shardus.setup({
       //get a list of accounts or CA keys that have been written to
       //This is important because the EVM could change many accounts or keys that we are not aware of
       //the transactionState is what accumulates the writes that we need
-      let {accounts:accountWrites, contractStorages:kvPairWrites, contractBytes: contractBytesWrites } = transactionState.getWrittenAccounts()
+      let {accounts:accountWrites, contractStorages:contractStorageWrites, contractBytes: contractBytesWrites } = transactionState.getWrittenAccounts()
 
+
+      for(let contractStorageEntry of contractStorageWrites.entries()){
+        //1. wrap and save/update this to shardium accounts[] map
+          let addressStr = contractStorageEntry[0]
+          let contractStorageWrites = contractStorageEntry[1]
+          for (let [key, value] of contractStorageWrites) {
+              let wrappedEVMAccount: WrappedEVMAccount = {timestamp: Date.now(), key, value, ethAddress: addressStr, hash: '', accountType: AccountType.ContractStorage}
+              const wrappedChangedAccount = {
+                  accountId: toShardusAddress(addressStr),
+                  stateId: '', // not sure about stateId
+                  data: wrappedEVMAccount,
+                  timestamp: wrappedEVMAccount.timestamp
+              }
+              //attach to applyResponse
+              //shardus.applyResponseAddChangedAccount(applyResponse, accountId, accountValue ) //account value would be the EVM account object
+              shardus.applyResponseAddChangedAccount(applyResponse, wrappedChangedAccount.accountId, wrappedChangedAccount, txId, wrappedChangedAccount.timestamp)
+
+          }
+      }
+
+      for (let contractBytesEntry of contractBytesWrites.entries()) {
+          //1. wrap and save/update this to shardium accounts[] map
+          let addressStr = contractBytesEntry[0]
+          let contractBytesWrites = contractBytesEntry[1]
+
+          // todo need to remove this loop? (look at the code in transaction state first though)
+          //for (let [codeHash, codeByte] of contractBytesWrites) {
+            
+          let wrappedEVMAccount: WrappedEVMAccount = {timestamp: Date.now(), codeHash:addressStr, codeByte:contractBytesWrites, ethAddress: addressStr, hash: '', accountType: AccountType.ContractCode}
+          const wrappedChangedAccount = {
+              accountId: toShardusAddress(addressStr),
+              stateId: '', // not sure about stateId
+              data: wrappedEVMAccount,
+              timestamp: wrappedEVMAccount.timestamp
+          }
+          //attach to applyResponse
+          shardus.applyResponseAddChangedAccount(applyResponse, wrappedChangedAccount.accountId, wrappedChangedAccount, txId, wrappedChangedAccount.timestamp)
+
+          //}
+      }
+
+      // Handle Account type last, because CAs may depend on CA:Storage or CA:Bytecode updates
       //wrap these accounts and keys up and add them to the applyResponse as additional involved accounts
       for(let account of accountWrites.entries()){
         //1. wrap and save/update this to shardium accounts[] map
@@ -715,51 +757,12 @@ shardus.setup({
         // and the added it to the apply response (not implemented yet)
 
         //Attach the written account data to the apply response.  This will allow it to be shared with other shards if needed.
-          shardus.applyResponseAddChangedAccount(applyResponse, wrappedChangedAccount.accountId, wrappedChangedAccount, txId, wrappedChangedAccount.timestamp)
-      }
-      for(let kvPair of kvPairWrites){
-        //1. wrap and save/update this to shardium accounts[] map
-          let addressStr = kvPair[0]
-          let contractStorageWrites = kvPair[1]
-          for (let [key, value] of contractStorageWrites) {
-              let wrappedEVMAccount: WrappedEVMAccount = {timestamp: Date.now(), key, value, ethAddress: addressStr, hash: '', accountType: AccountType.ContractStorage}
-              const wrappedChangedAccount = {
-                  accountId: toShardusAddress(addressStr),
-                  stateId: '', // not sure about stateId
-                  data: wrappedEVMAccount,
-                  timestamp: wrappedEVMAccount.timestamp
-              }
-              //attach to applyResponse
-              //shardus.applyResponseAddChangedAccount(applyResponse, accountId, accountValue ) //account value would be the EVM account object
-              shardus.applyResponseAddChangedAccount(applyResponse, wrappedChangedAccount.accountId, wrappedChangedAccount, txId, wrappedChangedAccount.timestamp)
-
-          }
-
-
-        //shardus.applyResponseAddChangedKeyedAccount(applyResponse, accountId, key, accountValue ) //in this case account value would be the hex string of the value buffer
+        shardus.applyResponseAddChangedAccount(applyResponse, wrappedChangedAccount.accountId, wrappedChangedAccount, txId, wrappedChangedAccount.timestamp)
       }
 
-      for (let contractByte of contractBytesWrites) {
-          //1. wrap and save/update this to shardium accounts[] map
-          let addressStr = contractByte[0]
-          let contractBytesWrites = contractByte[1]
-          for (let [codeHash, codeByte] of contractBytesWrites) {
-              let wrappedEVMAccount: WrappedEVMAccount = {timestamp: Date.now(), codeHash, codeByte, ethAddress: addressStr, hash: '', accountType: AccountType.ContractCode}
-              const wrappedChangedAccount = {
-                  accountId: toShardusAddress(addressStr),
-                  stateId: '', // not sure about stateId
-                  data: wrappedEVMAccount,
-                  timestamp: wrappedEVMAccount.timestamp
-              }
-              //attach to applyResponse
-              shardus.applyResponseAddChangedAccount(applyResponse, wrappedChangedAccount.accountId, wrappedChangedAccount, txId, wrappedChangedAccount.timestamp)
-
-          }
-      }
 
       //TODO also create an account for the receipt (nested in the returned Receipt should be a receipt with a list of logs)
 
-      //TODO also create an account for any created bytecode (contract code)
 
     } catch (e) {
 
@@ -835,7 +838,7 @@ shardus.setup({
 
         let addressString = wrappedEVMAccount.ethAddress
         let keyString = wrappedEVMAccount.key
-        let bufferStr = wrappedEVMAccount.value
+        let bufferStr = wrappedEVMAccount.value.toString('hex')
 
         shardiumStateManager.setContractAccountKeyValueExternal(addressString, keyString, bufferStr)
       }
