@@ -173,7 +173,7 @@ export default class TransactionState {
       //   account.balance = new BN('0x' + account.balance)
       // }
       if(typeof account.balance === 'string'){
-        
+
         //account.balance = new BN( account.balance, 'hex')
         //@ts-ignore
         if(account.balance.startsWith('0x') === false){
@@ -278,7 +278,8 @@ export default class TransactionState {
      * @param account - The account to store
      */
     putAccount(address: Address, account: Account) {
-      const addressString = address.buf.toString('hex')
+      const addressString = address.toString()
+      console.log('Running putAccount: addressString', addressString)
 
       if(this.accountInvolvedCB(this, addressString, false) === false){
         throw new Error('unable to proceed, cant involve account')
@@ -327,7 +328,7 @@ export default class TransactionState {
 
             //return unitiazlied new code bytes
             //todo need to insert it into a map of new / virtual accounts?
-            return Buffer.alloc(0) 
+            return Buffer.alloc(0)
         }
 
         // storage hit!!! data exists in this shard
@@ -396,7 +397,7 @@ export default class TransactionState {
             throw new Error('account not available') //todo smarter throw?
 
           //rlp.decode(null) returns this:
-          return Buffer.from([]) 
+          return Buffer.from([])
         }
 
         // storage hit!!! data exists in this shard

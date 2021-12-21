@@ -1,23 +1,23 @@
 import {add} from "lodash";
 
 const Set = require('core-js-pure/es/set')
-import { debug as createDebugLogger } from 'debug'
-import { SecureTrie as Trie } from 'merkle-patricia-tree'
+import {debug as createDebugLogger} from 'debug'
+import {SecureTrie as Trie} from 'merkle-patricia-tree'
 import {
-    Account,
-    Address,
-    toBuffer,
-    keccak256,
-    KECCAK256_NULL,
-    rlp,
-    unpadBuffer, bufferToHex,
+  Account,
+  Address,
+  toBuffer,
+  keccak256,
+  KECCAK256_NULL,
+  rlp,
+  unpadBuffer, bufferToHex,
 } from 'ethereumjs-util'
-import Common, { Chain, Hardfork } from '@ethereumjs/common'
-import { StateManager, StorageDump } from '@ethereumjs/vm/src/state/interface'
+import Common, {Chain, Hardfork} from '@ethereumjs/common'
+import {StateManager, StorageDump} from '@ethereumjs/vm/src/state/interface'
 import Cache from './cache'
 //import { getActivePrecompiles, ripemdPrecompileAddress } from '@ethereumjs/vm/src/evm/precompiles'
 //import { short } from '@ethereumjs/vm/src/evm/opcodes'
-import { AccessList, AccessListItem } from '@ethereumjs/tx'
+import {AccessList, AccessListItem} from '@ethereumjs/tx'
 import TransactionState from './transactionState'
 
 const debug = createDebugLogger('vm:state')
@@ -26,13 +26,13 @@ type AddressHex = string
 
 //SHARDIUM hack.  pulled from '@ethereumjs/vm/src/evm/opcodes' to make things run
 function short(buffer: Buffer): string {
-    const MAX_LENGTH = 50
-    const bufferStr = buffer.toString('hex')
-    if (bufferStr.length <= MAX_LENGTH) {
-      return bufferStr
-    }
-    return bufferStr.slice(0, MAX_LENGTH) + '...'
+  const MAX_LENGTH = 50
+  const bufferStr = buffer.toString('hex')
+  if (bufferStr.length <= MAX_LENGTH) {
+    return bufferStr
   }
+  return bufferStr.slice(0, MAX_LENGTH) + '...'
+}
 
 /**
  * Options for constructing a {@link StateManager}.
@@ -95,7 +95,7 @@ export default class ShardiumState implements StateManager {
   constructor(opts: DefaultStateManagerOpts = {}) {
     let common = opts.common
     if (!common) {
-      common = new Common({ chain: Chain.Mainnet, hardfork: Hardfork.Petersburg })
+      common = new Common({chain: Chain.Mainnet, hardfork: Hardfork.Petersburg})
     }
     this._common = common
 
@@ -118,12 +118,12 @@ export default class ShardiumState implements StateManager {
   }
 
   //critical to function
-  setTransactionState(transactionState:TransactionState){
+  setTransactionState(transactionState: TransactionState) {
     this._transactionState = transactionState
 
   }
 
-  unsetTransactionState(){
+  unsetTransactionState() {
     this._transactionState = null
   }
 
@@ -147,7 +147,7 @@ export default class ShardiumState implements StateManager {
   async getAccount(address: Address): Promise<Account> {
 
     //side run system on the side for now
-    if(this._transactionState != null){
+    if (this._transactionState != null) {
       let testAccount = await this._transactionState.getAccount(this._trie, address, false, false)
       // return testAccount
     }
@@ -166,7 +166,7 @@ export default class ShardiumState implements StateManager {
    */
   async putAccount(address: Address, account: Account): Promise<void> {
 
-    if(this._transactionState != null){
+    if (this._transactionState != null) {
       //side run system on the side for now
       this._transactionState.putAccount(address, account)
     }
@@ -215,12 +215,12 @@ export default class ShardiumState implements StateManager {
   async putContractCode(address: Address, value: Buffer): Promise<void> {
     const account = await this.getAccount(address)
 
-      if(this._transactionState != null){
-          //side run system on the side for now
-          this._transactionState.putContractCode(address, account, value)
-      }
+    if (this._transactionState != null) {
+      //side run system on the side for now
+      this._transactionState.putContractCode(address, account, value)
+    }
 
-      // Original implmentation:
+    // Original implmentation:
 
     const codeHash = keccak256(value)
 
@@ -244,13 +244,13 @@ export default class ShardiumState implements StateManager {
    * Returns an empty `Buffer` if the account has no associated code.
    */
   async getContractCode(address: Address): Promise<Buffer> {
-      //side run system on the side for now
-      if(this._transactionState != null){
-          let testAccount = await this._transactionState.getContractCode(this._trie, address, false, false)
-          // return testAccount
-      }
+    //side run system on the side for now
+    if (this._transactionState != null) {
+      let testAccount = await this._transactionState.getContractCode(this._trie, address, false, false)
+      // return testAccount
+    }
 
-      // Original implmentation:
+    // Original implmentation:
     const account = await this.getAccount(address)
     if (!account.isContract()) {
       return Buffer.alloc(0)
@@ -300,7 +300,7 @@ export default class ShardiumState implements StateManager {
    */
   async getContractStorage(address: Address, key: Buffer): Promise<Buffer> {
 
-    if(this._transactionState != null){
+    if (this._transactionState != null) {
       //side run system on the side for now
       let testAccount = await this._transactionState.getContractStorage(this._trie, address, key, false, false)
       //return testAccount
@@ -326,7 +326,7 @@ export default class ShardiumState implements StateManager {
    * @param key - Key in the account's storage to get the value for. Must be 32 bytes long.
    */
   async getOriginalContractStorage(address: Address, key: Buffer): Promise<Buffer> {
-    if(this._transactionState != null){
+    if (this._transactionState != null) {
       //side run system on the side for now
       let testAccount = await this._transactionState.getContractStorage(this._trie, address, key, true, false)
       //return testAccount
@@ -703,12 +703,12 @@ export default class ShardiumState implements StateManager {
       const state = initState[address]
       if (!Array.isArray(state)) {
         // Prior format: address -> balance
-        const account = Account.fromAccountData({ balance: state })
+        const account = Account.fromAccountData({balance: state})
         await this._trie.put(addr.buf, account.serialize())
       } else {
         // New format: address -> [balance, code, storage]
         const [balance, code, storage] = state
-        const account = Account.fromAccountData({ balance })
+        const account = Account.fromAccountData({balance})
         await this._trie.put(addr.buf, account.serialize())
         if (code) {
           await this.putContractCode(addr, toBuffer(code))
@@ -905,7 +905,7 @@ export default class ShardiumState implements StateManager {
   /**
    * For use by the shardeum Dapp to set account data from syncing
    */
-  async setAccountExternal(addressString:string, account:Account){
+  async setAccountExternal(addressString: string, account: Account) {
 
     //TODO implment this to convert string to address.
     //then checkpoint the state trie,
@@ -919,7 +919,7 @@ export default class ShardiumState implements StateManager {
   /**
    * For use by the shardeum Dapp to set account data from syncing
    */
-  async setContractAccountKeyValueExternal(addressString:string, keyString:string, bufferStr:string){
+  async setContractAccountKeyValueExternal(addressString: string, keyString: string, bufferStr: string) {
 
     //TODO implment this to convert string to address.
     //get the trie for this contract account address
@@ -932,7 +932,7 @@ export default class ShardiumState implements StateManager {
     // I saw some code in ethereumJS where a buffer was getting RLP'd again before being saved
 
 
-     //transactionState:commitAccount  , but specifically the part where CA key value pairs are saved out in the pending loop
+    //transactionState:commitAccount  , but specifically the part where CA key value pairs are saved out in the pending loop
   }
 
 }
