@@ -238,6 +238,8 @@ async function contractStorageMiss(transactionState: TransactionState, address: 
   let transferBlob = transactionState.getTransferBlob()
   let txID = transactionState.linkedTX
 
+  //NOTE  We do not need this for the january milestone!
+
 
   //let isRemote = shardus.isRemoteShard(address)
   // if(isRemote === false){
@@ -272,8 +274,19 @@ function accountInvolved(transactionState: TransactionState, address: string, is
 
   let txID = transactionState.linkedTX
 
+
+  //Need to translate address to a shardus-global-server space address!
+
   //TODO implement this shardus function.
-  //shardus.accountInvolved(txID, address, isRead)
+  // shardus.accountInvolved will look at the TXID to find the correct queue entry
+  //  then it will see if the queueEntry already knows of this account
+  //    if it has not seen this account it will test if we can add this account to the queue entry
+  //      The test for this is to see if the involved account has a newer cache timestamp than this TXid
+  //        If it fails the test we need to return a faliure code or assert
+  //See documentation for details
+  if(shardus.accountInvolved != null){
+    shardus.accountInvolved(txID, address, isRead)
+  }
 
   return true
 }
@@ -294,11 +307,24 @@ function contractStorageInvolved(transactionState: TransactionState, address: st
 
   let txID = transactionState.linkedTX
 
+  //Need to translate key (or a combination of hashing address+key) to a shardus-global-server space address!
+
   //TODO implement this shardus function.
-  //shardus.accountInvolved(txID, address, isRead)
+  //See documentation for details
+  //Note we will have 3-4 different account types where accountInvolved gets called (depending on how we handle Receipts),
+  // but they will all call the same shardus.accountInvolved() and shardus will not know of the different account types
+  if(shardus.accountInvolved != null){
+    shardus.accountInvolved(txID, key, isRead)
+  }
 
   return true
 }
+
+//TODO:
+//function contractBytesInvolved()
+
+//TODO:
+//function receiptInvolved()   (this will not get called by transactionState, it will get called at the end of Apply when we loop an add receipts as account types)
 
 
 /**
@@ -694,6 +720,13 @@ shardus.setup({
     //ah shoot this binding will not be "thread safe" may need to make it part of the EEI for this tx? idk.
     shardiumStateManager.setTransactionState(transactionState)
 
+    // TODO
+    // I think we need to loop through the wrappedStates an insert them into the transactionState as first*Reads
+    // probably need to add new functions to TransactionState like:
+    
+    //transactionState.insertFirst*Read(address, accountData) //some account types need more fields for this
+
+
     try {
       // Apply the tx
       // const Receipt = await EVM.runTx({tx: transaction, skipNonce: true, skipBlockGasLimitValidation: true})
@@ -701,11 +734,30 @@ shardus.setup({
 
       console.log('DBG', 'applied tx', txId, Receipt)
 
+      //This is also temporary.  It will move to the UpdateAccountFull code once we wrap the receipt a an account type
+      // shardus-global-server wont be calling all of the UpdateAccountFull calls just yet though so we need this here
+      // but it is ok to start adding the code that handles receipts in UpdateAccountFull and understand it will get called
+      // soon
       appliedTxs[txId] = {
         txId,
         injected: tx,
         receipt: {...Receipt, nonce: transaction.nonce.toString('hex')},
       }
+
+      // TEMPORARY HACK
+      // store contract account, when shardus-global-server has more progress we can disable this
+      if (Receipt.createdAddress) {
+        let ethAccountID = Receipt.createdAddress.toString()
+        let shardusAddress = toShardusAddress(ethAccountID)
+        let contractAccount = await EVM.stateManager.getAccount(Receipt.createdAddress)
+        let wrappedEthAccount = {timestamp: Date.now(), account: contractAccount, ethAddress: ethAccountID, hash: '', accountType: AccountType.Account}
+
+        updateEthAccountHash(wrappedEthAccount)
+
+        accounts[shardusAddress] = wrappedEthAccount
+        console.log('Contract account stored', accounts[shardusAddress])
+      }
+
 
       //get a list of accounts or CA keys that have been written to
       //This is important because the EVM could change many accounts or keys that we are not aware of
@@ -736,8 +788,10 @@ shardus.setup({
             timestamp: wrappedEVMAccount.timestamp
           }
           //attach to applyResponse
-          //shardus.applyResponseAddChangedAccount(applyResponse, accountId, accountValue ) //account value would be the EVM account object
-          shardus.applyResponseAddChangedAccount(applyResponse, wrappedChangedAccount.accountId, wrappedChangedAccount, txId, wrappedChangedAccount.timestamp)
+          
+          if(shardus.applyResponseAddChangedAccount != null){
+            shardus.applyResponseAddChangedAccount(applyResponse, wrappedChangedAccount.accountId, wrappedChangedAccount, txId, wrappedChangedAccount.timestamp)
+          }
         }
       }
 
@@ -761,7 +815,9 @@ shardus.setup({
           timestamp: wrappedEVMAccount.timestamp
         }
         //attach to applyResponse
-        shardus.applyResponseAddChangedAccount(applyResponse, wrappedChangedAccount.accountId, wrappedChangedAccount, txId, wrappedChangedAccount.timestamp)
+        if(shardus.applyResponseAddChangedAccount != null){
+          shardus.applyResponseAddChangedAccount(applyResponse, wrappedChangedAccount.accountId, wrappedChangedAccount, txId, wrappedChangedAccount.timestamp)
+        }
       }
 
       // Handle Account type last, because CAs may depend on CA:Storage or CA:Bytecode updates
@@ -794,11 +850,14 @@ shardus.setup({
         // and the added it to the apply response (not implemented yet)
 
         //Attach the written account data to the apply response.  This will allow it to be shared with other shards if needed.
-        shardus.applyResponseAddChangedAccount(applyResponse, wrappedChangedAccount.accountId, wrappedChangedAccount, txId, wrappedChangedAccount.timestamp)
+        if(shardus.applyResponseAddChangedAccount != null){
+          shardus.applyResponseAddChangedAccount(applyResponse, wrappedChangedAccount.accountId, wrappedChangedAccount, txId, wrappedChangedAccount.timestamp)
+        }
       }
 
       //TODO also create an account for the receipt (nested in the returned Receipt should be a receipt with a list of logs)
-
+      // We are ready to loop over the receipts and add them
+      
 
     } catch (e) {
 
@@ -977,6 +1036,16 @@ shardus.setup({
       let codeHash = updatedEVMAccount.codeHash
       let codeByte = updatedEVMAccount.codeByte
       transactionState.commitContractBytes(addressStr, codeHash, codeByte )
+    } else if (updatedEVMAccount.accountType === AccountType.Receipt) {
+
+      //TODO we can add the code that processes a receipt now.
+      //  This will not call back into transactionState
+      //  it will get added to the accounts[] map below just like all types,
+      //  but I think we may look the data here an basically call
+      //   appliedTxs[txId] = ...  the data we get...  in a way that matches the temp solution in apply()
+      //   but note we will keep the temp solution in apply() for now 
+      //   may have to store txId on the WrappedEVMAccount variant type.
+      //   
     }
 
     let hashBefore = updatedEVMAccount.hash
