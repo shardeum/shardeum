@@ -284,8 +284,8 @@ function accountInvolved(transactionState: TransactionState, address: string, is
   //      The test for this is to see if the involved account has a newer cache timestamp than this TXid
   //        If it fails the test we need to return a faliure code or assert
   //See documentation for details
-  if(shardus.accountInvolved != null){
-    shardus.accountInvolved(txID, address, isRead)
+  if(shardus.tryInvolveAccount != null){
+    shardus.tryInvolveAccount(txID, address, isRead)
   }
 
   return true
@@ -313,8 +313,8 @@ function contractStorageInvolved(transactionState: TransactionState, address: st
   //See documentation for details
   //Note we will have 3-4 different account types where accountInvolved gets called (depending on how we handle Receipts),
   // but they will all call the same shardus.accountInvolved() and shardus will not know of the different account types
-  if(shardus.accountInvolved != null){
-    shardus.accountInvolved(txID, key, isRead)
+  if(shardus.tryInvolveAccount != null){
+    shardus.tryInvolveAccount(txID, key, isRead)
   }
 
   return true
