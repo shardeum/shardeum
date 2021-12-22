@@ -9,6 +9,7 @@
     "noEmitOnError": false,
     "esModuleInterop": true,
     "resolveJsonModule" :true,
+    "noImplicitReturns": false,
     "typeRoots": [
       "node_modules/@types"
     ]
