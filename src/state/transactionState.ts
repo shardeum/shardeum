@@ -1,17 +1,6 @@
-
-import {
-  Account,
-  Address,
-  toBuffer,
-  keccak256,
-  KECCAK256_NULL,
-  rlp,
-  unpadBuffer, bufferToHex,
-} from 'ethereumjs-util'
-import { SecureTrie as Trie } from 'merkle-patricia-tree'
-import { ShardiumState } from '.'
-import {short} from "@ethereumjs/vm/src/evm/opcodes/index";
-import { BN } from 'bn.js';
+import {Account, Address, bufferToHex, keccak256, KECCAK256_NULL, rlp, unpadBuffer,} from 'ethereumjs-util'
+import {SecureTrie as Trie} from 'merkle-patricia-tree'
+import {ShardiumState} from '.'
 
 
 export type accountEvent = (transactionState: TransactionState, address: string) => Promise<boolean>
@@ -226,7 +215,7 @@ export default class TransactionState {
     }
 
     async getAccount(worldStateTrie:Trie, address: Address, originalOnly:boolean, canThrow: boolean): Promise<Account> {
-        const addressString = address.buf.toString('hex')
+        const addressString = address.toString()
 
         if(originalOnly === false){
           if(this.allAccountWrites.has(addressString)){
@@ -279,7 +268,6 @@ export default class TransactionState {
      */
     putAccount(address: Address, account: Account) {
       const addressString = address.toString()
-      console.log('Running putAccount: addressString', addressString)
 
       if(this.accountInvolvedCB(this, addressString, false) === false){
         throw new Error('unable to proceed, cant involve account')
@@ -290,23 +278,33 @@ export default class TransactionState {
       this.allAccountWrites.set(addressString, storedRlp )
     }
 
-    async getContractCode(worldStateTrie:Trie, address: Address, originalOnly:boolean, canThrow: boolean): Promise<Buffer> {
-        const addressString = address.buf.toString('hex')
+  insertFirstAccountReads(address: Address, account: Account) {
+    const addressString = address.toString()
+
+    if (this.accountInvolvedCB(this, addressString, false) === false) {
+      throw new Error('unable to proceed, cant involve account')
+    }
+
+    const accountObj = Account.fromAccountData(account)
+    let storedRlp = accountObj.serialize()
+    this.firstAccountReads.set(addressString, storedRlp)
+  }
+
+    async getContractCode(worldStateTrie:Trie, contractAddress: Address, originalOnly:boolean, canThrow: boolean): Promise<Buffer> {
+        const addressString = contractAddress.toString()
 
         //first get the account so we can have the correct code hash to look at
-        let contractAccount = await this.getAccount(worldStateTrie, address, originalOnly, canThrow)
+        let contractAccount = await this.getAccount(worldStateTrie, contractAddress, originalOnly, canThrow)
         let codeHash = contractAccount.codeHash
         let codeHashStr = codeHash.toString('hex')
 
         if(originalOnly === false){
             if(this.allContractBytesWrites.has(codeHashStr)){
-                let storedRlp = this.allContractBytesWrites.get(codeHashStr)
-                return storedRlp
+              return this.allContractBytesWrites.get(codeHashStr)
             }
         }
         if(this.firstContractBytesReads.has(codeHashStr)){
-            let storedRlp = this.firstContractBytesReads.get(codeHashStr)
-            return storedRlp
+          return this.firstContractBytesReads.get(codeHashStr)
         }
 
         if(this.accountInvolvedCB(this, codeHashStr, true) === false){
@@ -314,8 +312,8 @@ export default class TransactionState {
         }
 
         //see if we can get it from the storage trie.
-        let storedRlp = await worldStateTrie.get(codeHash)
-        let codeBytes = storedRlp // seems to be no conversio needed for codebytes.
+        let storedCodeByte = await worldStateTrie.get(codeHash)
+        let codeBytes = storedCodeByte // seems to be no conversio needed for codebytes.
 
         //Storage miss!!!, account not on this shard
         if(codeBytes == undefined){
@@ -333,34 +331,43 @@ export default class TransactionState {
 
         // storage hit!!! data exists in this shard
         //put this in our first reads map
-        this.firstContractBytesReads.set(codeHashStr, storedRlp)
+        this.firstContractBytesReads.set(codeHashStr, codeBytes)
         return codeBytes
     }
 
-    putContractCode(address: Address, account: Account, value: Buffer) {
-      const addressString = address.buf.toString('hex')
+    putContractCode(contractAddress: Address, codeByte: Buffer) {
+      const addressString = contractAddress.toString()
 
       if(this.accountInvolvedCB(this, addressString, false) === false){
         throw new Error('unable to proceed, cant involve contract storage')
       }
 
-      const codeHash = keccak256(value)
+      const codeHash = keccak256(codeByte)
       if (codeHash.equals(KECCAK256_NULL)) {
         return
       }
 
-      // let contractBytesWrites = this.allContractBytesWrites.get(addressString)
-      // if(contractBytesWrites == null){
-      //   contractBytesWrites = new Map()
-      //   this.allContractBytesWrites.set(addressString, contractBytesWrites)
-      // }
-
-      this.allContractBytesWrites.set(bufferToHex(codeHash), value )
+      this.allContractBytesWrites.set(bufferToHex(codeHash), codeByte )
       this.touchedCAs.add(addressString)
     }
 
-    async getContractStorage(storage:Trie, address: Address, key: Buffer, originalOnly:boolean, canThrow: boolean): Promise<Buffer> {
-      const addressString = address.buf.toString('hex')
+  insertFirstContractBytesReads(contractAddress: Address, codeByte: Buffer) {
+    const addressString = contractAddress.toString()
+
+    if(this.accountInvolvedCB(this, addressString, false) === false){
+      throw new Error('unable to proceed, cant involve contract storage')
+    }
+
+    const codeHash = keccak256(codeByte)
+    if (codeHash.equals(KECCAK256_NULL)) {
+      return
+    }
+    this.firstContractBytesReads.set(bufferToHex(codeHash), codeByte )
+    this.touchedCAs.add(addressString)
+  }
+
+  async getContractStorage(storage:Trie, contractAddress: Address, key: Buffer, originalOnly:boolean, canThrow: boolean): Promise<Buffer> {
+      const addressString = contractAddress.toString()
       const keyString = key.toString('hex')
 
         if(originalOnly === false){
@@ -385,7 +392,7 @@ export default class TransactionState {
         }
 
         //see if we can get it from the storage trie.
-        let storedRlp = await storage.get(address.buf)
+        let storedRlp = await storage.get(contractAddress.buf)
         let storedValue = storedRlp ? rlp.decode(storedRlp) : undefined
 
         //Storage miss!!!, account not on this shard
@@ -414,7 +421,7 @@ export default class TransactionState {
 
     async putContractStorage(address: Address, key: Buffer, value: Buffer): Promise<void> {
 
-      const addressString = address.buf.toString('hex')
+      const addressString = address.toString()
       const keyString = key.toString('hex')
 
       if(this.contractStorageInvolvedCB(this, addressString, keyString, true) === false){
@@ -429,7 +436,7 @@ export default class TransactionState {
       let contractStorageWrites = this.allContractStorageWrites.get(addressString)
       if(contractStorageWrites == null){
         contractStorageWrites = new Map()
-        this.allContractStorageWrites.set(keyString, contractStorageWrites)
+        this.allContractStorageWrites.set(addressString, contractStorageWrites)
       }
       contractStorageWrites.set(keyString, storedRlp )
 
@@ -450,9 +457,29 @@ export default class TransactionState {
       this.touchedCAs.add(addressString)
 
     }
+  insertFirstContractStorageReads(address: Address, keyString: string, value: Buffer) {
+    const addressString = address.toString()
 
-    async exectutePendingCAStateRoots(){
-      //for all touched CAs,
+    if (this.contractStorageInvolvedCB(this, addressString, keyString, true) === false) {
+      throw new Error('unable to proceed, cant involve contract storage')
+    }
+
+    // todo research the meaning of this next line!!!!, borrowed from existing ethereumJS code
+    value = unpadBuffer(value)
+
+    // Step 1 update the account storage
+    let storedRlp = rlp.encode(value)
+    let contractStorageReads = this.firstContractStorageReads.get(addressString)
+    if (contractStorageReads == null) {
+      contractStorageReads = new Map()
+      this.firstContractStorageReads.set(addressString, contractStorageReads)
+    }
+    contractStorageReads.set(keyString, storedRlp)
+    this.touchedCAs.add(addressString)
+  }
+
+  async exectutePendingCAStateRoots(){
+    //for all touched CAs,
 
       // get CA storage trie.
       // checkpoint the CA storage trie

@@ -217,7 +217,7 @@ export default class ShardiumState implements StateManager {
 
     if (this._transactionState != null) {
       //side run system on the side for now
-      this._transactionState.putContractCode(address, account, value)
+      this._transactionState.putContractCode(address, value)
     }
 
     // Original implmentation:

@@ -7,12 +7,11 @@ import {Account, Address, BN, bufferToHex, toBuffer} from 'ethereumjs-util'
 
 import {Transaction} from '@ethereumjs/tx';
 import VM from '@ethereumjs/vm';
-import {updateCommaList} from 'typescript'
 import {parse as parseUrl} from 'url'
 import got from 'got'
 import {ShardiumState, TransactionState} from './state'
 import {ShardusTypes} from 'shardus-global-server'
-import * as buffer from "buffer";
+import {TxReceipt} from "@ethereumjs/vm/dist/types";
 
 let {shardusFactory} = require('shardus-global-server')
 
@@ -186,7 +185,8 @@ interface WrappedEVMAccount {
   //research question..  does the RPC server have any logs checking endpoints..
   //doesnt seem like it on a quick search.
   //It does have a hardcoded logsBloom so maybe we need to fill this with correct data.
-
+  receipt?: TxReceipt
+  txId?: string
 }
 
 interface WrappedEthAccounts {
@@ -720,18 +720,23 @@ shardus.setup({
     //ah shoot this binding will not be "thread safe" may need to make it part of the EEI for this tx? idk.
     shardiumStateManager.setTransactionState(transactionState)
 
-    // TODO
-    // I think we need to loop through the wrappedStates an insert them into the transactionState as first*Reads
-    // probably need to add new functions to TransactionState like:
-    
-    //transactionState.insertFirst*Read(address, accountData) //some account types need more fields for this
-
+    // loop through the wrappedStates an insert them into the transactionState as first*Reads
+    for (let accountId in wrappedStates) {
+      let wrappedEVMAccount: WrappedEVMAccount = wrappedStates[accountId].data
+      let address = Address.fromString(wrappedEVMAccount.ethAddress)
+      if (wrappedEVMAccount.accountType === AccountType.Account) {
+        transactionState.insertFirstAccountReads(address, wrappedEVMAccount.account)
+      } else if (wrappedEVMAccount.accountType === AccountType.ContractCode) {
+        transactionState.insertFirstContractBytesReads(address, wrappedEVMAccount.codeByte)
+      } else if (wrappedEVMAccount.accountType === AccountType.ContractStorage) {
+        transactionState.insertFirstContractStorageReads(address, wrappedEVMAccount.key, wrappedEVMAccount.value)
+      }
+    }
 
     try {
       // Apply the tx
       // const Receipt = await EVM.runTx({tx: transaction, skipNonce: true, skipBlockGasLimitValidation: true})
       const Receipt = await EVM.runTx({tx: transaction, skipNonce: true})
-
       console.log('DBG', 'applied tx', txId, Receipt)
 
       //This is also temporary.  It will move to the UpdateAccountFull code once we wrap the receipt a an account type
@@ -788,7 +793,6 @@ shardus.setup({
             timestamp: wrappedEVMAccount.timestamp
           }
           //attach to applyResponse
-          
           if(shardus.applyResponseAddChangedAccount != null){
             shardus.applyResponseAddChangedAccount(applyResponse, wrappedChangedAccount.accountId, wrappedChangedAccount, txId, wrappedChangedAccount.timestamp)
           }
@@ -827,17 +831,13 @@ shardus.setup({
         let addressStr = account[0]
         let accountObj = Account.fromRlpSerializedAccount(account[1])
 
-        let wrappedEVMAccount = {
+        let wrappedEVMAccount: WrappedEVMAccount = {
           timestamp: Date.now(),
           account: accountObj,
           ethAddress: addressStr,
           hash: '',
           accountType: AccountType.Account
         }
-
-        //accounts[addressStr] = wrappedEVMAccount  //OOPS dont commit this yet. this will happen later in updateAccountFull   (or setAccountData)
-
-        //instead we need to wrap it:
 
         // I think data is unwrapped too much and we should be using wrappedEVMAccount directly as data
         const wrappedChangedAccount = {
@@ -848,7 +848,6 @@ shardus.setup({
         }
 
         // and the added it to the apply response (not implemented yet)
-
         //Attach the written account data to the apply response.  This will allow it to be shared with other shards if needed.
         if(shardus.applyResponseAddChangedAccount != null){
           shardus.applyResponseAddChangedAccount(applyResponse, wrappedChangedAccount.accountId, wrappedChangedAccount, txId, wrappedChangedAccount.timestamp)
@@ -857,8 +856,23 @@ shardus.setup({
 
       //TODO also create an account for the receipt (nested in the returned Receipt should be a receipt with a list of logs)
       // We are ready to loop over the receipts and add them
-      
-
+      let wrappedReceiptAccount: WrappedEVMAccount = {
+        timestamp: Date.now(),
+        ethAddress: txId.slice(0, 42),
+        hash: '',
+        receipt: Receipt.receipt,
+        txId,
+        accountType: AccountType.Receipt,
+      }
+      const wrappedChangedAccount = {
+        accountId: toShardusAddress(wrappedReceiptAccount.ethAddress), // TODO decide how to generate unique accountId
+        stateId: '', // not sure about stateId
+        data: wrappedReceiptAccount,
+        timestamp: wrappedReceiptAccount.timestamp
+      }
+      if(shardus.applyResponseAddChangedAccount != null){
+        shardus.applyResponseAddChangedAccount(applyResponse, wrappedChangedAccount.accountId, wrappedChangedAccount, txId, wrappedChangedAccount.timestamp)
+      }
     } catch (e) {
 
       //TODO need to detect if an execption here is a result of jumping the TX to another thread!
@@ -886,7 +900,6 @@ shardus.setup({
       if (transaction.to) result.targetKeys.push(transformedTargetKey)
       result.allKeys = result.allKeys.concat(result.sourceKeys, result.targetKeys)
 
-      // TODO we might want to get keys for contract creation or contract calls
       console.log('running getKeyFromTransaction', result)
     } catch (e) {
       console.log('Unable to get keys from tx', e)
@@ -1043,10 +1056,16 @@ shardus.setup({
       //  it will get added to the accounts[] map below just like all types,
       //  but I think we may look the data here an basically call
       //   appliedTxs[txId] = ...  the data we get...  in a way that matches the temp solution in apply()
-      //   but note we will keep the temp solution in apply() for now 
+      //   but note we will keep the temp solution in apply() for now
       //   may have to store txId on the WrappedEVMAccount variant type.
-      //   
+      //
+
+      // appliedTxs[txId] = {
+      //   txId: updatedEVMAccount.txId,
+      //   receipt: updatedEVMAccount.receipt
+      // }
     }
+
 
     let hashBefore = updatedEVMAccount.hash
     updateEthAccountHash(updatedEVMAccount)
