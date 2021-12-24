@@ -197,7 +197,12 @@ interface WrappedEthAccounts {
 let accounts: WrappedEthAccounts = {}
 let appliedTxs = {}
 
+let temporaryParallelOldMode = true // Set of temporary hacks that allow running ShardiumState with some old logic.  Usefull to keep 
+                          // our tests running while in development and have a way to check for issues early on
+
 let shardiumStateManager = new ShardiumState() //as StateManager
+shardiumStateManager.temporaryParallelOldMode = temporaryParallelOldMode
+
 let EVM = new VM({stateManager: shardiumStateManager})
 
 let transactionStateMap = new Map<string, TransactionState>()
@@ -439,23 +444,45 @@ async function getReadableAccountInfo(addressStr) {
 
 let useAddressConversion = true
 
-function toShardusAddress(addressStr) {
-  //change this:0x665eab3be2472e83e3100b4233952a16eed20c76
-  //    to this:665eab3be2472e83e3100b4233952a16eed20c76000000000000000000000000
-  if (useAddressConversion)
+function toShardusAddress(addressStr, accountType:AccountType) {
+  if (useAddressConversion != true){
+    return addressStr
+  }
+  if(accountType === AccountType.Account){
+    //change this:0x665eab3be2472e83e3100b4233952a16eed20c76
+    //    to this:  665eab3be2472e83e3100b4233952a16eed20c76000000000000000000000000
     return addressStr.slice(2) + '0'.repeat(24)
-  return addressStr
+  }
+  
+  //so far rest of the accounts are just using the 32 byte eth address for a shardus address minus the "0x"
+  //  later this will change so we can keep certain accounts close to their "parents"
+
+  //change this:0x665eab3be2472e83e3100b4233952a16eed20c76111111111111111111111111
+  //    to this:  665eab3be2472e83e3100b4233952a16eed20c76000000000000000000000000
+  return addressStr.slice(2)
 }
 
-function fromShardusAddress(addressStr) {
-  //change this:665eab3be2472e83e3100b4233952a16eed20c76000000000000000000000000
-  //    to this:0x665eab3be2472e83e3100b4233952a16eed20c76
-  if (useAddressConversion)
+function fromShardusAddress(addressStr, accountType:AccountType) {
+  if (useAddressConversion != true){
+    return addressStr
+  } 
+  if(accountType === AccountType.Account){
+    //change this:  665eab3be2472e83e3100b4233952a16eed20c76000000000000000000000000
+    //    to this:0x665eab3be2472e83e3100b4233952a16eed20c76
     return '0x' + addressStr.slice(0, 40)
 
-  return addressStr
+  }
+  //so far rest of the accounts are just using the 32 byte eth address for a shardus address minus the "0x"
+  //  later this will change so we can keep certain accounts close to their "parents"
+
+  //change this:  665eab3be2472e83e3100b4233952a16eed20c76111111111111111111111111
+  //    to this:0x665eab3be2472e83e3100b4233952a16eed20c76111111111111111111111111
+  return '0x' + addressStr
 }
 
+
+
+//   so far not going to do this just yet:
 //change contract account :0x665eab3be2472e83e3100b4233952a16eed20c76
 //         contract key   :0x0b4233952a16eed20c76665eab3be2472e83e310
 //                 to this:665eab3be2472e83e3100b4233952a16eed20c76000000000000000000000000
@@ -467,7 +494,7 @@ async function setupTester(ethAccountID: string) {
 
   //await sleep(4 * 60 * 1000) // wait 4 minutes to init account
 
-  let shardusAccountID = toShardusAddress(ethAccountID)
+  let shardusAccountID = toShardusAddress(ethAccountID, AccountType.Account)
   let newAccount = await createAccount(ethAccountID)
   console.log('Tester account created', newAccount)
   const address = Address.fromString(ethAccountID)
@@ -482,6 +509,10 @@ async function setupTester(ethAccountID: string) {
   }
   updateEthAccountHash(wrappedEthAccount)
   accounts[shardusAccountID] = wrappedEthAccount
+
+  //when temporaryParallelOldMode is set false we will actually need another way to commit this data!
+  //  may need to commit it with the help of a dummy TransactionState object since ShardeumState commit(),checkpoint(),revert() will be no-op'd
+  //  should test first to see if it just works though  
 }
 
 //setupTester("0x2041B9176A4839dAf7A4DcC6a97BA023953d9ad9")
@@ -739,30 +770,31 @@ shardus.setup({
       const Receipt = await EVM.runTx({tx: transaction, skipNonce: true})
       console.log('DBG', 'applied tx', txId, Receipt)
 
-      //This is also temporary.  It will move to the UpdateAccountFull code once we wrap the receipt a an account type
-      // shardus-global-server wont be calling all of the UpdateAccountFull calls just yet though so we need this here
-      // but it is ok to start adding the code that handles receipts in UpdateAccountFull and understand it will get called
-      // soon
-      appliedTxs[txId] = {
-        txId,
-        injected: tx,
-        receipt: {...Receipt, nonce: transaction.nonce.toString('hex')},
+      if(temporaryParallelOldMode === true){
+        //This is also temporary.  It will move to the UpdateAccountFull code once we wrap the receipt a an account type
+        // shardus-global-server wont be calling all of the UpdateAccountFull calls just yet though so we need this here
+        // but it is ok to start adding the code that handles receipts in UpdateAccountFull and understand it will get called
+        // soon
+        appliedTxs[txId] = {
+          txId,
+          injected: tx,
+          receipt: {...Receipt, nonce: transaction.nonce.toString('hex')},
+        }
+
+        // TEMPORARY HACK
+        // store contract account, when shardus-global-server has more progress we can disable this
+        if (Receipt.createdAddress) {
+          let ethAccountID = Receipt.createdAddress.toString()
+          let shardusAddress = toShardusAddress(ethAccountID, AccountType.Account)
+          let contractAccount = await EVM.stateManager.getAccount(Receipt.createdAddress)
+          let wrappedEthAccount = {timestamp: Date.now(), account: contractAccount, ethAddress: ethAccountID, hash: '', accountType: AccountType.Account}
+
+          updateEthAccountHash(wrappedEthAccount)
+
+          accounts[shardusAddress] = wrappedEthAccount
+          console.log('Contract account stored', accounts[shardusAddress])
+        }
       }
-
-      // TEMPORARY HACK
-      // store contract account, when shardus-global-server has more progress we can disable this
-      if (Receipt.createdAddress) {
-        let ethAccountID = Receipt.createdAddress.toString()
-        let shardusAddress = toShardusAddress(ethAccountID)
-        let contractAccount = await EVM.stateManager.getAccount(Receipt.createdAddress)
-        let wrappedEthAccount = {timestamp: Date.now(), account: contractAccount, ethAddress: ethAccountID, hash: '', accountType: AccountType.Account}
-
-        updateEthAccountHash(wrappedEthAccount)
-
-        accounts[shardusAddress] = wrappedEthAccount
-        console.log('Contract account stored', accounts[shardusAddress])
-      }
-
 
       //get a list of accounts or CA keys that have been written to
       //This is important because the EVM could change many accounts or keys that we are not aware of
@@ -787,7 +819,7 @@ shardus.setup({
             accountType: AccountType.ContractStorage
           }
           const wrappedChangedAccount = {
-            accountId: toShardusAddress(addressStr),
+            accountId: toShardusAddress(addressStr, AccountType.ContractStorage),
             stateId: '', // not sure about stateId
             data: wrappedEVMAccount,
             timestamp: wrappedEVMAccount.timestamp
@@ -813,7 +845,7 @@ shardus.setup({
           accountType: AccountType.ContractCode
         }
         const wrappedChangedAccount = {
-          accountId: toShardusAddress(addressStr),
+          accountId: toShardusAddress(addressStr, AccountType.ContractCode),
           stateId: '', // not sure about stateId
           data: wrappedEVMAccount,
           timestamp: wrappedEVMAccount.timestamp
@@ -841,7 +873,7 @@ shardus.setup({
 
         // I think data is unwrapped too much and we should be using wrappedEVMAccount directly as data
         const wrappedChangedAccount = {
-          accountId: toShardusAddress(addressStr),
+          accountId: toShardusAddress(addressStr, AccountType.Account),
           stateId: safeBufferToHex(wrappedEVMAccount.account.stateRoot), //todo decide on if we use eth hash or our own hash..
           data: wrappedEVMAccount,
           timestamp: wrappedEVMAccount.timestamp
@@ -858,14 +890,14 @@ shardus.setup({
       // We are ready to loop over the receipts and add them
       let wrappedReceiptAccount: WrappedEVMAccount = {
         timestamp: Date.now(),
-        ethAddress: txId.slice(0, 42),
+        ethAddress: txId, //.slice(0, 42),  I think the full 32byte TX should be fine now that toShardusAddress understands account type
         hash: '',
         receipt: Receipt.receipt,
         txId,
         accountType: AccountType.Receipt,
       }
       const wrappedChangedAccount = {
-        accountId: toShardusAddress(wrappedReceiptAccount.ethAddress), // TODO decide how to generate unique accountId
+        accountId: toShardusAddress(wrappedReceiptAccount.ethAddress, AccountType.Receipt), // TODO decide how to generate unique accountId
         stateId: '', // not sure about stateId
         data: wrappedReceiptAccount,
         timestamp: wrappedReceiptAccount.timestamp
@@ -894,8 +926,8 @@ shardus.setup({
       timestamp: tx.timestamp
     }
     try {
-      let transformedSourceKey = toShardusAddress(transaction.getSenderAddress().toString())
-      let transformedTargetKey = transaction.to ? toShardusAddress(transaction.to.toString()) : ''
+      let transformedSourceKey = toShardusAddress(transaction.getSenderAddress().toString(), AccountType.Account)
+      let transformedTargetKey = transaction.to ? toShardusAddress(transaction.to.toString(), AccountType.Account) : ''
       result.sourceKeys.push(transformedSourceKey)
       if (transaction.to) result.targetKeys.push(transformedTargetKey)
       result.allKeys = result.allKeys.concat(result.sourceKeys, result.targetKeys)
@@ -936,7 +968,6 @@ shardus.setup({
       let wrappedEVMAccount = account as WrappedEVMAccount
       accounts[account.id] = wrappedEVMAccount
 
-
       // hmm this is not awaited yet! needs changes to shardus global server.
       if (wrappedEVMAccount.accountType === AccountType.Account) {
         let addressString = wrappedEVMAccount.ethAddress
@@ -953,18 +984,26 @@ shardus.setup({
         shardiumStateManager.setContractAccountKeyValueExternal(addressString, keyString, bufferStr)
       }
 
+      //TODO need to save ContractBytes and Receipt types
+
     }
 
   },
   async getRelevantData(accountId, tx) {
     if (!tx.raw) throw new Error('getRelevantData: No raw tx')
 
-    let ethAccountID = fromShardusAddress(accountId) // accountId is a shardus address
     let wrappedEthAccount = accounts[accountId]
     let accountCreated = false
 
     // Create the account if it doesn't exist
     if (typeof wrappedEthAccount === 'undefined' || wrappedEthAccount === null) {
+
+      // oops! this is a problem..  maybe we should not have a fromShardusAddress
+      // when we support sharding I dont think we can assume this is an AccountType.Account
+      // the TX is specified at least so it might require digging into that to check if something matches the from/to field,
+      // or perhaps a storage key in an access list..   
+      let ethAccountID = fromShardusAddress(accountId, AccountType.Account) // accountId is a shardus address   
+
       //some of this feels a bit redundant, will need to think more on the cleanup
       await createAccount(ethAccountID)
 
@@ -976,7 +1015,7 @@ shardus.setup({
         account,
         ethAddress: ethAccountID,
         hash: '',
-        accountType: AccountType.Account
+        accountType: AccountType.Account //see above, it may be wrong to assume this type in the future
       }
       updateEthAccountHash(wrappedEthAccount)
 
@@ -1121,7 +1160,7 @@ shardus.setup({
     for (let recordData of accountBackupCopies) {
 
       let wrappedEthAccount = recordData.data as WrappedEVMAccount
-      let shardusAddress = toShardusAddress(wrappedEthAccount.ethAddress)
+      let shardusAddress = toShardusAddress(wrappedEthAccount.ethAddress, wrappedEthAccount.accountType)
       accounts[shardusAddress] = wrappedEthAccount
 
       //TODO need to also update shardiumState! probably can do that in a batch outside of this loop

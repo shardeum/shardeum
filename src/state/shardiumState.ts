@@ -79,6 +79,9 @@ export default class ShardiumState implements StateManager {
 
   _transactionState: TransactionState
 
+
+  temporaryParallelOldMode: boolean
+
   /**
    * StateManager is run in DEBUG mode (default: false)
    * Taken from DEBUG environment variable
@@ -149,11 +152,15 @@ export default class ShardiumState implements StateManager {
     //side run system on the side for now
     if (this._transactionState != null) {
       let testAccount = await this._transactionState.getAccount(this._trie, address, false, false)
-      // return testAccount
+      if(this.temporaryParallelOldMode === false){
+        return testAccount
+      }
     }
 
-
-    // Original implmentation:
+    if(this.temporaryParallelOldMode === false){
+      return // the code below will be irrelevant post SGS upgrade
+    }
+    // Original implementation:
     const account = await this._cache.getOrLoad(address)
     return account
 
@@ -171,7 +178,11 @@ export default class ShardiumState implements StateManager {
       this._transactionState.putAccount(address, account)
     }
 
-    // Original implmentation:
+    if(this.temporaryParallelOldMode === false){
+      return // the code below will be irrelevant post SGS upgrade
+    }
+
+    // Original implementation:
     if (this.DEBUG) {
       debug(
         `Save account address=${address} nonce=${account.nonce} balance=${
@@ -220,7 +231,11 @@ export default class ShardiumState implements StateManager {
       this._transactionState.putContractCode(address, value)
     }
 
-    // Original implmentation:
+    if(this.temporaryParallelOldMode === false){
+      return // the code below will be irrelevant post SGS upgrade
+    }
+
+    // Original implementation:
 
     const codeHash = keccak256(value)
 
@@ -247,10 +262,14 @@ export default class ShardiumState implements StateManager {
     //side run system on the side for now
     if (this._transactionState != null) {
       let testAccount = await this._transactionState.getContractCode(this._trie, address, false, false)
-      // return testAccount
+      if(this.temporaryParallelOldMode === false){
+        return testAccount
+      }
     }
-
-    // Original implmentation:
+    if(this.temporaryParallelOldMode === false){
+      return // the code below will be irrelevant post SGS upgrade
+    }
+    // Original implementation:
     const account = await this.getAccount(address)
     if (!account.isContract()) {
       return Buffer.alloc(0)
@@ -303,10 +322,14 @@ export default class ShardiumState implements StateManager {
     if (this._transactionState != null) {
       //side run system on the side for now
       let testAccount = await this._transactionState.getContractStorage(this._trie, address, key, false, false)
-      //return testAccount
+      if(this.temporaryParallelOldMode === false){
+        return testAccount
+      }
     }
-
-    // Original implmentation:
+    if(this.temporaryParallelOldMode === false){
+      return // the code below will be irrelevant post SGS upgrade
+    }
+    // Original implementation:
     if (key.length !== 32) {
       throw new Error('Storage key must be 32 bytes long')
     }
@@ -329,10 +352,14 @@ export default class ShardiumState implements StateManager {
     if (this._transactionState != null) {
       //side run system on the side for now
       let testAccount = await this._transactionState.getContractStorage(this._trie, address, key, true, false)
-      //return testAccount
+      if(this.temporaryParallelOldMode === false){
+        return testAccount
+      }
     }
-
-    // Original implmentation:
+    if(this.temporaryParallelOldMode === false){
+      return // the code below will be irrelevant post SGS upgrade
+    }
+    // Original implementation:
     if (key.length !== 32) {
       throw new Error('Storage key must be 32 bytes long')
     }
@@ -461,6 +488,9 @@ export default class ShardiumState implements StateManager {
 
     //side run: shardeum will no-op this in the future
     //  investigate: will it be a problem that EVM may call this for failed functions, or does that all bubble up anyhow?
+    if(this.temporaryParallelOldMode === false){
+      return // the code below will be irrelevant post SGS upgrade
+    }
 
     // Original implementation:
 
@@ -503,6 +533,9 @@ export default class ShardiumState implements StateManager {
 
     //side run: shardeum will no-op this in the future
     //  investigate: will it be a problem that EVM may call this for failed functions, or does that all bubble up anyhow?
+    if(this.temporaryParallelOldMode === false){
+      return // the code below will be irrelevant post SGS upgrade
+    }
 
     // Original implementation:
     // setup trie checkpointing
@@ -532,6 +565,9 @@ export default class ShardiumState implements StateManager {
 
     //side run: shardeum will no-op this in the future
     //  investigate: will it be a problem that EVM may call this for failed functions, or does that all bubble up anyhow?
+    if(this.temporaryParallelOldMode === false){
+      return // the code below will be irrelevant post SGS upgrade
+    }
 
     // Original implementation:
 
