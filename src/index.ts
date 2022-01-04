@@ -291,7 +291,13 @@ function accountInvolved(transactionState: TransactionState, address: string, is
   //        If it fails the test we need to return a faliure code or assert
   //See documentation for details
   if(shardus.tryInvolveAccount != null){
-    shardus.tryInvolveAccount(txID, shardusAddress, isRead)
+    let shardusAddress = toShardusAddress( address, AccountType.Account )
+
+    let success = shardus.tryInvolveAccount(txID, shardusAddress, isRead)
+    if(success === false){
+      // transactionState will throw an error and halt the evm
+      return false
+    }
   }
 
   return true
@@ -320,7 +326,14 @@ function contractStorageInvolved(transactionState: TransactionState, address: st
   //Note we will have 3-4 different account types where accountInvolved gets called (depending on how we handle Receipts),
   // but they will all call the same shardus.accountInvolved() and shardus will not know of the different account types
   if(shardus.tryInvolveAccount != null){
-    shardus.tryInvolveAccount(txID, key, isRead)
+    let shardusAddress = toShardusAddress( key, AccountType.ContractStorage )
+
+    let success = shardus.tryInvolveAccount(txID, shardusAddress, isRead)
+    if(success === false){
+      // transactionState will throw an error and halt the evm
+      return false
+    }
+
   }
 
   return true
@@ -368,6 +381,7 @@ function hashFromNonceHack(wrappedEthAccount: WrappedEVMAccount): string {
   if (wrappedEthAccount.accountType === AccountType.Account) hash = wrappedEthAccount.account.nonce.toString()
   else if (wrappedEthAccount.accountType === AccountType.ContractStorage) hash = crypto.hashObj({key: wrappedEthAccount.key, value: wrappedEthAccount.value})
   else if (wrappedEthAccount.accountType === AccountType.ContractCode) hash = crypto.hashObj({key: wrappedEthAccount.codeHash, value: wrappedEthAccount.codeByte})
+  else if (wrappedEthAccount.accountType === AccountType.Receipt) hash = crypto.hashObj({key: wrappedEthAccount.txId, value: wrappedEthAccount.receipt})
 
   hash = hash + '0'.repeat(64 - hash.length)
   return hash
@@ -445,15 +459,22 @@ async function getReadableAccountInfo(addressStr) {
 
 let useAddressConversion = true
 
-function toShardusAddress(addressStr, accountType:AccountType) {
-  if (useAddressConversion != true){
+function toShardusAddress(addressStr, accountType: AccountType) {
+  if (useAddressConversion != true) {
     return addressStr
   }
-  if(accountType === AccountType.Account){
+  if (accountType === AccountType.Account) {
+    if (addressStr.length != 42) {
+      throw new Error('must pass in a 42 character hex address for Account type.')
+    }
     //change this:0x665eab3be2472e83e3100b4233952a16eed20c76
     //    to this:  665eab3be2472e83e3100b4233952a16eed20c76000000000000000000000000
     return addressStr.slice(2) + '0'.repeat(24)
   }
+
+  // if (addressStr.length != 66) {
+  //   throw new Error('must pass in a 66 character 32 byte address for non Account types. use the key for storage and codehash contractbytes')
+  // }
 
   //so far rest of the accounts are just using the 32 byte eth address for a shardus address minus the "0x"
   //  later this will change so we can keep certain accounts close to their "parents"
@@ -811,17 +832,22 @@ shardus.setup({
         //1. wrap and save/update this to shardium accounts[] map
         let addressStr = contractStorageEntry[0]
         let contractStorageWrites = contractStorageEntry[1]
-        for (let [key, value] of contractStorageWrites) {
-          let wrappedEVMAccount: WrappedEVMAccount = {
+        for (let [key, value] of contractStorageWrites) { // do we need .entries()?
+
+            let wrappedEVMAccount: WrappedEVMAccount = {
             timestamp: Date.now(),
             key,
             value,
-            ethAddress: addressStr,
+            ethAddress: addressStr, //this is confusing but I think we may want to use key here
             hash: '',
             accountType: AccountType.ContractStorage
           }
+          //for now the CA shardus address will be based off of key rather than the CA address
+          //eventually we may use both with most significant hex of the CA address prepended
+          //to the CA storage key (or a hash of the key)
+
           const wrappedChangedAccount = {
-            accountId: toShardusAddress(addressStr, AccountType.ContractStorage),
+            accountId: toShardusAddress(key, AccountType.ContractStorage),
             stateId: '', // not sure about stateId
             data: wrappedEVMAccount,
             timestamp: wrappedEVMAccount.timestamp
@@ -992,6 +1018,7 @@ shardus.setup({
 
   },
   async getRelevantData(accountId, tx) {
+    console.log('Running getRelevantData', arguments)
     if (!tx.raw) throw new Error('getRelevantData: No raw tx')
 
     let wrappedEthAccount = accounts[accountId]
@@ -1053,6 +1080,8 @@ shardus.setup({
     return results
   },
   updateAccountFull(wrappedData, localCache, applyResponse: ShardusTypes.ApplyResponse) {
+    console.log('Running updateAccountFull', arguments)
+    console.log('Apply response account writes', applyResponse.accountWrites)
     const accountId = wrappedData.accountId
     const accountCreated = wrappedData.accountCreated
     const updatedEVMAccount: WrappedEVMAccount = wrappedData.data
