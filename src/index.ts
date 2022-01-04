@@ -15,7 +15,7 @@ import {TxReceipt} from "@ethereumjs/vm/dist/types";
 
 let {shardusFactory} = require('shardus-global-server')
 
-crypto.init('64f152869ca2d473e4ba64ab53f49ccdb2edae22da192c126850970e788af347')
+crypto.init('69fa4195670576c0160d660c3be36556ff8d504725be8a59b5a96509e0c994bc')
 
 const overwriteMerge = (target, source, options) => source
 
@@ -197,8 +197,8 @@ interface WrappedEthAccounts {
 let accounts: WrappedEthAccounts = {}
 let appliedTxs = {}
 
-let temporaryParallelOldMode = true // Set of temporary hacks that allow running ShardiumState with some old logic.  Usefull to keep 
-                          // our tests running while in development and have a way to check for issues early on
+let temporaryParallelOldMode = true // Set of temporary hacks that allow running ShardiumState with some old logic.  Usefull to keep
+// our tests running while in development and have a way to check for issues early on
 
 let shardiumStateManager = new ShardiumState() //as StateManager
 shardiumStateManager.temporaryParallelOldMode = temporaryParallelOldMode
@@ -281,6 +281,7 @@ function accountInvolved(transactionState: TransactionState, address: string, is
 
 
   //Need to translate address to a shardus-global-server space address!
+  let shardusAddress = toShardusAddress(address, AccountType.Account)
 
   //TODO implement this shardus function.
   // shardus.accountInvolved will look at the TXID to find the correct queue entry
@@ -290,14 +291,7 @@ function accountInvolved(transactionState: TransactionState, address: string, is
   //        If it fails the test we need to return a faliure code or assert
   //See documentation for details
   if(shardus.tryInvolveAccount != null){
-    
-    let shardusAddress = toShardusAddress( address, AccountType.Account )
-
-    let success = shardus.tryInvolveAccount(txID, shardusAddress, isRead)
-    if(success === false){
-      // transactionState will throw an error and halt the evm
-      return false
-    }
+    shardus.tryInvolveAccount(txID, shardusAddress, isRead)
   }
 
   return true
@@ -326,14 +320,7 @@ function contractStorageInvolved(transactionState: TransactionState, address: st
   //Note we will have 3-4 different account types where accountInvolved gets called (depending on how we handle Receipts),
   // but they will all call the same shardus.accountInvolved() and shardus will not know of the different account types
   if(shardus.tryInvolveAccount != null){
-
-    let shardusAddress = toShardusAddress( key, AccountType.ContractStorage )
-
-    let success = shardus.tryInvolveAccount(txID, shardusAddress, isRead)
-    if(success === false){
-      // transactionState will throw an error and halt the evm
-      return false
-    }
+    shardus.tryInvolveAccount(txID, key, isRead)
   }
 
   return true
@@ -463,19 +450,9 @@ function toShardusAddress(addressStr, accountType:AccountType) {
     return addressStr
   }
   if(accountType === AccountType.Account){
-
-    if(addressStr.length != 42){
-      throw new Error('must pass in a 42 character hex address for Account type.')
-    }
-
     //change this:0x665eab3be2472e83e3100b4233952a16eed20c76
     //    to this:  665eab3be2472e83e3100b4233952a16eed20c76000000000000000000000000
     return addressStr.slice(2) + '0'.repeat(24)
-  }
-  
-
-  if(addressStr.length != 66){
-    throw new Error('must pass in a 66 character 32 byte address for non Account types. use the key for storage and codehash contractbytes')
   }
 
   //so far rest of the accounts are just using the 32 byte eth address for a shardus address minus the "0x"
@@ -489,7 +466,7 @@ function toShardusAddress(addressStr, accountType:AccountType) {
 function fromShardusAddress(addressStr, accountType:AccountType) {
   if (useAddressConversion != true){
     return addressStr
-  } 
+  }
   if(accountType === AccountType.Account){
     //change this:  665eab3be2472e83e3100b4233952a16eed20c76000000000000000000000000
     //    to this:0x665eab3be2472e83e3100b4233952a16eed20c76
@@ -536,7 +513,7 @@ async function setupTester(ethAccountID: string) {
 
   //when temporaryParallelOldMode is set false we will actually need another way to commit this data!
   //  may need to commit it with the help of a dummy TransactionState object since ShardeumState commit(),checkpoint(),revert() will be no-op'd
-  //  should test first to see if it just works though  
+  //  should test first to see if it just works though
 }
 
 //setupTester("0x2041B9176A4839dAf7A4DcC6a97BA023953d9ad9")
@@ -748,7 +725,8 @@ shardus.setup({
     }
 
     const transaction = getTransactionObj(tx)
-    const txId = bufferToHex(transaction.hash())
+    // const txId = bufferToHex(transaction.hash())
+    let txId = crypto.hashObj(tx)
     // Create an applyResponse which will be used to tell Shardus that the tx has been applied
     console.log('DBG', new Date(), 'attempting to apply tx', txId, tx)
     const applyResponse = shardus.createApplyResponse(txId, tx.timestamp)
@@ -833,22 +811,17 @@ shardus.setup({
         //1. wrap and save/update this to shardium accounts[] map
         let addressStr = contractStorageEntry[0]
         let contractStorageWrites = contractStorageEntry[1]
-        for (let [key, value] of contractStorageWrites) { // do we need .entries()?
+        for (let [key, value] of contractStorageWrites) {
           let wrappedEVMAccount: WrappedEVMAccount = {
             timestamp: Date.now(),
             key,
             value,
-            ethAddress: addressStr, //this is confusing but I think we may want to use key here
+            ethAddress: addressStr,
             hash: '',
             accountType: AccountType.ContractStorage
           }
-
-          //for now the CA shardus address will be based off of key rather than the CA address
-          //eventually we may use both with most significant hex of the CA address prepended
-          //to the CA storage key (or a hash of the key)
-
           const wrappedChangedAccount = {
-            accountId: toShardusAddress(key, AccountType.ContractStorage),
+            accountId: toShardusAddress(addressStr, AccountType.ContractStorage),
             stateId: '', // not sure about stateId
             data: wrappedEVMAccount,
             timestamp: wrappedEVMAccount.timestamp
@@ -1030,8 +1003,8 @@ shardus.setup({
       // oops! this is a problem..  maybe we should not have a fromShardusAddress
       // when we support sharding I dont think we can assume this is an AccountType.Account
       // the TX is specified at least so it might require digging into that to check if something matches the from/to field,
-      // or perhaps a storage key in an access list..   
-      let ethAccountID = fromShardusAddress(accountId, AccountType.Account) // accountId is a shardus address   
+      // or perhaps a storage key in an access list..
+      let ethAccountID = fromShardusAddress(accountId, AccountType.Account) // accountId is a shardus address
 
       //some of this feels a bit redundant, will need to think more on the cleanup
       await createAccount(ethAccountID)
