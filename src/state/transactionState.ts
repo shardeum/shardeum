@@ -100,6 +100,37 @@ export default class TransactionState {
       return {accounts:this.firstAccountReads, kvPairs:this.firstContractStorageReads}
     }
 
+    checkAccountField(account) {
+      //hmm some hacks to fix data after getting copied around..
+      if(typeof account.nonce === 'string'){
+        //account.nonce = new BN(account.nonce)
+
+        //@ts-ignore
+        if(account.nonce.startsWith('0x') === false){
+          //@ts-ignore
+          account.nonce = '0x' + account.nonce
+        }
+      }
+      // if(typeof account.balance === 'string'){
+      //   account.balance = new BN('0x' + account.balance)
+      // }
+      if(typeof account.balance === 'string'){
+        //account.balance = new BN( account.balance, 'hex')
+        //@ts-ignore
+        if(account.balance.startsWith('0x') === false){
+          //@ts-ignore
+          account.balance = '0x' + account.balance
+        }
+      }
+      if (account.stateRoot.data) {
+        account.stateRoot = Buffer.from(account.stateRoot.data)
+      }
+      if (account.codeHash.data) {
+        account.codeHash = Buffer.from(account.codeHash.data)
+      }
+
+    }
+
     /**
      * Call this from dapp.updateAccountFull / updateAccountPartial to commit changes to the EVM trie
      * @param addressString
@@ -147,29 +178,7 @@ export default class TransactionState {
         account.stateRoot = storageTrie.root
       }
 
-      //hmm some hacks to fix data after getting copied around..
-      if(typeof account.nonce === 'string'){
-        //account.nonce = new BN(account.nonce)
-
-        //@ts-ignore
-        if(account.nonce.startsWith('0x') === false){
-          //@ts-ignore
-          account.nonce = '0x' + account.nonce
-        }
-
-      }
-      // if(typeof account.balance === 'string'){
-      //   account.balance = new BN('0x' + account.balance)
-      // }
-      if(typeof account.balance === 'string'){
-
-        //account.balance = new BN( account.balance, 'hex')
-        //@ts-ignore
-        if(account.balance.startsWith('0x') === false){
-          //@ts-ignore
-          account.balance = '0x' + account.balance
-        }
-      }
+      this.checkAccountField(account)
 
       account.codeHash = Buffer.from(account.codeHash)
       account.stateRoot = Buffer.from(account.stateRoot)
@@ -272,6 +281,7 @@ export default class TransactionState {
       if(this.accountInvolvedCB(this, addressString, false) === false){
         throw new Error('unable to proceed, cant involve account')
       }
+      this.checkAccountField(account)
 
       const accountObj = Account.fromAccountData(account)
       let storedRlp = accountObj.serialize()
@@ -284,6 +294,8 @@ export default class TransactionState {
     if (this.accountInvolvedCB(this, addressString, false) === false) {
       throw new Error('unable to proceed, cant involve account')
     }
+
+    this.checkAccountField(account)
 
     const accountObj = Account.fromAccountData(account)
     let storedRlp = accountObj.serialize()
@@ -307,7 +319,7 @@ export default class TransactionState {
           return this.firstContractBytesReads.get(codeHashStr)
         }
 
-        if(this.accountInvolvedCB(this, codeHashStr, true) === false){
+        if(this.accountInvolvedCB(this, addressString, true) === false){
             throw new Error('unable to proceed, cant involve contract bytes')
         }
 

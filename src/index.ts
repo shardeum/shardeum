@@ -441,15 +441,14 @@ function getReadableTransaction(tx) {
   }
 }
 
-async function getReadableAccountInfo(addressStr) {
+async function getReadableAccountInfo(addressStr, accountType) {
   try {
-    const address = Address.fromString(addressStr)
-    const account = await EVM.stateManager.getAccount(address)
+    const account: WrappedEVMAccount = accounts[toShardusAddress(addressStr, accountType)]
     return {
-      nonce: account.nonce.toString(),
-      balance: account.balance.toString(),
-      stateRoot: bufferToHex(account.stateRoot),
-      codeHash: bufferToHex(account.codeHash)
+      nonce: account.account.nonce.toString(),
+      balance: account.account.balance.toString(),
+      stateRoot: bufferToHex(account.account.stateRoot),
+      codeHash: bufferToHex(account.account.codeHash)
     }
   } catch (e) {
     console.log('Unable to get readable account', e)
@@ -625,7 +624,9 @@ shardus.registerExternalPost('faucet', async (req, res) => {
 
 shardus.registerExternalGet('account/:address', async (req, res) => {
   const address = req.params['address']
-  let readableAccount = await getReadableAccountInfo(address)
+  let accountType = req.query['type']
+  if (accountType == null) accountType = 0
+  let readableAccount = await getReadableAccountInfo(address, accountType)
   res.json({account: readableAccount})
 })
 
@@ -1018,7 +1019,6 @@ shardus.setup({
 
   },
   async getRelevantData(accountId, tx) {
-    console.log('Running getRelevantData', arguments)
     if (!tx.raw) throw new Error('getRelevantData: No raw tx')
 
     let wrappedEthAccount = accounts[accountId]
@@ -1080,8 +1080,6 @@ shardus.setup({
     return results
   },
   updateAccountFull(wrappedData, localCache, applyResponse: ShardusTypes.ApplyResponse) {
-    console.log('Running updateAccountFull', arguments)
-    console.log('Apply response account writes', applyResponse.accountWrites)
     const accountId = wrappedData.accountId
     const accountCreated = wrappedData.accountCreated
     const updatedEVMAccount: WrappedEVMAccount = wrappedData.data

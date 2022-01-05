@@ -123,7 +123,6 @@ export default class ShardiumState implements StateManager {
   //critical to function
   setTransactionState(transactionState: TransactionState) {
     this._transactionState = transactionState
-
   }
 
   unsetTransactionState() {
