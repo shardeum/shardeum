@@ -118,7 +118,7 @@ config = merge(
     server: {
       mode: 'debug',
       debug: {
-        startInFatalsLogMode: true, //true setting good for big aws test with nodes joining under stress.
+        startInFatalsLogMode: false, //true setting good for big aws test with nodes joining under stress.
         startInErrorLogMode: false,
         fakeNetworkDelay: 0,
         disableSnapshots: true,
@@ -339,6 +339,26 @@ function contractStorageInvolved(transactionState: TransactionState, address: st
   return true
 }
 
+
+/**
+ * fake callbacks so that the debug transactionState object can work with creating test accounts
+ * Probably not a good thing to have long term.
+ */
+async function accountMissHack(transactionState: TransactionState, address: string): Promise<boolean> {
+  let isRemoteShard = false
+  return isRemoteShard
+}
+async function contractStorageMissHack(transactionState: TransactionState, address: string, key: string): Promise<boolean> {
+  let isRemoteShard = false
+  return isRemoteShard
+}
+function accountInvolvedHack(transactionState: TransactionState, address: string, isRead: boolean): boolean {
+  return true
+}
+function contractStorageInvolvedHack(transactionState: TransactionState, address: string, key: string, isRead: boolean): boolean {
+  return true
+}
+
 //TODO:
 //function contractBytesInvolved()
 
@@ -395,7 +415,7 @@ function updateEthAccountHash(wrappedEthAccount: WrappedEVMAccount) {
   wrappedEthAccount.hash = hashFromNonceHack(wrappedEthAccount)
 }
 
-async function createAccount(addressStr): Promise<WrappedEVMAccount> {
+async function createAccount(addressStr, transactionState:TransactionState): Promise<WrappedEVMAccount> {
   console.log('Creating new account', addressStr)
   const accountAddress = Address.fromString(addressStr)
   const oneEth = new BN(10).pow(new BN(18))
@@ -404,6 +424,10 @@ async function createAccount(addressStr): Promise<WrappedEVMAccount> {
     nonce: 0,
     balance: oneEth.mul(new BN(100)) // 100 eth
   }
+
+  //I think this will have to change in the future!
+  shardiumStateManager.setTransactionState(transactionState)
+
   const account = Account.fromAccountData(acctData)
   await EVM.stateManager.putAccount(accountAddress, account)
   const updatedAccount = await EVM.stateManager.getAccount(accountAddress)
@@ -471,9 +495,14 @@ function toShardusAddress(addressStr, accountType: AccountType) {
     return addressStr.slice(2) + '0'.repeat(24)
   }
 
-  // if (addressStr.length != 66) {
-  //   throw new Error('must pass in a 66 character 32 byte address for non Account types. use the key for storage and codehash contractbytes')
-  // }
+  if (addressStr.length === 64) {
+    //unexpected case but lets allow it
+    return addressStr
+  }
+
+  if (addressStr.length != 66) {
+    throw new Error(`must pass in a 66 character 32 byte address for non Account types. use the key for storage and codehash contractbytes ${addressStr.length }`)
+  }
 
   //so far rest of the accounts are just using the 32 byte eth address for a shardus address minus the "0x"
   //  later this will change so we can keep certain accounts close to their "parents"
@@ -510,13 +539,55 @@ function fromShardusAddress(addressStr, accountType:AccountType) {
 //                                                 0b4233952a16eed20c76665eab3be2472e83e310
 //                           665eab3be2472e83e3100b
 
+function getDebugTXState():TransactionState{
+  let txId = '0'.repeat(64)
+  let transactionState = transactionStateMap.get(txId)
+  if (transactionState == null) {
+    transactionState = new TransactionState()
+    transactionState.initData(shardiumStateManager, {
+      //dont define callbacks for db TX state!
+      storageMiss: accountMissHack,
+      contractStorageMiss: contractStorageMissHack,
+      accountInvolved: accountInvolvedHack,
+      contractStorageInvolved: contractStorageInvolvedHack
+    }, txId, undefined, undefined)
+    transactionStateMap.set(txId, transactionState)
+  } else {
+    //TODO possibly need a blob to re-init with, but that may happen somewhere else.  Will require a slight interface change
+    //to allow shardus to pass in this extra data blob (unless we find a way to run it through wrapped states??)
+  }
+  return transactionState
+}
+
 
 async function setupTester(ethAccountID: string) {
 
   //await sleep(4 * 60 * 1000) // wait 4 minutes to init account
 
   let shardusAccountID = toShardusAddress(ethAccountID, AccountType.Account)
-  let newAccount = await createAccount(ethAccountID)
+
+  let debugTXState = getDebugTXState() //this isn't so great..
+  let newAccount = await createAccount(ethAccountID, debugTXState)
+
+  if(temporaryParallelOldMode === false){
+    let {
+      accounts: accountWrites,
+      contractStorages: contractStorageWrites,
+      contractBytes: contractBytesWrites
+    } = debugTXState.getWrittenAccounts()
+
+    //need to commit the account now... this is such a hack!!
+    for (let account of accountWrites.entries()) {
+      //1. wrap and save/update this to shardium accounts[] map
+      let addressStr = account[0]
+      let accountObj = Account.fromRlpSerializedAccount(account[1])
+
+      let ethAccount = accountObj
+      debugTXState.commitAccount(addressStr, ethAccount) //yikes this wants an await.
+
+    }    
+  }
+
   console.log('Tester account created', newAccount)
   const address = Address.fromString(ethAccountID)
   let account = await EVM.stateManager.getAccount(address)
@@ -1024,6 +1095,24 @@ shardus.setup({
     let wrappedEthAccount = accounts[accountId]
     let accountCreated = false
 
+
+    let txId = crypto.hashObj(tx)
+    let transactionState = transactionStateMap.get(txId)
+    if (transactionState == null) {
+      transactionState = new TransactionState()
+      transactionState.initData(shardiumStateManager, {
+        storageMiss: accountMiss,
+        contractStorageMiss,
+        accountInvolved,
+        contractStorageInvolved
+      }, txId, undefined, undefined)
+      transactionStateMap.set(txId, transactionState)
+    } else {
+      //TODO possibly need a blob to re-init with, but that may happen somewhere else.  Will require a slight interface change
+      //to allow shardus to pass in this extra data blob (unless we find a way to run it through wrapped states??)
+    }
+
+
     // Create the account if it doesn't exist
     if (typeof wrappedEthAccount === 'undefined' || wrappedEthAccount === null) {
 
@@ -1034,7 +1123,7 @@ shardus.setup({
       let ethAccountID = fromShardusAddress(accountId, AccountType.Account) // accountId is a shardus address
 
       //some of this feels a bit redundant, will need to think more on the cleanup
-      await createAccount(ethAccountID)
+      await createAccount(ethAccountID, transactionState)
 
       const address = Address.fromString(ethAccountID)
       let account = await EVM.stateManager.getAccount(address)
