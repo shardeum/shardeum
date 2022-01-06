@@ -12,6 +12,7 @@ import got from 'got'
 import {ShardiumState, TransactionState} from './state'
 import {ShardusTypes} from 'shardus-global-server'
 import {TxReceipt} from "@ethereumjs/vm/dist/types";
+import {ContractByteWrite} from "./state/transactionState";
 
 let {shardusFactory} = require('shardus-global-server')
 
@@ -177,8 +178,9 @@ interface WrappedEVMAccount {
   value?: Buffer //EVM buffer value if this is of type CA_KVP
 
   //What to store for ContractCode?
-  codeHash?: string
+  codeHash?: Buffer
   codeByte?: Buffer
+  contractAddress?: string
 
   //What to store for Reciept?  .. doesn't look like runTX really does much with them.  runBlock seem to do more.
   //the returned receipt from runTX is seems downcasted, because it actual has more fields than expected.
@@ -196,8 +198,10 @@ interface WrappedEthAccounts {
 
 let accounts: WrappedEthAccounts = {}
 let appliedTxs = {}
+let shardusTxIdToEthTxId = {}
 
-let temporaryParallelOldMode = true // Set of temporary hacks that allow running ShardiumState with some old logic.  Usefull to keep
+let temporaryParallelOldMode = false // Set of temporary hacks that allow running ShardiumState with some old logic.
+//  Usefull to keep
 // our tests running while in development and have a way to check for issues early on
 
 let shardiumStateManager = new ShardiumState() //as StateManager
@@ -585,7 +589,7 @@ async function setupTester(ethAccountID: string) {
       let ethAccount = accountObj
       debugTXState.commitAccount(addressStr, ethAccount) //yikes this wants an await.
 
-    }    
+    }
   }
 
   console.log('Tester account created', newAccount)
@@ -710,6 +714,9 @@ shardus.registerExternalPost('contract/call', async (req, res) => {
       origin: Address.fromString(callObj.from), // The tx.origin is also the caller here
       data: toBuffer(callObj.data),
     }
+    let debugTXState = getDebugTXState() //this isn't so great..
+    shardiumStateManager.setTransactionState(debugTXState)
+
     const callResult = await EVM.runCall(opt)
 
     if (callResult.execResult.exceptionError) {
@@ -818,7 +825,7 @@ shardus.setup({
     }
 
     const transaction = getTransactionObj(tx)
-    // const txId = bufferToHex(transaction.hash())
+    const ethTxId = bufferToHex(transaction.hash())
     let txId = crypto.hashObj(tx)
     // Create an applyResponse which will be used to tell Shardus that the tx has been applied
     console.log('DBG', new Date(), 'attempting to apply tx', txId, tx)
@@ -864,17 +871,20 @@ shardus.setup({
       // const Receipt = await EVM.runTx({tx: transaction, skipNonce: true, skipBlockGasLimitValidation: true})
       const Receipt = await EVM.runTx({tx: transaction, skipNonce: true})
       console.log('DBG', 'applied tx', txId, Receipt)
+      console.log('DBG', 'applied tx eth', ethTxId, Receipt)
+      shardusTxIdToEthTxId[txId] = ethTxId
+      // this is to expose tx data for json rpc server
+      appliedTxs[ethTxId] = {
+        txId: ethTxId,
+        injected: tx,
+        receipt: {...Receipt, nonce: transaction.nonce.toString('hex')},
+      }
 
       if(temporaryParallelOldMode === true){
         //This is also temporary.  It will move to the UpdateAccountFull code once we wrap the receipt a an account type
         // shardus-global-server wont be calling all of the UpdateAccountFull calls just yet though so we need this here
         // but it is ok to start adding the code that handles receipts in UpdateAccountFull and understand it will get called
         // soon
-        appliedTxs[txId] = {
-          txId,
-          injected: tx,
-          receipt: {...Receipt, nonce: transaction.nonce.toString('hex')},
-        }
 
         // TEMPORARY HACK
         // store contract account, when shardus-global-server has more progress we can disable this
@@ -934,13 +944,14 @@ shardus.setup({
       for (let contractBytesEntry of contractBytesWrites.entries()) {
         //1. wrap and save/update this to shardium accounts[] map
         let addressStr = contractBytesEntry[0]
-        let contractBytesWrites = contractBytesEntry[1]
+        let contractByteWrite: ContractByteWrite = contractBytesEntry[1]
 
         let wrappedEVMAccount: WrappedEVMAccount = {
           timestamp: Date.now(),
-          codeHash: addressStr,
-          codeByte: contractBytesWrites,
+          codeHash: contractByteWrite.codeHash,
+          codeByte: contractByteWrite.contractByte,
           ethAddress: addressStr,
+          contractAddress: contractByteWrite.contractAddress.toString(),
           hash: '',
           accountType: AccountType.ContractCode
         }
@@ -1168,7 +1179,7 @@ shardus.setup({
     }
     return results
   },
-  updateAccountFull(wrappedData, localCache, applyResponse: ShardusTypes.ApplyResponse) {
+  async updateAccountFull(wrappedData, localCache, applyResponse: ShardusTypes.ApplyResponse) {
     const accountId = wrappedData.accountId
     const accountCreated = wrappedData.accountCreated
     const updatedEVMAccount: WrappedEVMAccount = wrappedData.data
@@ -1190,22 +1201,23 @@ shardus.setup({
     }
     console.log('updatedEVMAccount', updatedEVMAccount)
 
-    if(updatedEVMAccount.accountType === AccountType.Account){
+    if (updatedEVMAccount.accountType === AccountType.Account) {
       //if account?
       let addressStr = updatedEVMAccount.ethAddress
       let ethAccount = updatedEVMAccount.account
       transactionState.commitAccount(addressStr, ethAccount) //yikes this wants an await.
-    } else if(updatedEVMAccount.accountType === AccountType.ContractStorage) {
+    } else if (updatedEVMAccount.accountType === AccountType.ContractStorage) {
       //if ContractAccount?
       let addressStr = updatedEVMAccount.ethAddress
       let key = updatedEVMAccount.key
       let bufferValue = updatedEVMAccount.value
-      transactionState.commitContractStorage(addressStr, key, bufferToHex(bufferValue) )
+      transactionState.commitContractStorage(addressStr, key, bufferToHex(bufferValue))
     } else if (updatedEVMAccount.accountType === AccountType.ContractCode) {
       let addressStr = updatedEVMAccount.ethAddress
+      let contractAddress = updatedEVMAccount.contractAddress
       let codeHash = updatedEVMAccount.codeHash
       let codeByte = updatedEVMAccount.codeByte
-      transactionState.commitContractBytes(addressStr, codeHash, codeByte )
+      transactionState.commitContractBytes(contractAddress, codeHash, codeByte)
     } else if (updatedEVMAccount.accountType === AccountType.Receipt) {
 
       //TODO we can add the code that processes a receipt now.
@@ -1223,13 +1235,18 @@ shardus.setup({
       // }
     }
 
-
     let hashBefore = updatedEVMAccount.hash
     updateEthAccountHash(updatedEVMAccount)
     let hashAfter = updatedEVMAccount.hash
 
     // Save updatedAccount to db / persistent storage
     accounts[accountId] = updatedEVMAccount
+    let ethTxId = shardusTxIdToEthTxId[txId]
+    let appliedTx = appliedTxs[ethTxId]
+    appliedTx.status = 1
+
+    // TODO: the account we passed to shardus is not the final committed data for contract code and contract storage
+    //  accounts
 
     // Add data to our required response object
     shardus.applyResponseAddState(applyResponse, updatedEVMAccount, updatedEVMAccount, accountId, applyResponse.txId, applyResponse.txTimestamp, hashBefore, hashAfter, accountCreated)

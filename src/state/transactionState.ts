@@ -22,6 +22,12 @@ export interface ShardeumStorageCallbacks {
    //access pattern is a bit different
    //would be nice if shardus called put account data on a list of accounts for a given TX !!!
 
+export interface ContractByteWrite {
+  contractByte: Buffer,
+  codeHash: Buffer,
+  contractAddress: Address
+}
+
 export default class TransactionState {
     //Shardus TXID
     linkedTX: string
@@ -38,12 +44,12 @@ export default class TransactionState {
     allContractStorageWrites: Map<string,Map<string, Buffer>>
 
     // contract account key: value data
-    firstContractBytesReads: Map<string, Buffer>
-    allContractBytesWrites: Map<string, Buffer>
+    firstContractBytesReads: Map<string, ContractByteWrite>
+    allContractBytesWrites: Map<string, ContractByteWrite>
 
     // pending contract storage commits
     pendingContractStorageCommits: Map<string,Map<string, Buffer>>
-    pendingContractBytesCommits: Map<string,Map<string, Buffer>>
+    pendingContractBytesCommits: Map<string,Map<string, any>>
 
     // touched CAs:  //TBD step 2.+ see docs
     touchedCAs: Set<string>
@@ -157,7 +163,7 @@ export default class TransactionState {
           let keyKeyBuf = keyAddress.buf
           storageTrie.put(keyKeyBuf, value)
         }
-        storageTrie.commit()
+        await storageTrie.commit()
 
         //update the accounts state root!
         account.stateRoot = storageTrie.root
@@ -168,9 +174,12 @@ export default class TransactionState {
 
         let storageTrie = await this.shardeumState._getStorageTrie(address)
         storageTrie.checkpoint()
-        for(let [codeHash, codeByte] of contractBytesCommits){
-          let codeHashBuffer = Buffer.from(codeHash, 'hex')
-          storageTrie.put(codeHashBuffer, codeByte)
+        for(let [key, contractByteWrite] of contractBytesCommits){
+          let codeHash = contractByteWrite.codeHash
+          let codeByte = contractByteWrite.codeByte
+          console.log(`Storing contract code for ${address.toString()}`, codeHash, codeByte)
+          storageTrie.put(codeHash, codeByte)
+          account.codeHash = codeHash
         }
         storageTrie.commit()
 
@@ -180,7 +189,6 @@ export default class TransactionState {
 
       this.checkAccountField(account)
 
-      account.codeHash = Buffer.from(account.codeHash)
       account.stateRoot = Buffer.from(account.stateRoot)
 
       const accountObj = Account.fromAccountData(account)
@@ -196,17 +204,21 @@ export default class TransactionState {
 
     /**
      * Call this from dapp.updateAccountFull / updateAccountPartial to commit changes to the EVM trie
-     * @param addressString
+     * @param contractAddress
      * @param codeHash
      * @param contractByte
      */
-    commitContractBytes(addressString:string, codeHash: string, contractByte: Buffer){
+    commitContractBytes(contractAddress:string, codeHash: Buffer, contractByte: Buffer){
       //only put this in the pending commit structure. we will do the real commit when updating the account
-      if(this.pendingContractBytesCommits.has(addressString)){
-        let contractBytesCommit = this.pendingContractBytesCommits.get(addressString)
-        if(contractBytesCommit.has(codeHash)){
-          contractBytesCommit.set(codeHash, contractByte)
+      if(this.pendingContractBytesCommits.has(contractAddress)){
+        let contractBytesCommit = this.pendingContractBytesCommits.get(contractAddress)
+        if(contractBytesCommit.has(codeHash.toString('hex'))){
+          contractBytesCommit.set(codeHash.toString('hex'), { codeHash, codeByte: contractByte })
         }
+      } else {
+        let contractBytesCommit = new Map()
+        contractBytesCommit.set(codeHash.toString('hex'), { codeHash, codeByte: contractByte })
+        this.pendingContractBytesCommits.set(contractAddress, contractBytesCommit)
       }
     }
 
@@ -312,11 +324,11 @@ export default class TransactionState {
 
         if(originalOnly === false){
             if(this.allContractBytesWrites.has(codeHashStr)){
-              return this.allContractBytesWrites.get(codeHashStr)
+              return this.allContractBytesWrites.get(codeHashStr).contractByte
             }
         }
         if(this.firstContractBytesReads.has(codeHashStr)){
-          return this.firstContractBytesReads.get(codeHashStr)
+          return this.firstContractBytesReads.get(codeHashStr).contractByte
         }
 
         if(this.accountInvolvedCB(this, addressString, true) === false){
@@ -324,8 +336,9 @@ export default class TransactionState {
         }
 
         //see if we can get it from the storage trie.
-        let storedCodeByte = await worldStateTrie.get(codeHash)
-        let codeBytes = storedCodeByte // seems to be no conversio needed for codebytes.
+      let storageTrie = await this.shardeumState._getStorageTrie(contractAddress)
+      let storedCodeByte = await storageTrie.get(codeHash)
+      let codeBytes = storedCodeByte // seems to be no conversio needed for codebytes.
 
         //Storage miss!!!, account not on this shard
         if(codeBytes == undefined){
@@ -343,7 +356,7 @@ export default class TransactionState {
 
         // storage hit!!! data exists in this shard
         //put this in our first reads map
-        this.firstContractBytesReads.set(codeHashStr, codeBytes)
+        this.firstContractBytesReads.set(codeHashStr, { codeHash: codeHash,contractByte: codeBytes, contractAddress: contractAddress})
         return codeBytes
     }
 
@@ -359,7 +372,12 @@ export default class TransactionState {
         return
       }
 
-      this.allContractBytesWrites.set(bufferToHex(codeHash), codeByte )
+      let contractByteWrite: ContractByteWrite = {
+       contractByte: codeByte,
+        codeHash,
+       contractAddress
+      }
+      this.allContractBytesWrites.set(codeHash.toString('hex'), contractByteWrite)
       this.touchedCAs.add(addressString)
     }
 
@@ -374,7 +392,7 @@ export default class TransactionState {
     if (codeHash.equals(KECCAK256_NULL)) {
       return
     }
-    this.firstContractBytesReads.set(bufferToHex(codeHash), codeByte )
+    this.firstContractBytesReads.set(bufferToHex(codeHash), { codeHash, contractByte: codeByte, contractAddress } )
     this.touchedCAs.add(addressString)
   }
 

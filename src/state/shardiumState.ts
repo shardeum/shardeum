@@ -1,23 +1,11 @@
-import {add} from "lodash";
-
-const Set = require('core-js-pure/es/set')
 import {debug as createDebugLogger} from 'debug'
 import {SecureTrie as Trie} from 'merkle-patricia-tree'
-import {
-  Account,
-  Address,
-  toBuffer,
-  keccak256,
-  KECCAK256_NULL,
-  rlp,
-  unpadBuffer, bufferToHex,
-} from 'ethereumjs-util'
+import {Account, Address, keccak256, KECCAK256_NULL, rlp, toBuffer, unpadBuffer,} from 'ethereumjs-util'
 import Common, {Chain, Hardfork} from '@ethereumjs/common'
 import {StateManager, StorageDump} from '@ethereumjs/vm/src/state/interface'
 import Cache from './cache'
 //import { getActivePrecompiles, ripemdPrecompileAddress } from '@ethereumjs/vm/src/evm/precompiles'
 //import { short } from '@ethereumjs/vm/src/evm/opcodes'
-import {AccessList, AccessListItem} from '@ethereumjs/tx'
 import TransactionState from './transactionState'
 
 const debug = createDebugLogger('vm:state')
@@ -237,6 +225,7 @@ export default class ShardiumState implements StateManager {
     // Original implementation:
 
     const codeHash = keccak256(value)
+    console.log('Storing contract code', codeHash, codeHash.toString('hex'), value)
 
     if (codeHash.equals(KECCAK256_NULL)) {
       return
