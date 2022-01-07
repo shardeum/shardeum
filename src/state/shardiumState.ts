@@ -148,7 +148,7 @@ export default class ShardiumState implements StateManager {
    * @param address - Address of the `account` to get
    */
   async getAccount(address: Address): Promise<Account> {
-    let testAccount 
+    let testAccount
     //side run system on the side for now
     if (this._transactionState != null) {
       testAccount = await this._transactionState.getAccount(this._trie, address, false, false)
@@ -319,7 +319,6 @@ export default class ShardiumState implements StateManager {
    * If this does not exist an empty `Buffer` is returned.
    */
   async getContractStorage(address: Address, key: Buffer): Promise<Buffer> {
-
     let testAccount
     if (this._transactionState != null) {
       //side run system on the side for now
@@ -461,7 +460,7 @@ export default class ShardiumState implements StateManager {
 
     let oldValue = value // for debugging
 
-    value = unpadBuffer(value)
+    value = unpadBuffer(value) // Trims leading zeros from a Buffer.
 
     await this._modifyContractStorage(address, async (storageTrie, done) => {
       if (value && value.length) {

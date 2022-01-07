@@ -60,7 +60,23 @@ export default class TransactionState {
     accountInvolvedCB: involvedEvent
     contractStorageInvolvedCB: keyInvolvedEvent
 
-    initData(shardeumState:ShardiumState, callbacks:ShardeumStorageCallbacks, linkedTX, firstReads: Map<string, Buffer>, firstContractStorageReads: Map<string,Map<string, Buffer>>) {
+  resetTransactionState() {
+    this.firstAccountReads = new Map()
+    this.allAccountWrites = new Map()
+
+    this.firstContractStorageReads = new Map()
+    this.allContractStorageWrites = new Map()
+
+    this.firstContractBytesReads = new Map()
+    this.allContractBytesWrites = new Map()
+
+    this.pendingContractStorageCommits = new Map()
+    this.pendingContractBytesCommits = new Map()
+
+    this.touchedCAs = new Set()
+  }
+
+  initData(shardeumState:ShardiumState, callbacks:ShardeumStorageCallbacks, linkedTX, firstReads: Map<string, Buffer>, firstContractStorageReads: Map<string,Map<string, Buffer>>) {
       this.linkedTX = linkedTX
 
       this.shardeumState = shardeumState
@@ -156,15 +172,11 @@ export default class TransactionState {
         //what if storage trie was just created?
         storageTrie.checkpoint()
         //walk through all of these
-        for(let entry of contractStorageCommits.entries()){
-          let stringKey = entry[0]
+        for (let entry of contractStorageCommits.entries()) {
+          let keyString = entry[0]
           let value = entry[1]  // need to check wrapping.  Does this need one more layer of toBuffer?/rlp?
-          //let keyAddress = Address.fromString(stringKey)//is this correct?
-          let keyKeyBuf = Buffer.from(stringKey, 'hex')  //keyAddress.buf
-          await storageTrie.put(keyKeyBuf, value)
-
-          // let test = await storageTrie.get(keyKeyBuf)
-          // let out =  test.toString('hex')
+          let keyBuffer = Buffer.from(keyString, 'hex')
+          await storageTrie.put(keyBuffer, value)
         }
         await storageTrie.commit()
 
@@ -225,21 +237,19 @@ export default class TransactionState {
       }
     }
 
-    commitContractStorage(addressString:string, keyString:string, value:string) {
+    commitContractStorage(contractAddress:string, keyString:string, value:Buffer) {
       //store all writes to the persistant trie.
 
       //only put this in the pending commit structure. we will do the real commit when updating the account
-      if(this.pendingContractStorageCommits.has(addressString)){
-        let contractStorageCommits = this.pendingContractStorageCommits.get(addressString)
-        if(contractStorageCommits.has(keyString)){
-            let bufferValue = Buffer.from(value, 'hex')
-            contractStorageCommits.set(keyString, bufferValue)
+      if(this.pendingContractStorageCommits.has(contractAddress)){
+        let contractStorageCommits = this.pendingContractStorageCommits.get(contractAddress)
+        if(!contractStorageCommits.has(keyString)){
+            contractStorageCommits.set(keyString, value)
         }
       } else {
         let contractStorageCommits = new Map()
-        let bufferValue = Buffer.from(value, 'hex')
-        contractStorageCommits.set(keyString, bufferValue)
-        this.pendingContractStorageCommits.set(addressString, contractStorageCommits)
+        contractStorageCommits.set(keyString, value)
+        this.pendingContractStorageCommits.set(contractAddress, contractStorageCommits)
       }
 
     }
@@ -421,7 +431,7 @@ export default class TransactionState {
         if(this.firstContractStorageReads.has(addressString)){
           let contractStorageReads = this.firstContractStorageReads.get(addressString)
           if(contractStorageReads.has(keyString)){
-              let storedRlp = contractStorageReads.get(keyString)
+            let storedRlp = contractStorageReads.get(keyString)
               return storedRlp ? rlp.decode(storedRlp) : undefined
           }
         }
@@ -433,6 +443,7 @@ export default class TransactionState {
         //see if we can get it from the storage trie.
         let storedRlp = await storage.get(key)
         let storedValue = storedRlp ? rlp.decode(storedRlp) : undefined
+        console.log(`storedValue for ${key.toString('hex')}`, storedValue)
 
         //Storage miss!!!, account not on this shard
         if(storedValue == undefined){
@@ -458,17 +469,15 @@ export default class TransactionState {
         return storedValue
     }
 
-    async putContractStorage(address: Address, key: Buffer, value: Buffer): Promise<void> {
-
-      const addressString = address.toString()
+    async putContractStorage(contractAddress: Address, key: Buffer, value: Buffer): Promise<void> {
+      const addressString = contractAddress.toString()
       const keyString = key.toString('hex')
 
       if(this.contractStorageInvolvedCB(this, addressString, keyString, true) === false){
         throw new Error('unable to proceed, cant involve contract storage')
       }
 
-      // todo research the meaning of this next line!!!!, borrowed from existing ethereumJS code
-      value = unpadBuffer(value)
+      value = unpadBuffer(value) // Trims leading zeros from a Buffer.
 
       // Step 1 update the account storage
       let storedRlp = rlp.encode(value)

@@ -469,7 +469,7 @@ function getReadableTransaction(tx) {
   }
 }
 
-async function getReadableAccountInfo(addressStr, accountType) {
+async function getReadableAccountInfo(addressStr, accountType = 0) {
   try {
     const account: WrappedEVMAccount = accounts[toShardusAddress(addressStr, accountType)]
     return {
@@ -488,7 +488,7 @@ let useAddressConversion = true
 
 function toShardusAddress(addressStr, accountType: AccountType) {
   if (useAddressConversion != true) {
-    return addressStr
+    return addressStr.toLowerCase()
   }
   if (accountType === AccountType.Account) {
     if (addressStr.length != 42) {
@@ -496,12 +496,12 @@ function toShardusAddress(addressStr, accountType: AccountType) {
     }
     //change this:0x665eab3be2472e83e3100b4233952a16eed20c76
     //    to this:  665eab3be2472e83e3100b4233952a16eed20c76000000000000000000000000
-    return addressStr.slice(2) + '0'.repeat(24)
+    return addressStr.slice(2).toLowerCase() + '0'.repeat(24)
   }
 
   if (addressStr.length === 64) {
     //unexpected case but lets allow it
-    return addressStr
+    return addressStr.toLowerCase()
   }
 
   if (addressStr.length != 66) {
@@ -513,17 +513,17 @@ function toShardusAddress(addressStr, accountType: AccountType) {
 
   //change this:0x665eab3be2472e83e3100b4233952a16eed20c76111111111111111111111111
   //    to this:  665eab3be2472e83e3100b4233952a16eed20c76000000000000000000000000
-  return addressStr.slice(2)
+  return addressStr.slice(2).toLowerCase()
 }
 
 function fromShardusAddress(addressStr, accountType:AccountType) {
   if (useAddressConversion != true){
-    return addressStr
+    return addressStr.toLowerCase()
   }
   if(accountType === AccountType.Account){
     //change this:  665eab3be2472e83e3100b4233952a16eed20c76000000000000000000000000
     //    to this:0x665eab3be2472e83e3100b4233952a16eed20c76
-    return '0x' + addressStr.slice(0, 40)
+    return '0x' + addressStr.slice(0, 40).toLowerCase()
 
   }
   //so far rest of the accounts are just using the 32 byte eth address for a shardus address minus the "0x"
@@ -531,7 +531,7 @@ function fromShardusAddress(addressStr, accountType:AccountType) {
 
   //change this:  665eab3be2472e83e3100b4233952a16eed20c76111111111111111111111111
   //    to this:0x665eab3be2472e83e3100b4233952a16eed20c76111111111111111111111111
-  return '0x' + addressStr
+  return '0x' + addressStr.toLowerCase()
 }
 
 
@@ -545,6 +545,7 @@ function fromShardusAddress(addressStr, accountType:AccountType) {
 
 function getDebugTXState():TransactionState{
   let txId = '0'.repeat(64)
+  console.log('Creating a debug tx state for ', txId)
   let transactionState = transactionStateMap.get(txId)
   if (transactionState == null) {
     transactionState = new TransactionState()
@@ -559,6 +560,8 @@ function getDebugTXState():TransactionState{
   } else {
     //TODO possibly need a blob to re-init with, but that may happen somewhere else.  Will require a slight interface change
     //to allow shardus to pass in this extra data blob (unless we find a way to run it through wrapped states??)
+    console.log('Resetting debug transaction state for txId', txId)
+    transactionState.resetTransactionState()
   }
   return transactionState
 }
@@ -718,10 +721,10 @@ shardus.registerExternalPost('contract/call', async (req, res) => {
     shardiumStateManager.setTransactionState(debugTXState)
 
     const callResult = await EVM.runCall(opt)
+    console.log('Call Result', callResult.execResult.returnValue.toString('hex'))
 
     if (callResult.execResult.exceptionError) {
       console.log('Execution Error:', callResult.execResult.exceptionError)
-      console.log('Call Result', callResult.execResult.returnValue.toString('hex'))
       return res.json({result: null})
     }
 
@@ -910,12 +913,13 @@ shardus.setup({
         contractBytes: contractBytesWrites
       } = transactionState.getWrittenAccounts()
 
+      console.log(`DBG: all contractStorages writes`, contractStorageWrites)
+
       for (let contractStorageEntry of contractStorageWrites.entries()) {
         //1. wrap and save/update this to shardium accounts[] map
         let addressStr = contractStorageEntry[0]
         let contractStorageWrites = contractStorageEntry[1]
         for (let [key, value] of contractStorageWrites) { // do we need .entries()?
-
             let wrappedEVMAccount: WrappedEVMAccount = {
             timestamp: Date.now(),
             key,
@@ -1211,7 +1215,7 @@ shardus.setup({
       let addressStr = updatedEVMAccount.ethAddress
       let key = updatedEVMAccount.key
       let bufferValue = updatedEVMAccount.value
-      transactionState.commitContractStorage(addressStr, key, bufferToHex(bufferValue))
+      transactionState.commitContractStorage(addressStr, key, bufferValue)
     } else if (updatedEVMAccount.accountType === AccountType.ContractCode) {
       let addressStr = updatedEVMAccount.ethAddress
       let contractAddress = updatedEVMAccount.contractAddress
