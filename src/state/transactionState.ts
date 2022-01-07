@@ -159,9 +159,12 @@ export default class TransactionState {
         for(let entry of contractStorageCommits.entries()){
           let stringKey = entry[0]
           let value = entry[1]  // need to check wrapping.  Does this need one more layer of toBuffer?/rlp?
-          let keyAddress = Address.fromString(stringKey)//is this correct?
-          let keyKeyBuf = keyAddress.buf
-          storageTrie.put(keyKeyBuf, value)
+          //let keyAddress = Address.fromString(stringKey)//is this correct?
+          let keyKeyBuf = Buffer.from(stringKey, 'hex')  //keyAddress.buf
+          await storageTrie.put(keyKeyBuf, value)
+
+          // let test = await storageTrie.get(keyKeyBuf)
+          // let out =  test.toString('hex')
         }
         await storageTrie.commit()
 
@@ -173,15 +176,15 @@ export default class TransactionState {
         let contractBytesCommits = this.pendingContractBytesCommits.get(addressString)
 
         let storageTrie = await this.shardeumState._getStorageTrie(address)
-        storageTrie.checkpoint()
+        storageTrie.checkpoint()   //todo later.  I think we need ContractBytes in the this.shardeumState._trie
         for(let [key, contractByteWrite] of contractBytesCommits){
           let codeHash = contractByteWrite.codeHash
           let codeByte = contractByteWrite.codeByte
           console.log(`Storing contract code for ${address.toString()}`, codeHash, codeByte)
-          storageTrie.put(codeHash, codeByte)
+          await storageTrie.put(codeHash, codeByte)
           account.codeHash = codeHash
         }
-        storageTrie.commit()
+        await storageTrie.commit()
 
         //update the accounts state root!
         account.stateRoot = storageTrie.root
@@ -196,7 +199,7 @@ export default class TransactionState {
       const accountKeyBuf = address.buf
       await this.shardeumState._trie.put(accountKeyBuf, accountRlp)
 
-      this.shardeumState._trie.commit()
+      await this.shardeumState._trie.commit()
 
       //TODO:  handle account deletion, if account is null. This is not a shardus concept yet
       //await this._trie.del(keyBuf)
@@ -232,7 +235,13 @@ export default class TransactionState {
             let bufferValue = Buffer.from(value, 'hex')
             contractStorageCommits.set(keyString, bufferValue)
         }
+      } else {
+        let contractStorageCommits = new Map()
+        let bufferValue = Buffer.from(value, 'hex')
+        contractStorageCommits.set(keyString, bufferValue)
+        this.pendingContractStorageCommits.set(addressString, contractStorageCommits)
       }
+
     }
 
     async getAccount(worldStateTrie:Trie, address: Address, originalOnly:boolean, canThrow: boolean): Promise<Account> {
@@ -422,7 +431,7 @@ export default class TransactionState {
         }
 
         //see if we can get it from the storage trie.
-        let storedRlp = await storage.get(contractAddress.buf)
+        let storedRlp = await storage.get(key)
         let storedValue = storedRlp ? rlp.decode(storedRlp) : undefined
 
         //Storage miss!!!, account not on this shard

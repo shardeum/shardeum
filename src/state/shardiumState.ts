@@ -148,10 +148,10 @@ export default class ShardiumState implements StateManager {
    * @param address - Address of the `account` to get
    */
   async getAccount(address: Address): Promise<Account> {
-
+    let testAccount 
     //side run system on the side for now
     if (this._transactionState != null) {
-      let testAccount = await this._transactionState.getAccount(this._trie, address, false, false)
+      testAccount = await this._transactionState.getAccount(this._trie, address, false, false)
       if(this.temporaryParallelOldMode === false){
         return testAccount
       }
@@ -320,9 +320,11 @@ export default class ShardiumState implements StateManager {
    */
   async getContractStorage(address: Address, key: Buffer): Promise<Buffer> {
 
+    let testAccount
     if (this._transactionState != null) {
       //side run system on the side for now
-      let testAccount = await this._transactionState.getContractStorage(this._trie, address, key, false, false)
+      let storageTrie = await this._getStorageTrie(address)
+      testAccount = await this._transactionState.getContractStorage(storageTrie, address, key, false, false)
       if(this.temporaryParallelOldMode === false){
         return testAccount
       }
@@ -352,7 +354,8 @@ export default class ShardiumState implements StateManager {
   async getOriginalContractStorage(address: Address, key: Buffer): Promise<Buffer> {
     if (this._transactionState != null) {
       //side run system on the side for now
-      let testAccount = await this._transactionState.getContractStorage(this._trie, address, key, true, false)
+      let storageTrie = await this._getStorageTrie(address)
+      let testAccount = await this._transactionState.getContractStorage(storageTrie, address, key, true, false)
       if(this.temporaryParallelOldMode === false){
         return testAccount
       }
@@ -446,6 +449,17 @@ export default class ShardiumState implements StateManager {
     if (value.length > 32) {
       throw new Error('Storage value cannot be longer than 32 bytes')
     }
+
+    if (this._transactionState != null) {
+      //side run system on the side for now
+      this._transactionState.putContractStorage(address, key, value)
+    }
+
+    if(this.temporaryParallelOldMode === false){
+      return // the code below will be irrelevant post SGS upgrade
+    }
+
+    let oldValue = value // for debugging
 
     value = unpadBuffer(value)
 
