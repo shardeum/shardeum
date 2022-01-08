@@ -10,7 +10,7 @@ import VM from '@ethereumjs/vm';
 import {parse as parseUrl} from 'url'
 import got from 'got'
 import {ShardiumState, TransactionState} from './state'
-import {ShardusTypes} from 'shardus-global-server'
+import {Shardus, ShardusTypes} from 'shardus-global-server'
 import {TxReceipt} from "@ethereumjs/vm/dist/types";
 import {ContractByteWrite} from "./state/transactionState";
 
@@ -285,7 +285,7 @@ function accountInvolved(transactionState: TransactionState, address: string, is
 
 
   //Need to translate address to a shardus-global-server space address!
-  let shardusAddress = toShardusAddress(address, AccountType.Account)
+  // let shardusAddress = toShardusAddress(address, AccountType.Account)
 
   //TODO implement this shardus function.
   // shardus.accountInvolved will look at the TXID to find the correct queue entry
@@ -418,6 +418,40 @@ function updateEthAccountHash(wrappedEthAccount: WrappedEVMAccount) {
   //just a basic nonce to hash because it will take more work to extract the correct hash
   wrappedEthAccount.hash = hashFromNonceHack(wrappedEthAccount)
 }
+
+
+function _calculateAccountHash(wrappedEthAccount: WrappedEVMAccount) {
+
+  return hashFromNonceHack(wrappedEthAccount)
+
+  //for accounts maybe:
+  //safeBufferToHex(wrappedEVMAccount.account.stateRoot), //todo decide on if we use eth hash or our own hash..
+  // safeBufferToHex(wrappedEthAccount.account.stateRoot), //todo decide on if we use eth hash or our own hash..
+
+
+  // if (wrappedEthAccount.account.stateRoot) return bufferToHex(wrappedEthAccount.account.stateRoot)
+  // else {
+  //   throw new Error('there is not account.stateRoot')
+  // }
+}
+
+function _shardusWrappedAccount(wrappedEthAccount: WrappedEVMAccount) : ShardusTypes.WrappedData {
+  let addressSource = wrappedEthAccount.ethAddress
+
+  if(wrappedEthAccount.accountType === AccountType.ContractStorage){
+    addressSource = wrappedEthAccount.key
+  }
+
+  const wrappedChangedAccount = {
+    accountId: toShardusAddress(addressSource, wrappedEthAccount.accountType),
+    stateId: _calculateAccountHash(wrappedEthAccount),
+    data: wrappedEthAccount,
+    timestamp: wrappedEthAccount.timestamp
+  }
+
+  return wrappedChangedAccount
+}
+
 
 async function createAccount(addressStr, transactionState:TransactionState): Promise<WrappedEVMAccount> {
   console.log('Creating new account', addressStr)
@@ -932,12 +966,7 @@ shardus.setup({
           //eventually we may use both with most significant hex of the CA address prepended
           //to the CA storage key (or a hash of the key)
 
-          const wrappedChangedAccount = {
-            accountId: toShardusAddress(key, AccountType.ContractStorage),
-            stateId: '', // not sure about stateId
-            data: wrappedEVMAccount,
-            timestamp: wrappedEVMAccount.timestamp
-          }
+          const wrappedChangedAccount = _shardusWrappedAccount(wrappedEVMAccount)
           //attach to applyResponse
           if(shardus.applyResponseAddChangedAccount != null){
             shardus.applyResponseAddChangedAccount(applyResponse, wrappedChangedAccount.accountId, wrappedChangedAccount, txId, wrappedChangedAccount.timestamp)
@@ -959,12 +988,7 @@ shardus.setup({
           hash: '',
           accountType: AccountType.ContractCode
         }
-        const wrappedChangedAccount = {
-          accountId: toShardusAddress(addressStr, AccountType.ContractCode),
-          stateId: '', // not sure about stateId
-          data: wrappedEVMAccount,
-          timestamp: wrappedEVMAccount.timestamp
-        }
+        const wrappedChangedAccount = _shardusWrappedAccount(wrappedEVMAccount)
         //attach to applyResponse
         if(shardus.applyResponseAddChangedAccount != null){
           shardus.applyResponseAddChangedAccount(applyResponse, wrappedChangedAccount.accountId, wrappedChangedAccount, txId, wrappedChangedAccount.timestamp)
@@ -987,12 +1011,7 @@ shardus.setup({
         }
 
         // I think data is unwrapped too much and we should be using wrappedEVMAccount directly as data
-        const wrappedChangedAccount = {
-          accountId: toShardusAddress(addressStr, AccountType.Account),
-          stateId: safeBufferToHex(wrappedEVMAccount.account.stateRoot), //todo decide on if we use eth hash or our own hash..
-          data: wrappedEVMAccount,
-          timestamp: wrappedEVMAccount.timestamp
-        }
+        const wrappedChangedAccount = _shardusWrappedAccount(wrappedEVMAccount)
 
         // and the added it to the apply response (not implemented yet)
         //Attach the written account data to the apply response.  This will allow it to be shared with other shards if needed.
@@ -1011,12 +1030,7 @@ shardus.setup({
         txId,
         accountType: AccountType.Receipt,
       }
-      const wrappedChangedAccount = {
-        accountId: toShardusAddress(wrappedReceiptAccount.ethAddress, AccountType.Receipt), // TODO decide how to generate unique accountId
-        stateId: '', // not sure about stateId
-        data: wrappedReceiptAccount,
-        timestamp: wrappedReceiptAccount.timestamp
-      }
+      const wrappedChangedAccount = _shardusWrappedAccount(wrappedReceiptAccount)
       if(shardus.applyResponseAddChangedAccount != null){
         shardus.applyResponseAddChangedAccount(applyResponse, wrappedChangedAccount.accountId, wrappedChangedAccount, txId, wrappedChangedAccount.timestamp)
       }
@@ -1170,12 +1184,7 @@ shardus.setup({
       if (id < start || id > end) continue
 
       // Add to results (wrapping is redundant?)
-      const wrapped = {
-        accountId: addressStr,
-        stateId: safeBufferToHex(wrappedEthAccount.account.stateRoot), //todo decide on if we use eth hash or our own hash..
-        data: wrappedEthAccount.account,
-        timestamp: wrappedEthAccount.timestamp
-      }
+      const wrapped = _shardusWrappedAccount(wrappedEthAccount)
       results.push(wrapped)
 
       // Return results early if maxRecords reached
@@ -1266,41 +1275,30 @@ shardus.setup({
     const end = parseInt(accountEnd, 16)
     // Loop all accounts
     for (let addressStr in accounts) {
-      let wrappedEthAccount = accounts[addressStr]
+      let wrappedEVMAccount = accounts[addressStr]
       // Skip if not in account id range
       const id = parseInt(addressStr, 16)
       if (id < start || id > end) continue
       // Skip if not in timestamp range
-      const timestamp = wrappedEthAccount.timestamp
+      const timestamp = wrappedEVMAccount.timestamp
       if (timestamp < tsStart || timestamp > tsEnd) continue
       // Add to results
-      const wrapped = {
-        accountId: addressStr,
-        stateId: safeBufferToHex(wrappedEthAccount.account.stateRoot),
-        data: wrappedEthAccount.account,
-        timestamp: wrappedEthAccount.timestamp
-      }
+      const wrapped = _shardusWrappedAccount(wrappedEVMAccount)
       results.push(wrapped)
       // Return results early if maxRecords reached
       if (results.length >= maxRecords) return results
     }
     return results
   },
-  calculateAccountHash(wrappedEthAccount: WrappedEVMAccount) {
-
-    return hashFromNonceHack(wrappedEthAccount)
-
-    // if (wrappedEthAccount.account.stateRoot) return bufferToHex(wrappedEthAccount.account.stateRoot)
-    // else {
-    //   throw new Error('there is not account.stateRoot')
-    // }
+  calculateAccountHash(wrappedEVMAccount: WrappedEVMAccount) {
+    return _calculateAccountHash(wrappedEVMAccount)
   },
   resetAccountData(accountBackupCopies) {
     for (let recordData of accountBackupCopies) {
 
-      let wrappedEthAccount = recordData.data as WrappedEVMAccount
-      let shardusAddress = toShardusAddress(wrappedEthAccount.ethAddress, wrappedEthAccount.accountType)
-      accounts[shardusAddress] = wrappedEthAccount
+      let wrappedEVMAccount = recordData.data as WrappedEVMAccount
+      let shardusAddress = toShardusAddress(wrappedEVMAccount.ethAddress, wrappedEVMAccount.accountType)
+      accounts[shardusAddress] = wrappedEVMAccount
 
       //TODO need to also update shardiumState! probably can do that in a batch outside of this loop
       // a wrappedEVMAccount could be an EVM Account or a CA key value pair
@@ -1317,12 +1315,7 @@ shardus.setup({
     for (const address of addressList) {
       const wrappedEthAccount = accounts[address]
       if (wrappedEthAccount) {
-        const wrapped = {
-          accountId: address,
-          stateId: bufferToHex(wrappedEthAccount.account.stateRoot),
-          data: wrappedEthAccount.account,
-          timestamp: wrappedEthAccount.timestamp //todo, timestamp?
-        }
+        const wrapped = _shardusWrappedAccount(wrappedEthAccount)
         results.push(wrapped)
       }
     }
