@@ -402,7 +402,10 @@ function hashFromNonceHack(wrappedEthAccount: WrappedEVMAccount): string {
   let hash
 
   // temporary hack for generating hash
-  if (wrappedEthAccount.accountType === AccountType.Account) hash = wrappedEthAccount.account.nonce.toString()
+  if (wrappedEthAccount.accountType === AccountType.Account){
+     // parse to number first since some nonces have leading zeroes
+     hash = Number(wrappedEthAccount.account.nonce).toString()
+  }
   else if (wrappedEthAccount.accountType === AccountType.ContractStorage) hash = crypto.hashObj({key: wrappedEthAccount.key, value: wrappedEthAccount.value})
   else if (wrappedEthAccount.accountType === AccountType.ContractCode) hash = crypto.hashObj({key: wrappedEthAccount.codeHash, value: wrappedEthAccount.codeByte})
   else if (wrappedEthAccount.accountType === AccountType.Receipt) hash = crypto.hashObj({key: wrappedEthAccount.txId, value: wrappedEthAccount.receipt})
@@ -412,11 +415,8 @@ function hashFromNonceHack(wrappedEthAccount: WrappedEVMAccount): string {
 }
 
 function updateEthAccountHash(wrappedEthAccount: WrappedEVMAccount) {
-  //this doesnt work since state root is a stable ref to a key in the db
-  //let hash = bufferToHex(wrappedEthAccount.account.stateRoot)
 
-  //just a basic nonce to hash because it will take more work to extract the correct hash
-  wrappedEthAccount.hash = hashFromNonceHack(wrappedEthAccount)
+  wrappedEthAccount.hash = _calculateAccountHash(wrappedEthAccount)
 }
 
 
@@ -436,14 +436,9 @@ function _calculateAccountHash(wrappedEthAccount: WrappedEVMAccount) {
 }
 
 function _shardusWrappedAccount(wrappedEthAccount: WrappedEVMAccount) : ShardusTypes.WrappedData {
-  let addressSource = wrappedEthAccount.ethAddress
-
-  if(wrappedEthAccount.accountType === AccountType.ContractStorage){
-    addressSource = wrappedEthAccount.key
-  }
 
   const wrappedChangedAccount = {
-    accountId: toShardusAddress(addressSource, wrappedEthAccount.accountType),
+    accountId: getAccountShardusAddress(wrappedEthAccount),
     stateId: _calculateAccountHash(wrappedEthAccount),
     data: wrappedEthAccount,
     timestamp: wrappedEthAccount.timestamp
@@ -519,6 +514,23 @@ async function getReadableAccountInfo(addressStr, accountType = 0) {
 }
 
 let useAddressConversion = true
+
+
+/**
+ * This will correctly get a shardus address from a WrappedEVMAccount account no matter what type it is.
+ * This is preferred over toShardusAddress in any case where we have an WrappedEVMAccount
+ * @param wrappedEthAccount
+ * @returns 
+ */
+function getAccountShardusAddress(wrappedEthAccount: WrappedEVMAccount) : string {
+  let addressSource = wrappedEthAccount.ethAddress
+
+  if(wrappedEthAccount.accountType === AccountType.ContractStorage){
+    addressSource = wrappedEthAccount.key
+  }
+  let shardusAddress = toShardusAddress(addressSource, wrappedEthAccount.accountType)
+  return shardusAddress
+}
 
 function toShardusAddress(addressStr, accountType: AccountType) {
   if (useAddressConversion != true) {
@@ -1069,13 +1081,7 @@ shardus.setup({
   },
   getStateId(accountAddress, mustExist = true) {
     let wrappedEthAccount = accounts[accountAddress]
-    return hashFromNonceHack(wrappedEthAccount)
-
-    // if (wrappedEthAccount && wrappedEthAccount.account.stateRoot) {
-    //   return bufferToHex(wrappedEthAccount.account.stateRoot)
-    // } else {
-    //   throw new Error('Could not get stateId for account ' + accountAddress)
-    // }
+    return _calculateAccountHash(wrappedEthAccount)
   },
   deleteLocalAccountData() {
     accounts = {}
@@ -1084,7 +1090,10 @@ shardus.setup({
   setAccountData(accountRecords) {
     for (const account of accountRecords) {
       let wrappedEVMAccount = account as WrappedEVMAccount
-      accounts[account.id] = wrappedEVMAccount
+
+      let shardusAddress = getAccountShardusAddress(wrappedEVMAccount)
+
+      accounts[shardusAddress] = wrappedEVMAccount
     }
 
     // update shardium state. put this in a separate loop, but maybe that is overkill
@@ -1093,10 +1102,8 @@ shardus.setup({
     // I am not even 100% that we can go without a mutex even one account at time, here or in other spots
     // where we commit data to tries.  I wouldn't want the awaited code to interleave in a bad way
     for (const account of accountRecords) {
-
       let wrappedEVMAccount = account as WrappedEVMAccount
-      accounts[account.id] = wrappedEVMAccount
-
+   
       // hmm this is not awaited yet! needs changes to shardus global server.
       if (wrappedEVMAccount.accountType === AccountType.Account) {
         let addressString = wrappedEVMAccount.ethAddress
@@ -1297,7 +1304,7 @@ shardus.setup({
     for (let recordData of accountBackupCopies) {
 
       let wrappedEVMAccount = recordData.data as WrappedEVMAccount
-      let shardusAddress = toShardusAddress(wrappedEVMAccount.ethAddress, wrappedEVMAccount.accountType)
+      let shardusAddress = getAccountShardusAddress(wrappedEVMAccount)
       accounts[shardusAddress] = wrappedEVMAccount
 
       //TODO need to also update shardiumState! probably can do that in a batch outside of this loop
