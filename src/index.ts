@@ -1087,11 +1087,18 @@ shardus.setup({
     accounts = {}
   },
 
-  setAccountData(accountRecords) {
+  async setAccountData(accountRecords) {
+
+    // update our in memory accounts map
     for (const account of accountRecords) {
       let wrappedEVMAccount = account as WrappedEVMAccount
 
       let shardusAddress = getAccountShardusAddress(wrappedEVMAccount)
+
+      if(wrappedEVMAccount.accountType === AccountType.Account) {
+
+        TransactionState.fixUpAccountFields(wrappedEVMAccount.account)
+      }
 
       accounts[shardusAddress] = wrappedEVMAccount
     }
@@ -1109,19 +1116,34 @@ shardus.setup({
         let addressString = wrappedEVMAccount.ethAddress
         let evmAccount = wrappedEVMAccount.account
 
-        shardiumStateManager.setAccountExternal(addressString, evmAccount)
+        await shardiumStateManager.setAccountExternal(addressString, evmAccount)
 
       } else if (wrappedEVMAccount.accountType === AccountType.ContractStorage) {
 
         let addressString = wrappedEVMAccount.ethAddress
-        let keyString = wrappedEVMAccount.key
-        let bufferStr = wrappedEVMAccount.value.toString('hex')
+        let key = Buffer.from(wrappedEVMAccount.key, 'hex')
+        let value = wrappedEVMAccount.value //.toString('hex')
 
-        shardiumStateManager.setContractAccountKeyValueExternal(addressString, keyString, bufferStr)
+        //get the contract account so we can pass in the state root
+        let shardusAddress = toShardusAddress(wrappedEVMAccount.ethAddress, AccountType.Account)
+        let contractAccount = accounts[shardusAddress]
+
+        if(contractAccount == null){
+          //todo queue this somehow
+          throw Error(`contractAccount not found for ${wrappedEVMAccount.ethAddress} / ${shardusAddress} `)
+        }
+
+        await  shardiumStateManager.setContractAccountKeyValueExternal(contractAccount.account.stateRoot, addressString, key, value)
+      } else if (wrappedEVMAccount.accountType === AccountType.ContractCode) {
+
+        let keyString = wrappedEVMAccount.codeHash
+        let bufferStr = wrappedEVMAccount.codeByte
+
+        shardiumStateManager.setContractBytesExternal(keyString, bufferStr)
+      } else if (wrappedEVMAccount.accountType === AccountType.Receipt) {
+
+        // looks like we dont need to inject anything into evm stae
       }
-
-      //TODO need to save ContractBytes and Receipt types
-
     }
 
   },
@@ -1333,6 +1355,19 @@ shardus.setup({
   },
   close() {
     console.log('Shutting down...')
+  },
+  getTimestampAndHashFromAccount(account) {
+    if(account != null){
+      let wrappedEVMAccount = account as WrappedEVMAccount
+      return {
+        timestamp: wrappedEVMAccount.timestamp,
+        hash: wrappedEVMAccount.hash,
+      } 
+    }
+    return {
+      timestamp: 0,
+      hash: 'invalid account data',
+    }    
   }
 })
 

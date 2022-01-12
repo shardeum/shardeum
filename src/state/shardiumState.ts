@@ -11,7 +11,7 @@ import {
   keccak256,
   KECCAK256_NULL,
   rlp,
-  unpadBuffer, bufferToHex,
+  unpadBuffer, bufferToHex, KECCAK256_RLP,
 } from 'ethereumjs-util'
 import Common, {Chain, Hardfork} from '@ethereumjs/common'
 import {StateManager, StorageDump} from '@ethereumjs/vm/src/state/interface'
@@ -956,33 +956,91 @@ export default class ShardiumState implements StateManager {
    * For use by the shardeum Dapp to set account data from syncing
    */
   async setAccountExternal(addressString: string, account: Account) {
+    //todo needs better control over when checkpoints and commits can be made!!
 
-    //TODO implment this to convert string to address.
-    //then checkpoint the state trie,
-    //put this state to the trie
-    //commit the trie
+    let address = Address.fromString(addressString)
+    this._trie.checkpoint()
 
-    //transactionState:commitAccount  is a good reference, but we dont need to loop the pending contract storage values like that code does
+    //contition the buffers to fix issues that are caused by serialization
+    TransactionState.fixUpAccountFields(account)
+
+    account.stateRoot = Buffer.from(account.stateRoot)
+    const accountObj = Account.fromAccountData(account)
+    const accountRlp = accountObj.serialize()
+    const accountKeyBuf = address.buf
+    await this._trie.put(accountKeyBuf, accountRlp)
+
+    await this._trie.commit()
+  }
+
+
+  async _getOrCreateStorageTrie(stateRoot:Buffer, address: Address): Promise<Trie> {
+    // from storage cache
+    const addressHex = address.buf.toString('hex')
+    let storageTrie = this._storageTries[addressHex]
+    if (!storageTrie) {
+      // lookup from state
+      storageTrie = await this._createStorageTrie(stateRoot, address)
+    }
+    return storageTrie
+  }
+
+  async _createStorageTrie(stateRoot:Buffer, address: Address): Promise<Trie> {
+    // from state trie
+    const storageTrie = this._trie.copy(false)
+    storageTrie.root = stateRoot
+    storageTrie.db.checkpoints = []
+    return storageTrie
   }
 
 
   /**
    * For use by the shardeum Dapp to set account data from syncing
    */
-  async setContractAccountKeyValueExternal(addressString: string, keyString: string, bufferStr: string) {
-
-    //TODO implment this to convert string to address.
-    //get the trie for this contract account address
-    //checkpoint the trie
-    //put this state to the trie
-    //commit the trie
+  async setContractAccountKeyValueExternal(stateRoot:Buffer, addressString: string, key: Buffer, value: Buffer) {
+    let address = Address.fromString(addressString)
 
 
-    //TODO, double check how much buffer values are "wrapped" before being committed.  I thought
-    // I saw some code in ethereumJS where a buffer was getting RLP'd again before being saved
+    // const account = await this.getAccount(address)
+    // if()
+    //Trie.e
+    //this.EMPTY_TRIE_ROOT = ethereumjs_util_1.KECCAK256_RLP;
+
+    let storageTrie = await this._getOrCreateStorageTrie(KECCAK256_RLP, address)
+
+    //put trie in storage tries..
+    const addressHex = address.buf.toString('hex')
+    this._storageTries[addressHex] = storageTrie
+
+    //what if storage trie was just created?
+    storageTrie.checkpoint()
+
+    //contition the buffers to fix issues that are caused by serialization
+    key = Buffer.from(key)
+    value = Buffer.from(value)
+
+    await storageTrie.put(key, value)
+  
+    await storageTrie.commit()
+
+  }
 
 
-    //transactionState:commitAccount  , but specifically the part where CA key value pairs are saved out in the pending loop
+  /**
+   * For use by the shardeum Dapp to set account data from syncing
+   */
+  async setContractBytesExternal( codeHash: Buffer, codeByte: Buffer) {
+    //let address = Address.fromString(addressString)
+
+    this._trie.checkpoint()
+    //contition the buffers to fix issues that are caused by serialization
+    codeHash = Buffer.from(codeHash)
+    codeByte = Buffer.from(codeByte)
+
+    await this._trie.db.put(codeHash, codeByte)
+  
+    await this._trie.commit()
+
   }
 
 }

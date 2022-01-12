@@ -122,7 +122,12 @@ export default class TransactionState {
       return {accounts:this.firstAccountReads, kvPairs:this.firstContractStorageReads}
     }
 
-    checkAccountField(account) {
+    /**
+     * repair the fields on this account.
+     * accounts need some adjustments after being deseralized
+     * @param account 
+     */
+    static fixUpAccountFields(account) {
       //hmm some hacks to fix data after getting copied around..
       if(typeof account.nonce === 'string'){
         //account.nonce = new BN(account.nonce)
@@ -187,22 +192,25 @@ export default class TransactionState {
       if(this.pendingContractBytesCommits.has(addressString)) {
         let contractBytesCommits = this.pendingContractBytesCommits.get(addressString)
 
-        let storageTrie = await this.shardeumState._getStorageTrie(address)
-        storageTrie.checkpoint()   //todo later.  I think we need ContractBytes in the this.shardeumState._trie
+        // let storageTrie = await this.shardeumState._getStorageTrie(address)
+        // storageTrie.checkpoint()   //todo later.  I think we need ContractBytes in the this.shardeumState._trie
         for(let [key, contractByteWrite] of contractBytesCommits){
           let codeHash = contractByteWrite.codeHash
           let codeByte = contractByteWrite.codeByte
           console.log(`Storing contract code for ${address.toString()}`, codeHash, codeByte)
-          await storageTrie.put(codeHash, codeByte)
+          // await storageTrie.put(codeHash, codeByte)
+          await this.shardeumState._trie.db.put(codeHash, codeByte)
           account.codeHash = codeHash
+
+          account.codeHash = contractByteWrite.codeHash
         }
-        await storageTrie.commit()
+        // await storageTrie.commit()
 
         //update the accounts state root!
-        account.stateRoot = storageTrie.root
+        
       }
 
-      this.checkAccountField(account)
+      TransactionState.fixUpAccountFields(account)
 
       account.stateRoot = Buffer.from(account.stateRoot)
 
@@ -312,7 +320,7 @@ export default class TransactionState {
       if(this.accountInvolvedCB(this, addressString, false) === false){
         throw new Error('unable to proceed, cant involve account')
       }
-      this.checkAccountField(account)
+      TransactionState.fixUpAccountFields(account)
 
       const accountObj = Account.fromAccountData(account)
       let storedRlp = accountObj.serialize()
@@ -326,7 +334,7 @@ export default class TransactionState {
       throw new Error('unable to proceed, cant involve account')
     }
 
-    this.checkAccountField(account)
+    TransactionState.fixUpAccountFields(account)
 
     const accountObj = Account.fromAccountData(account)
     let storedRlp = accountObj.serialize()
