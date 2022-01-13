@@ -727,6 +727,26 @@ shardus.registerExternalPost('inject', async (req, res) => {
   }
 })
 
+shardus.registerExternalGet('dumpStorage', async (req, res) => {
+  let id
+  try {
+    id = req.query.id as string
+    const addr = Address.fromString(id)
+    if(addr == null){
+      return res.json(`dumpStorage: ${id} addr == null`)
+    }
+
+    let storage = await shardiumStateManager.dumpStorage(addr)
+    return res.json(storage)
+    
+  } catch (err) {
+    //console.log(`dumpStorage: ${id} `, err)
+
+    return res.json(`dumpStorage: ${id} ${err}`)
+  }
+
+})
+
 shardus.registerExternalPost('faucet', async (req, res) => {
   let tx = req.body
   let id = tx.address as string

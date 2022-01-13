@@ -54,6 +54,8 @@ export default class TransactionState {
     // touched CAs:  //TBD step 2.+ see docs
     touchedCAs: Set<string>
 
+    debugTrace: boolean
+
     // callbacks
     accountMissCB: accountEvent
     contractStorageMissCB: contractStorageEvent
@@ -110,6 +112,8 @@ export default class TransactionState {
       if(firstContractStorageReads != null){
         this.firstContractStorageReads = firstContractStorageReads
       }
+
+      this.debugTrace = true
   }
 
     getWrittenAccounts(){
@@ -182,6 +186,9 @@ export default class TransactionState {
           let value = entry[1]  // need to check wrapping.  Does this need one more layer of toBuffer?/rlp?
           let keyBuffer = Buffer.from(keyString, 'hex')
           await storageTrie.put(keyBuffer, value)
+
+          if(this.debugTrace) this.debugTraceLog(`commitAccount:contractStorage: addr:${addressString} key:${keyString} v:${value.toString('hex')}`)
+
         }
         await storageTrie.commit()
 
@@ -192,22 +199,19 @@ export default class TransactionState {
       if(this.pendingContractBytesCommits.has(addressString)) {
         let contractBytesCommits = this.pendingContractBytesCommits.get(addressString)
 
-        // let storageTrie = await this.shardeumState._getStorageTrie(address)
-        // storageTrie.checkpoint()   //todo later.  I think we need ContractBytes in the this.shardeumState._trie
         for(let [key, contractByteWrite] of contractBytesCommits){
           let codeHash = contractByteWrite.codeHash
           let codeByte = contractByteWrite.codeByte
           console.log(`Storing contract code for ${address.toString()}`, codeHash, codeByte)
-          // await storageTrie.put(codeHash, codeByte)
+          //push codeByte to the worldStateTrie.db
           await this.shardeumState._trie.db.put(codeHash, codeByte)
           account.codeHash = codeHash
 
           account.codeHash = contractByteWrite.codeHash
-        }
-        // await storageTrie.commit()
 
-        //update the accounts state root!
-        
+          if(this.debugTrace) this.debugTraceLog(`commitAccount:contractByte: addr:${addressString} codeHash:${codeHash.toString('hex')} v:${codeByte.length}`)
+
+        }
       }
 
       TransactionState.fixUpAccountFields(account)
@@ -220,6 +224,8 @@ export default class TransactionState {
       await this.shardeumState._trie.put(accountKeyBuf, accountRlp)
 
       await this.shardeumState._trie.commit()
+
+      if(this.debugTrace) this.debugTraceLog(`commitAccount: addr:${addressString} v:${JSON.stringify(accountObj)}`)
 
       //TODO:  handle account deletion, if account is null. This is not a shardus concept yet
       //await this._trie.del(keyBuf)
@@ -290,6 +296,8 @@ export default class TransactionState {
           // not 100% if we should await this, may need some group discussion
           let isRemoteShard = await this.accountMissCB(this, addressString)
 
+          if(this.debugTrace) this.debugTraceLog(`getAccount: addr:${addressString} v:notFound`)
+
           if(canThrow && isRemoteShard)
             throw new Error('account in remote shard, abort') //todo smarter throw?
 
@@ -303,6 +311,7 @@ export default class TransactionState {
           return account
         }
 
+        if(this.debugTrace) this.debugTraceLog(`getAccount: addr:${addressString} v:${JSON.stringify(account)}`)
         // storage hit!!! data exists in this shard
         //put this in our first reads map
         this.firstAccountReads.set(addressString, storedRlp)
@@ -324,6 +333,9 @@ export default class TransactionState {
 
       const accountObj = Account.fromAccountData(account)
       let storedRlp = accountObj.serialize()
+
+      if(this.debugTrace) this.debugTraceLog(`putAccount: addr:${addressString} v:${JSON.stringify(accountObj)}`)
+
       this.allAccountWrites.set(addressString, storedRlp )
     }
 
@@ -351,27 +363,32 @@ export default class TransactionState {
 
         if(originalOnly === false){
             if(this.allContractBytesWrites.has(codeHashStr)){
-              return this.allContractBytesWrites.get(codeHashStr).contractByte
+              let codeBytes = this.allContractBytesWrites.get(codeHashStr).contractByte
+              if(this.debugTrace) this.debugTraceLog(`getContractCode: (allContractBytesWrites) addr:${addressString} codeHashStr:${codeHashStr} v:${codeBytes.length}`)
+              return codeBytes
             }
         }
         if(this.firstContractBytesReads.has(codeHashStr)){
-          return this.firstContractBytesReads.get(codeHashStr).contractByte
+          let codeBytes = this.firstContractBytesReads.get(codeHashStr).contractByte
+          if(this.debugTrace) this.debugTraceLog(`getContractCode: (firstContractBytesReads) addr:${addressString} codeHashStr:${codeHashStr} v:${codeBytes.length}`)
+          return codeBytes
         }
 
         if(this.accountInvolvedCB(this, addressString, true) === false){
             throw new Error('unable to proceed, cant involve contract bytes')
         }
 
-        //see if we can get it from the storage trie.
-      let storageTrie = await this.shardeumState._getStorageTrie(contractAddress)
-      let storedCodeByte = await storageTrie.get(codeHash)
-      let codeBytes = storedCodeByte // seems to be no conversio needed for codebytes.
+        //see if we can get it from the worldStateTrie.db
+        let storedCodeByte = await worldStateTrie.db.get(codeHash)
+        let codeBytes = storedCodeByte // seems to be no conversio needed for codebytes.
 
         //Storage miss!!!, account not on this shard
         if(codeBytes == undefined){
             //event callback to inidicate we do not have the account in this shard
             // not 100% if we should await this, may need some group discussion
             let isRemoteShard = await this.accountMissCB(this, codeHashStr)
+
+            if(this.debugTrace) this.debugTraceLog(`getContractCode: addr:${addressString} codeHashStr:${codeHashStr} v:undefined`)
 
             if(canThrow && isRemoteShard)
                 throw new Error('codeBytes in remote shard, abort') //todo smarter throw?
@@ -380,6 +397,8 @@ export default class TransactionState {
             //todo need to insert it into a map of new / virtual accounts?
             return Buffer.alloc(0)
         }
+
+        if(this.debugTrace) this.debugTraceLog(`getContractCode: addr:${addressString} codeHashStr:${codeHashStr} v:${codeBytes.length}`)
 
         // storage hit!!! data exists in this shard
         //put this in our first reads map
@@ -404,6 +423,9 @@ export default class TransactionState {
         codeHash,
        contractAddress
       }
+
+      if(this.debugTrace) this.debugTraceLog(`putContractCode: addr:${addressString} codeHash:${codeHash.toString('hex')} v:${contractByteWrite.contractByte.toString('hex')}`)
+
       this.allContractBytesWrites.set(codeHash.toString('hex'), contractByteWrite)
       this.touchedCAs.add(addressString)
     }
@@ -432,7 +454,9 @@ export default class TransactionState {
             let contractStorageWrites = this.allContractStorageWrites.get(addressString)
             if(contractStorageWrites.has(keyString)){
                 let storedRlp = contractStorageWrites.get(keyString)
-                return storedRlp ? rlp.decode(storedRlp) : undefined
+                let returnValue = storedRlp ? rlp.decode(storedRlp) : undefined
+                if(this.debugTrace) this.debugTraceLog(`getContractStorage: (contractStorageWrites) addr:${addressString} key:${keyString} v:${returnValue?.toString('hex')}`)
+                return returnValue
             }
           }
         }
@@ -440,7 +464,9 @@ export default class TransactionState {
           let contractStorageReads = this.firstContractStorageReads.get(addressString)
           if(contractStorageReads.has(keyString)){
             let storedRlp = contractStorageReads.get(keyString)
-              return storedRlp ? rlp.decode(storedRlp) : undefined
+            let returnValue = storedRlp ? rlp.decode(storedRlp) : undefined
+            if(this.debugTrace) this.debugTraceLog(`getContractStorage: (contractStorageReads) addr:${addressString} key:${keyString} v:${returnValue?.toString('hex')}`)
+            return returnValue
           }
         }
 
@@ -458,6 +484,8 @@ export default class TransactionState {
           //event callback to inidicate we do not have the account in this shard
           let isRemoteShard = await this.contractStorageMissCB(this, addressString, keyString)
 
+          if(this.debugTrace) this.debugTraceLog(`getContractStorage: addr:${addressString} key:${keyString} v:notFound`)
+
           if(canThrow && isRemoteShard)
             throw new Error('account not available') //todo smarter throw?
 
@@ -473,6 +501,9 @@ export default class TransactionState {
           this.firstContractStorageReads.set(addressString, contractStorageReads)
         }
         contractStorageReads.set(keyString, storedRlp)
+
+
+        if(this.debugTrace) this.debugTraceLog(`getContractStorage: addr:${addressString} key:${keyString} v:${storedValue.toString('hex')}`)
 
         return storedValue
     }
@@ -495,6 +526,9 @@ export default class TransactionState {
         this.allContractStorageWrites.set(addressString, contractStorageWrites)
       }
       contractStorageWrites.set(keyString, storedRlp )
+
+
+      if(this.debugTrace) this.debugTraceLog(`putContractStorage: addr:${addressString} key:${keyString} v:${value.toString('hex')}`)
 
       //here is our take on things:
       // todo investigate..  need to figure out if the code above does actually update the CA values storage hash or if that happens in commit?
@@ -571,5 +605,10 @@ export default class TransactionState {
       // }
       // this._cache.del(address)
       // this.touchAccount(address)
+    }
+
+    debugTraceLog(message:string) {
+
+      console.log(`DBG:${this.linkedTX} msg:${message}`)
     }
 }
