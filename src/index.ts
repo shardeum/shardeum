@@ -466,7 +466,7 @@ async function createAccount(addressStr, transactionState:TransactionState): Pro
   const updatedAccount = await EVM.stateManager.getAccount(accountAddress)
 
   let wrappedEthAccount = {
-    timestamp: Date.now(),
+    timestamp: 0,
     account: updatedAccount,
     ethAddress: addressStr,
     hash: '',
@@ -646,7 +646,7 @@ async function setupTester(ethAccountID: string) {
   let account = await EVM.stateManager.getAccount(address)
 
   let wrappedEthAccount = {
-    timestamp: Date.now(),
+    timestamp: 0,
     account,
     ethAddress: ethAccountID,
     hash: '',
@@ -961,7 +961,7 @@ shardus.setup({
           let ethAccountID = Receipt.createdAddress.toString()
           let shardusAddress = toShardusAddress(ethAccountID, AccountType.Account)
           let contractAccount = await EVM.stateManager.getAccount(Receipt.createdAddress)
-          let wrappedEthAccount = {timestamp: Date.now(), account: contractAccount, ethAddress: ethAccountID, hash: '', accountType: AccountType.Account}
+          let wrappedEthAccount = {timestamp: 0, account: contractAccount, ethAddress: ethAccountID, hash: '', accountType: AccountType.Account}
 
           updateEthAccountHash(wrappedEthAccount)
 
@@ -987,7 +987,7 @@ shardus.setup({
         let contractStorageWrites = contractStorageEntry[1]
         for (let [key, value] of contractStorageWrites) { // do we need .entries()?
             let wrappedEVMAccount: WrappedEVMAccount = {
-            timestamp: Date.now(),
+            timestamp: tx.timestamp,
             key,
             value,
             ethAddress: addressStr, //this is confusing but I think we may want to use key here
@@ -1012,7 +1012,7 @@ shardus.setup({
         let contractByteWrite: ContractByteWrite = contractBytesEntry[1]
 
         let wrappedEVMAccount: WrappedEVMAccount = {
-          timestamp: Date.now(),
+          timestamp: tx.timestamp,
           codeHash: contractByteWrite.codeHash,
           codeByte: contractByteWrite.contractByte,
           ethAddress: addressStr,
@@ -1035,7 +1035,7 @@ shardus.setup({
         let accountObj = Account.fromRlpSerializedAccount(account[1])
 
         let wrappedEVMAccount: WrappedEVMAccount = {
-          timestamp: Date.now(),
+          timestamp: tx.timestamp,
           account: accountObj,
           ethAddress: addressStr,
           hash: '',
@@ -1055,7 +1055,7 @@ shardus.setup({
       //TODO also create an account for the receipt (nested in the returned Receipt should be a receipt with a list of logs)
       // We are ready to loop over the receipts and add them
       let wrappedReceiptAccount: WrappedEVMAccount = {
-        timestamp: Date.now(),
+        timestamp: tx.timestamp,
         ethAddress: txId, //.slice(0, 42),  I think the full 32byte TX should be fine now that toShardusAddress understands account type
         hash: '',
         receipt: Receipt.receipt,
@@ -1207,7 +1207,7 @@ shardus.setup({
       let account = await EVM.stateManager.getAccount(address)
 
       wrappedEthAccount = {
-        timestamp: Date.now(),
+        timestamp: 0,
         account,
         ethAddress: ethAccountID,
         hash: '',
