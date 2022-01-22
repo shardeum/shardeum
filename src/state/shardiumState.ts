@@ -964,7 +964,7 @@ export default class ShardiumState implements StateManager {
     //contition the buffers to fix issues that are caused by serialization
     TransactionState.fixUpAccountFields(account)
 
-    account.stateRoot = Buffer.from(account.stateRoot)
+    //account.stateRoot = Buffer.from(account.stateRoot) //handled in fixUpAccountFields
     const accountObj = Account.fromAccountData(account)
     const accountRlp = accountObj.serialize()
     const accountKeyBuf = address.buf
@@ -1015,9 +1015,10 @@ export default class ShardiumState implements StateManager {
     //what if storage trie was just created?
     storageTrie.checkpoint()
 
+    //moved this code to fixDeserializedWrappedEVMAccount()
     //contition the buffers to fix issues that are caused by serialization
-    key = Buffer.from(key)
-    value = Buffer.from(value)
+    // key = Buffer.from(key)
+    // value = Buffer.from(value)
 
     await storageTrie.put(key, value)
   
@@ -1033,9 +1034,11 @@ export default class ShardiumState implements StateManager {
     //let address = Address.fromString(addressString)
 
     this._trie.checkpoint()
+
+    //moved this code to fixDeserializedWrappedEVMAccount()
     //contition the buffers to fix issues that are caused by serialization
-    codeHash = Buffer.from(codeHash)
-    codeByte = Buffer.from(codeByte)
+    // codeHash = Buffer.from(codeHash)
+    // codeByte = Buffer.from(codeByte)
 
     await this._trie.db.put(codeHash, codeByte)
   
