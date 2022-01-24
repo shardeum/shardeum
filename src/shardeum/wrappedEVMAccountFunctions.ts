@@ -27,11 +27,11 @@ export function hashFromNonceHack(wrappedEVMAccount: WrappedEVMAccount): string 
     // parse to number first since some nonces have leading zeroes
     hash = Number(wrappedEVMAccount.account.nonce).toString()
   } else if (wrappedEVMAccount.accountType === AccountType.ContractStorage) {
-    hash = crypto.hashObj({ key: wrappedEVMAccount.key, value: wrappedEVMAccount.value, })
+    hash = crypto.hashObj({ key: wrappedEVMAccount.key, value: wrappedEVMAccount.value })
   } else if (wrappedEVMAccount.accountType === AccountType.ContractCode) {
-    hash = crypto.hashObj({ key: wrappedEVMAccount.codeHash, value: wrappedEVMAccount.codeByte, })
+    hash = crypto.hashObj({ key: wrappedEVMAccount.codeHash, value: wrappedEVMAccount.codeByte })
   } else if (wrappedEVMAccount.accountType === AccountType.Receipt) {
-    hash = crypto.hashObj({ key: wrappedEVMAccount.txId, value: wrappedEVMAccount.receipt, })
+    hash = crypto.hashObj({ key: wrappedEVMAccount.txId, value: wrappedEVMAccount.receipt })
   }
   hash = hash + '0'.repeat(64 - hash.length)
   return hash

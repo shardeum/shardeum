@@ -1,7 +1,7 @@
-import { Account, Address, BN, bufferToHex, toBuffer } from "ethereumjs-util";
+import { Account, Address, BN, bufferToHex, toBuffer } from 'ethereumjs-util'
 
-import { Transaction, AccessListEIP2930Transaction } from "@ethereumjs/tx";
-import { TxReceipt } from "@ethereumjs/vm/dist/types";
+import { Transaction, AccessListEIP2930Transaction } from '@ethereumjs/tx'
+import { TxReceipt } from '@ethereumjs/vm/dist/types'
 
 /**
  * interface account {
@@ -35,38 +35,38 @@ export enum AccountType {
  * from disk again, and that could be a bit tricky.
  */
 export interface WrappedEVMAccount {
-  accountType: AccountType;
+  accountType: AccountType
 
-  ethAddress: string; //account address in EVM space.
-  hash: string; //account hash
+  ethAddress: string //account address in EVM space.
+  hash: string //account hash
 
-  timestamp: number; //account timestamp.  last time a TX changed it
+  timestamp: number //account timestamp.  last time a TX changed it
 
   // Here is the EVM variant data.  An account:
-  account?: Account; //actual EVM account. if this is type Account
+  account?: Account //actual EVM account. if this is type Account
   // <or> this:
-  key?: string; //EVM CA storage key
-  value?: Buffer; //EVM buffer value if this is of type CA_KVP
+  key?: string //EVM CA storage key
+  value?: Buffer //EVM buffer value if this is of type CA_KVP
 
   //What to store for ContractCode?
-  codeHash?: Buffer;
-  codeByte?: Buffer;
-  contractAddress?: string;
+  codeHash?: Buffer
+  codeByte?: Buffer
+  contractAddress?: string
 
   //What to store for Reciept?  .. doesn't look like runTX really does much with them.  runBlock seem to do more.
   //the returned receipt from runTX is seems downcasted, because it actual has more fields than expected.
   //research question..  does the RPC server have any logs checking endpoints..
   //doesnt seem like it on a quick search.
   //It does have a hardcoded logsBloom so maybe we need to fill this with correct data.
-  receipt?: TxReceipt;
-  txId?: string;
+  receipt?: TxReceipt
+  txId?: string
 }
 
 export interface WrappedEVMAccountMap {
-  [id: string]: WrappedEVMAccount;
+  [id: string]: WrappedEVMAccount
 }
 
 export interface EVMAccountInfo {
-  type: AccountType;
-  evmAddress: string;
+  type: AccountType
+  evmAddress: string
 }

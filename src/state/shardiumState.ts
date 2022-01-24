@@ -1,24 +1,16 @@
-import {add} from "lodash";
+import { add } from 'lodash'
 
 const Set = require('core-js-pure/es/set')
 
-import {debug as createDebugLogger} from 'debug'
-import {SecureTrie as Trie} from 'merkle-patricia-tree'
-import {
-  Account,
-  Address,
-  toBuffer,
-  keccak256,
-  KECCAK256_NULL,
-  rlp,
-  unpadBuffer, bufferToHex, KECCAK256_RLP,
-} from 'ethereumjs-util'
-import Common, {Chain, Hardfork} from '@ethereumjs/common'
-import {StateManager, StorageDump} from '@ethereumjs/vm/src/state/interface'
+import { debug as createDebugLogger } from 'debug'
+import { SecureTrie as Trie } from 'merkle-patricia-tree'
+import { Account, Address, toBuffer, keccak256, KECCAK256_NULL, rlp, unpadBuffer, bufferToHex, KECCAK256_RLP } from 'ethereumjs-util'
+import Common, { Chain, Hardfork } from '@ethereumjs/common'
+import { StateManager, StorageDump } from '@ethereumjs/vm/src/state/interface'
 import Cache from './cache'
 //import { getActivePrecompiles, ripemdPrecompileAddress } from '@ethereumjs/vm/src/evm/precompiles'
 //import { short } from '@ethereumjs/vm/src/evm/opcodes'
-import {AccessList, AccessListItem} from '@ethereumjs/tx'
+import { AccessList, AccessListItem } from '@ethereumjs/tx'
 import TransactionState from './transactionState'
 
 const debug = createDebugLogger('vm:state')
@@ -77,9 +69,7 @@ export default class ShardiumState implements StateManager {
   // to also include on access list generation
   _accessedStorageReverted: Map<string, Set<string>>[]
 
-
   _transactionState: TransactionState
-
 
   temporaryParallelOldMode: boolean
 
@@ -99,7 +89,7 @@ export default class ShardiumState implements StateManager {
   constructor(opts: DefaultStateManagerOpts = {}) {
     let common = opts.common
     if (!common) {
-      common = new Common({chain: Chain.Mainnet, hardfork: Hardfork.Petersburg})
+      common = new Common({ chain: Chain.Mainnet, hardfork: Hardfork.Petersburg })
     }
     this._common = common
 
@@ -130,7 +120,6 @@ export default class ShardiumState implements StateManager {
     this._transactionState = null
   }
 
-
   /**
    * Copies the current instance of the `StateManager`
    * at the last fully committed point, i.e. as if all current
@@ -152,18 +141,17 @@ export default class ShardiumState implements StateManager {
     //side run system on the side for now
     if (this._transactionState != null) {
       testAccount = await this._transactionState.getAccount(this._trie, address, false, false)
-      if(this.temporaryParallelOldMode === false){
+      if (this.temporaryParallelOldMode === false) {
         return testAccount
       }
     }
 
-    if(this.temporaryParallelOldMode === false){
+    if (this.temporaryParallelOldMode === false) {
       return // the code below will be irrelevant post SGS upgrade
     }
     // Original implementation:
     const account = await this._cache.getOrLoad(address)
     return account
-
   }
 
   /**
@@ -172,22 +160,21 @@ export default class ShardiumState implements StateManager {
    * @param account - The account to store
    */
   async putAccount(address: Address, account: Account): Promise<void> {
-
     if (this._transactionState != null) {
       //side run system on the side for now
       this._transactionState.putAccount(address, account)
     }
 
-    if(this.temporaryParallelOldMode === false){
+    if (this.temporaryParallelOldMode === false) {
       return // the code below will be irrelevant post SGS upgrade
     }
 
     // Original implementation:
     if (this.DEBUG) {
       debug(
-        `Save account address=${address} nonce=${account.nonce} balance=${
-          account.balance
-        } contract=${account.isContract() ? 'yes' : 'no'} empty=${account.isEmpty() ? 'yes' : 'no'}`
+        `Save account address=${address} nonce=${account.nonce} balance=${account.balance} contract=${account.isContract() ? 'yes' : 'no'} empty=${
+          account.isEmpty() ? 'yes' : 'no'
+        }`
       )
     }
     this._cache.put(address, account)
@@ -231,7 +218,7 @@ export default class ShardiumState implements StateManager {
       this._transactionState.putContractCode(address, value)
     }
 
-    if(this.temporaryParallelOldMode === false){
+    if (this.temporaryParallelOldMode === false) {
       return // the code below will be irrelevant post SGS upgrade
     }
 
@@ -263,11 +250,11 @@ export default class ShardiumState implements StateManager {
     //side run system on the side for now
     if (this._transactionState != null) {
       let testAccount = await this._transactionState.getContractCode(this._trie, address, false, false)
-      if(this.temporaryParallelOldMode === false){
+      if (this.temporaryParallelOldMode === false) {
         return testAccount
       }
     }
-    if(this.temporaryParallelOldMode === false){
+    if (this.temporaryParallelOldMode === false) {
       return // the code below will be irrelevant post SGS upgrade
     }
     // Original implementation:
@@ -324,11 +311,11 @@ export default class ShardiumState implements StateManager {
       //side run system on the side for now
       let storageTrie = await this._getStorageTrie(address)
       testAccount = await this._transactionState.getContractStorage(storageTrie, address, key, false, false)
-      if(this.temporaryParallelOldMode === false){
+      if (this.temporaryParallelOldMode === false) {
         return testAccount
       }
     }
-    if(this.temporaryParallelOldMode === false){
+    if (this.temporaryParallelOldMode === false) {
       return // the code below will be irrelevant post SGS upgrade
     }
     // Original implementation:
@@ -355,11 +342,11 @@ export default class ShardiumState implements StateManager {
       //side run system on the side for now
       let storageTrie = await this._getStorageTrie(address)
       let testAccount = await this._transactionState.getContractStorage(storageTrie, address, key, true, false)
-      if(this.temporaryParallelOldMode === false){
+      if (this.temporaryParallelOldMode === false) {
         return testAccount
       }
     }
-    if(this.temporaryParallelOldMode === false){
+    if (this.temporaryParallelOldMode === false) {
       return // the code below will be irrelevant post SGS upgrade
     }
     // Original implementation:
@@ -409,12 +396,9 @@ export default class ShardiumState implements StateManager {
    * @param address -  Address of the account whose storage is to be modified
    * @param modifyTrie - Function to modify the storage trie of the account
    */
-  async _modifyContractStorage(
-    address: Address,
-    modifyTrie: (storageTrie: Trie, done: Function) => void
-  ): Promise<void> {
+  async _modifyContractStorage(address: Address, modifyTrie: (storageTrie: Trie, done: Function) => void): Promise<void> {
     // eslint-disable-next-line no-async-promise-executor
-    return new Promise(async (resolve) => {
+    return new Promise(async resolve => {
       const storageTrie = await this._getStorageTrie(address)
 
       modifyTrie(storageTrie, async () => {
@@ -454,7 +438,7 @@ export default class ShardiumState implements StateManager {
       this._transactionState.putContractStorage(address, key, value)
     }
 
-    if(this.temporaryParallelOldMode === false){
+    if (this.temporaryParallelOldMode === false) {
       return // the code below will be irrelevant post SGS upgrade
     }
 
@@ -498,11 +482,9 @@ export default class ShardiumState implements StateManager {
    * `commit` or `reverted` by calling rollback.
    */
   async checkpoint(): Promise<void> {
-
-
     //side run: shardeum will no-op this in the future
     //  investigate: will it be a problem that EVM may call this for failed functions, or does that all bubble up anyhow?
-    if(this.temporaryParallelOldMode === false){
+    if (this.temporaryParallelOldMode === false) {
       return // the code below will be irrelevant post SGS upgrade
     }
 
@@ -518,10 +500,7 @@ export default class ShardiumState implements StateManager {
   /**
    * Merges a storage map into the last item of the accessed storage stack
    */
-  private _accessedStorageMerge(
-    storageList: Map<string, Set<string>>[],
-    storageMap: Map<string, Set<string>>
-  ) {
+  private _accessedStorageMerge(storageList: Map<string, Set<string>>[], storageMap: Map<string, Set<string>>) {
     const mapTarget = storageList[storageList.length - 1]
 
     if (mapTarget) {
@@ -544,10 +523,9 @@ export default class ShardiumState implements StateManager {
    * last call to checkpoint.
    */
   async commit(): Promise<void> {
-
     //side run: shardeum will no-op this in the future
     //  investigate: will it be a problem that EVM may call this for failed functions, or does that all bubble up anyhow?
-    if(this.temporaryParallelOldMode === false){
+    if (this.temporaryParallelOldMode === false) {
       return // the code below will be irrelevant post SGS upgrade
     }
 
@@ -576,15 +554,13 @@ export default class ShardiumState implements StateManager {
    * last call to checkpoint.
    */
   async revert(): Promise<void> {
-
     //side run: shardeum will no-op this in the future
     //  investigate: will it be a problem that EVM may call this for failed functions, or does that all bubble up anyhow?
-    if(this.temporaryParallelOldMode === false){
+    if (this.temporaryParallelOldMode === false) {
       return // the code below will be irrelevant post SGS upgrade
     }
 
     // Original implementation:
-
 
     // setup trie checkpointing
     await this._trie.revert()
@@ -664,7 +640,7 @@ export default class ShardiumState implements StateManager {
   async dumpStorage(address: Address): Promise<StorageDump> {
     return new Promise((resolve, reject) => {
       this._getStorageTrie(address)
-        .then((trie) => {
+        .then(trie => {
           const storage: StorageDump = {}
           const stream = trie.createReadStream()
 
@@ -675,7 +651,7 @@ export default class ShardiumState implements StateManager {
             resolve(storage)
           })
         })
-        .catch((e) => {
+        .catch(e => {
           reject(e)
         })
     })
@@ -690,7 +666,7 @@ export default class ShardiumState implements StateManager {
   async getContractAccountKVPs(address: Address): Promise<StorageDump> {
     return new Promise((resolve, reject) => {
       this._getStorageTrie(address)
-        .then((trie) => {
+        .then(trie => {
           const storage: StorageDump = {}
           const stream = trie.createReadStream()
 
@@ -701,12 +677,11 @@ export default class ShardiumState implements StateManager {
             resolve(storage)
           })
         })
-        .catch((e) => {
+        .catch(e => {
           reject(e)
         })
     })
   }
-
 
   /**
    * Checks whether the current instance has the canonical genesis state
@@ -753,12 +728,12 @@ export default class ShardiumState implements StateManager {
       const state = initState[address]
       if (!Array.isArray(state)) {
         // Prior format: address -> balance
-        const account = Account.fromAccountData({balance: state})
+        const account = Account.fromAccountData({ balance: state })
         await this._trie.put(addr.buf, account.serialize())
       } else {
         // New format: address -> [balance, code, storage]
         const [balance, code, storage] = state
-        const account = Account.fromAccountData({balance})
+        const account = Account.fromAccountData({ balance })
         await this._trie.put(addr.buf, account.serialize())
         if (code) {
           await this.putContractCode(addr, toBuffer(code))
@@ -891,45 +866,45 @@ export default class ShardiumState implements StateManager {
    * @returns - an [@ethereumjs/tx](https://github.com/ethereumjs/ethereumjs-monorepo/packages/tx) `AccessList`
    */
   //SHARDIUM hack disable - wont compile
-//   generateAccessList(
-//     addressesRemoved: Address[] = [],
-//     addressesOnlyStorage: Address[] = []
-//   ): AccessList {
-//     // Merge with the reverted storage list
-//     const mergedStorage = [...this._accessedStorage, ...this._accessedStorageReverted]
+  //   generateAccessList(
+  //     addressesRemoved: Address[] = [],
+  //     addressesOnlyStorage: Address[] = []
+  //   ): AccessList {
+  //     // Merge with the reverted storage list
+  //     const mergedStorage = [...this._accessedStorage, ...this._accessedStorageReverted]
 
-//     // Fold merged storage array into one Map
-//     while (mergedStorage.length >= 2) {
-//       const storageMap = mergedStorage.pop()
-//       if (storageMap) {
-//         this._accessedStorageMerge(mergedStorage, storageMap)
-//       }
-//     }
-//     const folded = new Map([...mergedStorage[0].entries()].sort())
+  //     // Fold merged storage array into one Map
+  //     while (mergedStorage.length >= 2) {
+  //       const storageMap = mergedStorage.pop()
+  //       if (storageMap) {
+  //         this._accessedStorageMerge(mergedStorage, storageMap)
+  //       }
+  //     }
+  //     const folded = new Map([...mergedStorage[0].entries()].sort())
 
-//     // Transfer folded map to final structure
-//     const accessList: AccessList = []
-//     folded.forEach((slots, addressStr) => {
-//       const address = Address.fromString(`0x${addressStr}`)
-//       const check1 = getActivePrecompiles(this._common).find((a) => a.equals(address))
-//       const check2 = addressesRemoved.find((a) => a.equals(address))
-//       const check3 =
-//         addressesOnlyStorage.find((a) => a.equals(address)) !== undefined && slots.size === 0
+  //     // Transfer folded map to final structure
+  //     const accessList: AccessList = []
+  //     folded.forEach((slots, addressStr) => {
+  //       const address = Address.fromString(`0x${addressStr}`)
+  //       const check1 = getActivePrecompiles(this._common).find((a) => a.equals(address))
+  //       const check2 = addressesRemoved.find((a) => a.equals(address))
+  //       const check3 =
+  //         addressesOnlyStorage.find((a) => a.equals(address)) !== undefined && slots.size === 0
 
-//       if (!check1 && !check2 && !check3) {
-//         const storageSlots = Array.from(slots)
-//           .map((s) => `0x${s}`)
-//           .sort()
-//         const accessListItem: AccessListItem = {
-//           address: `0x${addressStr}`,
-//           storageKeys: storageSlots,
-//         }
-//         accessList!.push(accessListItem)
-//       }
-//     })
+  //       if (!check1 && !check2 && !check3) {
+  //         const storageSlots = Array.from(slots)
+  //           .map((s) => `0x${s}`)
+  //           .sort()
+  //         const accessListItem: AccessListItem = {
+  //           address: `0x${addressStr}`,
+  //           storageKeys: storageSlots,
+  //         }
+  //         accessList!.push(accessListItem)
+  //       }
+  //     })
 
-//     return accessList
-//   }
+  //     return accessList
+  //   }
 
   /**
    * Removes accounts form the state trie that have been touched,
@@ -973,8 +948,7 @@ export default class ShardiumState implements StateManager {
     await this._trie.commit()
   }
 
-
-  async _getOrCreateStorageTrie(stateRoot:Buffer, address: Address): Promise<Trie> {
+  async _getOrCreateStorageTrie(stateRoot: Buffer, address: Address): Promise<Trie> {
     // from storage cache
     const addressHex = address.buf.toString('hex')
     let storageTrie = this._storageTries[addressHex]
@@ -985,7 +959,7 @@ export default class ShardiumState implements StateManager {
     return storageTrie
   }
 
-  async _createStorageTrie(stateRoot:Buffer, address: Address): Promise<Trie> {
+  async _createStorageTrie(stateRoot: Buffer, address: Address): Promise<Trie> {
     // from state trie
     const storageTrie = this._trie.copy(false)
     storageTrie.root = stateRoot
@@ -993,13 +967,11 @@ export default class ShardiumState implements StateManager {
     return storageTrie
   }
 
-
   /**
    * For use by the shardeum Dapp to set account data from syncing
    */
-  async setContractAccountKeyValueExternal(stateRoot:Buffer, addressString: string, key: Buffer, value: Buffer) {
+  async setContractAccountKeyValueExternal(stateRoot: Buffer, addressString: string, key: Buffer, value: Buffer) {
     let address = Address.fromString(addressString)
-
 
     // const account = await this.getAccount(address)
     // if()
@@ -1021,16 +993,14 @@ export default class ShardiumState implements StateManager {
     // value = Buffer.from(value)
 
     await storageTrie.put(key, value)
-  
+
     await storageTrie.commit()
-
   }
-
 
   /**
    * For use by the shardeum Dapp to set account data from syncing
    */
-  async setContractBytesExternal( codeHash: Buffer, codeByte: Buffer) {
+  async setContractBytesExternal(codeHash: Buffer, codeByte: Buffer) {
     //let address = Address.fromString(addressString)
 
     this._trie.checkpoint()
@@ -1041,9 +1011,7 @@ export default class ShardiumState implements StateManager {
     // codeByte = Buffer.from(codeByte)
 
     await this._trie.db.put(codeHash, codeByte)
-  
+
     await this._trie.commit()
-
   }
-
 }

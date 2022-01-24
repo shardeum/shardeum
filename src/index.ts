@@ -3,16 +3,16 @@ import path from 'path'
 import merge from 'deepmerge'
 import stringify from 'fast-json-stable-stringify'
 import * as crypto from 'shardus-crypto-utils'
-import {Account, Address, BN, bufferToHex, toBuffer} from 'ethereumjs-util'
+import { Account, Address, BN, bufferToHex, toBuffer } from 'ethereumjs-util'
 
-import {Transaction, AccessListEIP2930Transaction} from '@ethereumjs/tx';
-import VM from '@ethereumjs/vm';
-import {parse as parseUrl} from 'url'
+import { Transaction, AccessListEIP2930Transaction } from '@ethereumjs/tx'
+import VM from '@ethereumjs/vm'
+import { parse as parseUrl } from 'url'
 import got from 'got'
-import {ShardiumState, TransactionState} from './state'
-import {Shardus, ShardusTypes} from 'shardus-global-server'
-import {TxReceipt} from "@ethereumjs/vm/dist/types";
-import {ContractByteWrite} from "./state/transactionState";
+import { ShardiumState, TransactionState } from './state'
+import { Shardus, ShardusTypes } from 'shardus-global-server'
+import { TxReceipt } from '@ethereumjs/vm/dist/types'
+import { ContractByteWrite } from './state/transactionState'
 import { util } from 'prettier'
 
 import { replacer } from 'shardus-global-server/build/src/utils'
@@ -24,27 +24,27 @@ import * as utils from './utils'
 import * as ShardeumFlags from './shardeum/shardeumFlags'
 import * as WrappedEVMAccountFunctions from './shardeum/wrappedEVMAccountFunctions'
 
-let {shardusFactory} = require('shardus-global-server')
+let { shardusFactory } = require('shardus-global-server')
 
 crypto.init('69fa4195670576c0160d660c3be36556ff8d504725be8a59b5a96509e0c994bc')
 
 /***
- *     ######   #######  ##    ## ######## ####  ######   
- *    ##    ## ##     ## ###   ## ##        ##  ##    ##  
- *    ##       ##     ## ####  ## ##        ##  ##        
- *    ##       ##     ## ## ## ## ######    ##  ##   #### 
- *    ##       ##     ## ##  #### ##        ##  ##    ##  
- *    ##    ## ##     ## ##   ### ##        ##  ##    ##  
- *     ######   #######  ##    ## ##       ####  ######   
+ *     ######   #######  ##    ## ######## ####  ######
+ *    ##    ## ##     ## ###   ## ##        ##  ##    ##
+ *    ##       ##     ## ####  ## ##        ##  ##
+ *    ##       ##     ## ## ## ## ######    ##  ##   ####
+ *    ##       ##     ## ##  #### ##        ##  ##    ##
+ *    ##    ## ##     ## ##   ### ##        ##  ##    ##
+ *     ######   #######  ##    ## ##       ####  ######
  */
 
 const overwriteMerge = (target, source, options) => source
 
-let config = {server: {baseDir: './'}}
+let config = { server: { baseDir: './' } }
 
 if (fs.existsSync(path.join(process.cwd(), 'config.json'))) {
   const fileConfig = JSON.parse(fs.readFileSync(path.join(process.cwd(), 'config.json')).toString())
-  config = merge(config, fileConfig, {arrayMerge: overwriteMerge})
+  config = merge(config, fileConfig, { arrayMerge: overwriteMerge })
 }
 
 if (process.env.BASE_DIR) {
@@ -54,7 +54,7 @@ if (process.env.BASE_DIR) {
   if (fs.existsSync(path.join(baseDir, 'config.json'))) {
     baseDirFileConfig = JSON.parse(fs.readFileSync(path.join(baseDir, 'config.json')).toString())
   }
-  config = merge(config, baseDirFileConfig, {arrayMerge: overwriteMerge})
+  config = merge(config, baseDirFileConfig, { arrayMerge: overwriteMerge })
   config.server.baseDir = process.env.BASE_DIR
 }
 
@@ -70,16 +70,16 @@ if (process.env.APP_SEEDLIST) {
             {
               ip: process.env.APP_SEEDLIST,
               port: 4000,
-              publicKey: '758b1c119412298802cd28dbfa394cdfeecc4074492d60844cc192d632d84de3'
-            }
-          ]
+              publicKey: '758b1c119412298802cd28dbfa394cdfeecc4074492d60844cc192d632d84de3',
+            },
+          ],
         },
         sharding: {
-          nodesPerConsensus: 50
-        }
-      }
+          nodesPerConsensus: 50,
+        },
+      },
     },
-    {arrayMerge: overwriteMerge}
+    { arrayMerge: overwriteMerge }
   )
 }
 
@@ -89,11 +89,11 @@ if (process.env.APP_MONITOR) {
     {
       server: {
         reporting: {
-          recipient: `http://${process.env.APP_MONITOR}:3000/api`
-        }
-      }
+          recipient: `http://${process.env.APP_MONITOR}:3000/api`,
+        },
+      },
     },
-    {arrayMerge: overwriteMerge}
+    { arrayMerge: overwriteMerge }
   )
 }
 
@@ -104,11 +104,11 @@ if (process.env.APP_IP) {
       server: {
         ip: {
           externalIp: process.env.APP_IP,
-          internalIp: process.env.APP_IP
-        }
-      }
+          internalIp: process.env.APP_IP,
+        },
+      },
     },
-    {arrayMerge: overwriteMerge}
+    { arrayMerge: overwriteMerge }
   )
 }
 
@@ -119,17 +119,16 @@ config = merge(config, {
       minNodesToAllowTxs: 1,
       minNodes: 5,
       maxNodes: 5,
-    }
-  }
+    },
+  },
 })
-
 
 config = merge(config, {
   server: {
     sharding: {
-      nodesPerConsensusGroup: 50
-    }
-  }
+      nodesPerConsensusGroup: 50,
+    },
+  },
 })
 
 //some debug settings
@@ -143,24 +142,23 @@ config = merge(
         startInErrorLogMode: false,
         fakeNetworkDelay: 0,
         disableSnapshots: true,
-        countEndpointStart: -1
-      }
-    }
+        countEndpointStart: -1,
+      },
+    },
   },
-  {arrayMerge: overwriteMerge}
+  { arrayMerge: overwriteMerge }
 )
 
 const shardus = shardusFactory(config)
 
-
 /***
- *    ######## ##     ## ##     ##    #### ##    ## #### ######## 
- *    ##       ##     ## ###   ###     ##  ###   ##  ##     ##    
- *    ##       ##     ## #### ####     ##  ####  ##  ##     ##    
- *    ######   ##     ## ## ### ##     ##  ## ## ##  ##     ##    
- *    ##        ##   ##  ##     ##     ##  ##  ####  ##     ##    
- *    ##         ## ##   ##     ##     ##  ##   ###  ##     ##    
- *    ########    ###    ##     ##    #### ##    ## ####    ##    
+ *    ######## ##     ## ##     ##    #### ##    ## #### ########
+ *    ##       ##     ## ###   ###     ##  ###   ##  ##     ##
+ *    ##       ##     ## #### ####     ##  ####  ##  ##     ##
+ *    ######   ##     ## ## ### ##     ##  ## ## ##  ##     ##
+ *    ##        ##   ##  ##     ##     ##  ##  ####  ##     ##
+ *    ##         ## ##   ##     ##     ##  ##   ###  ##     ##
+ *    ########    ###    ##     ##    #### ##    ## ####    ##
  */
 
 let accounts: WrappedEVMAccountMap = {}
@@ -170,22 +168,21 @@ let shardusTxIdToEthTxId = {}
 let shardiumStateManager = new ShardiumState() //as StateManager
 shardiumStateManager.temporaryParallelOldMode = ShardeumFlags.temporaryParallelOldMode //could probably refactor to use ShardeumFlags in the state manager
 
-let EVM = new VM({stateManager: shardiumStateManager})
+let EVM = new VM({ stateManager: shardiumStateManager })
 
 let transactionStateMap = new Map<string, TransactionState>()
 
-let shardusAddressToEVMAccountInfo = new Map<string, EVMAccountInfo>() 
+let shardusAddressToEVMAccountInfo = new Map<string, EVMAccountInfo>()
 
 /***
- *     ######     ###    ##       ##       ########     ###     ######  ##    ##  ######  
- *    ##    ##   ## ##   ##       ##       ##     ##   ## ##   ##    ## ##   ##  ##    ## 
- *    ##        ##   ##  ##       ##       ##     ##  ##   ##  ##       ##  ##   ##       
- *    ##       ##     ## ##       ##       ########  ##     ## ##       #####     ######  
- *    ##       ######### ##       ##       ##     ## ######### ##       ##  ##         ## 
- *    ##    ## ##     ## ##       ##       ##     ## ##     ## ##    ## ##   ##  ##    ## 
- *     ######  ##     ## ######## ######## ########  ##     ##  ######  ##    ##  ######  
+ *     ######     ###    ##       ##       ########     ###     ######  ##    ##  ######
+ *    ##    ##   ## ##   ##       ##       ##     ##   ## ##   ##    ## ##   ##  ##    ##
+ *    ##        ##   ##  ##       ##       ##     ##  ##   ##  ##       ##  ##   ##
+ *    ##       ##     ## ##       ##       ########  ##     ## ##       #####     ######
+ *    ##       ######### ##       ##       ##     ## ######### ##       ##  ##         ##
+ *    ##    ## ##     ## ##       ##       ##     ## ##     ## ##    ## ##   ##  ##    ##
+ *     ######  ##     ## ######## ######## ########  ##     ##  ######  ##    ##  ######
  */
-
 
 /**
  * This callback is called when the EVM tries to get an account it does not exist in trie storage or TransactionState
@@ -194,7 +191,6 @@ let shardusAddressToEVMAccountInfo = new Map<string, EVMAccountInfo>()
  * @param address
  */
 async function accountMiss(transactionState: TransactionState, address: string): Promise<boolean> {
-
   //Get the first read version of data that we have collected so far
   let transferBlob = transactionState.getTransferBlob()
   let txID = transactionState.linkedTX
@@ -217,13 +213,11 @@ async function accountMiss(transactionState: TransactionState, address: string):
  * @param key
  */
 async function contractStorageMiss(transactionState: TransactionState, address: string, key: string): Promise<boolean> {
-
   //Get the first read version of data that we have collected so far
   let transferBlob = transactionState.getTransferBlob()
   let txID = transactionState.linkedTX
 
   //NOTE  We do not need this for the january milestone!
-
 
   //let isRemote = shardus.isRemoteShard(address)
   // if(isRemote === false){
@@ -257,7 +251,6 @@ function accountInvolved(transactionState: TransactionState, address: string, is
   // that we may need to invove an additional account
 
   let txID = transactionState.linkedTX
-
 
   //Need to translate address to a shardus-global-server space address!
   // let shardusAddress = toShardusAddress(address, AccountType.Account)
@@ -313,7 +306,6 @@ function contractStorageInvolved(transactionState: TransactionState, address: st
       // transactionState will throw an error and halt the evm
       return false
     }
-
   }
 
   return true
@@ -342,15 +334,14 @@ function contractStorageInvolvedHack(transactionState: TransactionState, address
 }
 
 /***
- *       ###     ######   ######   #######  ##     ## ##    ## ########       ###     ######   ######  ########  ######  
- *      ## ##   ##    ## ##    ## ##     ## ##     ## ###   ##    ##         ## ##   ##    ## ##    ## ##       ##    ## 
- *     ##   ##  ##       ##       ##     ## ##     ## ####  ##    ##        ##   ##  ##       ##       ##       ##       
- *    ##     ## ##       ##       ##     ## ##     ## ## ## ##    ##       ##     ## ##       ##       ######    ######  
- *    ######### ##       ##       ##     ## ##     ## ##  ####    ##       ######### ##       ##       ##             ## 
- *    ##     ## ##    ## ##    ## ##     ## ##     ## ##   ###    ##       ##     ## ##    ## ##    ## ##       ##    ## 
- *    ##     ##  ######   ######   #######   #######  ##    ##    ##       ##     ##  ######   ######  ########  ######  
+ *       ###     ######   ######   #######  ##     ## ##    ## ########       ###     ######   ######  ########  ######
+ *      ## ##   ##    ## ##    ## ##     ## ##     ## ###   ##    ##         ## ##   ##    ## ##    ## ##       ##    ##
+ *     ##   ##  ##       ##       ##     ## ##     ## ####  ##    ##        ##   ##  ##       ##       ##       ##
+ *    ##     ## ##       ##       ##     ## ##     ## ## ## ##    ##       ##     ## ##       ##       ######    ######
+ *    ######### ##       ##       ##     ## ##     ## ##  ####    ##       ######### ##       ##       ##             ##
+ *    ##     ## ##    ## ##    ## ##     ## ##     ## ##   ###    ##       ##     ## ##    ## ##    ## ##       ##    ##
+ *    ##     ##  ######   ######   #######   #######  ##    ##    ##       ##     ##  ######   ######  ########  ######
  */
-
 
 async function createAccount(addressStr, transactionState: TransactionState): Promise<WrappedEVMAccount> {
   console.log('Creating new account', addressStr)
@@ -359,7 +350,7 @@ async function createAccount(addressStr, transactionState: TransactionState): Pr
 
   const acctData = {
     nonce: 0,
-    balance: oneEth.mul(new BN(100)) // 100 eth
+    balance: oneEth.mul(new BN(100)), // 100 eth
   }
 
   //I think this will have to change in the future!
@@ -374,7 +365,7 @@ async function createAccount(addressStr, transactionState: TransactionState): Pr
     account: updatedAccount,
     ethAddress: addressStr,
     hash: '',
-    accountType: AccountType.Account
+    accountType: AccountType.Account,
   }
   WrappedEVMAccountFunctions.updateEthAccountHash(wrappedEVMAccount)
   return wrappedEVMAccount
@@ -406,12 +397,12 @@ function getTransactionObj(tx: any): Transaction | AccessListEIP2930Transaction 
 
 function getReadableTransaction(tx) {
   const transaction = getTransactionObj(tx)
-  if (!transaction) return {error: 'not found'}
+  if (!transaction) return { error: 'not found' }
   return {
     from: transaction.getSenderAddress().toString(),
     to: transaction.to ? transaction.to.toString() : '',
     value: transaction.value.toString(),
-    data: bufferToHex(transaction.data)
+    data: bufferToHex(transaction.data),
   }
 }
 
@@ -423,7 +414,7 @@ async function getReadableAccountInfo(addressStr, accountType = 0) {
       nonce: account.account.nonce.toString(),
       balance: account.account.balance.toString(),
       stateRoot: bufferToHex(account.account.stateRoot),
-      codeHash: bufferToHex(account.account.codeHash)
+      codeHash: bufferToHex(account.account.codeHash),
     }
   } catch (e) {
     console.log('Unable to get readable account', e)
@@ -437,13 +428,19 @@ function getDebugTXState(): TransactionState {
   let transactionState = transactionStateMap.get(txId)
   if (transactionState == null) {
     transactionState = new TransactionState()
-    transactionState.initData(shardiumStateManager, {
-      //dont define callbacks for db TX state!
-      storageMiss: accountMissHack,
-      contractStorageMiss: contractStorageMissHack,
-      accountInvolved: accountInvolvedHack,
-      contractStorageInvolved: contractStorageInvolvedHack
-    }, txId, undefined, undefined)
+    transactionState.initData(
+      shardiumStateManager,
+      {
+        //dont define callbacks for db TX state!
+        storageMiss: accountMissHack,
+        contractStorageMiss: contractStorageMissHack,
+        accountInvolved: accountInvolvedHack,
+        contractStorageInvolved: contractStorageInvolvedHack,
+      },
+      txId,
+      undefined,
+      undefined
+    )
     transactionStateMap.set(txId, transactionState)
   } else {
     //TODO possibly need a blob to re-init with, but that may happen somewhere else.  Will require a slight interface change
@@ -455,7 +452,6 @@ function getDebugTXState(): TransactionState {
 }
 
 async function setupTester(ethAccountID: string) {
-
   //await sleep(4 * 60 * 1000) // wait 4 minutes to init account
 
   let shardusAccountID = toShardusAddress(ethAccountID, AccountType.Account)
@@ -464,11 +460,7 @@ async function setupTester(ethAccountID: string) {
   let newAccount = await createAccount(ethAccountID, debugTXState)
 
   if (ShardeumFlags.temporaryParallelOldMode === false) {
-    let {
-      accounts: accountWrites,
-      contractStorages: contractStorageWrites,
-      contractBytes: contractBytesWrites
-    } = debugTXState.getWrittenAccounts()
+    let { accounts: accountWrites, contractStorages: contractStorageWrites, contractBytes: contractBytesWrites } = debugTXState.getWrittenAccounts()
 
     //need to commit the account now... this is such a hack!!
     for (let account of accountWrites.entries()) {
@@ -478,7 +470,6 @@ async function setupTester(ethAccountID: string) {
 
       let ethAccount = accountObj
       debugTXState.commitAccount(addressStr, ethAccount) //yikes this wants an await.
-
     }
   }
 
@@ -491,7 +482,7 @@ async function setupTester(ethAccountID: string) {
     account,
     ethAddress: ethAccountID,
     hash: '',
-    accountType: AccountType.Account
+    accountType: AccountType.Account,
   }
   WrappedEVMAccountFunctions.updateEthAccountHash(wrappedEVMAccount)
   accounts[shardusAccountID] = wrappedEVMAccount
@@ -527,18 +518,17 @@ async function _internalHackGet(url: string) {
       //json: false, // the whole reason for _internalHackGet was because we dont want the text response to mess things up
       //  and as a debug non shipping endpoint did not want to add optional parameters to http module
     })
-  } catch (e) {
-  }
+  } catch (e) {}
 }
 
 /***
- *    ######## ##    ## ########  ########   #######  #### ##    ## ########  ######  
- *    ##       ###   ## ##     ## ##     ## ##     ##  ##  ###   ##    ##    ##    ## 
- *    ##       ####  ## ##     ## ##     ## ##     ##  ##  ####  ##    ##    ##       
- *    ######   ## ## ## ##     ## ########  ##     ##  ##  ## ## ##    ##     ######  
- *    ##       ##  #### ##     ## ##        ##     ##  ##  ##  ####    ##          ## 
- *    ##       ##   ### ##     ## ##        ##     ##  ##  ##   ###    ##    ##    ## 
- *    ######## ##    ## ########  ##         #######  #### ##    ##    ##     ######  
+ *    ######## ##    ## ########  ########   #######  #### ##    ## ########  ######
+ *    ##       ###   ## ##     ## ##     ## ##     ##  ##  ###   ##    ##    ##    ##
+ *    ##       ####  ## ##     ## ##     ## ##     ##  ##  ####  ##    ##    ##
+ *    ######   ## ## ## ##     ## ########  ##     ##  ##  ## ## ##    ##     ######
+ *    ##       ##  #### ##     ## ##        ##     ##  ##  ##  ####    ##          ##
+ *    ##       ##   ### ##     ## ##        ##     ##  ##  ##   ###    ##    ##    ##
+ *    ######## ##    ## ########  ##         #######  #### ##    ##    ##     ######
  */
 
 //?id=<accountID>
@@ -563,9 +553,8 @@ shardus.registerExternalGet('faucet-all', async (req, res) => {
 shardus.registerExternalGet('faucet-one', async (req, res) => {
   let id = req.query.id as string
   setupTester(id)
-  return res.json({success: true})
+  return res.json({ success: true })
 })
-
 
 shardus.registerExternalPost('inject', async (req, res) => {
   let tx = req.body
@@ -589,27 +578,23 @@ shardus.registerExternalGet('dumpStorage', async (req, res) => {
 
     let storage = await shardiumStateManager.dumpStorage(addr)
     return res.json(storage)
-
   } catch (err) {
     //console.log(`dumpStorage: ${id} `, err)
 
     return res.json(`dumpStorage: ${id} ${err}`)
   }
-
 })
 
 shardus.registerExternalGet('dumpAddressMap', async (req, res) => {
   let id
   try {
     //use a replacer so we get the map:
-    let output = JSON.stringify(shardusAddressToEVMAccountInfo, replacer, 4);
+    let output = JSON.stringify(shardusAddressToEVMAccountInfo, replacer, 4)
     res.write(output)
     res.end()
     return
     //return res.json(transactionStateMap)
-
   } catch (err) {
-  
     return res.json(`dumpAddressMap: ${id} ${err}`)
   }
 })
@@ -618,18 +603,15 @@ shardus.registerExternalGet('dumpTransactionStateMap', async (req, res) => {
   let id
   try {
     //use a replacer so we get the map:
-    let output = JSON.stringify(transactionStateMap, replacer, 4);
+    let output = JSON.stringify(transactionStateMap, replacer, 4)
     res.write(output)
     res.end()
     return
     //return res.json(transactionStateMap)
-
   } catch (err) {
-  
     return res.json(`dumpAddressMap: ${id} ${err}`)
   }
 })
-
 
 shardus.registerExternalPost('faucet', async (req, res) => {
   let tx = req.body
@@ -655,7 +637,7 @@ shardus.registerExternalGet('account/:address', async (req, res) => {
   let accountType = req.query['type']
   if (accountType == null) accountType = 0
   let readableAccount = await getReadableAccountInfo(address, accountType)
-  res.json({account: readableAccount})
+  res.json({ account: readableAccount })
 })
 
 shardus.registerExternalPost('contract/call', async (req, res) => {
@@ -675,25 +657,24 @@ shardus.registerExternalPost('contract/call', async (req, res) => {
 
     if (callResult.execResult.exceptionError) {
       console.log('Execution Error:', callResult.execResult.exceptionError)
-      return res.json({result: null})
+      return res.json({ result: null })
     }
 
-    res.json({result: callResult.execResult.returnValue.toString('hex')})
-
+    res.json({ result: callResult.execResult.returnValue.toString('hex') })
   } catch (e) {
     console.log('Error', e)
-    return res.json({result: null})
+    return res.json({ result: null })
   }
 })
 
 shardus.registerExternalGet('tx/:hash', async (req, res) => {
   const txHash = req.params['hash']
   if (!appliedTxs[txHash]) {
-    return res.json({tx: 'Not found'})
+    return res.json({ tx: 'Not found' })
   }
   let appliedTx = appliedTxs[txHash]
 
-  if (!appliedTx) return res.json({tx: 'Not found'})
+  if (!appliedTx) return res.json({ tx: 'Not found' })
   let detail = getReadableTransaction(appliedTx.injected)
 
   let result = {
@@ -709,22 +690,22 @@ shardus.registerExternalGet('tx/:hash', async (req, res) => {
     status: '0x1',
     ...detail,
   }
-  res.json({tx: result})
+  res.json({ tx: result })
 })
 
 shardus.registerExternalGet('accounts', async (req, res) => {
   console.log('/accounts')
-  res.json({accounts})
+  res.json({ accounts })
 })
 
 /***
- *     ######  ##     ##    ###    ########  ########  ##     ##  ######      ######  ######## ######## ##     ## ########  
- *    ##    ## ##     ##   ## ##   ##     ## ##     ## ##     ## ##    ##    ##    ## ##          ##    ##     ## ##     ## 
- *    ##       ##     ##  ##   ##  ##     ## ##     ## ##     ## ##          ##       ##          ##    ##     ## ##     ## 
- *     ######  ######### ##     ## ########  ##     ## ##     ##  ######      ######  ######      ##    ##     ## ########  
- *          ## ##     ## ######### ##   ##   ##     ## ##     ##       ##          ## ##          ##    ##     ## ##        
- *    ##    ## ##     ## ##     ## ##    ##  ##     ## ##     ## ##    ##    ##    ## ##          ##    ##     ## ##        
- *     ######  ##     ## ##     ## ##     ## ########   #######   ######      ######  ########    ##     #######  ##        
+ *     ######  ##     ##    ###    ########  ########  ##     ##  ######      ######  ######## ######## ##     ## ########
+ *    ##    ## ##     ##   ## ##   ##     ## ##     ## ##     ## ##    ##    ##    ## ##          ##    ##     ## ##     ##
+ *    ##       ##     ##  ##   ##  ##     ## ##     ## ##     ## ##          ##       ##          ##    ##     ## ##     ##
+ *     ######  ######### ##     ## ########  ##     ## ##     ##  ######      ######  ######      ##    ##     ## ########
+ *          ## ##     ## ######### ##   ##   ##     ## ##     ##       ##          ## ##          ##    ##     ## ##
+ *    ##    ## ##     ## ##     ## ##    ##  ##     ## ##     ## ##    ##    ##    ## ##          ##    ##     ## ##
+ *     ######  ##     ## ##     ## ##     ## ########   #######   ######      ######  ########    ##     #######  ##
  */
 
 /**
@@ -741,7 +722,7 @@ shardus.setup({
     let txObj = getTransactionObj(tx)
     const response = {
       result: 'fail',
-      reason: 'Transaction is not valid. Cannot get txObj.'
+      reason: 'Transaction is not valid. Cannot get txObj.',
     }
     if (!txObj) return response
 
@@ -750,7 +731,7 @@ shardus.setup({
       if (!senderAddress) {
         return {
           result: 'fail',
-          reason: 'Cannot derive sender address from tx'
+          reason: 'Cannot derive sender address from tx',
         }
       }
     } catch (e) {
@@ -777,12 +758,12 @@ shardus.setup({
     return {
       success,
       reason,
-      txnTimestamp
+      txnTimestamp,
     }
   },
   async apply(tx, wrappedStates) {
     // Validate the tx
-    const {result, reason} = this.validateTransaction(tx)
+    const { result, reason } = this.validateTransaction(tx)
     if (result !== 'pass') {
       throw new Error(`invalid transaction, reason: ${reason}. tx: ${JSON.stringify(tx)}`)
     }
@@ -801,12 +782,18 @@ shardus.setup({
     let transactionState = transactionStateMap.get(txId)
     if (transactionState == null) {
       transactionState = new TransactionState()
-      transactionState.initData(shardiumStateManager, {
-        storageMiss: accountMiss,
-        contractStorageMiss,
-        accountInvolved,
-        contractStorageInvolved
-      }, txId, undefined, undefined)
+      transactionState.initData(
+        shardiumStateManager,
+        {
+          storageMiss: accountMiss,
+          contractStorageMiss,
+          accountInvolved,
+          contractStorageInvolved,
+        },
+        txId,
+        undefined,
+        undefined
+      )
       transactionStateMap.set(txId, transactionState)
     } else {
       //TODO possibly need a blob to re-init with, but that may happen somewhere else.  Will require a slight interface change
@@ -832,7 +819,7 @@ shardus.setup({
     try {
       // Apply the tx
       // const Receipt = await EVM.runTx({tx: transaction, skipNonce: true, skipBlockGasLimitValidation: true})
-      const Receipt = await EVM.runTx({tx: transaction, skipNonce: true})
+      const Receipt = await EVM.runTx({ tx: transaction, skipNonce: true })
       console.log('DBG', 'applied tx', txId, Receipt)
       console.log('DBG', 'applied tx eth', ethTxId, Receipt)
       shardusTxIdToEthTxId[txId] = ethTxId
@@ -840,7 +827,7 @@ shardus.setup({
       appliedTxs[ethTxId] = {
         txId: ethTxId,
         injected: tx,
-        receipt: {...Receipt, nonce: transaction.nonce.toString('hex')},
+        receipt: { ...Receipt, nonce: transaction.nonce.toString('hex') },
       }
 
       if (ShardeumFlags.temporaryParallelOldMode === true) {
@@ -855,7 +842,7 @@ shardus.setup({
           let ethAccountID = Receipt.createdAddress.toString()
           let shardusAddress = toShardusAddress(ethAccountID, AccountType.Account)
           let contractAccount = await EVM.stateManager.getAccount(Receipt.createdAddress)
-          let wrappedEVMAccount = {timestamp: 0, account: contractAccount, ethAddress: ethAccountID, hash: '', accountType: AccountType.Account}
+          let wrappedEVMAccount = { timestamp: 0, account: contractAccount, ethAddress: ethAccountID, hash: '', accountType: AccountType.Account }
 
           WrappedEVMAccountFunctions.updateEthAccountHash(wrappedEVMAccount)
 
@@ -867,11 +854,7 @@ shardus.setup({
       //get a list of accounts or CA keys that have been written to
       //This is important because the EVM could change many accounts or keys that we are not aware of
       //the transactionState is what accumulates the writes that we need
-      let {
-        accounts: accountWrites,
-        contractStorages: contractStorageWrites,
-        contractBytes: contractBytesWrites
-      } = transactionState.getWrittenAccounts()
+      let { accounts: accountWrites, contractStorages: contractStorageWrites, contractBytes: contractBytesWrites } = transactionState.getWrittenAccounts()
 
       console.log(`DBG: all contractStorages writes`, contractStorageWrites)
 
@@ -879,14 +862,15 @@ shardus.setup({
         //1. wrap and save/update this to shardium accounts[] map
         let addressStr = contractStorageEntry[0]
         let contractStorageWrites = contractStorageEntry[1]
-        for (let [key, value] of contractStorageWrites) { // do we need .entries()?
-            let wrappedEVMAccount: WrappedEVMAccount = {
+        for (let [key, value] of contractStorageWrites) {
+          // do we need .entries()?
+          let wrappedEVMAccount: WrappedEVMAccount = {
             timestamp: tx.timestamp,
             key,
             value,
             ethAddress: addressStr, //this is confusing but I think we may want to use key here
             hash: '',
-            accountType: AccountType.ContractStorage
+            accountType: AccountType.ContractStorage,
           }
           //for now the CA shardus address will be based off of key rather than the CA address
           //eventually we may use both with most significant hex of the CA address prepended
@@ -912,7 +896,7 @@ shardus.setup({
           ethAddress: addressStr,
           contractAddress: contractByteWrite.contractAddress.toString(),
           hash: '',
-          accountType: AccountType.ContractCode
+          accountType: AccountType.ContractCode,
         }
         const wrappedChangedAccount = WrappedEVMAccountFunctions._shardusWrappedAccount(wrappedEVMAccount)
         //attach to applyResponse
@@ -933,7 +917,7 @@ shardus.setup({
           account: accountObj,
           ethAddress: addressStr,
           hash: '',
-          accountType: AccountType.Account
+          accountType: AccountType.Account,
         }
 
         // I think data is unwrapped too much and we should be using wrappedEVMAccount directly as data
@@ -961,7 +945,6 @@ shardus.setup({
         shardus.applyResponseAddChangedAccount(applyResponse, wrappedChangedAccount.accountId, wrappedChangedAccount, txId, wrappedChangedAccount.timestamp)
       }
     } catch (e) {
-
       //TODO need to detect if an execption here is a result of jumping the TX to another thread!
       // shardus must be made to handle that
 
@@ -979,7 +962,7 @@ shardus.setup({
       targetKeys: [],
       storageKeys: [],
       allKeys: [],
-      timestamp: tx.timestamp
+      timestamp: tx.timestamp,
     }
     try {
       let txSenderEvmAddr = transaction.getSenderAddress().toString()
@@ -987,18 +970,18 @@ shardus.setup({
       let transformedSourceKey = toShardusAddress(txSenderEvmAddr, AccountType.Account)
       let transformedTargetKey = transaction.to ? toShardusAddress(txToEvmAddr, AccountType.Account) : ''
       result.sourceKeys.push(transformedSourceKey)
-      shardusAddressToEVMAccountInfo.set(transformedSourceKey, {evmAddress:txSenderEvmAddr, type: AccountType.Account})  
-      if (transaction.to){
+      shardusAddressToEVMAccountInfo.set(transformedSourceKey, { evmAddress: txSenderEvmAddr, type: AccountType.Account })
+      if (transaction.to) {
         result.targetKeys.push(transformedTargetKey)
-        shardusAddressToEVMAccountInfo.set(transformedTargetKey, {evmAddress:txToEvmAddr, type: AccountType.Account})  
-      } 
+        shardusAddressToEVMAccountInfo.set(transformedTargetKey, { evmAddress: txToEvmAddr, type: AccountType.Account })
+      }
       let otherAccountKeys = []
       if (transaction instanceof AccessListEIP2930Transaction && transaction.AccessListJSON) {
         for (let accessList of transaction.AccessListJSON) {
           let address = accessList.address
-          if(address){
+          if (address) {
             let shardusAddr = toShardusAddress(address, AccountType.Account)
-            shardusAddressToEVMAccountInfo.set(shardusAddr, {evmAddress:address, type: AccountType.Account})   
+            shardusAddressToEVMAccountInfo.set(shardusAddr, { evmAddress: address, type: AccountType.Account })
             otherAccountKeys.push(shardusAddr)
           }
           //let storageKeys = accessList.storageKeys.map(key => toShardusAddress(key, AccountType.ContractStorage))
@@ -1007,7 +990,7 @@ shardus.setup({
             //let shardusAddr = toShardusAddress(storageKey, AccountType.ContractStorage)
             let shardusAddr = toShardusAddressWithKey(address, storageKey, AccountType.ContractStorage)
 
-            shardusAddressToEVMAccountInfo.set(shardusAddr, {evmAddress:address, type: AccountType.Account}) 
+            shardusAddressToEVMAccountInfo.set(shardusAddr, { evmAddress: address, type: AccountType.Account })
             storageKeys.push(shardusAddr)
           }
           result.storageKeys = result.storageKeys.concat(storageKeys)
@@ -1029,7 +1012,6 @@ shardus.setup({
   },
 
   async setAccountData(accountRecords) {
-
     // update our in memory accounts map
     for (const account of accountRecords) {
       let wrappedEVMAccount = account as WrappedEVMAccount
@@ -1055,9 +1037,7 @@ shardus.setup({
         let evmAccount = wrappedEVMAccount.account
 
         await shardiumStateManager.setAccountExternal(addressString, evmAccount)
-
       } else if (wrappedEVMAccount.accountType === AccountType.ContractStorage) {
-
         let addressString = wrappedEVMAccount.ethAddress
         let key = Buffer.from(wrappedEVMAccount.key, 'hex')
         let value = wrappedEVMAccount.value //.toString('hex')
@@ -1077,17 +1057,14 @@ shardus.setup({
 
         await shardiumStateManager.setContractAccountKeyValueExternal(contractAccount.account.stateRoot, addressString, key, value)
       } else if (wrappedEVMAccount.accountType === AccountType.ContractCode) {
-
         let keyString = wrappedEVMAccount.codeHash
         let bufferStr = wrappedEVMAccount.codeByte
 
         shardiumStateManager.setContractBytesExternal(keyString, bufferStr)
       } else if (wrappedEVMAccount.accountType === AccountType.Receipt) {
-
         // looks like we dont need to inject anything into evm stae
       }
     }
-
   },
   async getRelevantData(accountId, tx) {
     if (!tx.raw) throw new Error('getRelevantData: No raw tx')
@@ -1095,27 +1072,30 @@ shardus.setup({
     let wrappedEVMAccount = accounts[accountId]
     let accountCreated = false
 
-
     let txId = crypto.hashObj(tx)
     let transactionState = transactionStateMap.get(txId)
     if (transactionState == null) {
       transactionState = new TransactionState()
-      transactionState.initData(shardiumStateManager, {
-        storageMiss: accountMiss,
-        contractStorageMiss,
-        accountInvolved,
-        contractStorageInvolved
-      }, txId, undefined, undefined)
+      transactionState.initData(
+        shardiumStateManager,
+        {
+          storageMiss: accountMiss,
+          contractStorageMiss,
+          accountInvolved,
+          contractStorageInvolved,
+        },
+        txId,
+        undefined,
+        undefined
+      )
       transactionStateMap.set(txId, transactionState)
     } else {
       //TODO possibly need a blob to re-init with, but that may happen somewhere else.  Will require a slight interface change
       //to allow shardus to pass in this extra data blob (unless we find a way to run it through wrapped states??)
     }
 
-
     // Create the account if it doesn't exist
     if (typeof wrappedEVMAccount === 'undefined' || wrappedEVMAccount === null) {
-
       // oops! this is a problem..  maybe we should not have a fromShardusAddress
       // when we support sharding I dont think we can assume this is an AccountType.Account
       // the TX is specified at least so it might require digging into that to check if something matches the from/to field,
@@ -1128,12 +1108,12 @@ shardus.setup({
       let evmAccountInfo = shardusAddressToEVMAccountInfo.get(accountId)
       let evmAccountID = null
       let accountType = AccountType.Account //assume account ok?
-      if(evmAccountInfo != null){
+      if (evmAccountInfo != null) {
         evmAccountID = evmAccountInfo.evmAddress
         accountType = evmAccountInfo.type
       }
 
-      if(accountType === AccountType.Account){
+      if (accountType === AccountType.Account) {
         //some of this feels a bit redundant, will need to think more on the cleanup
         await createAccount(evmAccountID, transactionState)
         const address = Address.fromString(evmAccountID)
@@ -1143,17 +1123,17 @@ shardus.setup({
           account,
           ethAddress: evmAccountID,
           hash: '',
-          accountType: AccountType.Account //see above, it may be wrong to assume this type in the future
+          accountType: AccountType.Account, //see above, it may be wrong to assume this type in the future
         }
-      } else if(accountType === AccountType.ContractStorage){
+      } else if (accountType === AccountType.ContractStorage) {
         wrappedEVMAccount = {
           timestamp: 0,
-          key:evmAccountID,
+          key: evmAccountID,
           value: Buffer.from([]),
           ethAddress: evmAccountID, //this is confusing but I think we may want to use key here
           hash: '',
-          accountType: AccountType.ContractStorage
-        }        
+          accountType: AccountType.ContractStorage,
+        }
       } else {
         throw new Error(`getRelevantData: invalid accoun type ${accountType}`)
       }
@@ -1162,7 +1142,13 @@ shardus.setup({
       accountCreated = true
     }
     // Wrap it for Shardus
-    return shardus.createWrappedResponse(accountId, accountCreated, utils.safeBufferToHex(wrappedEVMAccount.account.stateRoot), wrappedEVMAccount.timestamp, wrappedEVMAccount)//readableAccount)
+    return shardus.createWrappedResponse(
+      accountId,
+      accountCreated,
+      utils.safeBufferToHex(wrappedEVMAccount.account.stateRoot),
+      wrappedEVMAccount.timestamp,
+      wrappedEVMAccount
+    ) //readableAccount)
   },
   getAccountData(accountStart, accountEnd, maxRecords) {
     const results = []
@@ -1199,12 +1185,18 @@ shardus.setup({
     let transactionState = transactionStateMap.get(txId)
     if (transactionState == null) {
       transactionState = new TransactionState()
-      transactionState.initData(shardiumStateManager, {
-        storageMiss: accountMiss,
-        contractStorageMiss,
-        accountInvolved,
-        contractStorageInvolved
-      }, txId, undefined, undefined)
+      transactionState.initData(
+        shardiumStateManager,
+        {
+          storageMiss: accountMiss,
+          contractStorageMiss,
+          accountInvolved,
+          contractStorageInvolved,
+        },
+        txId,
+        undefined,
+        undefined
+      )
       transactionStateMap.set(txId, transactionState)
     } else {
       //TODO possibly need a blob to re-init with?
@@ -1229,7 +1221,6 @@ shardus.setup({
       let codeByte = updatedEVMAccount.codeByte
       transactionState.commitContractBytes(contractAddress, codeHash, codeByte)
     } else if (updatedEVMAccount.accountType === AccountType.Receipt) {
-
       //TODO we can add the code that processes a receipt now.
       //  This will not call back into transactionState
       //  it will get added to the accounts[] map below just like all types,
@@ -1238,7 +1229,6 @@ shardus.setup({
       //   but note we will keep the temp solution in apply() for now
       //   may have to store txId on the WrappedEVMAccount variant type.
       //
-
       // appliedTxs[txId] = {
       //   txId: updatedEVMAccount.txId,
       //   receipt: updatedEVMAccount.receipt
@@ -1259,7 +1249,17 @@ shardus.setup({
     //  accounts
 
     // Add data to our required response object
-    shardus.applyResponseAddState(applyResponse, updatedEVMAccount, updatedEVMAccount, accountId, applyResponse.txId, applyResponse.txTimestamp, hashBefore, hashAfter, accountCreated)
+    shardus.applyResponseAddState(
+      applyResponse,
+      updatedEVMAccount,
+      updatedEVMAccount,
+      accountId,
+      applyResponse.txId,
+      applyResponse.txTimestamp,
+      hashBefore,
+      hashAfter,
+      accountCreated
+    )
   },
   updateAccountPartial(wrappedData, localCache, applyResponse) {
     //I think we may need to utilize this so that shardus is not oblicated to make temporary copies of large CAs
@@ -1292,7 +1292,6 @@ shardus.setup({
   },
   resetAccountData(accountBackupCopies) {
     for (let recordData of accountBackupCopies) {
-
       let wrappedEVMAccount = recordData.data as WrappedEVMAccount
       let shardusAddress = getAccountShardusAddress(wrappedEVMAccount)
       accounts[shardusAddress] = wrappedEVMAccount
@@ -1336,11 +1335,9 @@ shardus.setup({
       timestamp: 0,
       hash: 'invalid account data',
     }
-  }
+  },
 })
 
 shardus.registerExceptionHandler()
 
 shardus.start()
-
-

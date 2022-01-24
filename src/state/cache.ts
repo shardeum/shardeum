@@ -3,14 +3,12 @@ const Tree = require('functional-red-black-tree')
 
 /**
  * Rework needed:
- * 
+ *
  * We will have one trie per
- * 
- * 
- * 
-*/
-
-
+ *
+ *
+ *
+ */
 
 /**
  * @ignore
@@ -203,13 +201,7 @@ export default class Cache {
    * @param deleted - Delete operation on an account
    * @param virtual - Account doesn't exist in the underlying trie
    */
-  _update(
-    key: Address,
-    value: Account,
-    modified: boolean,
-    deleted: boolean,
-    virtual = false
-  ): void {
+  _update(key: Address, value: Account, modified: boolean, deleted: boolean, virtual = false): void {
     const keyHex = key.buf.toString('hex')
     const it = this._cache.find(keyHex)
     const val = value.serialize()
