@@ -62,7 +62,7 @@ export interface WrappedEVMAccount {
   txId?: string;
 }
 
-export interface WrappedEthAccounts {
+export interface WrappedEVMAccountMap {
   [id: string]: WrappedEVMAccount;
 }
 

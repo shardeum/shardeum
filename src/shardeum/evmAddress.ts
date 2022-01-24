@@ -1,4 +1,4 @@
-import { AccountType, WrappedEVMAccount, WrappedEthAccounts, EVMAccountInfo } from './shardeumTypes'
+import { AccountType, WrappedEVMAccount, WrappedEVMAccountMap, EVMAccountInfo } from './shardeumTypes'
 
 import * as ShardeumFlags from './shardeumFlags'
 
@@ -6,25 +6,25 @@ import * as ShardeumFlags from './shardeumFlags'
  * This will correctly get a shardus address from a WrappedEVMAccount account no matter what type it is.
  * This is preferred over toShardusAddress in any case where we have an WrappedEVMAccount
  * maybe this should live in wrappedEVMAccountFunctions?
- * @param wrappedEthAccount
+ * @param wrappedEVMAccount
  * @returns
  */
-export function getAccountShardusAddress(wrappedEthAccount: WrappedEVMAccount): string {
-  let addressSource = wrappedEthAccount.ethAddress
+export function getAccountShardusAddress(wrappedEVMAccount: WrappedEVMAccount): string {
+  let addressSource = wrappedEVMAccount.ethAddress
 
-  if (wrappedEthAccount.accountType === AccountType.ContractStorage) {
-    //addressSource = wrappedEthAccount.key
-    let shardusAddress = toShardusAddressWithKey(wrappedEthAccount.ethAddress, wrappedEthAccount.key, wrappedEthAccount.accountType)
+  if (wrappedEVMAccount.accountType === AccountType.ContractStorage) {
+    //addressSource = wrappedEVMAccount.key
+    let shardusAddress = toShardusAddressWithKey(wrappedEVMAccount.ethAddress, wrappedEVMAccount.key, wrappedEVMAccount.accountType)
     return shardusAddress
   }
-  if (wrappedEthAccount.accountType === AccountType.ContractCode) {
+  if (wrappedEVMAccount.accountType === AccountType.ContractCode) {
     //in this case ethAddress is the code hash which is what we want for the key
-    //wrappedEthAccount.codeHash.toString('hex')
-    let shardusAddress = toShardusAddressWithKey(wrappedEthAccount.contractAddress, wrappedEthAccount.ethAddress, wrappedEthAccount.accountType)
+    //wrappedEVMAccount.codeHash.toString('hex')
+    let shardusAddress = toShardusAddressWithKey(wrappedEVMAccount.contractAddress, wrappedEVMAccount.ethAddress, wrappedEVMAccount.accountType)
     return shardusAddress
   }
 
-  let shardusAddress = toShardusAddress(addressSource, wrappedEthAccount.accountType)
+  let shardusAddress = toShardusAddress(addressSource, wrappedEVMAccount.accountType)
   return shardusAddress
 }
 

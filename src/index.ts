@@ -18,7 +18,7 @@ import { util } from 'prettier'
 import { replacer } from 'shardus-global-server/build/src/utils'
 import { json } from 'express'
 
-import { AccountType, WrappedEVMAccount, WrappedEthAccounts, EVMAccountInfo } from './shardeum/shardeumTypes'
+import { AccountType, WrappedEVMAccount, WrappedEVMAccountMap, EVMAccountInfo } from './shardeum/shardeumTypes'
 import { getAccountShardusAddress, toShardusAddressWithKey, toShardusAddress } from './shardeum/evmAddress'
 import * as utils from './utils'
 import * as ShardeumFlags from './shardeum/shardeumFlags'
@@ -163,7 +163,7 @@ const shardus = shardusFactory(config)
  *    ########    ###    ##     ##    #### ##    ## ####    ##    
  */
 
-let accounts: WrappedEthAccounts = {}
+let accounts: WrappedEVMAccountMap = {}
 let appliedTxs = {}
 let shardusTxIdToEthTxId = {}
 
@@ -369,15 +369,15 @@ async function createAccount(addressStr, transactionState: TransactionState): Pr
   await EVM.stateManager.putAccount(accountAddress, account)
   const updatedAccount = await EVM.stateManager.getAccount(accountAddress)
 
-  let wrappedEthAccount = {
+  let wrappedEVMAccount = {
     timestamp: 0,
     account: updatedAccount,
     ethAddress: addressStr,
     hash: '',
     accountType: AccountType.Account
   }
-  WrappedEVMAccountFunctions.updateEthAccountHash(wrappedEthAccount)
-  return wrappedEthAccount
+  WrappedEVMAccountFunctions.updateEthAccountHash(wrappedEVMAccount)
+  return wrappedEVMAccount
 }
 
 function getTransactionObj(tx: any): Transaction | AccessListEIP2930Transaction {
@@ -486,15 +486,15 @@ async function setupTester(ethAccountID: string) {
   const address = Address.fromString(ethAccountID)
   let account = await EVM.stateManager.getAccount(address)
 
-  let wrappedEthAccount = {
+  let wrappedEVMAccount = {
     timestamp: 0,
     account,
     ethAddress: ethAccountID,
     hash: '',
     accountType: AccountType.Account
   }
-  WrappedEVMAccountFunctions.updateEthAccountHash(wrappedEthAccount)
-  accounts[shardusAccountID] = wrappedEthAccount
+  WrappedEVMAccountFunctions.updateEthAccountHash(wrappedEVMAccount)
+  accounts[shardusAccountID] = wrappedEVMAccount
 
   //when temporaryParallelOldMode is set false we will actually need another way to commit this data!
   //  may need to commit it with the help of a dummy TransactionState object since ShardeumState commit(),checkpoint(),revert() will be no-op'd
@@ -855,11 +855,11 @@ shardus.setup({
           let ethAccountID = Receipt.createdAddress.toString()
           let shardusAddress = toShardusAddress(ethAccountID, AccountType.Account)
           let contractAccount = await EVM.stateManager.getAccount(Receipt.createdAddress)
-          let wrappedEthAccount = {timestamp: 0, account: contractAccount, ethAddress: ethAccountID, hash: '', accountType: AccountType.Account}
+          let wrappedEVMAccount = {timestamp: 0, account: contractAccount, ethAddress: ethAccountID, hash: '', accountType: AccountType.Account}
 
-          WrappedEVMAccountFunctions.updateEthAccountHash(wrappedEthAccount)
+          WrappedEVMAccountFunctions.updateEthAccountHash(wrappedEVMAccount)
 
-          accounts[shardusAddress] = wrappedEthAccount
+          accounts[shardusAddress] = wrappedEVMAccount
           console.log('Contract account stored', accounts[shardusAddress])
         }
       }
@@ -1021,8 +1021,8 @@ shardus.setup({
     return result
   },
   getStateId(accountAddress, mustExist = true) {
-    let wrappedEthAccount = accounts[accountAddress]
-    return WrappedEVMAccountFunctions._calculateAccountHash(wrappedEthAccount)
+    let wrappedEVMAccount = accounts[accountAddress]
+    return WrappedEVMAccountFunctions._calculateAccountHash(wrappedEVMAccount)
   },
   deleteLocalAccountData() {
     accounts = {}
@@ -1170,13 +1170,13 @@ shardus.setup({
     const end = parseInt(accountEnd, 16)
     // Loop all accounts
     for (let addressStr in accounts) {
-      let wrappedEthAccount = accounts[addressStr]
+      let wrappedEVMAccount = accounts[addressStr]
       // Skip if not in account id range
       const id = parseInt(addressStr, 16)
       if (id < start || id > end) continue
 
       // Add to results (wrapping is redundant?)
-      const wrapped = WrappedEVMAccountFunctions._shardusWrappedAccount(wrappedEthAccount)
+      const wrapped = WrappedEVMAccountFunctions._shardusWrappedAccount(wrappedEVMAccount)
       results.push(wrapped)
 
       // Return results early if maxRecords reached
@@ -1310,9 +1310,9 @@ shardus.setup({
   getAccountDataByList(addressList) {
     const results = []
     for (const address of addressList) {
-      const wrappedEthAccount = accounts[address]
-      if (wrappedEthAccount) {
-        const wrapped = WrappedEVMAccountFunctions._shardusWrappedAccount(wrappedEthAccount)
+      const wrappedEVMAccount = accounts[address]
+      if (wrappedEVMAccount) {
+        const wrapped = WrappedEVMAccountFunctions._shardusWrappedAccount(wrappedEVMAccount)
         results.push(wrapped)
       }
     }
