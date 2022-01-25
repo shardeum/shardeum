@@ -15,7 +15,7 @@ import {ContractByteWrite} from './state/transactionState'
 
 import {replacer} from 'shardus-global-server/build/src/utils'
 
-import {AccountType, EVMAccountInfo, WrappedEVMAccount, WrappedEVMAccountMap} from './shardeum/shardeumTypes'
+import { AccountType, WrappedEVMAccount, WrappedEVMAccountMap, EVMAccountInfo, InternalTx, WrappedStates, WrappedAccount, InternalTXType } from './shardeum/shardeumTypes'
 import {getAccountShardusAddress, toShardusAddress, toShardusAddressWithKey} from './shardeum/evmAddress'
 import * as ShardeumFlags from './shardeum/shardeumFlags'
 import * as WrappedEVMAccountFunctions from './shardeum/wrappedEVMAccountFunctions'
@@ -372,7 +372,14 @@ async function createAccount(addressStr, transactionState: TransactionState): Pr
   return wrappedEVMAccount
 }
 
-function getTransactionObj(tx: any): Transaction | AccessListEIP2930Transaction {
+function isInternalTx(tx: any): boolean {
+  if(tx.isInternalTx){
+    return true
+  }
+  return false
+}
+
+function getTransactionObj(tx: any): Transaction | AccessListEIP2930Transaction  {
   if (!tx.raw) throw Error('fail')
   let transactionObj
   const serializedInput = toBuffer(tx.raw)
@@ -699,6 +706,57 @@ shardus.registerExternalGet('accounts', async (req, res) => {
   res.json({ accounts })
 })
 
+
+/***
+ *    #### ##    ## ######## ######## ########  ##    ##    ###    ##          ######## ##     ## 
+ *     ##  ###   ##    ##    ##       ##     ## ###   ##   ## ##   ##             ##     ##   ##  
+ *     ##  ####  ##    ##    ##       ##     ## ####  ##  ##   ##  ##             ##      ## ##   
+ *     ##  ## ## ##    ##    ######   ########  ## ## ## ##     ## ##             ##       ###    
+ *     ##  ##  ####    ##    ##       ##   ##   ##  #### ######### ##             ##      ## ##   
+ *     ##  ##   ###    ##    ##       ##    ##  ##   ### ##     ## ##             ##     ##   ##  
+ *    #### ##    ##    ##    ######## ##     ## ##    ## ##     ## ########       ##    ##     ## 
+ */
+
+async function applyInternalTx(internalTx: InternalTx, wrappedStates:WrappedStates) : Promise<ShardusTypes.ApplyResponse> {
+  if(internalTx.internalTXType === InternalTXType.SetGlobalCodeBytes){
+    
+    const wrappedEVMAccount: WrappedEVMAccount = wrappedStates[internalTx.from].data
+    //just update the timestamp?  
+    wrappedEVMAccount.timestamp = internalTx.timestamp
+    //I think this will naturally accomplish the goal of the global update.
+  }
+
+  let txId = crypto.hashObj(internalTx)
+  const applyResponse: ShardusTypes.ApplyResponse = shardus.createApplyResponse(txId, internalTx.timestamp)
+  return applyResponse
+
+}
+
+function setGlobalCodeByteUpdate(txTimestamp:number, wrappedEVMAccount: WrappedEVMAccount, applyResponse: ShardusTypes.ApplyResponse){
+  let globalAddress = getAccountShardusAddress(wrappedEVMAccount)
+  const when = txTimestamp + 1000 * 10
+  let value = {
+    isInternalTx: true,
+    internalTXType: InternalTXType.SetGlobalCodeBytes,
+    // type: 'apply_code_bytes', //extra, for debug
+    timestamp: when,
+    accountData: wrappedEVMAccount,
+    from: globalAddress
+  }
+  applyResponse.appDefinedData.globalMsg = { address: globalAddress, value, when, source: globalAddress }
+}
+
+function _transactionReceiptPass (tx: any, txId: string, wrappedStates: WrappedStates, applyResponse: ShardusTypes.ApplyResponse) {
+
+  //If this apply response has a global message defined then call setGlobal()
+  if(applyResponse?.appDefinedData?.globalMsg){
+    let { address, value, when, source } = applyResponse.appDefinedData.globalMsg
+    shardus.setGlobal(address, value, when, source)
+    shardus.log('transactionReceiptPass')
+  }
+}
+
+
 /***
  *     ######  ##     ##    ###    ########  ########  ##     ##  ######      ######  ######## ######## ##     ## ########
  *    ##    ## ##     ##   ## ##   ##     ## ##     ## ##     ## ##    ##    ##    ## ##          ##    ##     ## ##     ##
@@ -720,6 +778,13 @@ shardus.registerExternalGet('accounts', async (req, res) => {
  */
 shardus.setup({
   validateTransaction(tx) {
+
+    if(isInternalTx(tx)){
+      let internalTX = tx as InternalTx
+      //todo validate internal TX
+      return {result : 'pass', reason : 'all_allowed'}
+    }
+
     let txObj = getTransactionObj(tx)
     const response = {
       result: 'fail',
@@ -749,6 +814,18 @@ shardus.setup({
     return response
   },
   validateTxnFields(tx) {
+
+    if(isInternalTx(tx)){
+      let internalTX = tx as InternalTx
+      //todo validate internal TX
+
+      return {
+        success: true,
+        reason: '',
+        txnTimestamp: internalTX.timestamp,
+      }
+    }
+
     // Validate tx fields here
     let success = true
     let reason = ''
@@ -767,6 +844,13 @@ shardus.setup({
     const { result, reason } = this.validateTransaction(tx)
     if (result !== 'pass') {
       throw new Error(`invalid transaction, reason: ${reason}. tx: ${JSON.stringify(tx)}`)
+    }
+
+    if(isInternalTx(tx)){
+      let internalTx = tx as InternalTx
+      //todo validate internal TX
+
+      return applyInternalTx(internalTx, wrappedStates)
     }
 
     const transaction = getTransactionObj(tx)
@@ -902,10 +986,15 @@ shardus.setup({
           hash: '',
           accountType: AccountType.ContractCode,
         }
-        const wrappedChangedAccount = WrappedEVMAccountFunctions._shardusWrappedAccount(wrappedEVMAccount)
-        //attach to applyResponse
-        if (shardus.applyResponseAddChangedAccount != null) {
-          shardus.applyResponseAddChangedAccount(applyResponse, wrappedChangedAccount.accountId, wrappedChangedAccount, txId, wrappedChangedAccount.timestamp)
+        if(ShardeumFlags.globalCodeBytes === true){
+          //set this globally instead!
+          setGlobalCodeByteUpdate(tx.timestamp, wrappedEVMAccount, applyResponse)
+        } else {
+          const wrappedChangedAccount = WrappedEVMAccountFunctions._shardusWrappedAccount(wrappedEVMAccount)
+          //attach to applyResponse
+          if (shardus.applyResponseAddChangedAccount != null) {
+            shardus.applyResponseAddChangedAccount(applyResponse, wrappedChangedAccount.accountId, wrappedChangedAccount, txId, wrappedChangedAccount.timestamp)
+          }          
         }
       }
 
@@ -963,6 +1052,20 @@ shardus.setup({
     return applyResponse
   },
   getKeyFromTransaction(tx) {
+
+    if(isInternalTx(tx)){
+      let internalTx = tx as InternalTx
+      const result = {
+        sourceKeys: [internalTx.from],
+        targetKeys: [],
+        storageKeys: [],
+        allKeys: [],
+        timestamp: internalTx.timestamp,
+      }
+      result.allKeys = result.allKeys.concat(result.sourceKeys, result.targetKeys, result.storageKeys)
+      return result
+    }
+
     const transaction = getTransactionObj(tx)
     const result = {
       sourceKeys: [],
@@ -1343,6 +1446,16 @@ shardus.setup({
       timestamp: 0,
       hash: 'invalid account data',
     }
+  },
+  transactionReceiptPass(tx: any, wrappedStates: { [id: string]: WrappedAccount }, applyResponse: ShardusTypes.ApplyResponse) {
+    let txId: string
+    if (!tx.sign) {
+      txId = crypto.hashObj(tx)
+    } else {
+      txId = crypto.hashObj(tx, true) // compute from tx
+    }
+    _transactionReceiptPass(tx, txId, wrappedStates, applyResponse)
+
   },
 })
 

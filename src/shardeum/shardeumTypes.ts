@@ -72,3 +72,37 @@ export interface EVMAccountInfo {
   evmAddress: string
   contractAddress?: string
 }
+
+
+export enum InternalTXType {
+  SetGlobalCodeBytes,
+}
+
+/**
+ * InternalTx is a non EVM TX that shardeum can use for utility task such as global changes
+ * 
+ */
+export interface InternalTx {
+  isInternalTx: boolean
+  internalTXType: InternalTXType
+  timestamp: number
+
+  from: string
+  to?: string
+  accountData?: WrappedEVMAccount
+
+}
+
+
+export interface WrappedAccount {
+  accountId: string
+  stateId: string
+  data: any
+  timestamp: number
+  accountCreated?: boolean
+}
+
+export interface WrappedStates {
+  [id: string]: WrappedAccount
+}
+
