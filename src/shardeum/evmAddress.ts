@@ -23,12 +23,17 @@ export function getAccountShardusAddress(wrappedEVMAccount: WrappedEVMAccount): 
     let shardusAddress = toShardusAddressWithKey(wrappedEVMAccount.contractAddress, wrappedEVMAccount.ethAddress, wrappedEVMAccount.accountType)
     return shardusAddress
   }
+  if (wrappedEVMAccount.accountType === AccountType.Receipt) {
+    //in this case ethAddress is the code hash which is what we want for the key
+    let shardusAddress = toShardusAddressWithKey(wrappedEVMAccount.txFrom, wrappedEVMAccount.ethAddress, wrappedEVMAccount.accountType)
+    return shardusAddress
+  }
 
   let shardusAddress = toShardusAddress(addressSource, wrappedEVMAccount.accountType)
   return shardusAddress
 }
 
-export function toShardusAddressWithKey(addressStr: string, keyStr: string, accountType: AccountType): string {
+export function toShardusAddressWithKey(addressStr: string, secondaryAddressStr: string, accountType: AccountType): string {
   if (accountType === AccountType.Account) {
     if (addressStr.length != 42) {
       throw new Error('must pass in a 42 character hex address for Account type.')
@@ -38,8 +43,9 @@ export function toShardusAddressWithKey(addressStr: string, keyStr: string, acco
     //    to this:  665eab3be2472e83e3100b4233952a16eed20c76000000000000000000000000
     return addressStr.slice(2).toLowerCase() + '0'.repeat(24)
   }
-
-  if (ShardeumFlags.contractStorageKeySilo && (accountType === AccountType.ContractStorage || accountType === AccountType.ContractCode)) {
+  
+  if (ShardeumFlags.contractStorageKeySilo
+    && (accountType === AccountType.ContractStorage || accountType === AccountType.ContractCode || accountType === AccountType.Receipt)) {
     let numPrefixChars = 8
     // remove the 0x and get the first 8 hex characters of the address
     let prefix = addressStr.slice(2, numPrefixChars + 2)
@@ -48,27 +54,28 @@ export function toShardusAddressWithKey(addressStr: string, keyStr: string, acco
     if (addressStr.length != 42) {
       throw new Error('must pass in a 42 character hex address for Account type.')
     }
-    if (keyStr.length === 66) {
-      keyStr = keyStr.slice(2)
+    if (secondaryAddressStr.length === 66) {
+      secondaryAddressStr = secondaryAddressStr.slice(2)
     }
     //create a suffix with by discarding numPrefixChars from the start of our keyStr
-    suffix = keyStr.slice(numPrefixChars)
+    suffix = secondaryAddressStr.slice(numPrefixChars)
 
     //force the address to lower case
     let shardusAddress = prefix + suffix
     shardusAddress = shardusAddress.toLowerCase()
     return shardusAddress
   }
-
-  if (ShardeumFlags.contractStorageKeySilo === false && (accountType === AccountType.ContractStorage || accountType === AccountType.ContractCode)) {
-    if (keyStr.length === 64) {
+  
+  if (ShardeumFlags.contractStorageKeySilo === false 
+    && (accountType === AccountType.ContractStorage || accountType === AccountType.ContractCode || accountType === AccountType.Receipt)) {
+    if (secondaryAddressStr.length === 64) {
       //unexpected case but lets allow it
-      return keyStr.toLowerCase()
+      return secondaryAddressStr.toLowerCase()
     }
-    if (keyStr.length != 66) {
+    if (secondaryAddressStr.length != 66) {
       throw new Error(`must pass in a 66 character 32 byte address for non Account types. use the key for storage and codehash contractbytes ${addressStr.length}`)
     }
-    return keyStr.slice(2).toLowerCase()
+    return secondaryAddressStr.slice(2).toLowerCase()
   }
 
   // receipt or contract bytes remain down past here

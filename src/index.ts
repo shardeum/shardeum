@@ -825,6 +825,8 @@ shardus.setup({
       console.log('DBG', 'applied tx', txId, Receipt)
       console.log('DBG', 'applied tx eth', ethTxId, Receipt)
       shardusTxIdToEthTxId[txId] = ethTxId
+
+      // todo: fix that this is getting set too early, should wait untill after TX consensus
       // this is to expose tx data for json rpc server
       appliedTxs[ethTxId] = {
         txId: ethTxId,
@@ -932,6 +934,7 @@ shardus.setup({
         }
       }
 
+      let txSenderEvmAddr = transaction.getSenderAddress().toString()
       //TODO also create an account for the receipt (nested in the returned Receipt should be a receipt with a list of logs)
       // We are ready to loop over the receipts and add them
       let wrappedReceiptAccount: WrappedEVMAccount = {
@@ -941,7 +944,9 @@ shardus.setup({
         receipt: Receipt.receipt,
         txId,
         accountType: AccountType.Receipt,
+        txFrom: txSenderEvmAddr,
       }
+      
       const wrappedChangedAccount = WrappedEVMAccountFunctions._shardusWrappedAccount(wrappedReceiptAccount)
       if (shardus.applyResponseAddChangedAccount != null) {
         shardus.applyResponseAddChangedAccount(applyResponse, wrappedChangedAccount.accountId, wrappedChangedAccount, txId, wrappedChangedAccount.timestamp)

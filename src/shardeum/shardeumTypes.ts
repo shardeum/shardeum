@@ -60,6 +60,7 @@ export interface WrappedEVMAccount {
   //It does have a hardcoded logsBloom so maybe we need to fill this with correct data.
   receipt?: TxReceipt
   txId?: string
+  txFrom?: string
 }
 
 export interface WrappedEVMAccountMap {
