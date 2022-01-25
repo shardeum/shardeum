@@ -552,7 +552,8 @@ export default class TransactionState {
     value = unpadBuffer(value)
 
     // Step 1 update the account storage
-    let storedRlp = rlp.encode(value)
+    // let storedRlp = rlp.encode(value)
+    let storedRlp = value
     let contractStorageReads = this.firstContractStorageReads.get(addressString)
     if (contractStorageReads == null) {
       contractStorageReads = new Map()

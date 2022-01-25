@@ -3,26 +3,23 @@ import path from 'path'
 import merge from 'deepmerge'
 import stringify from 'fast-json-stable-stringify'
 import * as crypto from 'shardus-crypto-utils'
-import { Account, Address, BN, bufferToHex, toBuffer } from 'ethereumjs-util'
+import {Account, Address, BN, bufferToHex, toBuffer} from 'ethereumjs-util'
 
-import { Transaction, AccessListEIP2930Transaction } from '@ethereumjs/tx'
+import {AccessListEIP2930Transaction, Transaction} from '@ethereumjs/tx'
 import VM from '@ethereumjs/vm'
-import { parse as parseUrl } from 'url'
+import {parse as parseUrl} from 'url'
 import got from 'got'
-import { ShardiumState, TransactionState } from './state'
-import { Shardus, ShardusTypes } from 'shardus-global-server'
-import { TxReceipt } from '@ethereumjs/vm/dist/types'
-import { ContractByteWrite } from './state/transactionState'
-import { util } from 'prettier'
+import {ShardiumState, TransactionState} from './state'
+import {ShardusTypes} from 'shardus-global-server'
+import {ContractByteWrite} from './state/transactionState'
 
-import { replacer } from 'shardus-global-server/build/src/utils'
-import { json } from 'express'
+import {replacer} from 'shardus-global-server/build/src/utils'
 
-import { AccountType, WrappedEVMAccount, WrappedEVMAccountMap, EVMAccountInfo } from './shardeum/shardeumTypes'
-import { getAccountShardusAddress, toShardusAddressWithKey, toShardusAddress } from './shardeum/evmAddress'
-import * as utils from './utils'
+import {AccountType, EVMAccountInfo, WrappedEVMAccount, WrappedEVMAccountMap} from './shardeum/shardeumTypes'
+import {getAccountShardusAddress, toShardusAddress, toShardusAddressWithKey} from './shardeum/evmAddress'
 import * as ShardeumFlags from './shardeum/shardeumFlags'
 import * as WrappedEVMAccountFunctions from './shardeum/wrappedEVMAccountFunctions'
+import {fixDeserializedWrappedEVMAccount} from './shardeum/wrappedEVMAccountFunctions'
 
 let { shardusFactory } = require('shardus-global-server')
 
@@ -117,8 +114,12 @@ config = merge(config, {
   server: {
     p2p: {
       minNodesToAllowTxs: 1,
-      minNodes: 5,
-      maxNodes: 5,
+      minNodes: 50,
+      maxNodes: 50,
+      maxJoinedPerCycle: 6,
+      maxSyncingPerCycle: 12,
+      maxRotatedPerCycle: 1,
+      firstCycleJoin: 10,
     },
   },
 })
@@ -126,7 +127,7 @@ config = merge(config, {
 config = merge(config, {
   server: {
     sharding: {
-      nodesPerConsensusGroup: 50,
+      nodesPerConsensusGroup: 5,
     },
   },
 })
@@ -806,6 +807,7 @@ shardus.setup({
     // loop through the wrappedStates an insert them into the transactionState as first*Reads
     for (let accountId in wrappedStates) {
       let wrappedEVMAccount: WrappedEVMAccount = wrappedStates[accountId].data
+      fixDeserializedWrappedEVMAccount(wrappedEVMAccount)
       let address = Address.fromString(wrappedEVMAccount.ethAddress)
       if (wrappedEVMAccount.accountType === AccountType.Account) {
         transactionState.insertFirstAccountReads(address, wrappedEVMAccount.account)
@@ -990,7 +992,7 @@ shardus.setup({
             //let shardusAddr = toShardusAddress(storageKey, AccountType.ContractStorage)
             let shardusAddr = toShardusAddressWithKey(address, storageKey, AccountType.ContractStorage)
 
-            shardusAddressToEVMAccountInfo.set(shardusAddr, { evmAddress: address, type: AccountType.Account })
+            shardusAddressToEVMAccountInfo.set(shardusAddr, { evmAddress: shardusAddr, contractAddress: address, type: AccountType.ContractStorage })
             storageKeys.push(shardusAddr)
           }
           result.storageKeys = result.storageKeys.concat(storageKeys)
@@ -1130,10 +1132,11 @@ shardus.setup({
           timestamp: 0,
           key: evmAccountID,
           value: Buffer.from([]),
-          ethAddress: evmAccountID, //this is confusing but I think we may want to use key here
+          ethAddress: evmAccountInfo.contractAddress, // storage key
           hash: '',
           accountType: AccountType.ContractStorage,
         }
+        console.log(`Creating new contract storage account key:${evmAccountID} in contract address ${wrappedEVMAccount.ethAddress}`)
       } else {
         throw new Error(`getRelevantData: invalid accoun type ${accountType}`)
       }
@@ -1145,7 +1148,7 @@ shardus.setup({
     return shardus.createWrappedResponse(
       accountId,
       accountCreated,
-      utils.safeBufferToHex(wrappedEVMAccount.account.stateRoot),
+      wrappedEVMAccount.hash,
       wrappedEVMAccount.timestamp,
       wrappedEVMAccount
     ) //readableAccount)

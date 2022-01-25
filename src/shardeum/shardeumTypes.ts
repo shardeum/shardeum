@@ -69,4 +69,5 @@ export interface WrappedEVMAccountMap {
 export interface EVMAccountInfo {
   type: AccountType
   evmAddress: string
+  contractAddress?: string
 }
