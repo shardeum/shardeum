@@ -1,6 +1,7 @@
 import { Account, Address, bufferToHex, keccak256, KECCAK256_NULL, rlp, unpadBuffer } from 'ethereumjs-util'
 import { SecureTrie as Trie } from 'merkle-patricia-tree'
 import { ShardiumState } from '.'
+import * as ShardeumFlags from '../shardeum/shardeumFlags'
 
 export type accountEvent = (transactionState: TransactionState, address: string) => Promise<boolean>
 export type contractStorageEvent = (transactionState: TransactionState, address: string, key: string) => Promise<boolean>
@@ -204,7 +205,7 @@ export default class TransactionState {
       for (let [key, contractByteWrite] of contractBytesCommits) {
         let codeHash = contractByteWrite.codeHash
         let codeByte = contractByteWrite.codeByte
-        console.log(`Storing contract code for ${address.toString()}`, codeHash, codeByte)
+        if(ShardeumFlags.VerboseLogs) console.log( `Storing contract code for ${address.toString()}`, codeHash, codeByte)
 
         //decided to move this back to commit. since codebytes are global we need to be able to commit them without changing a contract account
         //push codeByte to the worldStateTrie.db
@@ -486,7 +487,7 @@ export default class TransactionState {
     //see if we can get it from the storage trie.
     let storedRlp = await storage.get(key)
     let storedValue = storedRlp ? rlp.decode(storedRlp) : undefined
-    console.log(`storedValue for ${key.toString('hex')}`, storedValue)
+    if(ShardeumFlags.VerboseLogs) console.log( `storedValue for ${key.toString('hex')}`, storedValue)
 
     //Storage miss!!!, account not on this shard
     if (storedValue == undefined) {
@@ -605,6 +606,6 @@ export default class TransactionState {
   }
 
   debugTraceLog(message: string) {
-    console.log(`DBG:${this.linkedTX} msg:${message}`)
+    if(ShardeumFlags.VerboseLogs) console.log( `DBG:${this.linkedTX} msg:${message}`)
   }
 }

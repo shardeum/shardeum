@@ -139,7 +139,7 @@ config = merge(
     server: {
       mode: 'debug',
       debug: {
-        startInFatalsLogMode: false, //true setting good for big aws test with nodes joining under stress.
+        startInFatalsLogMode: true, //true setting good for big aws test with nodes joining under stress.
         startInErrorLogMode: false,
         fakeNetworkDelay: 0,
         disableSnapshots: true,
@@ -345,7 +345,7 @@ function contractStorageInvolvedHack(transactionState: TransactionState, address
  */
 
 async function createAccount(addressStr, transactionState: TransactionState): Promise<WrappedEVMAccount> {
-  console.log('Creating new account', addressStr)
+  if(ShardeumFlags.VerboseLogs) console.log( 'Creating new account', addressStr)
   const accountAddress = Address.fromString(addressStr)
   const oneEth = new BN(10).pow(new BN(18))
 
@@ -385,16 +385,16 @@ function getTransactionObj(tx: any): Transaction | AccessListEIP2930Transaction 
   const serializedInput = toBuffer(tx.raw)
   try {
     transactionObj = Transaction.fromRlpSerializedTx(serializedInput)
-    console.log('Legacy tx parsed:', transactionObj)
+    if(ShardeumFlags.VerboseLogs) console.log( 'Legacy tx parsed:', transactionObj)
   } catch (e) {
-    console.log('Unable to get legacy transaction obj', e)
+    if(ShardeumFlags.VerboseLogs) console.log( 'Unable to get legacy transaction obj', e)
   }
   if (!transactionObj) {
     try {
       transactionObj = AccessListEIP2930Transaction.fromRlpSerializedTx(serializedInput)
-      console.log('EIP2930 tx parsed:', transactionObj)
+      if(ShardeumFlags.VerboseLogs) console.log( 'EIP2930 tx parsed:', transactionObj)
     } catch (e) {
-      console.log('Unable to get EIP2930 transaction obj', e)
+      if(ShardeumFlags.VerboseLogs) console.log( 'Unable to get EIP2930 transaction obj', e)
     }
   }
 
@@ -425,14 +425,14 @@ async function getReadableAccountInfo(addressStr, accountType = 0) {
       codeHash: bufferToHex(account.account.codeHash),
     }
   } catch (e) {
-    console.log('Unable to get readable account', e)
+    if(ShardeumFlags.VerboseLogs) console.log( 'Unable to get readable account', e)
   }
   return null
 }
 
 function getDebugTXState(): TransactionState {
   let txId = '0'.repeat(64)
-  console.log('Creating a debug tx state for ', txId)
+  if(ShardeumFlags.VerboseLogs) console.log( 'Creating a debug tx state for ', txId)
   let transactionState = transactionStateMap.get(txId)
   if (transactionState == null) {
     transactionState = new TransactionState()
@@ -453,7 +453,7 @@ function getDebugTXState(): TransactionState {
   } else {
     //TODO possibly need a blob to re-init with, but that may happen somewhere else.  Will require a slight interface change
     //to allow shardus to pass in this extra data blob (unless we find a way to run it through wrapped states??)
-    console.log('Resetting debug transaction state for txId', txId)
+    if(ShardeumFlags.VerboseLogs) console.log( 'Resetting debug transaction state for txId', txId)
     transactionState.resetTransactionState()
   }
   return transactionState
@@ -481,7 +481,7 @@ async function setupTester(ethAccountID: string) {
     }
   }
 
-  console.log('Tester account created', newAccount)
+  if(ShardeumFlags.VerboseLogs) console.log( 'Tester account created', newAccount)
   const address = Address.fromString(ethAccountID)
   let account = await EVM.stateManager.getAccount(address)
 
@@ -566,12 +566,12 @@ shardus.registerExternalGet('faucet-one', async (req, res) => {
 
 shardus.registerExternalPost('inject', async (req, res) => {
   let tx = req.body
-  console.log('Transaction injected:', new Date(), tx)
+  if(ShardeumFlags.VerboseLogs) console.log( 'Transaction injected:', new Date(), tx)
   try {
     const response = shardus.put(tx)
     res.json(response)
   } catch (err) {
-    console.log('Failed to inject tx: ', err)
+    if(ShardeumFlags.VerboseLogs) console.log( 'Failed to inject tx: ', err)
   }
 })
 
@@ -587,7 +587,7 @@ shardus.registerExternalGet('dumpStorage', async (req, res) => {
     let storage = await shardiumStateManager.dumpStorage(addr)
     return res.json(storage)
   } catch (err) {
-    //console.log(`dumpStorage: ${id} `, err)
+    //if(ShardeumFlags.VerboseLogs) console.log( `dumpStorage: ${id} `, err)
 
     return res.json(`dumpStorage: ${id} ${err}`)
   }
@@ -661,16 +661,16 @@ shardus.registerExternalPost('contract/call', async (req, res) => {
     shardiumStateManager.setTransactionState(debugTXState)
 
     const callResult = await EVM.runCall(opt)
-    console.log('Call Result', callResult.execResult.returnValue.toString('hex'))
+    if(ShardeumFlags.VerboseLogs) console.log( 'Call Result', callResult.execResult.returnValue.toString('hex'))
 
     if (callResult.execResult.exceptionError) {
-      console.log('Execution Error:', callResult.execResult.exceptionError)
+      if(ShardeumFlags.VerboseLogs) console.log( 'Execution Error:', callResult.execResult.exceptionError)
       return res.json({ result: null })
     }
 
     res.json({ result: callResult.execResult.returnValue.toString('hex') })
   } catch (e) {
-    console.log('Error', e)
+    if(ShardeumFlags.VerboseLogs) console.log( 'Error', e)
     return res.json({ result: null })
   }
 })
@@ -702,7 +702,7 @@ shardus.registerExternalGet('tx/:hash', async (req, res) => {
 })
 
 shardus.registerExternalGet('accounts', async (req, res) => {
-  console.log('/accounts')
+  if(ShardeumFlags.VerboseLogs) console.log( '/accounts')
   res.json({ accounts })
 })
 
@@ -806,7 +806,7 @@ shardus.setup({
         }
       }
     } catch (e) {
-      console.log('Validation error', e)
+      if(ShardeumFlags.VerboseLogs) console.log( 'Validation error', e)
       response.result = 'fail'
       response.reason = e
       return response
@@ -862,7 +862,7 @@ shardus.setup({
     const ethTxId = bufferToHex(transaction.hash())
     let txId = crypto.hashObj(tx)
     // Create an applyResponse which will be used to tell Shardus that the tx has been applied
-    console.log('DBG', new Date(), 'attempting to apply tx', txId, tx)
+    if(ShardeumFlags.VerboseLogs) console.log( 'DBG', new Date(), 'attempting to apply tx', txId, tx)
     const applyResponse = shardus.createApplyResponse(txId, tx.timestamp)
 
     //Now we need to get a transaction state object.  For single sharded networks this will be a new object.
@@ -911,8 +911,8 @@ shardus.setup({
       // Apply the tx
       // const Receipt = await EVM.runTx({tx: transaction, skipNonce: true, skipBlockGasLimitValidation: true})
       const Receipt = await EVM.runTx({ tx: transaction, skipNonce: true })
-      console.log('DBG', 'applied tx', txId, Receipt)
-      console.log('DBG', 'applied tx eth', ethTxId, Receipt)
+      if(ShardeumFlags.VerboseLogs) console.log( 'DBG', 'applied tx', txId, Receipt)
+      if(ShardeumFlags.VerboseLogs) console.log( 'DBG', 'applied tx eth', ethTxId, Receipt)
       shardusTxIdToEthTxId[txId] = ethTxId
 
       // todo: fix that this is getting set too early, should wait untill after TX consensus
@@ -940,7 +940,7 @@ shardus.setup({
           WrappedEVMAccountFunctions.updateEthAccountHash(wrappedEVMAccount)
 
           accounts[shardusAddress] = wrappedEVMAccount
-          console.log('Contract account stored', accounts[shardusAddress])
+          if(ShardeumFlags.VerboseLogs) console.log( 'Contract account stored', accounts[shardusAddress])
         }
       }
 
@@ -949,7 +949,7 @@ shardus.setup({
       //the transactionState is what accumulates the writes that we need
       let { accounts: accountWrites, contractStorages: contractStorageWrites, contractBytes: contractBytesWrites } = transactionState.getWrittenAccounts()
 
-      console.log(`DBG: all contractStorages writes`, contractStorageWrites)
+      if(ShardeumFlags.VerboseLogs) console.log( `DBG: all contractStorages writes`, contractStorageWrites)
 
       for (let contractStorageEntry of contractStorageWrites.entries()) {
         //1. wrap and save/update this to shardium accounts[] map
@@ -1064,7 +1064,7 @@ shardus.setup({
       // shardus must be made to handle that
 
       shardus.log('Unable to apply transaction', e)
-      console.log('Unable to apply transaction', txId, e)
+      if(ShardeumFlags.VerboseLogs) console.log( 'Unable to apply transaction', txId, e)
     }
     shardiumStateManager.unsetTransactionState()
 
@@ -1126,9 +1126,9 @@ shardus.setup({
         }
       }
       result.allKeys = result.allKeys.concat(result.sourceKeys, result.targetKeys, result.storageKeys, otherAccountKeys)
-      console.log('running getKeyFromTransaction', result)
+      if(ShardeumFlags.VerboseLogs) console.log( 'running getKeyFromTransaction', result)
     } catch (e) {
-      console.log('Unable to get keys from tx', e)
+      if(ShardeumFlags.VerboseLogs) console.log( 'Unable to get keys from tx', e)
     }
     return result
   },
@@ -1287,7 +1287,7 @@ shardus.setup({
           hash: '',
           accountType: AccountType.ContractStorage,
         }
-        console.log(`Creating new contract storage account key:${evmAccountID} in contract address ${wrappedEVMAccount.ethAddress}`)
+        if(ShardeumFlags.VerboseLogs) console.log( `Creating new contract storage account key:${evmAccountID} in contract address ${wrappedEVMAccount.ethAddress}`)
       } else {
         throw new Error(`getRelevantData: invalid accoun type ${accountType}`)
       }
@@ -1358,7 +1358,7 @@ shardus.setup({
     } else {
       //TODO possibly need a blob to re-init with?
     }
-    console.log('updatedEVMAccount', updatedEVMAccount)
+    if(ShardeumFlags.VerboseLogs) console.log( 'updatedEVMAccount', updatedEVMAccount)
 
     if (updatedEVMAccount.accountType === AccountType.Account) {
       //if account?
@@ -1483,7 +1483,7 @@ shardus.setup({
     return `${stringify(wrappedAccount)}`
   },
   close() {
-    console.log('Shutting down...')
+    if(ShardeumFlags.VerboseLogs) console.log( 'Shutting down...')
   },
   getTimestampAndHashFromAccount(account) {
     if (account != null) {

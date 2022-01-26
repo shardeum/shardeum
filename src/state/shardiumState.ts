@@ -12,6 +12,7 @@ import Cache from './cache'
 //import { short } from '@ethereumjs/vm/src/evm/opcodes'
 import { AccessList, AccessListItem } from '@ethereumjs/tx'
 import TransactionState from './transactionState'
+import * as ShardeumFlags from '../shardeum/shardeumFlags'
 
 const debug = createDebugLogger('vm:state')
 
@@ -225,7 +226,7 @@ export default class ShardiumState implements StateManager {
     // Original implementation:
 
     const codeHash = keccak256(value)
-    console.log('Storing contract code', codeHash, codeHash.toString('hex'), value)
+    if(ShardeumFlags.VerboseLogs) console.log( 'Storing contract code', codeHash, codeHash.toString('hex'), value)
 
     if (codeHash.equals(KECCAK256_NULL)) {
       return
