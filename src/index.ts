@@ -1177,6 +1177,30 @@ shardus.setup({
     }
   },
   async getRelevantData(accountId, tx) {
+
+    if(isInternalTx(tx)){
+      let internalTx = tx as InternalTx
+
+      let accountCreated = false
+      let wrappedEVMAccount = accounts[accountId]
+      if(wrappedEVMAccount === null){
+        accountCreated = true
+        
+      }
+      if(internalTx.accountData){
+        wrappedEVMAccount = internalTx.accountData
+      }
+      
+      return shardus.createWrappedResponse(
+        accountId,
+        accountCreated,
+        wrappedEVMAccount.hash,
+        wrappedEVMAccount.timestamp,
+        wrappedEVMAccount
+      )
+    }
+
+
     if (!tx.raw) throw new Error('getRelevantData: No raw tx')
 
     let wrappedEVMAccount = accounts[accountId]
@@ -1352,9 +1376,14 @@ shardus.setup({
 
     // Save updatedAccount to db / persistent storage
     accounts[accountId] = updatedEVMAccount
+
     let ethTxId = shardusTxIdToEthTxId[txId]
-    let appliedTx = appliedTxs[ethTxId]
-    appliedTx.status = 1
+
+    //we will only have an ethTxId if this was an EVM tx.  internalTX will not have one
+    if(ethTxId != null){
+      let appliedTx = appliedTxs[ethTxId]
+      appliedTx.status = 1      
+    }
 
     // TODO: the account we passed to shardus is not the final committed data for contract code and contract storage
     //  accounts
