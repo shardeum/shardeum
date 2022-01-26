@@ -205,13 +205,15 @@ export default class TransactionState {
         let codeHash = contractByteWrite.codeHash
         let codeByte = contractByteWrite.codeByte
         console.log(`Storing contract code for ${address.toString()}`, codeHash, codeByte)
+
+        //decided to move this back to commit. since codebytes are global we need to be able to commit them without changing a contract account
         //push codeByte to the worldStateTrie.db
-        await this.shardeumState._trie.db.put(codeHash, codeByte)
-        account.codeHash = codeHash
+        //await this.shardeumState._trie.db.put(codeHash, codeByte)
+        //account.codeHash = codeHash
 
         account.codeHash = contractByteWrite.codeHash
 
-        if (this.debugTrace) this.debugTraceLog(`commitAccount:contractByte: addr:${addressString} codeHash:${codeHash.toString('hex')} v:${codeByte.length}`)
+        if (this.debugTrace) this.debugTraceLog(`commitAccount:contractCode: addr:${addressString} codeHash:${codeHash.toString('hex')} v:${codeByte.length}`)
       }
     }
 
@@ -238,7 +240,7 @@ export default class TransactionState {
    * @param codeHash
    * @param contractByte
    */
-  commitContractBytes(contractAddress: string, codeHash: Buffer, contractByte: Buffer) {
+   async commitContractBytes(contractAddress: string, codeHash: Buffer, contractByte: Buffer) {
     //only put this in the pending commit structure. we will do the real commit when updating the account
     if (this.pendingContractBytesCommits.has(contractAddress)) {
       let contractBytesCommit = this.pendingContractBytesCommits.get(contractAddress)
@@ -250,9 +252,17 @@ export default class TransactionState {
       contractBytesCommit.set(codeHash.toString('hex'), { codeHash, codeByte: contractByte })
       this.pendingContractBytesCommits.set(contractAddress, contractBytesCommit)
     }
+
+    //Update the trie right away.  This used to be queued and only committed at the same time as the CA
+    //Since CA bytes are global we must commit them right away because there will not be CA being updated in the same transaction any more
+    this.shardeumState._trie.checkpoint()
+    await this.shardeumState._trie.db.put(codeHash, contractByte)
+    await this.shardeumState._trie.commit()
+
+    if (this.debugTrace) this.debugTraceLog(`commitContractBytes:contractCode codeHash:${codeHash.toString('hex')} v:${contractByte.toString('hex')}`)
   }
 
-  commitContractStorage(contractAddress: string, keyString: string, value: Buffer) {
+  async commitContractStorage(contractAddress: string, keyString: string, value: Buffer) {
     //store all writes to the persistant trie.
 
     //only put this in the pending commit structure. we will do the real commit when updating the account

@@ -724,7 +724,12 @@ async function applyInternalTx(internalTx: InternalTx, wrappedStates:WrappedStat
     //just update the timestamp?  
     wrappedEVMAccount.timestamp = internalTx.timestamp
     //I think this will naturally accomplish the goal of the global update.
+
+    //need to run this to fix buffer types after serialization
+    fixDeserializedWrappedEVMAccount(wrappedEVMAccount)
   }
+
+
 
   let txId = crypto.hashObj(internalTx)
   const applyResponse: ShardusTypes.ApplyResponse = shardus.createApplyResponse(txId, internalTx.timestamp)
@@ -972,6 +977,10 @@ shardus.setup({
         }
       }
 
+      //Keep a map of CA addresses to codeHash
+      //use this later in the loop of account updates to set the correct account code hash values
+      let accountToCodeHash:Map<string,Buffer> = new Map()
+
       for (let contractBytesEntry of contractBytesWrites.entries()) {
         //1. wrap and save/update this to shardium accounts[] map
         let addressStr = contractBytesEntry[0]
@@ -986,6 +995,10 @@ shardus.setup({
           hash: '',
           accountType: AccountType.ContractCode,
         }
+
+        //add our codehash to the map entry for the CA address
+        accountToCodeHash.set(contractByteWrite.contractAddress.toString(), contractByteWrite.codeHash)
+
         if(ShardeumFlags.globalCodeBytes === true){
           //set this globally instead!
           setGlobalCodeByteUpdate(tx.timestamp, wrappedEVMAccount, applyResponse)
@@ -1011,6 +1024,12 @@ shardus.setup({
           ethAddress: addressStr,
           hash: '',
           accountType: AccountType.Account,
+        }
+
+        //If this account has an entry in the map use it to set the codeHash.
+        // the ContractCode "account" will get pushed later as a global TX
+        if(accountToCodeHash.has(addressStr)){
+          accountObj.codeHash = accountToCodeHash.get(addressStr)
         }
 
         // I think data is unwrapped too much and we should be using wrappedEVMAccount directly as data
@@ -1315,6 +1334,9 @@ shardus.setup({
     // const hashAfter = crypto.hashObj(updatedAccount || {})
     // updatedAccount.hash = hashAfter
 
+    //fix any issues from seralization
+    fixDeserializedWrappedEVMAccount(updatedEVMAccount)
+
     // oof, we dont have the TXID!!!
     let txId = applyResponse?.txId
     let transactionState = transactionStateMap.get(txId)
@@ -1342,19 +1364,19 @@ shardus.setup({
       //if account?
       let addressStr = updatedEVMAccount.ethAddress
       let ethAccount = updatedEVMAccount.account
-      transactionState.commitAccount(addressStr, ethAccount) //yikes this wants an await.
+      await transactionState.commitAccount(addressStr, ethAccount) //yikes this wants an await.
     } else if (updatedEVMAccount.accountType === AccountType.ContractStorage) {
       //if ContractAccount?
       let addressStr = updatedEVMAccount.ethAddress
       let key = updatedEVMAccount.key
       let bufferValue = updatedEVMAccount.value
-      transactionState.commitContractStorage(addressStr, key, bufferValue)
+      await transactionState.commitContractStorage(addressStr, key, bufferValue)
     } else if (updatedEVMAccount.accountType === AccountType.ContractCode) {
       let addressStr = updatedEVMAccount.ethAddress
       let contractAddress = updatedEVMAccount.contractAddress
       let codeHash = updatedEVMAccount.codeHash
       let codeByte = updatedEVMAccount.codeByte
-      transactionState.commitContractBytes(contractAddress, codeHash, codeByte)
+      await transactionState.commitContractBytes(contractAddress, codeHash, codeByte)
     } else if (updatedEVMAccount.accountType === AccountType.Receipt) {
       //TODO we can add the code that processes a receipt now.
       //  This will not call back into transactionState
