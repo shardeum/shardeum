@@ -125,6 +125,21 @@ config = merge(config, {
   },
 })
 
+//rateLimiting settings
+config = merge(config, {
+  server: {
+    rateLimiting: {
+      limitRate: true,
+      loadLimit: {
+        internal: 0.8,
+        external: 0.8,
+        txTimeInQueue: 0.7,
+        queueLength: 0.8,
+      },
+    }
+  }
+})
+
 config = merge(config, {
   server: {
     sharding: {
