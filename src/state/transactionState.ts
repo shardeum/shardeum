@@ -2,6 +2,7 @@ import { Account, Address, bufferToHex, keccak256, KECCAK256_NULL, rlp, unpadBuf
 import { SecureTrie as Trie } from 'merkle-patricia-tree'
 import { ShardiumState } from '.'
 import * as ShardeumFlags from '../shardeum/shardeumFlags'
+import {zeroAddressAccount, zeroAddressStr} from "../utils";
 
 export type accountEvent = (transactionState: TransactionState, address: string) => Promise<boolean>
 export type contractStorageEvent = (transactionState: TransactionState, address: string, key: string) => Promise<boolean>
@@ -175,6 +176,11 @@ export default class TransactionState {
     //store all writes to the persistant trie.
     let address = Address.fromString(addressString)
 
+    if (addressString === zeroAddressStr) {
+      if (this.debugTrace) this.debugTraceLog(`commitAccount: addr:${addressString} } is neglected`)
+      return
+    }
+
     this.shardeumState._trie.checkpoint()
 
     //IFF this is a contract account we need to update any pending contract storage values!!
@@ -282,6 +288,10 @@ export default class TransactionState {
   async getAccount(worldStateTrie: Trie, address: Address, originalOnly: boolean, canThrow: boolean): Promise<Account> {
     const addressString = address.toString()
 
+    if (addressString === zeroAddressStr) {
+      return zeroAddressAccount
+    }
+
     if (originalOnly === false) {
       if (this.allAccountWrites.has(addressString)) {
         let storedRlp = this.allAccountWrites.get(addressString)
@@ -335,6 +345,11 @@ export default class TransactionState {
    */
   putAccount(address: Address, account: Account) {
     const addressString = address.toString()
+
+    if (addressString === zeroAddressStr) {
+      if (this.debugTrace) this.debugTraceLog(`putAccount: addr:${addressString} is neglected`)
+      return
+    }
 
     if (this.accountInvolvedCB(this, addressString, false) === false) {
       throw new Error('unable to proceed, cant involve account')

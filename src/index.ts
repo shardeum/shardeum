@@ -19,7 +19,8 @@ import { AccountType, WrappedEVMAccount, WrappedEVMAccountMap, EVMAccountInfo, I
 import {getAccountShardusAddress, toShardusAddress, toShardusAddressWithKey} from './shardeum/evmAddress'
 import * as ShardeumFlags from './shardeum/shardeumFlags'
 import * as WrappedEVMAccountFunctions from './shardeum/wrappedEVMAccountFunctions'
-import {fixDeserializedWrappedEVMAccount} from './shardeum/wrappedEVMAccountFunctions'
+import {fixDeserializedWrappedEVMAccount, updateEthAccountHash} from './shardeum/wrappedEVMAccountFunctions'
+import {zeroAddressStr} from "./utils";
 
 let { shardusFactory } = require('shardus-global-server')
 
@@ -708,20 +709,20 @@ shardus.registerExternalGet('accounts', async (req, res) => {
 
 
 /***
- *    #### ##    ## ######## ######## ########  ##    ##    ###    ##          ######## ##     ## 
- *     ##  ###   ##    ##    ##       ##     ## ###   ##   ## ##   ##             ##     ##   ##  
- *     ##  ####  ##    ##    ##       ##     ## ####  ##  ##   ##  ##             ##      ## ##   
- *     ##  ## ## ##    ##    ######   ########  ## ## ## ##     ## ##             ##       ###    
- *     ##  ##  ####    ##    ##       ##   ##   ##  #### ######### ##             ##      ## ##   
- *     ##  ##   ###    ##    ##       ##    ##  ##   ### ##     ## ##             ##     ##   ##  
- *    #### ##    ##    ##    ######## ##     ## ##    ## ##     ## ########       ##    ##     ## 
+ *    #### ##    ## ######## ######## ########  ##    ##    ###    ##          ######## ##     ##
+ *     ##  ###   ##    ##    ##       ##     ## ###   ##   ## ##   ##             ##     ##   ##
+ *     ##  ####  ##    ##    ##       ##     ## ####  ##  ##   ##  ##             ##      ## ##
+ *     ##  ## ## ##    ##    ######   ########  ## ## ## ##     ## ##             ##       ###
+ *     ##  ##  ####    ##    ##       ##   ##   ##  #### ######### ##             ##      ## ##
+ *     ##  ##   ###    ##    ##       ##    ##  ##   ### ##     ## ##             ##     ##   ##
+ *    #### ##    ##    ##    ######## ##     ## ##    ## ##     ## ########       ##    ##     ##
  */
 
 async function applyInternalTx(internalTx: InternalTx, wrappedStates:WrappedStates) : Promise<ShardusTypes.ApplyResponse> {
   if(internalTx.internalTXType === InternalTXType.SetGlobalCodeBytes){
-    
+
     const wrappedEVMAccount: WrappedEVMAccount = wrappedStates[internalTx.from].data
-    //just update the timestamp?  
+    //just update the timestamp?
     wrappedEVMAccount.timestamp = internalTx.timestamp
     //I think this will naturally accomplish the goal of the global update.
 
@@ -1007,15 +1008,18 @@ shardus.setup({
           //attach to applyResponse
           if (shardus.applyResponseAddChangedAccount != null) {
             shardus.applyResponseAddChangedAccount(applyResponse, wrappedChangedAccount.accountId, wrappedChangedAccount, txId, wrappedChangedAccount.timestamp)
-          }          
+          }
         }
       }
+
+      if (ShardeumFlags.VerboseLogs) console.log('DBG: all account writes', accountWrites)
 
       // Handle Account type last, because CAs may depend on CA:Storage or CA:Bytecode updates
       //wrap these accounts and keys up and add them to the applyResponse as additional involved accounts
       for (let account of accountWrites.entries()) {
         //1. wrap and save/update this to shardium accounts[] map
         let addressStr = account[0]
+        if (addressStr === zeroAddressStr) continue
         let accountObj = Account.fromRlpSerializedAccount(account[1])
 
         let wrappedEVMAccount: WrappedEVMAccount = {
@@ -1031,6 +1035,8 @@ shardus.setup({
         if(accountToCodeHash.has(addressStr)){
           accountObj.codeHash = accountToCodeHash.get(addressStr)
         }
+
+        updateEthAccountHash(wrappedEVMAccount)
 
         // I think data is unwrapped too much and we should be using wrappedEVMAccount directly as data
         const wrappedChangedAccount = WrappedEVMAccountFunctions._shardusWrappedAccount(wrappedEVMAccount)
@@ -1054,7 +1060,7 @@ shardus.setup({
         accountType: AccountType.Receipt,
         txFrom: txSenderEvmAddr,
       }
-      
+
       const wrappedChangedAccount = WrappedEVMAccountFunctions._shardusWrappedAccount(wrappedReceiptAccount)
       if (shardus.applyResponseAddChangedAccount != null) {
         shardus.applyResponseAddChangedAccount(applyResponse, wrappedChangedAccount.accountId, wrappedChangedAccount, txId, wrappedChangedAccount.timestamp)
@@ -1204,12 +1210,11 @@ shardus.setup({
       let wrappedEVMAccount = accounts[accountId]
       if(wrappedEVMAccount === null){
         accountCreated = true
-        
       }
       if(internalTx.accountData){
         wrappedEVMAccount = internalTx.accountData
       }
-      
+
       return shardus.createWrappedResponse(
         accountId,
         accountCreated,
@@ -1328,11 +1333,7 @@ shardus.setup({
     const accountId = wrappedData.accountId
     const accountCreated = wrappedData.accountCreated
     const updatedEVMAccount: WrappedEVMAccount = wrappedData.data
-    // Update hash.   currently letting the hash be controlled by the EVM.
-    //                not sure if we want to hash the WrappedEthAccount instead, but probably not
-    // const hashBefore = updatedAccount.hash
-    // const hashAfter = crypto.hashObj(updatedAccount || {})
-    // updatedAccount.hash = hashAfter
+    const prevStateId = wrappedData.prevStateId
 
     //fix any issues from seralization
     fixDeserializedWrappedEVMAccount(updatedEVMAccount)
@@ -1392,7 +1393,7 @@ shardus.setup({
       // }
     }
 
-    let hashBefore = updatedEVMAccount.hash
+    let hashBefore = prevStateId
     WrappedEVMAccountFunctions.updateEthAccountHash(updatedEVMAccount)
     let hashAfter = updatedEVMAccount.hash
 
@@ -1404,7 +1405,7 @@ shardus.setup({
     //we will only have an ethTxId if this was an EVM tx.  internalTX will not have one
     if(ethTxId != null){
       let appliedTx = appliedTxs[ethTxId]
-      appliedTx.status = 1      
+      appliedTx.status = 1
     }
 
     // TODO: the account we passed to shardus is not the final committed data for contract code and contract storage
