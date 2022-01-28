@@ -1019,7 +1019,10 @@ shardus.setup({
       for (let account of accountWrites.entries()) {
         //1. wrap and save/update this to shardium accounts[] map
         let addressStr = account[0]
-        if (addressStr === zeroAddressStr) continue
+        if (ShardeumFlags.Virtual0Address && addressStr === zeroAddressStr){
+          //do not inform shardus about the 0 address account
+          continue
+        } 
         let accountObj = Account.fromRlpSerializedAccount(account[1])
 
         let wrappedEVMAccount: WrappedEVMAccount = {

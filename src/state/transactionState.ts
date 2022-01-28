@@ -176,7 +176,7 @@ export default class TransactionState {
     //store all writes to the persistant trie.
     let address = Address.fromString(addressString)
 
-    if (addressString === zeroAddressStr) {
+    if (ShardeumFlags.Virtual0Address && addressString === zeroAddressStr) {
       if (this.debugTrace) this.debugTraceLog(`commitAccount: addr:${addressString} } is neglected`)
       return
     }
@@ -288,7 +288,7 @@ export default class TransactionState {
   async getAccount(worldStateTrie: Trie, address: Address, originalOnly: boolean, canThrow: boolean): Promise<Account> {
     const addressString = address.toString()
 
-    if (addressString === zeroAddressStr) {
+    if (ShardeumFlags.Virtual0Address && addressString === zeroAddressStr) {
       return zeroAddressAccount
     }
 
@@ -346,7 +346,7 @@ export default class TransactionState {
   putAccount(address: Address, account: Account) {
     const addressString = address.toString()
 
-    if (addressString === zeroAddressStr) {
+    if (ShardeumFlags.Virtual0Address && addressString === zeroAddressStr) {
       if (this.debugTrace) this.debugTraceLog(`putAccount: addr:${addressString} is neglected`)
       return
     }
