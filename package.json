@@ -18,7 +18,8 @@
     "dbg": "shardus start 3 && shardus stop && rm -rf instances/",
     "test": "echo \"Error: no test specified\" && exit 1",
     "update-template": "node scripts/update-template.js",
-    "update-docker": "docker build -t registry.gitlab.com/shardus/applications/coin-app-template . && docker push registry.gitlab.com/shardus/applications/coin-app-template"
+    "update-docker": "docker build -t registry.gitlab.com/shardus/applications/coin-app-template . && docker push registry.gitlab.com/shardus/applications/coin-app-template",
+    "tsc": "tsc"
   },
   "author": "",
   "license": "ISC",
