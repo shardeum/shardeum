@@ -7,7 +7,7 @@ import { AccountType, WrappedEVMAccount, WrappedEVMAccountMap, EVMAccountInfo } 
 
 import * as ShardeumFlags from './shardeumFlags'
 import * as crypto from 'shardus-crypto-utils'
-import { ShardiumState, TransactionState } from '../state'
+import { ShardeumState, TransactionState } from '../state'
 import { getAccountShardusAddress, toShardusAddressWithKey, toShardusAddress } from './evmAddress'
 import { Shardus, ShardusTypes } from 'shardus-global-server'
 

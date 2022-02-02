@@ -9,7 +9,7 @@ import {AccessListEIP2930Transaction, Transaction} from '@ethereumjs/tx'
 import VM from '@ethereumjs/vm'
 import {parse as parseUrl} from 'url'
 import got from 'got'
-import {ShardiumState, TransactionState} from './state'
+import {ShardeumState, TransactionState} from './state'
 import {ShardusTypes} from 'shardus-global-server'
 import {ContractByteWrite} from './state/transactionState'
 
@@ -182,10 +182,10 @@ let accounts: WrappedEVMAccountMap = {}
 let appliedTxs = {}
 let shardusTxIdToEthTxId = {}
 
-let shardiumStateManager = new ShardiumState() //as StateManager
-shardiumStateManager.temporaryParallelOldMode = ShardeumFlags.temporaryParallelOldMode //could probably refactor to use ShardeumFlags in the state manager
+let shardeumStateManager = new ShardeumState() //as StateManager
+shardeumStateManager.temporaryParallelOldMode = ShardeumFlags.temporaryParallelOldMode //could probably refactor to use ShardeumFlags in the state manager
 
-let EVM = new VM({ stateManager: shardiumStateManager })
+let EVM = new VM({ stateManager: shardeumStateManager })
 
 let transactionStateMap = new Map<string, TransactionState>()
 
@@ -371,7 +371,7 @@ async function createAccount(addressStr, transactionState: TransactionState): Pr
   }
 
   //I think this will have to change in the future!
-  shardiumStateManager.setTransactionState(transactionState)
+  shardeumStateManager.setTransactionState(transactionState)
 
   const account = Account.fromAccountData(acctData)
   await EVM.stateManager.putAccount(accountAddress, account)
@@ -453,7 +453,7 @@ function getDebugTXState(): TransactionState {
   if (transactionState == null) {
     transactionState = new TransactionState()
     transactionState.initData(
-      shardiumStateManager,
+      shardeumStateManager,
       {
         //dont define callbacks for db TX state!
         storageMiss: accountMissNoOp,
@@ -488,7 +488,7 @@ async function setupTester(ethAccountID: string) {
 
     //need to commit the account now... this is such a hack!!
     for (let account of accountWrites.entries()) {
-      //1. wrap and save/update this to shardium accounts[] map
+      //1. wrap and save/update this to shardeum accounts[] map
       let addressStr = account[0]
       let accountObj = Account.fromRlpSerializedAccount(account[1])
 
@@ -600,7 +600,7 @@ shardus.registerExternalGet('dumpStorage', async (req, res) => {
       return res.json(`dumpStorage: ${id} addr == null`)
     }
 
-    let storage = await shardiumStateManager.dumpStorage(addr)
+    let storage = await shardeumStateManager.dumpStorage(addr)
     return res.json(storage)
   } catch (err) {
     //if(ShardeumFlags.VerboseLogs) console.log( `dumpStorage: ${id} `, err)
@@ -674,7 +674,7 @@ shardus.registerExternalPost('contract/call', async (req, res) => {
       data: toBuffer(callObj.data),
     }
     let debugTXState = getDebugTXState() //this isn't so great..
-    shardiumStateManager.setTransactionState(debugTXState)
+    shardeumStateManager.setTransactionState(debugTXState)
 
     const callResult = await EVM.runCall(opt)
     if(ShardeumFlags.VerboseLogs) console.log( 'Call Result', callResult.execResult.returnValue.toString('hex'))
@@ -889,7 +889,7 @@ shardus.setup({
     if (transactionState == null) {
       transactionState = new TransactionState()
       transactionState.initData(
-        shardiumStateManager,
+        shardeumStateManager,
         {
           storageMiss: accountMiss,
           contractStorageMiss,
@@ -907,7 +907,7 @@ shardus.setup({
     }
 
     //ah shoot this binding will not be "thread safe" may need to make it part of the EEI for this tx? idk.
-    shardiumStateManager.setTransactionState(transactionState)
+    shardeumStateManager.setTransactionState(transactionState)
 
     // loop through the wrappedStates an insert them into the transactionState as first*Reads
     for (let accountId in wrappedStates) {
@@ -968,7 +968,7 @@ shardus.setup({
       if(ShardeumFlags.VerboseLogs) console.log( `DBG: all contractStorages writes`, contractStorageWrites)
 
       for (let contractStorageEntry of contractStorageWrites.entries()) {
-        //1. wrap and save/update this to shardium accounts[] map
+        //1. wrap and save/update this to shardeum accounts[] map
         let addressStr = contractStorageEntry[0]
         let contractStorageWrites = contractStorageEntry[1]
         for (let [key, value] of contractStorageWrites) {
@@ -998,7 +998,7 @@ shardus.setup({
       let accountToCodeHash:Map<string,Buffer> = new Map()
 
       for (let contractBytesEntry of contractBytesWrites.entries()) {
-        //1. wrap and save/update this to shardium accounts[] map
+        //1. wrap and save/update this to shardeum accounts[] map
         let addressStr = contractBytesEntry[0]
         let contractByteWrite: ContractByteWrite = contractBytesEntry[1]
 
@@ -1032,7 +1032,7 @@ shardus.setup({
       // Handle Account type last, because CAs may depend on CA:Storage or CA:Bytecode updates
       //wrap these accounts and keys up and add them to the applyResponse as additional involved accounts
       for (let account of accountWrites.entries()) {
-        //1. wrap and save/update this to shardium accounts[] map
+        //1. wrap and save/update this to shardeum accounts[] map
         let addressStr = account[0]
         if (ShardeumFlags.Virtual0Address && addressStr === zeroAddressStr){
           //do not inform shardus about the 0 address account
@@ -1090,7 +1090,7 @@ shardus.setup({
       shardus.log('Unable to apply transaction', e)
       if(ShardeumFlags.VerboseLogs) console.log( 'Unable to apply transaction', txId, e)
     }
-    shardiumStateManager.unsetTransactionState()
+    shardeumStateManager.unsetTransactionState()
 
     return applyResponse
   },
@@ -1176,7 +1176,7 @@ shardus.setup({
       accounts[shardusAddress] = wrappedEVMAccount
     }
 
-    // update shardium state. put this in a separate loop, but maybe that is overkill
+    // update shardeum state. put this in a separate loop, but maybe that is overkill
     // I was thinking we could checkpoint and commit the changes on the outer loop,
     // but now I am not so sure that is safe, and best case may need a mutex
     // I am not even 100% that we can go without a mutex even one account at time, here or in other spots
@@ -1189,7 +1189,7 @@ shardus.setup({
         let addressString = wrappedEVMAccount.ethAddress
         let evmAccount = wrappedEVMAccount.account
 
-        await shardiumStateManager.setAccountExternal(addressString, evmAccount)
+        await shardeumStateManager.setAccountExternal(addressString, evmAccount)
       } else if (wrappedEVMAccount.accountType === AccountType.ContractStorage) {
         let addressString = wrappedEVMAccount.ethAddress
         let key = Buffer.from(wrappedEVMAccount.key, 'hex')
@@ -1208,12 +1208,12 @@ shardus.setup({
           throw Error(`contractAccount.account not found for ${wrappedEVMAccount.ethAddress} / ${shardusAddress} ${JSON.stringify(contractAccount)} `)
         }
 
-        await shardiumStateManager.setContractAccountKeyValueExternal(contractAccount.account.stateRoot, addressString, key, value)
+        await shardeumStateManager.setContractAccountKeyValueExternal(contractAccount.account.stateRoot, addressString, key, value)
       } else if (wrappedEVMAccount.accountType === AccountType.ContractCode) {
         let keyString = wrappedEVMAccount.codeHash
         let bufferStr = wrappedEVMAccount.codeByte
 
-        shardiumStateManager.setContractBytesExternal(keyString, bufferStr)
+        shardeumStateManager.setContractBytesExternal(keyString, bufferStr)
       } else if (wrappedEVMAccount.accountType === AccountType.Receipt) {
         // looks like we dont need to inject anything into evm stae
       }
@@ -1253,7 +1253,7 @@ shardus.setup({
     if (transactionState == null) {
       transactionState = new TransactionState()
       transactionState.initData(
-        shardiumStateManager,
+        shardeumStateManager,
         {
           storageMiss: accountMiss,
           contractStorageMiss,
@@ -1362,7 +1362,7 @@ shardus.setup({
     if (transactionState == null) {
       transactionState = new TransactionState()
       transactionState.initData(
-        shardiumStateManager,
+        shardeumStateManager,
         {
           storageMiss: accountMiss,
           contractStorageMiss,
@@ -1477,7 +1477,7 @@ shardus.setup({
       let shardusAddress = getAccountShardusAddress(wrappedEVMAccount)
       accounts[shardusAddress] = wrappedEVMAccount
 
-      //TODO need to also update shardiumState! probably can do that in a batch outside of this loop
+      //TODO need to also update shardeumState! probably can do that in a batch outside of this loop
       // a wrappedEVMAccount could be an EVM Account or a CA key value pair
       // maybe could just refactor the loop in setAccountData??
     }

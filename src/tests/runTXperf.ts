@@ -6,7 +6,7 @@ import {readFileSync} from 'fs';
 import fs from 'fs'
 import path from 'path' 
 
-import {ShardiumState } from '../state'
+import {ShardeumState } from '../state'
 
 import {  Account,
   Address,
@@ -21,8 +21,8 @@ crypto.init('69fa4195670576c0160d660c3be36556ff8d504725be8a59b5a96509e0c994bc')
 
 const common = new Common({chain: Chain.Mainnet, hardfork: Hardfork.Berlin});
 
-let shardiumStateManager = new ShardiumState() //as StateManager
-const vm = new VM({common, stateManager:shardiumStateManager});
+let shardeumStateManager = new ShardeumState() //as StateManager
+const vm = new VM({common, stateManager:shardeumStateManager});
 
 //const vm = new VM({common});
 

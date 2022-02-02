@@ -1,6 +1,6 @@
 import { Account, Address, bufferToHex, keccak256, KECCAK256_NULL, rlp, unpadBuffer } from 'ethereumjs-util'
 import { SecureTrie as Trie } from 'merkle-patricia-tree'
-import { ShardiumState } from '.'
+import { ShardeumState } from '.'
 import * as ShardeumFlags from '../shardeum/shardeumFlags'
 import {zeroAddressAccount, zeroAddressStr} from "../utils";
 
@@ -33,7 +33,7 @@ export default class TransactionState {
   linkedTX: string
 
   // link to the shardeumState singleton (todo refactor this as non member instance)
-  shardeumState: ShardiumState
+  shardeumState: ShardeumState
 
   // account data
   firstAccountReads: Map<string, Buffer>
@@ -79,7 +79,7 @@ export default class TransactionState {
   }
 
   initData(
-    shardeumState: ShardiumState,
+    shardeumState: ShardeumState,
     callbacks: ShardeumStorageCallbacks,
     linkedTX,
     firstReads: Map<string, Buffer>,

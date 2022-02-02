@@ -46,7 +46,7 @@ export interface DefaultStateManagerOpts {
  * Interface for getting and setting data from an underlying
  * state trie.
  */
-export default class ShardiumState implements StateManager {
+export default class ShardeumState implements StateManager {
   _common: Common
   _trie: Trie
   _storageTries: { [key: string]: Trie }
@@ -127,7 +127,7 @@ export default class ShardiumState implements StateManager {
    * checkpoints were reverted.
    */
   copy(): StateManager {
-    return new ShardiumState({
+    return new ShardeumState({
       trie: this._trie.copy(false),
       common: this._common,
     })
