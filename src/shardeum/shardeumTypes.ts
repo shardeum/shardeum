@@ -37,27 +37,24 @@ export enum AccountType {
 export interface WrappedEVMAccount {
   accountType: AccountType
 
-  ethAddress: string //account address in EVM space.
+  ethAddress: string //account address in EVM space. can have different meanings depending on account type
   hash: string //account hash
 
   timestamp: number //account timestamp.  last time a TX changed it
 
   // Here is the EVM variant data.  An account:
   account?: Account //actual EVM account. if this is type Account
-  // <or> this:
+  
+  // contract storage variant data
   key?: string //EVM CA storage key
   value?: Buffer //EVM buffer value if this is of type CA_KVP
 
-  //What to store for ContractCode?
+  //Contract code related variant data and addresses
   codeHash?: Buffer
   codeByte?: Buffer
   contractAddress?: string
 
-  //What to store for Reciept?  .. doesn't look like runTX really does much with them.  runBlock seem to do more.
-  //the returned receipt from runTX is seems downcasted, because it actual has more fields than expected.
-  //research question..  does the RPC server have any logs checking endpoints..
-  //doesnt seem like it on a quick search.
-  //It does have a hardcoded logsBloom so maybe we need to fill this with correct data.
+  //Receipt related variant data
   receipt?: TxReceipt
   txId?: string
   txFrom?: string

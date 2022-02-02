@@ -332,21 +332,21 @@ function contractStorageInvolved(transactionState: TransactionState, address: st
  * fake callbacks so that the debug transactionState object can work with creating test accounts
  * Probably not a good thing to have long term.
  */
-async function accountMissHack(transactionState: TransactionState, address: string): Promise<boolean> {
+async function accountMissNoOp(transactionState: TransactionState, address: string): Promise<boolean> {
   let isRemoteShard = false
   return isRemoteShard
 }
 
-async function contractStorageMissHack(transactionState: TransactionState, address: string, key: string): Promise<boolean> {
+async function contractStorageMissNoOp(transactionState: TransactionState, address: string, key: string): Promise<boolean> {
   let isRemoteShard = false
   return isRemoteShard
 }
 
-function accountInvolvedHack(transactionState: TransactionState, address: string, isRead: boolean): boolean {
+function accountInvolvedNoOp(transactionState: TransactionState, address: string, isRead: boolean): boolean {
   return true
 }
 
-function contractStorageInvolvedHack(transactionState: TransactionState, address: string, key: string, isRead: boolean): boolean {
+function contractStorageInvolvedNoOp(transactionState: TransactionState, address: string, key: string, isRead: boolean): boolean {
   return true
 }
 
@@ -456,10 +456,10 @@ function getDebugTXState(): TransactionState {
       shardiumStateManager,
       {
         //dont define callbacks for db TX state!
-        storageMiss: accountMissHack,
-        contractStorageMiss: contractStorageMissHack,
-        accountInvolved: accountInvolvedHack,
-        contractStorageInvolved: contractStorageInvolvedHack,
+        storageMiss: accountMissNoOp,
+        contractStorageMiss: contractStorageMissNoOp,
+        accountInvolved: accountInvolvedNoOp,
+        contractStorageInvolved: contractStorageInvolvedNoOp,
       },
       txId,
       undefined,
