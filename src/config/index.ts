@@ -34,14 +34,14 @@ if (process.env.APP_SEEDLIST) {
             {
               ip: process.env.APP_SEEDLIST,
               port: 4000,
-              publicKey: '758b1c119412298802cd28dbfa394cdfeecc4074492d60844cc192d632d84de3',
-            },
-          ],
+              publicKey: '758b1c119412298802cd28dbfa394cdfeecc4074492d60844cc192d632d84de3'
+            }
+          ]
         },
         sharding: {
-          nodesPerConsensus: 50,
-        },
-      },
+          nodesPerConsensus: 50
+        }
+      }
     },
     { arrayMerge: overwriteMerge }
   )
@@ -53,9 +53,9 @@ if (process.env.APP_MONITOR) {
     {
       server: {
         reporting: {
-          recipient: `http://${process.env.APP_MONITOR}:3000/api`,
-        },
-      },
+          recipient: `http://${process.env.APP_MONITOR}:3000/api`
+        }
+      }
     },
     { arrayMerge: overwriteMerge }
   )
@@ -68,9 +68,9 @@ if (process.env.APP_IP) {
       server: {
         ip: {
           externalIp: process.env.APP_IP,
-          internalIp: process.env.APP_IP,
-        },
-      },
+          internalIp: process.env.APP_IP
+        }
+      }
     },
     { arrayMerge: overwriteMerge }
   )
@@ -86,12 +86,12 @@ config = merge(config, {
       maxJoinedPerCycle: 6,
       maxSyncingPerCycle: 12,
       maxRotatedPerCycle: 1,
-      firstCycleJoin: 10,
-    },
-  },
+      firstCycleJoin: 10
+    }
+  }
 })
 
-//rateLimiting settings
+// rateLimiting settings
 config = merge(config, {
   server: {
     rateLimiting: {
@@ -100,8 +100,8 @@ config = merge(config, {
         internal: 0.8,
         external: 0.8,
         txTimeInQueue: 0.7,
-        queueLength: 0.8,
-      },
+        queueLength: 0.8
+      }
     }
   }
 })
@@ -109,25 +109,25 @@ config = merge(config, {
 config = merge(config, {
   server: {
     sharding: {
-      nodesPerConsensusGroup: 20,
-    },
-  },
+      nodesPerConsensusGroup: 5
+    }
+  }
 })
 
-//some debug settings
+// some debug settings
 config = merge(
   config,
   {
     server: {
       mode: 'debug',
       debug: {
-        startInFatalsLogMode: true, //true setting good for big aws test with nodes joining under stress.
+        startInFatalsLogMode: false, // true setting good for big aws test with nodes joining under stress.
         startInErrorLogMode: false,
         fakeNetworkDelay: 0,
         disableSnapshots: true,
-        countEndpointStart: -1,
-      },
-    },
+        countEndpointStart: -1
+      }
+    }
   },
   { arrayMerge: overwriteMerge }
 )

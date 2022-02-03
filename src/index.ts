@@ -288,10 +288,9 @@ function getReadableTransaction(tx) {
   }
 }
 
-async function getReadableAccountInfo(addressStr, accountType = 0) {
+async function getReadableAccountInfo(account) {
   try {
     //todo this code needs additional support for account type contract storage or contract code
-    const account: WrappedEVMAccount = accounts[toShardusAddress(addressStr, accountType)]
     return {
       nonce: account.account.nonce.toString(),
       balance: account.account.balance.toString(),
@@ -515,11 +514,18 @@ shardus.registerExternalPost('faucet', async (req, res) => {
 })
 
 shardus.registerExternalGet('account/:address', async (req, res) => {
-  const address = req.params['address']
-  let accountType = req.query['type']
-  if (accountType == null) accountType = 0
-  let readableAccount = await getReadableAccountInfo(address, accountType)
-  res.json({ account: readableAccount })
+    try {
+        const id = req.params['address']
+        const shardusAddress = toShardusAddress(id, AccountType.Account)
+        const account = await shardus.getLocalOrRemoteAccount(shardusAddress)
+        let data = account.data
+        fixDeserializedWrappedEVMAccount(data)
+        let readableAccount = await getReadableAccountInfo(data)
+        res.json({ account: readableAccount })
+    } catch (error) {
+        console.log(error)
+        res.json({ error })
+    }
 })
 
 shardus.registerExternalPost('contract/call', async (req, res) => {
@@ -895,7 +901,7 @@ shardus.setup({
         if (ShardeumFlags.Virtual0Address && addressStr === zeroAddressStr){
           //do not inform shardus about the 0 address account
           continue
-        } 
+        }
         let accountObj = Account.fromRlpSerializedAccount(account[1])
 
         let wrappedEVMAccount: WrappedEVMAccount = {
@@ -1078,7 +1084,6 @@ shardus.setup({
     }
   },
   async getRelevantData(accountId, tx) {
-
     if(isInternalTx(tx)){
       let internalTx = tx as InternalTx
 

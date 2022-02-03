@@ -3,21 +3,6 @@ import { Account, Address, BN, bufferToHex, toBuffer } from 'ethereumjs-util'
 import { Transaction, AccessListEIP2930Transaction } from '@ethereumjs/tx'
 import { TxReceipt } from '@ethereumjs/vm/dist/types'
 
-/**
- * interface account {
- *   id: string,        // 32 byte hex string
- *   hash: string,      // 32 byte hex string
- *   timestamp: number, // ms since epoch
- *   data: {
- *     balance: number
- *   }
- * }
- *
- * interface accounts {
- *   [id: string]: account
- * }
- */
-
 export enum AccountType {
   Account, //  EOA or CA
   ContractStorage, // Contract storage key value pair
@@ -36,24 +21,18 @@ export enum AccountType {
  */
 export interface WrappedEVMAccount {
   accountType: AccountType
-
   ethAddress: string //account address in EVM space. can have different meanings depending on account type
   hash: string //account hash
-
   timestamp: number //account timestamp.  last time a TX changed it
-
-  // Here is the EVM variant data.  An account:
   account?: Account //actual EVM account. if this is type Account
   
   // contract storage variant data
   key?: string //EVM CA storage key
   value?: Buffer //EVM buffer value if this is of type CA_KVP
-
   //Contract code related variant data and addresses
   codeHash?: Buffer
   codeByte?: Buffer
   contractAddress?: string
-
   //Receipt related variant data
   receipt?: TxReceipt
   txId?: string
@@ -83,13 +62,11 @@ export interface InternalTx {
   isInternalTx: boolean
   internalTXType: InternalTXType
   timestamp: number
-
   from: string
   to?: string
   accountData?: WrappedEVMAccount
 
 }
-
 
 export interface WrappedAccount {
   accountId: string
