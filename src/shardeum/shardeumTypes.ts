@@ -20,20 +20,21 @@ export enum AccountType {
  * from disk again, and that could be a bit tricky.
  */
 export interface WrappedEVMAccount {
-  accountType: AccountType
+  accountType: AccountType // determines how the shardus address will be computed and what variant data is present
   ethAddress: string //account address in EVM space. can have different meanings depending on account type
   hash: string //account hash
   timestamp: number //account timestamp.  last time a TX changed it
+
+  //variant data: account  
   account?: Account //actual EVM account. if this is type Account
-  
-  // contract storage variant data
+  //variant data: contract storage 
   key?: string //EVM CA storage key
   value?: Buffer //EVM buffer value if this is of type CA_KVP
-  //Contract code related variant data and addresses
+  //variant data: Contract code related and addresses
   codeHash?: Buffer
   codeByte?: Buffer
   contractAddress?: string
-  //Receipt related variant data
+  //variant data: Receipt related 
   receipt?: TxReceipt
   txId?: string
   txFrom?: string
