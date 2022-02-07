@@ -19,6 +19,7 @@ import * as WrappedEVMAccountFunctions from './shardeum/wrappedEVMAccountFunctio
 import {fixDeserializedWrappedEVMAccount, updateEthAccountHash, predictContractAddressDirect} from './shardeum/wrappedEVMAccountFunctions'
 import {zeroAddressStr} from "./utils";
 import config from './config'
+import ShardFunctions from 'shardus-global-server/build/src/state-manager/shardFunctions' 
 
 let { shardusFactory } = require('shardus-global-server')
 
@@ -402,6 +403,26 @@ async function _internalHackGet(url: string) {
   } catch (e) {}
 }
 
+async function _internalHackPostWithResp(url:string,body:any){
+  let normalized = _normalizeUrl(url)
+  let host = parseUrl(normalized, true)
+  try{
+    const res = await got.post(host, {
+      timeout: 7000,   
+      retry: 0,  
+      throwHttpErrors: false,
+      body,
+      json:true
+      //parseJson: (text:string)=>{},
+      //json: false, // the whole reason for _internalHackGet was because we dont want the text response to mess things up
+                   //  and as a debug non shipping endpoint did not want to add optional parameters to http module
+    })   
+    return res
+  } catch(e) {
+    return null
+  }
+}
+
 /***
  *    ######## ##    ## ########  ########   #######  #### ##    ## ########  ######
  *    ##       ###   ## ##     ## ##     ## ##     ##  ##  ###   ##    ##    ##    ##
@@ -528,6 +549,36 @@ shardus.registerExternalGet('account/:address', async (req, res) => {
     }
 })
 
+// shardus.registerExternalPost('contract/call', async (req, res) => {
+//   try {
+//     const callObj = req.body
+//     let opt = {
+//       to: Address.fromString(callObj.to),
+//       caller: Address.fromString(callObj.from),
+//       origin: Address.fromString(callObj.from), // The tx.origin is also the caller here
+//       data: toBuffer(callObj.data),
+//     }
+//     let debugTXState = getDebugTXState() //this isn't so great..
+//     shardeumStateManager.setTransactionState(debugTXState)
+
+//     const callResult = await EVM.runCall(opt)
+//     if(ShardeumFlags.VerboseLogs) console.log( 'Call Result', callResult.execResult.returnValue.toString('hex'))
+
+//     if (callResult.execResult.exceptionError) {
+//       if(ShardeumFlags.VerboseLogs) console.log( 'Execution Error:', callResult.execResult.exceptionError)
+//       return res.json({ result: null })
+//     }
+
+//     res.json({ result: callResult.execResult.returnValue.toString('hex') })
+//   } catch (e) {
+//     if(ShardeumFlags.VerboseLogs) console.log( 'Error', e)
+//     return res.json({ result: null })
+//   }
+// })
+
+
+
+
 shardus.registerExternalPost('contract/call', async (req, res) => {
   try {
     const callObj = req.body
@@ -537,6 +588,44 @@ shardus.registerExternalPost('contract/call', async (req, res) => {
       origin: Address.fromString(callObj.from), // The tx.origin is also the caller here
       data: toBuffer(callObj.data),
     }
+
+    let caShardusAddress = toShardusAddress(callObj.to, AccountType.Account)
+
+    //Overly techincal, should be ported back into SGS as a utility
+    let address = caShardusAddress
+    let ourNodeShardData = shardus.stateManager.currentCycleShardData.nodeShardData
+    let minP = ourNodeShardData.consensusStartPartition
+    let maxP = ourNodeShardData.consensusEndPartition
+    // HOMENODEMATHS this seems good.  making sure our node covers this partition
+    let { homePartition } = ShardFunctions.addressToPartition(shardus.stateManager.currentCycleShardData.shardGlobals, address)
+    let accountIsRemote = ShardFunctions.partitionInWrappingRange(homePartition, minP, maxP) === false
+    if (accountIsRemote) {
+      let homeNode = ShardFunctions.findHomeNode(shardus.stateManager.currentCycleShardData.shardGlobals, address, shardus.stateManager.currentCycleShardData.parititionShardDataMap)
+
+
+      if(ShardeumFlags.VerboseLogs) console.log( `Node is in remote shard: ${homeNode?.node.externalIp}:${homeNode?.node.externalPort}`)
+      if(homeNode != null && homeNode.node != null){
+        if(ShardeumFlags.VerboseLogs) console.log( `Node is in remote shard: requesting`)
+        let node = homeNode.node
+            
+        let postResp = await _internalHackPostWithResp(`${node.externalIp}:${node.externalPort}/contract/call`, callObj)
+        if(postResp.body != null && postResp.body != ''){
+          //getResp.body
+
+          if(ShardeumFlags.VerboseLogs) console.log( `Node is in remote shard: gotResp:${JSON.stringify(postResp.body)}`)
+          //res.json({ result: callResult.execResult.returnValue.toString('hex') })
+          //return res.json({ result: '0x' + postResp.body })   //I think the 0x is worse?
+          return res.json({ result: postResp.body.result })
+        }
+      } else {
+        if(ShardeumFlags.VerboseLogs) console.log( `Node is in remote shard: homenode = null`)
+        return res.json({ result: null })      
+      }
+    } else {
+      if(ShardeumFlags.VerboseLogs) console.log( `Node is in remote shard: false`)
+    }
+
+
     let debugTXState = getDebugTXState() //this isn't so great..
     shardeumStateManager.setTransactionState(debugTXState)
 
