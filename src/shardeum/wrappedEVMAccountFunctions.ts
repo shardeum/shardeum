@@ -1,4 +1,4 @@
-import { Account, Address, BN, bufferToHex, toBuffer } from 'ethereumjs-util'
+import { Account, Address, BN, bufferToHex, toBuffer, generateAddress } from 'ethereumjs-util'
 
 import { Transaction, AccessListEIP2930Transaction } from '@ethereumjs/tx'
 import { TxReceipt } from '@ethereumjs/vm/dist/types'
@@ -93,4 +93,26 @@ export function fixDeserializedWrappedEVMAccount(wrappedEVMAccount: WrappedEVMAc
   if (wrappedEVMAccount.accountType === AccountType.ContractStorage) {
     wrappedEVMAccount.value = Buffer.from(wrappedEVMAccount.value)
   }
+}
+
+export function predictContractAddress(wrappedEVMAccount: WrappedEVMAccount) : Buffer  {
+  if(wrappedEVMAccount.accountType != AccountType.Account){
+    throw new Error('predictContractAddress requires AccountType.Account')
+  }
+  let fromStr = wrappedEVMAccount.ethAddress
+  let nonce = wrappedEVMAccount.account.nonce
+  let addressBuffer = predictContractAddressDirect(fromStr, nonce)
+  return addressBuffer
+}
+
+export function predictContractAddressDirect(ethAddress:string, nonce:BN) : Buffer   {
+  let fromStr = ethAddress
+  if(fromStr.length === 42){
+    fromStr = fromStr.slice(2) //trim 0x
+  }
+  let fromBuffer = Buffer.from(fromStr,'hex')
+  
+  let nonceBuffer:Buffer = Buffer.from(nonce.toArray())
+  let addressBuffer = generateAddress(fromBuffer, nonceBuffer)
+  return addressBuffer
 }

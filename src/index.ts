@@ -16,7 +16,7 @@ import { AccountType, WrappedEVMAccount, WrappedEVMAccountMap, EVMAccountInfo, I
 import {getAccountShardusAddress, toShardusAddress, toShardusAddressWithKey} from './shardeum/evmAddress'
 import * as ShardeumFlags from './shardeum/shardeumFlags'
 import * as WrappedEVMAccountFunctions from './shardeum/wrappedEVMAccountFunctions'
-import {fixDeserializedWrappedEVMAccount, updateEthAccountHash} from './shardeum/wrappedEVMAccountFunctions'
+import {fixDeserializedWrappedEVMAccount, updateEthAccountHash, predictContractAddressDirect} from './shardeum/wrappedEVMAccountFunctions'
 import {zeroAddressStr} from "./utils";
 import config from './config'
 
@@ -982,6 +982,7 @@ shardus.setup({
       timestamp: tx.timestamp,
     }
     try {
+      let otherAccountKeys = []
       let txSenderEvmAddr = transaction.getSenderAddress().toString()
       let txToEvmAddr = transaction.to ? transaction.to.toString() : undefined
       let transformedSourceKey = toShardusAddress(txSenderEvmAddr, AccountType.Account)
@@ -991,8 +992,22 @@ shardus.setup({
       if (transaction.to) {
         result.targetKeys.push(transformedTargetKey)
         shardusAddressToEVMAccountInfo.set(transformedTargetKey, { evmAddress: txToEvmAddr, type: AccountType.Account })
+      } else {
+        //This is a contract create!!
+        //only will work with first deploy, since we do not have a way to get nonce that works with sharding
+        let hack0Nonce = new BN(0)
+        let caAddrBuf = predictContractAddressDirect(txSenderEvmAddr, hack0Nonce)
+
+        let caAddr = '0x' + caAddrBuf.toString('hex')
+
+        let shardusAddr = toShardusAddress(caAddr, AccountType.Account)
+        otherAccountKeys.push(shardusAddr)
+        shardusAddressToEVMAccountInfo.set(shardusAddr, { evmAddress: caAddr, type: AccountType.Account })
+
+        if(ShardeumFlags.VerboseLogs) console.log( 'getKeyFromTransaction: Predicting contract account address:', caAddr, shardusAddr)
+
       }
-      let otherAccountKeys = []
+      
       if (transaction instanceof AccessListEIP2930Transaction && transaction.AccessListJSON) {
         for (let accessList of transaction.AccessListJSON) {
           let address = accessList.address
