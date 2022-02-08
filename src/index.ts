@@ -89,6 +89,7 @@ if (process.env.APP_MONITOR) {
         reporting: {
           recipient: `http://${process.env.APP_MONITOR}:3000/api`,
         },
+        interval: 0.5 // faster reporting for small demo network
       },
     },
     { arrayMerge: overwriteMerge }
