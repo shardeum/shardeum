@@ -2,7 +2,7 @@
   "name": "coin-app",
   "version": "1.0.0",
   "description": "",
-  "main": "src/index.ts",
+  "main": "dist/index.js",
   "scripts": {
     "pm2": "cross-env PM2_HOME='./.pm2' pm2",
     "start": "node scripts/start.js && node dist/index.js",
