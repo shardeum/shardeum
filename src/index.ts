@@ -561,6 +561,17 @@ shardus.registerExternalGet('account/:address', async (req, res) => {
 //     let debugTXState = getDebugTXState() //this isn't so great..
 //     shardeumStateManager.setTransactionState(debugTXState)
 
+//     /// Generate a debug fake account
+//     const oneEth = new BN(10).pow(new BN(18))
+//     const acctData = {
+//       nonce: 0,
+//       balance: oneEth.mul(new BN(100)), // 100 eth
+//     }
+//     const fakeAccount = Account.fromAccountData(acctData)
+//     debugTXState.insertFirstAccountReads(opt.caller, fakeAccount)
+//     //
+
+
 //     const callResult = await EVM.runCall(opt)
 //     if(ShardeumFlags.VerboseLogs) console.log( 'Call Result', callResult.execResult.returnValue.toString('hex'))
 
@@ -590,6 +601,7 @@ shardus.registerExternalPost('contract/call', async (req, res) => {
     }
 
     let caShardusAddress = toShardusAddress(callObj.to, AccountType.Account)
+    //let callerShardusAddress = toShardusAddress(callObj.caller, AccountType.Account)
 
     //Overly techincal, should be ported back into SGS as a utility
     let address = caShardusAddress
@@ -624,9 +636,24 @@ shardus.registerExternalPost('contract/call', async (req, res) => {
     } else {
       if(ShardeumFlags.VerboseLogs) console.log( `Node is in remote shard: false`)
     }
-
-
     let debugTXState = getDebugTXState() //this isn't so great..
+
+    //pull the caller account into our state
+    // const callerAccount = await shardus.getLocalOrRemoteAccount(callerShardusAddress)
+    // let wrappedEVMAccount = callerAccount.data as WrappedEVMAccount
+    // fixDeserializedWrappedEVMAccount(wrappedEVMAccount)
+    // //let callerEthaddress = Address.fromString(wrappedEVMAccount.ethAddress)
+    // debugTXState.insertFirstAccountReads(opt.caller, wrappedEVMAccount.account)
+
+    const oneEth = new BN(10).pow(new BN(18))
+    const acctData = {
+      nonce: 0,
+      balance: oneEth.mul(new BN(100)), // 100 eth
+    }
+    const fakeAccount = Account.fromAccountData(acctData)
+    debugTXState.insertFirstAccountReads(opt.caller, fakeAccount)
+
+
     shardeumStateManager.setTransactionState(debugTXState)
 
     const callResult = await EVM.runCall(opt)
@@ -726,7 +753,12 @@ function _transactionReceiptPass (tx: any, txId: string, wrappedStates: WrappedS
   if(applyResponse?.appDefinedData?.globalMsg){
     let { address, value, when, source } = applyResponse.appDefinedData.globalMsg
     shardus.setGlobal(address, value, when, source)
-    shardus.log('transactionReceiptPass')
+    if(ShardeumFlags.VerboseLogs) {
+      const tx = { address, value, when, source }
+      const txHash = crypto.hashObj(tx)
+      console.log(`transactionReceiptPass setglobal: ${txHash} ${JSON.stringify(tx)}  `)      
+    }
+
   }
 }
 
@@ -867,6 +899,20 @@ shardus.setup({
       let wrappedEVMAccount: WrappedEVMAccount = wrappedStates[accountId].data
       fixDeserializedWrappedEVMAccount(wrappedEVMAccount)
       let address = Address.fromString(wrappedEVMAccount.ethAddress)
+
+      if(ShardeumFlags.VerboseLogs){
+        let ourNodeShardData = shardus.stateManager.currentCycleShardData.nodeShardData
+        let minP = ourNodeShardData.consensusStartPartition
+        let maxP = ourNodeShardData.consensusEndPartition
+        let shardusAddress = getAccountShardusAddress(wrappedEVMAccount)
+        let { homePartition } = ShardFunctions.addressToPartition(shardus.stateManager.currentCycleShardData.shardGlobals, shardusAddress)
+        let accountIsRemote = ShardFunctions.partitionInWrappingRange(homePartition, minP, maxP) === false
+        
+        console.log( 'DBG', 'tx insert data', txId, `accountIsRemote: ${accountIsRemote} acc:${address} type:${wrappedEVMAccount.accountType}`)
+      }
+
+
+
       if (wrappedEVMAccount.accountType === AccountType.Account) {
         transactionState.insertFirstAccountReads(address, wrappedEVMAccount.account)
       } else if (wrappedEVMAccount.accountType === AccountType.ContractCode) {
@@ -1169,14 +1215,24 @@ shardus.setup({
 
         if (contractAccount == null) {
           //todo queue this somehow
-          throw Error(`contractAccount not found for ${wrappedEVMAccount.ethAddress} / ${shardusAddress} `)
+          // repairing also breaks from this.. hmm
+          //throw Error(`contractAccount not found for ${wrappedEVMAccount.ethAddress} / ${shardusAddress} `)
+          if(ShardeumFlags.VerboseLogs) console.log(`contractAccount not found for ${wrappedEVMAccount.ethAddress} / ${shardusAddress} `)
+          //continue
         }
-        if (contractAccount.account == null) {
+        if (contractAccount && contractAccount.account == null) {
           //todo queue this somehow
-          throw Error(`contractAccount.account not found for ${wrappedEVMAccount.ethAddress} / ${shardusAddress} ${JSON.stringify(contractAccount)} `)
+          //throw Error(`contractAccount.account not found for ${wrappedEVMAccount.ethAddress} / ${shardusAddress} ${JSON.stringify(contractAccount)} `)
+          if(ShardeumFlags.VerboseLogs) console.log(`contractAccount.account not found for ${wrappedEVMAccount.ethAddress} / ${shardusAddress} ${JSON.stringify(contractAccount)} `)
+          //continue
         }
 
-        await shardeumStateManager.setContractAccountKeyValueExternal(contractAccount.account.stateRoot, addressString, key, value)
+        let stateRoot = null
+        if(contractAccount && contractAccount.account){
+          stateRoot = contractAccount.account.stateRoot
+        }
+        //looks like we dont even need state root here
+        await shardeumStateManager.setContractAccountKeyValueExternal(stateRoot, addressString, key, value)
       } else if (wrappedEVMAccount.accountType === AccountType.ContractCode) {
         let keyString = wrappedEVMAccount.codeHash
         let bufferStr = wrappedEVMAccount.codeByte
