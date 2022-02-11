@@ -1,25 +1,26 @@
 import stringify from 'fast-json-stable-stringify'
 import * as crypto from 'shardus-crypto-utils'
-import {Account, Address, BN, bufferToHex, toBuffer} from 'ethereumjs-util'
+import { Account, Address, BN, bufferToHex, toBuffer } from 'ethereumjs-util'
 
-import {AccessListEIP2930Transaction, Transaction} from '@ethereumjs/tx'
+import { AccessListEIP2930Transaction, Transaction } from '@ethereumjs/tx'
 import VM from '@ethereumjs/vm'
-import {parse as parseUrl} from 'url'
+import { parse as parseUrl } from 'url'
 import got from 'got'
-import {ShardeumState, TransactionState} from './state'
-import {ShardusTypes} from 'shardus-global-server'
-import {ContractByteWrite} from './state/transactionState'
+import { ShardeumState, TransactionState } from './state'
+import { ShardusTypes } from 'shardus-global-server'
+import { ContractByteWrite } from './state/transactionState'
 
-import {replacer} from 'shardus-global-server/build/src/utils'
+import { replacer } from 'shardus-global-server/build/src/utils'
 
-import { AccountType, WrappedEVMAccount, WrappedEVMAccountMap, EVMAccountInfo, InternalTx, WrappedStates, WrappedAccount, InternalTXType } from './shardeum/shardeumTypes'
-import {getAccountShardusAddress, toShardusAddress, toShardusAddressWithKey} from './shardeum/evmAddress'
+import { AccountType, EVMAccountInfo, InternalTx, InternalTXType, WrappedAccount, WrappedEVMAccount, WrappedEVMAccountMap, WrappedStates } from './shardeum/shardeumTypes'
+import { getAccountShardusAddress, toShardusAddress, toShardusAddressWithKey } from './shardeum/evmAddress'
 import * as ShardeumFlags from './shardeum/shardeumFlags'
 import * as WrappedEVMAccountFunctions from './shardeum/wrappedEVMAccountFunctions'
-import {fixDeserializedWrappedEVMAccount, updateEthAccountHash, predictContractAddressDirect} from './shardeum/wrappedEVMAccountFunctions'
-import {zeroAddressStr} from "./utils";
+import { fixDeserializedWrappedEVMAccount, predictContractAddressDirect, updateEthAccountHash } from './shardeum/wrappedEVMAccountFunctions'
+import { zeroAddressStr } from './utils'
 import config from './config'
-import ShardFunctions from 'shardus-global-server/build/src/state-manager/shardFunctions' 
+import ShardFunctions from 'shardus-global-server/build/src/state-manager/shardFunctions'
+import Logger from "archive-server/build/Logger";
 
 let { shardusFactory } = require('shardus-global-server')
 
@@ -408,15 +409,15 @@ async function _internalHackPostWithResp(url:string,body:any){
   let host = parseUrl(normalized, true)
   try{
     const res = await got.post(host, {
-      timeout: 7000,   
-      retry: 0,  
+      timeout: 7000,
+      retry: 0,
       throwHttpErrors: false,
       body,
       json:true
       //parseJson: (text:string)=>{},
       //json: false, // the whole reason for _internalHackGet was because we dont want the text response to mess things up
                    //  and as a debug non shipping endpoint did not want to add optional parameters to http module
-    })   
+    })
     return res
   } catch(e) {
     return null
@@ -536,13 +537,23 @@ shardus.registerExternalPost('faucet', async (req, res) => {
 
 shardus.registerExternalGet('account/:address', async (req, res) => {
     try {
-        const id = req.params['address']
-        const shardusAddress = toShardusAddress(id, AccountType.Account)
-        const account = await shardus.getLocalOrRemoteAccount(shardusAddress)
-        let data = account.data
-        fixDeserializedWrappedEVMAccount(data)
-        let readableAccount = await getReadableAccountInfo(data)
-        res.json({ account: readableAccount })
+        if (!req.query.type) {
+            const id = req.params['address']
+            const shardusAddress = toShardusAddress(id, AccountType.Account)
+            const account = await shardus.getLocalOrRemoteAccount(shardusAddress)
+            let data = account.data
+            fixDeserializedWrappedEVMAccount(data)
+            let readableAccount = await getReadableAccountInfo(data)
+            res.json({ account: readableAccount })
+        } else {
+            let accountType = parseInt(req.query.type)
+            let id = req.params['address']
+            const shardusAddress = toShardusAddressWithKey(id, '',  accountType)
+            console.log('shardus address', shardusAddress)
+            console.log('accounts', accounts)
+            let account = accounts[shardusAddress]
+            res.json({account})
+        }
     } catch (error) {
         console.log(error)
         res.json({ error })
@@ -601,6 +612,7 @@ shardus.registerExternalPost('contract/call', async (req, res) => {
     }
 
     let caShardusAddress = toShardusAddress(callObj.to, AccountType.Account)
+      console.log('Calling to ', callObj.to, caShardusAddress)
     //let callerShardusAddress = toShardusAddress(callObj.caller, AccountType.Account)
 
     //Overly techincal, should be ported back into SGS as a utility
@@ -619,7 +631,7 @@ shardus.registerExternalPost('contract/call', async (req, res) => {
       if(homeNode != null && homeNode.node != null){
         if(ShardeumFlags.VerboseLogs) console.log( `Node is in remote shard: requesting`)
         let node = homeNode.node
-            
+
         let postResp = await _internalHackPostWithResp(`${node.externalIp}:${node.externalPort}/contract/call`, callObj)
         if(postResp.body != null && postResp.body != ''){
           //getResp.body
@@ -631,7 +643,7 @@ shardus.registerExternalPost('contract/call', async (req, res) => {
         }
       } else {
         if(ShardeumFlags.VerboseLogs) console.log( `Node is in remote shard: homenode = null`)
-        return res.json({ result: null })      
+        return res.json({ result: null })
       }
     } else {
       if(ShardeumFlags.VerboseLogs) console.log( `Node is in remote shard: false`)
@@ -680,6 +692,27 @@ shardus.registerExternalGet('tx/:hash', async (req, res) => {
 
   if (!appliedTx) return res.json({ tx: 'Not found' })
   let detail = getReadableTransaction(appliedTx.injected)
+    let logs = []
+
+    let runState = appliedTx.receipt.execResult.runState
+    if (!runState) {
+        if (ShardeumFlags.VerboseLogs) console.log(`No runState found in the receipt for ${txHash}`)
+    }
+
+    if (runState) logs = runState.logs.map((l:any[]) => {
+        return {
+            logIndex: "0x1", // 1
+            blockNumber:"0xb", // 436
+            blockHash: "0xc6ef2fc5426d6ad6fd9e2a26abeab0aa2411b7ab17f30a99d3cb96aed1d1055b",
+            transactionHash:  appliedTx.txId,
+            transactionIndex: "0x1",
+            address: bufferToHex(l[0]),
+            topics: l[1].map(i => bufferToHex(i)),
+            data: bufferToHex(l[2]),
+        }
+    })
+
+    console.log('Transformed log for tx', appliedTx.txId, logs, logs[0])
 
   let result = {
     transactionHash: appliedTx.txId,
@@ -689,8 +722,8 @@ shardus.registerExternalGet('tx/:hash', async (req, res) => {
     blockHash: '0xc6ef2fc5426d6ad6fd9e2a26abeab0aa2411b7ab17f30a99d3cb96aed1d1055b',
     cumulativeGasUsed: bufferToHex(appliedTx.receipt.gasUsed),
     gasUsed: bufferToHex(appliedTx.receipt.gasUsed),
-    logs: appliedTx.receipt.logs,
-    contractAddress: bufferToHex(appliedTx.receipt.createdAddress),
+    logs: logs,
+    contractAddress: appliedTx.receipt.createdAddress ? appliedTx.receipt.createdAddress.toString(): null,
     status: '0x1',
     ...detail,
   }
@@ -756,7 +789,7 @@ function _transactionReceiptPass (tx: any, txId: string, wrappedStates: WrappedS
     if(ShardeumFlags.VerboseLogs) {
       const tx = { address, value, when, source }
       const txHash = crypto.hashObj(tx)
-      console.log(`transactionReceiptPass setglobal: ${txHash} ${JSON.stringify(tx)}  `)      
+      console.log(`transactionReceiptPass setglobal: ${txHash} ${JSON.stringify(tx)}  `)
     }
 
   }
@@ -907,7 +940,7 @@ shardus.setup({
         let shardusAddress = getAccountShardusAddress(wrappedEVMAccount)
         let { homePartition } = ShardFunctions.addressToPartition(shardus.stateManager.currentCycleShardData.shardGlobals, shardusAddress)
         let accountIsRemote = ShardFunctions.partitionInWrappingRange(homePartition, minP, maxP) === false
-        
+
         console.log( 'DBG', 'tx insert data', txId, `accountIsRemote: ${accountIsRemote} acc:${address} type:${wrappedEVMAccount.accountType}`)
       }
 
@@ -1142,7 +1175,7 @@ shardus.setup({
         if(ShardeumFlags.VerboseLogs) console.log( 'getKeyFromTransaction: Predicting contract account address:', caAddr, shardusAddr)
 
       }
-      
+
       if (transaction instanceof AccessListEIP2930Transaction && transaction.AccessListJSON) {
         for (let accessList of transaction.AccessListJSON) {
           let address = accessList.address
