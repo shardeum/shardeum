@@ -25,7 +25,8 @@ export function getAccountShardusAddress(wrappedEVMAccount: WrappedEVMAccount): 
   }
   if (wrappedEVMAccount.accountType === AccountType.Receipt) {
     //in this case ethAddress is the code hash which is what we want for the key
-    let shardusAddress = toShardusAddressWithKey(wrappedEVMAccount.txFrom, wrappedEVMAccount.ethAddress, wrappedEVMAccount.accountType)
+    // let shardusAddress = toShardusAddressWithKey(wrappedEVMAccount.txFrom, wrappedEVMAccount.ethAddress, wrappedEVMAccount.accountType)
+    let shardusAddress = toShardusAddressWithKey(wrappedEVMAccount.ethAddress.slice(0, 42), wrappedEVMAccount.ethAddress, wrappedEVMAccount.accountType)
     return shardusAddress
   }
 
@@ -43,9 +44,11 @@ export function toShardusAddressWithKey(addressStr: string, secondaryAddressStr:
     //    to this:  665eab3be2472e83e3100b4233952a16eed20c76000000000000000000000000
     return addressStr.slice(2).toLowerCase() + '0'.repeat(24)
   }
-  
-  if (ShardeumFlags.contractStorageKeySilo
-    && (accountType === AccountType.ContractStorage || accountType === AccountType.ContractCode || accountType === AccountType.Receipt)) {
+
+  if (
+    ShardeumFlags.contractStorageKeySilo &&
+    (accountType === AccountType.ContractStorage || accountType === AccountType.ContractCode || accountType === AccountType.Receipt)
+  ) {
     let numPrefixChars = 8
     // remove the 0x and get the first 8 hex characters of the address
     let prefix = addressStr.slice(2, numPrefixChars + 2)
@@ -65,9 +68,11 @@ export function toShardusAddressWithKey(addressStr: string, secondaryAddressStr:
     shardusAddress = shardusAddress.toLowerCase()
     return shardusAddress
   }
-  
-  if (ShardeumFlags.contractStorageKeySilo === false 
-    && (accountType === AccountType.ContractStorage || accountType === AccountType.ContractCode || accountType === AccountType.Receipt)) {
+
+  if (
+    ShardeumFlags.contractStorageKeySilo === false &&
+    (accountType === AccountType.ContractStorage || accountType === AccountType.ContractCode || accountType === AccountType.Receipt)
+  ) {
     if (secondaryAddressStr.length === 64) {
       //unexpected case but lets allow it
       return secondaryAddressStr.toLowerCase()

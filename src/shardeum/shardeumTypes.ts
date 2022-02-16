@@ -25,17 +25,18 @@ export interface WrappedEVMAccount {
   hash: string //account hash
   timestamp: number //account timestamp.  last time a TX changed it
 
-  //variant data: account  
+  //variant data: account
   account?: Account //actual EVM account. if this is type Account
-  //variant data: contract storage 
+  //variant data: contract storage
   key?: string //EVM CA storage key
   value?: Buffer //EVM buffer value if this is of type CA_KVP
   //variant data: Contract code related and addresses
   codeHash?: Buffer
   codeByte?: Buffer
   contractAddress?: string
-  //variant data: Receipt related 
+  //variant data: Receipt related
   receipt?: TxReceipt
+  readableReceipt?: ReadableReceipt
   txId?: string
   txFrom?: string
 }
@@ -50,14 +51,13 @@ export interface EVMAccountInfo {
   contractAddress?: string
 }
 
-
 export enum InternalTXType {
   SetGlobalCodeBytes,
 }
 
 /**
  * InternalTx is a non EVM TX that shardeum can use for utility task such as global changes
- * 
+ *
  */
 export interface InternalTx {
   isInternalTx: boolean
@@ -66,7 +66,6 @@ export interface InternalTx {
   from: string
   to?: string
   accountData?: WrappedEVMAccount
-
 }
 
 export interface WrappedAccount {
@@ -81,3 +80,18 @@ export interface WrappedStates {
   [id: string]: WrappedAccount
 }
 
+export interface ReadableReceipt {
+  transactionHash: string
+  transactionIndex: string
+  blockNumber: string
+  nonce: string
+  blockHash: string
+  cumulativeGasUsed: string
+  gasUsed: string
+  logs: any[]
+  contractAddress: string | null
+  from: string
+  to: string
+  value: string
+  data: string
+}
