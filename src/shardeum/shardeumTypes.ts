@@ -80,6 +80,21 @@ export interface WrappedStates {
   [id: string]: WrappedAccount
 }
 
+export interface OurAppDefinedData {
+  globalMsg: {
+     address: string, 
+     value: {
+        isInternalTx: boolean,
+        internalTXType: InternalTXType,
+        timestamp: number,
+        accountData: WrappedEVMAccount,
+        from: string
+     }, 
+     when: number, 
+     source: string 
+  }
+
+}
 export interface ReadableReceipt {
   transactionHash: string
   transactionIndex: string
@@ -95,3 +110,4 @@ export interface ReadableReceipt {
   value: string
   data: string
 }
+

@@ -12,17 +12,7 @@ import { ContractByteWrite } from './state/transactionState'
 
 import { replacer } from 'shardus-global-server/build/src/utils'
 
-import {
-  AccountType,
-  EVMAccountInfo,
-  InternalTx,
-  InternalTXType,
-  ReadableReceipt,
-  WrappedAccount,
-  WrappedEVMAccount,
-  WrappedEVMAccountMap,
-  WrappedStates,
-} from './shardeum/shardeumTypes'
+import { AccountType, EVMAccountInfo, InternalTx, InternalTXType, WrappedAccount, WrappedEVMAccount, WrappedEVMAccountMap, WrappedStates, OurAppDefinedData } from './shardeum/shardeumTypes'
 import { getAccountShardusAddress, toShardusAddress, toShardusAddressWithKey } from './shardeum/evmAddress'
 import * as ShardeumFlags from './shardeum/shardeumFlags'
 import * as WrappedEVMAccountFunctions from './shardeum/wrappedEVMAccountFunctions'
@@ -780,17 +770,23 @@ function setGlobalCodeByteUpdate(txTimestamp: number, wrappedEVMAccount: Wrapped
     // type: 'apply_code_bytes', //extra, for debug
     timestamp: when,
     accountData: wrappedEVMAccount,
-    from: globalAddress,
+    from: globalAddress
   }
-  applyResponse.appDefinedData.globalMsg = { address: globalAddress, value, when, source: globalAddress }
+  
+  let ourAppDefinedData = applyResponse.appDefinedData as OurAppDefinedData
+  ourAppDefinedData.globalMsg = { address: globalAddress, value, when, source: globalAddress }
 }
 
-function _transactionReceiptPass(tx: any, txId: string, wrappedStates: WrappedStates, applyResponse: ShardusTypes.ApplyResponse) {
+function _transactionReceiptPass (tx: any, txId: string, wrappedStates: WrappedStates, applyResponse: ShardusTypes.ApplyResponse) {
+  if(applyResponse == null){
+    return
+  }
+  let ourAppDefinedData = applyResponse.appDefinedData as OurAppDefinedData
   //If this apply response has a global message defined then call setGlobal()
-  if (applyResponse?.appDefinedData?.globalMsg) {
-    let { address, value, when, source } = applyResponse.appDefinedData.globalMsg
+  if(ourAppDefinedData.globalMsg){
+    let { address, value, when, source } = ourAppDefinedData.globalMsg
     shardus.setGlobal(address, value, when, source)
-    if (ShardeumFlags.VerboseLogs) {
+    if(ShardeumFlags.VerboseLogs) {
       const tx = { address, value, when, source }
       const txHash = crypto.hashObj(tx)
       console.log(`transactionReceiptPass setglobal: ${txHash} ${JSON.stringify(tx)}  `)
