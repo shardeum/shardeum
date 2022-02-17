@@ -12,7 +12,18 @@ import { ContractByteWrite } from './state/transactionState'
 
 import { replacer } from 'shardus-global-server/build/src/utils'
 
-import { AccountType, EVMAccountInfo, InternalTx, InternalTXType, WrappedAccount, WrappedEVMAccount, WrappedEVMAccountMap, WrappedStates, OurAppDefinedData } from './shardeum/shardeumTypes'
+import {
+  AccountType,
+  EVMAccountInfo,
+  InternalTx,
+  InternalTXType,
+  WrappedAccount,
+  WrappedEVMAccount,
+  WrappedEVMAccountMap,
+  WrappedStates,
+  OurAppDefinedData,
+  ReadableReceipt,
+} from './shardeum/shardeumTypes'
 import { getAccountShardusAddress, toShardusAddress, toShardusAddressWithKey } from './shardeum/evmAddress'
 import * as ShardeumFlags from './shardeum/shardeumFlags'
 import * as WrappedEVMAccountFunctions from './shardeum/wrappedEVMAccountFunctions'
