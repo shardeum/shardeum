@@ -17,8 +17,9 @@
     "posttest": "",
     "dbg": "shardus start 3 && shardus stop && rm -rf instances/",
     "test": "echo \"Error: no test specified\" && exit 1",
-    "update-template": "node scripts/update-template.js",
-    "update-docker": "docker build -t registry.gitlab.com/shardus/applications/coin-app-template . && docker push registry.gitlab.com/shardus/applications/coin-app-template",
+    "build-docker": "node scripts/build-docker.js",
+    "push-docker": "node scripts/push-docker.js",
+    "update-docker": "npm run build-docker && npm run push-docker",
     "tsc": "tsc"
   },
   "author": "",
