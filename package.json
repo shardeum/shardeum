@@ -31,7 +31,7 @@
     "got": "^9.6.0",
     "gts": "^3.1.0",
     "shardus-crypto-utils": "git+https://gitlab.com/shardus/shardus-crypto-utils.git#semver:^3.0.1",
-    "shardus-global-server": "git+https://gitlab.com/shardus/global/shardus-global-server.git#mergeCleanup20220215",
+    "@shardus/core": "git+https://gitlab.com/shardus/global/shardus-global-server.git#configFixes20220224",
     "typescript": "^4.5.2",
     "vorpal": "^1.12.0"
   },

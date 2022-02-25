@@ -8,8 +8,8 @@ import { AccountType, WrappedEVMAccount, WrappedEVMAccountMap, EVMAccountInfo } 
 import * as ShardeumFlags from './shardeumFlags'
 import * as crypto from 'shardus-crypto-utils'
 import { ShardeumState, TransactionState } from '../state'
-import { getAccountShardusAddress, toShardusAddressWithKey, toShardusAddress } from './evmAddress'
-import { Shardus, ShardusTypes } from 'shardus-global-server'
+import { getAccountShardusAddress, toShardusAddressWithKey} from './evmAddress'
+import { Shardus, ShardusTypes } from '@shardus/core'
 
 /**
  * we need this for now because the stateRoot is a stable key into a trie
@@ -111,7 +111,7 @@ export function predictContractAddressDirect(ethAddress:string, nonce:BN) : Buff
     fromStr = fromStr.slice(2) //trim 0x
   }
   let fromBuffer = Buffer.from(fromStr,'hex')
-  
+
   let nonceBuffer:Buffer = Buffer.from(nonce.toArray())
   let addressBuffer = generateAddress(fromBuffer, nonceBuffer)
   return addressBuffer

@@ -7,10 +7,10 @@ import VM from '@ethereumjs/vm'
 import { parse as parseUrl } from 'url'
 import got from 'got'
 import { ShardeumState, TransactionState } from './state'
-import { ShardusTypes } from 'shardus-global-server'
+import { ShardusTypes } from '@shardus/core'
 import { ContractByteWrite } from './state/transactionState'
 
-import { replacer } from 'shardus-global-server/build/src/utils'
+import { replacer } from '@shardus/core/dist/utils'
 
 import {
   AccountType,
@@ -30,12 +30,12 @@ import * as WrappedEVMAccountFunctions from './shardeum/wrappedEVMAccountFunctio
 import { fixDeserializedWrappedEVMAccount, predictContractAddressDirect, updateEthAccountHash } from './shardeum/wrappedEVMAccountFunctions'
 import { zeroAddressStr } from './utils'
 import config from './config'
-import ShardFunctions from 'shardus-global-server/build/src/state-manager/shardFunctions'
+import ShardFunctions from '@shardus/core/dist/state-manager/shardFunctions'
 import Logger from 'archive-server/build/Logger'
 import { RunTxResult } from '@ethereumjs/vm/dist/runTx'
 import { RunState } from '@ethereumjs/vm/dist/evm/interpreter'
 
-let { shardusFactory } = require('shardus-global-server')
+let { shardusFactory } = require('@shardus/core')
 
 crypto.init('69fa4195670576c0160d660c3be36556ff8d504725be8a59b5a96509e0c994bc')
 
@@ -783,7 +783,7 @@ function setGlobalCodeByteUpdate(txTimestamp: number, wrappedEVMAccount: Wrapped
     accountData: wrappedEVMAccount,
     from: globalAddress
   }
-  
+
   let ourAppDefinedData = applyResponse.appDefinedData as OurAppDefinedData
   ourAppDefinedData.globalMsg = { address: globalAddress, value, when, source: globalAddress }
 }
