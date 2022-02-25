@@ -6,7 +6,7 @@ import { TxReceipt } from '@ethereumjs/vm/dist/types'
 import { AccountType, WrappedEVMAccount, WrappedEVMAccountMap, EVMAccountInfo } from './shardeumTypes'
 
 import * as ShardeumFlags from './shardeumFlags'
-import * as crypto from 'shardus-crypto-utils'
+import * as crypto from '@shardus/crypto-utils'
 import { ShardeumState, TransactionState } from '../state'
 import { getAccountShardusAddress, toShardusAddressWithKey} from './evmAddress'
 import { Shardus, ShardusTypes } from '@shardus/core'

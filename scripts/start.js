@@ -1,7 +1,7 @@
 const execa = require('execa')
 
-const archiverPath = require.resolve('archive-server')
-const monitorPath = require.resolve('monitor-server')
+const archiverPath = require.resolve('@shardus/archiver')
+const monitorPath = require.resolve('@shardus/monitor-server')
 
 async function main () {
   try {

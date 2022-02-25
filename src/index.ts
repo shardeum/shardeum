@@ -1,5 +1,5 @@
 import stringify from 'fast-json-stable-stringify'
-import * as crypto from 'shardus-crypto-utils'
+import * as crypto from '@shardus/crypto-utils'
 import { Account, Address, BN, bufferToHex, toBuffer } from 'ethereumjs-util'
 
 import { AccessListEIP2930Transaction, Transaction } from '@ethereumjs/tx'
@@ -10,6 +10,7 @@ import { ShardeumState, TransactionState } from './state'
 import { ShardusTypes } from '@shardus/core'
 import { ContractByteWrite } from './state/transactionState'
 
+// @ts-ignore
 import { replacer } from '@shardus/core/dist/utils'
 
 import {
@@ -30,8 +31,9 @@ import * as WrappedEVMAccountFunctions from './shardeum/wrappedEVMAccountFunctio
 import { fixDeserializedWrappedEVMAccount, predictContractAddressDirect, updateEthAccountHash } from './shardeum/wrappedEVMAccountFunctions'
 import { zeroAddressStr } from './utils'
 import config from './config'
+// @ts-ignore
 import ShardFunctions from '@shardus/core/dist/state-manager/shardFunctions'
-import Logger from 'archive-server/build/Logger'
+import Logger from '@shardus/archiver/build/Logger'
 import { RunTxResult } from '@ethereumjs/vm/dist/runTx'
 import { RunState } from '@ethereumjs/vm/dist/evm/interpreter'
 

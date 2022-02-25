@@ -15,7 +15,7 @@ import {  Account,
   bufferToHex,
   bufferToInt} from 'ethereumjs-util';
 
-import * as crypto from 'shardus-crypto-utils'
+import * as crypto from '@shardus/crypto-utils'
 //import { json } from 'stream/consumers';
 crypto.init('69fa4195670576c0160d660c3be36556ff8d504725be8a59b5a96509e0c994bc')
 
