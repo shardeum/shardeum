@@ -744,13 +744,16 @@ function setGlobalCodeByteUpdate(txTimestamp:number, wrappedEVMAccount: WrappedE
     accountData: wrappedEVMAccount,
     from: globalAddress
   }
+  // @ts-ignore
   applyResponse.appDefinedData.globalMsg = { address: globalAddress, value, when, source: globalAddress }
 }
 
 function _transactionReceiptPass (tx: any, txId: string, wrappedStates: WrappedStates, applyResponse: ShardusTypes.ApplyResponse) {
 
   //If this apply response has a global message defined then call setGlobal()
+  // @ts-ignore
   if(applyResponse?.appDefinedData?.globalMsg){
+    // @ts-ignore
     let { address, value, when, source } = applyResponse.appDefinedData.globalMsg
     shardus.setGlobal(address, value, when, source)
     if(ShardeumFlags.VerboseLogs) {

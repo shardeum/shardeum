@@ -12,14 +12,15 @@
     "compile": "tsc -p .",
     "fix": "gts fix",
     "lint": "tsc --noEmit && eslint '*/**/*.{js,ts,tsx}' --quiet --fix",
-    "prepare": "npm run compile",
-    "pretest": "npm run compile",
+    "prepare": "$npm_execpath run compile",
+    "pretest": "$npm_execpath run compile",
     "posttest": "",
+    "postinstall": "$npm_execpath run compile",
     "dbg": "shardus start 3 && shardus stop && rm -rf instances/",
     "test": "echo \"Error: no test specified\" && exit 1",
     "build-docker": "node scripts/build-docker.js",
     "push-docker": "node scripts/push-docker.js",
-    "update-docker": "npm run build-docker && npm run push-docker",
+    "update-docker": "$npm_execpath run build-docker && $npm_execpath run push-docker",
     "tsc": "tsc"
   },
   "author": "",
@@ -31,8 +32,9 @@
     "fast-stable-stringify": "^1.0.0",
     "got": "^9.6.0",
     "gts": "^3.1.0",
+    "monitor-server": "git+https://gitlab.com/shardus/monitor-server.git#demo20220208",
     "shardus-crypto-utils": "git+https://gitlab.com/shardus/shardus-crypto-utils.git#semver:^3.0.1",
-    "shardus-global-server": "git+https://gitlab.com/shardus/global/shardus-global-server.git#sync20220214",
+    "shardus-global-server": "git+https://gitlab.com/shardus/global/shardus-global-server.git#semver:^2.4.0",
     "typescript": "^4.5.2",
     "vorpal": "^1.12.0"
   },
@@ -60,7 +62,6 @@
     "explorer-server": "git+https://gitlab.com/liberdus/explorer-server.git#semver:^1.0.1",
     "hygen-create": "^0.2.1",
     "jest": "^26.6.3",
-    "monitor-server": "git+https://gitlab.com/shardus/monitor-server.git#semver:^2.0.0",
     "pm2": "^4.1.2",
     "prettier": "^1.19.1",
     "shardus": "^4.2.0",
@@ -68,5 +69,6 @@
     "standard": "^12.0.1",
     "ts-jest": "^26.5.2",
     "yarpm": "^0.2.1"
-  }
+  },
+  "packageManager": "yarn@3.2.0"
 }

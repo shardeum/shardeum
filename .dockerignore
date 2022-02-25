@@ -4,5 +4,4 @@ logs/
 instances/
 .pm2/
 statistics.tsv
-.gitcreds.json
-.yarn
+yarn.lock

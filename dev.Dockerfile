@@ -16,14 +16,29 @@ WORKDIR /usr/src/app
 # Bundle app source
 COPY . .
 
+# Temporarily set git credentials to those passed as --build-args to the docker build command
+ARG GITUSER
+ARG GITPASS
+RUN git config --global credential.helper '!f() { sleep 1; echo "username='$GITUSER'"; echo "password='$GITPASS'"; }; f'
+
+# Install build tools for Rust native modules
+# (build tools for node-gyp C++ native modules are pre-installed)
+RUN apt-get update
+RUN apt-get install -y \
+    build-essential \
+    curl
+RUN apt-get update
+RUN curl https://sh.rustup.rs -sSf | bash -s -- -y
+ENV PATH="/root/.cargo/bin:${PATH}"
+
 # Install node_modules
-RUN npm set unsafe-perm true
-RUN npm config set fetch-retries=0
-RUN npm install
+RUN npm install -g --force yarn@latest
+RUN yarn cache clean
+RUN yarn set version berry
+RUN yarn install
 
-COPY node_modules/shardus-global-server node_modules/shardus-global-server
-
-RUN npm run compile
+# Set git credential helper to cache to erase credentials
+RUN git config --global credential.helper cache
 
 # Define run command
 CMD [ "node", "dist/index.js" ]
