@@ -8,10 +8,9 @@ import { parse as parseUrl } from 'url'
 import got from 'got'
 import { ShardeumState, TransactionState } from './state'
 import { ShardusTypes } from '@shardus/core'
-import { ContractByteWrite } from './state/transactionState'
+import { __ShardFunctions } from '@shardus/core'
 
-// @ts-ignore
-import { replacer } from '@shardus/core/dist/utils'
+import { ContractByteWrite } from './state/transactionState'
 
 import {
   AccountType,
@@ -29,10 +28,9 @@ import { getAccountShardusAddress, toShardusAddress, toShardusAddressWithKey } f
 import * as ShardeumFlags from './shardeum/shardeumFlags'
 import * as WrappedEVMAccountFunctions from './shardeum/wrappedEVMAccountFunctions'
 import { fixDeserializedWrappedEVMAccount, predictContractAddressDirect, updateEthAccountHash } from './shardeum/wrappedEVMAccountFunctions'
-import { zeroAddressStr } from './utils'
+import { zeroAddressStr, replacer } from './utils'
 import config from './config'
-// @ts-ignore
-import ShardFunctions from '@shardus/core/dist/state-manager/shardFunctions'
+
 import Logger from '@shardus/archiver/build/Logger'
 import { RunTxResult } from '@ethereumjs/vm/dist/runTx'
 import { RunState } from '@ethereumjs/vm/dist/evm/interpreter'
@@ -613,10 +611,10 @@ shardus.registerExternalPost('contract/call', async (req, res) => {
     let minP = ourNodeShardData.consensusStartPartition
     let maxP = ourNodeShardData.consensusEndPartition
     // HOMENODEMATHS this seems good.  making sure our node covers this partition
-    let { homePartition } = ShardFunctions.addressToPartition(shardus.stateManager.currentCycleShardData.shardGlobals, address)
-    let accountIsRemote = ShardFunctions.partitionInWrappingRange(homePartition, minP, maxP) === false
+    let { homePartition } = __ShardFunctions.addressToPartition(shardus.stateManager.currentCycleShardData.shardGlobals, address)
+    let accountIsRemote = __ShardFunctions.partitionInWrappingRange(homePartition, minP, maxP) === false
     if (accountIsRemote) {
-      let homeNode = ShardFunctions.findHomeNode(
+      let homeNode = __ShardFunctions.findHomeNode(
         shardus.stateManager.currentCycleShardData.shardGlobals,
         address,
         shardus.stateManager.currentCycleShardData.parititionShardDataMap
@@ -947,8 +945,8 @@ shardus.setup({
         let minP = ourNodeShardData.consensusStartPartition
         let maxP = ourNodeShardData.consensusEndPartition
         let shardusAddress = getAccountShardusAddress(wrappedEVMAccount)
-        let { homePartition } = ShardFunctions.addressToPartition(shardus.stateManager.currentCycleShardData.shardGlobals, shardusAddress)
-        let accountIsRemote = ShardFunctions.partitionInWrappingRange(homePartition, minP, maxP) === false
+        let { homePartition } = __ShardFunctions.addressToPartition(shardus.stateManager.currentCycleShardData.shardGlobals, shardusAddress)
+        let accountIsRemote = __ShardFunctions.partitionInWrappingRange(homePartition, minP, maxP) === false
 
         console.log('DBG', 'tx insert data', txId, `accountIsRemote: ${accountIsRemote} acc:${address} type:${wrappedEVMAccount.accountType}`)
       }

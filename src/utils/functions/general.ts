@@ -18,3 +18,15 @@ export function sleep(ms) {
     setTimeout(resolve, ms)
   })
 }
+
+export const replacer = (key, value) => {
+  const originalObject = value // this[key]
+  if (originalObject instanceof Map) {
+    return {
+      dataType: 'stringifyReduce_map_2_array',
+      value: Array.from(originalObject.entries()), // or with spread: value: [...originalObject]
+    }
+  } else {
+    return value
+  }
+}
