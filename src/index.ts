@@ -7,8 +7,7 @@ import VM from '@ethereumjs/vm'
 import { parse as parseUrl } from 'url'
 import got from 'got'
 import { ShardeumState, TransactionState } from './state'
-import { ShardusTypes } from '@shardus/core'
-import { __ShardFunctions } from '@shardus/core'
+import { __ShardFunctions, ShardusTypes } from '@shardus/core'
 
 import { ContractByteWrite } from './state/transactionState'
 
@@ -17,21 +16,19 @@ import {
   EVMAccountInfo,
   InternalTx,
   InternalTXType,
+  OurAppDefinedData,
+  ReadableReceipt,
   WrappedAccount,
   WrappedEVMAccount,
   WrappedEVMAccountMap,
   WrappedStates,
-  OurAppDefinedData,
-  ReadableReceipt,
 } from './shardeum/shardeumTypes'
 import { getAccountShardusAddress, toShardusAddress, toShardusAddressWithKey } from './shardeum/evmAddress'
 import * as ShardeumFlags from './shardeum/shardeumFlags'
 import * as WrappedEVMAccountFunctions from './shardeum/wrappedEVMAccountFunctions'
 import { fixDeserializedWrappedEVMAccount, predictContractAddressDirect, updateEthAccountHash } from './shardeum/wrappedEVMAccountFunctions'
-import { zeroAddressStr, replacer } from './utils'
+import { replacer, zeroAddressStr } from './utils'
 import config from './config'
-
-import Logger from '@shardus/archiver/build/Logger'
 import { RunTxResult } from '@ethereumjs/vm/dist/runTx'
 import { RunState } from '@ethereumjs/vm/dist/evm/interpreter'
 
@@ -589,6 +586,75 @@ shardus.registerExternalGet('account/:address', async (req, res) => {
     console.log(error)
     res.json({ error })
   }
+})
+shardus.registerExternalPost('eth_estimateGas', async (req, res) => {
+    try {
+        const transaction = req.body
+        let address = toShardusAddress(transaction.to, AccountType.Account)
+        let ourNodeShardData = shardus.stateManager.currentCycleShardData.nodeShardData
+        let minP = ourNodeShardData.consensusStartPartition
+        let maxP = ourNodeShardData.consensusEndPartition
+        let { homePartition } = __ShardFunctions.addressToPartition(shardus.stateManager.currentCycleShardData.shardGlobals, address)
+        let accountIsRemote = __ShardFunctions.partitionInWrappingRange(homePartition, minP, maxP) === false
+        if (accountIsRemote) {
+            let homeNode = __ShardFunctions.findHomeNode(
+                shardus.stateManager.currentCycleShardData.shardGlobals,
+                address,
+                shardus.stateManager.currentCycleShardData.parititionShardDataMap
+            )
+            if (ShardeumFlags.VerboseLogs) console.log(`Node is in remote shard: ${homeNode?.node.externalIp}:${homeNode?.node.externalPort}`)
+            if (homeNode != null && homeNode.node != null) {
+                if (ShardeumFlags.VerboseLogs) console.log(`Node is in remote shard: requesting`)
+                let node = homeNode.node
+
+                let postResp = await _internalHackPostWithResp(`${node.externalIp}:${node.externalPort}/eth_estimateGas`, transaction)
+                if (postResp.body != null && postResp.body != '') {
+                    if (ShardeumFlags.VerboseLogs) console.log(`Node is in remote shard: gotResp:${JSON.stringify(postResp.body)}`)
+                    return res.json({ result: postResp.body.result })
+                }
+            } else {
+                if (ShardeumFlags.VerboseLogs) console.log(`Node is in remote shard: homenode = null`)
+                return res.json({ result: null })
+            }
+        } else {
+            if (ShardeumFlags.VerboseLogs) console.log(`Node is in remote shard: false`)
+        }
+        let debugTXState = getDebugTXState()
+        let debugEVM = EVM.copy()
+        let debugStateManager = debugEVM.stateManager as ShardeumState
+
+        await debugStateManager.checkpoint()
+        debugStateManager.setTransactionState(debugTXState)
+        const txData = { ...transaction, gasLimit: 3000000 }
+        const tx = Transaction.fromTxData(txData, { common: debugEVM._common, freeze: false })
+
+        // set from address
+        const from = transaction.from ? Address.fromString(transaction.from) : Address.zero()
+        tx.getSenderAddress = () => {
+            return from
+        }
+
+        const runResult: RunTxResult = await debugEVM.runTx({
+            tx,
+            skipNonce: true,
+            skipBalance: true,
+            skipBlockGasLimitValidation: true,
+        })
+
+        await debugStateManager.revert()
+
+        let gasUsed = runResult.gasUsed.toString('hex')
+        if (ShardeumFlags.VerboseLogs) console.log('Gas estimated:', gasUsed)
+
+        if (runResult.execResult.exceptionError) {
+            if (ShardeumFlags.VerboseLogs) console.log('Gas Estimation Error:', runResult.execResult.exceptionError)
+            return res.json({result: '2DC6C0'})
+        }
+        return res.json({result: gasUsed})
+    } catch (e) {
+        if (ShardeumFlags.VerboseLogs) console.log('Error', e)
+        return res.json({ result: null })
+    }
 })
 
 shardus.registerExternalPost('contract/call', async (req, res) => {
