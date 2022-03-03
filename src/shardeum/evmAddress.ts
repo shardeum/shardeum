@@ -1,4 +1,4 @@
-import { AccountType, WrappedEVMAccount, WrappedEVMAccountMap, EVMAccountInfo } from './shardeumTypes'
+import {AccountType, WrappedEVMAccount} from './shardeumTypes'
 
 import * as ShardeumFlags from './shardeumFlags'
 
@@ -106,7 +106,7 @@ export function toShardusAddress(addressStr, accountType: AccountType): string {
     throw new Error(`toShardusAddress does not work anymore with type ContractStorage, use toShardusAddressWithKey instead`)
   }
 
-  if (accountType === AccountType.Account) {
+  if (accountType === AccountType.Account || accountType === AccountType.Debug) {
     if (addressStr.length != 42) {
       throw new Error('must pass in a 42 character hex address for Account type.')
     }

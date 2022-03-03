@@ -8,6 +8,7 @@ export enum AccountType {
   ContractStorage, // Contract storage key value pair
   ContractCode, // Contract code bytes
   Receipt, //This holds logs for a TX
+  Debug,
 }
 
 /**
@@ -39,6 +40,7 @@ export interface WrappedEVMAccount {
   readableReceipt?: ReadableReceipt
   txId?: string
   txFrom?: string
+  balance?: number // For debug tx
 }
 
 export interface WrappedEVMAccountMap {
@@ -55,6 +57,11 @@ export enum InternalTXType {
   SetGlobalCodeBytes,
 }
 
+export enum DebugTXType {
+  Create,
+  Transfer,
+}
+
 /**
  * InternalTx is a non EVM TX that shardeum can use for utility task such as global changes
  *
@@ -62,6 +69,15 @@ export enum InternalTXType {
 export interface InternalTx {
   isInternalTx: boolean
   internalTXType: InternalTXType
+  timestamp: number
+  from: string
+  to?: string
+  accountData?: WrappedEVMAccount
+}
+
+export interface DebugTx {
+  isDebugTx: boolean
+  debugTXType: DebugTXType
   timestamp: number
   from: string
   to?: string
@@ -82,19 +98,19 @@ export interface WrappedStates {
 
 export interface OurAppDefinedData {
   globalMsg: {
-     address: string, 
-     value: {
-        isInternalTx: boolean,
-        internalTXType: InternalTXType,
-        timestamp: number,
-        accountData: WrappedEVMAccount,
-        from: string
-     }, 
-     when: number, 
-     source: string 
+    address: string
+    value: {
+      isInternalTx: boolean
+      internalTXType: InternalTXType
+      timestamp: number
+      accountData: WrappedEVMAccount
+      from: string
+    }
+    when: number
+    source: string
   }
-
 }
+
 export interface ReadableReceipt {
   transactionHash: string
   transactionIndex: string
@@ -110,4 +126,3 @@ export interface ReadableReceipt {
   value: string
   data: string
 }
-

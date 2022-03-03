@@ -1,15 +1,10 @@
-import { Account, Address, BN, bufferToHex, toBuffer, generateAddress } from 'ethereumjs-util'
+import {Account, BN, generateAddress} from 'ethereumjs-util'
 
-import { Transaction, AccessListEIP2930Transaction } from '@ethereumjs/tx'
-import { TxReceipt } from '@ethereumjs/vm/dist/types'
-
-import { AccountType, WrappedEVMAccount, WrappedEVMAccountMap, EVMAccountInfo } from './shardeumTypes'
-
-import * as ShardeumFlags from './shardeumFlags'
+import {AccountType, WrappedEVMAccount} from './shardeumTypes'
 import * as crypto from '@shardus/crypto-utils'
-import { ShardeumState, TransactionState } from '../state'
-import { getAccountShardusAddress, toShardusAddressWithKey} from './evmAddress'
-import { Shardus, ShardusTypes } from '@shardus/core'
+import {TransactionState} from '../state'
+import {getAccountShardusAddress} from './evmAddress'
+import {ShardusTypes} from '@shardus/core'
 
 /**
  * we need this for now because the stateRoot is a stable key into a trie
@@ -42,6 +37,8 @@ export function accountSpecificHash(wrappedEVMAccount: WrappedEVMAccount): strin
   if (wrappedEVMAccount.accountType === AccountType.Account) {
     //Hash the full account, if we knew EOA vs CA we could mabe skip some steps.
     hash = crypto.hashObj(wrappedEVMAccount.account)
+  } else if(wrappedEVMAccount.accountType === AccountType.Debug) {
+    hash = crypto.hashObj(wrappedEVMAccount)
   } else if (wrappedEVMAccount.accountType === AccountType.ContractStorage) {
     hash = crypto.hashObj({ key: wrappedEVMAccount.key, value: wrappedEVMAccount.value })
   } else if (wrappedEVMAccount.accountType === AccountType.ContractCode) {

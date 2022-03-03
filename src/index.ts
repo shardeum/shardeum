@@ -13,6 +13,8 @@ import { ContractByteWrite } from './state/transactionState'
 
 import {
   AccountType,
+  DebugTx,
+  DebugTXType,
   EVMAccountInfo,
   InternalTx,
   InternalTXType,
@@ -267,6 +269,10 @@ function isInternalTx(tx: any): boolean {
     return true
   }
   return false
+}
+
+function isDebugTx(tx: any): boolean {
+  return tx.isDebugTx
 }
 
 function getTransactionObj(tx: any): Transaction | AccessListEIP2930Transaction {
@@ -573,14 +579,20 @@ shardus.registerExternalGet('account/:address', async (req, res) => {
       const account = await shardus.getLocalOrRemoteAccount(shardusAddress)
       let data = account.data
       fixDeserializedWrappedEVMAccount(data)
-      let readableAccount = await getReadableAccountInfo(data)
-      res.json({ account: readableAccount })
+      try {
+        let readableAccount = await getReadableAccountInfo(data)
+        if(readableAccount) res.json({ account: readableAccount })
+      } catch (e) {
+        console.log('Account may be a debug account', e)
+      } finally {
+        res.json({ account: data})
+      }
     } else {
       let accountType = parseInt(req.query.type)
       let id = req.params['address']
       const shardusAddress = toShardusAddressWithKey(id, '', accountType)
       let account = accounts[shardusAddress]
-      res.json({ account })
+      return res.json({ account })
     }
   } catch (error) {
     console.log(error)
@@ -838,6 +850,20 @@ async function applyInternalTx(internalTx: InternalTx, wrappedStates: WrappedSta
   return applyResponse
 }
 
+async function applyDebugTx(debugTx: DebugTx, wrappedStates: WrappedStates): Promise<ShardusTypes.ApplyResponse> {
+  if(ShardeumFlags.VerboseLogs) console.log('Applying debug transaction', debugTx)
+  if (debugTx.debugTXType === DebugTXType.Create) {
+    let fromShardusAddress = toShardusAddress(debugTx.from, AccountType.Debug)
+    const wrappedEVMAccount: WrappedEVMAccount = wrappedStates[fromShardusAddress].data
+    wrappedEVMAccount.timestamp = debugTx.timestamp
+    wrappedEVMAccount.balance += 1
+    fixDeserializedWrappedEVMAccount(wrappedEVMAccount)
+  }
+
+  let txId = crypto.hashObj(debugTx)
+  return shardus.createApplyResponse(txId, debugTx.timestamp)
+}
+
 function setGlobalCodeByteUpdate(txTimestamp: number, wrappedEVMAccount: WrappedEVMAccount, applyResponse: ShardusTypes.ApplyResponse) {
   let globalAddress = getAccountShardusAddress(wrappedEVMAccount)
   const when = txTimestamp + 1000 * 10
@@ -847,23 +873,23 @@ function setGlobalCodeByteUpdate(txTimestamp: number, wrappedEVMAccount: Wrapped
     // type: 'apply_code_bytes', //extra, for debug
     timestamp: when,
     accountData: wrappedEVMAccount,
-    from: globalAddress
+    from: globalAddress,
   }
 
   let ourAppDefinedData = applyResponse.appDefinedData as OurAppDefinedData
   ourAppDefinedData.globalMsg = { address: globalAddress, value, when, source: globalAddress }
 }
 
-function _transactionReceiptPass (tx: any, txId: string, wrappedStates: WrappedStates, applyResponse: ShardusTypes.ApplyResponse) {
-  if(applyResponse == null){
+function _transactionReceiptPass(tx: any, txId: string, wrappedStates: WrappedStates, applyResponse: ShardusTypes.ApplyResponse) {
+  if (applyResponse == null) {
     return
   }
   let ourAppDefinedData = applyResponse.appDefinedData as OurAppDefinedData
   //If this apply response has a global message defined then call setGlobal()
-  if(ourAppDefinedData.globalMsg){
+  if (ourAppDefinedData.globalMsg) {
     let { address, value, when, source } = ourAppDefinedData.globalMsg
     shardus.setGlobal(address, value, when, source)
-    if(ShardeumFlags.VerboseLogs) {
+    if (ShardeumFlags.VerboseLogs) {
       const tx = { address, value, when, source }
       const txHash = crypto.hashObj(tx)
       console.log(`transactionReceiptPass setglobal: ${txHash} ${JSON.stringify(tx)}  `)
@@ -898,6 +924,11 @@ shardus.setup({
       return { result: 'pass', reason: 'all_allowed' }
     }
 
+    if (isDebugTx(tx)) {
+      let debugTx = tx as DebugTx
+      //todo validate debug TX
+      return { result: 'pass', reason: 'all_allowed' }
+    }
     let txObj = getTransactionObj(tx)
     const response = {
       result: 'fail',
@@ -963,6 +994,11 @@ shardus.setup({
       //todo validate internal TX
 
       return applyInternalTx(internalTx, wrappedStates)
+    }
+
+    if (isDebugTx(tx)) {
+      let debugTx = tx as DebugTx
+      return applyDebugTx(debugTx, wrappedStates)
     }
 
     const transaction: Transaction | AccessListEIP2930Transaction = getTransactionObj(tx)
@@ -1251,6 +1287,34 @@ shardus.setup({
       result.allKeys = result.allKeys.concat(result.sourceKeys, result.targetKeys, result.storageKeys)
       return result
     }
+    if (isDebugTx(tx)) {
+      let debugTx = tx as DebugTx
+      const result = {
+        sourceKeys: [],
+        targetKeys: [],
+        storageKeys: [],
+        allKeys: [],
+        timestamp: debugTx.timestamp,
+      }
+
+      let transformedSourceKey = toShardusAddress(debugTx.from, AccountType.Debug)
+      let transformedTargetKey = debugTx.to ? toShardusAddress(debugTx.to, AccountType.Debug) : ''
+      result.sourceKeys.push(transformedSourceKey)
+      shardusAddressToEVMAccountInfo.set(transformedSourceKey, {
+        evmAddress: debugTx.from,
+        type: AccountType.Debug,
+      })
+      if (debugTx.to) {
+        result.targetKeys.push(transformedTargetKey)
+        shardusAddressToEVMAccountInfo.set(transformedTargetKey, {
+          evmAddress: debugTx.to,
+          type: AccountType.Debug,
+        })
+      }
+
+      result.allKeys = result.allKeys.concat(result.sourceKeys, result.targetKeys, result.storageKeys)
+      return result
+    }
 
     const transaction = getTransactionObj(tx)
     const result = {
@@ -1415,6 +1479,34 @@ shardus.setup({
 
       return shardus.createWrappedResponse(accountId, accountCreated, wrappedEVMAccount.hash, wrappedEVMAccount.timestamp, wrappedEVMAccount)
     }
+    if (isDebugTx(tx)) {
+      let debugTx = tx as DebugTx
+      let accountCreated = false
+      let wrappedEVMAccount = accounts[accountId]
+      if (wrappedEVMAccount == null) {
+        let evmAccountInfo = shardusAddressToEVMAccountInfo.get(accountId)
+        let evmAccountID = null
+        let accountType = AccountType.Debug //assume account ok?
+        if (evmAccountInfo != null) {
+          evmAccountID = evmAccountInfo.evmAddress
+          accountType = evmAccountInfo.type
+        }
+
+        wrappedEVMAccount = {
+          timestamp: 0,
+          balance: 0,
+          ethAddress: evmAccountID,
+          hash: '',
+          accountType: AccountType.Debug, //see above, it may be wrong to assume this type in the future
+        } as WrappedEVMAccount
+        WrappedEVMAccountFunctions.updateEthAccountHash(wrappedEVMAccount)
+        accounts[accountId] = wrappedEVMAccount
+        console.log('Created new debug account', wrappedEVMAccount)
+        accountCreated = true
+      }
+
+      return shardus.createWrappedResponse(accountId, accountCreated, wrappedEVMAccount.hash, wrappedEVMAccount.timestamp, wrappedEVMAccount)
+    }
 
     if (!tx.raw) throw new Error('getRelevantData: No raw tx')
 
@@ -1519,6 +1611,16 @@ shardus.setup({
     const accountCreated = wrappedData.accountCreated
     const updatedEVMAccount: WrappedEVMAccount = wrappedData.data
     const prevStateId = wrappedData.prevStateId
+    console.log('Running updateAccountFull', updatedEVMAccount)
+
+    if (updatedEVMAccount.accountType === AccountType.Debug) {
+      // Update hash
+      updateEthAccountHash(updatedEVMAccount)
+      const hashBefore = updatedEVMAccount.hash
+      accounts[accountId] = updatedEVMAccount
+      shardus.applyResponseAddState(applyResponse, updatedEVMAccount, updatedEVMAccount, accountId, applyResponse.txId, applyResponse.txTimestamp, hashBefore, updatedEVMAccount.hash, accountCreated)
+      return
+    }
 
     //fix any issues from seralization
     fixDeserializedWrappedEVMAccount(updatedEVMAccount)
