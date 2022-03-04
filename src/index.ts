@@ -579,14 +579,9 @@ shardus.registerExternalGet('account/:address', async (req, res) => {
       const account = await shardus.getLocalOrRemoteAccount(shardusAddress)
       let data = account.data
       fixDeserializedWrappedEVMAccount(data)
-      try {
-        let readableAccount = await getReadableAccountInfo(data)
-        if(readableAccount) res.json({ account: readableAccount })
-      } catch (e) {
-        console.log('Account may be a debug account', e)
-      } finally {
-        res.json({ account: data})
-      }
+      let readableAccount = await getReadableAccountInfo(data)
+      if(readableAccount) return res.json({ account: readableAccount })
+      else res.json({account: data})
     } else {
       let accountType = parseInt(req.query.type)
       let id = req.params['address']
@@ -858,6 +853,16 @@ async function applyDebugTx(debugTx: DebugTx, wrappedStates: WrappedStates): Pro
     wrappedEVMAccount.timestamp = debugTx.timestamp
     wrappedEVMAccount.balance += 1
     fixDeserializedWrappedEVMAccount(wrappedEVMAccount)
+  } else if (debugTx.debugTXType === DebugTXType.Transfer) {
+    let fromAddress = toShardusAddress(debugTx.from, AccountType.Debug)
+    let toAddress = toShardusAddress(debugTx.to, AccountType.Debug)
+    const fromAccount: WrappedEVMAccount = wrappedStates[fromAddress].data
+    const toAccount: WrappedEVMAccount = wrappedStates[toAddress].data
+    fromAccount.timestamp = debugTx.timestamp
+    fromAccount.balance -= 1
+    toAccount.balance += 1
+    fixDeserializedWrappedEVMAccount(fromAccount)
+    fixDeserializedWrappedEVMAccount(toAccount)
   }
 
   let txId = crypto.hashObj(debugTx)
