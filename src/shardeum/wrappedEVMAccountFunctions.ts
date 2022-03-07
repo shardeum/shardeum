@@ -6,34 +6,9 @@ import {TransactionState} from '../state'
 import {getAccountShardusAddress} from './evmAddress'
 import {ShardusTypes} from '@shardus/core'
 
-/**
- * we need this for now because the stateRoot is a stable key into a trie
- * this is flawed though and not a good hash.  it does update though
- *    probably could use balance in the string and get a bit better.
- * @param wrappedEVMAccount
- * @returns
- */
-export function hashFromNonceHack(wrappedEVMAccount: WrappedEVMAccount): string {
-  //just a basic nonce to hash because it will take more work to extract the correct hash
-  let hash
-
-  // temporary hack for generating hash
-  if (wrappedEVMAccount.accountType === AccountType.Account) {
-    // parse to number first since some nonces have leading zeroes
-    hash = Number(wrappedEVMAccount.account.nonce).toString()
-  } else if (wrappedEVMAccount.accountType === AccountType.ContractStorage) {
-    hash = crypto.hashObj({ key: wrappedEVMAccount.key, value: wrappedEVMAccount.value })
-  } else if (wrappedEVMAccount.accountType === AccountType.ContractCode) {
-    hash = crypto.hashObj({ key: wrappedEVMAccount.codeHash, value: wrappedEVMAccount.codeByte })
-  } else if (wrappedEVMAccount.accountType === AccountType.Receipt) {
-    hash = crypto.hashObj({ key: wrappedEVMAccount.txId, value: wrappedEVMAccount.receipt })
-  }
-  hash = hash + '0'.repeat(64 - hash.length)
-  return hash
-}
-
 export function accountSpecificHash(wrappedEVMAccount: WrappedEVMAccount): string {
   let hash
+  delete wrappedEVMAccount.hash
   if (wrappedEVMAccount.accountType === AccountType.Account) {
     //Hash the full account, if we knew EOA vs CA we could mabe skip some steps.
     hash = crypto.hashObj(wrappedEVMAccount.account)
@@ -47,7 +22,9 @@ export function accountSpecificHash(wrappedEVMAccount: WrappedEVMAccount): strin
     hash = crypto.hashObj({ key: wrappedEVMAccount.txId, value: wrappedEVMAccount.receipt })
   }
 
-  hash = hash + '0'.repeat(64 - hash.length)
+  //hash = hash + '0'.repeat(64 - hash.length)
+
+  wrappedEVMAccount.hash = hash
   return hash
 }
 
