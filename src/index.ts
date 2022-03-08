@@ -1069,17 +1069,20 @@ shardus.setup({
 
     try {
       // Apply the tx
-      // const Receipt = await EVM.runTx({tx: transaction, skipNonce: true, skipBlockGasLimitValidation: true})
-      const Receipt: RunTxResult = await EVM.runTx({ tx: transaction, skipNonce: true })
-      if (ShardeumFlags.VerboseLogs) console.log('DBG', 'applied tx', txId, Receipt)
-      if (ShardeumFlags.VerboseLogs) console.log('DBG', 'applied tx eth', ethTxId, Receipt)
+      // const runTxResult = await EVM.runTx({tx: transaction, skipNonce: true, skipBlockGasLimitValidation: true})
+      const runTxResult: RunTxResult = await EVM.runTx({ tx: transaction, skipNonce: true })
+        if (runTxResult.execResult.exceptionError) {
+            throw new Error(`invalid transaction, reason: ${reason}. tx: ${JSON.stringify(tx)}`)
+        }
+      if (ShardeumFlags.VerboseLogs) console.log('DBG', 'applied tx', txId, runTxResult)
+      if (ShardeumFlags.VerboseLogs) console.log('DBG', 'applied tx eth', ethTxId, runTxResult)
       shardusTxIdToEthTxId[txId] = ethTxId // todo: fix that this is getting set too early, should wait untill after TX consensus
 
       // this is to expose tx data for json rpc server
       appliedTxs[ethTxId] = {
         txId: ethTxId,
         injected: tx,
-        receipt: { ...Receipt, nonce: transaction.nonce.toString('hex') },
+        receipt: { ...runTxResult, nonce: transaction.nonce.toString('hex') },
       }
 
       if (ShardeumFlags.temporaryParallelOldMode === true) {
@@ -1090,10 +1093,10 @@ shardus.setup({
 
         // TEMPORARY HACK
         // store contract account, when shardus-global-server has more progress we can disable this
-        if (Receipt.createdAddress) {
-          let ethAccountID = Receipt.createdAddress.toString()
+        if (runTxResult.createdAddress) {
+          let ethAccountID = runTxResult.createdAddress.toString()
           let shardusAddress = toShardusAddress(ethAccountID, AccountType.Account)
-          let contractAccount = await EVM.stateManager.getAccount(Receipt.createdAddress)
+          let contractAccount = await EVM.stateManager.getAccount(runTxResult.createdAddress)
           let wrappedEVMAccount = {
             timestamp: 0,
             account: contractAccount,
@@ -1216,9 +1219,9 @@ shardus.setup({
       }
 
       let txSenderEvmAddr = transaction.getSenderAddress().toString()
-      //TODO also create an account for the receipt (nested in the returned Receipt should be a receipt with a list of logs)
+      //TODO also create an account for the receipt (nested in the returned runTxResult should be a receipt with a list of logs)
       // We are ready to loop over the receipts and add them
-      let runState: RunStateWithLogs = Receipt.execResult.runState
+      let runState: RunStateWithLogs = runTxResult.execResult.runState
       let logs = []
       if (runState == null) {
         if (ShardeumFlags.VerboseLogs) console.log(`No runState found in the receipt for ${txId}`)
@@ -1243,10 +1246,10 @@ shardus.setup({
         blockNumber: '0xb',
         nonce: transaction.nonce.toString('hex'),
         blockHash: '0xc6ef2fc5426d6ad6fd9e2a26abeab0aa2411b7ab17f30a99d3cb96aed1d1055b',
-        cumulativeGasUsed: '0x' + Receipt.gasUsed.toString('hex'),
-        gasUsed: '0x' + Receipt.gasUsed.toString('hex'),
+        cumulativeGasUsed: '0x' + runTxResult.gasUsed.toString('hex'),
+        gasUsed: '0x' + runTxResult.gasUsed.toString('hex'),
         logs: logs,
-        contractAddress: Receipt.createdAddress ? Receipt.createdAddress.toString() : null,
+        contractAddress: runTxResult.createdAddress ? runTxResult.createdAddress.toString() : null,
         from: transaction.getSenderAddress().toString(),
         to: transaction.to ? transaction.to.toString() : '',
         value: transaction.value.toString('hex'),
@@ -1256,7 +1259,7 @@ shardus.setup({
         timestamp: tx.timestamp,
         ethAddress: ethTxId, //.slice(0, 42),  I think the full 32byte TX should be fine now that toShardusAddress understands account type
         hash: '',
-        receipt: Receipt.receipt,
+        receipt: runTxResult.receipt,
         readableReceipt,
         txId,
         accountType: AccountType.Receipt,
@@ -1269,11 +1272,13 @@ shardus.setup({
         shardus.applyResponseAddChangedAccount(applyResponse, wrappedChangedAccount.accountId, wrappedChangedAccount, txId, wrappedChangedAccount.timestamp)
       }
     } catch (e) {
-      //TODO need to detect if an execption here is a result of jumping the TX to another thread!
-      // shardus must be made to handle that
-
       shardus.log('Unable to apply transaction', e)
       if (ShardeumFlags.VerboseLogs) console.log('Unable to apply transaction', txId, e)
+      shardeumStateManager.unsetTransactionState()
+
+      //TODO need to detect if an execption here is a result of jumping the TX to another thread!
+      // shardus must be made to handle that
+      throw new Error(e)
     }
     shardeumStateManager.unsetTransactionState()
 
@@ -1498,7 +1503,7 @@ shardus.setup({
         }
 
         wrappedEVMAccount = {
-          timestamp: 0,
+          timestamp: Date.now(),
           balance: 0,
           ethAddress: evmAccountID,
           hash: '',
