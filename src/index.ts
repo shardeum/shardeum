@@ -24,12 +24,15 @@ import {
   WrappedEVMAccount,
   WrappedEVMAccountMap,
   WrappedStates,
+  NetworkAccount,
+  NetworkParameters,
+  NodeAccount
 } from './shardeum/shardeumTypes'
 import { getAccountShardusAddress, toShardusAddress, toShardusAddressWithKey } from './shardeum/evmAddress'
 import * as ShardeumFlags from './shardeum/shardeumFlags'
 import * as WrappedEVMAccountFunctions from './shardeum/wrappedEVMAccountFunctions'
 import { fixDeserializedWrappedEVMAccount, predictContractAddressDirect, updateEthAccountHash } from './shardeum/wrappedEVMAccountFunctions'
-import { replacer, zeroAddressStr } from './utils'
+import { replacer, zeroAddressStr, sleep } from './utils'
 import config from './config'
 import { RunTxResult } from '@ethereumjs/vm/dist/runTx'
 import { RunState } from '@ethereumjs/vm/dist/evm/interpreter'
@@ -37,6 +40,29 @@ import { RunState } from '@ethereumjs/vm/dist/evm/interpreter'
 let { shardusFactory } = require('@shardus/core')
 
 crypto.init('69fa4195670576c0160d660c3be36556ff8d504725be8a59b5a96509e0c994bc')
+
+export const networkAccount = '0'.repeat(64)
+
+// HELPFUL TIME CONSTANTS IN MILLISECONDS
+export const ONE_SECOND = 1000
+export const ONE_MINUTE = 60 * ONE_SECOND
+export const ONE_HOUR = 60 * ONE_MINUTE
+export const ONE_DAY = 24 * ONE_HOUR
+// export const ONE_WEEK = 7 * ONE_DAY
+// export const ONE_YEAR = 365 * ONE_DAY
+
+
+// INITIAL NETWORK PARAMETERS FOR Shardeum
+export const INITIAL_PARAMETERS: NetworkParameters = {
+  title: 'Initial parameters',
+  description: 'These are the initial network parameters Shardeum started with',
+  nodeRewardInterval: ONE_MINUTE, //ONE_HOUR,
+  nodeRewardAmount: 1,
+  nodePenalty: 10,
+  stakeRequired: 5,
+  maintenanceInterval: ONE_DAY,
+  maintenanceFee: 0
+}
 
 const shardus = shardusFactory(config)
 
@@ -844,6 +870,12 @@ async function applyInternalTx(internalTx: InternalTx, wrappedStates: WrappedSta
 
   let txId = crypto.hashObj(internalTx)
   const applyResponse: ShardusTypes.ApplyResponse = shardus.createApplyResponse(txId, txTimestamp)
+  if (internalTx.internalTXType === InternalTXType.InitNetwork) {
+    const network: NetworkAccount = wrappedStates[networkAccount].data
+    network.timestamp = internalTx.timestamp
+    console.log(`init_network NETWORK_ACCOUNT: ${stringify(network)}`)
+    shardus.log('Applied init_network transaction', network)
+}
   return applyResponse
 }
 
@@ -922,6 +954,34 @@ function getInjectedOrGeneratedTimestamp(timestampedTx) {
   return txnTimestamp
 }
 
+const createNetworkAccount = (accountId: string, timestamp: number) => {
+  const account: NetworkAccount = {
+    id: accountId,
+    type: 'NetworkAccount',
+    current: INITIAL_PARAMETERS,
+    next: {},
+    hash: '',
+    timestamp: 0,
+  }
+  account.hash = crypto.hashObj(account)
+  console.log('INITIAL_HASH: ', account.hash)
+  return account
+}
+
+const createNodeAccount = (accountId: string) => {
+  const account: NodeAccount = {
+    id: accountId,
+    type: 'NodeAccount',
+    balance: 0,
+    nodeRewardTime: 0,
+    hash: '',
+    timestamp: 0,
+  }
+  account.hash = crypto.hashObj(account)
+  return account
+}
+
+
 /***
  *     ######  ##     ##    ###    ########  ########  ##     ##  ######      ######  ######## ######## ##     ## ########
  *    ##    ## ##     ##   ## ##   ##     ## ##     ## ##     ## ##    ##    ##    ## ##          ##    ##     ## ##     ##
@@ -942,6 +1002,41 @@ function getInjectedOrGeneratedTimestamp(timestampedTx) {
  * }
  */
 shardus.setup({
+  async sync(): Promise<void> {
+    if (shardus.p2p.isFirstSeed) {
+      await sleep(ONE_SECOND * 5)
+
+      const nodeId = shardus.getNodeId()
+      const address = shardus.getNode(nodeId).address
+      // const when = Date.now() + configs.ONE_SECOND * 10
+      const when = Date.now()
+      const existingNetworkAccount = await shardus.getLocalOrRemoteAccount(networkAccount)
+      if (existingNetworkAccount) {
+        shardus.log('NETWORK_ACCOUNT ALREADY EXISTED: ', existingNetworkAccount)
+        await sleep(ONE_SECOND * 5)
+      } else {
+        shardus.setGlobal(
+          networkAccount,
+          {
+            isInternalTx: true,
+            internalTXType: InternalTXType.InitNetwork,
+            timestamp: when,
+            network: networkAccount,
+          },
+          when,
+          networkAccount,
+        )
+
+        shardus.log(`node ${nodeId} GENERATED_A_NEW_NETWORK_ACCOUNT: `)
+        await sleep(ONE_SECOND * 10)
+      }
+    } else {
+      while (!(await shardus.getLocalOrRemoteAccount(networkAccount))) {
+        console.log('waiting..')
+        await sleep(1000)
+      }
+    }
+  },
   validateTransaction(tx) {
     if (isInternalTx(tx)) {
       let internalTX = tx as InternalTx
@@ -1334,17 +1429,22 @@ shardus.setup({
 
     if (isInternalTx(tx)) {
       let internalTx = tx as InternalTx
-      const keys = {
-        sourceKeys: [internalTx.from],
+      const result = {
+        sourceKeys: [],
         targetKeys: [],
         storageKeys: [],
         allKeys: [],
         timestamp: timestamp,
       }
-      keys.allKeys = keys.allKeys.concat(keys.sourceKeys, keys.targetKeys, keys.storageKeys)
+      if (internalTx.internalTXType === InternalTXType.SetGlobalCodeBytes) {
+        result.sourceKeys = [internalTx.from]
+      } else if (internalTx.internalTXType === InternalTXType.InitNetwork) {
+        result.targetKeys = [networkAccount]
+      }
+      result.allKeys = result.allKeys.concat(result.sourceKeys, result.targetKeys, result.storageKeys)
       return {
         timestamp,
-        keys,
+        result,
         id: crypto.hashObj(tx)
       }
     }
@@ -1554,11 +1654,23 @@ shardus.setup({
 
       let accountCreated = false
       let wrappedEVMAccount = accounts[accountId]
-      if (wrappedEVMAccount === null) {
-        accountCreated = true
+      if (internalTx.internalTXType === InternalTXType.SetGlobalCodeBytes) {
+        if (wrappedEVMAccount === null) {
+          accountCreated = true
+        }
+        if (internalTx.accountData) {
+          wrappedEVMAccount = internalTx.accountData
+        }
       }
-      if (internalTx.accountData) {
-        wrappedEVMAccount = internalTx.accountData
+      if (internalTx.internalTXType === InternalTXType.InitNetwork) {
+        if (!wrappedEVMAccount) {
+          if (accountId === networkAccount) {
+            wrappedEVMAccount = createNetworkAccount(accountId, tx.timestamp) as any
+          } else {
+            wrappedEVMAccount = createNodeAccount(accountId) as any
+          }
+          accountCreated = true
+        }
       }
 
       return shardus.createWrappedResponse(accountId, accountCreated, wrappedEVMAccount.hash, wrappedEVMAccount.timestamp, wrappedEVMAccount)
@@ -1894,4 +2006,67 @@ shardus.setup({
 
 shardus.registerExceptionHandler()
 
-shardus.start()
+  // CODE THAT GETS EXECUTED WHEN NODES START
+  ; (async (): Promise<void> => {
+    const serverConfig : any= config.server
+    const cycleInterval = serverConfig.p2p.cycleDuration * ONE_SECOND
+
+    let network: NetworkAccount
+
+
+    let node: any
+    let nodeId: string
+    let nodeAddress: string
+    let lastReward: number
+    let currentTime: number
+    let expected = Date.now() + cycleInterval
+    let drift: number
+    await shardus.start()
+
+    // THIS CODE IS CALLED ON EVERY NODE ON EVERY CYCLE
+    async function networkMaintenance(): Promise<NodeJS.Timeout> {
+      shardus.log('New maintainence cycle has started')
+      drift = Date.now() - expected
+      currentTime = Date.now()
+
+      try {
+        const account = await shardus.getLocalOrRemoteAccount(networkAccount)
+        network = account.data as NetworkAccount
+        nodeId = shardus.getNodeId()
+        node = shardus.getNode(nodeId)
+        nodeAddress = node.address
+      } catch (err) {
+        shardus.log('ERR: ', err)
+        console.log('ERR: ', err)
+        return setTimeout(networkMaintenance, 100)
+      }
+
+      // shardus.log('payAddress: ', process.env.PAY_ADDRESS)
+      // shardus.log('nodeId: ', nodeId)
+      // shardus.log('nodeAddress: ', nodeAddress)
+
+      // THIS IS FOR NODE_REWARD
+      if (currentTime - lastReward > network.current.nodeRewardInterval) {
+        // utils.nodeReward(nodeAddress, nodeId, shardus)
+        lastReward = currentTime
+        console.log('node_reward')
+      }
+
+      shardus.log('Maintainence cycle has ended')
+      console.log('Maintainence cycle has ended')
+
+      expected += cycleInterval
+      return setTimeout(networkMaintenance, Math.max(0, cycleInterval - drift))
+    }
+
+    shardus.on(
+      'active',
+      async (): Promise<NodeJS.Timeout> => {
+        if (shardus.p2p.isFirstSeed) {
+          await sleep(ONE_SECOND * cycleInterval * 2)
+        }
+        lastReward = Date.now()
+        return setTimeout(networkMaintenance, cycleInterval)
+      },
+    )
+  })()

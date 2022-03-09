@@ -1,4 +1,4 @@
-import {AccountType, WrappedEVMAccount} from './shardeumTypes'
+import { AccountType, WrappedEVMAccount } from './shardeumTypes'
 
 import * as ShardeumFlags from './shardeumFlags'
 
@@ -30,6 +30,11 @@ export function getAccountShardusAddress(wrappedEVMAccount: WrappedEVMAccount): 
 
     let shardusAddress = toShardusAddress(addressSource, wrappedEVMAccount.accountType)
     return shardusAddress
+  }
+  
+  let NetworkAccount: any = wrappedEVMAccount
+  if (NetworkAccount.type === 'NetworkAccount') {
+    return NetworkAccount.id
   }
 
   let shardusAddress = toShardusAddress(addressSource, wrappedEVMAccount.accountType)

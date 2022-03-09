@@ -22,9 +22,12 @@ export function accountSpecificHash(wrappedEVMAccount: WrappedEVMAccount): strin
     hash = crypto.hashObj({ key: wrappedEVMAccount.txId, value: wrappedEVMAccount.receipt })
   }
 
-  //hash = hash + '0'.repeat(64 - hash.length)
+  const NetworkAccount: any = wrappedEVMAccount
+  if (NetworkAccount.type === 'NetworkAccount') {
+    return wrappedEVMAccount.hash
+  }
 
-  wrappedEVMAccount.hash = hash
+  hash = hash + '0'.repeat(64 - hash.length)
   return hash
 }
 

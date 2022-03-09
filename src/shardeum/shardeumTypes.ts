@@ -9,6 +9,12 @@ export enum AccountType {
   ContractCode, // Contract code bytes
   Receipt, //This holds logs for a TX
   Debug,
+  NetworkAccount,
+  NodeAccount
+}
+
+export interface BaseAccount {
+  accountType: AccountType
 }
 
 /**
@@ -20,8 +26,8 @@ export enum AccountType {
  * that is held in memory for awhile but eventually cleared.  This would mean that we have to be able to pull these
  * from disk again, and that could be a bit tricky.
  */
-export interface WrappedEVMAccount {
-  accountType: AccountType // determines how the shardus address will be computed and what variant data is present
+export interface WrappedEVMAccount extends BaseAccount {
+  // accountType: AccountType // determines how the shardus address will be computed and what variant data is present
   ethAddress: string //account address in EVM space. can have different meanings depending on account type
   hash: string //account hash
   timestamp: number //account timestamp.  last time a TX changed it
@@ -55,6 +61,8 @@ export interface EVMAccountInfo {
 
 export enum InternalTXType {
   SetGlobalCodeBytes,
+  InitNetwork,
+  NodeReward
 }
 
 export enum DebugTXType {
@@ -66,13 +74,17 @@ export enum DebugTXType {
  * InternalTx is a non EVM TX that shardeum can use for utility task such as global changes
  *
  */
-export interface InternalTx {
+export interface InternalTxBase {
   isInternalTx: boolean
   internalTXType: InternalTXType
+}
+
+export interface InternalTx extends InternalTxBase {
   timestamp: number
-  from: string
+  from?: string
   to?: string
   accountData?: WrappedEVMAccount
+  network?: string
 }
 
 export interface DebugTx {
@@ -125,4 +137,33 @@ export interface ReadableReceipt {
   to: string
   value: string
   data: string
+}
+
+export interface NetworkAccount {
+  id: string
+  type: string
+  current: NetworkParameters
+  next: NetworkParameters | {}
+  hash: string
+  timestamp: number
+}
+
+export interface NetworkParameters {
+  title: string
+  description: string
+  nodeRewardInterval: number
+  nodeRewardAmount: number
+  nodePenalty: number
+  stakeRequired: number
+  maintenanceInterval: number
+  maintenanceFee: number
+}
+
+export interface NodeAccount {
+  id: string
+  type: string
+  balance: number
+  nodeRewardTime: number
+  hash: string
+  timestamp: number
 }

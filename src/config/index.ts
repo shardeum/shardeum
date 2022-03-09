@@ -28,6 +28,7 @@ if (process.env.APP_SEEDLIST) {
     {
       server: {
         p2p: {
+          cycleDuration: 30,
           maxJoinedPerCycle: 5,
           maxRotatedPerCycle: 0,
           existingArchivers: [
@@ -80,6 +81,7 @@ if (process.env.APP_IP) {
 config = merge(config, {
   server: {
     p2p: {
+      cycleDuration: 30,
       minNodesToAllowTxs: 1,
       minNodes: 50,
       maxNodes: 50,
