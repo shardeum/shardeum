@@ -33,8 +33,6 @@ import { replacer, zeroAddressStr } from './utils'
 import config from './config'
 import { RunTxResult } from '@ethereumjs/vm/dist/runTx'
 import { RunState } from '@ethereumjs/vm/dist/evm/interpreter'
-import {Runtime} from "inspector";
-import Timestamp = module
 
 let { shardusFactory } = require('@shardus/core')
 
