@@ -33,6 +33,8 @@ import { replacer, zeroAddressStr } from './utils'
 import config from './config'
 import { RunTxResult } from '@ethereumjs/vm/dist/runTx'
 import { RunState } from '@ethereumjs/vm/dist/evm/interpreter'
+import {Runtime} from "inspector";
+import Timestamp = module
 
 let { shardusFactory } = require('@shardus/core')
 
@@ -831,11 +833,11 @@ shardus.registerExternalGet('accounts', async (req, res) => {
  *    #### ##    ##    ##    ######## ##     ## ##    ## ##     ## ########       ##    ##     ##
  */
 
-async function applyInternalTx(internalTx: InternalTx, wrappedStates: WrappedStates): Promise<ShardusTypes.ApplyResponse> {
+async function applyInternalTx(internalTx: InternalTx, wrappedStates: WrappedStates, txTimestamp: number): Promise<ShardusTypes.ApplyResponse> {
   if (internalTx.internalTXType === InternalTXType.SetGlobalCodeBytes) {
     const wrappedEVMAccount: WrappedEVMAccount = wrappedStates[internalTx.from].data
     //just update the timestamp?
-    wrappedEVMAccount.timestamp = internalTx.timestamp
+    wrappedEVMAccount.timestamp = txTimestamp
     //I think this will naturally accomplish the goal of the global update.
 
     //need to run this to fix buffer types after serialization
@@ -843,16 +845,16 @@ async function applyInternalTx(internalTx: InternalTx, wrappedStates: WrappedSta
   }
 
   let txId = crypto.hashObj(internalTx)
-  const applyResponse: ShardusTypes.ApplyResponse = shardus.createApplyResponse(txId, internalTx.timestamp)
+  const applyResponse: ShardusTypes.ApplyResponse = shardus.createApplyResponse(txId, txTimestamp)
   return applyResponse
 }
 
-async function applyDebugTx(debugTx: DebugTx, wrappedStates: WrappedStates): Promise<ShardusTypes.ApplyResponse> {
+async function applyDebugTx(debugTx: DebugTx, wrappedStates: WrappedStates, txTimestamp: number): Promise<ShardusTypes.ApplyResponse> {
   if(ShardeumFlags.VerboseLogs) console.log('Applying debug transaction', debugTx)
   if (debugTx.debugTXType === DebugTXType.Create) {
     let fromShardusAddress = toShardusAddress(debugTx.from, AccountType.Debug)
     const wrappedEVMAccount: WrappedEVMAccount = wrappedStates[fromShardusAddress].data
-    wrappedEVMAccount.timestamp = debugTx.timestamp
+    wrappedEVMAccount.timestamp = txTimestamp
     wrappedEVMAccount.balance += 1
     fixDeserializedWrappedEVMAccount(wrappedEVMAccount)
   } else if (debugTx.debugTXType === DebugTXType.Transfer) {
@@ -860,7 +862,7 @@ async function applyDebugTx(debugTx: DebugTx, wrappedStates: WrappedStates): Pro
     let toAddress = toShardusAddress(debugTx.to, AccountType.Debug)
     const fromAccount: WrappedEVMAccount = wrappedStates[fromAddress].data
     const toAccount: WrappedEVMAccount = wrappedStates[toAddress].data
-    fromAccount.timestamp = debugTx.timestamp
+    fromAccount.timestamp = txTimestamp
     fromAccount.balance -= 1
     toAccount.balance += 1
     fixDeserializedWrappedEVMAccount(fromAccount)
@@ -868,7 +870,7 @@ async function applyDebugTx(debugTx: DebugTx, wrappedStates: WrappedStates): Pro
   }
 
   let txId = crypto.hashObj(debugTx)
-  return shardus.createApplyResponse(txId, debugTx.timestamp)
+  return shardus.createApplyResponse(txId, txTimestamp)
 }
 
 function setGlobalCodeByteUpdate(txTimestamp: number, wrappedEVMAccount: WrappedEVMAccount, applyResponse: ShardusTypes.ApplyResponse) {
@@ -1018,6 +1020,7 @@ shardus.setup({
   },
   async apply(timestampedTx, wrappedStates) {
     let { tx, timestampReceipt } = timestampedTx
+    const txTimestamp = getInjectedOrGeneratedTimestamp(timestampedTx)
     // Validate the tx
     const { result, reason } = this.validateTransaction(tx)
     if (result !== 'pass') {
@@ -1028,12 +1031,12 @@ shardus.setup({
       let internalTx = tx as InternalTx
       //todo validate internal TX
 
-      return applyInternalTx(internalTx, wrappedStates)
+      return applyInternalTx(internalTx, wrappedStates, txTimestamp)
     }
 
     if (isDebugTx(tx)) {
       let debugTx = tx as DebugTx
-      return applyDebugTx(debugTx, wrappedStates)
+      return applyDebugTx(debugTx, wrappedStates, txTimestamp)
     }
 
     const transaction: Transaction | AccessListEIP2930Transaction = getTransactionObj(tx)
@@ -1042,7 +1045,7 @@ shardus.setup({
     let txId = crypto.hashObj(tx)
     // Create an applyResponse which will be used to tell Shardus that the tx has been applied
     if (ShardeumFlags.VerboseLogs) console.log('DBG', new Date(), 'attempting to apply tx', txId, tx)
-    const applyResponse = shardus.createApplyResponse(txId, tx.timestamp)
+    const applyResponse = shardus.createApplyResponse(txId, txTimestamp)
 
     //Now we need to get a transaction state object.  For single sharded networks this will be a new object.
     //When we have multiple shards we could have some blob data that wrapped up read accounts.  We will read these accounts
@@ -1162,7 +1165,7 @@ shardus.setup({
         for (let [key, value] of contractStorageWrites) {
           // do we need .entries()?
           let wrappedEVMAccount: WrappedEVMAccount = {
-            timestamp: tx.timestamp,
+            timestamp: txTimestamp,
             key,
             value,
             ethAddress: addressStr, //this is confusing but I think we may want to use key here
@@ -1191,7 +1194,7 @@ shardus.setup({
         let contractByteWrite: ContractByteWrite = contractBytesEntry[1]
 
         let wrappedEVMAccount: WrappedEVMAccount = {
-          timestamp: tx.timestamp,
+          timestamp: txTimestamp,
           codeHash: contractByteWrite.codeHash,
           codeByte: contractByteWrite.contractByte,
           ethAddress: addressStr,
@@ -1205,7 +1208,7 @@ shardus.setup({
 
         if (ShardeumFlags.globalCodeBytes === true) {
           //set this globally instead!
-          setGlobalCodeByteUpdate(tx.timestamp, wrappedEVMAccount, applyResponse)
+          setGlobalCodeByteUpdate(txTimestamp, wrappedEVMAccount, applyResponse)
         } else {
           const wrappedChangedAccount = WrappedEVMAccountFunctions._shardusWrappedAccount(wrappedEVMAccount)
           //attach to applyResponse
@@ -1229,7 +1232,7 @@ shardus.setup({
         let accountObj = Account.fromRlpSerializedAccount(account[1])
 
         let wrappedEVMAccount: WrappedEVMAccount = {
-          timestamp: tx.timestamp,
+          timestamp: txTimestamp,
           account: accountObj,
           ethAddress: addressStr,
           hash: '',
@@ -1292,7 +1295,7 @@ shardus.setup({
         data: '0x' + transaction.data.toString('hex'),
       }
       let wrappedReceiptAccount: WrappedEVMAccount = {
-        timestamp: tx.timestamp,
+        timestamp: txTimestamp,
         ethAddress: ethTxId, //.slice(0, 42),  I think the full 32byte TX should be fine now that toShardusAddress understands account type
         hash: '',
         receipt: runTxResult.receipt,
@@ -1706,7 +1709,6 @@ shardus.setup({
     const accountCreated = wrappedData.accountCreated
     const updatedEVMAccount: WrappedEVMAccount = wrappedData.data
     const prevStateId = wrappedData.prevStateId
-    console.log('Running updateAccountFull', updatedEVMAccount)
 
     if (updatedEVMAccount.accountType === AccountType.Debug) {
       // Update hash
