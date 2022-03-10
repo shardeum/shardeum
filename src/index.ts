@@ -750,7 +750,8 @@ shardus.registerExternalPost('contract/call', async (req, res) => {
 shardus.registerExternalGet('tx/:hash', async (req, res) => {
   const txHash = req.params['hash']
   try {
-    const shardusAddress = toShardusAddressWithKey(txHash.slice(0, 42), txHash, AccountType.Receipt)
+    //const shardusAddress = toShardusAddressWithKey(txHash.slice(0, 42), txHash, AccountType.Receipt)
+    const shardusAddress = toShardusAddressWithKey(txHash, '', AccountType.Receipt)
     const account = await shardus.getLocalOrRemoteAccount(shardusAddress)
     if (!account || !account.data) {
       console.log(`No tx found for ${shardusAddress}`, accounts[shardusAddress])
@@ -816,7 +817,11 @@ shardus.registerExternalGet('tx/:hash', async (req, res) => {
 
 shardus.registerExternalGet('accounts', async (req, res) => {
   if (ShardeumFlags.VerboseLogs) console.log('/accounts')
-  res.json({ accounts })
+  //res.json({accounts})
+
+  // stable sort on accounts order..  todo, may turn this off later for perf reasons.
+  let sorted = JSON.parse(stringify(accounts))
+  res.json({accounts:sorted})
 })
 
 /***
@@ -1008,6 +1013,7 @@ shardus.setup({
 
     const transaction: Transaction | AccessListEIP2930Transaction = getTransactionObj(tx)
     const ethTxId = bufferToHex(transaction.hash())
+    const shardusReceiptAddress = toShardusAddressWithKey(ethTxId, '', AccountType.Receipt)
     let txId = crypto.hashObj(tx)
     // Create an applyResponse which will be used to tell Shardus that the tx has been applied
     if (ShardeumFlags.VerboseLogs) console.log('DBG', new Date(), 'attempting to apply tx', txId, tx)
@@ -1043,6 +1049,11 @@ shardus.setup({
 
     // loop through the wrappedStates an insert them into the transactionState as first*Reads
     for (let accountId in wrappedStates) {
+      if(shardusReceiptAddress === accountId){
+        //have to skip the created receipt account
+        continue
+      }
+
       let wrappedEVMAccount: WrappedEVMAccount = wrappedStates[accountId].data
       fixDeserializedWrappedEVMAccount(wrappedEVMAccount)
       let address = Address.fromString(wrappedEVMAccount.ethAddress)
@@ -1388,10 +1399,23 @@ shardus.setup({
           result.storageKeys = result.storageKeys.concat(storageKeys)
         }
       }
-      result.allKeys = result.allKeys.concat(result.sourceKeys, result.targetKeys, result.storageKeys, otherAccountKeys)
+
+      // make sure the receipt address is in the get keys from transaction..
+      // This will technically cause an empty account to get created but this will get overriden with the 
+      // correct values as a result of apply().  There are several ways we could optimize this in the future
+      // If a transactions knows a key is for an account that will be created than it does not need to attempt to aquire and share the data
+      const txHash = bufferToHex(transaction.hash())
+      const shardusReceiptAddress = toShardusAddressWithKey(txHash, '', AccountType.Receipt)
+      if (ShardeumFlags.VerboseLogs) console.log(`getKeyFromTransaction: adding tx receipt key: ${shardusReceiptAddress} ts:${tx.timestamp}`)
+
+      // insert target keys first. first key in allkeys list will define the execution shard
+      // for smart contract calls the contract will be the target.  For simple coin transfers it wont matter
+      // insert otherAccountKeys second, because we need the CA addres at the front of the list for contract deploy
+      // There wont be a target key in when we deploy a contract
+      result.allKeys = result.allKeys.concat(result.targetKeys, otherAccountKeys, result.sourceKeys, result.storageKeys, [shardusReceiptAddress])
       if (ShardeumFlags.VerboseLogs) console.log('running getKeyFromTransaction', result)
     } catch (e) {
-      if (ShardeumFlags.VerboseLogs) console.log('Unable to get keys from tx', e)
+      if (ShardeumFlags.VerboseLogs) console.log('getKeyFromTransaction: Unable to get keys from tx', e)
     }
     return result
   },
@@ -1559,7 +1583,18 @@ shardus.setup({
         accountType = evmAccountInfo.type
       }
 
-      if (accountType === AccountType.Account) {
+      const transaction = getTransactionObj(tx)
+      const txHash = bufferToHex(transaction.hash())
+      const shardusReceiptAddress = toShardusAddressWithKey(txHash, '', AccountType.Receipt)
+      if(shardusReceiptAddress === accountId){
+        wrappedEVMAccount = {
+          timestamp: 0,
+          ethAddress: shardusReceiptAddress,
+          hash: '',
+          accountType: AccountType.Receipt,
+        }
+        //this is needed, but also kind of a waste.  Would be nice if shardus could be told to ignore creating certain accounts
+      } else if (accountType === AccountType.Account) {
         //some of this feels a bit redundant, will need to think more on the cleanup
         await createAccount(evmAccountID, transactionState)
         const address = Address.fromString(evmAccountID)
