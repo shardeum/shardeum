@@ -32,9 +32,9 @@ export function getAccountShardusAddress(wrappedEVMAccount: WrappedEVMAccount): 
     return shardusAddress
   }
   
-  let NetworkAccount: any = wrappedEVMAccount
-  if (NetworkAccount.type === 'NetworkAccount') {
-    return NetworkAccount.id
+  let otherAccount: any = wrappedEVMAccount
+  if (otherAccount.type === 'NetworkAccount' || otherAccount.type === 'NodeAccount') {
+    return otherAccount.id
   }
 
   let shardusAddress = toShardusAddress(addressSource, wrappedEVMAccount.accountType)

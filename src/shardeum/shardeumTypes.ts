@@ -84,7 +84,8 @@ export interface InternalTx extends InternalTxBase {
   from?: string
   to?: string
   accountData?: WrappedEVMAccount
-  network?: string
+  network?: string // Network Account
+  nodeId?: string,
 }
 
 export interface DebugTx {

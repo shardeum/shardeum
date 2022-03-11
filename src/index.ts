@@ -875,7 +875,32 @@ async function applyInternalTx(internalTx: InternalTx, wrappedStates: WrappedSta
     network.timestamp = internalTx.timestamp
     console.log(`init_network NETWORK_ACCOUNT: ${stringify(network)}`)
     shardus.log('Applied init_network transaction', network)
-}
+  }
+  if (internalTx.internalTXType === InternalTXType.NodeReward) {
+    const network: NetworkAccount = wrappedStates[networkAccount].data
+    const from: NodeAccount = wrappedStates[internalTx.from].data
+    const to: WrappedEVMAccount = wrappedStates[toShardusAddress(internalTx.to, AccountType.Account)].data
+    from.balance += network.current.nodeRewardAmount // This is not needed and will have to delete `balance` field eventually
+    shardus.log(`Reward from ${internalTx.from} to ${internalTx.to}`)
+    shardus.log('TO ACCOUNT', to)
+
+    // const accountAddress = Address.fromString(internalTx.to)
+    // const oneEth = new BN(10).pow(new BN(18))
+
+    // let account = await EVM.stateManager.getAccount(accountAddress)
+    // console.log(account)
+    // account.balance.iadd(oneEth) // Add 1 eth
+    // console.log(account)
+    // await EVM.stateManager.putAccount(accountAddress, account)
+    // account = await EVM.stateManager.getAccount(accountAddress)
+    // console.log(account)
+    // console.log('Add node_reward to', internalTx.to)
+
+    from.nodeRewardTime = internalTx.timestamp
+    from.timestamp = internalTx.timestamp
+    // shardus.log('Applied node_reward tx', from, to)
+    console.log('Applied node_reward tx')
+  }
   return applyResponse
 }
 
@@ -919,7 +944,7 @@ function setGlobalCodeByteUpdate(txTimestamp: number, wrappedEVMAccount: Wrapped
   ourAppDefinedData.globalMsg = { address: globalAddress, value, when, source: globalAddress }
 }
 
-function _transactionReceiptPass(tx: any, txId: string, wrappedStates: WrappedStates, applyResponse: ShardusTypes.ApplyResponse) {
+async function _transactionReceiptPass(tx: any, txId: string, wrappedStates: WrappedStates, applyResponse: ShardusTypes.ApplyResponse) {
   if (applyResponse == null) {
     return
   }
@@ -934,6 +959,18 @@ function _transactionReceiptPass(tx: any, txId: string, wrappedStates: WrappedSt
       console.log(`transactionReceiptPass setglobal: ${txHash} ${JSON.stringify(tx)}  `)
     }
   }
+  // if (tx.internalTXType === InternalTXType.NodeReward) {
+  //   const accountAddress = Address.fromString(tx.to)
+  //   const oneEth = new BN(10).pow(new BN(18))
+  //   let account = await shardeumStateManager.getAccount(accountAddress)
+  //   console.log(account)
+  //   account.balance.iadd(oneEth)
+  //   console.log(account)
+  //   await shardeumStateManager.putAccount(tx.to, account)
+  //   account = await shardeumStateManager.getAccount(accountAddress)
+  //   console.log(account)
+  //   console.log('Add node_reward to', tx.to)
+  // }
 }
 
 function getInjectedOrGeneratedTimestamp(timestampedTx) {
@@ -1440,6 +1477,9 @@ shardus.setup({
         result.sourceKeys = [internalTx.from]
       } else if (internalTx.internalTXType === InternalTXType.InitNetwork) {
         result.targetKeys = [networkAccount]
+      } else if (internalTx.internalTXType === InternalTXType.NodeReward) {
+        result.sourceKeys = [internalTx.from]
+        result.targetKeys = [toShardusAddress(internalTx.to, AccountType.Account), networkAccount]
       }
       result.allKeys = result.allKeys.concat(result.sourceKeys, result.targetKeys, result.storageKeys)
       return {
@@ -1672,6 +1712,23 @@ shardus.setup({
           accountCreated = true
         }
       }
+      if (internalTx.internalTXType === InternalTXType.NodeReward) {
+        if (!wrappedEVMAccount) {
+          if (accountId === internalTx.from) {
+            wrappedEVMAccount = createNodeAccount(accountId) as any
+          } else {
+            // for eth payment account
+            let evmAccountID = internalTx.to
+            //some of this feels a bit redundant, will need to think more on the cleanup
+            let debugTXState = getDebugTXState() //this isn't so great.. just for testing purpose
+            wrappedEVMAccount = await createAccount(evmAccountID, debugTXState)
+            WrappedEVMAccountFunctions.updateEthAccountHash(wrappedEVMAccount)
+            accounts[accountId] = wrappedEVMAccount
+            console.log('Created new eth payment account', wrappedEVMAccount)
+          }
+          accountCreated = true
+        }
+      }
 
       return shardus.createWrappedResponse(accountId, accountCreated, wrappedEVMAccount.hash, wrappedEVMAccount.timestamp, wrappedEVMAccount)
     }
@@ -1826,6 +1883,17 @@ shardus.setup({
       const hashBefore = updatedEVMAccount.hash
       accounts[accountId] = updatedEVMAccount
       shardus.applyResponseAddState(applyResponse, updatedEVMAccount, updatedEVMAccount, accountId, applyResponse.txId, applyResponse.txTimestamp, hashBefore, updatedEVMAccount.hash, accountCreated)
+      return
+    }
+    let otherAccount = wrappedData.data
+    if (otherAccount.type === 'NetworkAccount' || otherAccount.type === 'NodeAccount') {
+      // Update hash
+      const hashBefore = otherAccount.hash
+      otherAccount.hash = '' // DON'T THINK THIS IS NECESSARY
+      const hashAfter = crypto.hashObj(otherAccount)
+      otherAccount.hash = hashAfter
+      accounts[accountId] = otherAccount
+      shardus.applyResponseAddState(applyResponse, otherAccount, otherAccount, accountId, applyResponse.txId, applyResponse.txTimestamp, hashBefore, hashAfter, accountCreated)
       return
     }
 
@@ -2041,15 +2109,22 @@ shardus.registerExceptionHandler()
         return setTimeout(networkMaintenance, 100)
       }
 
-      // shardus.log('payAddress: ', process.env.PAY_ADDRESS)
       // shardus.log('nodeId: ', nodeId)
       // shardus.log('nodeAddress: ', nodeAddress)
 
       // THIS IS FOR NODE_REWARD
       if (currentTime - lastReward > network.current.nodeRewardInterval) {
-        // utils.nodeReward(nodeAddress, nodeId, shardus)
+        const tx = {
+          isInternalTx: true,
+          internalTXType: InternalTXType.NodeReward,
+          nodeId: nodeId,
+          from: nodeAddress,
+          to: '0x50F6D9E5771361Ec8b95D6cfb8aC186342B70120', // testing account for temporary.
+          timestamp: Date.now(),
+        }
+        shardus.put(tx)
+        shardus.log('GENERATED_NODE_REWARD: ', nodeId)
         lastReward = currentTime
-        console.log('node_reward')
       }
 
       shardus.log('Maintainence cycle has ended')

@@ -8,6 +8,10 @@ import {ShardusTypes} from '@shardus/core'
 
 export function accountSpecificHash(wrappedEVMAccount: WrappedEVMAccount): string {
   let hash
+  const otherAccount: any = wrappedEVMAccount
+  if (otherAccount.type === 'NetworkAccount' || otherAccount.type === 'NodeAccount') {
+    return wrappedEVMAccount.hash
+  }
   delete wrappedEVMAccount.hash
   if (wrappedEVMAccount.accountType === AccountType.Account) {
     //Hash the full account, if we knew EOA vs CA we could mabe skip some steps.
@@ -22,12 +26,8 @@ export function accountSpecificHash(wrappedEVMAccount: WrappedEVMAccount): strin
     hash = crypto.hashObj({ key: wrappedEVMAccount.txId, value: wrappedEVMAccount.receipt })
   }
 
-  const NetworkAccount: any = wrappedEVMAccount
-  if (NetworkAccount.type === 'NetworkAccount') {
-    return wrappedEVMAccount.hash
-  }
-
-  hash = hash + '0'.repeat(64 - hash.length)
+  // hash = hash + '0'.repeat(64 - hash.length)
+  wrappedEVMAccount.hash = hash
   return hash
 }
 
