@@ -56,7 +56,7 @@ export const ONE_DAY = 24 * ONE_HOUR
 export const INITIAL_PARAMETERS: NetworkParameters = {
   title: 'Initial parameters',
   description: 'These are the initial network parameters Shardeum started with',
-  nodeRewardInterval: ONE_MINUTE, //ONE_HOUR,
+  nodeRewardInterval: ONE_MINUTE / 2, //ONE_HOUR,
   nodeRewardAmount: 1,
   nodePenalty: 10,
   stakeRequired: 5,
@@ -884,17 +884,17 @@ async function applyInternalTx(internalTx: InternalTx, wrappedStates: WrappedSta
     shardus.log(`Reward from ${internalTx.from} to ${internalTx.to}`)
     shardus.log('TO ACCOUNT', to)
 
-    // const accountAddress = Address.fromString(internalTx.to)
-    // const oneEth = new BN(10).pow(new BN(18))
+    const accountAddress = Address.fromString(internalTx.to)
+    const oneEth = new BN(10).pow(new BN(18))
 
-    // let account = await EVM.stateManager.getAccount(accountAddress)
-    // console.log(account)
-    // account.balance.iadd(oneEth) // Add 1 eth
-    // console.log(account)
-    // await EVM.stateManager.putAccount(accountAddress, account)
-    // account = await EVM.stateManager.getAccount(accountAddress)
-    // console.log(account)
-    // console.log('Add node_reward to', internalTx.to)
+    let account = await EVM.stateManager.getAccount(accountAddress)
+    console.log(account)
+    account.balance.iadd(oneEth) // Add 1 eth
+    await EVM.stateManager.putAccount(accountAddress, account)
+    account = await EVM.stateManager.getAccount(accountAddress)
+    console.log(account)
+    to.account = account // Not sure if it can update value like this
+    console.log('Add node_reward to', internalTx.to)
 
     from.nodeRewardTime = internalTx.timestamp
     from.timestamp = internalTx.timestamp
