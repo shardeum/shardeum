@@ -877,6 +877,54 @@ async function applyInternalTx(internalTx: InternalTx, wrappedStates: WrappedSta
     shardus.log('Applied init_network transaction', network)
   }
   if (internalTx.internalTXType === InternalTXType.NodeReward) {
+    let transactionState = transactionStateMap.get(txId)
+    if (transactionState == null) {
+      transactionState = new TransactionState()
+      transactionState.initData(
+        shardeumStateManager,
+        {
+          storageMiss: accountMiss,
+          contractStorageMiss,
+          accountInvolved,
+          contractStorageInvolved,
+        },
+        txId,
+        undefined,
+        undefined
+      )
+      transactionStateMap.set(txId, transactionState)
+    } else {
+      //TODO possibly need a blob to re-init with, but that may happen somewhere else.  Will require a slight interface change
+      //to allow shardus to pass in this extra data blob (unless we find a way to run it through wrapped states??)
+    }
+
+    //ah shoot this binding will not be "thread safe" may need to make it part of the EEI for this tx? idk.
+    shardeumStateManager.setTransactionState(transactionState)
+
+    // loop through the wrappedStates an insert them into the transactionState as first*Reads
+    for (let accountId in wrappedStates) {
+      let wrappedEVMAccount: WrappedEVMAccount = wrappedStates[accountId].data
+      if (wrappedEVMAccount.accountType === AccountType.Account) {
+        fixDeserializedWrappedEVMAccount(wrappedEVMAccount)
+        let address = Address.fromString(wrappedEVMAccount.ethAddress)
+
+        if (ShardeumFlags.VerboseLogs) {
+          let ourNodeShardData = shardus.stateManager.currentCycleShardData.nodeShardData
+          let minP = ourNodeShardData.consensusStartPartition
+          let maxP = ourNodeShardData.consensusEndPartition
+          let shardusAddress = getAccountShardusAddress(wrappedEVMAccount)
+          let { homePartition } = __ShardFunctions.addressToPartition(shardus.stateManager.currentCycleShardData.shardGlobals, shardusAddress)
+          let accountIsRemote = __ShardFunctions.partitionInWrappingRange(homePartition, minP, maxP) === false
+
+          console.log('DBG', 'tx insert data', txId, `accountIsRemote: ${accountIsRemote} acc:${address} type:${wrappedEVMAccount.accountType}`)
+        }
+
+        if (wrappedEVMAccount.accountType === AccountType.Account) {
+          transactionState.insertFirstAccountReads(address, wrappedEVMAccount.account)
+        }
+      }
+    }
+
     const network: NetworkAccount = wrappedStates[networkAccount].data
     const from: NodeAccount = wrappedStates[internalTx.from].data
     const to: WrappedEVMAccount = wrappedStates[toShardusAddress(internalTx.to, AccountType.Account)].data
@@ -886,20 +934,21 @@ async function applyInternalTx(internalTx: InternalTx, wrappedStates: WrappedSta
 
     const accountAddress = Address.fromString(internalTx.to)
     const oneEth = new BN(10).pow(new BN(18))
-
-    let account = await EVM.stateManager.getAccount(accountAddress)
-    console.log(account)
+    console.log('node Reward', internalTx, accountAddress)
+    let account = await shardeumStateManager.getAccount(accountAddress)
+    console.log('nodeReward', 'accountAddress', account)
     account.balance.iadd(oneEth) // Add 1 eth
-    await EVM.stateManager.putAccount(accountAddress, account)
-    account = await EVM.stateManager.getAccount(accountAddress)
-    console.log(account)
+    await shardeumStateManager.putAccount(accountAddress, account)
+    account = await shardeumStateManager.getAccount(accountAddress)
+    console.log('nodeReward', 'accountAddress', account)
     to.account = account // Not sure if it can update value like this
-    console.log('Add node_reward to', internalTx.to)
+    to.timestamp = internalTx.timestamp
 
     from.nodeRewardTime = internalTx.timestamp
     from.timestamp = internalTx.timestamp
     // shardus.log('Applied node_reward tx', from, to)
     console.log('Applied node_reward tx')
+    shardeumStateManager.unsetTransactionState()
   }
   return applyResponse
 }
