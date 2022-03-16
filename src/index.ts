@@ -1450,7 +1450,7 @@ shardus.setup({
       }
 
       // make sure the receipt address is in the get keys from transaction..
-      // This will technically cause an empty account to get created but this will get overriden with the 
+      // This will technically cause an empty account to get created but this will get overriden with the
       // correct values as a result of apply().  There are several ways we could optimize this in the future
       // If a transactions knows a key is for an account that will be created than it does not need to attempt to aquire and share the data
       const txHash = bufferToHex(transaction.hash())
@@ -1578,7 +1578,7 @@ shardus.setup({
 
         wrappedEVMAccount = {
           timestamp: 0,
-          balance: 0,
+          balance: 100,
           ethAddress: evmAccountID,
           hash: '',
           accountType: AccountType.Debug, //see above, it may be wrong to assume this type in the future
