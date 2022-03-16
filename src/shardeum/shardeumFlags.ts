@@ -8,3 +8,5 @@ export let temporaryParallelOldMode = false // Set of temporary hacks that allow
 export let globalCodeBytes = true
 export let VerboseLogs = false //set this to false to reduce logging that can impact perf tests or demos
 export let Virtual0Address = true
+export let GlobalNetworkAccount = true
+export let NodeReward = true

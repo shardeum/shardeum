@@ -1089,37 +1089,39 @@ const createNodeAccount = (accountId: string) => {
  */
 shardus.setup({
   async sync(): Promise<void> {
-    if (shardus.p2p.isFirstSeed) {
-      await sleep(ONE_SECOND * 5)
-
-      const nodeId = shardus.getNodeId()
-      const address = shardus.getNode(nodeId).address
-      // const when = Date.now() + configs.ONE_SECOND * 10
-      const when = Date.now()
-      const existingNetworkAccount = await shardus.getLocalOrRemoteAccount(networkAccount)
-      if (existingNetworkAccount) {
-        shardus.log('NETWORK_ACCOUNT ALREADY EXISTED: ', existingNetworkAccount)
+    if (ShardeumFlags.GlobalNetworkAccount) {
+      if (shardus.p2p.isFirstSeed) {
         await sleep(ONE_SECOND * 5)
-      } else {
-        shardus.setGlobal(
-          networkAccount,
-          {
-            isInternalTx: true,
-            internalTXType: InternalTXType.InitNetwork,
-            timestamp: when,
-            network: networkAccount,
-          },
-          when,
-          networkAccount,
-        )
 
-        shardus.log(`node ${nodeId} GENERATED_A_NEW_NETWORK_ACCOUNT: `)
-        await sleep(ONE_SECOND * 10)
-      }
-    } else {
-      while (!(await shardus.getLocalOrRemoteAccount(networkAccount))) {
-        console.log('waiting..')
-        await sleep(1000)
+        const nodeId = shardus.getNodeId()
+        const address = shardus.getNode(nodeId).address
+        // const when = Date.now() + configs.ONE_SECOND * 10
+        const when = Date.now()
+        const existingNetworkAccount = await shardus.getLocalOrRemoteAccount(networkAccount)
+        if (existingNetworkAccount) {
+          shardus.log('NETWORK_ACCOUNT ALREADY EXISTED: ', existingNetworkAccount)
+          await sleep(ONE_SECOND * 5)
+        } else {
+          shardus.setGlobal(
+            networkAccount,
+            {
+              isInternalTx: true,
+              internalTXType: InternalTXType.InitNetwork,
+              timestamp: when,
+              network: networkAccount,
+            },
+            when,
+            networkAccount,
+          )
+
+          shardus.log(`node ${nodeId} GENERATED_A_NEW_NETWORK_ACCOUNT: `)
+          await sleep(ONE_SECOND * 10)
+        }
+      } else {
+        while (!(await shardus.getLocalOrRemoteAccount(networkAccount))) {
+          console.log('waiting..')
+          await sleep(1000)
+        }
       }
     }
   },
@@ -2123,6 +2125,7 @@ shardus.setup({
 
 shardus.registerExceptionHandler()
 
+if (ShardeumFlags.GlobalNetworkAccount) {
   // CODE THAT GETS EXECUTED WHEN NODES START
   ; (async (): Promise<void> => {
     const serverConfig : any= config.server
@@ -2162,25 +2165,26 @@ shardus.registerExceptionHandler()
       shardus.log('nodeAddress: ', nodeAddress)
 
       // THIS IS FOR NODE_REWARD
-      if (currentTime - lastReward > network.current.nodeRewardInterval) {
-        const tx = {
-          isInternalTx: true,
-          internalTXType: InternalTXType.NodeReward,
-          nodeId: nodeId,
-          from: nodeAddress,
-          to: '0x50F6D9E5771361Ec8b95D6cfb8aC186342B70120', // testing account for temporary.
-          timestamp: Date.now(),
+      if (ShardeumFlags.NodeReward) {
+        if (currentTime - lastReward > network.current.nodeRewardInterval) {
+          const tx = {
+            isInternalTx: true,
+            internalTXType: InternalTXType.NodeReward,
+            nodeId: nodeId,
+            from: nodeAddress,
+            to: '0x50F6D9E5771361Ec8b95D6cfb8aC186342B70120', // testing account for temporary.
+            timestamp: Date.now(),
+          }
+          shardus.put(tx)
+          shardus.log('GENERATED_NODE_REWARD: ', nodeId)
+          lastReward = currentTime
         }
-        shardus.put(tx)
-        shardus.log('GENERATED_NODE_REWARD: ', nodeId)
-        lastReward = currentTime
+
+        shardus.log('Maintainence cycle has ended')
+
+        expected += cycleInterval
+        return setTimeout(networkMaintenance, Math.max(0, cycleInterval - drift))
       }
-
-      shardus.log('Maintainence cycle has ended')
-      console.log('Maintainence cycle has ended')
-
-      expected += cycleInterval
-      return setTimeout(networkMaintenance, Math.max(0, cycleInterval - drift))
     }
 
     shardus.on(
@@ -2194,3 +2198,6 @@ shardus.registerExceptionHandler()
       },
     )
   })()
+} else {
+  shardus.start()
+}
