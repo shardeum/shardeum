@@ -2158,8 +2158,8 @@ shardus.registerExceptionHandler()
         return setTimeout(networkMaintenance, 100)
       }
 
-      // shardus.log('nodeId: ', nodeId)
-      // shardus.log('nodeAddress: ', nodeAddress)
+      shardus.log('nodeId: ', nodeId)
+      shardus.log('nodeAddress: ', nodeAddress)
 
       // THIS IS FOR NODE_REWARD
       if (currentTime - lastReward > network.current.nodeRewardInterval) {
@@ -2187,7 +2187,7 @@ shardus.registerExceptionHandler()
       'active',
       async (): Promise<NodeJS.Timeout> => {
         if (shardus.p2p.isFirstSeed) {
-          await sleep(ONE_SECOND * cycleInterval * 2)
+          await sleep(cycleInterval * 2)
         }
         lastReward = Date.now()
         return setTimeout(networkMaintenance, cycleInterval)

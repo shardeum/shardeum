@@ -10,6 +10,8 @@ export function accountSpecificHash(wrappedEVMAccount: WrappedEVMAccount): strin
   let hash
   const otherAccount: any = wrappedEVMAccount
   if (otherAccount.type === 'NetworkAccount' || otherAccount.type === 'NodeAccount') {
+    wrappedEVMAccount.hash = ''
+    wrappedEVMAccount.hash = crypto.hashObj(wrappedEVMAccount)
     return wrappedEVMAccount.hash
   }
   delete wrappedEVMAccount.hash
