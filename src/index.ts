@@ -872,7 +872,7 @@ async function applyInternalTx(internalTx: InternalTx, wrappedStates: WrappedSta
   const applyResponse: ShardusTypes.ApplyResponse = shardus.createApplyResponse(txId, txTimestamp)
   if (internalTx.internalTXType === InternalTXType.InitNetwork) {
     const network: NetworkAccount = wrappedStates[networkAccount].data
-    network.timestamp = internalTx.timestamp
+    network.timestamp = txTimestamp
     console.log(`init_network NETWORK_ACCOUNT: ${stringify(network)}`)
     shardus.log('Applied init_network transaction', network)
   }
@@ -934,18 +934,24 @@ async function applyInternalTx(internalTx: InternalTx, wrappedStates: WrappedSta
 
     const accountAddress = Address.fromString(internalTx.to)
     const oneEth = new BN(10).pow(new BN(18))
-    console.log('node Reward', internalTx, accountAddress)
+    if (ShardeumFlags.VerboseLogs) {
+      console.log('node Reward', internalTx)
+    }
     let account = await shardeumStateManager.getAccount(accountAddress)
-    console.log('nodeReward', 'accountAddress', account)
+    if (ShardeumFlags.VerboseLogs) {
+      console.log('nodeReward', 'accountAddress', account)
+    }
     account.balance.iadd(oneEth) // Add 1 eth
     await shardeumStateManager.putAccount(accountAddress, account)
     account = await shardeumStateManager.getAccount(accountAddress)
-    console.log('nodeReward', 'accountAddress', account)
-    to.account = account // Not sure if it can update value like this
-    to.timestamp = internalTx.timestamp
+    if (ShardeumFlags.VerboseLogs) {
+      console.log('nodeReward', 'accountAddress', account)
+    }
+    to.account = account
+    to.timestamp = txTimestamp
 
-    from.nodeRewardTime = internalTx.timestamp
-    from.timestamp = internalTx.timestamp
+    from.nodeRewardTime = txTimestamp
+    from.timestamp = txTimestamp
     // shardus.log('Applied node_reward tx', from, to)
     console.log('Applied node_reward tx')
     shardeumStateManager.unsetTransactionState()
@@ -1008,18 +1014,6 @@ async function _transactionReceiptPass(tx: any, txId: string, wrappedStates: Wra
       console.log(`transactionReceiptPass setglobal: ${txHash} ${JSON.stringify(tx)}  `)
     }
   }
-  // if (tx.internalTXType === InternalTXType.NodeReward) {
-  //   const accountAddress = Address.fromString(tx.to)
-  //   const oneEth = new BN(10).pow(new BN(18))
-  //   let account = await shardeumStateManager.getAccount(accountAddress)
-  //   console.log(account)
-  //   account.balance.iadd(oneEth)
-  //   console.log(account)
-  //   await shardeumStateManager.putAccount(tx.to, account)
-  //   account = await shardeumStateManager.getAccount(accountAddress)
-  //   console.log(account)
-  //   console.log('Add node_reward to', tx.to)
-  // }
 }
 
 function getInjectedOrGeneratedTimestamp(timestampedTx) {
@@ -1043,7 +1037,7 @@ function getInjectedOrGeneratedTimestamp(timestampedTx) {
 const createNetworkAccount = (accountId: string, timestamp: number) => {
   const account: NetworkAccount = {
     id: accountId,
-    type: 'NetworkAccount',
+    accountType: AccountType.NetworkAccount,
     current: INITIAL_PARAMETERS,
     next: {},
     hash: '',
@@ -1057,7 +1051,7 @@ const createNetworkAccount = (accountId: string, timestamp: number) => {
 const createNodeAccount = (accountId: string) => {
   const account: NodeAccount = {
     id: accountId,
-    type: 'NodeAccount',
+    accountType: AccountType.NodeAccount,
     balance: 0,
     nodeRewardTime: 0,
     hash: '',
@@ -1517,7 +1511,7 @@ shardus.setup({
 
     if (isInternalTx(tx)) {
       let internalTx = tx as InternalTx
-      const result = {
+      const keys = {
         sourceKeys: [],
         targetKeys: [],
         storageKeys: [],
@@ -1525,17 +1519,17 @@ shardus.setup({
         timestamp: timestamp,
       }
       if (internalTx.internalTXType === InternalTXType.SetGlobalCodeBytes) {
-        result.sourceKeys = [internalTx.from]
+        keys.sourceKeys = [internalTx.from]
       } else if (internalTx.internalTXType === InternalTXType.InitNetwork) {
-        result.targetKeys = [networkAccount]
+        keys.targetKeys = [networkAccount]
       } else if (internalTx.internalTXType === InternalTXType.NodeReward) {
-        result.sourceKeys = [internalTx.from]
-        result.targetKeys = [toShardusAddress(internalTx.to, AccountType.Account), networkAccount]
+        keys.sourceKeys = [internalTx.from]
+        keys.targetKeys = [toShardusAddress(internalTx.to, AccountType.Account), networkAccount]
       }
-      result.allKeys = result.allKeys.concat(result.sourceKeys, result.targetKeys, result.storageKeys)
+      keys.allKeys = keys.allKeys.concat(keys.sourceKeys, keys.targetKeys, keys.storageKeys)
       return {
         timestamp,
-        result,
+        keys,
         id: crypto.hashObj(tx)
       }
     }
@@ -1937,12 +1931,11 @@ shardus.setup({
       return
     }
     let otherAccount = wrappedData.data
-    if (otherAccount.type === 'NetworkAccount' || otherAccount.type === 'NodeAccount') {
+    if (otherAccount.accountType === AccountType.NetworkAccount || otherAccount.type === AccountType.NodeAccount) {
       // Update hash
       const hashBefore = otherAccount.hash
-      otherAccount.hash = '' // DON'T THINK THIS IS NECESSARY
-      const hashAfter = crypto.hashObj(otherAccount)
-      otherAccount.hash = hashAfter
+      updateEthAccountHash(otherAccount) // This will get the hash of its relevant account type
+      const hashAfter = updatedEVMAccount.hash
       accounts[accountId] = otherAccount
       shardus.applyResponseAddState(applyResponse, otherAccount, otherAccount, accountId, applyResponse.txId, applyResponse.txTimestamp, hashBefore, hashAfter, accountCreated)
       return

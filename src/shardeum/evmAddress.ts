@@ -33,7 +33,7 @@ export function getAccountShardusAddress(wrappedEVMAccount: WrappedEVMAccount): 
   }
   
   let otherAccount: any = wrappedEVMAccount
-  if (otherAccount.type === 'NetworkAccount' || otherAccount.type === 'NodeAccount') {
+  if (otherAccount.accountType === AccountType.NetworkAccount || otherAccount.accountType === AccountType.NodeAccount) {
     return otherAccount.id
   }
 

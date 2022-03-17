@@ -140,9 +140,8 @@ export interface ReadableReceipt {
   data: string
 }
 
-export interface NetworkAccount {
+export interface NetworkAccount extends BaseAccount {
   id: string
-  type: string
   current: NetworkParameters
   next: NetworkParameters | {}
   hash: string
@@ -160,9 +159,8 @@ export interface NetworkParameters {
   maintenanceFee: number
 }
 
-export interface NodeAccount {
+export interface NodeAccount extends BaseAccount {
   id: string
-  type: string
   balance: number
   nodeRewardTime: number
   hash: string
