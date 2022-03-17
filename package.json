@@ -28,6 +28,7 @@
     "@shardus/core": "^2.5.3",
     "@shardus/crypto-utils": "^4.0.4",
     "deepmerge": "^4.2.2",
+    "dotenv": "^16.0.0",
     "ethereumjs-util": "^7.1.3",
     "fast-stable-stringify": "^1.0.0",
     "got": "^9.6.0",

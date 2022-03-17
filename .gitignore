@@ -4,3 +4,4 @@ logs
 instances/
 .pm2/
 statistics.tsv
+.env
