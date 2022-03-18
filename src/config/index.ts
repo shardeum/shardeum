@@ -39,9 +39,6 @@ if (process.env.APP_SEEDLIST) {
             }
           ]
         },
-        sharding: {
-          nodesPerConsensus: 50
-        }
       }
     },
     { arrayMerge: overwriteMerge }
