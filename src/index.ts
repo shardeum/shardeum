@@ -57,7 +57,7 @@ export const ONE_DAY = 24 * ONE_HOUR
 export const INITIAL_PARAMETERS: NetworkParameters = {
   title: 'Initial parameters',
   description: 'These are the initial network parameters Shardeum started with',
-  nodeRewardInterval: ONE_MINUTE / 2, //ONE_HOUR,
+  nodeRewardInterval: ONE_MINUTE * 10, // 10 minutes for testing
   nodeRewardAmount: 1,
   nodePenalty: 10,
   stakeRequired: 5,
