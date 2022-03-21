@@ -2,7 +2,8 @@ let stringify = require( 'fast-json-stable-stringify')
 const fs = require('fs');
 const path = require('path')
 
-const directory = `paste path here`;
+const myArgs = process.argv.slice(2)
+const directory = myArgs[0] //`paste path here`;
 
 //hacky little script to make a folder of json files have a stable key sort
 fs.readdir(directory, (err, files) => {
