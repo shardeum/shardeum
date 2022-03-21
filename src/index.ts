@@ -1801,7 +1801,7 @@ shardus.setup({
           accountType: AccountType.Debug, //see above, it may be wrong to assume this type in the future
         } as WrappedEVMAccount
         WrappedEVMAccountFunctions.updateEthAccountHash(wrappedEVMAccount)
-        accounts[accountId] = wrappedEVMAccount
+        //accounts[accountId] = wrappedEVMAccount  //getRelevantData must never modify accounts[]
         console.log('Created new debug account', wrappedEVMAccount)
         accountCreated = true
       }
@@ -1892,7 +1892,7 @@ shardus.setup({
         throw new Error(`getRelevantData: invalid accoun type ${accountType}`)
       }
       WrappedEVMAccountFunctions.updateEthAccountHash(wrappedEVMAccount)
-      accounts[accountId] = wrappedEVMAccount
+      // accounts[accountId] = wrappedEVMAccount //getRelevantData must never modify accounts[]
       accountCreated = true
     }
     console.log('Running getRelevantData', wrappedEVMAccount)
