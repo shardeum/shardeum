@@ -78,7 +78,7 @@ if (process.env.APP_IP) {
 config = merge(config, {
   server: {
     p2p: {
-      cycleDuration: 30,
+      cycleDuration: 60,
       minNodesToAllowTxs: 1,
       minNodes: 50,
       maxNodes: 50,
@@ -90,7 +90,7 @@ config = merge(config, {
   }
 })
 
-// rateLimiting settings
+// rateLimiting and loadDetection settings
 config = merge(config, {
   server: {
     rateLimiting: {
@@ -101,6 +101,12 @@ config = merge(config, {
         txTimeInQueue: 0.7,
         queueLength: 0.8
       }
+    },
+    loadDetection : {
+      queueLimit: 200,
+      desiredTxTime: 15,
+      highThreshold: 0.5,
+      lowThreshold: 0.2
     }
   }
 })
@@ -108,7 +114,7 @@ config = merge(config, {
 config = merge(config, {
   server: {
     sharding: {
-      nodesPerConsensusGroup: 5
+      nodesPerConsensusGroup: 30
     }
   }
 })
