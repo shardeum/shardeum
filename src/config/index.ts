@@ -80,7 +80,7 @@ config = merge(config, {
     p2p: {
       cycleDuration: 60,
       minNodesToAllowTxs: 1,
-      minNodes: 50,
+      minNodes: 10,
       maxNodes: 50,
       maxJoinedPerCycle: 6,
       maxSyncingPerCycle: 12,
