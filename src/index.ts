@@ -931,6 +931,7 @@ async function applyInternalTx(internalTx: InternalTx, wrappedStates: WrappedSta
     const network: NetworkAccount = wrappedStates[networkAccount].data
     const from: NodeAccount = wrappedStates[internalTx.from].data
     const to: WrappedEVMAccount = wrappedStates[toShardusAddress(internalTx.to, AccountType.Account)].data
+    const nodeRewardReceipt: WrappedEVMAccount = wrappedStates['0x'+ txId].data // Current node reward receipt hash is set with txId
     from.balance += network.current.nodeRewardAmount // This is not needed and will have to delete `balance` field eventually
     shardus.log(`Reward from ${internalTx.from} to ${internalTx.to}`)
     shardus.log('TO ACCOUNT', to)
@@ -955,6 +956,26 @@ async function applyInternalTx(internalTx: InternalTx, wrappedStates: WrappedSta
 
     from.nodeRewardTime = txTimestamp
     from.timestamp = txTimestamp
+    
+    let readableReceipt: ReadableReceipt = {
+      transactionHash: '0x' + txId,
+      transactionIndex: '0x1',
+      blockNumber: '0xb',
+      nonce: '0x',
+      blockHash: '0xc6ef2fc5426d6ad6fd9e2a26abeab0aa2411b7ab17f30a99d3cb96aed1d1055b',
+      cumulativeGasUsed: '0x0',
+      gasUsed: '0x0',
+      logs: null,
+      contractAddress: null,
+      from: from.id,
+      to: to.ethAddress,
+      value: oneEth.toString('hex'),
+      data: '0x',
+    }
+    nodeRewardReceipt.timestamp = txTimestamp
+    nodeRewardReceipt.readableReceipt = readableReceipt
+    nodeRewardReceipt.txId = txId
+    nodeRewardReceipt.txFrom = from.id
     // shardus.log('Applied node_reward tx', from, to)
     console.log('Applied node_reward tx')
     shardeumStateManager.unsetTransactionState()
@@ -1530,6 +1551,11 @@ shardus.setup({
         keys.targetKeys = [toShardusAddress(internalTx.to, AccountType.Account), networkAccount]
       }
       keys.allKeys = keys.allKeys.concat(keys.sourceKeys, keys.targetKeys, keys.storageKeys)
+      // temporary hack for creating a receipt of node reward tx
+      if (internalTx.internalTXType === InternalTXType.NodeReward) {
+        const txId = crypto.hashObj(tx)
+        keys.allKeys = keys.allKeys.concat(['0x' + txId]) // For Node Reward Receipt
+      }
       return {
         timestamp,
         keys,
@@ -1764,6 +1790,15 @@ shardus.setup({
         if (!wrappedEVMAccount) {
           if (accountId === internalTx.from) {
             wrappedEVMAccount = createNodeAccount(accountId) as any
+          } else if (accountId === '0x' + crypto.hashObj(tx)) { // For Node Reward Receipt; This needs to evaluate whether it's good or can have issue
+            wrappedEVMAccount = {
+              timestamp: 0,
+              ethAddress: accountId,
+              hash: '',
+              accountType: AccountType.NodeRewardReceipt
+            }
+            WrappedEVMAccountFunctions.updateEthAccountHash(wrappedEVMAccount)
+            // console.log('Created new eth payment account', wrappedEVMAccount)
           } else {
             // for eth payment account
             let evmAccountID = internalTx.to
@@ -1771,7 +1806,7 @@ shardus.setup({
             let debugTXState = getDebugTXState() //this isn't so great.. just for testing purpose
             wrappedEVMAccount = await createAccount(evmAccountID, debugTXState)
             WrappedEVMAccountFunctions.updateEthAccountHash(wrappedEVMAccount)
-            accounts[accountId] = wrappedEVMAccount
+            // accounts[accountId] = wrappedEVMAccount
             console.log('Created new eth payment account', wrappedEVMAccount)
           }
           accountCreated = true

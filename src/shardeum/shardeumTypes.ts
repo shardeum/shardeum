@@ -10,7 +10,8 @@ export enum AccountType {
   Receipt, //This holds logs for a TX
   Debug,
   NetworkAccount,
-  NodeAccount
+  NodeAccount,
+  NodeRewardReceipt
 }
 
 export interface BaseAccount {
@@ -85,7 +86,7 @@ export interface InternalTx extends InternalTxBase {
   to?: string
   accountData?: WrappedEVMAccount
   network?: string // Network Account
-  nodeId?: string,
+  nodeId?: string, // Node Account
 }
 
 export interface DebugTx {
