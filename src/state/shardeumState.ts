@@ -947,6 +947,24 @@ export default class ShardeumState implements StateManager {
     await this._trie.put(accountKeyBuf, accountRlp)
 
     await this._trie.commit()
+
+    if(ShardeumFlags.SelfTest){
+      //self test function
+      const rlp = await this._trie.get(address.buf)
+      if(rlp == null){
+        throw new Error('setAccountExternal failed to get rlp')
+      }
+      let testAccount = rlp ? Account.fromRlpSerializedAccount(rlp) : undefined
+      if(testAccount == null){
+        throw new Error('setAccountExternal failed to get testAccount')
+      }
+      TransactionState.fixUpAccountFields(testAccount)
+      let s1 = JSON.stringify(testAccount)
+      let s2 = JSON.stringify(account)
+      if(s1 != s2){
+        throw new Error(`setAccountExternal s1 != s2  \n\n  ${s1}   \n\n  ${s2}`)
+      }      
+    }
   }
 
   async _getOrCreateStorageTrie(stateRoot: Buffer, address: Address): Promise<Trie> {
@@ -996,6 +1014,8 @@ export default class ShardeumState implements StateManager {
     await storageTrie.put(key, value)
 
     await storageTrie.commit()
+
+    //UPDATE CA?
   }
 
   /**
