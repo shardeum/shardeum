@@ -1,6 +1,6 @@
 import stringify from 'fast-json-stable-stringify'
 import * as crypto from '@shardus/crypto-utils'
-import { Account, Address, BN, bufferToHex, toBuffer } from 'ethereumjs-util'
+import { Account, Address, BN, bufferToHex, isValidAddress, toBuffer } from 'ethereumjs-util'
 import { AccessListEIP2930Transaction, Transaction } from '@ethereumjs/tx'
 import VM from '@ethereumjs/vm'
 import { parse as parseUrl } from 'url'
@@ -499,6 +499,8 @@ async function _internalHackPostWithResp(url: string, body: any) {
 //?id=<accountID>
 shardus.registerExternalGet('faucet-all', async (req, res) => {
   let id = req.query.id as string
+  if (!id) return res.json({ success: false, result: 'id is not defined!' })
+  if (!isValidAddress(id)) return res.json({ success: false, result: 'Address format is wrong!' })
   setupTester(id)
   try {
     let activeNodes = shardus.p2p.state.getNodes()
@@ -517,6 +519,8 @@ shardus.registerExternalGet('faucet-all', async (req, res) => {
 
 shardus.registerExternalGet('faucet-one', async (req, res) => {
   let id = req.query.id as string
+  if (!id) return res.json({ success: false, result: 'id is not defined!' })
+  if (!isValidAddress(id)) return res.json({ success: false, result: 'Address format is wrong!' })
   setupTester(id)
   return res.json({ success: true })
 })
@@ -2152,6 +2156,12 @@ shardus.setup({
     }
     _transactionReceiptPass(tx, txId, wrappedStates, applyResponse)
   },
+  validateJoinRequest(data: any) {
+    // console.log('joinRequestData', data)
+    return {
+      success: true
+    }
+  }
 })
 
 shardus.registerExceptionHandler()
