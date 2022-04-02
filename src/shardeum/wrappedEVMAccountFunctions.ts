@@ -9,8 +9,7 @@ import {ShardusTypes} from '@shardus/core'
 export function accountSpecificHash(wrappedEVMAccount: WrappedEVMAccount): string {
   let hash
   delete wrappedEVMAccount.hash
-  const otherAccount: any = wrappedEVMAccount
-  if (otherAccount.accountType === AccountType.NetworkAccount || otherAccount.accountType === AccountType.NodeAccount || otherAccount.accountType === AccountType.NodeRewardReceipt) {
+  if (wrappedEVMAccount.accountType === AccountType.NetworkAccount || wrappedEVMAccount.accountType === AccountType.NodeAccount || wrappedEVMAccount.accountType === AccountType.NodeRewardReceipt) {
     wrappedEVMAccount.hash = crypto.hashObj(wrappedEVMAccount)
     return wrappedEVMAccount.hash
   }

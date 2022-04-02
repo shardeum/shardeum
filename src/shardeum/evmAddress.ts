@@ -1,6 +1,7 @@
 import { AccountType, WrappedEVMAccount } from './shardeumTypes'
 
 import * as ShardeumFlags from './shardeumFlags'
+import { Account } from 'ethereumjs-util'
 
 /**
  * This will correctly get a shardus address from a WrappedEVMAccount account no matter what type it is.
@@ -35,6 +36,10 @@ export function getAccountShardusAddress(wrappedEVMAccount: WrappedEVMAccount): 
   let otherAccount: any = wrappedEVMAccount
   if (otherAccount.accountType === AccountType.NetworkAccount || otherAccount.accountType === AccountType.NodeAccount) {
     return otherAccount.id
+  }
+
+  if (otherAccount.accountType === AccountType.NodeRewardReceipt) {
+    return otherAccount.ethAddress
   }
 
   let shardusAddress = toShardusAddress(addressSource, wrappedEVMAccount.accountType)

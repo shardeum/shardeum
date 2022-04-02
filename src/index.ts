@@ -980,6 +980,7 @@ async function applyInternalTx(internalTx: InternalTx, wrappedStates: WrappedSta
     nodeRewardReceipt.readableReceipt = readableReceipt
     nodeRewardReceipt.txId = txId
     nodeRewardReceipt.txFrom = from.id
+    // console.log('nodeRewardReceipt', nodeRewardReceipt)
     // shardus.log('Applied node_reward tx', from, to)
     console.log('Applied node_reward tx')
     shardeumStateManager.unsetTransactionState()
@@ -1705,7 +1706,8 @@ shardus.setup({
 
       let shardusAddress = getAccountShardusAddress(wrappedEVMAccount)
 
-      WrappedEVMAccountFunctions.fixDeserializedWrappedEVMAccount(wrappedEVMAccount)
+      if (wrappedEVMAccount.accountType !== AccountType.NetworkAccount && wrappedEVMAccount.accountType !== AccountType.NodeAccount && wrappedEVMAccount.accountType !== AccountType.NodeRewardReceipt)
+        WrappedEVMAccountFunctions.fixDeserializedWrappedEVMAccount(wrappedEVMAccount)
 
       accounts[shardusAddress] = wrappedEVMAccount
     }
@@ -1802,7 +1804,7 @@ shardus.setup({
               accountType: AccountType.NodeRewardReceipt
             }
             WrappedEVMAccountFunctions.updateEthAccountHash(wrappedEVMAccount)
-            // console.log('Created new eth payment account', wrappedEVMAccount)
+            // console.log('Created node reward receipt account', wrappedEVMAccount)
           } else {
             // for eth payment account
             let evmAccountID = internalTx.to
@@ -1972,14 +1974,13 @@ shardus.setup({
       shardus.applyResponseAddState(applyResponse, updatedEVMAccount, updatedEVMAccount, accountId, applyResponse.txId, applyResponse.txTimestamp, hashBefore, updatedEVMAccount.hash, accountCreated)
       return
     }
-    let otherAccount = wrappedData.data
-    if (otherAccount.accountType === AccountType.NetworkAccount || otherAccount.type === AccountType.NodeAccount) {
+    if (updatedEVMAccount.accountType === AccountType.NetworkAccount || updatedEVMAccount.accountType === AccountType.NodeAccount || updatedEVMAccount.accountType === AccountType.NodeRewardReceipt) {
       // Update hash
-      const hashBefore = otherAccount.hash
-      updateEthAccountHash(otherAccount) // This will get the hash of its relevant account type
+      const hashBefore = updatedEVMAccount.hash
+      updateEthAccountHash(updatedEVMAccount) // This will get the hash of its relevant account type
       const hashAfter = updatedEVMAccount.hash
-      accounts[accountId] = otherAccount
-      shardus.applyResponseAddState(applyResponse, otherAccount, otherAccount, accountId, applyResponse.txId, applyResponse.txTimestamp, hashBefore, hashAfter, accountCreated)
+      accounts[accountId] = updatedEVMAccount
+      shardus.applyResponseAddState(applyResponse, updatedEVMAccount, updatedEVMAccount, accountId, applyResponse.txId, applyResponse.txTimestamp, hashBefore, hashAfter, accountCreated)
       return
     }
 
