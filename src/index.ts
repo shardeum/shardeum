@@ -9,7 +9,7 @@ import 'dotenv/config'
 import { ShardeumState, TransactionState } from './state'
 import { __ShardFunctions, ShardusTypes } from '@shardus/core'
 import { ContractByteWrite } from './state/transactionState'
-
+import { version } from '../package.json'
 import {
   AccountType,
   DebugTx,
@@ -31,7 +31,7 @@ import { getAccountShardusAddress, toShardusAddress, toShardusAddressWithKey } f
 import * as ShardeumFlags from './shardeum/shardeumFlags'
 import * as WrappedEVMAccountFunctions from './shardeum/wrappedEVMAccountFunctions'
 import { fixDeserializedWrappedEVMAccount, predictContractAddressDirect, updateEthAccountHash } from './shardeum/wrappedEVMAccountFunctions'
-import { replacer, zeroAddressStr, sleep } from './utils'
+import { replacer, zeroAddressStr, sleep, isEqualOrNewerVersion } from './utils'
 import config from './config'
 import { RunTxResult } from '@ethereumjs/vm/dist/runTx'
 import { RunState } from '@ethereumjs/vm/dist/evm/interpreter'
@@ -935,7 +935,7 @@ async function applyInternalTx(internalTx: InternalTx, wrappedStates: WrappedSta
     const network: NetworkAccount = wrappedStates[networkAccount].data
     const from: NodeAccount = wrappedStates[internalTx.from].data
     const to: WrappedEVMAccount = wrappedStates[toShardusAddress(internalTx.to, AccountType.Account)].data
-    const nodeRewardReceipt: WrappedEVMAccount = wrappedStates['0x'+ txId].data // Current node reward receipt hash is set with txId
+    const nodeRewardReceipt: WrappedEVMAccount = wrappedStates['0x' + txId].data // Current node reward receipt hash is set with txId
     from.balance += network.current.nodeRewardAmount // This is not needed and will have to delete `balance` field eventually
     shardus.log(`Reward from ${internalTx.from} to ${internalTx.to}`)
     shardus.log('TO ACCOUNT', to)
@@ -986,6 +986,42 @@ async function applyInternalTx(internalTx: InternalTx, wrappedStates: WrappedSta
     // shardus.log('Applied node_reward tx', from, to)
     console.log('Applied node_reward tx')
     shardeumStateManager.unsetTransactionState()
+  }
+  if (internalTx.internalTXType === InternalTXType.ChangeConfig) {
+    const from: NodeAccount = wrappedStates[internalTx.from].data // This will be user/node account. needs review!
+    const network: NetworkAccount = wrappedStates[networkAccount].data
+    let changeOnCycle
+    let cycleData: ShardusTypes.Cycle
+
+    if (internalTx.cycle === -1) {
+      ;[cycleData] = shardus.getLatestCycles()
+      changeOnCycle = cycleData.counter + 3
+    } else {
+      changeOnCycle = internalTx.cycle
+    }
+
+    const when = txTimestamp + ONE_SECOND * 10
+    let value = {
+      isInternalTx: true,
+      internalTXType: InternalTXType.ApplyChangeConfig,
+      timestamp: when,
+      network: networkAccount,
+      change: { cycle: changeOnCycle, change: JSON.parse(internalTx.config) },
+    }
+
+    let ourAppDefinedData = applyResponse.appDefinedData as OurAppDefinedData
+    ourAppDefinedData.globalMsg = { address: networkAccount, value, when, source: networkAccount }
+
+    from.timestamp = txTimestamp
+    console.log('Applied change_config tx')
+    shardus.log('Applied change_config tx')
+  }
+  if (internalTx.internalTXType === InternalTXType.ApplyChangeConfig) {
+    const network: NetworkAccount = wrappedStates[networkAccount].data
+    network.timestamp = txTimestamp
+    network.listOfChanges.push(internalTx.change)
+    console.log(`Applied CHANGE_CONFIG GLOBAL transaction: ${stringify(network)}`)
+    shardus.log('Applied CHANGE_CONFIG GLOBAL transaction', stringify(network))
   }
   return applyResponse
 }
@@ -1069,6 +1105,18 @@ const createNetworkAccount = (accountId: string, timestamp: number) => {
   const account: NetworkAccount = {
     id: accountId,
     accountType: AccountType.NetworkAccount,
+    listOfChanges: [
+      {
+        cycle: 1,
+        change: {
+          server: {
+            p2p: {
+              minNodes: 15,
+            }
+          },
+        },
+      },
+    ],
     current: INITIAL_PARAMETERS,
     next: {},
     hash: '',
@@ -1556,6 +1604,11 @@ shardus.setup({
       } else if (internalTx.internalTXType === InternalTXType.NodeReward) {
         keys.sourceKeys = [internalTx.from]
         keys.targetKeys = [toShardusAddress(internalTx.to, AccountType.Account), networkAccount]
+      } else if (internalTx.internalTXType === InternalTXType.ChangeConfig) {
+        keys.sourceKeys = [tx.from]
+        keys.targetKeys = [networkAccount]
+      } else if (internalTx.internalTXType === InternalTXType.ApplyChangeConfig) {
+        keys.targetKeys = [networkAccount]
       }
       keys.allKeys = keys.allKeys.concat(keys.sourceKeys, keys.targetKeys, keys.storageKeys)
       // temporary hack for creating a receipt of node reward tx
@@ -1818,6 +1871,20 @@ shardus.setup({
             console.log('Created new eth payment account', wrappedEVMAccount)
           }
           accountCreated = true
+        }
+      }
+      if (internalTx.internalTXType === InternalTXType.ChangeConfig) {
+        if (!wrappedEVMAccount) {
+          if (accountId === networkAccount) throw Error(`Network Account is not found ${accountId}`)
+          else {
+            wrappedEVMAccount = createNodeAccount(accountId) as any
+            accountCreated = true
+          }
+        }
+      }
+      if (internalTx.internalTXType === InternalTXType.ApplyChangeConfig) {
+        if (!wrappedEVMAccount) {
+          throw Error(`Network Account is not found ${accountId}`)
         }
       }
 
@@ -2160,7 +2227,12 @@ shardus.setup({
     _transactionReceiptPass(tx, txId, wrappedStates, applyResponse)
   },
   validateJoinRequest(data: any) {
-    // console.log('joinRequestData', data)
+    if (!data.appSetting) {
+      return { success: false, reason: `Join request node doesn't provide the app data.` }
+    }
+    if (!isEqualOrNewerVersion(version, data.appSetting.version)) {
+      return { success: false, reason: `version number is old. Our app version is ${version}. Join request node app version is ${data.appSetting.version}` }
+    }
     return {
       success: true
     }

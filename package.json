@@ -1,11 +1,11 @@
 {
-  "name": "coin-app",
-  "version": "1.0.0",
+  "name": "shardeum",
+  "version": "0.0.1",
   "description": "",
-  "main": "dist/index.js",
+  "main": "dist/src/index.js",
   "scripts": {
     "pm2": "cross-env PM2_HOME='./.pm2' pm2",
-    "start": "node scripts/start.js && node dist/index.js",
+    "start": "node scripts/start.js && node dist/src/index.js",
     "stop": "node scripts/stop.js",
     "clean": "node scripts/clean.js",
     "check": "gts check",

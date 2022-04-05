@@ -2,6 +2,7 @@ import { Account, Address, BN, bufferToHex, toBuffer } from 'ethereumjs-util'
 
 import { Transaction, AccessListEIP2930Transaction } from '@ethereumjs/tx'
 import { TxReceipt } from '@ethereumjs/vm/dist/types'
+import { ShardusTypes } from '@shardus/core'
 
 export enum AccountType {
   Account, //  EOA or CA
@@ -63,7 +64,9 @@ export interface EVMAccountInfo {
 export enum InternalTXType {
   SetGlobalCodeBytes,
   InitNetwork,
-  NodeReward
+  NodeReward,
+  ChangeConfig,
+  ApplyChangeConfig
 }
 
 export enum DebugTXType {
@@ -87,6 +90,9 @@ export interface InternalTx extends InternalTxBase {
   accountData?: WrappedEVMAccount
   network?: string // Network Account
   nodeId?: string, // Node Account
+  change?: any // change config
+  cycle?: number // change config
+  config?: any // change config
 }
 
 export interface DebugTx {
@@ -117,8 +123,12 @@ export interface OurAppDefinedData {
       isInternalTx: boolean
       internalTXType: InternalTXType
       timestamp: number
-      accountData: WrappedEVMAccount
-      from: string
+      accountData?: WrappedEVMAccount
+      from?: string
+      change?: {
+        cycle: ShardusTypes.Cycle,
+        change: any
+      }
     }
     when: number
     source: string
@@ -144,6 +154,10 @@ export interface ReadableReceipt {
 export interface NetworkAccount extends BaseAccount {
   id: string
   current: NetworkParameters
+  listOfChanges: Array<{
+    cycle: number
+    change: any
+  }>
   next: NetworkParameters | {}
   hash: string
   timestamp: number
@@ -165,5 +179,19 @@ export interface NodeAccount extends BaseAccount {
   balance: number
   nodeRewardTime: number
   hash: string
+  timestamp: number
+}
+
+export interface ChangeConfig {
+  type: string
+  from: string
+  cycle: number
+  config: string
+  timestamp: number
+}
+
+export interface ApplyChangeConfig {
+  type: string
+  change: any
   timestamp: number
 }

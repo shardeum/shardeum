@@ -1,6 +1,7 @@
 import fs from 'fs'
 import path from 'path'
 import merge from 'deepmerge'
+import { version } from '../../package.json'
 
 const overwriteMerge = (target, source, options) => source
 
@@ -99,7 +100,7 @@ config = merge(config, {
         queueLength: 0.8
       }
     },
-    loadDetection : {
+    loadDetection: {
       queueLimit: 100, //200 would be ideal at 25 tps but lowering it for now as we find the right network size
       desiredTxTime: 15,
       highThreshold: 0.5,
@@ -128,6 +129,19 @@ config = merge(
         fakeNetworkDelay: 0,
         disableSnapshots: false,
         countEndpointStart: -1
+      }
+    }
+  },
+  { arrayMerge: overwriteMerge }
+)
+
+// app related config to pass through
+config = merge(
+  config,
+  {
+    server: {
+      appSetting: {
+        version
       }
     }
   },
