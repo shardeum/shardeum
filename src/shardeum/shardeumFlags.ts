@@ -9,5 +9,5 @@ export let globalCodeBytes = true
 export let VerboseLogs = false //set this to false to reduce logging that can impact perf tests or demos
 export let Virtual0Address = true
 export let GlobalNetworkAccount = true
-export let NodeReward = true
-export let SelfTest = true
+export let NodeReward = false
+export let SelfTest = false
