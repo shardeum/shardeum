@@ -35,6 +35,7 @@ import { replacer, zeroAddressStr, sleep, isEqualOrNewerVersion } from './utils'
 import config from './config'
 import { RunTxResult } from '@ethereumjs/vm/dist/runTx'
 import { RunState } from '@ethereumjs/vm/dist/evm/interpreter'
+import Wallet from 'ethereumjs-wallet'
 
 const env = process.env
 
@@ -57,7 +58,7 @@ export const ONE_DAY = 24 * ONE_HOUR
 export const INITIAL_PARAMETERS: NetworkParameters = {
   title: 'Initial parameters',
   description: 'These are the initial network parameters Shardeum started with',
-  nodeRewardInterval: ONE_MINUTE * 10, // 10 minutes for testing
+  nodeRewardInterval: ONE_MINUTE, // 10 minutes for testing
   nodeRewardAmount: 1,
   nodePenalty: 10,
   stakeRequired: 5,
@@ -67,7 +68,10 @@ export const INITIAL_PARAMETERS: NetworkParameters = {
 
 const shardus = shardusFactory(config)
 
-const pay_address = '0x50F6D9E5771361Ec8b95D6cfb8aC186342B70120' // testing account for node_reward
+// const pay_address = '0x50F6D9E5771361Ec8b95D6cfb8aC186342B70120' // testing account for node_reward
+const random_wallet = Wallet.generate()
+const pay_address = random_wallet.getAddressString()
+console.log('Pay Address', pay_address, isValidAddress(pay_address))
 
 /***
  *    ######## ##     ## ##     ##    #### ##    ## #### ########
