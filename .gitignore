@@ -5,3 +5,4 @@ instances/
 .pm2/
 statistics.tsv
 .env
+coverage

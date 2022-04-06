@@ -58,7 +58,7 @@ export const ONE_DAY = 24 * ONE_HOUR
 export const INITIAL_PARAMETERS: NetworkParameters = {
   title: 'Initial parameters',
   description: 'These are the initial network parameters Shardeum started with',
-  nodeRewardInterval: ONE_MINUTE, // 10 minutes for testing
+  nodeRewardInterval: ONE_MINUTE * 10, // 10 minutes for testing
   nodeRewardAmount: 1,
   nodePenalty: 10,
   stakeRequired: 5,
@@ -943,8 +943,6 @@ async function applyInternalTx(internalTx: InternalTx, wrappedStates: WrappedSta
     from.balance += network.current.nodeRewardAmount // This is not needed and will have to delete `balance` field eventually
     shardus.log(`Reward from ${internalTx.from} to ${internalTx.to}`)
     shardus.log('TO ACCOUNT', to)
-      console.log(`Reward from ${internalTx.from} to ${internalTx.to}`)
-      console.log('TO ACCOUNT', to)
 
     const accountAddress = Address.fromString(internalTx.to)
     const oneEth = new BN(10).pow(new BN(18))
@@ -2230,12 +2228,18 @@ shardus.setup({
     }
     _transactionReceiptPass(tx, txId, wrappedStates, applyResponse)
   },
-  validateJoinRequest(data: any) {
-    if (!data.appSetting) {
-      return { success: false, reason: `Join request node doesn't provide the app data.` }
+  getJoinData() {
+    const joinData = {
+      version
     }
-    if (!isEqualOrNewerVersion(version, data.appSetting.version)) {
-      return { success: false, reason: `version number is old. Our app version is ${version}. Join request node app version is ${data.appSetting.version}` }
+    return joinData
+  },
+  validateJoinRequest(data: any) {
+    if (!data.appJoinData) {
+      return { success: false, reason: `Join request node doesn't provide the app join data.` }
+    }
+    if (!isEqualOrNewerVersion(version, data.appJoinData.version)) {
+      return { success: false, reason: `version number is old. Our app version is ${version}. Join request node app version is ${data.appJoinData.version}` }
     }
     return {
       success: true

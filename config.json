@@ -1,0 +1,17 @@
+{
+  "server": {
+    "baseDir": ".",
+    "ip": {
+      "externalIp": "127.0.0.1",
+      "externalPort": 9009,
+      "internalIp": "127.0.0.1",
+      "internalPort": 10009
+    },
+    "reporting": {
+      "report": true,
+      "recipient": "http://localhost:3000/api",
+      "interval": 2,
+      "console": false
+    }
+  }
+}

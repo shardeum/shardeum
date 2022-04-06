@@ -1,7 +1,6 @@
 import fs from 'fs'
 import path from 'path'
 import merge from 'deepmerge'
-import { version } from '../../package.json'
 
 const overwriteMerge = (target, source, options) => source
 
@@ -129,19 +128,6 @@ config = merge(
         fakeNetworkDelay: 0,
         disableSnapshots: false,
         countEndpointStart: -1
-      }
-    }
-  },
-  { arrayMerge: overwriteMerge }
-)
-
-// app related config to pass through
-config = merge(
-  config,
-  {
-    server: {
-      appSetting: {
-        version
       }
     }
   },

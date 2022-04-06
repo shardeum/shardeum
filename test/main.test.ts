@@ -14,7 +14,7 @@ let accounts = []
 const network = '0'.repeat(64)
 
 const opts = { shell: true }
-const spamClientDir = join(__dirname, '../../spam-client') // spam-client repo path
+const SPAM_CLIENT_DIR = join(__dirname, '../../spam-client') // spam-client repo path
 
 describe('Smoke Testing to the Shardeum Network', () => {
 
@@ -32,7 +32,7 @@ describe('Smoke Testing to the Shardeum Network', () => {
             } catch (e) {
                 console.log('Unable to remove instances folder')
             }
-            execa.commandSync(`shardus create --no-log-rotation  ${START_NETWORK_SIZE}`) // start 2 times of minNode
+            execa.commandSync(`shardus create --no-log-rotation  ${START_NETWORK_SIZE}`, { ...opts, stdio: [0, 1, 2] })
             const isNetworkActive = await utils.waitForNetworkToBeActive(START_NETWORK_SIZE)
             expect(isNetworkActive).toBe(true)
         }
@@ -55,10 +55,10 @@ describe('Smoke Testing to the Shardeum Network', () => {
         console.log('Spamming the network ...')
 
         let spamCommand = `npx hardhat load_test --type eth_transfer --tps ${nodeCount * 2} --duration ${durationSecond} --eoa ${nodeCount * 50} --validate true`
-        // const { stdout, stderr } = await execa.command(`cd ${spamClientDir} && `, opts)
+        // const { stdout, stderr } = await execa.command(`cd ${SPAM_CLIENT_DIR} && ls `, opts)
         // console.log(stdout, stderr)
         // execa.command('ls').stdout.pipe(process.stdout)
-        execa.commandSync(`cd ${spamClientDir} && ${spamCommand}`, { ...opts, stdio: [0, 1, 2] })
+        execa.commandSync(`cd ${SPAM_CLIENT_DIR} && ${spamCommand}`, { ...opts, stdio: [0, 1, 2] })
         await utils._sleep(durationMiliSecond + 10000) // extra 10s for processing pending txs in the queue
 
         let report = await utils.queryLatestReport()
@@ -73,11 +73,41 @@ describe('Smoke Testing to the Shardeum Network', () => {
     it('Data is correctly synced across the nodes', async () => {
         console.log('TEST: Data is correctly synced across the nodes')
         let result = await utils.getInsyncAll()
-        // console.log(result)
         const in_sync = result.in_sync === START_NETWORK_SIZE
         const out_sync = result.out_sync === 0
         expect(in_sync).toBe(true)
         expect(out_sync).toBe(true)
+    })
+
+    test('Start new archivers successfully', async () => {
+        console.log('TEST: Start new archivers successfully')
+
+        try {
+            execa.commandSync('shardus-network start --archivers 1', { ...opts, stdio: [0, 1, 2] })
+        } catch (e) {
+            console.log(e)
+        }
+        let hasNewArchiverJoined = await utils.waitForArchiverToJoin('localhost', 4001)
+
+        expect(hasNewArchiverJoined).toBe(true)
+    })
+
+    test('New archivers sync archived data successfully', async () => {
+        console.log('TEST: New archivers sync archived data successfully')
+        await utils._sleep(60000) // needs to wait while new archiver is syncing data
+
+        const dataFromArchiver_1 = await utils.queryArchivedCycles('localhost', 4000, 5)
+        const dataFromArchiver_2 = await utils.queryArchivedCycles('localhost', 4001, 5)
+        let hasSameData = true
+        for (let i = 0; i < dataFromArchiver_1.length; i++) {
+            let data1 = dataFromArchiver_1[i]
+            let data2 = dataFromArchiver_2[i]
+            let isSame = JSON.stringify(data1) === JSON.stringify(data2)
+            if (!isSame) {
+                hasSameData = isSame
+            }
+        }
+        expect(hasSameData).toBe(true)
     })
 
 

@@ -16,7 +16,7 @@
     "pretest": "npm run compile",
     "posttest": "",
     "dbg": "shardus start 3 && shardus stop && rm -rf instances/",
-    "test": "jest --detectOpenHandles --useStderr",
+    "test": "jest --detectOpenHandles --useStderr --coverage",
     "update-template": "node scripts/update-template.js",
     "build-docker-dev": "docker build -f dev.Dockerfile -t registry.gitlab.com/shardeum/server:dev .",
     "push-docker-dev": "docker push registry.gitlab.com/shardeum/server:dev",
