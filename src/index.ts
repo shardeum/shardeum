@@ -2165,10 +2165,18 @@ shardus.setup({
       // Add to results
       const wrapped = WrappedEVMAccountFunctions._shardusWrappedAccount(wrappedEVMAccount)
       results.push(wrapped)
+
+      // we can't exit early. this is hard on perf
+      // This data needs to eventually live in a DB and then the sort and max records will be natural.
+
       // Return results early if maxRecords reached
-      if (results.length >= maxRecords) return results
+      // if (results.length >= maxRecords) return results
     }
-    return results
+    //critical to sort by timestamp before we cull max records
+    results.sort((a, b) => a.timestamp - b.timestamp)
+    let finalResults = results.slice(0, maxRecords)
+
+    return finalResults
   },
   calculateAccountHash(wrappedEVMAccount: WrappedEVMAccount) {
     return WrappedEVMAccountFunctions._calculateAccountHash(wrappedEVMAccount)
@@ -2279,6 +2287,14 @@ if (ShardeumFlags.GlobalNetworkAccount) {
         nodeId = shardus.getNodeId()
         node = shardus.getNode(nodeId)
         nodeAddress = node.address
+
+        // wait for rewards 
+        let latestCycles = shardus.getLatestCycles()
+        if(latestCycles != null && latestCycles.length > 0 && latestCycles[0].counter < 10){
+          shardus.log(`Too early for node reward: ${latestCycles[0].counter}`)
+          return setTimeout(networkMaintenance, 100)
+        }
+
       } catch (err) {
         shardus.log('ERR: ', err)
         console.log('ERR: ', err)
@@ -2300,7 +2316,7 @@ if (ShardeumFlags.GlobalNetworkAccount) {
             timestamp: Date.now(),
           }
           shardus.put(tx)
-          shardus.log('GENERATED_NODE_REWARD: ', nodeId)
+          shardus.log('GENERATED_NODE_REWARD: ', nodeId, tx.to)
           lastReward = currentTime
         }
 
