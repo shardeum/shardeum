@@ -79,8 +79,8 @@ config = merge(config, {
       minNodesToAllowTxs: 1,
       minNodes: 2000,
       maxNodes: 2000,
-      maxJoinedPerCycle: 2,
-      maxSyncingPerCycle: 4,
+      maxJoinedPerCycle: 6,
+      maxSyncingPerCycle: 12,
       maxRotatedPerCycle: 1,
       firstCycleJoin: 10
     }
