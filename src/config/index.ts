@@ -111,7 +111,7 @@ config = merge(config, {
 config = merge(config, {
   server: {
     sharding: {
-      nodesPerConsensusGroup: 30
+      nodesPerConsensusGroup: 5
     }
   }
 })
