@@ -30,4 +30,4 @@ RUN npm set unsafe-perm true
 RUN npm install
 
 # Define run command
-CMD [ "node", "dist/index.js" ]
+CMD [ "node", "dist/src/index.js" ]
