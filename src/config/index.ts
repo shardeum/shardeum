@@ -80,7 +80,7 @@ config = merge(config, {
       minNodes: 2000,
       maxNodes: 2000,
       maxJoinedPerCycle: 6,
-      maxSyncingPerCycle: 12,
+      maxSyncingPerCycle: 6, 
       maxRotatedPerCycle: 1,
       firstCycleJoin: 10
     }
