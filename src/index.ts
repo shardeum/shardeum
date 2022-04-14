@@ -58,7 +58,7 @@ export const ONE_DAY = 24 * ONE_HOUR
 export const INITIAL_PARAMETERS: NetworkParameters = {
   title: 'Initial parameters',
   description: 'These are the initial network parameters Shardeum started with',
-  nodeRewardInterval: ONE_MINUTE * 10, // 10 minutes for testing
+  nodeRewardInterval: ONE_MINUTE, // 10 minutes for testing
   nodeRewardAmount: 1,
   nodePenalty: 10,
   stakeRequired: 5,
@@ -72,6 +72,11 @@ const shardus = shardusFactory(config)
 const random_wallet = Wallet.generate()
 const pay_address = random_wallet.getAddressString()
 console.log('Pay Address', pay_address, isValidAddress(pay_address))
+
+let nodeRewardTracker = {
+  nodeRewardsCount: 0,
+}
+
 
 /***
  *    ######## ##     ## ##     ##    #### ##    ## #### ########
@@ -858,6 +863,26 @@ shardus.registerExternalGet('accounts', async (req, res) => {
   res.json({ accounts: sorted })
 })
 
+shardus.registerExternalGet('nodeRewardValidate', async (req, res) => {
+  const oneEth = new BN(10).pow(new BN(18))
+  const expectedBalance = parseInt(oneEth.mul(new BN(nodeRewardTracker.nodeRewardsCount)).toString()) + parseInt(oneEth.mul(new BN(100)).toString())
+  const shardusAddress = toShardusAddress(pay_address, AccountType.Account)
+  const account = accounts[shardusAddress]
+  // const account = await shardus.getLocalOrRemoteAccount(shardusAddress)
+  if (!account || !account.account) {
+    console.log(`Pay address ${pay_address} is not found!`)
+    return res.json({ success: false, data: `Pay address ${pay_address} is not found!` })
+  }
+  // let data = account.account
+  fixDeserializedWrappedEVMAccount(account)
+  let readableAccount = await getReadableAccountInfo(account)
+  console.log(expectedBalance, readableAccount.balance)
+  if (expectedBalance === parseInt(readableAccount.balance)) {
+    return res.json({ success: true, data: 'Node reward is adding successfully!' })
+  }
+  return res.json({ success: false, data: `Pay address ${pay_address} balance and Node reward amount does not match!` })
+})
+
 /***
  *    #### ##    ## ######## ######## ########  ##    ##    ###    ##          ######## ##     ##
  *     ##  ###   ##    ##    ##       ##     ## ###   ##   ## ##   ##             ##     ##   ##
@@ -1169,7 +1194,7 @@ shardus.setup({
         await sleep(ONE_SECOND * 5)
 
         const nodeId = shardus.getNodeId()
-        const address = shardus.getNode(nodeId).address
+        const nodeInfo = shardus.getNode(nodeId)
         // const when = Date.now() + configs.ONE_SECOND * 10
         const when = Date.now()
         const existingNetworkAccount = await shardus.getLocalOrRemoteAccount(networkAccount)
@@ -2307,6 +2332,7 @@ if (ShardeumFlags.GlobalNetworkAccount) {
       // THIS IS FOR NODE_REWARD
       if (ShardeumFlags.NodeReward) {
         if (currentTime - lastReward > network.current.nodeRewardInterval) {
+          nodeRewardTracker.nodeRewardsCount++
           const tx = {
             isInternalTx: true,
             internalTXType: InternalTXType.NodeReward,

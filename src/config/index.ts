@@ -77,11 +77,11 @@ config = merge(config, {
     p2p: {
       cycleDuration: 60,
       minNodesToAllowTxs: 1,
-      minNodes: 2000,
+      minNodes: process.env.minNodes ? parseInt(process.env.minNodes) : 2000,
       maxNodes: 2000,
       maxJoinedPerCycle: 6,
       maxSyncingPerCycle: 6, 
-      maxRotatedPerCycle: 1,
+      maxRotatedPerCycle: process.env.maxRotatedPerCycle ? parseInt(process.env.maxRotatedPerCycle) : 1,
       firstCycleJoin: 10
     }
   }
@@ -111,7 +111,7 @@ config = merge(config, {
 config = merge(config, {
   server: {
     sharding: {
-      nodesPerConsensusGroup: 5
+      nodesPerConsensusGroup: process.env.nodesPerConsensusGroup ? parseInt(process.env.nodesPerConsensusGroup) : 10
     }
   }
 })

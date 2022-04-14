@@ -39,7 +39,7 @@ describe('Smoke Testing to the Shardeum Network', () => {
     })
 
 
-    it('Process txs at the rate of 2 txs per node/per second for 1 min', async () => {
+    it('Process eth transfer txs at the rate of 2 txs per node/per second for 1 min', async () => {
         console.log('TEST: Process txs at the rate of 2 txs per node/per second for 1 min')
 
         const activeNodes = await utils.queryActiveNodes()
@@ -69,6 +69,38 @@ describe('Smoke Testing to the Shardeum Network', () => {
         // TBC: rejected should be less than 3% of total injected 
         expect(report.totalRejected).toBeLessThanOrEqual(report.totalInjected * 0.03)
     })
+
+    it('Process token transfer txs of 5 ERC20 contracts at the rate of 2 txs per node/per second for 1 min', async () => {
+        console.log('TEST: Process txs at the rate of 2 txs per node/per second for 1 min')
+
+        const activeNodes = await utils.queryActiveNodes()
+        const nodeCount = Object.keys(activeNodes).length
+        const durationMinute = 1
+        const durationSecond = 60 * durationMinute
+        // const durationSecond = 10
+        const durationMiliSecond = 1000 * durationSecond
+
+        // await utils.resetReport()
+        await utils._sleep(10000) // need to wait monitor-server to collect active nodes after reset
+
+        console.log('Spamming the network ...')
+
+        let spamCommand = `npx hardhat load_test --type token_transfer --tps ${nodeCount * 2} --duration ${durationSecond} --contracts 5 --eoa ${nodeCount * 50} --validate true --deploytps 1`
+        // const { stdout, stderr } = await execa.command(`cd ${SPAM_CLIENT_DIR} && ls `, opts)
+        // console.log(stdout, stderr)
+        // execa.command('ls').stdout.pipe(process.stdout)
+        execa.commandSync(`cd ${SPAM_CLIENT_DIR} && ${spamCommand}`, { ...opts, stdio: [0, 1, 2] })
+        await utils._sleep(durationMiliSecond + 10000) // extra 10s for processing pending txs in the queue
+
+        let report = await utils.queryLatestReport()
+        let processedRatio = report.totalProcessed / report.totalInjected
+
+        // TBC: process / injected ratio should be 80% or more
+        expect(processedRatio).toBeGreaterThanOrEqual(0.8)
+        // TBC: rejected should be less than 3% of total injected 
+        expect(report.totalRejected).toBeLessThanOrEqual(report.totalInjected * 0.03)
+    })
+
 
     it('Data is correctly synced across the nodes', async () => {
         console.log('TEST: Data is correctly synced across the nodes')

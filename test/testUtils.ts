@@ -5,99 +5,117 @@ export const ARCHIVER_HOST = 'localhost:4000'
 export const MONITOR_HOST = 'localhost:3000'
 
 export async function _sleep(ms = 0): Promise<NodeJS.Timeout> {
-    return new Promise(resolve => setTimeout(resolve, ms))
+  return new Promise(resolve => setTimeout(resolve, ms))
 }
 
 export async function queryActiveNodes() {
-    const res = await axios.get(`http://${MONITOR_HOST}/api/report`)
-    if (res.data.nodes.active) return res.data.nodes.active
-    else return null
+  const res = await axios.get(`http://${MONITOR_HOST}/api/report`)
+  if (res.data.nodes.active) return res.data.nodes.active
+  else return null
 }
 
 export async function queryLatestReport() {
-    const res = await axios.get(`http://${MONITOR_HOST}/api/report`)
-    if (res.data.nodes.active) return res.data
-    else return null
+  const res = await axios.get(`http://${MONITOR_HOST}/api/report`)
+  if (res.data.nodes.active) return res.data
+  else return null
 }
 
 export async function resetReport() {
-    const res = await axios.get(`http://${MONITOR_HOST}/api/flush`)
-    return res.data
+  const res = await axios.get(`http://${MONITOR_HOST}/api/flush`)
+  return res.data
 }
 
 export async function queryLatestCycleRecordFromArchiver() {
-    const res = await axios.get(`http://${ARCHIVER_HOST}/cycleinfo/1`)
-    if (res.data.cycleInfo.length > 0) return res.data.cycleInfo[0]
-    else return null
+  const res = await axios.get(`http://${ARCHIVER_HOST}/cycleinfo/1`)
+  if (res.data.cycleInfo.length > 0) return res.data.cycleInfo[0]
+  else return null
 }
 
 export async function queryArchivedCycles(ip, port, count) {
-    const res = await axios.get(`http://${ip}:${port}/full-archive/${count}`)
-    return res.data.archivedCycles
+  const res = await axios.get(`http://${ip}:${port}/full-archive/${count}`)
+  return res.data.archivedCycles
 }
 
 export async function waitForNetworkToBeActive(numberOfExpectedNodes) {
-    let ready = false
-    await _sleep(60000) // wait for 1 minute
-    let attempt = 0
-    while (!ready) {
-        try {
-            let activeNodes = await queryActiveNodes()
-            if (activeNodes) {
-                if (Object.keys(activeNodes).length >= numberOfExpectedNodes) ready = true
-            }
-        } catch (e) {
-            console.log(e)
-        }
-        if (!ready) await _sleep(10000)
-        if (attempt === numberOfExpectedNodes * 3) break  // 3 attempts is in one cycle, total cycle is number of Nodes
-        attempt++
+  let ready = false
+  await _sleep(60000) // wait for 1 minute
+  let attempt = 0
+  while (!ready) {
+    try {
+      let activeNodes = await queryActiveNodes()
+      if (activeNodes) {
+        if (Object.keys(activeNodes).length >= numberOfExpectedNodes) ready = true
+      }
+    } catch (e) {
+      console.log(e)
     }
-    return ready
+    if (!ready) await _sleep(10000)
+    if (attempt === numberOfExpectedNodes * 3) break // 3 attempts is in one cycle, total cycle is number of Nodes
+    attempt++
+  }
+  return ready
 }
 
 export async function waitForArchiverToJoin(ip, port) {
-    let ready = false
+  let ready = false
 
-    while (!ready) {
-        try {
-            let cycleRecord = await queryLatestCycleRecordFromArchiver()
-            let newArchiver = cycleRecord.joinedArchivers[0]
-            if (newArchiver) {
-                if (newArchiver.ip === ip && newArchiver.port === port) ready = true
-            }
-        } catch (e) {
-            console.log("error while checking new archiver to join", e.message)
-        }
-        if (!ready) await _sleep(10000)
+  while (!ready) {
+    try {
+      let cycleRecord = await queryLatestCycleRecordFromArchiver()
+      let newArchiver = cycleRecord.joinedArchivers[0]
+      if (newArchiver) {
+        if (newArchiver.ip === ip && newArchiver.port === port) ready = true
+      }
+    } catch (e) {
+      console.log('error while checking new archiver to join', e.message)
     }
-    return true
+    if (!ready) await _sleep(10000)
+  }
+  return true
 }
 
 export async function getInsyncAll() {
-    let result = await axios.get(`http://${HOST}/get-tree-last-insync-all`)
-    let lines = result.data.split('\n')
-    let in_sync = 0
-    let out_sync = 0
-    let outOfSyncNodes = []
-    for (let line of lines) {
-        line = line.trim()
-        if (line.includes('inSync')) {
-            let isInSync = line.split(' ')[1] === 'true'
-            let host = line.split(' ')[3]
-            if (isInSync)
-                in_sync += 1
-            else {
-                out_sync += 1
-                outOfSyncNodes.push(host)
-            }
-        }
+  const activeNodes = await queryActiveNodes()
+  const activeNodeList: any = Object.values(activeNodes)
+  const host = activeNodeList[0].nodeIpInfo.externalIp + ':' + activeNodeList[0].nodeIpInfo.externalPort
+  let result = await axios.get(`http://${host}/get-tree-last-insync-all`)
+  let lines = result.data.split('\n')
+  let in_sync = 0
+  let out_sync = 0
+  let outOfSyncNodes = []
+  for (let line of lines) {
+    line = line.trim()
+    if (line.includes('inSync')) {
+      let isInSync = line.split(' ')[1] === 'true'
+      let host = line.split(' ')[3]
+      if (isInSync) in_sync += 1
+      else {
+        out_sync += 1
+        outOfSyncNodes.push(host)
+      }
     }
-    return {
-        in_sync,
-        out_sync,
-        outOfSyncNodes
+  }
+  return {
+    in_sync,
+    out_sync,
+    outOfSyncNodes,
+  }
+}
+
+export async function nodeRewardsCheck() {
+  const activeNodes = await queryActiveNodes()
+  const activeNodeList: any = Object.values(activeNodes)
+  for (let i = 0; i < activeNodeList.length; i++) {
+    const host = activeNodeList[i].nodeIpInfo.externalIp + ':' + activeNodeList[i].nodeIpInfo.externalPort
+    let result = await axios.get(`http://${host}/nodeRewardValidate`)
+    if (!result.data.success) {
+      return false
     }
+  }
+  if (activeNodeList.length > 0) {
+    return true
+  }
+  return false
 }
 
 // Check if two objects are equal; comparing to the deep down
