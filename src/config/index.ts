@@ -77,10 +77,10 @@ config = merge(config, {
     p2p: {
       cycleDuration: 60,
       minNodesToAllowTxs: 1,
-      minNodes: process.env.minNodes ? parseInt(process.env.minNodes) : 2000,
+      minNodes: process.env.minNodes ? parseInt(process.env.minNodes) : 10,
       maxNodes: 2000,
       maxJoinedPerCycle: 6,
-      maxSyncingPerCycle: 6, 
+      maxSyncingPerCycle: 12, 
       maxRotatedPerCycle: process.env.maxRotatedPerCycle ? parseInt(process.env.maxRotatedPerCycle) : 1,
       firstCycleJoin: 10
     }
@@ -111,7 +111,7 @@ config = merge(config, {
 config = merge(config, {
   server: {
     sharding: {
-      nodesPerConsensusGroup: process.env.nodesPerConsensusGroup ? parseInt(process.env.nodesPerConsensusGroup) : 10
+      nodesPerConsensusGroup: process.env.nodesPerConsensusGroup ? parseInt(process.env.nodesPerConsensusGroup) : 20
     }
   }
 })
@@ -121,7 +121,7 @@ config = merge(
   config,
   {
     server: {
-      mode: 'debug',
+      mode: 'release', //TODO must set this to release for public networks or get security on endpoints
       debug: {
         startInFatalsLogMode: false, // true setting good for big aws test with nodes joining under stress.
         startInErrorLogMode: true,
