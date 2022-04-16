@@ -5,7 +5,7 @@ import { kill } from 'process'
 
 const opts = { shell: true }
 const SPAM_CLIENT_DIR = join(__dirname, '../../spam-client') // spam-client repo path
-const abortController = new AbortController()
+// const abortController = new AbortController()
 
 export async function waitForNetworkLoad(load, value) {
   let isCriteriaMet = false

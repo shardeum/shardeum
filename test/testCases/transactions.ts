@@ -8,15 +8,15 @@ crypto.init('69fa4195670576c0160d660c3be36556ff8d504725be8a59b5a96509e0c994bc')
 const opts = { shell: true }
 const SPAM_CLIENT_DIR = join(__dirname, '../../../spam-client') // spam-client repo path
 
-export const transactionsTest = START_NETWORK_SIZE => {
+export const transactionsTest = (START_NETWORK_SIZE, EXPECTED_ACTIVE_NODES = null) => {
   it('Process eth transfer txs at the rate of 2 txs per second for 1 min', async () => {
     console.log('TEST: Process eth transfer txs at the rate of 2 txs per second for 1 min')
 
     // const activeNodes = await utils.queryActiveNodes()
     // const nodeCount = Object.keys(activeNodes).length
-    // const durationMinute = 1
-    // const durationSecond = 60 * durationMinute
-    const durationSecond = 30
+    const durationMinute = 1
+    const durationSecond = 60 * durationMinute
+    // const durationSecond = 10
     const durationMiliSecond = 1000 * durationSecond
 
     await utils.resetReport()
@@ -45,9 +45,9 @@ export const transactionsTest = START_NETWORK_SIZE => {
 
     // const activeNodes = await utils.queryActiveNodes()
     // const nodeCount = Object.keys(activeNodes).length
-    // const durationMinute = 1
-    // const durationSecond = 60 * durationMinute
-    const durationSecond = 30
+    const durationMinute = 1
+    const durationSecond = 60 * durationMinute
+    // const durationSecond = 10
     const durationMiliSecond = 1000 * durationSecond
 
     await utils.resetReport()
@@ -74,7 +74,12 @@ export const transactionsTest = START_NETWORK_SIZE => {
   it('Data is correctly synced across the nodes', async () => {
     console.log('TEST: Data is correctly synced across the nodes')
     let result = await utils.getInsyncAll()
-    const in_sync = result.in_sync === START_NETWORK_SIZE
+    let in_sync = result.in_sync === START_NETWORK_SIZE || (EXPECTED_ACTIVE_NODES && result.in_sync === EXPECTED_ACTIVE_NODES)
+    if (!in_sync) {
+      await utils._sleep(5000)
+      result = await utils.getInsyncAll()
+      in_sync = result.in_sync === START_NETWORK_SIZE || (EXPECTED_ACTIVE_NODES && result.in_sync === EXPECTED_ACTIVE_NODES)
+    }
     const out_sync = result.out_sync === 0
     expect(in_sync).toBe(true)
     expect(out_sync).toBe(true)
