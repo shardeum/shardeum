@@ -58,7 +58,7 @@ export const ONE_DAY = 24 * ONE_HOUR
 export const INITIAL_PARAMETERS: NetworkParameters = {
   title: 'Initial parameters',
   description: 'These are the initial network parameters Shardeum started with',
-  nodeRewardInterval: ONE_MINUTE, // 10 minutes for testing
+  nodeRewardInterval: ONE_MINUTE * 10, // 10 minutes for testing
   nodeRewardAmount: 1,
   nodePenalty: 10,
   stakeRequired: 5,
@@ -104,6 +104,8 @@ let shardusAddressToEVMAccountInfo = new Map<string, EVMAccountInfo>()
 interface RunStateWithLogs extends RunState {
   logs?: []
 }
+
+let transactionFailHashMap: any = {}
 
 /***
  *     ######     ###    ##       ##       ########     ###     ######  ##    ##  ######
@@ -616,6 +618,9 @@ shardus.registerExternalGet('account/:address', async (req, res) => {
       const id = req.params['address']
       const shardusAddress = toShardusAddress(id, AccountType.Account)
       const account = await shardus.getLocalOrRemoteAccount(shardusAddress)
+      if (!account) {
+        return res.json({ account: null })
+      }
       let data = account.data
       fixDeserializedWrappedEVMAccount(data)
       let readableAccount = await getReadableAccountInfo(data)
@@ -706,51 +711,65 @@ shardus.registerExternalGet('account/:address', async (req, res) => {
 shardus.registerExternalPost('contract/call', async (req, res) => {
   try {
     const callObj = req.body
+    if (ShardeumFlags.VerboseLogs) console.log('callObj', callObj)
     let opt = {
       to: Address.fromString(callObj.to),
       caller: Address.fromString(callObj.from),
       origin: Address.fromString(callObj.from), // The tx.origin is also the caller here
       data: toBuffer(callObj.data),
     }
+    if (callObj.to) {
+      opt['to'] = Address.fromString(callObj.to)
+    }
 
-    let caShardusAddress = toShardusAddress(callObj.to, AccountType.Account)
-    console.log('Calling to ', callObj.to, caShardusAddress)
-    //let callerShardusAddress = toShardusAddress(callObj.caller, AccountType.Account)
+    if (callObj.gas) {
+      opt['gasLimit'] = new BN(Number(callObj.gas))
+    }
 
-    //Overly techincal, should be ported back into SGS as a utility
-    let address = caShardusAddress
-    let ourNodeShardData = shardus.stateManager.currentCycleShardData.nodeShardData
-    let minP = ourNodeShardData.consensusStartPartition
-    let maxP = ourNodeShardData.consensusEndPartition
-    // HOMENODEMATHS this seems good.  making sure our node covers this partition
-    let { homePartition } = __ShardFunctions.addressToPartition(shardus.stateManager.currentCycleShardData.shardGlobals, address)
-    let accountIsRemote = __ShardFunctions.partitionInWrappingRange(homePartition, minP, maxP) === false
-    if (accountIsRemote) {
-      let homeNode = __ShardFunctions.findHomeNode(
-        shardus.stateManager.currentCycleShardData.shardGlobals,
-        address,
-        shardus.stateManager.currentCycleShardData.parititionShardDataMap
-      )
-      if (ShardeumFlags.VerboseLogs) console.log(`Node is in remote shard: ${homeNode?.node.externalIp}:${homeNode?.node.externalPort}`)
-      if (homeNode != null && homeNode.node != null) {
-        if (ShardeumFlags.VerboseLogs) console.log(`Node is in remote shard: requesting`)
-        let node = homeNode.node
+    if (callObj.gasPrice) {
+      opt['gasPrice'] = callObj.gasPrice
+    }
 
-        let postResp = await _internalHackPostWithResp(`${node.externalIp}:${node.externalPort}/contract/call`, callObj)
-        if (postResp.body != null && postResp.body != '') {
-          //getResp.body
+    if (opt['to']) {
+      let caShardusAddress = toShardusAddress(callObj.to, AccountType.Account)
+      console.log('Calling to ', callObj.to, caShardusAddress)
+      //let callerShardusAddress = toShardusAddress(callObj.caller, AccountType.Account)
 
-          if (ShardeumFlags.VerboseLogs) console.log(`Node is in remote shard: gotResp:${JSON.stringify(postResp.body)}`)
-          //res.json({ result: callResult.execResult.returnValue.toString('hex') })
-          //return res.json({ result: '0x' + postResp.body })   //I think the 0x is worse?
-          return res.json({ result: postResp.body.result })
+      //Overly techincal, should be ported back into SGS as a utility
+      let address = caShardusAddress
+      let ourNodeShardData = shardus.stateManager.currentCycleShardData.nodeShardData
+      let minP = ourNodeShardData.consensusStartPartition
+      let maxP = ourNodeShardData.consensusEndPartition
+      // HOMENODEMATHS this seems good.  making sure our node covers this partition
+      let { homePartition } = __ShardFunctions.addressToPartition(shardus.stateManager.currentCycleShardData.shardGlobals, address)
+      let accountIsRemote = __ShardFunctions.partitionInWrappingRange(homePartition, minP, maxP) === false
+      if (accountIsRemote) {
+        let homeNode = __ShardFunctions.findHomeNode(
+          shardus.stateManager.currentCycleShardData.shardGlobals,
+          address,
+          shardus.stateManager.currentCycleShardData.parititionShardDataMap
+        )
+        if (ShardeumFlags.VerboseLogs) console.log(`Node is in remote shard: ${homeNode?.node.externalIp}:${homeNode?.node.externalPort}`)
+        if (homeNode != null && homeNode.node != null) {
+          if (ShardeumFlags.VerboseLogs) console.log(`Node is in remote shard: requesting`)
+          let node = homeNode.node
+
+          let postResp = await _internalHackPostWithResp(`${node.externalIp}:${node.externalPort}/contract/call`, callObj)
+          if (postResp.body != null && postResp.body != '') {
+            //getResp.body
+
+            if (ShardeumFlags.VerboseLogs) console.log(`Node is in remote shard: gotResp:${JSON.stringify(postResp.body)}`)
+            //res.json({ result: callResult.execResult.returnValue.toString('hex') })
+            //return res.json({ result: '0x' + postResp.body })   //I think the 0x is worse?
+            return res.json({ result: postResp.body.result })
+          }
+        } else {
+          if (ShardeumFlags.VerboseLogs) console.log(`Node is in remote shard: homenode = null`)
+          return res.json({ result: null })
         }
       } else {
-        if (ShardeumFlags.VerboseLogs) console.log(`Node is in remote shard: homenode = null`)
-        return res.json({ result: null })
+        if (ShardeumFlags.VerboseLogs) console.log(`Node is in remote shard: false`)
       }
-    } else {
-      if (ShardeumFlags.VerboseLogs) console.log(`Node is in remote shard: false`)
     }
     let debugTXState = getDebugTXState() //this isn't so great..
 
@@ -760,16 +779,23 @@ shardus.registerExternalPost('contract/call', async (req, res) => {
     // fixDeserializedWrappedEVMAccount(wrappedEVMAccount)
     // //let callerEthaddress = Address.fromString(wrappedEVMAccount.ethAddress)
     // debugTXState.insertFirstAccountReads(opt.caller, wrappedEVMAccount.account)
+    let callerAddress = toShardusAddress(callObj.from, AccountType.Account)
+    if (!accounts[callerAddress]) {
+      if (ShardeumFlags.VerboseLogs) console.log('callerAddress', accounts[callerAddress])
+      // fixDeserializedWrappedEVMAccount(accounts[callerAddress])
+      debugTXState.insertFirstAccountReads(opt.caller, accounts[callerAddress].account)
+      shardeumStateManager.setTransactionState(debugTXState)
+    } else {
+      const oneEth = new BN(10).pow(new BN(18))
+      const acctData = {
+        nonce: 0,
+        balance: oneEth.mul(new BN(100)), // 100 eth
+      }
+      const fakeAccount = Account.fromAccountData(acctData)
+      debugTXState.insertFirstAccountReads(opt.caller, fakeAccount)
 
-    const oneEth = new BN(10).pow(new BN(18))
-    const acctData = {
-      nonce: 0,
-      balance: oneEth.mul(new BN(100)), // 100 eth
+      shardeumStateManager.setTransactionState(debugTXState)
     }
-    const fakeAccount = Account.fromAccountData(acctData)
-    debugTXState.insertFirstAccountReads(opt.caller, fakeAccount)
-
-    shardeumStateManager.setTransactionState(debugTXState)
 
     const callResult = await EVM.runCall(opt)
     if (ShardeumFlags.VerboseLogs) console.log('Call Result', callResult.execResult.returnValue.toString('hex'))
@@ -793,6 +819,10 @@ shardus.registerExternalGet('tx/:hash', async (req, res) => {
     const shardusAddress = toShardusAddressWithKey(txHash, '', AccountType.Receipt)
     const account = await shardus.getLocalOrRemoteAccount(shardusAddress)
     if (!account || !account.data) {
+      if (transactionFailHashMap[txHash]) {
+        console.log(`Tx Hash ${txHash} is found in the failed transactions list`, transactionFailHashMap[txHash])
+        return res.json({ account: transactionFailHashMap[txHash] })
+      }
       console.log(`No tx found for ${shardusAddress}`, accounts[shardusAddress])
       return res.json({ account: null })
     }
@@ -1392,6 +1422,33 @@ shardus.setup({
       // const runTxResult = await EVM.runTx({tx: transaction, skipNonce: true, skipBlockGasLimitValidation: true})
       const runTxResult: RunTxResult = await EVM.runTx({ tx: transaction, skipNonce: true })
       if (runTxResult.execResult.exceptionError) {
+        let readableReceipt: ReadableReceipt = {
+          status: false,
+          transactionHash: ethTxId,
+          transactionIndex: '0x1',
+          blockNumber: '0xb',
+          nonce: transaction.nonce.toString('hex'),
+          blockHash: '0xc6ef2fc5426d6ad6fd9e2a26abeab0aa2411b7ab17f30a99d3cb96aed1d1055b',
+          cumulativeGasUsed: '0x' + runTxResult.gasUsed.toString('hex'),
+          gasUsed: '0x' + runTxResult.gasUsed.toString('hex'),
+          logs: null,
+          contractAddress: runTxResult.createdAddress ? runTxResult.createdAddress.toString() : null,
+          from: transaction.getSenderAddress().toString(),
+          to: transaction.to ? transaction.to.toString() : '',
+          value: transaction.value.toString('hex'),
+          data: '0x' + transaction.data.toString('hex'),
+        }
+        let wrappedFailReceiptAccount: WrappedEVMAccount = {
+          timestamp: txTimestamp,
+          ethAddress: ethTxId, //.slice(0, 42),  I think the full 32byte TX should be fine now that toShardusAddress understands account type
+          hash: '',
+          receipt: runTxResult.receipt,
+          readableReceipt,
+          txId,
+          accountType: AccountType.Receipt,
+          txFrom: transaction.getSenderAddress().toString(),
+        }
+        transactionFailHashMap[ethTxId] = wrappedFailReceiptAccount
         throw new Error(`invalid transaction, reason: ${reason}. tx: ${JSON.stringify(tx)}`)
       }
       if (ShardeumFlags.VerboseLogs) console.log('DBG', 'applied tx', txId, runTxResult)
@@ -1592,6 +1649,47 @@ shardus.setup({
         shardus.applyResponseAddChangedAccount(applyResponse, wrappedChangedAccount.accountId, wrappedChangedAccount, txId, wrappedChangedAccount.timestamp)
       }
     } catch (e) {
+      if (!transactionFailHashMap[ethTxId]) {
+        let txSenderEvmAddr = transaction.getSenderAddress().toString()
+
+        let hack0Nonce = new BN(0)
+        let caAddrBuf = predictContractAddressDirect(txSenderEvmAddr, hack0Nonce)
+
+        let caAddr = '0x' + caAddrBuf.toString('hex')
+
+        let shardusAddr = toShardusAddress(caAddr, AccountType.Account)
+        // otherAccountKeys.push(shardusAddr)
+        // shardusAddressToEVMAccountInfo.set(shardusAddr, { evmAddress: caAddr, type: AccountType.Account })
+
+        if (ShardeumFlags.VerboseLogs) console.log('Predicting contract account address:', caAddr, shardusAddr)
+        let readableReceipt: ReadableReceipt = {
+          status: false,
+          transactionHash: ethTxId,
+          transactionIndex: '0x1',
+          blockNumber: '0xb',
+          nonce: transaction.nonce.toString('hex'),
+          blockHash: '0xc6ef2fc5426d6ad6fd9e2a26abeab0aa2411b7ab17f30a99d3cb96aed1d1055b',
+          cumulativeGasUsed: '0x',
+          logs: null,
+          gasUsed: '0x',
+          contractAddress: caAddr,
+          from: transaction.getSenderAddress().toString(),
+          to: transaction.to ? transaction.to.toString() : '',
+          value: transaction.value.toString('hex'),
+          data: '0x',
+        }
+        let wrappedFailReceiptAccount: WrappedEVMAccount = {
+          timestamp: txTimestamp,
+          ethAddress: ethTxId, //.slice(0, 42),  I think the full 32byte TX should be fine now that toShardusAddress understands account type
+          hash: '',
+          // receipt: runTxResult.receipt,
+          readableReceipt,
+          txId,
+          accountType: AccountType.Receipt,
+          txFrom: transaction.getSenderAddress().toString(),
+        }
+        transactionFailHashMap[ethTxId] = wrappedFailReceiptAccount
+      }
       shardus.log('Unable to apply transaction', e)
       if (ShardeumFlags.VerboseLogs) console.log('Unable to apply transaction', txId, e)
       shardeumStateManager.unsetTransactionState()
@@ -2315,7 +2413,7 @@ if (ShardeumFlags.GlobalNetworkAccount) {
 
         // wait for rewards 
         let latestCycles = shardus.getLatestCycles()
-        if(latestCycles != null && latestCycles.length > 0 && latestCycles[0].counter < 10){
+        if (latestCycles != null && latestCycles.length > 0 && latestCycles[0].counter < 10) {
           shardus.log(`Too early for node reward: ${latestCycles[0].counter}`)
           return setTimeout(networkMaintenance, 100)
         }
