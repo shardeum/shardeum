@@ -11,3 +11,4 @@ export let Virtual0Address = true
 export let GlobalNetworkAccount = true
 export let NodeReward = NodeRewardENV || true
 export let SelfTest = false
+export let ServicePointsPerSecond = 100 //service function points per second

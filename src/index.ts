@@ -78,6 +78,51 @@ let nodeRewardTracker = {
 }
 
 
+function isDebugMode(){
+  //@ts-ignore
+  return config.mode === "debug"
+}
+
+
+const pointsAverageInterval = 2 // seconds
+
+let servicePointSpendHistory:{points:number, ts:number}[] = []
+
+/**
+ * Allows us to attempt to spend points.  We have ShardeumFlags.ServicePointsPerSecond 
+ * that can be spent as a total bucket
+ * @param points 
+ * @returns 
+ */
+function trySpendServicePoints(points:number) : boolean {
+  let nowTs = Date.now()
+  let maxAge = 1000 * pointsAverageInterval
+  let maxAllowedPoints = ShardeumFlags.ServicePointsPerSecond * pointsAverageInterval
+  let totalPoints = 0
+  //remove old entries, count points
+  for(let i=servicePointSpendHistory.length-1; i>=0; i-- ){
+    let entry = servicePointSpendHistory[i]
+    let age = nowTs - entry.ts
+    //if the element is too old remove it
+    if(age > maxAge){
+      servicePointSpendHistory.pop()
+    } else {
+      totalPoints += entry.points
+    }
+  }
+
+  //is the new operation too expensive?
+  if(totalPoints + points > maxAllowedPoints){
+    return false
+  }
+
+  //Add new entry to array
+  let newEntry = {points, ts:nowTs}
+  servicePointSpendHistory.unshift(newEntry)
+
+  return true
+}
+
 /***
  *    ######## ##     ## ##     ##    #### ##    ## #### ########
  *    ##       ##     ## ###   ###     ##  ###   ##  ##     ##
@@ -507,6 +552,9 @@ async function _internalHackPostWithResp(url: string, body: any) {
  *    ######## ##    ## ########  ##         #######  #### ##    ##    ##     ######
  */
 
+let isDebugMiddleware = shardus.getDebugModeMiddleware()
+
+//TODO request needs a signature and a timestamp.  or make it a real TX from a faucet account..
 //?id=<accountID>
 shardus.registerExternalGet('faucet-all', async (req, res) => {
   let id = req.query.id as string
@@ -528,12 +576,26 @@ shardus.registerExternalGet('faucet-all', async (req, res) => {
   res.end()
 })
 
+//TODO request needs a signature and a timestamp
 shardus.registerExternalGet('faucet-one', async (req, res) => {
   let id = req.query.id as string
   if (!id) return res.json({ success: false, result: 'id is not defined!' })
   if (!isValidAddress(id)) return res.json({ success: false, result: 'Address format is wrong!' })
   setupTester(id)
   return res.json({ success: true })
+})
+
+shardus.registerExternalGet('debug-points', isDebugMiddleware, async (req, res) => {
+  // if(isDebugMode()){
+  //   return res.json(`endpoint not available`)
+  // }
+
+  let points = Number(req.query.points ?? 20)
+  if(trySpendServicePoints(points) === false){
+    return res.json({error:'node busy' , points,  servicePointSpendHistory})
+  }
+
+  return res.json(`spent points: ${points}  ${JSON.stringify(servicePointSpendHistory)} `)
 })
 
 shardus.registerExternalPost('inject', async (req, res) => {
@@ -547,7 +609,12 @@ shardus.registerExternalPost('inject', async (req, res) => {
   }
 })
 
-shardus.registerExternalGet('dumpStorage', async (req, res) => {
+
+shardus.registerExternalGet('dumpStorage',isDebugMiddleware, async (req, res) => {
+  // if(isDebugMode()){
+  //   return res.json(`endpoint not available`)
+  // }
+  
   let id
   try {
     id = req.query.id as string
@@ -565,7 +632,11 @@ shardus.registerExternalGet('dumpStorage', async (req, res) => {
   }
 })
 
-shardus.registerExternalGet('dumpAddressMap', async (req, res) => {
+shardus.registerExternalGet('dumpAddressMap', isDebugMiddleware, async (req, res) => {
+  // if(isDebugMode()){
+  //   return res.json(`endpoint not available`)
+  // }
+
   let id
   try {
     //use a replacer so we get the map:
@@ -579,7 +650,11 @@ shardus.registerExternalGet('dumpAddressMap', async (req, res) => {
   }
 })
 
-shardus.registerExternalGet('dumpTransactionStateMap', async (req, res) => {
+shardus.registerExternalGet('dumpTransactionStateMap', isDebugMiddleware, async (req, res) => {
+  // if(isDebugMode()){
+  //   return res.json(`endpoint not available`)
+  // }
+
   let id
   try {
     //use a replacer so we get the map:
@@ -593,26 +668,35 @@ shardus.registerExternalGet('dumpTransactionStateMap', async (req, res) => {
   }
 })
 
-shardus.registerExternalPost('faucet', async (req, res) => {
-  let tx = req.body
-  let id = tx.address as string
-  setupTester(id)
-  try {
-    let activeNodes = shardus.p2p.state.getNodes()
-    if (activeNodes) {
-      for (let node of activeNodes.values()) {
-        _internalHackGet(`${node.externalIp}:${node.externalPort}/faucet-one?id=${id}`)
-        res.write(`${node.externalIp}:${node.externalPort}/faucet-one?id=${id}\n`)
-      }
-    }
-    res.write(`sending faucet request to all nodes\n`)
-  } catch (e) {
-    res.write(`${e}\n`)
-  }
-  res.end()
-})
+// //this is not used by the web faucet.  probably could remove it
+// shardus.registerExternalPost('faucet', async (req, res) => {
+//   if(isDebugMode()){
+//     return res.json(`endpoint not available`)
+//   }
+
+//   let tx = req.body
+//   let id = tx.address as string
+//   setupTester(id)
+//   try {
+//     let activeNodes = shardus.p2p.state.getNodes()
+//     if (activeNodes) {
+//       for (let node of activeNodes.values()) {
+//         _internalHackGet(`${node.externalIp}:${node.externalPort}/faucet-one?id=${id}`)
+//         res.write(`${node.externalIp}:${node.externalPort}/faucet-one?id=${id}\n`)
+//       }
+//     }
+//     res.write(`sending faucet request to all nodes\n`)
+//   } catch (e) {
+//     res.write(`${e}\n`)
+//   }
+//   res.end()
+// })
 
 shardus.registerExternalGet('account/:address', async (req, res) => {
+  if(trySpendServicePoints(5) === false){
+    return res.json({error:'node busy'})
+  }
+
   try {
     if (!req.query.type) {
       const id = req.params['address']
@@ -709,6 +793,13 @@ shardus.registerExternalGet('account/:address', async (req, res) => {
 // })
 
 shardus.registerExternalPost('contract/call', async (req, res) => {
+  // if(isDebugMode()){
+  //   return res.json(`endpoint not available`)
+  // }
+  if(trySpendServicePoints(5) === false){
+    return res.json({result: null, error:'node busy'})
+  }
+
   try {
     const callObj = req.body
     if (ShardeumFlags.VerboseLogs) console.log('callObj', callObj)
@@ -771,6 +862,12 @@ shardus.registerExternalPost('contract/call', async (req, res) => {
         if (ShardeumFlags.VerboseLogs) console.log(`Node is in remote shard: false`)
       }
     }
+
+    // if we are going to handle the call directly charge 20 points
+    if(trySpendServicePoints(20) === false){
+      return res.json({ result: null, error:'node busy'})
+    }
+
     let debugTXState = getDebugTXState() //this isn't so great..
 
     //pull the caller account into our state
@@ -813,6 +910,10 @@ shardus.registerExternalPost('contract/call', async (req, res) => {
 })
 
 shardus.registerExternalGet('tx/:hash', async (req, res) => {
+  if(trySpendServicePoints(20) === false){
+    return res.json({error:'node busy'})
+  }
+
   const txHash = req.params['hash']
   try {
     //const shardusAddress = toShardusAddressWithKey(txHash.slice(0, 42), txHash, AccountType.Receipt)
@@ -884,7 +985,10 @@ shardus.registerExternalGet('tx/:hash', async (req, res) => {
 //   res.json({ tx: result })
 // })
 
-shardus.registerExternalGet('accounts', async (req, res) => {
+shardus.registerExternalGet('accounts', isDebugMiddleware, async (req, res) => {
+  // if(isDebugMode()){
+  //   return res.json(`endpoint not available`)
+  // }
   if (ShardeumFlags.VerboseLogs) console.log('/accounts')
   //res.json({accounts})
 
@@ -893,7 +997,11 @@ shardus.registerExternalGet('accounts', async (req, res) => {
   res.json({ accounts: sorted })
 })
 
-shardus.registerExternalGet('nodeRewardValidate', async (req, res) => {
+shardus.registerExternalGet('nodeRewardValidate', isDebugMiddleware, async (req, res) => {
+  // if(isDebugMode()){
+  //   return res.json(`endpoint not available`)
+  // }
+
   const oneEth = new BN(10).pow(new BN(18))
   const expectedBalance = parseInt(oneEth.mul(new BN(nodeRewardTracker.nodeRewardsCount)).toString()) + parseInt(oneEth.mul(new BN(100)).toString())
   const shardusAddress = toShardusAddress(pay_address, AccountType.Account)

@@ -127,7 +127,8 @@ config = merge(
         startInErrorLogMode: true,
         fakeNetworkDelay: 0,
         disableSnapshots: false,
-        countEndpointStart: -1
+        countEndpointStart: -1,
+        hashedDevAuth: '117151a0d719f329a4a570b4ccde4bbb1ec12fa6a7a870a1471ed170e7f08d70'
       }
     }
   },
