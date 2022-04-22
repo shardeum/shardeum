@@ -36,6 +36,7 @@ import config from './config'
 import { RunTxResult } from '@ethereumjs/vm/dist/runTx'
 import { RunState } from '@ethereumjs/vm/dist/evm/interpreter'
 import Wallet from 'ethereumjs-wallet'
+import genesis from './config/genesis.json'
 
 const env = process.env
 
@@ -93,10 +94,10 @@ const pointsAverageInterval = 2 // seconds
 let servicePointSpendHistory:{points:number, ts:number}[] = []
 
 /**
- * Allows us to attempt to spend points.  We have ShardeumFlags.ServicePointsPerSecond 
+ * Allows us to attempt to spend points.  We have ShardeumFlags.ServicePointsPerSecond
  * that can be spent as a total bucket
- * @param points 
- * @returns 
+ * @param points
+ * @returns
  */
 function trySpendServicePoints(points:number) : boolean {
   let nowTs = Date.now()
@@ -140,6 +141,8 @@ function trySpendServicePoints(points:number) : boolean {
 let accounts: WrappedEVMAccountMap = {}
 let appliedTxs = {}
 let shardusTxIdToEthTxId = {}
+const oneEth = new BN(10).pow(new BN(18))
+const defaultBalance = oneEth.mul(new BN(100))
 
 let shardeumStateManager = new ShardeumState() //as StateManager
 shardeumStateManager.temporaryParallelOldMode = ShardeumFlags.temporaryParallelOldMode //could probably refactor to use ShardeumFlags in the state manager
@@ -325,14 +328,13 @@ function contractStorageInvolvedNoOp(transactionState: TransactionState, address
  *    ##     ##  ######   ######   #######   #######  ##    ##    ##       ##     ##  ######   ######  ########  ######
  */
 
-async function createAccount(addressStr, transactionState: TransactionState): Promise<WrappedEVMAccount> {
+async function createAccount(addressStr, transactionState: TransactionState, balance: BN = defaultBalance): Promise<WrappedEVMAccount> {
   if (ShardeumFlags.VerboseLogs) console.log('Creating new account', addressStr)
   const accountAddress = Address.fromString(addressStr)
-  const oneEth = new BN(10).pow(new BN(18))
 
   const acctData = {
     nonce: 0,
-    balance: oneEth.mul(new BN(100)), // 100 eth
+    balance: balance, // 100 eth
   }
 
   //I think this will have to change in the future!
@@ -443,13 +445,13 @@ function getDebugTXState(): TransactionState {
   return transactionState
 }
 
-async function setupTester(ethAccountID: string) {
+async function setupTester(ethAccountID: string, balance = defaultBalance) {
   //await sleep(4 * 60 * 1000) // wait 4 minutes to init account
 
   let shardusAccountID = toShardusAddress(ethAccountID, AccountType.Account)
 
   let debugTXState = getDebugTXState() //this isn't so great..
-  let newAccount = await createAccount(ethAccountID, debugTXState)
+  let newAccount = await createAccount(ethAccountID, debugTXState, balance)
 
   if (ShardeumFlags.temporaryParallelOldMode === false) {
     let { accounts: accountWrites, contractStorages: contractStorageWrites, contractBytes: contractBytesWrites } = debugTXState.getWrittenAccounts()
@@ -556,40 +558,40 @@ async function _internalHackPostWithResp(url: string, body: any) {
  *    ######## ##    ## ########  ##         #######  #### ##    ##    ##     ######
  */
 
-let isDebugMiddleware = shardus.getDebugModeMiddleware()
+let debugMiddleware = shardus.getDebugModeMiddleware()
 
 //TODO request needs a signature and a timestamp.  or make it a real TX from a faucet account..
 //?id=<accountID>
-shardus.registerExternalGet('faucet-all', async (req, res) => {
-  let id = req.query.id as string
-  if (!id) return res.json({ success: false, result: 'id is not defined!' })
-  if (!isValidAddress(id)) return res.json({ success: false, result: 'Address format is wrong!' })
-  setupTester(id)
-  try {
-    let activeNodes = shardus.p2p.state.getNodes()
-    if (activeNodes) {
-      for (let node of activeNodes.values()) {
-        _internalHackGet(`${node.externalIp}:${node.externalPort}/faucet-one?id=${id}`)
-        res.write(`${node.externalIp}:${node.externalPort}/faucet-one?id=${id}\n`)
-      }
-    }
-    res.write(`sending faucet request to all nodes\n`)
-  } catch (e) {
-    res.write(`${e}\n`)
-  }
-  res.end()
-})
+// shardus.registerExternalGet('faucet-all', debugMiddleware, async (req, res) => {
+//   let id = req.query.id as string
+//   if (!id) return res.json({ success: false, result: 'id is not defined!' })
+//   if (!isValidAddress(id)) return res.json({ success: false, result: 'Address format is wrong!' })
+//   setupTester(id)
+//   try {
+//     let activeNodes = shardus.p2p.state.getNodes()
+//     if (activeNodes) {
+//       for (let node of activeNodes.values()) {
+//         _internalHackGet(`${node.externalIp}:${node.externalPort}/faucet-one?id=${id}`)
+//         res.write(`${node.externalIp}:${node.externalPort}/faucet-one?id=${id}\n`)
+//       }
+//     }
+//     res.write(`sending faucet request to all nodes\n`)
+//   } catch (e) {
+//     res.write(`${e}\n`)
+//   }
+//   res.end()
+// })
+//
+// //TODO request needs a signature and a timestamp
+// shardus.registerExternalGet('faucet-one', debugMiddleware, async (req, res) => {
+//   let id = req.query.id as string
+//   if (!id) return res.json({ success: false, result: 'id is not defined!' })
+//   if (!isValidAddress(id)) return res.json({ success: false, result: 'Address format is wrong!' })
+//   setupTester(id)
+//   return res.json({ success: true })
+// })
 
-//TODO request needs a signature and a timestamp
-shardus.registerExternalGet('faucet-one', async (req, res) => {
-  let id = req.query.id as string
-  if (!id) return res.json({ success: false, result: 'id is not defined!' })
-  if (!isValidAddress(id)) return res.json({ success: false, result: 'Address format is wrong!' })
-  setupTester(id)
-  return res.json({ success: true })
-})
-
-shardus.registerExternalGet('debug-points', isDebugMiddleware, async (req, res) => {
+shardus.registerExternalGet('debug-points', debugMiddleware, async (req, res) => {
   // if(isDebugMode()){
   //   return res.json(`endpoint not available`)
   // }
@@ -614,11 +616,11 @@ shardus.registerExternalPost('inject', async (req, res) => {
 })
 
 
-shardus.registerExternalGet('dumpStorage',isDebugMiddleware, async (req, res) => {
+shardus.registerExternalGet('dumpStorage',debugMiddleware, async (req, res) => {
   // if(isDebugMode()){
   //   return res.json(`endpoint not available`)
   // }
-  
+
   let id
   try {
     id = req.query.id as string
@@ -636,7 +638,7 @@ shardus.registerExternalGet('dumpStorage',isDebugMiddleware, async (req, res) =>
   }
 })
 
-shardus.registerExternalGet('dumpAddressMap', isDebugMiddleware, async (req, res) => {
+shardus.registerExternalGet('dumpAddressMap', debugMiddleware, async (req, res) => {
   // if(isDebugMode()){
   //   return res.json(`endpoint not available`)
   // }
@@ -654,7 +656,7 @@ shardus.registerExternalGet('dumpAddressMap', isDebugMiddleware, async (req, res
   }
 })
 
-shardus.registerExternalGet('dumpTransactionStateMap', isDebugMiddleware, async (req, res) => {
+shardus.registerExternalGet('dumpTransactionStateMap', debugMiddleware, async (req, res) => {
   // if(isDebugMode()){
   //   return res.json(`endpoint not available`)
   // }
@@ -989,7 +991,7 @@ shardus.registerExternalGet('tx/:hash', async (req, res) => {
 //   res.json({ tx: result })
 // })
 
-shardus.registerExternalGet('accounts', isDebugMiddleware, async (req, res) => {
+shardus.registerExternalGet('accounts', debugMiddleware, async (req, res) => {
   // if(isDebugMode()){
   //   return res.json(`endpoint not available`)
   // }
@@ -1001,7 +1003,7 @@ shardus.registerExternalGet('accounts', isDebugMiddleware, async (req, res) => {
   res.json({ accounts: sorted })
 })
 
-shardus.registerExternalGet('nodeRewardValidate', isDebugMiddleware, async (req, res) => {
+shardus.registerExternalGet('nodeRewardValidate', debugMiddleware, async (req, res) => {
   // if(isDebugMode()){
   //   return res.json(`endpoint not available`)
   // }
@@ -1383,6 +1385,13 @@ shardus.setup({
           )
 
           shardus.log(`node ${nodeId} GENERATED_A_NEW_NETWORK_ACCOUNT: `)
+          if(ShardeumFlags.SetupGenesisAccount) {
+            for (let address in genesis) {
+              let amount = new BN(genesis[address].wei)
+              setupTester(address, amount)
+              shardus.log(`node ${nodeId} SETUP GENESIS ACCOUNT: `)
+            }
+          }
           await sleep(ONE_SECOND * 10)
         }
       } else {
@@ -2594,7 +2603,7 @@ if (ShardeumFlags.GlobalNetworkAccount) {
         node = shardus.getNode(nodeId)
         nodeAddress = node.address
 
-        // wait for rewards 
+        // wait for rewards
         let latestCycles = shardus.getLatestCycles()
         if (latestCycles != null && latestCycles.length > 0 && latestCycles[0].counter < 10) {
           shardus.log(`Too early for node reward: ${latestCycles[0].counter}`)
