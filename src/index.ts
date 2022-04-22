@@ -71,7 +71,11 @@ const shardus = shardusFactory(config)
 // const pay_address = '0x50F6D9E5771361Ec8b95D6cfb8aC186342B70120' // testing account for node_reward
 const random_wallet = Wallet.generate()
 const pay_address = random_wallet.getAddressString()
+
 console.log('Pay Address', pay_address, isValidAddress(pay_address))
+
+//console.log('Pk',random_wallet.getPublicKey())
+//console.log('pk',random_wallet.getPrivateKey())
 
 let nodeRewardTracker = {
   nodeRewardsCount: 0,
@@ -1102,7 +1106,10 @@ async function applyInternalTx(internalTx: InternalTx, wrappedStates: WrappedSta
     const network: NetworkAccount = wrappedStates[networkAccount].data
     const from: NodeAccount = wrappedStates[internalTx.from].data
     const to: WrappedEVMAccount = wrappedStates[toShardusAddress(internalTx.to, AccountType.Account)].data
-    const nodeRewardReceipt: WrappedEVMAccount = wrappedStates['0x' + txId].data // Current node reward receipt hash is set with txId
+    let nodeRewardReceipt: WrappedEVMAccount = null
+    if(ShardeumFlags.EVMReceiptsAsAccounts){
+      nodeRewardReceipt = wrappedStates['0x' + txId].data // Current node reward receipt hash is set with txId
+    }
     from.balance += network.current.nodeRewardAmount // This is not needed and will have to delete `balance` field eventually
     shardus.log(`Reward from ${internalTx.from} to ${internalTx.to}`)
     shardus.log('TO ACCOUNT', to)
@@ -1143,10 +1150,16 @@ async function applyInternalTx(internalTx: InternalTx, wrappedStates: WrappedSta
       value: oneEth.toString('hex'),
       data: '0x',
     }
-    nodeRewardReceipt.timestamp = txTimestamp
-    nodeRewardReceipt.readableReceipt = readableReceipt
-    nodeRewardReceipt.txId = txId
-    nodeRewardReceipt.txFrom = from.id
+
+    if(ShardeumFlags.EVMReceiptsAsAccounts){
+      nodeRewardReceipt.timestamp = txTimestamp
+      nodeRewardReceipt.readableReceipt = readableReceipt
+      nodeRewardReceipt.txId = txId
+      nodeRewardReceipt.txFrom = from.id      
+    } else {
+      //put this in the apply response
+      shardus.applyResponseAddReceiptData(applyResponse,readableReceipt, crypto.hashObj(readableReceipt))
+    }
     // console.log('nodeRewardReceipt', nodeRewardReceipt)
     // shardus.log('Applied node_reward tx', from, to)
     console.log('Applied node_reward tx')
@@ -1556,7 +1569,16 @@ shardus.setup({
           accountType: AccountType.Receipt,
           txFrom: transaction.getSenderAddress().toString(),
         }
-        transactionFailHashMap[ethTxId] = wrappedFailReceiptAccount
+        if(ShardeumFlags.EVMReceiptsAsAccounts){
+          transactionFailHashMap[ethTxId] = wrappedFailReceiptAccount
+        } else {
+          //put this on the fail receipt. we need a way to pass it in the exception!
+          
+          shardus.applyResponseAddReceiptData(applyResponse,readableReceipt, crypto.hashObj(readableReceipt))
+          shardus.applyResponseSetFailed(applyResponse, reason)
+          return applyResponse //return rather than throw exception
+        }
+
         throw new Error(`invalid transaction, reason: ${reason}. tx: ${JSON.stringify(tx)}`)
       }
       if (ShardeumFlags.VerboseLogs) console.log('DBG', 'applied tx', txId, runTxResult)
@@ -1752,10 +1774,16 @@ shardus.setup({
       }
       if (ShardeumFlags.VerboseLogs) console.log(`DBG Receipt Account for txId ${ethTxId}`, wrappedReceiptAccount)
 
-      const wrappedChangedAccount = WrappedEVMAccountFunctions._shardusWrappedAccount(wrappedReceiptAccount)
-      if (shardus.applyResponseAddChangedAccount != null) {
-        shardus.applyResponseAddChangedAccount(applyResponse, wrappedChangedAccount.accountId, wrappedChangedAccount, txId, wrappedChangedAccount.timestamp)
+      if(ShardeumFlags.EVMReceiptsAsAccounts){
+        const wrappedChangedAccount = WrappedEVMAccountFunctions._shardusWrappedAccount(wrappedReceiptAccount)
+        if (shardus.applyResponseAddChangedAccount != null) {
+          shardus.applyResponseAddChangedAccount(applyResponse, wrappedChangedAccount.accountId, wrappedChangedAccount, txId, wrappedChangedAccount.timestamp)
+        }
+      } else {
+        //put this in the apply response
+        shardus.applyResponseAddReceiptData(applyResponse,readableReceipt, crypto.hashObj(readableReceipt))
       }
+
     } catch (e) {
       if (!transactionFailHashMap[ethTxId]) {
         let txSenderEvmAddr = transaction.getSenderAddress().toString()
@@ -1796,14 +1824,30 @@ shardus.setup({
           accountType: AccountType.Receipt,
           txFrom: transaction.getSenderAddress().toString(),
         }
-        transactionFailHashMap[ethTxId] = wrappedFailReceiptAccount
+        if(ShardeumFlags.EVMReceiptsAsAccounts){
+          transactionFailHashMap[ethTxId] = wrappedFailReceiptAccount
+        } else {
+          //communicate this in the message back to sharuds so we can attach it to the fail receipt
+          shardus.applyResponseAddReceiptData(applyResponse,readableReceipt, crypto.hashObj(readableReceipt))
+          shardus.applyResponseSetFailed(applyResponse, reason)
+          return applyResponse //return rather than throw exception
+        }
+        
       }
       shardus.log('Unable to apply transaction', e)
       if (ShardeumFlags.VerboseLogs) console.log('Unable to apply transaction', txId, e)
       shardeumStateManager.unsetTransactionState()
 
+      // not sure what to do here.
+      // shardus.applyResponseAddReceiptData(applyResponse, readableReceipt, crypto.hashObj(readableReceipt))
+      // shardus.applyResponseSetFailed(applyResponse, reason)
+      // return applyResponse //return rather than throw exception
+
       //TODO need to detect if an execption here is a result of jumping the TX to another thread!
       // shardus must be made to handle that
+
+      // todo can set a jummped value that we return!
+
       throw new Error(e)
     }
     shardeumStateManager.unsetTransactionState()
@@ -1846,8 +1890,10 @@ shardus.setup({
       keys.allKeys = keys.allKeys.concat(keys.sourceKeys, keys.targetKeys, keys.storageKeys)
       // temporary hack for creating a receipt of node reward tx
       if (internalTx.internalTXType === InternalTXType.NodeReward) {
-        const txId = crypto.hashObj(tx)
-        keys.allKeys = keys.allKeys.concat(['0x' + txId]) // For Node Reward Receipt
+        if(ShardeumFlags.EVMReceiptsAsAccounts){
+          const txId = crypto.hashObj(tx)
+          keys.allKeys = keys.allKeys.concat(['0x' + txId]) // For Node Reward Receipt
+        }
       }
       return {
         timestamp,
@@ -1918,9 +1964,7 @@ shardus.setup({
         //only will work with first deploy, since we do not have a way to get nonce that works with sharding
         let hack0Nonce = new BN(0)
         let caAddrBuf = predictContractAddressDirect(txSenderEvmAddr, hack0Nonce)
-
         let caAddr = '0x' + caAddrBuf.toString('hex')
-
         let shardusAddr = toShardusAddress(caAddr, AccountType.Account)
         otherAccountKeys.push(shardusAddr)
         shardusAddressToEVMAccountInfo.set(shardusAddr, { evmAddress: caAddr, type: AccountType.Account })
@@ -1960,15 +2004,19 @@ shardus.setup({
       // This will technically cause an empty account to get created but this will get overriden with the
       // correct values as a result of apply().  There are several ways we could optimize this in the future
       // If a transactions knows a key is for an account that will be created than it does not need to attempt to aquire and share the data
-      const txHash = bufferToHex(transaction.hash())
-      const shardusReceiptAddress = toShardusAddressWithKey(txHash, '', AccountType.Receipt)
-      if (ShardeumFlags.VerboseLogs) console.log(`getKeyFromTransaction: adding tx receipt key: ${shardusReceiptAddress} ts:${tx.timestamp}`)
+      let additionalAccounts = []
+      if(ShardeumFlags.EVMReceiptsAsAccounts){
+        const txHash = bufferToHex(transaction.hash())
+        const shardusReceiptAddress = toShardusAddressWithKey(txHash, '', AccountType.Receipt)
+        if (ShardeumFlags.VerboseLogs) console.log(`getKeyFromTransaction: adding tx receipt key: ${shardusReceiptAddress} ts:${tx.timestamp}`)
+        additionalAccounts.push(shardusReceiptAddress)
+      }
 
       // insert target keys first. first key in allkeys list will define the execution shard
       // for smart contract calls the contract will be the target.  For simple coin transfers it wont matter
       // insert otherAccountKeys second, because we need the CA addres at the front of the list for contract deploy
       // There wont be a target key in when we deploy a contract
-      result.allKeys = result.allKeys.concat(result.targetKeys, otherAccountKeys, result.sourceKeys, result.storageKeys, [shardusReceiptAddress])
+      result.allKeys = result.allKeys.concat(result.targetKeys, otherAccountKeys, result.sourceKeys, result.storageKeys, additionalAccounts)
       if (ShardeumFlags.VerboseLogs) console.log('running getKeyFromTransaction', result)
     } catch (e) {
       if (ShardeumFlags.VerboseLogs) console.log('getKeyFromTransaction: Unable to get keys from tx', e)
