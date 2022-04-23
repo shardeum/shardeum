@@ -142,7 +142,7 @@ let accounts: WrappedEVMAccountMap = {}
 let appliedTxs = {}
 let shardusTxIdToEthTxId = {}
 const oneEth = new BN(10).pow(new BN(18))
-const defaultBalance = oneEth.mul(new BN(100))
+const defaultBalance = isDebugMode() ? oneEth.mul(new BN(100)) : new BN(0)
 
 let shardeumStateManager = new ShardeumState() //as StateManager
 shardeumStateManager.temporaryParallelOldMode = ShardeumFlags.temporaryParallelOldMode //could probably refactor to use ShardeumFlags in the state manager
@@ -1157,7 +1157,7 @@ async function applyInternalTx(internalTx: InternalTx, wrappedStates: WrappedSta
       nodeRewardReceipt.timestamp = txTimestamp
       nodeRewardReceipt.readableReceipt = readableReceipt
       nodeRewardReceipt.txId = txId
-      nodeRewardReceipt.txFrom = from.id      
+      nodeRewardReceipt.txFrom = from.id
     } else {
 
       let nodeRewardReceipt: WrappedEVMAccount = {
@@ -1173,7 +1173,7 @@ async function applyInternalTx(internalTx: InternalTx, wrappedStates: WrappedSta
       nodeRewardReceipt.timestamp = txTimestamp
       nodeRewardReceipt.readableReceipt = readableReceipt
       nodeRewardReceipt.txId = txId
-      nodeRewardReceipt.txFrom = from.id  
+      nodeRewardReceipt.txFrom = from.id
 
       const shardusWrappedAccount = WrappedEVMAccountFunctions._shardusWrappedAccount(nodeRewardReceipt)
       //put this in the apply response
@@ -1868,7 +1868,7 @@ shardus.setup({
           shardus.applyResponseSetFailed(applyResponse, reason)
           return applyResponse //return rather than throw exception
         }
-        
+
       }
       shardus.log('Unable to apply transaction', e)
       if (ShardeumFlags.VerboseLogs) console.log('Unable to apply transaction', txId, e)
