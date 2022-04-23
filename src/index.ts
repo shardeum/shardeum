@@ -142,6 +142,8 @@ let accounts: WrappedEVMAccountMap = {}
 let appliedTxs = {}
 let shardusTxIdToEthTxId = {}
 const oneEth = new BN(10).pow(new BN(18))
+
+//In debug mode the default value is 100 SHM.  This is needed for certain load test operations
 const defaultBalance = isDebugMode() ? oneEth.mul(new BN(100)) : new BN(0)
 
 let shardeumStateManager = new ShardeumState() //as StateManager
@@ -334,7 +336,7 @@ async function createAccount(addressStr, transactionState: TransactionState, bal
 
   const acctData = {
     nonce: 0,
-    balance: balance, // 100 eth
+    balance: balance, // 100 eth in debug mode.  0 ETH in release mode
   }
 
   //I think this will have to change in the future!
@@ -445,7 +447,12 @@ function getDebugTXState(): TransactionState {
   return transactionState
 }
 
-async function setupTester(ethAccountID: string, balance = defaultBalance) {
+/**
+ * This creates an account outside of any EVM transaction
+ * @param ethAccountID 
+ * @param balance 
+ */
+async function manuallyCreateAccount(ethAccountID: string, balance = defaultBalance) {
   //await sleep(4 * 60 * 1000) // wait 4 minutes to init account
 
   let shardusAccountID = toShardusAddress(ethAccountID, AccountType.Account)
@@ -480,10 +487,6 @@ async function setupTester(ethAccountID: string, balance = defaultBalance) {
   }
   WrappedEVMAccountFunctions.updateEthAccountHash(wrappedEVMAccount)
   accounts[shardusAccountID] = wrappedEVMAccount
-
-  //when temporaryParallelOldMode is set false we will actually need another way to commit this data!
-  //  may need to commit it with the help of a dummy TransactionState object since ShardeumState commit(),checkpoint(),revert() will be no-op'd
-  //  should test first to see if it just works though
 }
 
 function _containsProtocol(url: string) {
@@ -892,7 +895,7 @@ shardus.registerExternalPost('contract/call', async (req, res) => {
       const oneEth = new BN(10).pow(new BN(18))
       const acctData = {
         nonce: 0,
-        balance: oneEth.mul(new BN(100)), // 100 eth
+        balance: oneEth.mul(new BN(100)), // 100 eth.  This is a temporary account that will never exist.
       }
       const fakeAccount = Account.fromAccountData(acctData)
       debugTXState.insertFirstAccountReads(opt.caller, fakeAccount)
@@ -1388,7 +1391,7 @@ shardus.setup({
           if(ShardeumFlags.SetupGenesisAccount) {
             for (let address in genesis) {
               let amount = new BN(genesis[address].wei)
-              setupTester(address, amount)
+              manuallyCreateAccount(address, amount)
               shardus.log(`node ${nodeId} SETUP GENESIS ACCOUNT: `)
             }
           }

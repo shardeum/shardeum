@@ -128,7 +128,7 @@ config = merge(
         fakeNetworkDelay: 0,
         disableSnapshots: false,
         countEndpointStart: -1,
-        hashedDevAuth: '117151a0d719f329a4a570b4ccde4bbb1ec12fa6a7a870a1471ed170e7f08d70',
+        hashedDevAuth: '117151a0d719f329a4a570b4ccde4bbb1ec12fa6a7a870a1471ed170e7f08d70', //todo remove this after alpha 1.0
         devPublicKey:'774491f80f47fedb119bb861601490f42bc3ea3b57fc63906c0d08e6d777a592'
       }
     }
