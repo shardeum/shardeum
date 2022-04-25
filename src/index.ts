@@ -59,7 +59,7 @@ export const ONE_DAY = 24 * ONE_HOUR
 export const INITIAL_PARAMETERS: NetworkParameters = {
   title: 'Initial parameters',
   description: 'These are the initial network parameters Shardeum started with',
-  nodeRewardInterval: ONE_MINUTE * 1, // 10 minutes for testing
+  nodeRewardInterval: ONE_MINUTE * 10, // 10 minutes for testing
   nodeRewardAmount: 1,
   nodePenalty: 10,
   stakeRequired: 5,
@@ -1012,7 +1012,7 @@ shardus.registerExternalGet('nodeRewardValidate', debugMiddleware, async (req, r
   // }
 
   const oneEth = new BN(10).pow(new BN(18))
-  const expectedBalance = parseInt(oneEth.mul(new BN(nodeRewardTracker.nodeRewardsCount)).toString()) + parseInt(oneEth.mul(new BN(defaultBalance)).toString())
+  const expectedBalance = parseInt(oneEth.mul(new BN(nodeRewardTracker.nodeRewardsCount)).toString()) + parseInt(oneEth.mul(defaultBalance).toString())
   const shardusAddress = toShardusAddress(pay_address, AccountType.Account)
   const account = accounts[shardusAddress]
   // const account = await shardus.getLocalOrRemoteAccount(shardusAddress)
