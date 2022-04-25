@@ -93,6 +93,7 @@ export interface InternalTx extends InternalTxBase {
   change?: any // change config
   cycle?: number // change config
   config?: any // change config
+  sign: ShardusTypes.Sign
 }
 
 export interface DebugTx {

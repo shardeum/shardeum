@@ -59,7 +59,7 @@ export const ONE_DAY = 24 * ONE_HOUR
 export const INITIAL_PARAMETERS: NetworkParameters = {
   title: 'Initial parameters',
   description: 'These are the initial network parameters Shardeum started with',
-  nodeRewardInterval: ONE_MINUTE * 10, // 10 minutes for testing
+  nodeRewardInterval: ONE_MINUTE * 1, // 10 minutes for testing
   nodeRewardAmount: 1,
   nodePenalty: 10,
   stakeRequired: 5,
@@ -449,8 +449,8 @@ function getDebugTXState(): TransactionState {
 
 /**
  * This creates an account outside of any EVM transaction
- * @param ethAccountID 
- * @param balance 
+ * @param ethAccountID
+ * @param balance
  */
 async function manuallyCreateAccount(ethAccountID: string, balance = defaultBalance) {
   //await sleep(4 * 60 * 1000) // wait 4 minutes to init account
@@ -1209,6 +1209,8 @@ async function applyInternalTx(internalTx: InternalTx, wrappedStates: WrappedSta
       change: { cycle: changeOnCycle, change: JSON.parse(internalTx.config) },
     }
 
+    value = shardus.signAsNode(value)
+
     let ourAppDefinedData = applyResponse.appDefinedData as OurAppDefinedData
     ourAppDefinedData.globalMsg = { address: networkAccount, value, when, source: networkAccount }
 
@@ -1261,6 +1263,8 @@ function setGlobalCodeByteUpdate(txTimestamp: number, wrappedEVMAccount: Wrapped
     accountData: wrappedEVMAccount,
     from: globalAddress,
   }
+
+  value = shardus.signAsNode(value)
 
   let ourAppDefinedData = applyResponse.appDefinedData as OurAppDefinedData
   ourAppDefinedData.globalMsg = { address: globalAddress, value, when, source: globalAddress }
@@ -1375,14 +1379,16 @@ shardus.setup({
           shardus.log('NETWORK_ACCOUNT ALREADY EXISTED: ', existingNetworkAccount)
           await sleep(ONE_SECOND * 5)
         } else {
-          shardus.setGlobal(
-            networkAccount,
-            {
+          let value = {
               isInternalTx: true,
               internalTXType: InternalTXType.InitNetwork,
               timestamp: when,
               network: networkAccount,
-            },
+          }
+          value = shardus.signAsNode(value)
+          shardus.setGlobal(
+            networkAccount,
+            value,
             when,
             networkAccount,
           )
@@ -1409,7 +1415,9 @@ shardus.setup({
     if (isInternalTx(tx)) {
       let internalTX = tx as InternalTx
       //todo validate internal TX
-      return { result: 'pass', reason: 'all_allowed' }
+      let isValid = crypto.verifyObj(internalTX)
+      if(isValid) return { result: 'pass', reason: 'valid' }
+      else return { result: 'fail', reason: 'Invalid signature' }
     }
 
     if (isDebugTx(tx)) {
@@ -1423,6 +1431,11 @@ shardus.setup({
       reason: 'Transaction is not valid. Cannot get txObj.',
     }
     if (!txObj) return response
+
+    if (!txObj.isSigned() || !txObj.validate()) {
+      response.reason = 'Transaction is not signed or signature is not valid.'
+      return response
+    }
 
     try {
       let senderAddress = txObj.getSenderAddress()
@@ -1458,20 +1471,44 @@ shardus.setup({
     }
     if (isInternalTx(tx)) {
       let internalTX = tx as InternalTx
-      //todo validate internal TX
+      let success = false
+      let reason = ''
+
+      // validate internal TX
+      try {
+        success = crypto.verifyObj(internalTX)
+      } catch (e) {
+        reason = 'Invalid signature for internal tx'
+      }
 
       return {
-        success: true,
-        reason: '',
+        success,
+        reason,
         txnTimestamp: txnTimestamp,
       }
     }
 
-    // Validate tx fields here
-    let success = true
-    let reason = ''
+    // Validate EVM tx fields
+    let success = false
+    let reason = 'Invalid EVM transaction fields'
 
-    // TODO: validate more tx fields here
+    try {
+      let txObj = getTransactionObj(tx)
+      let isSigned = txObj.isSigned()
+      let isSignatureValid = txObj.validate()
+      if (ShardeumFlags.VerboseLogs) console.log('validate evm tx', isSigned, isSignatureValid)
+
+      if (isSigned && isSignatureValid) {
+        success = true
+        reason = ''
+      } else {
+        reason = 'Transaction is not signed or signature is not valid'
+      }
+    } catch (e) {
+      if (ShardeumFlags.VerboseLogs) console.log('validate error', e)
+      success = false
+      reason = e.message
+    }
 
     return {
       success,
@@ -2626,7 +2663,7 @@ if (ShardeumFlags.GlobalNetworkAccount) {
       if (ShardeumFlags.NodeReward) {
         if (currentTime - lastReward > network.current.nodeRewardInterval) {
           nodeRewardTracker.nodeRewardsCount++
-          const tx = {
+          let tx = {
             isInternalTx: true,
             internalTXType: InternalTXType.NodeReward,
             nodeId: nodeId,
@@ -2634,6 +2671,7 @@ if (ShardeumFlags.GlobalNetworkAccount) {
             to: env.PAY_ADDRESS || pay_address,
             timestamp: Date.now(),
           }
+          tx = shardus.signAsNode(tx)
           shardus.put(tx)
           shardus.log('GENERATED_NODE_REWARD: ', nodeId, tx.to)
           lastReward = currentTime
