@@ -1012,7 +1012,7 @@ shardus.registerExternalGet('nodeRewardValidate', debugMiddleware, async (req, r
   // }
 
   const oneEth = new BN(10).pow(new BN(18))
-  const expectedBalance = parseInt(oneEth.mul(new BN(nodeRewardTracker.nodeRewardsCount)).toString()) + parseInt(oneEth.mul(new BN(100)).toString())
+  const expectedBalance = parseInt(oneEth.mul(new BN(nodeRewardTracker.nodeRewardsCount)).toString()) + parseInt(oneEth.mul(new BN(defaultBalance)).toString())
   const shardusAddress = toShardusAddress(pay_address, AccountType.Account)
   const account = accounts[shardusAddress]
   // const account = await shardus.getLocalOrRemoteAccount(shardusAddress)
@@ -1170,7 +1170,7 @@ async function applyInternalTx(internalTx: InternalTx, wrappedStates: WrappedSta
         // receipt: runTxResult.receipt,
         readableReceipt,
         txId,
-        accountType: AccountType.Receipt,
+        accountType: AccountType.NodeRewardReceipt,
         txFrom: from.id,
       }
       nodeRewardReceipt.timestamp = txTimestamp
