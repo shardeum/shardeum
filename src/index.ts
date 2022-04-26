@@ -1040,6 +1040,12 @@ shardus.registerExternalGet('nodeRewardValidate', debugMiddleware, async (req, r
  *    #### ##    ##    ##    ######## ##     ## ##    ## ##     ## ########       ##    ##     ##
  */
 
+function isInternalTXGlobal(internalTx: InternalTx){
+  return internalTx.internalTXType === InternalTXType.SetGlobalCodeBytes 
+      || internalTx.internalTXType === InternalTXType.ApplyChangeConfig
+      || internalTx.internalTXType === InternalTXType.InitNetwork
+}
+
 async function applyInternalTx(internalTx: InternalTx, wrappedStates: WrappedStates, txTimestamp: number): Promise<ShardusTypes.ApplyResponse> {
   if (internalTx.internalTXType === InternalTXType.SetGlobalCodeBytes) {
     const wrappedEVMAccount: WrappedEVMAccount = wrappedStates[internalTx.from].data
@@ -1209,7 +1215,7 @@ async function applyInternalTx(internalTx: InternalTx, wrappedStates: WrappedSta
       change: { cycle: changeOnCycle, change: JSON.parse(internalTx.config) },
     }
 
-    value = shardus.signAsNode(value)
+    //value = shardus.signAsNode(value)
 
     let ourAppDefinedData = applyResponse.appDefinedData as OurAppDefinedData
     ourAppDefinedData.globalMsg = { address: networkAccount, value, when, source: networkAccount }
@@ -1264,7 +1270,7 @@ function setGlobalCodeByteUpdate(txTimestamp: number, wrappedEVMAccount: Wrapped
     from: globalAddress,
   }
 
-  value = shardus.signAsNode(value)
+  //value = shardus.signAsNode(value)
 
   let ourAppDefinedData = applyResponse.appDefinedData as OurAppDefinedData
   ourAppDefinedData.globalMsg = { address: globalAddress, value, when, source: globalAddress }
@@ -1278,6 +1284,7 @@ async function _transactionReceiptPass(tx: any, txId: string, wrappedStates: Wra
   //If this apply response has a global message defined then call setGlobal()
   if (ourAppDefinedData.globalMsg) {
     let { address, value, when, source } = ourAppDefinedData.globalMsg
+    //delete value.sign
     shardus.setGlobal(address, value, when, source)
     if (ShardeumFlags.VerboseLogs) {
       const tx = { address, value, when, source }
@@ -1385,7 +1392,7 @@ shardus.setup({
               timestamp: when,
               network: networkAccount,
           }
-          value = shardus.signAsNode(value)
+          //value = shardus.signAsNode(value)
           shardus.setGlobal(
             networkAccount,
             value,
@@ -1414,10 +1421,14 @@ shardus.setup({
   validateTransaction(tx) {
     if (isInternalTx(tx)) {
       let internalTX = tx as InternalTx
-      //todo validate internal TX
-      let isValid = crypto.verifyObj(internalTX)
-      if(isValid) return { result: 'pass', reason: 'valid' }
-      else return { result: 'fail', reason: 'Invalid signature' }
+      if(isInternalTXGlobal(internalTX) === true){
+        return { result: 'pass', reason: 'valid' }
+      } else {
+        //todo validate internal TX
+        let isValid = crypto.verifyObj(internalTX)
+        if(isValid) return { result: 'pass', reason: 'valid' }
+        else return { result: 'fail', reason: 'Invalid signature' }
+      }
     }
 
     if (isDebugTx(tx)) {
@@ -1475,12 +1486,19 @@ shardus.setup({
       let reason = ''
 
       // validate internal TX
-      try {
-        success = crypto.verifyObj(internalTX)
-      } catch (e) {
-        reason = 'Invalid signature for internal tx'
+      if(isInternalTXGlobal(internalTX) === true){
+        return {
+          success: true,
+          reason: '',
+          txnTimestamp,
+        }
+      } else {
+        try {
+          success = crypto.verifyObj(internalTX)
+        } catch (e) {
+          reason = 'Invalid signature for internal tx'
+        }
       }
-
       return {
         success,
         reason,
