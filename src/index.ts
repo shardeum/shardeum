@@ -886,7 +886,7 @@ shardus.registerExternalPost('contract/call', async (req, res) => {
     // //let callerEthaddress = Address.fromString(wrappedEVMAccount.ethAddress)
     // debugTXState.insertFirstAccountReads(opt.caller, wrappedEVMAccount.account)
     let callerAddress = toShardusAddress(callObj.from, AccountType.Account)
-    if (!accounts[callerAddress]) {
+    if (accounts[callerAddress]) {
       if (ShardeumFlags.VerboseLogs) console.log('callerAddress', accounts[callerAddress])
       // fixDeserializedWrappedEVMAccount(accounts[callerAddress])
       debugTXState.insertFirstAccountReads(opt.caller, accounts[callerAddress].account)
