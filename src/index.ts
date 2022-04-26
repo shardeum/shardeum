@@ -88,7 +88,7 @@ function isDebugMode(){
   return config.mode === "debug"
 }
 
-
+// grab this
 const pointsAverageInterval = 2 // seconds
 
 let servicePointSpendHistory:{points:number, ts:number}[] = []
@@ -919,7 +919,7 @@ shardus.registerExternalPost('contract/call', async (req, res) => {
 })
 
 shardus.registerExternalGet('tx/:hash', async (req, res) => {
-  if(trySpendServicePoints(20) === false){
+  if(trySpendServicePoints(5) === false){
     return res.json({error:'node busy'})
   }
 
@@ -1199,6 +1199,8 @@ async function applyInternalTx(internalTx: InternalTx, wrappedStates: WrappedSta
     let changeOnCycle
     let cycleData: ShardusTypes.Cycle
 
+    //NEED to sign with dev key (probably check this in validate() )
+
     if (internalTx.cycle === -1) {
       ;[cycleData] = shardus.getLatestCycles()
       changeOnCycle = cycleData.counter + 3
@@ -1207,6 +1209,7 @@ async function applyInternalTx(internalTx: InternalTx, wrappedStates: WrappedSta
     }
 
     const when = txTimestamp + ONE_SECOND * 10
+    // value is the TX that will apply a change to the global network account 0000x0000
     let value = {
       isInternalTx: true,
       internalTXType: InternalTXType.ApplyChangeConfig,
@@ -1218,6 +1221,7 @@ async function applyInternalTx(internalTx: InternalTx, wrappedStates: WrappedSta
     //value = shardus.signAsNode(value)
 
     let ourAppDefinedData = applyResponse.appDefinedData as OurAppDefinedData
+    // network will consens that this is the correct value
     ourAppDefinedData.globalMsg = { address: networkAccount, value, when, source: networkAccount }
 
     from.timestamp = txTimestamp
@@ -2249,11 +2253,23 @@ shardus.setup({
         }
       }
       if (internalTx.internalTXType === InternalTXType.ChangeConfig) {
+        // Not sure if this is even relevant.  I think the from account should be one of our dev accounts and
+        // and should already exist (hit the faucet)
+        // probably an array of dev public keys
+
         if (!wrappedEVMAccount) {
-          if (accountId === networkAccount) throw Error(`Network Account is not found ${accountId}`)
+          //if the network account does not exist then throw an error
+          // This is the 0000x00000 account
+          if (accountId === networkAccount){
+            throw Error(`Network Account is not found ${accountId}`)
+          }
           else {
-            wrappedEVMAccount = createNodeAccount(accountId) as any
-            accountCreated = true
+            //If the id is not the network account then it must be our dev user account.
+            // we shouldn't try to create that either.
+            // Dev account is a developers public key on a test account they control
+            throw Error(`Dev Account is not found ${accountId}`)
+            // wrappedEVMAccount = createNodeAccount(accountId) as any
+            // accountCreated = true
           }
         }
       }
