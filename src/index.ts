@@ -599,7 +599,7 @@ shardus.registerExternalGet('debug-points', debugMiddleware, async (req, res) =>
   //   return res.json(`endpoint not available`)
   // }
 
-  let points = Number(req.query.points ?? 20)
+  let points = Number(req.query.points ?? ShardeumFlags.ServicePoints['debug-points'])
   if(trySpendServicePoints(points) === false){
     return res.json({error:'node busy' , points,  servicePointSpendHistory})
   }
@@ -702,7 +702,7 @@ shardus.registerExternalGet('dumpTransactionStateMap', debugMiddleware, async (r
 // })
 
 shardus.registerExternalGet('account/:address', async (req, res) => {
-  if(trySpendServicePoints(5) === false){
+  if(trySpendServicePoints(ShardeumFlags.ServicePoints['account/:address']) === false){
     return res.json({error:'node busy'})
   }
 
@@ -805,7 +805,7 @@ shardus.registerExternalPost('contract/call', async (req, res) => {
   // if(isDebugMode()){
   //   return res.json(`endpoint not available`)
   // }
-  if(trySpendServicePoints(5) === false){
+  if(trySpendServicePoints(ShardeumFlags.ServicePoints['contract/call'].endpoint) === false){
     return res.json({result: null, error:'node busy'})
   }
 
@@ -873,7 +873,7 @@ shardus.registerExternalPost('contract/call', async (req, res) => {
     }
 
     // if we are going to handle the call directly charge 20 points
-    if(trySpendServicePoints(20) === false){
+    if(trySpendServicePoints(ShardeumFlags.ServicePoints['contract/call'].direct) === false){
       return res.json({ result: null, error:'node busy'})
     }
 
@@ -919,7 +919,7 @@ shardus.registerExternalPost('contract/call', async (req, res) => {
 })
 
 shardus.registerExternalGet('tx/:hash', async (req, res) => {
-  if(trySpendServicePoints(5) === false){
+  if(trySpendServicePoints(ShardeumFlags.ServicePoints['tx/:hash']) === false){
     return res.json({error:'node busy'})
   }
 
