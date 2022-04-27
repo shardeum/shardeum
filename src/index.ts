@@ -838,8 +838,35 @@ shardus.registerExternalPost('contract/call', async (req, res) => {
     }
 
     let caShardusAddress;
+    const methodCode = callObj.data.substr(0, 10)
     if (opt['to']) {
-      let caShardusAddress = toShardusAddress(callObj.to, AccountType.Account)
+      caShardusAddress = toShardusAddress(callObj.to, AccountType.Account)
+      if (ERC20_METHOD_DIC[methodCode]) {
+        // ERC20 Token balance query
+        let caShardusAddress = toShardusAddress(callObj.to, AccountType.Account)
+        if (accounts[caShardusAddress]) {
+          // if (ERC20TokenBalanceMap[caShardusAddress].timestamp === accounts[caShardusAddress].timestamp &&
+          //   ERC20TokenBalanceMap[caShardusAddress].args === JSON.stringify({'to': callObj.to, 'data': callObj.data})
+          // ) {
+          //   console.log(`eth call counter`, caShardusAddress, ERC20TokenBalanceMap[caShardusAddress].counter++)
+          //   return ERC20TokenBalanceMap[caShardusAddress].result
+          // }
+          const result = ERC20TokenBalanceMap.filter(x => x.to === callObj.to && x.data === callObj.data)
+          if (result.length > 0) {
+            const index = ERC20TokenBalanceMap.findIndex(x => x.to === callObj.to && x.data === callObj.data)
+            console.log('Found in the ERC20TokenBalanceMap; index:', index, callObj.to)
+            ERC20TokenBalanceMap.splice(index, 1)
+            if (result[0].timestamp === accounts[caShardusAddress].timestamp) { // The contract account is not updated yet.
+              ERC20TokenBalanceMap.push(result[0])
+              console.log(`eth call for ERC20TokenBalanceMap`, callObj.to, callObj.data)
+              return res.json({ result: result[0].result })
+            }
+          }
+        }
+      }
+    }
+
+    if (opt['to']) {
       console.log('Calling to ', callObj.to, caShardusAddress)
       //let callerShardusAddress = toShardusAddress(callObj.caller, AccountType.Account)
 
@@ -883,31 +910,6 @@ shardus.registerExternalPost('contract/call', async (req, res) => {
     // if we are going to handle the call directly charge 20 points
     if(trySpendServicePoints(ShardeumFlags.ServicePoints['contract/call'].direct) === false){
       return res.json({ result: null, error:'node busy'})
-    }
-
-    const methodCode = callObj.data.substr(0, 10)
-    if (ERC20_METHOD_DIC[methodCode]) {
-      // ERC20 Token balance query
-      let caShardusAddress = toShardusAddress(callObj.to, AccountType.Account)
-      if (accounts[caShardusAddress]) {
-        // if (ERC20TokenBalanceMap[caShardusAddress].timestamp === accounts[caShardusAddress].timestamp &&
-        //   ERC20TokenBalanceMap[caShardusAddress].args === JSON.stringify({'to': callObj.to, 'data': callObj.data})
-        // ) {
-        //   console.log(`eth call counter`, caShardusAddress, ERC20TokenBalanceMap[caShardusAddress].counter++)
-        //   return ERC20TokenBalanceMap[caShardusAddress].result
-        // }
-        const result = ERC20TokenBalanceMap.filter(x => x.to === callObj.to && x.data === callObj.data)
-        if (result.length > 0) {
-          const index = ERC20TokenBalanceMap.findIndex(x => x.to === callObj.to && x.data === callObj.data)
-          console.log('Found in the ERC20TokenBalanceMap; index:', index, callObj.to)
-          ERC20TokenBalanceMap.splice(index, 1)
-          if (result[0].timestamp === accounts[caShardusAddress].timestamp) { // The contract account is not updated yet.
-            ERC20TokenBalanceMap.push(result[0])
-            console.log(`eth call for ERC20TokenBalanceMap`, callObj.to, callObj.data)
-            return res.json({ result: result[0].result })
-          }
-        }
-      }
     }
 
     let debugTXState = getDebugTXState() //this isn't so great..
