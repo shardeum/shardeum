@@ -87,7 +87,7 @@ let nodeRewardTracker = {
 
 function isDebugMode(){
   //@ts-ignore
-  return config.mode === "debug"
+  return config.server.mode === "debug"
 }
 
 // grab this
@@ -843,15 +843,15 @@ shardus.registerExternalPost('contract/call', async (req, res) => {
         // ERC20 Token balance query
         let caShardusAddress = toShardusAddress(callObj.to, AccountType.Account)
         if (accounts[caShardusAddress]) {
-          const result = ERC20TokenBalanceMap.filter(x => x.to === callObj.to && x.data === callObj.data)
-          if (result.length > 0) {
-            const index = ERC20TokenBalanceMap.findIndex(x => x.to === callObj.to && x.data === callObj.data)
-            console.log('Found in the ERC20TokenBalanceMap; index:', index, callObj.to)
+          const index = ERC20TokenBalanceMap.findIndex(x => x.to === callObj.to && x.data === callObj.data)
+          if (index > -1) {
+            const tokenBalanceResult = ERC20TokenBalanceMap[index]
+            if (ShardeumFlags.VerboseLogs) console.log('Found in the ERC20TokenBalanceMap; index:', index, callObj.to)
             ERC20TokenBalanceMap.splice(index, 1)
-            if (result[0].timestamp === accounts[caShardusAddress].timestamp) { // The contract account is not updated yet.
-              ERC20TokenBalanceMap.push(result[0])
-              console.log(`eth call for ERC20TokenBalanceMap`, callObj.to, callObj.data)
-              return res.json({ result: result[0].result })
+            if (tokenBalanceResult.timestamp === accounts[caShardusAddress].timestamp) { // The contract account is not updated yet.
+              ERC20TokenBalanceMap.push(tokenBalanceResult)
+              if (ShardeumFlags.VerboseLogs) console.log(`eth call for ERC20TokenBalanceMap`, callObj.to, callObj.data)
+              return res.json({ result: tokenBalanceResult.result })
             }
           }
         }
@@ -941,8 +941,9 @@ shardus.registerExternalPost('contract/call', async (req, res) => {
         'timestamp': accounts[caShardusAddress] && accounts[caShardusAddress].timestamp,
         'result': callResult.execResult.exceptionError ? null : callResult.execResult.returnValue.toString('hex')
       })
-      while (ERC20TokenBalanceMap.length > ERC20TokenCacheSize) {
-        ERC20TokenBalanceMap.shift()
+      if (ERC20TokenBalanceMap.length > ERC20TokenCacheSize + 10) {
+        let extra = ERC20TokenBalanceMap.length - ERC20TokenCacheSize
+        ERC20TokenBalanceMap.splice(0, extra)
       }
     }
 
