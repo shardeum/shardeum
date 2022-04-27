@@ -67,9 +67,7 @@ export const INITIAL_PARAMETERS: NetworkParameters = {
   maintenanceFee: 0
 }
 
-const ERC20_METHOD_DIC = {
-  '0x70a08231': 'balanceOf',
-};
+const ERC20_BALANCEOF_CODE =  '0x70a08231';
 
 const shardus = shardusFactory(config)
 
@@ -841,16 +839,10 @@ shardus.registerExternalPost('contract/call', async (req, res) => {
     const methodCode = callObj.data.substr(0, 10)
     if (opt['to']) {
       caShardusAddress = toShardusAddress(callObj.to, AccountType.Account)
-      if (ERC20_METHOD_DIC[methodCode]) {
+      if (methodCode === ERC20_BALANCEOF_CODE) {
         // ERC20 Token balance query
         let caShardusAddress = toShardusAddress(callObj.to, AccountType.Account)
         if (accounts[caShardusAddress]) {
-          // if (ERC20TokenBalanceMap[caShardusAddress].timestamp === accounts[caShardusAddress].timestamp &&
-          //   ERC20TokenBalanceMap[caShardusAddress].args === JSON.stringify({'to': callObj.to, 'data': callObj.data})
-          // ) {
-          //   console.log(`eth call counter`, caShardusAddress, ERC20TokenBalanceMap[caShardusAddress].counter++)
-          //   return ERC20TokenBalanceMap[caShardusAddress].result
-          // }
           const result = ERC20TokenBalanceMap.filter(x => x.to === callObj.to && x.data === callObj.data)
           if (result.length > 0) {
             const index = ERC20TokenBalanceMap.findIndex(x => x.to === callObj.to && x.data === callObj.data)
@@ -942,7 +934,7 @@ shardus.registerExternalPost('contract/call', async (req, res) => {
     if (ShardeumFlags.VerboseLogs) console.log('Call Result', callResult.execResult.returnValue.toString('hex'))
 
 
-    if (ERC20_METHOD_DIC[methodCode]) {
+    if (methodCode === ERC20_BALANCEOF_CODE) {
       ERC20TokenBalanceMap.push({
         'to': callObj.to,
         'data': callObj.data,
