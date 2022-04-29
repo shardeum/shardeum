@@ -1449,8 +1449,8 @@ shardus.setup({
           if(ShardeumFlags.SetupGenesisAccount) {
             for (let address in genesis) {
               let amount = new BN(genesis[address].wei)
-              manuallyCreateAccount(address, amount)
-              shardus.log(`node ${nodeId} SETUP GENESIS ACCOUNT: `)
+              await manuallyCreateAccount(address, amount)
+              shardus.log(`node ${nodeId} SETUP GENESIS ACCOUNT: ${address}  amt: ${amount}`)
             }
           }
           await sleep(ONE_SECOND * 10)
