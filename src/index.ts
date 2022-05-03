@@ -1082,7 +1082,7 @@ shardus.registerExternalGet('nodeRewardValidate', debugMiddleware, async (req, r
  */
 
 function isInternalTXGlobal(internalTx: InternalTx){
-  return internalTx.internalTXType === InternalTXType.SetGlobalCodeBytes 
+  return internalTx.internalTXType === InternalTXType.SetGlobalCodeBytes
       || internalTx.internalTXType === InternalTXType.ApplyChangeConfig
       || internalTx.internalTXType === InternalTXType.InitNetwork
 }
@@ -1201,6 +1201,7 @@ async function applyInternalTx(internalTx: InternalTx, wrappedStates: WrappedSta
       to: to.ethAddress,
       value: oneEth.toString('hex'),
       data: '0x',
+      status: 1
     }
 
     if(ShardeumFlags.EVMReceiptsAsAccounts){
@@ -1673,7 +1674,7 @@ shardus.setup({
       const runTxResult: RunTxResult = await EVM.runTx({ tx: transaction, skipNonce: true })
       if (runTxResult.execResult.exceptionError) {
         let readableReceipt: ReadableReceipt = {
-          status: false,
+          status: 0,
           transactionHash: ethTxId,
           transactionIndex: '0x1',
           blockNumber: '0xb',
@@ -1684,7 +1685,7 @@ shardus.setup({
           logs: null,
           contractAddress: runTxResult.createdAddress ? runTxResult.createdAddress.toString() : null,
           from: transaction.getSenderAddress().toString(),
-          to: transaction.to ? transaction.to.toString() : '',
+          to: transaction.to ? transaction.to.toString() : null,
           value: transaction.value.toString('hex'),
           data: '0x' + transaction.data.toString('hex'),
         }
@@ -1721,7 +1722,7 @@ shardus.setup({
       appliedTxs[ethTxId] = {
         txId: ethTxId,
         injected: tx,
-        receipt: { ...runTxResult, nonce: transaction.nonce.toString('hex') },
+        receipt: { ...runTxResult, nonce: transaction.nonce.toString('hex'), status: 1 },
       }
 
       if (ShardeumFlags.temporaryParallelOldMode === true) {
@@ -1880,6 +1881,7 @@ shardus.setup({
       }
 
       let readableReceipt: ReadableReceipt = {
+        status: 1,
         transactionHash: ethTxId,
         transactionIndex: '0x1',
         blockNumber: '0xb',
@@ -1890,7 +1892,7 @@ shardus.setup({
         logs: logs,
         contractAddress: runTxResult.createdAddress ? runTxResult.createdAddress.toString() : null,
         from: transaction.getSenderAddress().toString(),
-        to: transaction.to ? transaction.to.toString() : '',
+        to: transaction.to ? transaction.to.toString() : null,
         value: transaction.value.toString('hex'),
         data: '0x' + transaction.data.toString('hex'),
       }
@@ -1936,7 +1938,7 @@ shardus.setup({
 
         if (ShardeumFlags.VerboseLogs) console.log('Predicting contract account address:', caAddr, shardusAddr)
         let readableReceipt: ReadableReceipt = {
-          status: false,
+          status: 0,
           transactionHash: ethTxId,
           transactionIndex: '0x1',
           blockNumber: '0xb',
@@ -1947,7 +1949,7 @@ shardus.setup({
           gasUsed: '0x',
           contractAddress: caAddr,
           from: transaction.getSenderAddress().toString(),
-          to: transaction.to ? transaction.to.toString() : '',
+          to: transaction.to ? transaction.to.toString() : null,
           value: transaction.value.toString('hex'),
           data: '0x',
         }

@@ -137,7 +137,7 @@ export interface OurAppDefinedData {
 }
 
 export interface ReadableReceipt {
-  status?: boolean | string 
+  status?: boolean | string | number
   transactionHash: string
   transactionIndex: string
   blockNumber: string
