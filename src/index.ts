@@ -37,6 +37,7 @@ import { RunTxResult } from '@ethereumjs/vm/dist/runTx'
 import { RunState } from '@ethereumjs/vm/dist/evm/interpreter'
 import Wallet from 'ethereumjs-wallet'
 import genesis from './config/genesis.json'
+import {loadAccountDataFromDB} from './shardeum/debugRestoreAccounts'
 
 const env = process.env
 
@@ -88,6 +89,11 @@ let nodeRewardTracker = {
 function isDebugMode(){
   //@ts-ignore
   return config.server.mode === "debug"
+}
+
+function isVerboseEnabled() {
+  let logVerbose = shardus.getLogFlags().verbose
+  return logVerbose
 }
 
 // grab this
@@ -1426,6 +1432,17 @@ shardus.setup({
         const nodeId = shardus.getNodeId()
         const nodeInfo = shardus.getNode(nodeId)
         // const when = Date.now() + configs.ONE_SECOND * 10
+
+        //await sleep(ONE_SECOND * 20)
+        if(ShardeumFlags.DebugRestoreFile != null && ShardeumFlags.DebugRestoreFile != ''){
+          let loadOptions = {
+            file:ShardeumFlags.DebugRestoreFile
+          }
+          let report = await loadAccountDataFromDB(shardus, loadOptions)
+          shardus.log('loadAccountDataFromDB:' + JSON.stringify(report))
+          
+        }
+
         const when = Date.now()
         const existingNetworkAccount = await shardus.getLocalOrRemoteAccount(networkAccount)
         if (existingNetworkAccount) {
@@ -2585,6 +2602,9 @@ shardus.setup({
     const results = []
     const start = parseInt(accountStart, 16)
     const end = parseInt(accountEnd, 16)
+
+    const finalResults = []
+
     // Loop all accounts
     for (let addressStr in accounts) {
       let wrappedEVMAccount = accounts[addressStr]
@@ -2594,10 +2614,12 @@ shardus.setup({
       // Skip if not in timestamp range
       const timestamp = wrappedEVMAccount.timestamp
       if (timestamp < tsStart || timestamp > tsEnd) continue
-      // Add to results
-      const wrapped = WrappedEVMAccountFunctions._shardusWrappedAccount(wrappedEVMAccount)
-      results.push(wrapped)
 
+      // // Add to results
+      // const wrapped = WrappedEVMAccountFunctions._shardusWrappedAccount(wrappedEVMAccount)
+      // results.push(wrapped)
+      // Add to results
+      results.push(wrappedEVMAccount)
       // we can't exit early. this is hard on perf
       // This data needs to eventually live in a DB and then the sort and max records will be natural.
 
@@ -2606,24 +2628,32 @@ shardus.setup({
     }
     //critical to sort by timestamp before we cull max records
     results.sort((a, b) => a.timestamp - b.timestamp)
-    let finalResults = results.slice(0, maxRecords)
+    let cappedResults = results.slice(0, maxRecords)
+
+    for(let wrappedEVMAccount of cappedResults){
+      // Process and add to finalResults
+      const wrapped = WrappedEVMAccountFunctions._shardusWrappedAccount(wrappedEVMAccount)
+      finalResults.push(wrapped)
+    }
+
 
     return finalResults
   },
   calculateAccountHash(wrappedEVMAccount: WrappedEVMAccount) {
     return WrappedEVMAccountFunctions._calculateAccountHash(wrappedEVMAccount)
   },
-  resetAccountData(accountBackupCopies) {
-    for (let recordData of accountBackupCopies) {
-      let wrappedEVMAccount = recordData.data as WrappedEVMAccount
-      let shardusAddress = getAccountShardusAddress(wrappedEVMAccount)
-      accounts[shardusAddress] = wrappedEVMAccount
+  // should rely on set account data
+  // resetAccountData(accountBackupCopies) {
+  //   for (let recordData of accountBackupCopies) {
+  //     let wrappedEVMAccount = recordData.data as WrappedEVMAccount
+  //     let shardusAddress = getAccountShardusAddress(wrappedEVMAccount)
+  //     accounts[shardusAddress] = wrappedEVMAccount
 
-      //TODO need to also update shardeumState! probably can do that in a batch outside of this loop
-      // a wrappedEVMAccount could be an EVM Account or a CA key value pair
-      // maybe could just refactor the loop in setAccountData??
-    }
-  },
+  //     //TODO need to also update shardeumState! probably can do that in a batch outside of this loop
+  //     // a wrappedEVMAccount could be an EVM Account or a CA key value pair
+  //     // maybe could just refactor the loop in setAccountData??
+  //   }
+  // },
   deleteAccountData(addressList) {
     for (const address of addressList) {
       delete accounts[address]

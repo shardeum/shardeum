@@ -20,3 +20,4 @@ export let ServicePoints = {
   ['contract/call']: { endpoint: 5, direct: 20 },
   ['tx/:hash']: 5,
 }
+export let DebugRestoreFile = '' //'accounts-by-ts.json'

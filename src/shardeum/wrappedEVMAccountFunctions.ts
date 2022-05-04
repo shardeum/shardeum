@@ -54,7 +54,7 @@ export function _shardusWrappedAccount(wrappedEVMAccount: WrappedEVMAccount): Sh
  * @param wrappedEVMAccount
  */
 export function fixDeserializedWrappedEVMAccount(wrappedEVMAccount: WrappedEVMAccount) {
-    console.log('fixDeserializedWrappedEVMAccount', wrappedEVMAccount)
+  //  console.log('fixDeserializedWrappedEVMAccount', wrappedEVMAccount)
   if (wrappedEVMAccount.accountType === AccountType.Account) {
     TransactionState.fixUpAccountFields(wrappedEVMAccount.account)
     //need to take the seriazlied data and put create a proper account object from it
