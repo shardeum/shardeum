@@ -1688,7 +1688,7 @@ shardus.setup({
     try {
       // Apply the tx
       // const runTxResult = await EVM.runTx({tx: transaction, skipNonce: true, skipBlockGasLimitValidation: true})
-      const runTxResult: RunTxResult = await EVM.runTx({ tx: transaction, skipNonce: true })
+      const runTxResult: RunTxResult = await EVM.runTx({ tx: transaction, skipNonce: false })
       if (runTxResult.execResult.exceptionError) {
         let readableReceipt: ReadableReceipt = {
           status: 0,
