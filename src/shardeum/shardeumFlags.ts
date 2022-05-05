@@ -21,3 +21,4 @@ export let ServicePoints = {
   ['tx/:hash']: 5,
 }
 export let DebugRestoreFile = '' //'accounts-by-ts.json'
+// export let CheckNonceGreaterThan = false
