@@ -46,6 +46,7 @@ export default class TransactionState {
   // contract account key: value data
   firstContractBytesReads: Map<string, ContractByteWrite>
   allContractBytesWrites: Map<string, ContractByteWrite>
+  allContractBytesWritesByAddress: Map<string, ContractByteWrite>
 
   // pending contract storage commits
   pendingContractStorageCommits: Map<string, Map<string, Buffer>>
@@ -71,6 +72,7 @@ export default class TransactionState {
 
     this.firstContractBytesReads = new Map()
     this.allContractBytesWrites = new Map()
+    this.allContractBytesWritesByAddress = new Map()
 
     this.pendingContractStorageCommits = new Map()
     this.pendingContractBytesCommits = new Map()
@@ -103,6 +105,7 @@ export default class TransactionState {
 
     this.firstContractBytesReads = new Map()
     this.allContractBytesWrites = new Map()
+    this.allContractBytesWritesByAddress = new Map()
 
     this.pendingContractStorageCommits = new Map()
     this.pendingContractBytesCommits = new Map()
@@ -392,6 +395,11 @@ export default class TransactionState {
         if (this.debugTrace) this.debugTraceLog(`getContractCode: (allContractBytesWrites) addr:${addressString} codeHashStr:${codeHashStr} v:${codeBytes.length}`)
         return codeBytes
       }
+      if (this.allContractBytesWritesByAddress.has(addressString)) {
+        let codeBytes = this.allContractBytesWritesByAddress.get(addressString).contractByte
+        if (this.debugTrace) this.debugTraceLog(`getContractCode: (allContractBytesWritesByAddress) addr:${addressString} v:${codeBytes.length}`)
+        return codeBytes
+      }
     }
     if (this.firstContractBytesReads.has(codeHashStr)) {
       let codeBytes = this.firstContractBytesReads.get(codeHashStr).contractByte
@@ -430,7 +438,7 @@ export default class TransactionState {
     return codeBytes
   }
 
-  putContractCode(contractAddress: Address, codeByte: Buffer) {
+  async putContractCode(contractAddress: Address, codeByte: Buffer) {
     const addressString = contractAddress.toString()
 
     if (this.accountInvolvedCB(this, addressString, false) === false) {
@@ -452,6 +460,8 @@ export default class TransactionState {
       this.debugTraceLog(`putContractCode: addr:${addressString} codeHash:${codeHash.toString('hex')} v:${contractByteWrite.contractByte.toString('hex')}`)
 
     this.allContractBytesWrites.set(codeHash.toString('hex'), contractByteWrite)
+    this.allContractBytesWritesByAddress.set(addressString, contractByteWrite)
+
     this.touchedCAs.add(addressString)
   }
 
