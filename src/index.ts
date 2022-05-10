@@ -2613,8 +2613,8 @@ shardus.setup({
     //
     this.updateAccountFull(wrappedData, localCache, applyResponse)
   },
-  getAccountDataByRange(accountStart, accountEnd, tsStart, tsEnd, maxRecords) {
-    const results = []
+  getAccountDataByRange(accountStart, accountEnd, tsStart, tsEnd, maxRecords, offset=0) {
+    const results:WrappedEVMAccount[] = []
     const start = parseInt(accountStart, 16)
     const end = parseInt(accountEnd, 16)
 
@@ -2643,13 +2643,74 @@ shardus.setup({
     }
     //critical to sort by timestamp before we cull max records
     results.sort((a, b) => a.timestamp - b.timestamp)
-    let cappedResults = results.slice(0, maxRecords)
 
+    // let sortByTsThenAddress = function (a,b){
+    //   if(a.timestamp === b.timestamp){
+    //     if(a.ethAddress > b.ethAddress){
+    //       return 1
+    //     }if(a.ethAddress < b.ethAddress){
+    //       return -1
+    //     } else {
+    //       return 0
+    //     }
+    //   }
+    //   if(a.timestamp > b.timestamp){
+    //     return 1
+    //   } 
+    //   return -1
+    // }
+    // results.sort(sortByTsThenAddress)
+
+    //let cappedResults = results.slice(0, maxRecords)
+
+    let cappedResults = []
+    let count = 0
+    let extra = 0   
+    let lastTS = tsEnd 
+    // let startTS = results[0].timestamp
+    // let sameTS = true
+
+    if(results.length > 0) {
+      lastTS = results[0].timestamp
+      //start at offset!
+      for(let i=offset; i<results.length; i++ ){  
+        let wrappedEVMAccount = results[i]
+        // if(startTS === wrappedEVMAccount.timestamp){
+        //   sameTS = true
+        // }
+        // if(sameTS){
+        //   if(startTS != wrappedEVMAccount.timestamp){
+        //     sameTS = false
+        //   }
+        // } else {
+        //   if(count > maxRecords){
+        //     break
+        //   }
+        // }
+        if(count > maxRecords){
+          // if(lastTS != wrappedEVMAccount.timestamp){
+          //   break
+          // } else {
+          //   extra++
+          // }
+
+          break //no extras allowed
+        }
+        lastTS = wrappedEVMAccount.timestamp
+        count++
+        cappedResults.push(wrappedEVMAccount)
+      }      
+    }
+
+    
+    shardus.log(`getAccountDataByRange: extra:${extra} ${JSON.stringify({accountStart, accountEnd, tsStart, tsEnd, maxRecords, offset})}`);
+    
     for(let wrappedEVMAccount of cappedResults){
       // Process and add to finalResults
       const wrapped = WrappedEVMAccountFunctions._shardusWrappedAccount(wrappedEVMAccount)
       finalResults.push(wrapped)
     }
+
 
 
     return finalResults
