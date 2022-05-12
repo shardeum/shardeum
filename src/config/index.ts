@@ -111,7 +111,11 @@ config = merge(config, {
 config = merge(config, {
   server: {
     sharding: {
-      nodesPerConsensusGroup: process.env.nodesPerConsensusGroup ? parseInt(process.env.nodesPerConsensusGroup) : 20
+      nodesPerConsensusGroup: process.env.nodesPerConsensusGroup ? parseInt(process.env.nodesPerConsensusGroup) : 20,
+      executeInOneShard: false
+    },
+    stateManager: {
+      accountBucketSize: 200 //25
     }
   }
 })
@@ -121,12 +125,12 @@ config = merge(
   config,
   {
     server: {
-      mode: 'release', //TODO must set this to release for public networks or get security on endpoints
+      mode: 'debug', //TODO must set this to release for public networks or get security on endpoints
       debug: {
         startInFatalsLogMode: false, // true setting good for big aws test with nodes joining under stress.
         startInErrorLogMode: true,
         fakeNetworkDelay: 0,
-        disableSnapshots: false,
+        disableSnapshots: false,// //dont check in if set to true
         countEndpointStart: -1,
         hashedDevAuth: '117151a0d719f329a4a570b4ccde4bbb1ec12fa6a7a870a1471ed170e7f08d70', //todo remove this after alpha 1.0
         devPublicKey:'774491f80f47fedb119bb861601490f42bc3ea3b57fc63906c0d08e6d777a592'

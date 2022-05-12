@@ -9,7 +9,7 @@ export let globalCodeBytes = true
 export let VerboseLogs = false //set this to false to reduce logging that can impact perf tests or demos
 export let Virtual0Address = true
 export let GlobalNetworkAccount = true
-export let NodeReward = NodeRewardENV || true
+export let NodeReward = NodeRewardENV || true //false //
 export let SelfTest = false
 export let ServicePointsPerSecond = 100 //service function points per second
 export let SetupGenesisAccount = true
@@ -20,5 +20,7 @@ export let ServicePoints = {
   ['contract/call']: { endpoint: 5, direct: 20 },
   ['tx/:hash']: 5,
 }
-export let DebugRestoreFile = '' //'accounts-by-ts.json'
+export let DebugRestoreFile = ''//'accounts-by-ts.json'
 // export let CheckNonceGreaterThan = false
+
+export let UseDBForAccounts = false //true is wip, but close

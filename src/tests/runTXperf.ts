@@ -16,6 +16,7 @@ import {  Account,
   bufferToInt} from 'ethereumjs-util';
 
 import * as crypto from '@shardus/crypto-utils'
+import { json } from 'express';
 //import { json } from 'stream/consumers';
 crypto.init('69fa4195670576c0160d660c3be36556ff8d504725be8a59b5a96509e0c994bc')
 
@@ -25,6 +26,27 @@ let shardeumStateManager = new ShardeumState() //as StateManager
 const vm = new VM({common, stateManager:shardeumStateManager});
 
 //const vm = new VM({common});
+
+
+
+function debugTX(txStr){
+  
+  const serializedInput = toBuffer(txStr)
+  const transaction = Transaction.fromRlpSerializedTx(serializedInput)
+
+  console.log(JSON.stringify(transaction))
+
+  console.log('to ' + transaction.to)
+
+  console.log('verify ' + transaction.verifySignature())
+
+  console.log('sender ' + transaction.getSenderAddress())
+
+  console.log('sender PK ' + transaction.getSenderPublicKey().toString())
+
+  console.log('sender json.. ' + JSON.stringify(transaction.toJSON()) )
+}
+
 
 function getTransactionObj (tx: any) : Transaction {
   if (!tx.raw) throw Error('fail')
@@ -208,5 +230,9 @@ async function test(){
   await runTXs(signedTxs)
 }
 
-test()
+//test()
+let txStr = '0xf8728207b18501dfd14000832dc6c094c125bde1fdcc2ca1a0dd2583872dcc037aeed87289056bc75e2d6310000080823f61a0f56ebbe107068b9bf0a63a0c15023e75a34bd4d2807ce7dd21d62ed13cc68968a019c537ddbd95c21667433e284c32580dbce4b1f508dd41cbca7b21befd0d1024'
+debugTX(txStr)
+
+
 
