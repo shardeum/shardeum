@@ -25,7 +25,8 @@ import {
   WrappedStates,
   NetworkAccount,
   NetworkParameters,
-  NodeAccount
+  NodeAccount,
+  BlockMap
 } from './shardeum/shardeumTypes'
 import { getAccountShardusAddress, toShardusAddress, toShardusAddressWithKey } from './shardeum/evmAddress'
 import * as ShardeumFlags from './shardeum/shardeumFlags'
@@ -38,6 +39,8 @@ import { RunState } from '@ethereumjs/vm/dist/evm/interpreter'
 import Wallet from 'ethereumjs-wallet'
 import genesis from './config/genesis.json'
 import {loadAccountDataFromDB} from './shardeum/debugRestoreAccounts'
+import { Block } from '@ethereumjs/block'
+import { ShardeumBlock } from './block/blockchain'
 
 const env = process.env
 
@@ -55,6 +58,8 @@ export const ONE_DAY = 24 * ONE_HOUR
 // export const ONE_WEEK = 7 * ONE_DAY
 // export const ONE_YEAR = 365 * ONE_DAY
 
+let latestBlock = 0
+export let blocks: BlockMap = {}
 
 // INITIAL NETWORK PARAMETERS FOR Shardeum
 export const INITIAL_PARAMETERS: NetworkParameters = {
@@ -157,7 +162,8 @@ const defaultBalance = isDebugMode() ? oneEth.mul(new BN(100)) : new BN(0)
 let shardeumStateManager = new ShardeumState() //as StateManager
 shardeumStateManager.temporaryParallelOldMode = ShardeumFlags.temporaryParallelOldMode //could probably refactor to use ShardeumFlags in the state manager
 
-let EVM = new VM({ stateManager: shardeumStateManager })
+let shardeumBlock = new ShardeumBlock()
+let EVM = new VM({ stateManager: shardeumStateManager, blockchain: shardeumBlock })
 
 let transactionStateMap = new Map<string, TransactionState>()
 
@@ -1698,7 +1704,7 @@ shardus.setup({
 
       // Apply the tx
       // const runTxResult = await EVM.runTx({tx: transaction, skipNonce: true, skipBlockGasLimitValidation: true})
-      const runTxResult: RunTxResult = await EVM.runTx({ tx: transaction, skipNonce: true })
+      const runTxResult: RunTxResult = await EVM.runTx({ block: blocks[latestBlock], tx: transaction, skipNonce: true })
       if (runTxResult.execResult.exceptionError) {
         let readableReceipt: ReadableReceipt = {
           status: 0,
@@ -1738,8 +1744,7 @@ shardus.setup({
           shardus.applyResponseSetFailed(applyResponse, reason)
           return applyResponse //return rather than throw exception
         }
-
-        throw new Error(`invalid transaction, reason: ${reason}. tx: ${JSON.stringify(tx)}`)
+        throw new Error(`invalid transaction, reason: ${runTxResult.execResult.exceptionError}. tx: ${JSON.stringify(tx)}`)
       }
       if (ShardeumFlags.VerboseLogs) console.log('DBG', 'applied tx', txId, runTxResult)
       if (ShardeumFlags.VerboseLogs) console.log('DBG', 'applied tx eth', ethTxId, runTxResult)
@@ -2762,6 +2767,19 @@ if (ShardeumFlags.GlobalNetworkAccount) {
 
         // wait for rewards
         let latestCycles = shardus.getLatestCycles()
+        if (latestCycles != null && latestCycles.length > 0) {
+          const { counter, start } = latestCycles[0]
+          if (!blocks[counter]) {
+            const blockData = {
+              header: { number: counter, timestamp: new BN(start) },
+              transactions: [],
+              uncleHeaders: [],
+            }
+            const block = Block.fromBlockData(blockData)
+            blocks[counter] = block
+            latestBlock = counter
+          }
+        }
         if (latestCycles != null && latestCycles.length > 0 && latestCycles[0].counter < 10) {
           shardus.log(`Too early for node reward: ${latestCycles[0].counter}`)
           return setTimeout(networkMaintenance, 100)

@@ -3,6 +3,7 @@ import { Account, Address, BN, bufferToHex, toBuffer } from 'ethereumjs-util'
 import { Transaction, AccessListEIP2930Transaction } from '@ethereumjs/tx'
 import { TxReceipt } from '@ethereumjs/vm/dist/types'
 import { ShardusTypes } from '@shardus/core'
+import { Block } from '@ethereumjs/block'
 
 export enum AccountType {
   Account, //  EOA or CA
@@ -53,6 +54,10 @@ export interface WrappedEVMAccount extends BaseAccount {
 
 export interface WrappedEVMAccountMap {
   [id: string]: WrappedEVMAccount
+}
+
+export interface BlockMap {
+  [counter: number | string]: Block
 }
 
 export interface EVMAccountInfo {
