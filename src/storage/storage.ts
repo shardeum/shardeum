@@ -85,7 +85,7 @@ class Storage {
           raw: true,
         }
       )
-      return result
+      if(result.length > 0) return result[0]
     } catch (e) {
       throw new Error(e)
     }

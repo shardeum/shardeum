@@ -42,6 +42,7 @@ export async function init(baseDir:string, dbPath:string){
 export async function getAccount(address: string): Promise<WrappedEVMAccount> {
   if (ShardeumFlags.UseDBForAccounts === true) {
     let account = await storage.getAccountsEntry(address)
+    if (!account) return
 
     if (isString(account.data)) {
       account.data = JSON.parse(account.data as string)
@@ -131,5 +132,3 @@ export async function queryAccountsEntryByRanges2(accountStart, accountEnd, tsSt
     //return accounts
   }
 }
-
-
