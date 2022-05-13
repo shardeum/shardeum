@@ -39,7 +39,7 @@ class Storage {
     //   'CREATE TABLE if not exists `accountsEntry` (`accountId` VARCHAR(255) NOT NULL, `timestamp` BIGINT NOT NULL, `data` JSON NOT NULL, `hash` VARCHAR(255) NOT NULL, PRIMARY KEY (`accountId`, `timestamp`))'
     // )
     await this.storage.runCreate(
-      'CREATE TABLE if not exists `accountsEntry` (`accountId` VARCHAR(255) NOT NULL, `timestamp` BIGINT NOT NULL, `data` JSON NOT NULL, PRIMARY KEY (`accountId`, `timestamp`))'
+      'CREATE TABLE if not exists `accountsEntry` (`accountId` VARCHAR(255) NOT NULL, `timestamp` BIGINT NOT NULL, `data` JSON NOT NULL, PRIMARY KEY (`accountId`))'
     )
 
     // get models and helper methods from the storage class we just initializaed.
