@@ -79,10 +79,10 @@ config = merge(config, {
       minNodesToAllowTxs: 1,
       minNodes: process.env.minNodes ? parseInt(process.env.minNodes) : 10,
       maxNodes: 2000,
-      maxJoinedPerCycle: 6,
-      maxSyncingPerCycle: 12, 
+      maxJoinedPerCycle: 1,
+      maxSyncingPerCycle: 1, 
       maxRotatedPerCycle: process.env.maxRotatedPerCycle ? parseInt(process.env.maxRotatedPerCycle) : 1,
-      firstCycleJoin: 10
+      firstCycleJoin: 1
     }
   }
 })

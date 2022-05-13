@@ -158,9 +158,11 @@ if(ShardeumFlags.UseDBForAccounts === true){
   AccountsStorage.init(config.server.baseDir, 'db/shardeum.sqlite')
 }
 
-//let accounts: WrappedEVMAccountMap = {}
-let appliedTxs = {}
-let shardusTxIdToEthTxId = {}
+//let accounts: WrappedEVMAccountMap = {} //relocated
+
+//may need these later.  if so, move to DB
+let appliedTxs = {} //this appears to be unused. will it still be unused if we use receipts as app data
+let shardusTxIdToEthTxId = {} //this appears to only support appliedTxs
 const oneEth = new BN(10).pow(new BN(18))
 
 //In debug mode the default value is 100 SHM.  This is needed for certain load test operations
@@ -172,15 +174,18 @@ shardeumStateManager.temporaryParallelOldMode = ShardeumFlags.temporaryParallelO
 let shardeumBlock = new ShardeumBlock()
 let EVM = new VM({ stateManager: shardeumStateManager, blockchain: shardeumBlock })
 
-//todo needs disk storage
+//todo need to evict old data
 let transactionStateMap = new Map<string, TransactionState>()
-//todo needs disk storage
+let debugTransactionState:TransactionState = null
+
+//todo need to evict old data
 let shardusAddressToEVMAccountInfo = new Map<string, EVMAccountInfo>()
 
 interface RunStateWithLogs extends RunState {
   logs?: []
 }
 
+// TODO move this to a db table
 let transactionFailHashMap: any = {}
 
 let ERC20TokenBalanceMap: any = []
@@ -446,7 +451,7 @@ async function getReadableAccountInfo(account) {
 function getDebugTXState(): TransactionState {
   let txId = '0'.repeat(64)
   if (ShardeumFlags.VerboseLogs) console.log('Creating a debug tx state for ', txId)
-  let transactionState = transactionStateMap.get(txId)
+  let transactionState = debugTransactionState //transactionStateMap.get(txId)
   if (transactionState == null) {
     transactionState = new TransactionState()
     transactionState.initData(
@@ -462,7 +467,8 @@ function getDebugTXState(): TransactionState {
       undefined,
       undefined
     )
-    transactionStateMap.set(txId, transactionState)
+    //transactionStateMap.set(txId, transactionState)
+    debugTransactionState = transactionState
   } else {
     //TODO possibly need a blob to re-init with, but that may happen somewhere else.  Will require a slight interface change
     //to allow shardus to pass in this extra data blob (unless we find a way to run it through wrapped states??)

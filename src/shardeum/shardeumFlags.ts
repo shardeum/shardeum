@@ -23,4 +23,4 @@ export let ServicePoints = {
 export let DebugRestoreFile = ''//'accounts-by-ts.json'
 // export let CheckNonceGreaterThan = false
 
-export let UseDBForAccounts = false //true is wip, but close
+export let UseDBForAccounts = true
