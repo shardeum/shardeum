@@ -1782,13 +1782,16 @@ shardus.setup({
       }
       if (ShardeumFlags.VerboseLogs) console.log('DBG', 'applied tx', txId, runTxResult)
       if (ShardeumFlags.VerboseLogs) console.log('DBG', 'applied tx eth', ethTxId, runTxResult)
-      shardusTxIdToEthTxId[txId] = ethTxId // todo: fix that this is getting set too early, should wait untill after TX consensus
+      
+      if(ShardeumFlags.AppliedTxsMaps) {
+        shardusTxIdToEthTxId[txId] = ethTxId // todo: fix that this is getting set too early, should wait untill after TX consensus
 
-      // this is to expose tx data for json rpc server
-      appliedTxs[ethTxId] = {
-        txId: ethTxId,
-        injected: tx,
-        receipt: { ...runTxResult, nonce: transaction.nonce.toString('hex'), status: 1 },
+        // this is to expose tx data for json rpc server
+        appliedTxs[ethTxId] = {
+          txId: ethTxId,
+          injected: tx,
+          receipt: { ...runTxResult, nonce: transaction.nonce.toString('hex'), status: 1 },
+        }        
       }
 
       if (ShardeumFlags.temporaryParallelOldMode === true) {
@@ -2652,14 +2655,15 @@ shardus.setup({
     //accounts[accountId] = updatedEVMAccount
     await AccountsStorage.setAccount(accountId, updatedEVMAccount)
 
-    let ethTxId = shardusTxIdToEthTxId[txId]
+    if(ShardeumFlags.AppliedTxsMaps) {
+      let ethTxId = shardusTxIdToEthTxId[txId]
 
-    //we will only have an ethTxId if this was an EVM tx.  internalTX will not have one
-    if (ethTxId != null) {
-      let appliedTx = appliedTxs[ethTxId]
-      appliedTx.status = 1
+      //we will only have an ethTxId if this was an EVM tx.  internalTX will not have one
+      if (ethTxId != null) {
+        let appliedTx = appliedTxs[ethTxId]
+        appliedTx.status = 1
+      }
     }
-
     // TODO: the account we passed to shardus is not the final committed data for contract code and contract storage
     //  accounts
 

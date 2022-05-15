@@ -20,7 +20,11 @@ export let ServicePoints = {
   ['contract/call']: { endpoint: 5, direct: 20 },
   ['tx/:hash']: 5,
 }
-export let DebugRestoreFile = ''//'accounts-by-ts.json'
+export let DebugRestoreFile = '' //'accounts-by-ts.json'
 // export let CheckNonceGreaterThan = false
 
-export let UseDBForAccounts = true
+export let UseDBForAccounts = true //Use Sql to store in memory accounts instead of simple accounts object map
+
+export let AppliedTxsMaps = false //some maps that are not currently used, but may need to come back later. 
+                                  //Even then may need to port them to sqllite.  Disabled for now because they 
+                                  //leak memory
