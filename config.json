@@ -3,9 +3,9 @@
     "baseDir": ".",
     "ip": {
       "externalIp": "127.0.0.1",
-      "externalPort": 9009,
+      "externalPort": 9001,
       "internalIp": "127.0.0.1",
-      "internalPort": 10009
+      "internalPort": 10001
     },
     "reporting": {
       "report": true,

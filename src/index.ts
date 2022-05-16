@@ -2986,12 +2986,10 @@ if (ShardeumFlags.GlobalNetworkAccount) {
           shardus.log('GENERATED_NODE_REWARD: ', nodeId, tx.to)
           lastReward = currentTime
         }
-
-        shardus.log('Maintainence cycle has ended')
-
-        expected += cycleInterval
-        return setTimeout(networkMaintenance, Math.max(0, cycleInterval - drift))
       }
+      shardus.log('Maintainence cycle has ended')
+      expected += cycleInterval
+      return setTimeout(networkMaintenance, Math.max(0, cycleInterval - drift))
     }
 
     shardus.on(
