@@ -969,6 +969,7 @@ shardus.registerExternalPost('contract/call', async (req, res) => {
       shardeumStateManager.setTransactionState(debugTXState)
     }
 
+    opt['block'] = blocks[latestBlock]
     const callResult = await EVM.runCall(opt)
     if (ShardeumFlags.VerboseLogs) console.log('Call Result', callResult.execResult.returnValue.toString('hex'))
 
@@ -1237,7 +1238,7 @@ async function applyInternalTx(internalTx: InternalTx, wrappedStates: WrappedSta
     let readableReceipt: ReadableReceipt = {
       transactionHash: '0x' + txId,
       transactionIndex: '0x1',
-      blockNumber: '0xb',
+      blockNumber: '0x' + blocks[latestBlock].header.number.toString('hex'),
       nonce: '0x',
       blockHash: '0xc6ef2fc5426d6ad6fd9e2a26abeab0aa2411b7ab17f30a99d3cb96aed1d1055b',
       cumulativeGasUsed: '0x0',
@@ -1444,6 +1445,12 @@ const createNodeAccount = (accountId: string) => {
   return account
 }
 
+const getTxBlock = (timestamp: string) => {
+  for (let i = Object.values(blocks).length - 1; i >= 0; i--) {
+    if (Number(timestamp) >= blocks[i].header.timestamp.toNumber())
+      return blocks[latestBlock]
+  }
+}
 
 /***
  *     ######  ##     ##    ###    ########  ########  ##     ##  ######      ######  ######## ######## ##     ## ########
@@ -1745,7 +1752,7 @@ shardus.setup({
           status: 0,
           transactionHash: ethTxId,
           transactionIndex: '0x1',
-          blockNumber: '0xb',
+          blockNumber: '0x' + blocks[latestBlock].header.number.toString('hex'),
           nonce: transaction.nonce.toString('hex'),
           blockHash: '0xc6ef2fc5426d6ad6fd9e2a26abeab0aa2411b7ab17f30a99d3cb96aed1d1055b',
           cumulativeGasUsed: '0x' + runTxResult.gasUsed.toString('hex'),
@@ -1956,7 +1963,7 @@ shardus.setup({
         status: 1,
         transactionHash: ethTxId,
         transactionIndex: '0x1',
-        blockNumber: '0xb',
+        blockNumber: '0x' + blocks[latestBlock].header.number.toString('hex'),
         nonce: transaction.nonce.toString('hex'),
         blockHash: '0xc6ef2fc5426d6ad6fd9e2a26abeab0aa2411b7ab17f30a99d3cb96aed1d1055b',
         cumulativeGasUsed: '0x' + runTxResult.gasUsed.toString('hex'),
@@ -2013,7 +2020,7 @@ shardus.setup({
           status: 0,
           transactionHash: ethTxId,
           transactionIndex: '0x1',
-          blockNumber: '0xb',
+          blockNumber: '0x' + blocks[latestBlock].header.number.toString('hex'),
           nonce: transaction.nonce.toString('hex'),
           blockHash: '0xc6ef2fc5426d6ad6fd9e2a26abeab0aa2411b7ab17f30a99d3cb96aed1d1055b',
           cumulativeGasUsed: '0x',
