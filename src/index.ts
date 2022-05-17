@@ -706,7 +706,8 @@ shardus.registerExternalGet('dumpTransactionStateMap', debugMiddleware, async (r
   let id
   try {
     //use a replacer so we get the map:
-    let output = JSON.stringify(transactionStateMap, replacer, 4)
+    //let output = JSON.stringify(transactionStateMap, replacer, 4)
+    let output = `tx state count:${transactionStateMap.size}`
     res.write(output)
     res.end()
     return
@@ -2864,6 +2865,12 @@ shardus.setup({
       txId = crypto.hashObj(tx, true) // compute from tx
     }
     _transactionReceiptPass(tx, txId, wrappedStates, applyResponse)
+
+    //clear this out of the transaction state map
+    if(transactionStateMap.has(txId)){
+      transactionStateMap.delete(txId)
+    }
+    
   },
   getJoinData() {
     const joinData = {
@@ -2885,6 +2892,22 @@ shardus.setup({
 })
 
 shardus.registerExceptionHandler()
+
+
+function periodicMemoryCleanup(){
+  let keys = transactionStateMap.keys()
+  //todo any provisions needed for TXs that can hop and extend the timer
+  let maxAge = Date.now() - 60000
+  for(let key of keys){
+    let transactionState = transactionStateMap.get(key)
+    if(transactionState.createdTimestamp < maxAge){
+      transactionStateMap.delete(key)
+    }
+  }
+  setTimeout(periodicMemoryCleanup, 60000)
+}
+
+setTimeout(periodicMemoryCleanup, 60000)
 
 if (ShardeumFlags.GlobalNetworkAccount) {
   // CODE THAT GETS EXECUTED WHEN NODES START

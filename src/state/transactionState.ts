@@ -57,6 +57,8 @@ export default class TransactionState {
 
   debugTrace: boolean
 
+  createdTimestamp: number
+
   // callbacks
   accountMissCB: accountEvent
   contractStorageMissCB: contractStorageEvent
@@ -87,6 +89,9 @@ export default class TransactionState {
     firstReads: Map<string, Buffer>,
     firstContractStorageReads: Map<string, Map<string, Buffer>>
   ) {
+
+    this.createdTimestamp = Date.now()
+
     this.linkedTX = linkedTX
 
     this.shardeumState = shardeumState

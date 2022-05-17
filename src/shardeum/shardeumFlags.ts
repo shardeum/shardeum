@@ -5,7 +5,7 @@
 const NodeRewardENV = process.env.NodeReward ? (process.env.NodeReward === 'true' ? true : false) : null
 export let contractStorageKeySilo = true // do we want to calcultate contract storage keys that are close to the CA account address?
 export let temporaryParallelOldMode = false // Set of temporary hacks that allow running ShardeumState with some old logic.
-export let globalCodeBytes = true
+export let globalCodeBytes = false //do codebytes (contract code) use global accounts?
 export let VerboseLogs = false //set this to false to reduce logging that can impact perf tests or demos
 export let Virtual0Address = true
 export let GlobalNetworkAccount = true
@@ -28,3 +28,4 @@ export let UseDBForAccounts = true //Use Sql to store in memory accounts instead
 export let AppliedTxsMaps = false //some maps that are not currently used, but may need to come back later. 
                                   //Even then may need to port them to sqllite.  Disabled for now because they 
                                   //leak memory
+
