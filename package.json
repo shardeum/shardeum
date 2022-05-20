@@ -39,7 +39,8 @@
     "got": "^9.6.0",
     "gts": "^3.1.0",
     "typescript": "^4.5.2",
-    "vorpal": "^1.12.0"
+    "vorpal": "^1.12.0",
+    "sqlite3": "^4.2.0"
   },
   "devDependencies": {
     "@shardus/archiver": "^3.2.5",
