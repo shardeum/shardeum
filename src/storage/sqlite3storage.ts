@@ -5,6 +5,9 @@ import fs from 'fs'
 import path from 'path'
 import * as Sequelize from 'sequelize'
 
+import config from '../config'
+import { sleep } from '../utils'
+
 const Op = Sequelize.Op
 const sqlite3 = require('sqlite3').verbose()
 
@@ -103,13 +106,31 @@ class Sqlite3Storage {
     // Rename dbDir if it exists
     let oldDirPath
     try {
-      oldDirPath = dbDir + '-old-' + Date.now()
-      fs.renameSync(dbDir, oldDirPath)
-      if (oldDirPath) {
-        //this.mainLogger.info('Setting old data path. this will cause safety mode?' + oldDirPath)
-        //Snapshot.setOldDataPath(oldDirPath)
-        this.oldDb = new sqlite3.Database(`${oldDirPath}/db.sqlite`)
-      }
+      // oldDirPath = dbDir + '-old-' + Date.now()
+      // fs.renameSync(dbDir, oldDirPath)
+      // if (oldDirPath) {
+      //   //this.mainLogger.info('Setting old data path. this will cause safety mode?' + oldDirPath)
+      //   //Snapshot.setOldDataPath(oldDirPath)
+      //   this.oldDb = new sqlite3.Database(`${oldDirPath}/db.sqlite`)
+      // }
+
+      // shardus can take care of moving the database!!
+      //@ts-ignore
+      // if(config.storage.options.saveOldDBFiles){
+      //   fs.renameSync(dbDir, oldDirPath)
+      //   if (oldDirPath) {
+      //     this.oldDb = new sqlite3.Database(`${oldDirPath}/db.sqlite`)
+      //   }        
+      // } else {
+      //   //recursive delete of db folder
+      //   try{
+      //     fs.rmdirSync(dbDir, { recursive: true })
+      //   } catch (e) {
+      //     //wait 5 seconds and try one more time
+      //     await sleep(5000)
+      //     fs.rmdirSync(dbDir, { recursive: true })
+      //   }
+      // }      
     } catch (e) {
       // if (config.p2p.startInWitnessMode) {
       //   throw new Error('Unable to start in witness mode: no old data')
@@ -126,8 +147,22 @@ class Sqlite3Storage {
       this.db = new sqlite3.Database(this.dbPath)
     }
 
+
     await this.run('PRAGMA synchronous = OFF')
-    await this.run('PRAGMA journal_mode = MEMORY')
+    console.log('PRAGMA synchronous = OFF')
+    //@ts-ignore
+    if(config?.storage?.options?.walMode === true){
+      await this.run('PRAGMA journal_mode = WAL')
+      console.log('PRAGMA journal_mode = WAL')
+    } else {
+      await this.run('PRAGMA journal_mode = MEMORY')
+      console.log('PRAGMA journal_mode = MEMORY')
+    }
+    //@ts-ignore
+    if(config?.storage?.options?.exclusiveLockMode === true){
+      await this.run('PRAGMA locking_mode = EXCLUSIVE')
+      console.log('PRAGMA locking_mode = EXCLUSIVE')
+    }
 
     this.initialized = true
     //this.mainLogger.info('Database initialized.')
