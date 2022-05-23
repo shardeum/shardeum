@@ -145,7 +145,6 @@ function trySpendServicePoints(points:number) : boolean {
 }
 
 async function updateBlockNumber() {
-  console.log(Date.now(), 'Running updateBlockNumber')
   setTimeout(updateBlockNumber, 10000)
   let latestCycles = shardus.getLatestCycles()
   if (latestCycles == null || latestCycles.length === 0) return
@@ -675,6 +674,10 @@ shardus.registerExternalPost('inject', async (req, res) => {
   }
 })
 
+shardus.registerExternalGet('eth_blockNumber', debugMiddleware, async (req, res) => {
+    if (ShardeumFlags.VerboseLogs) console.log('Req: eth_blockNumber', latestBlock)
+    return res.json({blockNumber: latestBlock})
+})
 
 shardus.registerExternalGet('dumpStorage',debugMiddleware, async (req, res) => {
   // if(isDebugMode()){
@@ -1472,12 +1475,11 @@ const getTxBlock = (timestamp: string) => {
 
 const mapCycleToBlockInfo = (cycle: ShardusTypes.Cycle) => {
     const now = Date.now();
-    let cycleStart = cycle.start * 1000
+    let cycleStart = (cycle.start + cycle.duration) * 1000
     let timeElapsed = now - cycleStart
     let decimal = timeElapsed / (cycle.duration * 1000)
     let blockNumber = Math.floor((cycle.counter + decimal) * 10)
-    console.log('elasped time', timeElapsed)
-    console.log('counter vs derived block', cycle.counter, blockNumber)
+    if(ShardeumFlags.VerboseLogs) console.log('Cycle counter vs derived blockNumber', cycle.counter, blockNumber)
     return {blockNumber, timestamp: now}
 }
 
@@ -3034,20 +3036,13 @@ if (ShardeumFlags.GlobalNetworkAccount) {
 
         let latestCycles = shardus.getLatestCycles()
         if (latestCycles != null && latestCycles.length > 0) {
-          const cycle = latestCycles[0]
+          const latestCycle = latestCycles[0]
           const now = Date.now()
-          const cycleStart = cycle.start * 1000
-          const timeElapsed = now - cycleStart
+          const currentCycleStart = (latestCycle.start + latestCycle.duration) * 1000
+          const timeElapsed = now - currentCycleStart
           const nextUpdateQuarter = Math.floor(timeElapsed / 10000) + 1
-          const nextUpdateTimestamp = cycleStart + (nextUpdateQuarter * 10000)
+          const nextUpdateTimestamp = currentCycleStart + (nextUpdateQuarter * 10000)
           const waitTime = nextUpdateTimestamp - now
-
-          console.log('current cycle', cycle.counter, cycleStart)
-          console.log('now', now)
-          console.log('timeElapsed', timeElapsed)
-          console.log('Next update quarter', nextUpdateQuarter)
-          console.log('Next update timestamp', nextUpdateTimestamp)
-          console.log('wait time', waitTime)
 
           setTimeout(updateBlockNumber, waitTime)
         }
@@ -3056,8 +3051,6 @@ if (ShardeumFlags.GlobalNetworkAccount) {
           await sleep(cycleInterval * 2)
         }
         lastReward = Date.now()
-
-
 
         return setTimeout(networkMaintenance, cycleInterval)
       },
