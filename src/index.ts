@@ -144,6 +144,24 @@ function trySpendServicePoints(points:number) : boolean {
   return true
 }
 
+async function updateBlockNumber() {
+  console.log(Date.now(), 'Running updateBlockNumber')
+  setTimeout(updateBlockNumber, 10000)
+  let latestCycles = shardus.getLatestCycles()
+  if (latestCycles == null || latestCycles.length === 0) return
+  let {blockNumber, timestamp} = mapCycleToBlockInfo(latestCycles[0])
+  if (!blocks[blockNumber]) {
+    const blockData = {
+      header: {number: blockNumber, timestamp: new BN(timestamp)},
+      transactions: [],
+      uncleHeaders: [],
+    }
+    const block = Block.fromBlockData(blockData)
+    blocks[blockNumber] = block
+    latestBlock = blockNumber
+  }
+}
+
 /***
  *    ######## ##     ## ##     ##    #### ##    ## #### ########
  *    ##       ##     ## ###   ###     ##  ###   ##  ##     ##
@@ -1450,6 +1468,17 @@ const getTxBlock = (timestamp: string) => {
     if (Number(timestamp) >= blocks[i].header.timestamp.toNumber())
       return blocks[latestBlock]
   }
+}
+
+const mapCycleToBlockInfo = (cycle: ShardusTypes.Cycle) => {
+    const now = Date.now();
+    let cycleStart = cycle.start * 1000
+    let timeElapsed = now - cycleStart
+    let decimal = timeElapsed / (cycle.duration * 1000)
+    let blockNumber = Math.floor((cycle.counter + decimal) * 10)
+    console.log('elasped time', timeElapsed)
+    console.log('counter vs derived block', cycle.counter, blockNumber)
+    return {blockNumber, timestamp: now}
 }
 
 /***
@@ -2949,19 +2978,19 @@ if (ShardeumFlags.GlobalNetworkAccount) {
 
         // wait for rewards
         let latestCycles = shardus.getLatestCycles()
-        if (latestCycles != null && latestCycles.length > 0) {
-          const { counter, start } = latestCycles[0]
-          if (!blocks[counter]) {
-            const blockData = {
-              header: { number: counter, timestamp: new BN(start) },
-              transactions: [],
-              uncleHeaders: [],
-            }
-            const block = Block.fromBlockData(blockData)
-            blocks[counter] = block
-            latestBlock = counter
-          }
-        }
+        // if (latestCycles != null && latestCycles.length > 0) {
+        //     let {blockNumber, timestamp} = mapCycleToBlockInfo(latestCycles[0])
+        //   if (!blocks[blockNumber]) {
+        //     const blockData = {
+        //       header: { number: blockNumber, timestamp: new BN(timestamp) },
+        //       transactions: [],
+        //       uncleHeaders: [],
+        //     }
+        //     const block = Block.fromBlockData(blockData)
+        //     blocks[blockNumber] = block
+        //     latestBlock = blockNumber
+        //   }
+        // }
         if (latestCycles != null && latestCycles.length > 0 && latestCycles[0].counter < 10) {
           shardus.log(`Too early for node reward: ${latestCycles[0].counter}`)
           return setTimeout(networkMaintenance, 100)
@@ -3002,10 +3031,34 @@ if (ShardeumFlags.GlobalNetworkAccount) {
     shardus.on(
       'active',
       async (): Promise<NodeJS.Timeout> => {
+
+        let latestCycles = shardus.getLatestCycles()
+        if (latestCycles != null && latestCycles.length > 0) {
+          const cycle = latestCycles[0]
+          const now = Date.now()
+          const cycleStart = cycle.start * 1000
+          const timeElapsed = now - cycleStart
+          const nextUpdateQuarter = Math.floor(timeElapsed / 10000) + 1
+          const nextUpdateTimestamp = cycleStart + (nextUpdateQuarter * 10000)
+          const waitTime = nextUpdateTimestamp - now
+
+          console.log('current cycle', cycle.counter, cycleStart)
+          console.log('now', now)
+          console.log('timeElapsed', timeElapsed)
+          console.log('Next update quarter', nextUpdateQuarter)
+          console.log('Next update timestamp', nextUpdateTimestamp)
+          console.log('wait time', waitTime)
+
+          setTimeout(updateBlockNumber, waitTime)
+        }
+
         if (shardus.p2p.isFirstSeed) {
           await sleep(cycleInterval * 2)
         }
         lastReward = Date.now()
+
+
+
         return setTimeout(networkMaintenance, cycleInterval)
       },
     )
