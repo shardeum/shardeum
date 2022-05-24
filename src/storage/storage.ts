@@ -171,7 +171,7 @@ class Storage {
   async debugSelectAllAccountsEntry() {
     this._checkInit()
     try {
-      await this._read(this.storageModels.accountsEntry, null)
+      return await this._read(this.storageModels.accountsEntry, null)
     } catch (e) {
       throw new Error(e)
     }
