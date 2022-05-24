@@ -21,7 +21,7 @@ export let ServicePoints = {
   ['contract/call']: { endpoint: 5, direct: 20 },
   ['tx/:hash']: 5,
 }
-export let DebugRestoreFile = '' //'accounts-by-ts.json'
+export let DebugRestoreFile = 'account-export.json' //'accounts-by-ts.json'
 // export let CheckNonceGreaterThan = false
 
 export let UseDBForAccounts = true //Use Sql to store in memory accounts instead of simple accounts object map
