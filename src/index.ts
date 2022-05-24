@@ -3007,13 +3007,14 @@ if (ShardeumFlags.GlobalNetworkAccount) {
         // }
         if (latestCycles != null && latestCycles.length > 0 && latestCycles[0].counter < ShardeumFlags.FirstNodeRewardCycle) {
           shardus.log(`Too early for node reward: ${latestCycles[0].counter}.  first reward:${ShardeumFlags.FirstNodeRewardCycle}`)
-          return setTimeout(networkMaintenance, 100)
+          shardus.log('Maintenance cycle has ended')
+          expected += cycleInterval
+          return setTimeout(networkMaintenance, Math.max(100, cycleInterval - drift))
         }
-
       } catch (err) {
         shardus.log('ERR: ', err)
         console.log('ERR: ', err)
-        return setTimeout(networkMaintenance, 100)
+        return setTimeout(networkMaintenance, 5000) // wait 5s before trying again
       }
 
       shardus.log('nodeId: ', nodeId)
@@ -3039,7 +3040,7 @@ if (ShardeumFlags.GlobalNetworkAccount) {
       }
       shardus.log('Maintainence cycle has ended')
       expected += cycleInterval
-      return setTimeout(networkMaintenance, Math.max(0, cycleInterval - drift))
+      return setTimeout(networkMaintenance, Math.max(100, cycleInterval - drift))
     }
 
     shardus.on(
