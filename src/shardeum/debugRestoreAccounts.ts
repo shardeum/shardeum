@@ -1,4 +1,5 @@
 import * as fs from 'fs'
+import { networkAccount } from '..'
 import * as ShardeumFlags from '../shardeum/shardeumFlags'
 
 export interface LoadOptions {
@@ -18,11 +19,19 @@ export async function loadAccountDataFromDB(shardus: any, options: LoadOptions):
     fatal: false,
   }
 
+
+
+
   let logVerbose = ShardeumFlags.VerboseLogs //shardus.getLogFlags().verbose
 
   if (logVerbose) shardus.log(`loadAccountDataFromDB`)
   try {
     let path = options.file
+
+    if(fs.existsSync(path) === false){
+      console.log(`loadAccountDataFromDB: ${path}  does not exist`)
+      return report
+    }
 
     const accountFileText = fs.readFileSync(path, 'utf8')
     if (accountFileText == null) {
@@ -34,6 +43,7 @@ export async function loadAccountDataFromDB(shardus: any, options: LoadOptions):
     }
 
     if (logVerbose) shardus.log(`loadAccountDataFromDB ${accountArray.length}`)
+    console.log(`loadAccountDataFromDB: ${accountArray.length}`)
 
     // for(let account of accountArray){
     //     let {hash, data, accountId, isGlobal, timestamp, cycleNumber} = account
@@ -47,7 +57,22 @@ export async function loadAccountDataFromDB(shardus: any, options: LoadOptions):
       //account.isGlobal = (account.isGlobal === 1)? true : false
       account.data = JSON.parse(account.data)
       account.isGlobal = Boolean(account.isGlobal)
-      account.cycleNumber = 0 //hack to 0
+      account.cycleNumber = 0 //force to 0.  later if we use a cycle offset, then we leave cycle number alone
+                              //but for now we have to start back at 0 in a new network
+
+      if(account.timestamp === 0){
+        account.timestamp = 1 //fix some old data to have non zero timestamps
+      }
+
+      if(account.data.timestamp === 0){
+        account.data.timestamp = 1 //fix some old data to have non zero timestamps
+      }
+
+      // in liberty 1.0 contract accounts were globbal.  They are now going to be non global in 
+      // liberty 1.1   We will keep the network account as global though
+      if(account.accountId != networkAccount){
+        account.isGlobal = false
+      }
 
       if (account.timestamp < lastTS) {
         //accounts are descending timestamps.
@@ -68,6 +93,8 @@ export async function loadAccountDataFromDB(shardus: any, options: LoadOptions):
   } catch (error) {
     report.fatal = true
     if (logVerbose) shardus.log(`loadAccountDataFromDB ${JSON.stringify(error)}`)
+
+    throw new Error(`loadAccountDataFromDB:` + error.name + ': ' + error.message + ' at ' + error.stack)
   }
   return report
 }

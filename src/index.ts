@@ -1518,8 +1518,8 @@ shardus.setup({
             file:ShardeumFlags.DebugRestoreFile
           }
           let report = await loadAccountDataFromDB(shardus, loadOptions)
-          shardus.log('loadAccountDataFromDB:' + JSON.stringify(report))
-          
+          //shardus.log('loadAccountDataFromDB:' + JSON.stringify(report))
+          console.log('loadAccountDataFromDB:' + JSON.stringify(report))
         }
 
         //create genesis accounts before network account since nodes will wait for the network account
