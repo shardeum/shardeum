@@ -1522,6 +1522,17 @@ shardus.setup({
           
         }
 
+        //create genesis accounts before network account since nodes will wait for the network account
+        shardus.log(`node ${nodeId} GENERATED_A_NEW_NETWORK_ACCOUNT: `)
+        if(ShardeumFlags.SetupGenesisAccount) {
+          for (let address in genesis) {
+            let amount = new BN(genesis[address].wei)
+            await manuallyCreateAccount(address, amount)
+            shardus.log(`node ${nodeId} SETUP GENESIS ACCOUNT: ${address}  amt: ${amount}`)
+          }
+        }
+        await sleep(ONE_SECOND * 10)
+
         const when = Date.now()
         const existingNetworkAccount = await shardus.getLocalOrRemoteAccount(networkAccount)
         if (existingNetworkAccount) {
@@ -1542,15 +1553,15 @@ shardus.setup({
             networkAccount,
           )
 
-          shardus.log(`node ${nodeId} GENERATED_A_NEW_NETWORK_ACCOUNT: `)
-          if(ShardeumFlags.SetupGenesisAccount) {
-            for (let address in genesis) {
-              let amount = new BN(genesis[address].wei)
-              await manuallyCreateAccount(address, amount)
-              shardus.log(`node ${nodeId} SETUP GENESIS ACCOUNT: ${address}  amt: ${amount}`)
-            }
-          }
-          await sleep(ONE_SECOND * 10)
+          // shardus.log(`node ${nodeId} GENERATED_A_NEW_NETWORK_ACCOUNT: `)
+          // if(ShardeumFlags.SetupGenesisAccount) {
+          //   for (let address in genesis) {
+          //     let amount = new BN(genesis[address].wei)
+          //     await manuallyCreateAccount(address, amount)
+          //     shardus.log(`node ${nodeId} SETUP GENESIS ACCOUNT: ${address}  amt: ${amount}`)
+          //   }
+          // }
+          // await sleep(ONE_SECOND * 10)
         }
       } else {
         while (!(await shardus.getLocalOrRemoteAccount(networkAccount))) {
@@ -2993,8 +3004,8 @@ if (ShardeumFlags.GlobalNetworkAccount) {
         //     latestBlock = blockNumber
         //   }
         // }
-        if (latestCycles != null && latestCycles.length > 0 && latestCycles[0].counter < 10) {
-          shardus.log(`Too early for node reward: ${latestCycles[0].counter}`)
+        if (latestCycles != null && latestCycles.length > 0 && latestCycles[0].counter < ShardeumFlags.FirstNodeRewardCycle) {
+          shardus.log(`Too early for node reward: ${latestCycles[0].counter}.  first reward:${ShardeumFlags.FirstNodeRewardCycle}`)
           return setTimeout(networkMaintenance, 100)
         }
 

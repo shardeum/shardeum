@@ -10,6 +10,7 @@ export let VerboseLogs = false //set this to false to reduce logging that can im
 export let Virtual0Address = true
 export let GlobalNetworkAccount = true
 export let NodeReward = NodeRewardENV || true //false //
+export let FirstNodeRewardCycle = 100
 export let SelfTest = false
 export let ServicePointsPerSecond = 100 //service function points per second
 export let SetupGenesisAccount = true

@@ -27,12 +27,16 @@ interface Storage {
 }
 
 class Storage {
+  storage:Sqlite3Storage = null
+
   constructor(baseDir: string, dbPath: string) {
     this.storage = new Sqlite3Storage(models, baseDir, dbPath)
   }
 
   async init() {
+    console.log('shardeum storage init:' + this.storage.dbPath)
     await this.storage.init()
+    console.log('shardeum storage init complete:' )
 
     //would be neat if this wasn't needed here (refactor so storage stays more generic?)
     // await this.storage.runCreate(

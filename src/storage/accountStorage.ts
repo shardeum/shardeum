@@ -28,16 +28,23 @@ export let accounts: WrappedEVMAccountMap = {}
 
 export let storage: Storage = null
 
+let isInitialized = false
 
 export async function init(baseDir:string, dbPath:string){
-  this.storage = new Storage(
+  storage = new Storage(
     baseDir,
     dbPath
   )
 
-  await this.storage.init()
+  //we have to lazy init storage, because this init happens very early
 }
 
+export async function lazyInit(){
+  if(isInitialized === false){
+    await storage.init()
+    isInitialized = true
+  }
+}
 
 export async function getAccount(address: string): Promise<WrappedEVMAccount> {
   if (ShardeumFlags.UseDBForAccounts === true) {
@@ -94,6 +101,9 @@ export async function debugGetAllAccounts(): Promise<WrappedEVMAccount[]> {
 
 export async function clearAccounts(): Promise<void> {
   if (ShardeumFlags.UseDBForAccounts === true) {
+    //This lazy init is not ideal.. we only know this is called because of special knowledge
+    //Would be much better to make a specific api that is called at the right time before data sync
+    await lazyInit()
     await storage.deleteAccountsEntry()
   } else {
     accounts = {}

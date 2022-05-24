@@ -137,31 +137,39 @@ class Sqlite3Storage {
       // }
     }
 
-    // Create dbDir if it doesn't exist
-    await _ensureExists(dbDir)
-    //this.mainLogger.info('Created Database directory.')
+    try {
 
-    if (this.memoryFile) {
-      this.db = new sqlite3.Database(':memory:')
-    } else {
-      this.db = new sqlite3.Database(this.dbPath)
-    }
+      // Create dbDir if it doesn't exist
+      await _ensureExists(dbDir)
+      //this.mainLogger.info('Created Database directory.')
+
+      if (this.memoryFile) {
+        this.db = new sqlite3.Database(':memory:')
+      } else {
+        this.db = new sqlite3.Database(this.dbPath)
+      }
 
 
-    await this.run('PRAGMA synchronous = OFF')
-    console.log('PRAGMA synchronous = OFF')
-    //@ts-ignore
-    if(config?.storage?.options?.walMode === true){
-      await this.run('PRAGMA journal_mode = WAL')
-      console.log('PRAGMA journal_mode = WAL')
-    } else {
-      await this.run('PRAGMA journal_mode = MEMORY')
-      console.log('PRAGMA journal_mode = MEMORY')
-    }
-    //@ts-ignore
-    if(config?.storage?.options?.exclusiveLockMode === true){
-      await this.run('PRAGMA locking_mode = EXCLUSIVE')
-      console.log('PRAGMA locking_mode = EXCLUSIVE')
+      await this.run('PRAGMA synchronous = OFF')
+      console.log('PRAGMA synchronous = OFF')
+      //@ts-ignore
+      if(config?.storage?.options?.walMode === true){
+        await this.run('PRAGMA journal_mode = WAL')
+        console.log('PRAGMA journal_mode = WAL')
+      } else {
+        await this.run('PRAGMA journal_mode = MEMORY')
+        console.log('PRAGMA journal_mode = MEMORY')
+      }
+      //@ts-ignore
+      if(config?.storage?.options?.exclusiveLockMode === true){
+        await this.run('PRAGMA locking_mode = EXCLUSIVE')
+        console.log('PRAGMA locking_mode = EXCLUSIVE')
+      }
+
+    } catch (e) {
+      
+      throw new Error('shardeum storage init error ' + e.name + ': ' + e.message + ' at ' + e.stack)
+      
     }
 
     this.initialized = true

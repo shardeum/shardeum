@@ -108,6 +108,7 @@ config = merge(config, {
   }
 })
 
+// some sharding and state manager settings
 config = merge(config, {
   server: {
     sharding: {
@@ -119,6 +120,15 @@ config = merge(config, {
     }
   }
 })
+
+// // some storage settings. 
+// config = merge(config, {
+//   storage: {
+//     saveOldDBFiles: false,
+//     walMode: true,
+//     exclusiveLockMode: true
+//   }
+// })
 
 // some debug settings
 config = merge(
