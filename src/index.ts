@@ -1301,7 +1301,7 @@ async function applyInternalTx(internalTx: InternalTx, wrappedStates: WrappedSta
     }
     // console.log('nodeRewardReceipt', nodeRewardReceipt)
     // shardus.log('Applied node_reward tx', from, to)
-    console.log('Applied node_reward tx')
+    console.log('Applied node_reward tx', txId, txTimestamp)
     shardeumStateManager.unsetTransactionState()
   }
   if (internalTx.internalTXType === InternalTXType.ChangeConfig) {
@@ -2043,6 +2043,7 @@ shardus.setup({
         //put this in the apply response
         shardus.applyResponseAddReceiptData(applyResponse,shardusWrappedAccount, crypto.hashObj(shardusWrappedAccount))
       }
+      if (ShardeumFlags.VerboseLogs) console.log('Applied txId', txId, txTimestamp)
 
     } catch (e) {
       if (!transactionFailHashMap[ethTxId]) {
@@ -2120,12 +2121,12 @@ shardus.setup({
     return tx.timestamp ? tx.timestamp : 0
   },
   crack(timestampedTx) {
-    console.log('Running getKeyFromTransaction', timestampedTx)
+    if (ShardeumFlags.VerboseLogs) console.log('Running getKeyFromTransaction', timestampedTx)
     let { tx, timestampReceipt } = timestampedTx
 
-    console.log('Running getKeyFromTransaction tx', tx)
+    if (ShardeumFlags.VerboseLogs) console.log('Running getKeyFromTransaction tx', tx)
     let timestamp: number = getInjectedOrGeneratedTimestamp(timestampedTx)
-    console.log('Running getKeyFromTransaction timestamp', timestamp)
+    if (ShardeumFlags.VerboseLogs) console.log('Running getKeyFromTransaction timestamp', timestamp)
 
     if (isInternalTx(tx)) {
       let internalTx = tx as InternalTx
@@ -2375,7 +2376,7 @@ shardus.setup({
     }
   },
   async getRelevantData(accountId, timestampedTx) {
-    console.log('Running getRelevantData', timestampedTx)
+    if (ShardeumFlags.VerboseLogs) console.log('Running getRelevantData', timestampedTx)
     let { tx, timestampReceipt } = timestampedTx
     if (isInternalTx(tx)) {
       let internalTx = tx as InternalTx
@@ -2574,7 +2575,7 @@ shardus.setup({
       // accounts[accountId] = wrappedEVMAccount //getRelevantData must never modify accounts[]
       accountCreated = true
     }
-    console.log('Running getRelevantData', wrappedEVMAccount)
+    if (ShardeumFlags.VerboseLogs) console.log('Running getRelevantData', wrappedEVMAccount)
     // Wrap it for Shardus
     return shardus.createWrappedResponse(accountId, accountCreated, wrappedEVMAccount.hash, wrappedEVMAccount.timestamp, wrappedEVMAccount) //readableAccount)
   },
