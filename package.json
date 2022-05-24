@@ -42,7 +42,8 @@
     "gts": "^3.1.0",
     "typescript": "^4.5.2",
     "vorpal": "^1.12.0",
-    "sqlite3": "^4.2.0"
+    "sqlite3": "^4.2.0",
+    "sequelize": "^6.15.1"
   },
   "devDependencies": {
     "@shardus/archiver": "^3.2.6",
