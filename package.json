@@ -25,6 +25,8 @@
     "push-docker-dev": "docker push registry.gitlab.com/shardeum/server:dev",
     "build-docker-dev2": "docker build -f dev.Dockerfile -t registry.gitlab.com/shardeum/server:dev2 .",
     "push-docker-dev2": "docker push registry.gitlab.com/shardeum/server:dev2",
+    "build-docker-production": "docker build -f dev.Dockerfile -t registry.gitlab.com/shardeum/server .",
+    "push-docker-production": "docker push registry.gitlab.com/shardeum/server",
     "tsc": "tsc"
   },
   "author": "",
