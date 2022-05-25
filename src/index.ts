@@ -26,7 +26,7 @@ import {
   NetworkAccount,
   NetworkParameters,
   NodeAccount,
-  BlockMap
+  BlockMap,
 } from './shardeum/shardeumTypes'
 import { getAccountShardusAddress, toShardusAddress, toShardusAddressWithKey } from './shardeum/evmAddress'
 import * as ShardeumFlags from './shardeum/shardeumFlags'
@@ -144,20 +144,38 @@ function trySpendServicePoints(points:number) : boolean {
   return true
 }
 
-async function updateBlockNumber() {
-  setTimeout(updateBlockNumber, 10000)
-  let latestCycles = shardus.getLatestCycles()
-  if (latestCycles == null || latestCycles.length === 0) return
-  let {blockNumber, timestamp} = mapCycleToBlockInfo(latestCycles[0])
+function pruneOldBlocks() {
+  let maxOldBlocksCount =  10
+  if (latestBlock > maxOldBlocksCount) {
+    console.log('Pruning old blocks')
+    for (let i=10; i > 0; i--) {
+      let block = latestBlock - maxOldBlocksCount - i
+      if (blocks[block]) delete blocks[block]
+    }
+  }
+}
+
+function createNewBlock(blockNumber, timestamp): Block {
+  console.log('Current time is', Date.now())
+  console.log('Creating new block at ', blockNumber, timestamp)
   if (!blocks[blockNumber]) {
     const blockData = {
-      header: {number: blockNumber, timestamp: new BN(timestamp)},
+      header: {number: blockNumber, timestamp: new BN(timestamp ? timestamp : Date.now())},
       transactions: [],
       uncleHeaders: [],
     }
     const block = Block.fromBlockData(blockData)
     blocks[blockNumber] = block
     latestBlock = blockNumber
+    let readableBlocks = []
+    for (let blockNumber in blocks) {
+      readableBlocks.push({
+        blockNumber,
+        timestamp: blocks[blockNumber].header.timestamp.toNumber()
+      })
+    }
+    console.log('Blocks', readableBlocks)
+    return block
   }
 }
 
@@ -996,7 +1014,7 @@ shardus.registerExternalPost('contract/call', async (req, res) => {
 
     if (methodCode === ERC20_BALANCEOF_CODE) {
       //TODO would be way faster to have timestamp in db as field
-      //let caAccount = await AccountsStorage.getAccount(caShardusAddress) 
+      //let caAccount = await AccountsStorage.getAccount(caShardusAddress)
 
       ERC20TokenBalanceMap.push({
         'to': callObj.to,
@@ -1473,14 +1491,50 @@ const getTxBlock = (timestamp: string) => {
   }
 }
 
-const mapCycleToBlockInfo = (cycle: ShardusTypes.Cycle) => {
-    const now = Date.now();
-    let cycleStart = (cycle.start + cycle.duration) * 1000
-    let timeElapsed = now - cycleStart
-    let decimal = timeElapsed / (cycle.duration * 1000)
-    let blockNumber = Math.floor((cycle.counter + decimal) * 10)
-    if(ShardeumFlags.VerboseLogs) console.log('Cycle counter vs derived blockNumber', cycle.counter, blockNumber)
-    return {blockNumber, timestamp: now}
+const startRegularBlockCreator = () => {
+    getOrCreateBlockFromTimestamp(Date.now())
+}
+
+const getOrCreateBlockFromTimestamp = (timestamp: number, scheduleNextBlock = false): Block => {
+  console.log('Getting block from timestamp', timestamp)
+  if (blocks[latestBlock]) {
+      console.log('Latest block timestamp', blocks[latestBlock].header.timestamp, blocks[latestBlock].header.timestamp.toNumber() + 6000)
+      console.log('Latest block number', blocks[latestBlock].header.number.toNumber())
+    }
+  if (blocks[latestBlock] && blocks[latestBlock].header.timestamp.toNumber() >= timestamp) {
+    console.log('We do not need to create a new block yet')
+    return blocks[latestBlock]
+  }
+
+  console.log('We need to create a new block because timestamp is newer than last block timestamp + 6s')
+
+  let latestCycles = shardus.getLatestCycles()
+  if (latestCycles == null || latestCycles.length === 0) return
+  const cycle = latestCycles[0]
+
+  let cycleStart = (cycle.start + cycle.duration) * 1000
+  let timeElapsed = timestamp - cycleStart
+  let decimal = timeElapsed / (cycle.duration * 1000)
+  let numBlocksPerCycle = cycle.duration / ShardeumFlags.blockProductionRate
+  let blockNumber = Math.floor((cycle.counter + decimal) * numBlocksPerCycle)
+  let newBlockTimestampInSecond = cycle.start + cycle.duration + (blockNumber - (cycle.counter * 10)) * ShardeumFlags.blockProductionRate
+  let newBlockTimestamp = newBlockTimestampInSecond * 1000
+  if(true) {
+    console.log('Timestamp', timestamp, timeElapsed, decimal)
+    console.log('Cycle counter vs derived blockNumber', cycle.counter, blockNumber)
+  }
+  let block = createNewBlock(blockNumber, newBlockTimestamp)
+  if (scheduleNextBlock) {
+      let nextBlockTimestamp = newBlockTimestamp + ShardeumFlags.blockProductionRate * 1000
+    console.log('nextBlockTimestamp', nextBlockTimestamp, Date.now())
+      let waitTime = nextBlockTimestamp - Date.now()
+    console.log('Scheduling next block created which will happen in', waitTime)
+      setTimeout(() => {
+          getOrCreateBlockFromTimestamp(nextBlockTimestamp, true)
+      }, waitTime)
+  }
+  pruneOldBlocks()
+  return block
 }
 
 /***
@@ -1783,12 +1837,14 @@ shardus.setup({
       //   let senderAccount:WrappedEVMAccount = wrappedStates[shardusAddress]
       //   if(senderAccount.account.nonce >= transaction.nonce ){
       //     throw new Error(`invalid transaction, reason: nonce fail. tx: ${JSON.stringify(tx)}`)
-      //   }        
+      //   }
       // }
 
       // Apply the tx
       // const runTxResult = await EVM.runTx({tx: transaction, skipNonce: true, skipBlockGasLimitValidation: true})
-      const runTxResult: RunTxResult = await EVM.runTx({ block: blocks[latestBlock], tx: transaction, skipNonce: true })
+      let blockForTx = getOrCreateBlockFromTimestamp(txTimestamp)
+      console.log(`Block for tx ${ethTxId}`, blockForTx.header.number.toNumber())
+      const runTxResult: RunTxResult = await EVM.runTx({ block: blockForTx, tx: transaction, skipNonce: true })
       if (runTxResult.execResult.exceptionError) {
         let readableReceipt: ReadableReceipt = {
           status: 0,
@@ -1832,7 +1888,7 @@ shardus.setup({
       }
       if (ShardeumFlags.VerboseLogs) console.log('DBG', 'applied tx', txId, runTxResult)
       if (ShardeumFlags.VerboseLogs) console.log('DBG', 'applied tx eth', ethTxId, runTxResult)
-      
+
       if(ShardeumFlags.AppliedTxsMaps) {
         shardusTxIdToEthTxId[txId] = ethTxId // todo: fix that this is getting set too early, should wait untill after TX consensus
 
@@ -1841,7 +1897,7 @@ shardus.setup({
           txId: ethTxId,
           injected: tx,
           receipt: { ...runTxResult, nonce: transaction.nonce.toString('hex'), status: 1 },
-        }        
+        }
       }
 
       if (ShardeumFlags.temporaryParallelOldMode === true) {
@@ -2384,7 +2440,7 @@ shardus.setup({
       let accountCreated = false
       //let wrappedEVMAccount = accounts[accountId]
       let wrappedEVMAccount = await AccountsStorage.getAccount(accountId)
-      
+
       if (internalTx.internalTXType === InternalTXType.SetGlobalCodeBytes) {
         if (wrappedEVMAccount === null) {
           accountCreated = true
@@ -2591,7 +2647,7 @@ shardus.setup({
 
       for(let wrappedEVMAccount of dbResults){
         const wrapped = WrappedEVMAccountFunctions._shardusWrappedAccount(wrappedEVMAccount)
-        wrappedResults.push(wrapped)        
+        wrappedResults.push(wrapped)
       }
       return wrappedResults
     }
@@ -2792,7 +2848,7 @@ shardus.setup({
     //   }
     //   if(a.timestamp > b.timestamp){
     //     return 1
-    //   } 
+    //   }
     //   return -1
     // }
     // results.sort(sortByTsThenAddress)
@@ -2801,15 +2857,15 @@ shardus.setup({
 
     let cappedResults = []
     let count = 0
-    let extra = 0   
-    let lastTS = tsEnd 
+    let extra = 0
+    let lastTS = tsEnd
     // let startTS = results[0].timestamp
     // let sameTS = true
 
     if(results.length > 0) {
       lastTS = results[0].timestamp
       //start at offset!
-      for(let i=offset; i<results.length; i++ ){  
+      for(let i=offset; i<results.length; i++ ){
         let wrappedEVMAccount = results[i]
         // if(startTS === wrappedEVMAccount.timestamp){
         //   sameTS = true
@@ -2835,12 +2891,12 @@ shardus.setup({
         lastTS = wrappedEVMAccount.timestamp
         count++
         cappedResults.push(wrappedEVMAccount)
-      }      
+      }
     }
 
-    
+
     shardus.log(`getAccountDataByRange: extra:${extra} ${JSON.stringify({accountStart, accountEnd, tsStart, tsEnd, maxRecords, offset})}`);
-    
+
     for(let wrappedEVMAccount of cappedResults){
       // Process and add to finalResults
       const wrapped = WrappedEVMAccountFunctions._shardusWrappedAccount(wrappedEVMAccount)
@@ -2920,7 +2976,7 @@ shardus.setup({
     if(transactionStateMap.has(txId)){
       transactionStateMap.delete(txId)
     }
-    
+
   },
   getJoinData() {
     const joinData = {
@@ -2992,19 +3048,6 @@ if (ShardeumFlags.GlobalNetworkAccount) {
 
         // wait for rewards
         let latestCycles = shardus.getLatestCycles()
-        // if (latestCycles != null && latestCycles.length > 0) {
-        //     let {blockNumber, timestamp} = mapCycleToBlockInfo(latestCycles[0])
-        //   if (!blocks[blockNumber]) {
-        //     const blockData = {
-        //       header: { number: blockNumber, timestamp: new BN(timestamp) },
-        //       transactions: [],
-        //       uncleHeaders: [],
-        //     }
-        //     const block = Block.fromBlockData(blockData)
-        //     blocks[blockNumber] = block
-        //     latestBlock = blockNumber
-        //   }
-        // }
         if (latestCycles != null && latestCycles.length > 0 && latestCycles[0].counter < ShardeumFlags.FirstNodeRewardCycle) {
           shardus.log(`Too early for node reward: ${latestCycles[0].counter}.  first reward:${ShardeumFlags.FirstNodeRewardCycle}`)
           shardus.log('Maintenance cycle has ended')
@@ -3053,11 +3096,20 @@ if (ShardeumFlags.GlobalNetworkAccount) {
           const now = Date.now()
           const currentCycleStart = (latestCycle.start + latestCycle.duration) * 1000
           const timeElapsed = now - currentCycleStart
-          const nextUpdateQuarter = Math.floor(timeElapsed / 10000) + 1
-          const nextUpdateTimestamp = currentCycleStart + (nextUpdateQuarter * 10000)
+          const blockProductionRateInSeconds = ShardeumFlags.blockProductionRate * 1000
+          const nextUpdateQuarter = Math.floor(timeElapsed / blockProductionRateInSeconds) + 1
+          const nextUpdateTimestamp = currentCycleStart + (nextUpdateQuarter * blockProductionRateInSeconds)
           const waitTime = nextUpdateTimestamp - now
 
-          setTimeout(updateBlockNumber, waitTime)
+          console.log('Active timestamp', now)
+          console.log('timeElapsed from cycle start', timeElapsed)
+          console.log('nextUpdateQuarter', nextUpdateQuarter)
+          console.log('nextUpdateTimestamp', nextUpdateTimestamp)
+          console.log('waitTime', waitTime)
+
+          setTimeout(() => {
+              getOrCreateBlockFromTimestamp(nextUpdateTimestamp, true)
+          }, waitTime)
         }
 
         if (shardus.p2p.isFirstSeed) {

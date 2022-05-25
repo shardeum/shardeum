@@ -11,6 +11,7 @@ export let Virtual0Address = true
 export let GlobalNetworkAccount = true
 export let NodeReward = NodeRewardENV || true //false //
 export let FirstNodeRewardCycle = 100
+export let blockProductionRate = 3 // generate new block every 6s
 export let SelfTest = false
 export let ServicePointsPerSecond = 100 //service function points per second
 export let SetupGenesisAccount = true
@@ -29,4 +30,3 @@ export let UseDBForAccounts = true //Use Sql to store in memory accounts instead
 export let AppliedTxsMaps = false //some maps that are not currently used, but may need to come back later. 
                                   //Even then may need to port them to sqllite.  Disabled for now because they 
                                   //leak memory
-
