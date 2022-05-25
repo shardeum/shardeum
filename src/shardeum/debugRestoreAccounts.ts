@@ -1,7 +1,7 @@
 import * as fs from 'fs'
 import { networkAccount } from '..'
 import * as ShardeumFlags from '../shardeum/shardeumFlags'
-
+import * as Path from 'path'
 export interface LoadOptions {
   file: string
 }
@@ -27,6 +27,8 @@ export async function loadAccountDataFromDB(shardus: any, options: LoadOptions):
   if (logVerbose) shardus.log(`loadAccountDataFromDB`)
   try {
     let path = options.file
+    
+    path = Path.resolve('./', path)
 
     if(fs.existsSync(path) === false){
       console.log(`loadAccountDataFromDB: ${path}  does not exist`)
