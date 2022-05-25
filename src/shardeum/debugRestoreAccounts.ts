@@ -2,6 +2,7 @@ import * as fs from 'fs'
 import { networkAccount } from '..'
 import * as ShardeumFlags from '../shardeum/shardeumFlags'
 import * as Path from 'path'
+import { sleep } from '../utils'
 export interface LoadOptions {
   file: string
 }
@@ -83,18 +84,26 @@ export async function loadAccountDataFromDB(shardus: any, options: LoadOptions):
       }
       lastTS = account.timestamp
 
-      rawAccounts.push(account.data)
+      rawAccounts.push(account)
     }
 
     let firstAccount = accountArray[0]
     if (logVerbose) shardus.log(`loadAccountDataFromDB ${JSON.stringify(firstAccount)}`)
 
-    try{
-      await shardus.forwardAccounts(rawAccounts)
-    } catch(error){
-      console.log(`loadAccountDataFromDB:` + error.name + ': ' + error.message + ' at ' + error.stack)
+    let limit = 10000
+    let j = limit
+    for (let i = 0; i < rawAccounts.length; i = j) {
+      console.log(i, limit)
+      const accountsToForward = rawAccounts.slice(i, limit)
+      try {
+        await shardus.forwardAccounts(accountsToForward)
+      } catch (error) {
+        console.log(`loadAccountDataFromDB:` + error.name + ': ' + error.message + ' at ' + error.stack)
+      }
+      j = limit
+      limit += 10000
+      await sleep(1000)
     }
-    
 
     await shardus.debugCommitAccountCopies(accountArray)
 
