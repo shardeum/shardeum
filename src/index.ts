@@ -145,9 +145,8 @@ function trySpendServicePoints(points:number) : boolean {
 }
 
 function pruneOldBlocks() {
-  let maxOldBlocksCount =  10
+  let maxOldBlocksCount =  ShardeumFlags.maxNumberOfOldBlocks || 256
   if (latestBlock > maxOldBlocksCount) {
-    console.log('Pruning old blocks')
     for (let i=10; i > 0; i--) {
       let block = latestBlock - maxOldBlocksCount - i
       if (blocks[block]) delete blocks[block]
@@ -156,8 +155,7 @@ function pruneOldBlocks() {
 }
 
 function createNewBlock(blockNumber, timestamp): Block {
-  console.log('Current time is', Date.now())
-  console.log('Creating new block at ', blockNumber, timestamp)
+  if (blocks[blockNumber]) return blocks[blockNumber]
   if (!blocks[blockNumber]) {
     const blockData = {
       header: {number: blockNumber, timestamp: new BN(timestamp ? timestamp : Date.now())},
@@ -167,14 +165,16 @@ function createNewBlock(blockNumber, timestamp): Block {
     const block = Block.fromBlockData(blockData)
     blocks[blockNumber] = block
     latestBlock = blockNumber
-    let readableBlocks = []
-    for (let blockNumber in blocks) {
-      readableBlocks.push({
-        blockNumber,
-        timestamp: blocks[blockNumber].header.timestamp.toNumber()
-      })
+    if (ShardeumFlags.VerboseLogs) {
+      let readableBlocks = []
+      for (let blockNumber in blocks) {
+        readableBlocks.push({
+          blockNumber,
+          timestamp: blocks[blockNumber].header.timestamp.toNumber()
+        })
+      }
+      console.log('Recent Blocks', readableBlocks)
     }
-    console.log('Blocks', readableBlocks)
     return block
   }
 }
@@ -1491,22 +1491,15 @@ const getTxBlock = (timestamp: string) => {
   }
 }
 
-const startRegularBlockCreator = () => {
-    getOrCreateBlockFromTimestamp(Date.now())
-}
-
 const getOrCreateBlockFromTimestamp = (timestamp: number, scheduleNextBlock = false): Block => {
-  console.log('Getting block from timestamp', timestamp)
-  if (blocks[latestBlock]) {
-      console.log('Latest block timestamp', blocks[latestBlock].header.timestamp, blocks[latestBlock].header.timestamp.toNumber() + 6000)
-      console.log('Latest block number', blocks[latestBlock].header.number.toNumber())
-    }
+  if (ShardeumFlags.VerboseLogs) console.log('Getting block from timestamp', timestamp)
+  if (ShardeumFlags.VerboseLogs && blocks[latestBlock]) {
+    console.log('Latest block timestamp', blocks[latestBlock].header.timestamp, blocks[latestBlock].header.timestamp.toNumber() + 6000)
+    console.log('Latest block number', blocks[latestBlock].header.number.toNumber())
+  }
   if (blocks[latestBlock] && blocks[latestBlock].header.timestamp.toNumber() >= timestamp) {
-    console.log('We do not need to create a new block yet')
     return blocks[latestBlock]
   }
-
-  console.log('We need to create a new block because timestamp is newer than last block timestamp + 6s')
 
   let latestCycles = shardus.getLatestCycles()
   if (latestCycles == null || latestCycles.length === 0) return
@@ -1519,19 +1512,17 @@ const getOrCreateBlockFromTimestamp = (timestamp: number, scheduleNextBlock = fa
   let blockNumber = Math.floor((cycle.counter + decimal) * numBlocksPerCycle)
   let newBlockTimestampInSecond = cycle.start + cycle.duration + (blockNumber - (cycle.counter * 10)) * ShardeumFlags.blockProductionRate
   let newBlockTimestamp = newBlockTimestampInSecond * 1000
-  if(true) {
-    console.log('Timestamp', timestamp, timeElapsed, decimal)
+  if(ShardeumFlags.VerboseLogs) {
     console.log('Cycle counter vs derived blockNumber', cycle.counter, blockNumber)
   }
   let block = createNewBlock(blockNumber, newBlockTimestamp)
   if (scheduleNextBlock) {
-      let nextBlockTimestamp = newBlockTimestamp + ShardeumFlags.blockProductionRate * 1000
-    console.log('nextBlockTimestamp', nextBlockTimestamp, Date.now())
-      let waitTime = nextBlockTimestamp - Date.now()
-    console.log('Scheduling next block created which will happen in', waitTime)
-      setTimeout(() => {
-          getOrCreateBlockFromTimestamp(nextBlockTimestamp, true)
-      }, waitTime)
+    let nextBlockTimestamp = newBlockTimestamp + ShardeumFlags.blockProductionRate * 1000
+    let waitTime = nextBlockTimestamp - Date.now()
+    if(ShardeumFlags.VerboseLogs) console.log('Scheduling next block created which will happen in', waitTime)
+    setTimeout(() => {
+      getOrCreateBlockFromTimestamp(nextBlockTimestamp, true)
+    }, waitTime)
   }
   pruneOldBlocks()
   return block
@@ -1843,7 +1834,7 @@ shardus.setup({
       // Apply the tx
       // const runTxResult = await EVM.runTx({tx: transaction, skipNonce: true, skipBlockGasLimitValidation: true})
       let blockForTx = getOrCreateBlockFromTimestamp(txTimestamp)
-      console.log(`Block for tx ${ethTxId}`, blockForTx.header.number.toNumber())
+      if(ShardeumFlags.VerboseLogs) console.log(`Block for tx ${ethTxId}`, blockForTx.header.number.toNumber())
       const runTxResult: RunTxResult = await EVM.runTx({ block: blockForTx, tx: transaction, skipNonce: true })
       if (runTxResult.execResult.exceptionError) {
         let readableReceipt: ReadableReceipt = {
@@ -3101,11 +3092,13 @@ if (ShardeumFlags.GlobalNetworkAccount) {
           const nextUpdateTimestamp = currentCycleStart + (nextUpdateQuarter * blockProductionRateInSeconds)
           const waitTime = nextUpdateTimestamp - now
 
-          console.log('Active timestamp', now)
-          console.log('timeElapsed from cycle start', timeElapsed)
-          console.log('nextUpdateQuarter', nextUpdateQuarter)
-          console.log('nextUpdateTimestamp', nextUpdateTimestamp)
-          console.log('waitTime', waitTime)
+          if (ShardeumFlags.VerboseLogs) {
+            console.log('Active timestamp', now)
+            console.log('timeElapsed from cycle start', timeElapsed)
+            console.log('nextUpdateQuarter', nextUpdateQuarter)
+            console.log('nextUpdateTimestamp', nextUpdateTimestamp)
+            console.log('waitTime', waitTime)
+          }
 
           setTimeout(() => {
               getOrCreateBlockFromTimestamp(nextUpdateTimestamp, true)
