@@ -27,7 +27,7 @@ export async function loadAccountDataFromDB(shardus: any, options: LoadOptions):
   if (logVerbose) shardus.log(`loadAccountDataFromDB`)
   try {
     let path = options.file
-    
+
     path = Path.resolve('./', path)
 
     if(fs.existsSync(path) === false){
@@ -54,6 +54,7 @@ export async function loadAccountDataFromDB(shardus: any, options: LoadOptions):
     //     await shardus.debugSetAccountState(wrappedResponse)
     // }
 
+    let rawAccounts = []
     let lastTS = -1
     for (let account of accountArray) {
       //account.isGlobal = (account.isGlobal === 1)? true : false
@@ -81,10 +82,19 @@ export async function loadAccountDataFromDB(shardus: any, options: LoadOptions):
         throw new Error(`invalid timestamp sort: ${account.timestamp}`)
       }
       lastTS = account.timestamp
+
+      rawAccounts.push(account.data)
     }
 
     let firstAccount = accountArray[0]
     if (logVerbose) shardus.log(`loadAccountDataFromDB ${JSON.stringify(firstAccount)}`)
+
+    try{
+      await shardus.forwardAccounts(rawAccounts)
+    } catch(error){
+      console.log(`loadAccountDataFromDB:` + error.name + ': ' + error.message + ' at ' + error.stack)
+    }
+    
 
     await shardus.debugCommitAccountCopies(accountArray)
 
@@ -100,3 +110,4 @@ export async function loadAccountDataFromDB(shardus: any, options: LoadOptions):
   }
   return report
 }
+
