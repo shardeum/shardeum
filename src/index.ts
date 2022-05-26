@@ -157,8 +157,9 @@ function pruneOldBlocks() {
 function createNewBlock(blockNumber, timestamp): Block {
   if (blocks[blockNumber]) return blocks[blockNumber]
   if (!blocks[blockNumber]) {
+    let timestampInSecond = timestamp ? Math.round(timestamp / 1000) : Math.round(Date.now() / 1000)
     const blockData = {
-      header: {number: blockNumber, timestamp: new BN(timestamp ? timestamp : Date.now())},
+      header: {number: blockNumber, timestamp: new BN(timestampInSecond)},
       transactions: [],
       uncleHeaders: [],
     }
