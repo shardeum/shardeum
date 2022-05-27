@@ -106,6 +106,13 @@ function isVerboseEnabled() {
   return logVerbose
 }
 
+function verify(obj, expectedPk?) {
+  if (expectedPk) {
+    if (obj.sign.owner !== expectedPk) return false
+  }
+  return crypto.verifyObj(obj)
+}
+
 // grab this
 const pointsAverageInterval = 2 // seconds
 
@@ -724,7 +731,7 @@ shardus.registerExternalPost('inject', async (req, res) => {
   let tx = req.body
   if (ShardeumFlags.VerboseLogs) console.log('Transaction injected:', new Date(), tx)
   try {
-    const response = shardus.put(tx)
+    const response = await shardus.put(tx)
     res.json(response)
   } catch (err) {
     if (ShardeumFlags.VerboseLogs) console.log('Failed to inject tx: ', err)
@@ -1679,6 +1686,16 @@ shardus.setup({
       let internalTX = tx as InternalTx
       if(isInternalTXGlobal(internalTX) === true){
         return { result: 'pass', reason: 'valid' }
+      } else if (tx.internalTXType === InternalTXType.ChangeConfig) {
+        const devPublicKey = shardus.getDevPublicKey()
+        if (devPublicKey) {
+          let isValid = verify(tx, devPublicKey)
+          console.log('isValid', isValid)
+          if (isValid) return { result: 'pass', reason: 'valid' }
+          else return { result: 'fail', reason: 'Invalid signature' }
+        } else {
+          return { result: 'fail', reason: 'Dev key is not defined on the server!' }
+        }
       } else {
         //todo validate internal TX
         let isValid = crypto.verifyObj(internalTX)
@@ -1748,6 +1765,20 @@ shardus.setup({
           reason: '',
           txnTimestamp,
         }
+      } else if (tx.internalTXType === InternalTXType.ChangeConfig) {
+        try {
+          const devPublicKey = shardus.getDevPublicKey()
+          if (devPublicKey) {
+            success = verify(tx, devPublicKey)
+            if (!success)
+              reason = 'Dev key does not match!'
+          } else {
+            success = false
+            reason = 'Dev key is not defined on the server!'
+          }
+        } catch (e) {
+          reason = 'Invalid signature for internal tx'
+        }
       } else {
         try {
           success = crypto.verifyObj(internalTX)
@@ -1755,6 +1786,7 @@ shardus.setup({
           reason = 'Invalid signature for internal tx'
         }
       }
+      if (ShardeumFlags.VerboseLogs) console.log('validateTxsField', success, reason)
       return {
         success,
         reason,
@@ -2250,7 +2282,7 @@ shardus.setup({
         keys.sourceKeys = [internalTx.from]
         keys.targetKeys = [toShardusAddress(internalTx.to, AccountType.Account), networkAccount]
       } else if (internalTx.internalTXType === InternalTXType.ChangeConfig) {
-        keys.sourceKeys = [tx.from]
+        // keys.sourceKeys = [tx.from]
         keys.targetKeys = [networkAccount]
       } else if (internalTx.internalTXType === InternalTXType.ApplyChangeConfig) {
         keys.targetKeys = [networkAccount]
@@ -2545,14 +2577,15 @@ shardus.setup({
           if (accountId === networkAccount){
             throw Error(`Network Account is not found ${accountId}`)
           }
-          else {
-            //If the id is not the network account then it must be our dev user account.
-            // we shouldn't try to create that either.
-            // Dev account is a developers public key on a test account they control
-            throw Error(`Dev Account is not found ${accountId}`)
-            // wrappedEVMAccount = createNodeAccount(accountId) as any
-            // accountCreated = true
-          }
+          // I think we don't need it now, the dev Key is checked on the validateTxnFields
+          // else { 
+          //   //If the id is not the network account then it must be our dev user account.
+          //   // we shouldn't try to create that either.
+          //   // Dev account is a developers public key on a test account they control
+          //   throw Error(`Dev Account is not found ${accountId}`)
+          //   // wrappedEVMAccount = createNodeAccount(accountId) as any
+          //   // accountCreated = true
+          // }
         }
       }
       if (internalTx.internalTXType === InternalTXType.ApplyChangeConfig) {
