@@ -63,6 +63,8 @@ export const ONE_DAY = 24 * ONE_HOUR
 
 let latestBlock = 0
 export let blocks: BlockMap = {}
+export let blocksByHash = {}
+export let readableBlocks = {}
 
 // INITIAL NETWORK PARAMETERS FOR Shardeum
 export const INITIAL_PARAMETERS: NetworkParameters = {
@@ -145,13 +147,56 @@ function trySpendServicePoints(points:number) : boolean {
 }
 
 function pruneOldBlocks() {
-  let maxOldBlocksCount =  ShardeumFlags.maxNumberOfOldBlocks || 256
+  let maxOldBlocksCount = ShardeumFlags.maxNumberOfOldBlocks || 256
   if (latestBlock > maxOldBlocksCount) {
-    for (let i=10; i > 0; i--) {
+    for (let i = 10; i > 0; i--) {
       let block = latestBlock - maxOldBlocksCount - i
-      if (blocks[block]) delete blocks[block]
+      if (blocks[block]) {
+        try {
+          let blockHash = readableBlocks[block].hash
+          delete blocks[block]
+          delete blocksByHash[blockHash]
+          delete readableBlocks[block]
+          if(ShardeumFlags.VerboseLogs) console.log('Lengths of blocks after pruning', Object.keys(blocksByHash).length, Object.keys(readableBlocks).length)
+        } catch (e) {
+          console.log('Error: pruneOldBlocks', e)
+        }
+      }
     }
   }
+}
+
+function convertToReadableBlock(block: Block) {
+  let defaultBlock = {
+    difficulty: '0x4ea3f27bc',
+    extraData: '0x476574682f4c5649562f76312e302e302f6c696e75782f676f312e342e32',
+    gasLimit: '0x4a817c800', // 20000000000   "0x1388",
+    gasUsed: '0x0',
+    hash: '0xdc0818cf78f21a8e70579cb46a43643f78291264dda342ae31049421c82d21ae',
+    logsBloom:
+      '0x00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000',
+    miner: '0xbb7b8287f3f0a933474a79eae42cbca977791171',
+    mixHash: '0x4fffe9ae21f1c9e15207b1f472d5bbdd68c9595d461666602f2be20daf5e7843',
+    nonce: '0x689056015818adbe',
+    number: '0',
+    parentHash: '0x0000000000000000000000000000000000000000000000000000000000000000',
+    receiptsRoot: '0x0000000000000000000000000000000000000000000000000000000000000000',
+    sha3Uncles: '0x1dcc4de8dec75d7aab85b567b6ccd41ad312451b948a7413f0a142fd40d49347',
+    size: '0x220',
+    stateRoot: '0x0000000000000000000000000000000000000000000000000000000000000000',
+    timestamp: '0x55ba467c',
+    totalDifficulty: '0x78ed983323d',
+    transactions: [],
+    transactionsRoot: '0x0000000000000000000000000000000000000000000000000000000000000000',
+    uncles: [],
+  }
+  defaultBlock.number = '0x' + block.header.number.toString('hex')
+  defaultBlock.timestamp = '0x' + block.header.timestamp.toString('hex')
+  defaultBlock.hash = '0x' + block.header.hash().toString('hex')
+  let previousBlockNumber = String(block.header.number.toNumber() - 1)
+  let previousBlock = readableBlocks[previousBlockNumber]
+  if(previousBlock) defaultBlock.parentHash = previousBlock.hash
+  return defaultBlock
 }
 
 function createNewBlock(blockNumber, timestamp): Block {
@@ -164,18 +209,11 @@ function createNewBlock(blockNumber, timestamp): Block {
       uncleHeaders: [],
     }
     const block = Block.fromBlockData(blockData)
+    const readableBlock = convertToReadableBlock(block)
     blocks[blockNumber] = block
+    readableBlocks[blockNumber] = readableBlock
+    blocksByHash[readableBlock.hash] = blockNumber
     latestBlock = blockNumber
-    if (ShardeumFlags.VerboseLogs) {
-      let readableBlocks = []
-      for (let blockNumber in blocks) {
-        readableBlocks.push({
-          blockNumber,
-          timestamp: blocks[blockNumber].header.timestamp.toNumber()
-        })
-      }
-      console.log('Recent Blocks', readableBlocks)
-    }
     return block
   }
 }
@@ -693,10 +731,29 @@ shardus.registerExternalPost('inject', async (req, res) => {
   }
 })
 
-shardus.registerExternalGet('eth_blockNumber', debugMiddleware, async (req, res) => {
-    if (ShardeumFlags.VerboseLogs) console.log('Req: eth_blockNumber', latestBlock)
-    return res.json({blockNumber: latestBlock})
+shardus.registerExternalGet('eth_blockNumber', async (req, res) => {
+    if (ShardeumFlags.VerboseLogs) console.log('Req: eth_blockNumber')
+    return res.json({blockNumber: latestBlock ? '0x' + latestBlock.toString(16) : '0x0'})
 })
+
+shardus.registerExternalGet('eth_getBlockByNumber', async (req, res) => {
+  let blockNumber = req.query.blockNumber
+  if (blockNumber === 'latest') blockNumber = latestBlock
+  if (ShardeumFlags.VerboseLogs) console.log('Req: eth_getBlockByNumber', blockNumber)
+  if (blockNumber == null) {
+    return res.json({error: 'Invalid block number'})
+  }
+  return res.json({block: readableBlocks[blockNumber]})
+})
+
+shardus.registerExternalGet('eth_getBlockByHash', async (req, res) => {
+  let blockHash = req.query.blockHash
+  if (blockHash === 'latest') blockHash = readableBlocks[latestBlock].hash
+  if (ShardeumFlags.VerboseLogs) console.log('Req: eth_getBlockByHash', blockHash)
+  let blockNumber = blocksByHash[blockHash]
+  return res.json({block: readableBlocks[blockNumber]})
+})
+
 
 shardus.registerExternalGet('dumpStorage',debugMiddleware, async (req, res) => {
   // if(isDebugMode()){
@@ -1280,7 +1337,7 @@ async function applyInternalTx(internalTx: InternalTx, wrappedStates: WrappedSta
       transactionIndex: '0x1',
       blockNumber: '0x' + blocks[latestBlock].header.number.toString('hex'),
       nonce: '0x',
-      blockHash: '0xc6ef2fc5426d6ad6fd9e2a26abeab0aa2411b7ab17f30a99d3cb96aed1d1055b',
+      blockHash: readableBlocks[latestBlock].hash,
       cumulativeGasUsed: '0x0',
       gasUsed: '0x0',
       logs: null,
@@ -1842,9 +1899,9 @@ shardus.setup({
           status: 0,
           transactionHash: ethTxId,
           transactionIndex: '0x1',
-          blockNumber: '0x' + blocks[latestBlock].header.number.toString('hex'),
+          blockNumber: readableBlocks[latestBlock].number,
           nonce: transaction.nonce.toString('hex'),
-          blockHash: '0xc6ef2fc5426d6ad6fd9e2a26abeab0aa2411b7ab17f30a99d3cb96aed1d1055b',
+          blockHash: readableBlocks[latestBlock].hash,
           cumulativeGasUsed: '0x' + runTxResult.gasUsed.toString('hex'),
           gasUsed: '0x' + runTxResult.gasUsed.toString('hex'),
           logs: null,
@@ -2038,8 +2095,8 @@ shardus.setup({
         logs = runState.logs.map((l: any[]) => {
           return {
             logIndex: '0x1',
-            blockNumber: '0xb',
-            blockHash: '0xc6ef2fc5426d6ad6fd9e2a26abeab0aa2411b7ab17f30a99d3cb96aed1d1055b',
+            blockNumber: readableBlocks[latestBlock].number,
+            blockHash: readableBlocks[latestBlock].hash,
             transactionHash: ethTxId,
             transactionIndex: '0x1',
             address: bufferToHex(l[0]),
@@ -2055,7 +2112,7 @@ shardus.setup({
         transactionIndex: '0x1',
         blockNumber: '0x' + blocks[latestBlock].header.number.toString('hex'),
         nonce: transaction.nonce.toString('hex'),
-        blockHash: '0xc6ef2fc5426d6ad6fd9e2a26abeab0aa2411b7ab17f30a99d3cb96aed1d1055b',
+        blockHash: readableBlocks[latestBlock].hash,
         cumulativeGasUsed: '0x' + runTxResult.gasUsed.toString('hex'),
         gasUsed: '0x' + runTxResult.gasUsed.toString('hex'),
         logs: logs,
@@ -2113,7 +2170,7 @@ shardus.setup({
           transactionIndex: '0x1',
           blockNumber: '0x' + blocks[latestBlock].header.number.toString('hex'),
           nonce: transaction.nonce.toString('hex'),
-          blockHash: '0xc6ef2fc5426d6ad6fd9e2a26abeab0aa2411b7ab17f30a99d3cb96aed1d1055b',
+          blockHash: readableBlocks[latestBlock].hash,
           cumulativeGasUsed: '0x',
           logs: null,
           gasUsed: '0x',
