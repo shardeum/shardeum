@@ -13,7 +13,7 @@ if (fs.existsSync(path.join(process.cwd(), 'config.json'))) {
 
 if (process.env.BASE_DIR) {
   let baseDir = process.env.BASE_DIR || '.'
-  let baseDirFileConfig
+  let baseDirFileConfig = {}
 
   if (fs.existsSync(path.join(baseDir, 'config.json'))) {
     baseDirFileConfig = JSON.parse(fs.readFileSync(path.join(baseDir, 'config.json')).toString())
