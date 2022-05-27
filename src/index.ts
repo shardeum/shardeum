@@ -714,6 +714,11 @@ let debugMiddleware = shardus.getDebugModeMiddleware()
 //   return res.json({ success: true })
 // })
 
+shardus.registerExternalGet('motd', async (req, res) => {
+  return res.json(`fix-block-timestamp 20220527`)
+})
+
+
 shardus.registerExternalGet('debug-points', debugMiddleware, async (req, res) => {
   // if(isDebugMode()){
   //   return res.json(`endpoint not available`)
