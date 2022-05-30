@@ -6,3 +6,4 @@ instances/
 statistics.tsv
 .env
 coverage
+account-export.json
