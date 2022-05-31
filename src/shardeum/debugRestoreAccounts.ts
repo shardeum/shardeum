@@ -90,7 +90,8 @@ export async function loadAccountDataFromDB(shardus: any, options: LoadOptions):
     let firstAccount = accountArray[0]
     if (logVerbose) shardus.log(`loadAccountDataFromDB ${JSON.stringify(firstAccount)}`)
 
-    let limit = 5000
+    let bucketSize = 5000
+    let limit = bucketSize
     let j = limit
     for (let i = 0; i < rawAccounts.length; i = j) {
       console.log(i, limit)
@@ -101,7 +102,7 @@ export async function loadAccountDataFromDB(shardus: any, options: LoadOptions):
         console.log(`loadAccountDataFromDB:` + error.name + ': ' + error.message + ' at ' + error.stack)
       }
       j = limit
-      limit += 10000
+      limit += bucketSize
       await sleep(1000)
     }
 
