@@ -10,6 +10,7 @@ export interface LoadOptions {
 export interface LoadReport {
   passed: boolean
   loadCount: number
+  loadFailed: number
   fatal: boolean
 }
 
@@ -17,11 +18,9 @@ export async function loadAccountDataFromDB(shardus: any, options: LoadOptions):
   let report: LoadReport = {
     passed: false,
     loadCount: 0,
+    loadFailed: 0,
     fatal: false,
   }
-
-
-
 
   let logVerbose = ShardeumFlags.VerboseLogs //shardus.getLogFlags().verbose
 
@@ -59,7 +58,17 @@ export async function loadAccountDataFromDB(shardus: any, options: LoadOptions):
     let lastTS = -1
     for (let account of accountArray) {
       //account.isGlobal = (account.isGlobal === 1)? true : false
-      account.data = JSON.parse(account.data)
+      try{
+        account.data = JSON.parse(account.data)
+      } catch (error){
+        if(report.loadFailed < 100){
+          //log first 100 parsing errors
+          console.log(`error parsing ${account.data}`)          
+        }
+        report.loadFailed++
+        continue
+      }
+
       account.isGlobal = Boolean(account.isGlobal)
       account.cycleNumber = 0 //force to 0.  later if we use a cycle offset, then we leave cycle number alone
                               //but for now we have to start back at 0 in a new network
