@@ -39,7 +39,7 @@ export async function loadAccountDataFromDB(shardus: any, options: LoadOptions):
     if (accountFileText == null) {
       return report
     }
-    const accountArray = JSON.parse(accountFileText)
+    let accountArray = JSON.parse(accountFileText)
     if (accountArray == null) {
       return report
     }
@@ -54,8 +54,8 @@ export async function loadAccountDataFromDB(shardus: any, options: LoadOptions):
     //     await shardus.debugSetAccountState(wrappedResponse)
     // }
 
-    let rawAccounts = []
     let lastTS = -1
+    let accountArrayClean = []
     for (let account of accountArray) {
       //account.isGlobal = (account.isGlobal === 1)? true : false
       try{
@@ -93,8 +93,11 @@ export async function loadAccountDataFromDB(shardus: any, options: LoadOptions):
       }
       lastTS = account.timestamp
 
-      rawAccounts.push(account)
+      accountArrayClean.push(account)
     }
+
+    //replace with the clean array
+    accountArray = accountArrayClean
 
     let firstAccount = accountArray[0]
     if (logVerbose) shardus.log(`loadAccountDataFromDB ${JSON.stringify(firstAccount)}`)
@@ -102,9 +105,9 @@ export async function loadAccountDataFromDB(shardus: any, options: LoadOptions):
     let bucketSize = ShardeumFlags.DebugRestoreArchiveBatch
     let limit = bucketSize
     let j = limit
-    for (let i = 0; i < rawAccounts.length; i = j) {
+    for (let i = 0; i < accountArray.length; i = j) {
       console.log(i, limit)
-      const accountsToForward = rawAccounts.slice(i, limit)
+      const accountsToForward = accountArray.slice(i, limit)
       try {
         await shardus.forwardAccounts(accountsToForward)
       } catch (error) {
