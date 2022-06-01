@@ -90,7 +90,7 @@ export async function loadAccountDataFromDB(shardus: any, options: LoadOptions):
     let firstAccount = accountArray[0]
     if (logVerbose) shardus.log(`loadAccountDataFromDB ${JSON.stringify(firstAccount)}`)
 
-    let bucketSize = 5000
+    let bucketSize = ShardeumFlags.DebugRestoreArchiveBatch
     let limit = bucketSize
     let j = limit
     for (let i = 0; i < rawAccounts.length; i = j) {

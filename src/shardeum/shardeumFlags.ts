@@ -24,6 +24,7 @@ export let ServicePoints = {
   ['tx/:hash']: 5,
 }
 export let DebugRestoreFile = 'account-export.json' //'accounts-by-ts.json'
+export let DebugRestoreArchiveBatch = 2000
 // export let CheckNonceGreaterThan = false
 
 export let UseDBForAccounts = true //Use Sql to store in memory accounts instead of simple accounts object map
