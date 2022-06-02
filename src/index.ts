@@ -742,6 +742,10 @@ shardus.registerExternalPost('inject', async (req, res) => {
   let tx = req.body
   if (ShardeumFlags.VerboseLogs) console.log('Transaction injected:', new Date(), tx)
   try {
+    if (tx.isInternalTx && tx.internalTXType === InternalTXType.ChangeConfig) {
+      const response = await shardus.put(tx, false, true)
+      return res.json(response)
+    }
     const response = await shardus.put(tx)
     res.json(response)
   } catch (err) {
@@ -1413,7 +1417,7 @@ async function applyInternalTx(internalTx: InternalTx, wrappedStates: WrappedSta
     shardeumStateManager.unsetTransactionState()
   }
   if (internalTx.internalTXType === InternalTXType.ChangeConfig) {
-    const from: NodeAccount = wrappedStates[internalTx.from].data // This will be user/node account. needs review!
+    // const from: NodeAccount = wrappedStates[internalTx.from].data // This will be user/node account. needs review!
     const network: NetworkAccount = wrappedStates[networkAccount].data
     let changeOnCycle
     let cycleData: ShardusTypes.Cycle
@@ -1443,7 +1447,7 @@ async function applyInternalTx(internalTx: InternalTx, wrappedStates: WrappedSta
     // network will consens that this is the correct value
     ourAppDefinedData.globalMsg = { address: networkAccount, value, when, source: networkAccount }
 
-    from.timestamp = txTimestamp
+    // from.timestamp = txTimestamp
     console.log('Applied change_config tx')
     shardus.log('Applied change_config tx')
   }
