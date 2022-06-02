@@ -1,5 +1,5 @@
 import * as fs from 'fs'
-import { networkAccount } from '..'
+import { setGenesisAccounts, networkAccount } from '..'
 import * as ShardeumFlags from '../shardeum/shardeumFlags'
 import * as Path from 'path'
 import { sleep } from '../utils'
@@ -102,20 +102,25 @@ export async function loadAccountDataFromDB(shardus: any, options: LoadOptions):
     let firstAccount = accountArray[0]
     if (logVerbose) shardus.log(`loadAccountDataFromDB ${JSON.stringify(firstAccount)}`)
 
-    let bucketSize = ShardeumFlags.DebugRestoreArchiveBatch
-    let limit = bucketSize
-    let j = limit
-    for (let i = 0; i < accountArray.length; i = j) {
-      console.log(i, limit)
-      const accountsToForward = accountArray.slice(i, limit)
-      try {
-        await shardus.forwardAccounts(accountsToForward)
-      } catch (error) {
-        console.log(`loadAccountDataFromDB:` + error.name + ': ' + error.message + ' at ' + error.stack)
+    if (ShardeumFlags.forwardGenesisAccounts) {
+      let bucketSize = ShardeumFlags.DebugRestoreArchiveBatch
+      let limit = bucketSize
+      let j = limit
+      for (let i = 0; i < accountArray.length; i = j) {
+        console.log(i, limit)
+        const accountsToForward = accountArray.slice(i, limit)
+        try {
+          await shardus.forwardAccounts(accountsToForward)
+        } catch (error) {
+          console.log(`loadAccountDataFromDB:` + error.name + ': ' + error.message + ' at ' + error.stack)
+        }
+        j = limit
+        limit += bucketSize
+        await sleep(1000)
       }
-      j = limit
-      limit += bucketSize
-      await sleep(1000)
+    } else {
+      await shardus.forwardAccounts(accountArray.length)
+      setGenesisAccounts(accountArray) // As an assumption to save in memory, so that when it's queried it can reponse fast
     }
 
     await shardus.debugCommitAccountCopies(accountArray)

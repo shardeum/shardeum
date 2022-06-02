@@ -78,6 +78,8 @@ export const INITIAL_PARAMETERS: NetworkParameters = {
   maintenanceFee: 0
 }
 
+export let genesisAccounts = []
+
 const ERC20_BALANCEOF_CODE =  '0x70a08231';
 
 const shardus = shardusFactory(config)
@@ -223,6 +225,10 @@ function createNewBlock(blockNumber, timestamp): Block {
     latestBlock = blockNumber
     return block
   }
+}
+
+export function setGenesisAccounts(accounts = []) {
+  genesisAccounts = accounts
 }
 
 /***
@@ -1226,6 +1232,20 @@ shardus.registerExternalGet('nodeRewardValidate', debugMiddleware, async (req, r
     return res.json({ success: true, data: 'Node reward is adding successfully!' })
   }
   return res.json({ success: false, data: `Pay address ${pay_address} balance and Node reward amount does not match!` })
+})
+
+shardus.registerExternalGet('genesis_accounts', async (req, res) => {
+  const { start } = req.query;
+  if (!start) {
+    return res.json({ success: false, reason: 'start value is not defined!' })
+  }
+  const skip = parseInt(start)
+  const limit = skip + 1000;
+  let accounts = []
+  if (genesisAccounts.length > 0) {
+    accounts = genesisAccounts.slice(skip, limit)
+  }
+  res.json({ success: true, accounts })
 })
 
 /***
