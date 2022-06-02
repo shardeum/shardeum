@@ -3,6 +3,9 @@ import { SecureTrie as Trie } from 'merkle-patricia-tree'
 import { ShardeumState } from '.'
 import * as ShardeumFlags from '../shardeum/shardeumFlags'
 import {zeroAddressAccount, zeroAddressStr} from "../utils";
+import * as AccountsStorage from '../storage/accountStorage'
+import { AccountType } from '../shardeum/shardeumTypes';
+import { toShardusAddress, toShardusAddressWithKey } from '../shardeum/evmAddress';
 
 export type accountEvent = (transactionState: TransactionState, address: string) => Promise<boolean>
 export type contractStorageEvent = (transactionState: TransactionState, address: string, key: string) => Promise<boolean>
@@ -189,64 +192,69 @@ export default class TransactionState {
       return
     }
 
-    this.shardeumState._trie.checkpoint()
+    if(ShardeumFlags.SaveEVMTries){
+      this.shardeumState._trie.checkpoint()
 
-    //IFF this is a contract account we need to update any pending contract storage values!!
-    if (this.pendingContractStorageCommits.has(addressString)) {
-      let contractStorageCommits = this.pendingContractStorageCommits.get(addressString)
+      //IFF this is a contract account we need to update any pending contract storage values!!
+      if (this.pendingContractStorageCommits.has(addressString)) {
+        let contractStorageCommits = this.pendingContractStorageCommits.get(addressString)
 
-      let storageTrie = await this.shardeumState._getStorageTrie(address)
-      //what if storage trie was just created?
-      storageTrie.checkpoint()
-      //walk through all of these
-      for (let entry of contractStorageCommits.entries()) {
-        let keyString = entry[0]
-        let value = entry[1] // need to check wrapping.  Does this need one more layer of toBuffer?/rlp?
-        let keyBuffer = Buffer.from(keyString, 'hex')
-        await storageTrie.put(keyBuffer, value)
+        let storageTrie = await this.shardeumState._getStorageTrie(address)
+        //what if storage trie was just created?
+        storageTrie.checkpoint()
+        //walk through all of these
+        for (let entry of contractStorageCommits.entries()) {
+          let keyString = entry[0]
+          let value = entry[1] // need to check wrapping.  Does this need one more layer of toBuffer?/rlp?
+          let keyBuffer = Buffer.from(keyString, 'hex')
+          await storageTrie.put(keyBuffer, value)
 
-        if (this.debugTrace) this.debugTraceLog(`commitAccount:contractStorage: addr:${addressString} key:${keyString} v:${value.toString('hex')}`)
+          if (this.debugTrace) this.debugTraceLog(`commitAccount:contractStorage: addr:${addressString} key:${keyString} v:${value.toString('hex')}`)
+        }
+        await storageTrie.commit()
+
+        //update the accounts state root!
+        account.stateRoot = storageTrie.root
+        //TODO:  handle key deletion
       }
-      await storageTrie.commit()
+      if (this.pendingContractBytesCommits.has(addressString)) {
+        let contractBytesCommits = this.pendingContractBytesCommits.get(addressString)
 
-      //update the accounts state root!
-      account.stateRoot = storageTrie.root
-      //TODO:  handle key deletion
-    }
-    if (this.pendingContractBytesCommits.has(addressString)) {
-      let contractBytesCommits = this.pendingContractBytesCommits.get(addressString)
+        for (let [key, contractByteWrite] of contractBytesCommits) {
+          let codeHash = contractByteWrite.codeHash
+          let codeByte = contractByteWrite.codeByte
+          if(ShardeumFlags.VerboseLogs) console.log( `Storing contract code for ${address.toString()}`, codeHash, codeByte)
 
-      for (let [key, contractByteWrite] of contractBytesCommits) {
-        let codeHash = contractByteWrite.codeHash
-        let codeByte = contractByteWrite.codeByte
-        if(ShardeumFlags.VerboseLogs) console.log( `Storing contract code for ${address.toString()}`, codeHash, codeByte)
+          //decided to move this back to commit. since codebytes are global we need to be able to commit them without changing a contract account
+          //push codeByte to the worldStateTrie.db
+          //await this.shardeumState._trie.db.put(codeHash, codeByte)
+          //account.codeHash = codeHash
 
-        //decided to move this back to commit. since codebytes are global we need to be able to commit them without changing a contract account
-        //push codeByte to the worldStateTrie.db
-        //await this.shardeumState._trie.db.put(codeHash, codeByte)
-        //account.codeHash = codeHash
+          account.codeHash = contractByteWrite.codeHash
 
-        account.codeHash = contractByteWrite.codeHash
-
-        if (this.debugTrace) this.debugTraceLog(`commitAccount:contractCode: addr:${addressString} codeHash:${codeHash.toString('hex')} v:${codeByte.length}`)
+          if (this.debugTrace) this.debugTraceLog(`commitAccount:contractCode: addr:${addressString} codeHash:${codeHash.toString('hex')} v:${codeByte.length}`)
+        }
       }
+
+      TransactionState.fixUpAccountFields(account)
+
+      account.stateRoot = Buffer.from(account.stateRoot)
+
+      const accountObj = Account.fromAccountData(account)
+      const accountRlp = accountObj.serialize()
+      const accountKeyBuf = address.buf
+      await this.shardeumState._trie.put(accountKeyBuf, accountRlp)
+
+      await this.shardeumState._trie.commit()
+
+      if (this.debugTrace) this.debugTraceLog(`commitAccount: addr:${addressString} v:${JSON.stringify(accountObj)}`)
+
+      //TODO:  handle account deletion, if account is null. This is not a shardus concept yet
+      //await this._trie.del(keyBuf)
+    } else {
+      //save to accounts
+
     }
-
-    TransactionState.fixUpAccountFields(account)
-
-    account.stateRoot = Buffer.from(account.stateRoot)
-
-    const accountObj = Account.fromAccountData(account)
-    const accountRlp = accountObj.serialize()
-    const accountKeyBuf = address.buf
-    await this.shardeumState._trie.put(accountKeyBuf, accountRlp)
-
-    await this.shardeumState._trie.commit()
-
-    if (this.debugTrace) this.debugTraceLog(`commitAccount: addr:${addressString} v:${JSON.stringify(accountObj)}`)
-
-    //TODO:  handle account deletion, if account is null. This is not a shardus concept yet
-    //await this._trie.del(keyBuf)
   }
 
   /**
@@ -256,40 +264,45 @@ export default class TransactionState {
    * @param contractByte
    */
    async commitContractBytes(contractAddress: string, codeHash: Buffer, contractByte: Buffer) {
-    //only put this in the pending commit structure. we will do the real commit when updating the account
-    if (this.pendingContractBytesCommits.has(contractAddress)) {
-      let contractBytesCommit = this.pendingContractBytesCommits.get(contractAddress)
-      if (contractBytesCommit.has(codeHash.toString('hex'))) {
+
+    if(ShardeumFlags.SaveEVMTries){
+      //only put this in the pending commit structure. we will do the real commit when updating the account
+      if (this.pendingContractBytesCommits.has(contractAddress)) {
+        let contractBytesCommit = this.pendingContractBytesCommits.get(contractAddress)
+        if (contractBytesCommit.has(codeHash.toString('hex'))) {
+          contractBytesCommit.set(codeHash.toString('hex'), { codeHash, codeByte: contractByte })
+        }
+      } else {
+        let contractBytesCommit = new Map()
         contractBytesCommit.set(codeHash.toString('hex'), { codeHash, codeByte: contractByte })
+        this.pendingContractBytesCommits.set(contractAddress, contractBytesCommit)
       }
-    } else {
-      let contractBytesCommit = new Map()
-      contractBytesCommit.set(codeHash.toString('hex'), { codeHash, codeByte: contractByte })
-      this.pendingContractBytesCommits.set(contractAddress, contractBytesCommit)
+
+      //Update the trie right away.  This used to be queued and only committed at the same time as the CA
+      //Since CA bytes are global we must commit them right away because there will not be CA being updated in the same transaction any more
+      this.shardeumState._trie.checkpoint()
+      await this.shardeumState._trie.db.put(codeHash, contractByte)
+      await this.shardeumState._trie.commit()
+
+      if (this.debugTrace) this.debugTraceLog(`commitContractBytes:contractCode codeHash:${codeHash.toString('hex')} v:${contractByte.toString('hex')}`)
     }
 
-    //Update the trie right away.  This used to be queued and only committed at the same time as the CA
-    //Since CA bytes are global we must commit them right away because there will not be CA being updated in the same transaction any more
-    this.shardeumState._trie.checkpoint()
-    await this.shardeumState._trie.db.put(codeHash, contractByte)
-    await this.shardeumState._trie.commit()
-
-    if (this.debugTrace) this.debugTraceLog(`commitContractBytes:contractCode codeHash:${codeHash.toString('hex')} v:${contractByte.toString('hex')}`)
   }
 
   async commitContractStorage(contractAddress: string, keyString: string, value: Buffer) {
     //store all writes to the persistant trie.
-
-    //only put this in the pending commit structure. we will do the real commit when updating the account
-    if (this.pendingContractStorageCommits.has(contractAddress)) {
-      let contractStorageCommits = this.pendingContractStorageCommits.get(contractAddress)
-      if (!contractStorageCommits.has(keyString)) {
+    if(ShardeumFlags.SaveEVMTries){
+      //only put this in the pending commit structure. we will do the real commit when updating the account
+      if (this.pendingContractStorageCommits.has(contractAddress)) {
+        let contractStorageCommits = this.pendingContractStorageCommits.get(contractAddress)
+        if (!contractStorageCommits.has(keyString)) {
+          contractStorageCommits.set(keyString, value)
+        }
+      } else {
+        let contractStorageCommits = new Map()
         contractStorageCommits.set(keyString, value)
+        this.pendingContractStorageCommits.set(contractAddress, contractStorageCommits)
       }
-    } else {
-      let contractStorageCommits = new Map()
-      contractStorageCommits.set(keyString, value)
-      this.pendingContractStorageCommits.set(contractAddress, contractStorageCommits)
     }
   }
 
@@ -315,9 +328,30 @@ export default class TransactionState {
       throw new Error('unable to proceed, cant involve account')
     }
 
-    //see if we can get it from the storage trie.
-    let storedRlp = await worldStateTrie.get(address.buf)
-    let account = storedRlp ? Account.fromRlpSerializedAccount(storedRlp) : undefined
+    let storedRlp: Buffer
+    let account:Account
+
+
+    if(ShardeumFlags.SaveEVMTries){
+      //see if we can get it from the storage trie.
+      storedRlp = await worldStateTrie.get(address.buf)
+      account = storedRlp ? Account.fromRlpSerializedAccount(storedRlp) : undefined
+    } else {
+      //get from accounts 
+      //throw new Error('get from accounts db')
+
+      //figure out if addres to string is ok...
+      //also what about RLP format... need to do the extra conversions now, but plan on the best conversion.
+      let accountShardusAddress = toShardusAddress(address.toString(), AccountType.Account)
+      let wrappedAccount = await AccountsStorage.getAccount(accountShardusAddress)
+      if(wrappedAccount != null){
+        account = wrappedAccount.account        
+      }
+
+      if(account != null){
+        storedRlp = account.serialize()
+      }
+    }
 
     //Storage miss!!!, account not on this shard
     if (account == undefined) {
@@ -416,10 +450,24 @@ export default class TransactionState {
       throw new Error('unable to proceed, cant involve contract bytes')
     }
 
-    //see if we can get it from the worldStateTrie.db
-    let storedCodeByte = await worldStateTrie.db.get(codeHash)
-    let codeBytes = storedCodeByte // seems to be no conversio needed for codebytes.
+    let storedCodeByte:Buffer
+    let codeBytes :Buffer
+    if(ShardeumFlags.SaveEVMTries){
+      //see if we can get it from the worldStateTrie.db
+      storedCodeByte = await worldStateTrie.db.get(codeHash)
+      codeBytes = storedCodeByte // seems to be no conversio needed for codebytes.
+    } else {
+      //get from accounts db
+      //throw new Error('get from accounts db')
 
+      //need: contract address,  code hash  for toShardusAddressWithKey
+      let bytesShardusAddress = toShardusAddressWithKey(addressString, codeHashStr, AccountType.ContractCode)
+      let wrappedAccount = await AccountsStorage.getAccount(bytesShardusAddress)
+      if(wrappedAccount != null){
+        storedCodeByte = wrappedAccount.codeByte   
+        codeBytes = storedCodeByte    
+      }
+    }
     //Storage miss!!!, account not on this shard
     if (codeBytes == undefined) {
       //event callback to inidicate we do not have the account in this shard
@@ -514,11 +562,24 @@ export default class TransactionState {
       throw new Error('unable to proceed, cant involve contract storage')
     }
 
-    //see if we can get it from the storage trie.
-    let storedRlp = await storage.get(key)
-    let storedValue = storedRlp ? rlp.decode(storedRlp) : undefined
-    if(ShardeumFlags.VerboseLogs) console.log( `storedValue for ${key.toString('hex')}`, storedValue)
-
+    let storedRlp
+    let storedValue
+    if(ShardeumFlags.SaveEVMTries){
+      //see if we can get it from the storage trie.
+      storedRlp = await storage.get(key)
+      storedValue = storedRlp ? rlp.decode(storedRlp) : undefined
+      if(ShardeumFlags.VerboseLogs) console.log( `storedValue for ${key.toString('hex')}`, storedValue)    
+    } else {
+      //get from accounts db
+      //throw new Error('get from accounts db')
+      // toShardusAddressWithKey.. use contract address followed by key
+      let storageShardusAddress = toShardusAddressWithKey(addressString, keyString, AccountType.ContractStorage)
+      let wrappedAccount = await AccountsStorage.getAccount(storageShardusAddress)
+      if(wrappedAccount != null){
+        storedRlp = wrappedAccount.value   
+        storedValue = storedRlp ? rlp.decode(storedRlp) : undefined    
+      }
+    }
     //Storage miss!!!, account not on this shard
     if (storedValue == undefined) {
       //event callback to inidicate we do not have the account in this shard
@@ -604,6 +665,8 @@ export default class TransactionState {
     this.touchedCAs.add(addressString)
   }
 
+
+  //should go away with SaveEVMTries = false
   async exectutePendingCAStateRoots() {
     //for all touched CAs,
     // get CA storage trie.
@@ -618,6 +681,7 @@ export default class TransactionState {
     // It could be that this is the right answer for version 1 that is on a single shard anyhow!!
   }
 
+  //should go away with SaveEVMTries = false
   async generateTrieProofs() {
     //alternative to exectutePendingCAStateRoots
     //in this code we would look at all READ CA keys and create a set of proofs on checkpointed trie.

@@ -121,7 +121,7 @@ export function toShardusAddressWithKey(addressStr: string, secondaryAddressStr:
   return addressStr.slice(2).toLowerCase()
 }
 
-export function toShardusAddress(addressStr, accountType: AccountType): string {
+export function toShardusAddress(addressStr: string, accountType: AccountType): string {
   if (accountType === AccountType.ContractStorage || accountType === AccountType.ContractCode) {
     throw new Error(`toShardusAddress does not work anymore with type ContractStorage, use toShardusAddressWithKey instead`)
   }
