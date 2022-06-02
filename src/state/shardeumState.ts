@@ -525,7 +525,9 @@ export default class ShardeumState implements StateManager {
    */
   async clearContractStorage(address: Address): Promise<void> {
     if(ShardeumFlags.SaveEVMTries === false){
-      throw new Error('todo implement update to clearContractStorage ')
+      //throw new Error('todo implement update to clearContractStorage ')
+      return
+
     } else {
       //I am not convinced this was safe to do before.  I think it was an oversight/unfinished
       await this._modifyContractStorage(address, (storageTrie, done) => {
@@ -670,7 +672,8 @@ export default class ShardeumState implements StateManager {
     if(ShardeumFlags.SaveEVMTries === false){
       //may not need to do anything. but we need to trace where this is used
       //looks like just Pre-Byzantium paths use this in a receipt
-      throw new Error('todo implement update to getStateRoot ')
+      //throw new Error('todo implement update to getStateRoot ')
+      return Buffer.from([])
     }
 
     await this._cache.flush()
