@@ -13,6 +13,9 @@ import Cache from './cache'
 import { AccessList, AccessListItem } from '@ethereumjs/tx'
 import TransactionState from './transactionState'
 import * as ShardeumFlags from '../shardeum/shardeumFlags'
+import * as AccountsStorage from '../storage/accountStorage'
+import { toShardusAddress } from '../shardeum/evmAddress'
+import { AccountType } from '../shardeum/shardeumTypes'
 
 const debug = createDebugLogger('vm:state')
 
@@ -861,15 +864,15 @@ export default class ShardeumState implements StateManager {
    * @param address - Address to check
    */
   async accountIsEmpty(address: Address): Promise<boolean> {
-    if(ShardeumFlags.SaveEVMTries === false){
-      // not sure yet if we need to implement this..
-      // could this be a fash shardus cache look up?
-      // should it peek into unfinished transaction state?
-      throw new Error('accountIsEmpty not valid implemented yet SaveEVMTries === false')
-    }
+    // if(ShardeumFlags.SaveEVMTries === false){
+    //   // todo, how can shardeum handle 'empty' accounts..
+    //   let accountShardusAddress = toShardusAddress(address.toString(), AccountType.Account)
+    //   let exists = await AccountsStorage.accountExists(accountShardusAddress)
+    //   return exists === false
+    // }
 
     const account = await this.getAccount(address)
-    return account.isEmpty()
+    return account == null || account.isEmpty()
   }
 
   /**
@@ -879,13 +882,12 @@ export default class ShardeumState implements StateManager {
    */
   async accountExists(address: Address): Promise<boolean> {
     if(ShardeumFlags.SaveEVMTries === false){
-      // not sure yet if we need to implement this..
-      // could this be a fash shardus cache look up?
-      // should it peek into unfinished transaction state?
-      //throw new Error('accountExists not implemented yet when SaveEVMTries === false')
+      // let accountShardusAddress = toShardusAddress(address.toString(), AccountType.Account)
+      // let exists = await AccountsStorage.accountExists(accountShardusAddress)
+      // return exists
 
-      //HACK i think this only impacts gas.. TODO replace it with propper logic that looks at accounts
-      return true
+      const account = await this.getAccount(address)
+      return account != null //&& account.isEmpty() === false
     }
 
     const account = this._cache.lookup(address)

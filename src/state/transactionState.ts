@@ -6,6 +6,7 @@ import {zeroAddressAccount, zeroAddressStr} from "../utils";
 import * as AccountsStorage from '../storage/accountStorage'
 import { AccountType } from '../shardeum/shardeumTypes';
 import { toShardusAddress, toShardusAddressWithKey } from '../shardeum/evmAddress';
+import { fixDeserializedWrappedEVMAccount } from '../shardeum/wrappedEVMAccountFunctions';
 
 export type accountEvent = (transactionState: TransactionState, address: string) => Promise<boolean>
 export type contractStorageEvent = (transactionState: TransactionState, address: string, key: string) => Promise<boolean>
@@ -345,8 +346,10 @@ export default class TransactionState {
       let accountShardusAddress = toShardusAddress(address.toString(), AccountType.Account)
       let wrappedAccount = await AccountsStorage.getAccount(accountShardusAddress)
       if(wrappedAccount != null){
+        fixDeserializedWrappedEVMAccount(wrappedAccount)
         account = wrappedAccount.account        
       }
+
 
       if(account != null){
         storedRlp = account.serialize()
@@ -464,6 +467,7 @@ export default class TransactionState {
       let bytesShardusAddress = toShardusAddressWithKey(addressString, codeHashStr, AccountType.ContractCode)
       let wrappedAccount = await AccountsStorage.getAccount(bytesShardusAddress)
       if(wrappedAccount != null){
+        fixDeserializedWrappedEVMAccount(wrappedAccount)
         storedCodeByte = wrappedAccount.codeByte   
         codeBytes = storedCodeByte    
       }
@@ -576,6 +580,7 @@ export default class TransactionState {
       let storageShardusAddress = toShardusAddressWithKey(addressString, keyString, AccountType.ContractStorage)
       let wrappedAccount = await AccountsStorage.getAccount(storageShardusAddress)
       if(wrappedAccount != null){
+        fixDeserializedWrappedEVMAccount(wrappedAccount)
         storedRlp = wrappedAccount.value   
         storedValue = storedRlp ? rlp.decode(storedRlp) : undefined    
       }

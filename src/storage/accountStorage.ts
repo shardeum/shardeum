@@ -72,6 +72,16 @@ export async function getAccountTimestamp(address: string): Promise<number> {
   }
 }
 
+export async function accountExists(address: string): Promise<boolean> {
+  if (ShardeumFlags.UseDBForAccounts === true) {
+    //todo replace with specific sql query, or even a shardus cache check
+    let account = await storage.getAccountsEntry(address)
+    return account != null
+  } else {
+    return accounts[address] != null
+  }
+}
+
 export async function setAccount(address: string, account: WrappedEVMAccount): Promise<void> {
   if (ShardeumFlags.UseDBForAccounts === true) {
     let accountEntry = {

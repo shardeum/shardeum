@@ -23,6 +23,20 @@
             "type": "pwa-node"
         },
         {
+            //this seems to work pretty well when other methods are breaking.
+            "type": "node",
+            "request": "attach",
+            "name": "Attach by Process Better",
+            "processId": "${command:PickProcess}", // or hardcode the process id here i.e. "15684"
+            "port": 9229,
+            //"restart": true,
+            "sourceMaps": true,
+            "protocol": "inspector" ,
+            "skipFiles": [
+                "<node_internals>/**"
+            ]
+        },        
+        {
             "type": "pwa-node",
             "request": "launch",
             "name": "Launch Program",
