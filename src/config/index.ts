@@ -82,7 +82,8 @@ config = merge(config, {
       maxJoinedPerCycle: 2,
       maxSyncingPerCycle: 2, 
       maxRotatedPerCycle: process.env.maxRotatedPerCycle ? parseInt(process.env.maxRotatedPerCycle) : 1,
-      firstCycleJoin: 1
+      firstCycleJoin: 1,
+      maxSyncTimeFloor: 12000
     }
   }
 })
@@ -116,7 +117,7 @@ config = merge(config, {
       executeInOneShard: false
     },
     stateManager: {
-      accountBucketSize: 400 //25
+      accountBucketSize: 200 //25
     }
   }
 })
@@ -137,7 +138,6 @@ config = merge(
     server: {
       mode: 'release', //TODO must set this to release for public networks or get security on endpoints
       debug: {
-        maxSyncTimeFloor: 12000,
         startInFatalsLogMode: false, // true setting good for big aws test with nodes joining under stress.
         startInErrorLogMode: true,
         fakeNetworkDelay: 0,
