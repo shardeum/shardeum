@@ -83,7 +83,8 @@ config = merge(config, {
       maxSyncingPerCycle: 2, 
       maxRotatedPerCycle: process.env.maxRotatedPerCycle ? parseInt(process.env.maxRotatedPerCycle) : 1,
       firstCycleJoin: 1,
-      maxSyncTimeFloor: 12000
+      maxSyncTimeFloor: 18000,
+      syncBoostEnabled: false
     }
   }
 })
