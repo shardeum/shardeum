@@ -1994,7 +1994,7 @@ shardus.setup({
           shardus.applyResponseSetFailed(applyResponse, reason)
           return applyResponse //return rather than throw exception
         }
-        throw new Error(`invalid transaction, reason: ${runTxResult.execResult.exceptionError}. tx: ${JSON.stringify(tx)}`)
+        throw new Error(`invalid transaction, reason: ${JSON.stringify(runTxResult.execResult.exceptionError)}. tx: ${JSON.stringify(tx)}`)
       }
       if (ShardeumFlags.VerboseLogs) console.log('DBG', 'applied tx', txId, runTxResult)
       if (ShardeumFlags.VerboseLogs) console.log('DBG', 'applied tx eth', ethTxId, runTxResult)
@@ -2263,8 +2263,8 @@ shardus.setup({
         }
 
       }
-      shardus.log('Unable to apply transaction', e)
-      if (ShardeumFlags.VerboseLogs) console.log('Unable to apply transaction', txId, e)
+      shardus.log('Unable to apply transaction', JSON.stringify(e))
+      if (ShardeumFlags.VerboseLogs) console.log('Unable to apply transaction', txId, JSON.stringify(e))
       shardeumStateManager.unsetTransactionState()
 
       // not sure what to do here.
