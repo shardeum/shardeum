@@ -34,6 +34,7 @@ async function main() {
     }
     console.log('size of accounts map after db', dbFile, accountsMap.size)
   }
+
   let accountsToCheckCodeHash = []
   for (let [accountId, accountData] of accountsMap) {
     let newestAccount = accountData[0]
@@ -87,7 +88,6 @@ async function main() {
     let newestAccount = accountsMap.get(accountId)[0]
     let oldestCodeHash = Buffer.from(oldestAccount.data.account.codeHash).toString('hex')
     if (oldestCodeHash !== emptyCodeHash) {
-      console.log('detected corrupted CA', newestAccount, oldestAccount)
       // codeHash is corrupted. We will restore with old contract code hash
       newestAccount.data.account.codeHash = oldestAccount.data.account.codeHash
       // update account hash
@@ -98,8 +98,10 @@ async function main() {
     }
   }
   let finalAccounts = Array.from(accountsMap.values())
-  finalAccounts = finalAccounts.sort((a, b) => a.timestamp - b.timestamp)
-  fs.writeFileSync('accounts-export.json', JSON.stringify(finalAccounts))
+  finalAccounts = finalAccounts.map(acc => Array.isArray(acc) ? acc[0] : acc)
+  finalAccounts = finalAccounts.sort((a, b) => a.timestamp - b.timestamp).map(acc => ({...acc, data: JSON.stringify(acc.data)}))
+  fs.writeFileSync('account-export.json', JSON.stringify(finalAccounts, null, 2))
+  console.log('Merge Completed!')
 }
 
 
