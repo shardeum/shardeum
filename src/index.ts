@@ -70,8 +70,8 @@ export let readableBlocks = {}
 export const INITIAL_PARAMETERS: NetworkParameters = {
   title: 'Initial parameters',
   description: 'These are the initial network parameters Shardeum started with',
-  nodeRewardInterval: ONE_MINUTE * 10, // 10 minutes for testing
-  nodeRewardAmount: 1,
+  nodeRewardInterval: ONE_MINUTE, // 10 minutes for testing
+  nodeRewardAmount: 1, // 1 ETH
   nodePenalty: 10,
   stakeRequired: 5,
   maintenanceInterval: ONE_DAY,
@@ -93,10 +93,7 @@ console.log('Pay Address', pay_address, isValidAddress(pay_address))
 //console.log('Pk',random_wallet.getPublicKey())
 //console.log('pk',random_wallet.getPrivateKey())
 
-let nodeRewardTracker = {
-  nodeRewardsCount: 0,
-}
-
+let nodeRewardCount = 0
 
 function isDebugMode(){
   //@ts-ignore
@@ -1077,7 +1074,6 @@ shardus.registerExternalPost('contract/call', async (req, res) => {
       debugTXState.insertFirstAccountReads(opt.caller, callerAccount.account)
       shardeumStateManager.setTransactionState(debugTXState)
     } else {
-      const oneEth = new BN(10).pow(new BN(18))
       const acctData = {
         nonce: 0,
         balance: oneEth.mul(new BN(100)), // 100 eth.  This is a temporary account that will never exist.
@@ -1217,8 +1213,7 @@ shardus.registerExternalGet('nodeRewardValidate', debugMiddleware, async (req, r
   //   return res.json(`endpoint not available`)
   // }
 
-  const oneEth = new BN(10).pow(new BN(18))
-  const expectedBalance = parseInt(oneEth.mul(new BN(nodeRewardTracker.nodeRewardsCount)).toString()) + parseInt(oneEth.mul(defaultBalance).toString())
+  const expectedBalance = nodeRewardCount * parseInt(oneEth.mul(new BN(INITIAL_PARAMETERS.nodeRewardAmount)).toString()) + parseInt(defaultBalance.toString())
   const shardusAddress = toShardusAddress(pay_address, AccountType.Account)
   //const account = accounts[shardusAddress]
   const account = await AccountsStorage.getAccount(shardusAddress)
@@ -1341,14 +1336,13 @@ async function applyInternalTx(internalTx: InternalTx, wrappedStates: WrappedSta
     const to: WrappedEVMAccount = wrappedStates[toShardusAddress(internalTx.to, AccountType.Account)].data
     let nodeRewardReceipt: WrappedEVMAccount = null
     if(ShardeumFlags.EVMReceiptsAsAccounts){
-      nodeRewardReceipt = wrappedStates['0x' + txId].data // Current node reward receipt hash is set with txId
+      nodeRewardReceipt = wrappedStates[txId].data // Current node reward receipt hash is set with txId
     }
     from.balance += network.current.nodeRewardAmount // This is not needed and will have to delete `balance` field eventually
     shardus.log(`Reward from ${internalTx.from} to ${internalTx.to}`)
     shardus.log('TO ACCOUNT', to)
 
     const accountAddress = Address.fromString(internalTx.to)
-    const oneEth = new BN(10).pow(new BN(18))
     if (ShardeumFlags.VerboseLogs) {
       console.log('node Reward', internalTx)
     }
@@ -1356,7 +1350,7 @@ async function applyInternalTx(internalTx: InternalTx, wrappedStates: WrappedSta
     if (ShardeumFlags.VerboseLogs) {
       console.log('nodeReward', 'accountAddress', account)
     }
-    account.balance.iadd(oneEth) // Add 1 eth
+    account.balance.iadd(oneEth.mul(new BN(network.current.nodeRewardAmount))) // Add 1 ETH
     await shardeumStateManager.putAccount(accountAddress, account)
     account = await shardeumStateManager.getAccount(accountAddress)
     if (ShardeumFlags.VerboseLogs) {
@@ -1369,7 +1363,7 @@ async function applyInternalTx(internalTx: InternalTx, wrappedStates: WrappedSta
     from.timestamp = txTimestamp
 
     let readableReceipt: ReadableReceipt = {
-      transactionHash: '0x' + txId,
+      transactionHash: txId,
       transactionIndex: '0x1',
       blockNumber: '0x' + blocks[latestBlock].header.number.toString('hex'),
       nonce: '0x',
@@ -2321,9 +2315,10 @@ shardus.setup({
       if (internalTx.internalTXType === InternalTXType.NodeReward) {
         if(ShardeumFlags.EVMReceiptsAsAccounts){
           const txId = crypto.hashObj(tx)
-          keys.allKeys = keys.allKeys.concat(['0x' + txId]) // For Node Reward Receipt
+          keys.allKeys = keys.allKeys.concat([txId]) // For Node Reward Receipt
         }
       }
+      if (ShardeumFlags.VerboseLogs) console.log('crack', { timestamp, keys, id: crypto.hashObj(tx) })
       return {
         timestamp,
         keys,
@@ -2573,7 +2568,7 @@ shardus.setup({
         if (!wrappedEVMAccount) {
           if (accountId === internalTx.from) {
             wrappedEVMAccount = createNodeAccount(accountId) as any
-          } else if (accountId === '0x' + crypto.hashObj(tx)) { // For Node Reward Receipt; This needs to evaluate whether it's good or can have issue
+          } else if (accountId === crypto.hashObj(tx)) { // For Node Reward Receipt; This needs to evaluate whether it's good or can have issue
             wrappedEVMAccount = {
               timestamp: 0,
               ethAddress: accountId,
@@ -3177,7 +3172,7 @@ if (ShardeumFlags.GlobalNetworkAccount) {
       // THIS IS FOR NODE_REWARD
       if (ShardeumFlags.NodeReward) {
         if (currentTime - lastReward > network.current.nodeRewardInterval) {
-          nodeRewardTracker.nodeRewardsCount++
+          nodeRewardCount++
           let tx = {
             isInternalTx: true,
             internalTXType: InternalTXType.NodeReward,

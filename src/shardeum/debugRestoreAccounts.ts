@@ -120,7 +120,7 @@ export async function loadAccountDataFromDB(shardus: any, options: LoadOptions):
       }
     } else {
       await shardus.forwardAccounts(accountArray.length)
-      setGenesisAccounts(accountArray) // As an assumption to save in memory, so that when it's queried it can reponse fast
+      setGenesisAccounts(accountArray) // As an assumption to save in memory, so that when it's queried it can reponse fast, we can make it query from DB later 
     }
 
     await shardus.debugCommitAccountCopies(accountArray)
