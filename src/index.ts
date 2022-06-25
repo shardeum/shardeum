@@ -70,7 +70,7 @@ export let readableBlocks = {}
 export const INITIAL_PARAMETERS: NetworkParameters = {
   title: 'Initial parameters',
   description: 'These are the initial network parameters Shardeum started with',
-  nodeRewardInterval: ONE_MINUTE, // 10 minutes for testing
+  nodeRewardInterval: ONE_MINUTE * 10, // 10 minutes for testing
   nodeRewardAmount: 1, // 1 ETH
   nodePenalty: 10,
   stakeRequired: 5,
