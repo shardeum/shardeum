@@ -2459,6 +2459,11 @@ shardus.setup({
 
     //TODO consider if this can be table lookup rather than a recalculation
     const wrappedEVMAccount = await AccountsStorage.getAccount(accountAddress)
+
+    //looks like this wont change much as this is an unused function
+    fixDeserializedWrappedEVMAccount(wrappedEVMAccount)
+
+
     return WrappedEVMAccountFunctions._calculateAccountHash(wrappedEVMAccount)
   },
 
@@ -3014,6 +3019,8 @@ shardus.setup({
     return finalResults
   },
   calculateAccountHash(wrappedEVMAccount: WrappedEVMAccount) {
+    //this could be slow, would be nice to have a smart version
+    fixDeserializedWrappedEVMAccount(wrappedEVMAccount)
     return WrappedEVMAccountFunctions._calculateAccountHash(wrappedEVMAccount)
   },
   // should rely on set account data

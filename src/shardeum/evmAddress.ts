@@ -25,10 +25,7 @@ export function getAccountShardusAddress(wrappedEVMAccount: WrappedEVMAccount): 
     return shardusAddress
   }
   if (wrappedEVMAccount.accountType === AccountType.Receipt) {
-    //in this case ethAddress is the code hash which is what we want for the key
-    //let shardusAddress = toShardusAddressWithKey(wrappedEVMAccount.txFrom, wrappedEVMAccount.ethAddress, wrappedEVMAccount.accountType)
-    //let shardusAddress = toShardusAddressWithKey(wrappedEVMAccount.ethAddress.slice(0, 42), wrappedEVMAccount.ethAddress, wrappedEVMAccount.accountType)
-
+    //We use the whole eth address for the receipt (non siloed)
     let shardusAddress = toShardusAddress(addressSource, wrappedEVMAccount.accountType)
     return shardusAddress
   }

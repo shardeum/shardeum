@@ -12,8 +12,8 @@ let dbFiles = [
   'db.1.sqlite',
   'db.2.sqlite',
   'db.3.sqlite',
-  // 'db.4.sqlite',
-  // 'db.5.sqlite',
+  'db.4.sqlite',
+  'db.5.sqlite',
 ]
 
 async function main() {
@@ -90,6 +90,10 @@ async function main() {
     if (oldestCodeHash !== emptyCodeHash) {
       // codeHash is corrupted. We will restore with old contract code hash
       newestAccount.data.account.codeHash = oldestAccount.data.account.codeHash
+
+      //not 100% sure if this is correct. but I think it works with the updates in this commit
+      WrappedEVMAccountFunctions.fixDeserializedWrappedEVMAccount(newestAccount.data)
+
       // update account hash
       WrappedEVMAccountFunctions.updateEthAccountHash(newestAccount.data)
       newestAccount.hash = newestAccount.data.hash
