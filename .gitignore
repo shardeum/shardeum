@@ -7,3 +7,10 @@ statistics.tsv
 .env
 coverage
 account-export.json
+
+.sqlite
+.gzip
+.7z
+.sqlite-shm
+.sqlite-wal
+
