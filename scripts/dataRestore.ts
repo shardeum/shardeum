@@ -9,18 +9,30 @@ crypto.init('69fa4195670576c0160d660c3be36556ff8d504725be8a59b5a96509e0c994bc')
 let accountsMap = new Map()
 const emptyCodeHash = 'c5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470'
 let dbFiles = [
-  'db.1.sqlite',
-  'db.2.sqlite',
-  'db.3.sqlite',
-  'db.4.sqlite',
-  'db.5.sqlite',
+  {
+    filename: 'db.0609_1.sqlite',
+    loadAccountType: 1
+  },
+  {
+    filename: 'db.0609_2.sqlite',
+    loadAccountType: 1
+  },
+  {
+    filename: 'db.0623_1.sqlite',
+    loadAccountType: "all" // except storage accounts
+  },
 ]
 
 async function main() {
   for (let dbFile of dbFiles) {
     try {
-      let accounts = await getNewestAccountsFromDB(dbFile)
-      for (let account of accounts) {
+      let newestAccounts = await getNewestAccountsFromDB(dbFile.filename)
+      for (let account of newestAccounts) {
+        if (dbFile.loadAccountType === 1) {
+          if (account.data.accountType !== 1) continue
+        } else if (dbFile.loadAccountType === 'all') {
+          if (account.data.accountType === 1) continue
+        }
         if (accountsMap.has(account.accountId)) {
           let existingAccounts = accountsMap.get(account.accountId)
           existingAccounts.push(account)
@@ -57,7 +69,7 @@ async function main() {
   console.log('total account to check code hash', accountsToCheckCodeHash.length)
   let oldAccountsMap = new Map()
   for (let dbFile of dbFiles) {
-    let db = getDB(dbFile)
+    let db = getDB(dbFile.filename)
     let accountIdArr = ''
     for (let i = 0; i < accountsToCheckCodeHash.length; i++) {
       let accountId = accountsToCheckCodeHash[i]
