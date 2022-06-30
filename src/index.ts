@@ -1949,47 +1949,54 @@ shardus.setup({
       let blockForTx = getOrCreateBlockFromTimestamp(txTimestamp)
       if(ShardeumFlags.VerboseLogs) console.log(`Block for tx ${ethTxId}`, blockForTx.header.number.toNumber())
       const runTxResult: RunTxResult = await EVM.runTx({ block: blockForTx, tx: transaction, skipNonce: true })
-      if (runTxResult.execResult.exceptionError) {
-        let readableReceipt: ReadableReceipt = {
-          status: 0,
-          transactionHash: ethTxId,
-          transactionIndex: '0x1',
-          blockNumber: readableBlocks[latestBlock].number,
-          nonce: transaction.nonce.toString('hex'),
-          blockHash: readableBlocks[latestBlock].hash,
-          cumulativeGasUsed: '0x' + runTxResult.gasUsed.toString('hex'),
-          gasUsed: '0x' + runTxResult.gasUsed.toString('hex'),
-          logs: null,
-          contractAddress: runTxResult.createdAddress ? runTxResult.createdAddress.toString() : null,
-          from: transaction.getSenderAddress().toString(),
-          to: transaction.to ? transaction.to.toString() : null,
-          value: transaction.value.toString('hex'),
-          data: '0x' + transaction.data.toString('hex'),
-        }
-        let wrappedFailReceiptAccount: WrappedEVMAccount = {
-          timestamp: txTimestamp,
-          ethAddress: ethTxId, //.slice(0, 42),  I think the full 32byte TX should be fine now that toShardusAddress understands account type
-          hash: '',
-          receipt: runTxResult.receipt,
-          readableReceipt,
-          txId,
-          accountType: AccountType.Receipt,
-          txFrom: transaction.getSenderAddress().toString(),
-        }
-        if(ShardeumFlags.EVMReceiptsAsAccounts){
-          transactionFailHashMap[ethTxId] = wrappedFailReceiptAccount
-        } else {
-          //keep this for now but maybe remove it soon
-          transactionFailHashMap[ethTxId] = wrappedFailReceiptAccount
+      if(ShardeumFlags.VerboseLogs) console.log('runTxResult', txId, runTxResult)
+      // if (runTxResult.execResult.exceptionError) {
+      //   let readableReceipt: ReadableReceipt = {
+      //     status: 0,
+      //     transactionHash: ethTxId,
+      //     transactionIndex: '0x1',
+      //     blockNumber: readableBlocks[latestBlock].number,
+      //     nonce: transaction.nonce.toString('hex'),
+      //     blockHash: readableBlocks[latestBlock].hash,
+      //     cumulativeGasUsed: '0x' + runTxResult.gasUsed.toString('hex'),
+      //     gasUsed: '0x' + runTxResult.gasUsed.toString('hex'),
+      //     logs: null,
+      //     contractAddress: runTxResult.createdAddress ? runTxResult.createdAddress.toString() : null,
+      //     from: transaction.getSenderAddress().toString(),
+      //     to: transaction.to ? transaction.to.toString() : null,
+      //     value: transaction.value.toString('hex'),
+      //     data: '0x' + transaction.data.toString('hex'),
+      //   }
+      //   let wrappedFailReceiptAccount: WrappedEVMAccount = {
+      //     timestamp: txTimestamp,
+      //     ethAddress: ethTxId, //.slice(0, 42),  I think the full 32byte TX should be fine now that toShardusAddress understands account type
+      //     hash: '',
+      //     receipt: runTxResult.receipt,
+      //     readableReceipt,
+      //     txId,
+      //     accountType: AccountType.Receipt,
+      //     txFrom: transaction.getSenderAddress().toString(),
+      //   }
+      //   if(ShardeumFlags.EVMReceiptsAsAccounts){
+      //     // transactionFailHashMap[ethTxId] = wrappedFailReceiptAccount
+      //     const wrappedChangedAccount = WrappedEVMAccountFunctions._shardusWrappedAccount(wrappedFailReceiptAccount)
+      //     if (shardus.applyResponseAddChangedAccount != null) {
+      //       shardus.applyResponseAddChangedAccount(applyResponse, wrappedChangedAccount.accountId, wrappedChangedAccount, txId, wrappedChangedAccount.timestamp)
+      //     }
+      //     shardeumStateManager.unsetTransactionState()
+      //     return applyResponse //return rather than throw exception
+      //   } else {
+      //     //keep this for now but maybe remove it soon
+      //     // transactionFailHashMap[ethTxId] = wrappedFailReceiptAccount
 
-          //put this on the fail receipt. we need a way to pass it in the exception!
-          const shardusWrappedAccount = WrappedEVMAccountFunctions._shardusWrappedAccount(wrappedFailReceiptAccount)
-          shardus.applyResponseAddReceiptData(applyResponse,shardusWrappedAccount, crypto.hashObj(shardusWrappedAccount))
-          shardus.applyResponseSetFailed(applyResponse, reason)
-          return applyResponse //return rather than throw exception
-        }
-        throw new Error(`invalid transaction, reason: ${JSON.stringify(runTxResult.execResult.exceptionError)}. tx: ${JSON.stringify(tx)}`)
-      }
+      //     //put this on the fail receipt. we need a way to pass it in the exception!
+      //     const shardusWrappedAccount = WrappedEVMAccountFunctions._shardusWrappedAccount(wrappedFailReceiptAccount)
+      //     shardus.applyResponseAddReceiptData(applyResponse,shardusWrappedAccount, crypto.hashObj(shardusWrappedAccount))
+      //     shardus.applyResponseSetFailed(applyResponse, reason)
+      //     return applyResponse //return rather than throw exception
+      //   }
+      //   // throw new Error(`invalid transaction, reason: ${JSON.stringify(runTxResult.execResult.exceptionError)}. tx: ${JSON.stringify(tx)}`)
+      // }
       if (ShardeumFlags.VerboseLogs) console.log('DBG', 'applied tx', txId, runTxResult)
       if (ShardeumFlags.VerboseLogs) console.log('DBG', 'applied tx eth', ethTxId, runTxResult)
 
@@ -2162,7 +2169,7 @@ shardus.setup({
       }
 
       let readableReceipt: ReadableReceipt = {
-        status: 1,
+        status: runTxResult.receipt["status"],
         transactionHash: ethTxId,
         transactionIndex: '0x1',
         blockNumber: '0x' + blocks[latestBlock].header.number.toString('hex'),
@@ -2247,6 +2254,10 @@ shardus.setup({
         }
         if(ShardeumFlags.EVMReceiptsAsAccounts){
           transactionFailHashMap[ethTxId] = wrappedFailReceiptAccount
+          // const wrappedChangedAccount = WrappedEVMAccountFunctions._shardusWrappedAccount(wrappedFailReceiptAccount)
+          // if (shardus.applyResponseAddChangedAccount != null) {
+          //   shardus.applyResponseAddChangedAccount(applyResponse, wrappedChangedAccount.accountId, wrappedChangedAccount, txId, wrappedChangedAccount.timestamp)
+          // }
         } else {
 
           const shardusWrappedAccount = WrappedEVMAccountFunctions._shardusWrappedAccount(wrappedFailReceiptAccount)
