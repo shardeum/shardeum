@@ -2,6 +2,7 @@ import stringify from 'fast-json-stable-stringify'
 import * as crypto from '@shardus/crypto-utils'
 import { Account, Address, BN, bufferToHex, isValidAddress, toBuffer } from 'ethereumjs-util'
 import { AccessListEIP2930Transaction, Transaction } from '@ethereumjs/tx'
+import Common, { Chain } from '@ethereumjs/common';
 import VM from '@ethereumjs/vm'
 import { parse as parseUrl } from 'url'
 import got from 'got'
@@ -252,11 +253,26 @@ const oneEth = new BN(10).pow(new BN(18))
 //In debug mode the default value is 100 SHM.  This is needed for certain load test operations
 const defaultBalance = isDebugMode() ? oneEth.mul(new BN(100)) : new BN(0)
 
-let shardeumStateManager = new ShardeumState() //as StateManager
+const supportedHardforks = [
+  'chainstart',
+  'homestead',
+  'tangerineWhistle',
+  'spuriousDragon',
+  'byzantium',
+  'constantinople',
+  'petersburg',
+  'istanbul',
+  'berlin',
+]
+
+let common = new Common({ chain: Chain.Rinkeby, supportedHardforks })
+
+let shardeumStateManager = new ShardeumState({ common }) //as StateManager
 shardeumStateManager.temporaryParallelOldMode = ShardeumFlags.temporaryParallelOldMode //could probably refactor to use ShardeumFlags in the state manager
 
-let shardeumBlock = new ShardeumBlock()
-let EVM = new VM({ stateManager: shardeumStateManager, blockchain: shardeumBlock })
+let shardeumBlock = new ShardeumBlock({ common })
+
+let EVM = new VM({ common, stateManager: shardeumStateManager, blockchain: shardeumBlock })
 
 //todo need to evict old data
 let transactionStateMap = new Map<string, TransactionState>()
