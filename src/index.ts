@@ -2011,7 +2011,7 @@ shardus.setup({
         // }
         shardus.log('Unable to apply transaction', e)
         if (ShardeumFlags.VerboseLogs) console.log('Unable to apply transaction', txId, e)
-        throw new Error(e)
+        // throw new Error(e)
       }
       // Still keeping this here to check later if it may need later
       // if (runTxResult.execResult.exceptionError) {
