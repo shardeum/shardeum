@@ -156,6 +156,7 @@ export interface ReadableReceipt {
   to: string
   value: string
   data: string
+  reason?: string // Added this to add the evm error reason
 }
 
 export interface NetworkAccount extends BaseAccount {
