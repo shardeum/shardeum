@@ -265,7 +265,15 @@ const supportedHardforks = [
   'berlin',
 ]
 
-let common = new Common({ chain: Chain.Rinkeby, supportedHardforks })
+//let common = new Common({ chain: ShardeumFlags.ChainID, supportedHardforks })
+let common = new Common({ chain: Chain.Mainnet, supportedHardforks })
+
+let chainIDBN = new BN(ShardeumFlags.ChainID)
+
+//hack override this function.  perhaps a nice thing would be to use forCustomChain to create a custom common object
+common.chainIdBN = () => {
+  return chainIDBN
+}
 
 let shardeumStateManager = new ShardeumState({ common }) //as StateManager
 shardeumStateManager.temporaryParallelOldMode = ShardeumFlags.temporaryParallelOldMode //could probably refactor to use ShardeumFlags in the state manager
