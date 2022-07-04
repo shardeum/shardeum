@@ -1979,18 +1979,22 @@ shardus.setup({
         if (ShardeumFlags.VerboseLogs) console.log('runTxResult', txId, runTxResult)
       } catch (e) {
         // if (!transactionFailHashMap[ethTxId]) {
-          let txSenderEvmAddr = transaction.getSenderAddress().toString()
+          let caAddr = null
+          if (!transaction.to) {
+            let txSenderEvmAddr = transaction.getSenderAddress().toString()
   
-          let hack0Nonce = new BN(0)
-          let caAddrBuf = predictContractAddressDirect(txSenderEvmAddr, hack0Nonce)
+            let hack0Nonce = new BN(0)
+            let caAddrBuf = predictContractAddressDirect(txSenderEvmAddr, hack0Nonce)
   
-          let caAddr = '0x' + caAddrBuf.toString('hex')
+            caAddr = '0x' + caAddrBuf.toString('hex')
   
-          let shardusAddr = toShardusAddress(caAddr, AccountType.Account)
-          // otherAccountKeys.push(shardusAddr)
-          // shardusAddressToEVMAccountInfo.set(shardusAddr, { evmAddress: caAddr, type: AccountType.Account })
+            let shardusAddr = toShardusAddress(caAddr, AccountType.Account)
+            // otherAccountKeys.push(shardusAddr)
+            // shardusAddressToEVMAccountInfo.set(shardusAddr, { evmAddress: caAddr, type: AccountType.Account })
   
-          if (ShardeumFlags.VerboseLogs) console.log('Predicting contract account address:', caAddr, shardusAddr)
+            if (ShardeumFlags.VerboseLogs) console.log('Predicting contract account address:', caAddr, shardusAddr)
+
+          }
           let readableReceipt: ReadableReceipt = {
             status: 0,
             transactionHash: ethTxId,
