@@ -2273,6 +2273,9 @@ shardus.setup({
         value: transaction.value.toString('hex'),
         data: '0x' + transaction.data.toString('hex'),
       }
+      if (runTxResult.execResult.exceptionError) {
+        readableReceipt.reason = runTxResult.execResult.exceptionError.error
+      }
       wrappedReceiptAccount = {
         timestamp: txTimestamp,
         ethAddress: ethTxId, //.slice(0, 42),  I think the full 32byte TX should be fine now that toShardusAddress understands account type
