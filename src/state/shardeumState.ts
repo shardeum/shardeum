@@ -547,6 +547,12 @@ export default class ShardeumState implements StateManager {
    * `commit` or `reverted` by calling rollback.
    */
   async checkpoint(): Promise<void> {
+
+    if (this._transactionState != null) {
+      this._transactionState.checkpoint()
+    }
+
+
     //side run: shardeum will no-op this in the future
     //  investigate: will it be a problem that EVM may call this for failed functions, or does that all bubble up anyhow?
     if (this.temporaryParallelOldMode === false) {
@@ -625,6 +631,12 @@ export default class ShardeumState implements StateManager {
    * last call to checkpoint.
    */
   async revert(): Promise<void> {
+
+    if (this._transactionState != null) {
+      this._transactionState.revert()
+    }
+
+
     //side run: shardeum will no-op this in the future
     //  investigate: will it be a problem that EVM may call this for failed functions, or does that all bubble up anyhow?
     if (this.temporaryParallelOldMode === false) {

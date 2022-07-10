@@ -707,4 +707,28 @@ export default class TransactionState {
   debugTraceLog(message: string) {
     if(ShardeumFlags.VerboseLogs) console.log( `DBG:${this.linkedTX} msg:${message}`)
   }
+
+  checkpoint(){
+    if(ShardeumFlags.CheckpointRevertSupport === false){
+      return
+    }
+
+    //it appears that the way checkpoint/revert are used in very specific cases in runTX and exectuteMessage
+    //that we do not need to implement a stack system with checkpoint
+  }
+
+  revert(){
+    if(ShardeumFlags.CheckpointRevertSupport === false){
+      return
+    }
+    //it appears that the way checkpoint/revert are used in very specific cases in runTX and exectuteMessage
+    //that we do not need to implement a stack system with checkpoint
+
+    //Need to investigate the revert opcode to be certain
+
+    this.allAccountWrites.clear()
+    this.allContractStorageWrites.clear()
+    this.allContractBytesWritesByAddress.clear()
+
+  }
 }
