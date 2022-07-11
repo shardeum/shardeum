@@ -43,6 +43,8 @@ export default class TransactionState {
   firstAccountReads: Map<string, Buffer>
   allAccountWrites: Map<string, Buffer>
 
+  allAccountWritesStack: Map<string, Buffer>[]
+
   // contract account key: value data
   firstContractStorageReads: Map<string, Map<string, Buffer>>
   allContractStorageWrites: Map<string, Map<string, Buffer>>
@@ -135,6 +137,21 @@ export default class TransactionState {
   }
 
   getWrittenAccounts() {
+
+    //flatten accounts maps. from newest to oldest in our stack (newest has the highest array index)
+    //only update values if there is not an existing newer value!!
+    for(let i=this.allAccountWritesStack.length-1; i>=0; i--){
+      let accountWrites = this.allAccountWritesStack[i]
+      //process all the values in the stack
+      for(let [key,value] of accountWrites.entries()){
+        //if our flattened list does not have the value yet
+        if (this.allAccountWrites.has(key) === false) {
+          //then flatten the value from the stack into it
+          this.allAccountWrites.set(key,value)
+        }
+      }
+    }
+
     //let the apply function take care of wrapping these accounts?
     return { accounts: this.allAccountWrites, contractStorages: this.allContractStorageWrites, contractBytes: this.allContractBytesWrites }
   }
@@ -315,9 +332,20 @@ export default class TransactionState {
     }
 
     if (originalOnly === false) {
+      //first check our map as these are the most current account values
       if (this.allAccountWrites.has(addressString)) {
         let storedRlp = this.allAccountWrites.get(addressString)
         return storedRlp ? Account.fromRlpSerializedAccount(storedRlp) : undefined
+      }
+
+      //check stack for changes next.  from newest to oldest
+      //new changes are pushed to the end of the array
+      for(let i=this.allAccountWritesStack.length-1; i>=0; i--){
+        let accountWrites = this.allAccountWritesStack[i]
+        if (accountWrites.has(addressString)) {
+          let storedRlp = accountWrites.get(addressString)
+          return storedRlp ? Account.fromRlpSerializedAccount(storedRlp) : undefined
+        }
       }
     }
     if (this.firstAccountReads.has(addressString)) {
@@ -713,22 +741,30 @@ export default class TransactionState {
       return
     }
 
-    //it appears that the way checkpoint/revert are used in very specific cases in runTX and exectuteMessage
-    //that we do not need to implement a stack system with checkpoint
+    //we need checkpoint / revert stack support for accounts so that gas is handled correctly
+    this.allAccountWritesStack.push(this.allAccountWrites)
+
+    this.allAccountWrites = new Map()
+
+
   }
 
   revert(){
     if(ShardeumFlags.CheckpointRevertSupport === false){
       return
     }
-    //it appears that the way checkpoint/revert are used in very specific cases in runTX and exectuteMessage
-    //that we do not need to implement a stack system with checkpoint
 
-    //Need to investigate the revert opcode to be certain
+    //we need checkpoint / revert stack support for accounts so that gas is handled correctly
 
-    this.allAccountWrites.clear()
+    //the top of the stack becomes our base level set of values.
+    this.allAccountWrites = this.allAccountWritesStack.pop()
+
+    //other saved values do not need a stack and are simply cleared:
+    //this.allAccountWrites.clear()
     this.allContractStorageWrites.clear()
     this.allContractBytesWritesByAddress.clear()
 
   }
+
+
 }
