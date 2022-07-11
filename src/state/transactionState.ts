@@ -110,6 +110,7 @@ export default class TransactionState {
 
     this.firstAccountReads = new Map()
     this.allAccountWrites = new Map()
+    this.allAccountWritesStack = []
 
     this.firstContractStorageReads = new Map()
     this.allContractStorageWrites = new Map()
