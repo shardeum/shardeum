@@ -1,0 +1,13 @@
+{
+    "image": "registry.gitlab.com/shardus/dev-container",
+    "workspaceMount": "",
+    "runArgs": [
+      // "--userns=keep-id", // Need this if using Podman instead of Docker
+      "--volume=${localWorkspaceFolder}:/workspaces/${localWorkspaceFolderBasename}:Z"
+    ],
+    "remoteUser": "node",
+    "postCreateCommand": "/bin/sh .devcontainer/install-shardus-cli.sh",
+    "containerEnv": {
+      "HOME": "/home/node"  
+    }
+}
