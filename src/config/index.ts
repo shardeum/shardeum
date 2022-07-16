@@ -102,7 +102,7 @@ config = merge(config, {
       }
     },
     loadDetection: {
-      queueLimit: 100, //200 would be ideal at 25 tps but lowering it for now as we find the right network size
+      queueLimit: 120, //200 would be ideal at 25 tps but lowering it for now as we find the right network size
       desiredTxTime: 15,
       highThreshold: 0.5,
       lowThreshold: 0.2
