@@ -6,14 +6,14 @@ import { ShardusTypes } from '@shardus/core'
 import { Block } from '@ethereumjs/block'
 
 export enum AccountType {
-  Account, //  EOA or CA
-  ContractStorage, // Contract storage key value pair
-  ContractCode, // Contract code bytes
-  Receipt, //This holds logs for a TX
-  Debug,
-  NetworkAccount,
-  NodeAccount,
-  NodeRewardReceipt
+  Account = 0, //  EOA or CA
+  ContractStorage = 1, // Contract storage key value pair
+  ContractCode = 2, // Contract code bytes
+  Receipt = 3, //This holds logs for a TX
+  Debug = 4,
+  NetworkAccount = 5,
+  NodeAccount = 6,
+  NodeRewardReceipt = 7
 }
 
 export interface BaseAccount {
