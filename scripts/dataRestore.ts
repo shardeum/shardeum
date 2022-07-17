@@ -48,7 +48,7 @@ async function dbFilesFromFolders() {
           console.log(filepath2 + ' ' + size)
 
           dbFiles.push({
-            filename: filepathRel,
+            filename: filepath2,
             loadAccountType: 'all',
           })
         }
@@ -101,7 +101,7 @@ async function main() {
     } catch (error) {
       console.error('Unable to connect to the database:', error)
     }
-    console.log(`size of accounts map after db: ${dbFile} ${accountsMap.size}  tsUpgrades:${tsUpgrades}`)
+    console.log(`size of accounts map after db: ${dbFile.filename} ${accountsMap.size}  tsUpgrades:${tsUpgrades}`)
   }
 
   let repairOldCodeHash = false
