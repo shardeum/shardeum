@@ -88,6 +88,8 @@ export async function loadAccountDataFromDB(shardus: any, options: LoadOptions):
       //account.isGlobal = (account.isGlobal === 1)? true : false
       try{
         account.data = JSON.parse(account.data)
+        // skip account with accountIds starting with "0x"
+        if (account.accountId.indexOf('0x') >= 0) continue
       } catch (error){
         if(report.loadFailed < 100){
           //log first 100 parsing errors
@@ -165,4 +167,3 @@ export async function loadAccountDataFromDB(shardus: any, options: LoadOptions):
   }
   return report
 }
-
