@@ -184,16 +184,18 @@ async function main() {
   //fs.writeFileSync('account-export.json', JSON.stringify(finalAccounts, null, 2))
   console.log(JSON.stringify(stats, null, 2))
 
+  //write a non JSON file..  each line will be its own json object
   const writableStream = fs.createWriteStream('account-export.json')
-  writableStream.write('[')
+  //writableStream.write('[')
   for (let i = 0; i < finalAccounts.length; i++) {
     let account = finalAccounts[i]
-    writableStream.write(JSON.stringify(account, null, 2)) // + (i < finalAccounts.length)?',\n':'')
-    if (i < finalAccounts.length - 1) {
-      writableStream.write(',\n')
-    }
+    writableStream.write(JSON.stringify(account))//JSON.stringify(account, null, 2)) // + (i < finalAccounts.length)?',\n':'')
+    // if (i < finalAccounts.length - 1) {
+    //   writableStream.write(',\n')
+    // }
+    writableStream.write('\n')
   }
-  writableStream.write(']')
+  //writableStream.write(']')
   writableStream.end()
   console.log('Merge Completed!')
   console.log(JSON.stringify(stats, null, 2))
