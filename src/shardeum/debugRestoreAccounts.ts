@@ -3,6 +3,8 @@ import { setGenesisAccounts, networkAccount } from '..'
 import * as ShardeumFlags from '../shardeum/shardeumFlags'
 import * as Path from 'path'
 import { sleep } from '../utils'
+import * as readline from 'readline'
+import { once } from 'events'
 export interface LoadOptions {
   file: string
 }
@@ -13,6 +15,8 @@ export interface LoadReport {
   loadFailed: number
   fatal: boolean
 }
+
+let oneJsonAccountPerLine = true
 
 export async function loadAccountDataFromDB(shardus: any, options: LoadOptions): Promise<LoadReport> {
   let report: LoadReport = {
@@ -35,14 +39,38 @@ export async function loadAccountDataFromDB(shardus: any, options: LoadOptions):
       return report
     }
 
-    const accountFileText = fs.readFileSync(path, 'utf8')
-    if (accountFileText == null) {
-      return report
+    let accountArray = []
+    if(oneJsonAccountPerLine === false){
+      const accountFileText = fs.readFileSync(path, 'utf8')
+      if (accountFileText == null) {
+        return report
+      }
+      let accountArray = JSON.parse(accountFileText)
+      if (accountArray == null) {
+        return report
+      }      
+    } else {
+      const rl = readline.createInterface({
+        input: fs.createReadStream(path),
+        output: process.stdout,
+        terminal: false,
+        crlfDelay: Infinity
+      })
+      rl.on('line', (line) => {
+        if(line != ''){
+          try{
+            const account = JSON.parse(line)
+            if(account != null){
+              accountArray.push(account)
+            }
+          } catch(ex){
+
+          }
+        }
+      })
+      await once(rl, 'close');
     }
-    let accountArray = JSON.parse(accountFileText)
-    if (accountArray == null) {
-      return report
-    }
+    await sleep(2000)
 
     if (logVerbose) shardus.log(`loadAccountDataFromDB ${accountArray.length}`)
     console.log(`loadAccountDataFromDB: ${accountArray.length}`)
