@@ -16,7 +16,7 @@ export interface LoadReport {
   fatal: boolean
 }
 
-let oneJsonAccountPerLine = true
+let oneJsonAccountPerLine = false
 
 export async function loadAccountDataFromDB(shardus: any, options: LoadOptions): Promise<LoadReport> {
   let report: LoadReport = {
@@ -45,7 +45,7 @@ export async function loadAccountDataFromDB(shardus: any, options: LoadOptions):
       if (accountFileText == null) {
         return report
       }
-      let accountArray = JSON.parse(accountFileText)
+      accountArray = JSON.parse(accountFileText)
       if (accountArray == null) {
         return report
       }      
@@ -70,7 +70,6 @@ export async function loadAccountDataFromDB(shardus: any, options: LoadOptions):
       })
       await once(rl, 'close');
     }
-    await sleep(2000)
 
     if (logVerbose) shardus.log(`loadAccountDataFromDB ${accountArray.length}`)
     console.log(`loadAccountDataFromDB: ${accountArray.length}`)
