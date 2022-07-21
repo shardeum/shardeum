@@ -77,10 +77,10 @@ config = merge(config, {
     p2p: {
       cycleDuration: 60,
       minNodesToAllowTxs: 1,
-      minNodes: process.env.minNodes ? parseInt(process.env.minNodes) : 30,
+      minNodes: process.env.minNodes ? parseInt(process.env.minNodes) : 100,
       maxNodes: 40,
-      maxJoinedPerCycle: 2,
-      maxSyncingPerCycle: 2, 
+      maxJoinedPerCycle: 4,
+      maxSyncingPerCycle: 8, 
       maxRotatedPerCycle: process.env.maxRotatedPerCycle ? parseInt(process.env.maxRotatedPerCycle) : 1,
       firstCycleJoin: 1,
       maxSyncTimeFloor: 18000,
@@ -102,7 +102,7 @@ config = merge(config, {
       }
     },
     loadDetection: {
-      queueLimit: 120, //200 would be ideal at 25 tps but lowering it for now as we find the right network size
+      queueLimit: 100, //200 would be ideal at 25 tps but lowering it for now as we find the right network size
       desiredTxTime: 15,
       highThreshold: 0.5,
       lowThreshold: 0.2
@@ -114,7 +114,7 @@ config = merge(config, {
 config = merge(config, {
   server: {
     sharding: {
-      nodesPerConsensusGroup: process.env.nodesPerConsensusGroup ? parseInt(process.env.nodesPerConsensusGroup) : 50,
+      nodesPerConsensusGroup: process.env.nodesPerConsensusGroup ? parseInt(process.env.nodesPerConsensusGroup) : 10,
       executeInOneShard: false
     },
     stateManager: {
@@ -137,7 +137,7 @@ config = merge(
   config,
   {
     server: {
-      mode: 'release', //TODO must set this to release for public networks or get security on endpoints
+      mode: 'debug', //TODO must set this to release for public networks or get security on endpoints
       debug: {
         startInFatalsLogMode: false, // true setting good for big aws test with nodes joining under stress.
         startInErrorLogMode: true,
