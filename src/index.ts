@@ -514,7 +514,7 @@ function getTransactionObj(tx: any): Transaction | AccessListEIP2930Transaction 
     transactionObj = Transaction.fromRlpSerializedTx(serializedInput)
     if (ShardeumFlags.VerboseLogs) console.log('Legacy tx parsed:', transactionObj)
   } catch (e) {
-    if (ShardeumFlags.VerboseLogs) console.log('Unable to get legacy transaction obj', e)
+    // if (ShardeumFlags.VerboseLogs) console.log('Unable to get legacy transaction obj', e)
   }
   if (!transactionObj) {
     try {
@@ -1895,7 +1895,7 @@ shardus.setup({
     const shardusReceiptAddress = toShardusAddressWithKey(ethTxId, '', AccountType.Receipt)
     let txId = crypto.hashObj(tx)
     // Create an applyResponse which will be used to tell Shardus that the tx has been applied
-    if (ShardeumFlags.VerboseLogs) console.log('DBG', new Date(), 'attempting to apply tx', txId, tx)
+    if (ShardeumFlags.VerboseLogs) console.log('DBG', new Date(), 'attempting to apply tx', txId, ethTxId, tx)
     const applyResponse = shardus.createApplyResponse(txId, txTimestamp)
 
     //Now we need to get a transaction state object.  For single sharded networks this will be a new object.
@@ -1935,7 +1935,9 @@ shardus.setup({
 
       let wrappedEVMAccount: WrappedEVMAccount = wrappedStates[accountId].data
       fixDeserializedWrappedEVMAccount(wrappedEVMAccount)
-      let address = Address.fromString(wrappedEVMAccount.ethAddress)
+      let address
+      if (wrappedEVMAccount.accountType === AccountType.ContractCode) address = Address.fromString(wrappedEVMAccount.contractAddress)
+      else address = Address.fromString(wrappedEVMAccount.ethAddress)
 
       if (ShardeumFlags.VerboseLogs) {
         let ourNodeShardData = shardus.stateManager.currentCycleShardData.nodeShardData
@@ -1982,16 +1984,16 @@ shardus.setup({
           let caAddr = null
           if (!transaction.to) {
             let txSenderEvmAddr = transaction.getSenderAddress().toString()
-  
+
             let hack0Nonce = new BN(0)
             let caAddrBuf = predictContractAddressDirect(txSenderEvmAddr, hack0Nonce)
-  
+
             caAddr = '0x' + caAddrBuf.toString('hex')
-  
+
             let shardusAddr = toShardusAddress(caAddr, AccountType.Account)
             // otherAccountKeys.push(shardusAddr)
             // shardusAddressToEVMAccountInfo.set(shardusAddr, { evmAddress: caAddr, type: AccountType.Account })
-  
+
             if (ShardeumFlags.VerboseLogs) console.log('Predicting contract account address:', caAddr, shardusAddr)
 
           }
@@ -2029,7 +2031,7 @@ shardus.setup({
           //   //   shardus.applyResponseAddChangedAccount(applyResponse, wrappedChangedAccount.accountId, wrappedChangedAccount, txId, wrappedChangedAccount.timestamp)
           //   // }
           // } else {
-  
+
           //   const shardusWrappedAccount = WrappedEVMAccountFunctions._shardusWrappedAccount(wrappedFailReceiptAccount)
           //   //communicate this in the message back to sharuds so we can attach it to the fail receipt
           //   shardus.applyResponseAddReceiptData(applyResponse, shardusWrappedAccount, crypto.hashObj(shardusWrappedAccount))
@@ -2171,7 +2173,7 @@ shardus.setup({
 
       for (let contractBytesEntry of contractBytesWrites.entries()) {
         //1. wrap and save/update this to shardeum accounts[] map
-        let addressStr = contractBytesEntry[0]
+        let addressStr = '0x' + contractBytesEntry[0]
         let contractByteWrite: ContractByteWrite = contractBytesEntry[1]
 
         let wrappedEVMAccount: WrappedEVMAccount = {
@@ -2588,7 +2590,7 @@ shardus.setup({
     }
   },
   async getRelevantData(accountId, timestampedTx) {
-    if (ShardeumFlags.VerboseLogs) console.log('Running getRelevantData', timestampedTx)
+    if (ShardeumFlags.VerboseLogs) console.log('Running getRelevantData', accountId, timestampedTx)
     let { tx, timestampReceipt } = timestampedTx
     if (isInternalTx(tx)) {
       let internalTx = tx as InternalTx
@@ -2653,7 +2655,7 @@ shardus.setup({
             throw Error(`Network Account is not found ${accountId}`)
           }
           // I think we don't need it now, the dev Key is checked on the validateTxnFields
-          // else { 
+          // else {
           //   //If the id is not the network account then it must be our dev user account.
           //   // we shouldn't try to create that either.
           //   // Dev account is a developers public key on a test account they control
