@@ -1703,10 +1703,9 @@ async function applyInternalTx(internalTx: InternalTx, wrappedStates: WrappedSta
       nodeRewardReceipt.timestamp = txTimestamp
       nodeRewardReceipt.readableReceipt = readableReceipt
       nodeRewardReceipt.txId = txId
-      nodeRewardReceipt.txFrom = from.id
+      nodeRewardReceipt.txFrom = from.id 
     } else {
-
-      let nodeRewardReceipt: WrappedEVMAccount = {
+      nodeRewardReceipt = {
         timestamp: txTimestamp,
         ethAddress: txId, //.slice(0, 42),  I think the full 32byte TX should be fine now that toShardusAddress understands account type
         hash: '',
@@ -1716,11 +1715,6 @@ async function applyInternalTx(internalTx: InternalTx, wrappedStates: WrappedSta
         accountType: AccountType.NodeRewardReceipt,
         txFrom: from.id,
       }
-      nodeRewardReceipt.timestamp = txTimestamp
-      nodeRewardReceipt.readableReceipt = readableReceipt
-      nodeRewardReceipt.txId = txId
-      nodeRewardReceipt.txFrom = from.id
-
       const shardusWrappedAccount = WrappedEVMAccountFunctions._shardusWrappedAccount(nodeRewardReceipt)
       //put this in the apply response
       shardus.applyResponseAddReceiptData(applyResponse,shardusWrappedAccount, crypto.hashObj(shardusWrappedAccount))
@@ -2631,7 +2625,7 @@ shardus.setup({
         //put this in the apply response
         shardus.applyResponseAddReceiptData(applyResponse,shardusWrappedAccount, crypto.hashObj(shardusWrappedAccount))
         // this is to expose tx data for json rpc server
-        appliedEVMReceipts.push ({
+        appliedEVMReceipts.push({
           txId: ethTxId,
           injected: tx,
           receipt: shardusWrappedAccount,
