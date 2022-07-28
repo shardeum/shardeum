@@ -251,6 +251,9 @@ let appliedTxs = {} //this appears to be unused. will it still be unused if we u
 let shardusTxIdToEthTxId = {} //this appears to only support appliedTxs
 const oneEth = new BN(10).pow(new BN(18))
 
+let appliedEVMReceipts = [] // To use with EVMReceiptsAsAccounts false
+let EVMReceiptsToKeep = 1000
+
 //In debug mode the default value is 100 SHM.  This is needed for certain load test operations
 const defaultBalance = isDebugMode() ? oneEth.mul(new BN(100)) : new BN(0)
 
@@ -1429,6 +1432,13 @@ shardus.registerExternalGet('tx/:hash', async (req, res) => {
   }
 
   const txHash = req.params['hash']
+  if (!ShardeumFlags.EVMReceiptsAsAccounts) {
+    let evmReceipt = appliedEVMReceipts.find(receipt => receipt.txId === txHash)
+    if (!evmReceipt) return res.json({ tx: 'Not found' })
+    let data = evmReceipt.receipt.data
+    fixDeserializedWrappedEVMAccount(data)
+    return res.json({ account: data })
+  }
   try {
     //const shardusAddress = toShardusAddressWithKey(txHash.slice(0, 42), txHash, AccountType.Receipt)
     const shardusAddress = toShardusAddressWithKey(txHash, '', AccountType.Receipt)
@@ -1464,7 +1474,7 @@ shardus.registerExternalGet('tx/:hash', async (req, res) => {
 //
 //   let runState: RunStateWithLogs = appliedTx.receipt.execResult.runState
 //   if (!runState) {
-//     if (ShardeumFlags.VerboseLogs) console.log(`No runState found in the receipt for ${txHash}`)
+//     if (ShardeumFlags.VerboseLogs) console.log(`No runState found in the receipt for ${txHash}`) 
 //   }
 //
 //   if (runState && runState.logs)
@@ -2620,6 +2630,17 @@ shardus.setup({
         const shardusWrappedAccount = WrappedEVMAccountFunctions._shardusWrappedAccount(wrappedReceiptAccount)
         //put this in the apply response
         shardus.applyResponseAddReceiptData(applyResponse,shardusWrappedAccount, crypto.hashObj(shardusWrappedAccount))
+        // this is to expose tx data for json rpc server
+        appliedEVMReceipts.push ({
+          txId: ethTxId,
+          injected: tx,
+          receipt: shardusWrappedAccount,
+        })
+        if (appliedEVMReceipts.length > EVMReceiptsToKeep + 10) {
+          let extra = appliedEVMReceipts.length - EVMReceiptsToKeep
+          appliedEVMReceipts.splice(0, extra)
+          if (ShardeumFlags.VerboseLogs) console.log('EVMReceipts Kept', appliedEVMReceipts.length)
+        }
       }
       if (ShardeumFlags.VerboseLogs) console.log('Applied txId', txId, txTimestamp)
 

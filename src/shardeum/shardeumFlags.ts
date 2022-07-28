@@ -17,7 +17,7 @@ export let maxNumberOfOldBlocks = 256
 export let SelfTest = false
 export let ServicePointsPerSecond = 100 //service function points per second
 export let SetupGenesisAccount = true
-export let EVMReceiptsAsAccounts = true
+export let EVMReceiptsAsAccounts = false
 export let ServicePoints = {
   ['debug-points']: 20,
   ['account/:address']: 5,
