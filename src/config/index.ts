@@ -115,7 +115,7 @@ config = merge(config, {
   server: {
     sharding: {
       nodesPerConsensusGroup: process.env.nodesPerConsensusGroup ? parseInt(process.env.nodesPerConsensusGroup) : 10,
-      executeInOneShard: false
+      executeInOneShard: true
     },
     stateManager: {
       accountBucketSize: 200 //25

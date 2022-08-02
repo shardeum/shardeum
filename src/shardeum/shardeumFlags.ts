@@ -12,13 +12,13 @@ export let globalCodeBytes = false //do codebytes (contract code) use global acc
 export let VerboseLogs = false //set this to false to reduce logging that can impact perf tests or demos
 export let Virtual0Address = true
 export let GlobalNetworkAccount = true
-export let NodeReward = NodeRewardENV || true //false //
+export let NodeReward = false // NodeRewardENV || true //false //
 export let FirstNodeRewardCycle = 100
 export let blockProductionRate = 6 // generate new block every 6s
 export let maxNumberOfOldBlocks = 256
 export let SelfTest = false
 export let ServicePointsPerSecond = 100 //service function points per second
-export let SetupGenesisAccount = true
+export let SetupGenesisAccount = false
 export let EVMReceiptsAsAccounts = true
 export let ServicePoints = {
   ['debug-points']: 20,
