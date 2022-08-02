@@ -559,10 +559,11 @@ export default class TransactionState {
     }
 
     const codeHash = keccak256(codeByte)
+    const codeHashStr = codeHash.toString('hex')
     if (codeHash.equals(KECCAK256_NULL)) {
       return
     }
-    this.firstContractBytesReads.set(bufferToHex(codeHash), { codeHash, contractByte: codeByte, contractAddress })
+    this.firstContractBytesReads.set(codeHashStr, { codeHash, contractByte: codeByte, contractAddress })
     this.touchedCAs.add(addressString)
   }
 
