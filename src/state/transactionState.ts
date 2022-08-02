@@ -507,7 +507,7 @@ export default class TransactionState {
       // not 100% if we should await this, may need some group discussion
       let isRemoteShard = await this.accountMissCB(this, codeHashStr)
 
-      if (this.debugTrace) this.debugTraceLog(`getContractCode: addr:${addressString} codeHashStr:${codeHashStr} v:undefined`)
+      if (this.debugTrace) this.debugTraceLog(`getContractCode: addr:${addressString} codeHashStr:${codeHashStr} v:undefined isRemoteShard:${isRemoteShard}`)
 
       if (canThrow && isRemoteShard) throw new Error('codeBytes in remote shard, abort') //todo smarter throw?
 
