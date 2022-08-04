@@ -77,8 +77,8 @@ config = merge(config, {
     p2p: {
       cycleDuration: 60,
       minNodesToAllowTxs: 1,
-      minNodes: process.env.minNodes ? parseInt(process.env.minNodes) : 100,
-      maxNodes: 40,
+      minNodes: process.env.minNodes ? parseInt(process.env.minNodes) : 300,
+      maxNodes: 300,
       maxJoinedPerCycle: 4,
       maxSyncingPerCycle: 8, 
       maxRotatedPerCycle: process.env.maxRotatedPerCycle ? parseInt(process.env.maxRotatedPerCycle) : 1,
@@ -102,7 +102,7 @@ config = merge(config, {
       }
     },
     loadDetection: {
-      queueLimit: 100, //200 would be ideal at 25 tps but lowering it for now as we find the right network size
+      queueLimit: 200, //200 would be ideal at 25 tps but lowering it for now as we find the right network size
       desiredTxTime: 15,
       highThreshold: 0.5,
       lowThreshold: 0.2
