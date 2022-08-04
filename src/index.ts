@@ -463,6 +463,18 @@ function tryGetRemoteAccountCBNoOp(transactionState: TransactionState, type:Acco
   return undefined
 }
 
+async function tryGetRemoteAccountCB(transactionState: TransactionState, type:AccountType, address: string, key: string) : Promise<WrappedEVMAccount> {
+  let shardusAddress = toShardusAddressWithKey(address, key, type)
+  let remoteShardusAccount = await shardus.getLocalOrRemoteAccount(shardusAddress)
+  if (remoteShardusAccount == undefined) {
+    if (ShardeumFlags.VerboseLogs) console.log(`Found no remote account for address: ${address}, type: ${type}, key: ${key}`)
+    return
+  }
+  let fixedEVMAccount = remoteShardusAccount.data
+  fixDeserializedWrappedEVMAccount(fixedEVMAccount)
+  return fixedEVMAccount
+}
+
 /***
  *       ###     ######   ######   #######  ##     ## ##    ## ########       ###     ######   ######  ########  ######
  *      ## ##   ##    ## ##    ## ##     ## ##     ## ###   ##    ##         ## ##   ##    ## ##    ## ##       ##    ##
@@ -589,6 +601,26 @@ function getDebugTXState(): TransactionState {
     if (ShardeumFlags.VerboseLogs) console.log('Resetting debug transaction state for txId', txId)
     transactionState.resetTransactionState()
   }
+  return transactionState
+}
+
+function getCallTXState(): TransactionState {
+  let txId = '0'.repeat(64)
+  if (ShardeumFlags.VerboseLogs) console.log('Creating a call tx state for ', txId)
+  let transactionState = new TransactionState()
+  transactionState.initData(
+    shardeumStateManager,
+    {
+      storageMiss: accountMissNoOp,
+      contractStorageMiss: contractStorageMissNoOp,
+      accountInvolved: accountInvolvedNoOp,
+      contractStorageInvolved: contractStorageInvolvedNoOp,
+      tryGetRemoteAccountCB: tryGetRemoteAccountCB
+    },
+    txId,
+    undefined,
+    undefined
+  )
   return transactionState
 }
 
@@ -1089,29 +1121,23 @@ shardus.registerExternalPost('contract/call', async (req, res) => {
       return res.json({ result: null, error:'node busy'})
     }
 
-    let debugTXState = getDebugTXState() //this isn't so great..
+    let callTxState = getCallTXState() //this isn't so great..
 
-    //pull the caller account into our state
-    // const callerAccount = await shardus.getLocalOrRemoteAccount(callerShardusAddress)
-    // let wrappedEVMAccount = callerAccount.data as WrappedEVMAccount
-    // fixDeserializedWrappedEVMAccount(wrappedEVMAccount)
-    // //let callerEthaddress = Address.fromString(wrappedEVMAccount.ethAddress)
-    // debugTXState.insertFirstAccountReads(opt.caller, wrappedEVMAccount.account)
     let callerAddress = toShardusAddress(callObj.from, AccountType.Account)
     let callerAccount = await AccountsStorage.getAccount(callerAddress)
     if (callerAccount) {
       if (ShardeumFlags.VerboseLogs) console.log('callerAddress', callerAccount)
-      debugTXState.insertFirstAccountReads(opt.caller, callerAccount.account)
-      shardeumStateManager.setTransactionState(debugTXState)
+      callTxState.insertFirstAccountReads(opt.caller, callerAccount.account)
+      shardeumStateManager.setTransactionState(callTxState)
     } else {
       const acctData = {
         nonce: 0,
         balance: oneEth.mul(new BN(100)), // 100 eth.  This is a temporary account that will never exist.
       }
       const fakeAccount = Account.fromAccountData(acctData)
-      debugTXState.insertFirstAccountReads(opt.caller, fakeAccount)
+      callTxState.insertFirstAccountReads(opt.caller, fakeAccount)
 
-      shardeumStateManager.setTransactionState(debugTXState)
+      shardeumStateManager.setTransactionState(callTxState)
     }
 
     opt['block'] = blocks[latestBlock]

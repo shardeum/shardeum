@@ -111,6 +111,7 @@ export default class TransactionState {
     this.contractStorageMissCB = callbacks.contractStorageMiss
     this.accountInvolvedCB = callbacks.accountInvolved
     this.contractStorageInvolvedCB = callbacks.contractStorageInvolved
+    this.tryGetRemoteAccountCB = callbacks.tryGetRemoteAccountCB
 
     this.firstAccountReads = new Map()
     this.allAccountWrites = new Map()
@@ -396,6 +397,7 @@ export default class TransactionState {
       if(wrappedEVMAccount != undefined){
         //get account aout of the wrapped evm account 
         account = wrappedEVMAccount.account
+        storedRlp = account.serialize()
       }
     }
 
@@ -471,6 +473,10 @@ export default class TransactionState {
 
     //first get the account so we can have the correct code hash to look at
     let contractAccount = await this.getAccount(worldStateTrie, contractAddress, originalOnly, canThrow)
+    if (contractAccount == undefined) {
+      if (this.debugTrace) this.debugTraceLog(`getContractCode: addr:${addressString} Found no contract account`)
+      return
+    }
     let codeHash = contractAccount.codeHash
     let codeHashStr = codeHash.toString('hex')
 
@@ -515,6 +521,18 @@ export default class TransactionState {
         codeBytes = storedCodeByte    
       }
     }
+
+    //attempt to get data from tryGetRemoteAccountCB
+    //this can be a long wait only suitable in some cases
+    if(codeBytes == undefined){
+      let wrappedEVMAccount = await this.tryGetRemoteAccountCB(this, AccountType.ContractCode, addressString, codeHashStr )
+      if(wrappedEVMAccount != undefined && wrappedEVMAccount.codeByte){
+        //get account aout of the wrapped evm account
+        codeBytes = wrappedEVMAccount.codeByte
+      }
+    }
+
+
     //Storage miss!!!, account not on this shard
     if (codeBytes == undefined) {
       //event callback to inidicate we do not have the account in this shard
@@ -629,6 +647,20 @@ export default class TransactionState {
         storedValue = storedRlp ? rlp.decode(storedRlp) : undefined    
       }
     }
+
+
+    //attempt to get data from tryGetRemoteAccountCB
+    //this can be a long wait only suitable in some cases
+    if(storedValue == undefined){
+      let wrappedEVMAccount = await this.tryGetRemoteAccountCB(this, AccountType.ContractStorage, addressString, keyString)
+      if(wrappedEVMAccount != undefined && wrappedEVMAccount.value){
+        //get account aout of the wrapped evm account
+        storedRlp = wrappedEVMAccount.value
+        storedValue = storedRlp ? rlp.decode(storedRlp) : undefined
+      }
+    }
+
+
     //Storage miss!!!, account not on this shard
     if (storedValue == undefined) {
       //event callback to inidicate we do not have the account in this shard
