@@ -4,7 +4,7 @@ import { ShardeumState } from '.'
 import * as ShardeumFlags from '../shardeum/shardeumFlags'
 import {zeroAddressAccount, zeroAddressStr} from "../utils";
 import * as AccountsStorage from '../storage/accountStorage'
-import { AccountType } from '../shardeum/shardeumTypes';
+import { AccountType, WrappedEVMAccount } from '../shardeum/shardeumTypes';
 import { toShardusAddress, toShardusAddressWithKey } from '../shardeum/evmAddress';
 import { fixDeserializedWrappedEVMAccount } from '../shardeum/wrappedEVMAccountFunctions';
 
@@ -12,12 +12,14 @@ export type accountEvent = (transactionState: TransactionState, address: string)
 export type contractStorageEvent = (transactionState: TransactionState, address: string, key: string) => Promise<boolean>
 export type involvedEvent = (transactionState: TransactionState, address: string, isRead: boolean) => boolean
 export type keyInvolvedEvent = (transactionState: TransactionState, address: string, key: string, isRead: boolean) => boolean
+export type getAccountEvent = (transactionState: TransactionState, type:AccountType, address: string, key: string) => Promise<WrappedEVMAccount>
 
 export interface ShardeumStorageCallbacks {
   storageMiss: accountEvent
   contractStorageMiss: contractStorageEvent
   accountInvolved: involvedEvent
   contractStorageInvolved: keyInvolvedEvent
+  tryGetRemoteAccountCB: getAccountEvent
 }
 
 //how to know about getting original version vs putted version..
@@ -70,6 +72,8 @@ export default class TransactionState {
   contractStorageMissCB: contractStorageEvent
   accountInvolvedCB: involvedEvent
   contractStorageInvolvedCB: keyInvolvedEvent
+
+  tryGetRemoteAccountCB: getAccountEvent
 
   resetTransactionState() {
     this.firstAccountReads = new Map()
@@ -382,6 +386,16 @@ export default class TransactionState {
 
       if(account != null){
         storedRlp = account.serialize()
+      }
+    }
+
+    //attempt to get data from tryGetRemoteAccountCB
+    //this can be a long wait only suitable in some cases
+    if(account == undefined){
+      let wrappedEVMAccount = await this.tryGetRemoteAccountCB(this, AccountType.Account, addressString, null )
+      if(wrappedEVMAccount != undefined){
+        //get account aout of the wrapped evm account 
+        account = wrappedEVMAccount.account
       }
     }
 

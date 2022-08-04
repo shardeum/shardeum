@@ -458,6 +458,11 @@ function contractStorageInvolvedNoOp(transactionState: TransactionState, address
   return true
 }
 
+
+function tryGetRemoteAccountCBNoOp(transactionState: TransactionState, type:AccountType, address: string, key: string) : Promise<WrappedEVMAccount> {
+  return undefined
+}
+
 /***
  *       ###     ######   ######   #######  ##     ## ##    ## ########       ###     ######   ######  ########  ######
  *      ## ##   ##    ## ##    ## ##     ## ##     ## ###   ##    ##         ## ##   ##    ## ##    ## ##       ##    ##
@@ -570,6 +575,7 @@ function getDebugTXState(): TransactionState {
         contractStorageMiss: contractStorageMissNoOp,
         accountInvolved: accountInvolvedNoOp,
         contractStorageInvolved: contractStorageInvolvedNoOp,
+        tryGetRemoteAccountCB: tryGetRemoteAccountCBNoOp
       },
       txId,
       undefined,
@@ -1317,6 +1323,7 @@ async function applyInternalTx(internalTx: InternalTx, wrappedStates: WrappedSta
           contractStorageMiss,
           accountInvolved,
           contractStorageInvolved,
+          tryGetRemoteAccountCB: tryGetRemoteAccountCBNoOp
         },
         txId,
         undefined,
@@ -1912,6 +1919,7 @@ shardus.setup({
           contractStorageMiss,
           accountInvolved,
           contractStorageInvolved,
+          tryGetRemoteAccountCB: tryGetRemoteAccountCBNoOp
         },
         txId,
         undefined,
@@ -2767,6 +2775,7 @@ shardus.setup({
           contractStorageMiss,
           accountInvolved,
           contractStorageInvolved,
+          tryGetRemoteAccountCB: tryGetRemoteAccountCBNoOp
         },
         txId,
         undefined,
@@ -2943,6 +2952,7 @@ shardus.setup({
           contractStorageMiss,
           accountInvolved,
           contractStorageInvolved,
+          tryGetRemoteAccountCB: tryGetRemoteAccountCBNoOp
         },
         txId,
         undefined,
