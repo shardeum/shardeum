@@ -6,9 +6,9 @@ import * as utils from '../testUtils'
 crypto.init('69fa4195670576c0160d660c3be36556ff8d504725be8a59b5a96509e0c994bc')
 
 const opts = { shell: true }
-const SPAM_CLIENT_DIR = join(__dirname, '../../../spam-client') // spam-client repo path
+const LOAD_TESTER = join(__dirname, '../../../load-tester') // spam-client repo path
 
-export const transactionsTest = (START_NETWORK_SIZE, EXPECTED_ACTIVE_NODES = null) => {
+export const transactionsTest = (START_NETWORK_SIZE: number, EXPECTED_ACTIVE_NODES = null) => {
   it('Process eth transfer txs at the rate of 2 txs per second for 1 min', async () => {
     console.log('TEST: Process eth transfer txs at the rate of 2 txs per second for 1 min')
 
@@ -28,7 +28,7 @@ export const transactionsTest = (START_NETWORK_SIZE, EXPECTED_ACTIVE_NODES = nul
     // const { stdout, stderr } = await execa.command(`cd ${SPAM_CLIENT_DIR} && ls `, opts)
     // console.log(stdout, stderr)
     // execa.command('ls').stdout.pipe(process.stdout)
-    execa.commandSync(`cd ${SPAM_CLIENT_DIR} && ${spamCommand}`, { ...opts, stdio: [0, 1, 2] })
+    execa.commandSync(`cd ${LOAD_TESTER} && ${spamCommand}`, { ...opts, stdio: [0, 1, 2] })
     await utils._sleep(durationMiliSecond + 10000) // extra 10s for processing pending txs in the queue
 
     let report = await utils.queryLatestReport()
@@ -59,7 +59,7 @@ export const transactionsTest = (START_NETWORK_SIZE, EXPECTED_ACTIVE_NODES = nul
     // const { stdout, stderr } = await execa.command(`cd ${SPAM_CLIENT_DIR} && ls `, opts)
     // console.log(stdout, stderr)
     // execa.command('ls').stdout.pipe(process.stdout)
-    execa.commandSync(`cd ${SPAM_CLIENT_DIR} && ${spamCommand}`, { ...opts, stdio: [0, 1, 2] })
+    execa.commandSync(`cd ${LOAD_TESTER} && ${spamCommand}`, { ...opts, stdio: [0, 1, 2] })
     await utils._sleep(durationMiliSecond + 10000) // extra 10s for processing pending txs in the queue
 
     let report = await utils.queryLatestReport()

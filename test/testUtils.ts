@@ -49,7 +49,10 @@ export async function waitForNetworkToBeActive(numberOfExpectedNodes) {
     } catch (e) {
       console.log(e)
     }
-    if (!ready) await _sleep(10000)
+
+    // Math.max needed to be done because initially attempt is 0, zero times zero is zero.
+    // also the reason for adding more delay is because it's not enough
+    if (!ready) await _sleep(10000 * Math.max((attempt/2),1))
     if (attempt === numberOfExpectedNodes * 3) break // 3 attempts is in one cycle, total cycle is number of Nodes
     attempt++
   }

@@ -19,18 +19,17 @@ export const archiverTest = () => {
 
   test('New archivers sync archived data successfully', async () => {
     console.log('TEST: New archivers sync archived data successfully')
-    await utils._sleep(60000) // needs to wait while new archiver is syncing data
+    await utils._sleep(60000 * 5) // needs to wait while new archiver is syncing data
 
     const dataFromArchiver_1 = await utils.queryArchivedCycles('localhost', 4000, 5)
+    console.log('archiver:4000')
     const dataFromArchiver_2 = await utils.queryArchivedCycles('localhost', 4001, 5)
-    let hasSameData = true
+    console.log('archiver:4001')
+    let hasSameData = false
     for (let i = 0; i < dataFromArchiver_1.length; i++) {
-      let data1 = dataFromArchiver_1[i]
-      let data2 = dataFromArchiver_2[i]
-      let isSame = JSON.stringify(data1) === JSON.stringify(data2)
-      if (!isSame) {
-        hasSameData = isSame
-      }
+      const data1 = dataFromArchiver_1[i]
+      const data2 = dataFromArchiver_2[i]
+      hasSameData = JSON.stringify(data1) === JSON.stringify(data2) 
     }
     expect(hasSameData).toBe(true)
   })

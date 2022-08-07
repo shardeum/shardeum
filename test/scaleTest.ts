@@ -4,7 +4,7 @@ import { join } from 'path'
 import { kill } from 'process'
 
 const opts = { shell: true }
-const SPAM_CLIENT_DIR = join(__dirname, '../../spam-client') // spam-client repo path
+const LOAD_TESTER = join(__dirname, '../../load-tester') // spam-client repo path
 // const abortController = new AbortController()
 
 export async function waitForNetworkLoad(load, value) {
@@ -49,11 +49,11 @@ export async function waitForNetworkScaling(desired) {
   return true
 }
 
-export const scaleTest = START_NETWORK_SIZE => {
+export const scaleTest = (START_NETWORK_SIZE: number) => {
   test('Auto scale up the network successfully', async () => {
     console.log('TEST: Auto scale up the network successfully')
-    let spamCommand = `npx hardhat load_test --type eth_transfer --tps 10 --duration 600 --eoa 1000`
-    let spamProcess = execa.command(`cd ${SPAM_CLIENT_DIR} && ${spamCommand}`, opts)
+    let spamCommand = `npx hardhat load_test --type eth_transfer --tps 200 --duration 600 --eoa 1000`
+    let spamProcess = execa.command(`cd ${LOAD_TESTER} && ${spamCommand}`, opts)
     console.log(process.pid)
     console.log(spamProcess.pid)
     let isLoadIncreased = await waitForNetworkLoad('high', 0.2)

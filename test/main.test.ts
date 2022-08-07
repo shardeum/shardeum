@@ -14,7 +14,7 @@ let accounts = []
 const network = '0'.repeat(64)
 
 const opts = { shell: true }
-const SPAM_CLIENT_DIR = join(__dirname, '../../spam-client') // spam-client repo path
+const LOAD_TESTER = join(__dirname, '../../load-tester') // spam-client repo path
 
 describe('Smoke Testing to the Shardeum Network', () => {
 
@@ -58,7 +58,7 @@ describe('Smoke Testing to the Shardeum Network', () => {
         // const { stdout, stderr } = await execa.command(`cd ${SPAM_CLIENT_DIR} && ls `, opts)
         // console.log(stdout, stderr)
         // execa.command('ls').stdout.pipe(process.stdout)
-        execa.commandSync(`cd ${SPAM_CLIENT_DIR} && ${spamCommand}`, { ...opts, stdio: [0, 1, 2] })
+        execa.commandSync(`cd ${LOAD_TESTER} && ${spamCommand}`, { ...opts, stdio: [0, 1, 2] })
         await utils._sleep(durationMiliSecond + 10000) // extra 10s for processing pending txs in the queue
 
         let report = await utils.queryLatestReport()
@@ -89,7 +89,7 @@ describe('Smoke Testing to the Shardeum Network', () => {
         // const { stdout, stderr } = await execa.command(`cd ${SPAM_CLIENT_DIR} && ls `, opts)
         // console.log(stdout, stderr)
         // execa.command('ls').stdout.pipe(process.stdout)
-        execa.commandSync(`cd ${SPAM_CLIENT_DIR} && ${spamCommand}`, { ...opts, stdio: [0, 1, 2] })
+        execa.commandSync(`cd ${LOAD_TESTER} && ${spamCommand}`, { ...opts, stdio: [0, 1, 2] })
         await utils._sleep(durationMiliSecond + 10000) // extra 10s for processing pending txs in the queue
 
         let report = await utils.queryLatestReport()
