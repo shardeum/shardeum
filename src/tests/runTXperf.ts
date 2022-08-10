@@ -192,7 +192,7 @@ async function runTXs(signedTxs:Transaction[]){
 
       let txStart = Date.now()
       try{
-        await vm.runTx({tx, skipNonce:true, skipBlockGasLimitValidation:true})
+        await vm.runTx({tx, skipNonce:false, skipBlockGasLimitValidation:true})
         stats.pass++
         totalPass++
         stats[txType].p++

@@ -2011,7 +2011,7 @@ shardus.setup({
       let runTxResult: RunTxResult
       let wrappedReceiptAccount : WrappedEVMAccount
       try {
-        runTxResult = await EVM.runTx({ block: blockForTx, tx: transaction, skipNonce: true })
+        runTxResult = await EVM.runTx({ block: blockForTx, tx: transaction, skipNonce: false })
         if (ShardeumFlags.VerboseLogs) console.log('runTxResult', txId, runTxResult)
       } catch (e) {
         // if (!transactionFailHashMap[ethTxId]) {
