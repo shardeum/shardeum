@@ -1995,14 +1995,14 @@ shardus.setup({
 
 
 
-      // if(ShardeumFlags.CheckNonceGreaterThan === true){
-      //   let senderEVMAddrStr = transaction.getSenderAddress().toString()
-      //   let shardusAddress = toShardusAddress(senderEVMAddrStr,  AccountType.Account)
-      //   let senderAccount:WrappedEVMAccount = wrappedStates[shardusAddress]
-      //   if(senderAccount.account.nonce >= transaction.nonce ){
-      //     throw new Error(`invalid transaction, reason: nonce fail. tx: ${JSON.stringify(tx)}`)
-      //   }
-      // }
+      if(ShardeumFlags.CheckNonceGreaterThan === true){
+        let senderEVMAddrStr = transaction.getSenderAddress().toString()
+        let shardusAddress = toShardusAddress(senderEVMAddrStr,  AccountType.Account)
+        let senderAccount:WrappedEVMAccount = wrappedStates[shardusAddress]
+        if(senderAccount.account.nonce >= transaction.nonce ){
+          throw new Error(`invalid transaction, reason: nonce fail. tx: ${JSON.stringify(tx)}`)
+        }
+      }
 
       // Apply the tx
       // const runTxResult = await EVM.runTx({tx: transaction, skipNonce: true, skipBlockGasLimitValidation: true})
