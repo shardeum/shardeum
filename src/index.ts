@@ -71,7 +71,7 @@ export let readableBlocks = {}
 export const INITIAL_PARAMETERS: NetworkParameters = {
   title: 'Initial parameters',
   description: 'These are the initial network parameters Shardeum started with',
-  nodeRewardInterval: ONE_MINUTE * 10, // 10 minutes for testing
+  nodeRewardInterval: ONE_MINUTE * 5, // 10 minutes for testing
   nodeRewardAmount: 1, // 1 ETH
   nodePenalty: 10,
   stakeRequired: 5,
@@ -2667,7 +2667,7 @@ shardus.setup({
           throw Error(`Network Account is not found ${accountId}`)
         }
       }
-
+      if (ShardeumFlags.VerboseLogs) console.log('Running getRelevantData', wrappedEVMAccount)
       return shardus.createWrappedResponse(accountId, accountCreated, wrappedEVMAccount.hash, wrappedEVMAccount.timestamp, wrappedEVMAccount)
     }
     if (isDebugTx(tx)) {
@@ -2832,23 +2832,49 @@ shardus.setup({
     const updatedEVMAccount: WrappedEVMAccount = wrappedData.data
     const prevStateId = wrappedData.prevStateId
 
+    if (ShardeumFlags.VerboseLogs) console.log('updatedEVMAccount', updatedEVMAccount)
+
     if (updatedEVMAccount.accountType === AccountType.Debug) {
       // Update hash
       updateEthAccountHash(updatedEVMAccount)
       const hashBefore = updatedEVMAccount.hash
       //accounts[accountId] = updatedEVMAccount
       await AccountsStorage.setAccount(accountId, updatedEVMAccount)
-      shardus.applyResponseAddState(applyResponse, updatedEVMAccount, updatedEVMAccount, accountId, applyResponse.txId, applyResponse.txTimestamp, hashBefore, updatedEVMAccount.hash, accountCreated)
+      shardus.applyResponseAddState(
+        applyResponse,
+        updatedEVMAccount,
+        updatedEVMAccount,
+        accountId,
+        applyResponse.txId,
+        applyResponse.txTimestamp,
+        hashBefore,
+        updatedEVMAccount.hash,
+        accountCreated
+      )
       return
     }
-    if (updatedEVMAccount.accountType === AccountType.NetworkAccount || updatedEVMAccount.accountType === AccountType.NodeAccount || updatedEVMAccount.accountType === AccountType.NodeRewardReceipt) {
+    if (
+      updatedEVMAccount.accountType === AccountType.NetworkAccount ||
+      updatedEVMAccount.accountType === AccountType.NodeAccount ||
+      updatedEVMAccount.accountType === AccountType.NodeRewardReceipt
+    ) {
       // Update hash
       const hashBefore = updatedEVMAccount.hash
       updateEthAccountHash(updatedEVMAccount) // This will get the hash of its relevant account type
       const hashAfter = updatedEVMAccount.hash
       //accounts[accountId] = updatedEVMAccount
       await AccountsStorage.setAccount(accountId, updatedEVMAccount)
-      shardus.applyResponseAddState(applyResponse, updatedEVMAccount, updatedEVMAccount, accountId, applyResponse.txId, applyResponse.txTimestamp, hashBefore, hashAfter, accountCreated)
+      shardus.applyResponseAddState(
+        applyResponse,
+        updatedEVMAccount,
+        updatedEVMAccount,
+        accountId,
+        applyResponse.txId,
+        applyResponse.txTimestamp,
+        hashBefore,
+        hashAfter,
+        accountCreated
+      )
       return
     }
 
@@ -2876,7 +2902,6 @@ shardus.setup({
     } else {
       //TODO possibly need a blob to re-init with?
     }
-    if (ShardeumFlags.VerboseLogs) console.log('updatedEVMAccount', updatedEVMAccount)
 
     if (updatedEVMAccount.accountType === AccountType.Account) {
       //if account?
