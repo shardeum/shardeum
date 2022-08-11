@@ -28,7 +28,7 @@ export let ServicePoints = {
 }
 export let DebugRestoreFile = 'account-export.json' //'accounts-by-ts.json'
 export let DebugRestoreArchiveBatch = 2000
-export let CheckNonceGreaterThan = false
+export let CheckNonce = true
 export let forwardGenesisAccounts = false // To send accounts from consensor rather than pulling from archiver
 
 export let UseDBForAccounts = true //Use Sql to store in memory accounts instead of simple accounts object map

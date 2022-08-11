@@ -999,7 +999,7 @@ shardus.registerExternalGet('account/:address', async (req, res) => {
 //
 //     const runResult: RunTxResult = await debugEVM.runTx({
 //       tx,
-//       skipNonce: true,
+//       skipNonce: !ShardeumFlags.CheckNonceGreaterThan,
 //       skipBalance: true,
 //       skipBlockGasLimitValidation: true,
 //     })
@@ -1995,23 +1995,26 @@ shardus.setup({
 
 
 
-      if(ShardeumFlags.CheckNonceGreaterThan === true){
-        let senderEVMAddrStr = transaction.getSenderAddress().toString()
-        let shardusAddress = toShardusAddress(senderEVMAddrStr,  AccountType.Account)
-        let senderAccount:WrappedEVMAccount = wrappedStates[shardusAddress]
-        if(senderAccount.account.nonce >= transaction.nonce ){
-          throw new Error(`invalid transaction, reason: nonce fail. tx: ${JSON.stringify(tx)}`)
-        }
-      }
+      // this code's got bug
+      // if(ShardeumFlags.CheckNonce === true){
+      //   let senderEVMAddrStr = transaction.getSenderAddress().toString()
+      //   let shardusAddress = toShardusAddress(senderEVMAddrStr,  AccountType.Account)
+      //   let senderAccount:WrappedEVMAccount = wrappedStates[shardusAddress]
+      //  bug here seem like nonce is undefined even though type def indicate, it does.
+      //   if(senderAccount.account.nonce >= transaction.nonce ){
+      //     throw new Error(`invalid transaction, reason: nonce fail. tx: ${JSON.stringify(tx)}`)
+      //   }
+      // }
 
       // Apply the tx
-      // const runTxResult = await EVM.runTx({tx: transaction, skipNonce: true, skipBlockGasLimitValidation: true})
+      // const runTxResult = await EVM.runTx({tx: transaction, skipNonce: !ShardeumFlags.CheckNonce, skipBlockGasLimitValidation: true})
       let blockForTx = getOrCreateBlockFromTimestamp(txTimestamp)
       if(ShardeumFlags.VerboseLogs) console.log(`Block for tx ${ethTxId}`, blockForTx.header.number.toNumber())
       let runTxResult: RunTxResult
       let wrappedReceiptAccount : WrappedEVMAccount
       try {
-        runTxResult = await EVM.runTx({ block: blockForTx, tx: transaction, skipNonce: false })
+        // if checkNonce is true, we're not gonna skip the nonce
+        runTxResult = await EVM.runTx({ block: blockForTx, tx: transaction, skipNonce: !ShardeumFlags.CheckNonce })
         if (ShardeumFlags.VerboseLogs) console.log('runTxResult', txId, runTxResult)
       } catch (e) {
         // if (!transactionFailHashMap[ethTxId]) {
