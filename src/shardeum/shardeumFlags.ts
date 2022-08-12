@@ -18,7 +18,7 @@ export let blockProductionRate = 6 // generate new block every 6s
 export let maxNumberOfOldBlocks = 256
 export let SelfTest = false
 export let ServicePointsPerSecond = 100 //service function points per second
-export let SetupGenesisAccount = false
+export let SetupGenesisAccount = true
 export let EVMReceiptsAsAccounts = true
 export let ServicePoints = {
   ['debug-points']: 20,
