@@ -42,3 +42,5 @@ export let SaveEVMTries = false
 export let ChainID = 8080 //Chain.Rinkeby   // The EVM chain ID.  used by CHAINID opcode.  may need Chain.Rinkeby (4)  for local testing 
 
 export let CheckpointRevertSupport = true
+
+export let UseTXPreCrack = true

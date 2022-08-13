@@ -503,7 +503,7 @@ function isInternalTx(tx: any): boolean {
 }
 
 function isDebugTx(tx: any): boolean {
-  return tx.isDebugTx
+  return tx.isDebugTx != null
 }
 
 function getTransactionObj(tx: any): Transaction | AccessListEIP2930Transaction {
@@ -2325,7 +2325,46 @@ shardus.setup({
   getTimestampFromTransaction(tx) {
     return tx.timestamp ? tx.timestamp : 0
   },
-  crack(timestampedTx) {
+  async txPreCrackData(timestampedTx, appData){
+    if(ShardeumFlags.UseTXPreCrack === false){
+      return
+    }
+    let { tx, timestampReceipt } = timestampedTx
+    if (isInternalTx(tx) === false && isDebugTx(tx) === false){
+      const transaction = getTransactionObj(tx)
+      if (transaction instanceof AccessListEIP2930Transaction && transaction.AccessListJSON){
+        //do nothing if eip2930
+      } else {
+        //if the TX is a contract deploy, predict the new contract address correctly
+        if (transaction.to == null){
+          let foundNonce = false
+          let foundSender = false
+          let deployNonce = new BN(0)
+          let txSenderEvmAddr = transaction.getSenderAddress().toString()
+          let transformedSourceKey = toShardusAddress(txSenderEvmAddr, AccountType.Account)
+          let remoteShardusAccount = await shardus.getLocalOrRemoteAccount(transformedSourceKey)
+          if (remoteShardusAccount == undefined) {
+            //if (ShardeumFlags.VerboseLogs) console.log(`txPreCrackData: found no remote account for address: ${txSenderEvmAddr}, key: ${transformedSourceKey}. using nonce=0`)
+          } else {
+            foundSender = true
+            let wrappedEVMAccount = remoteShardusAccount.data as WrappedEVMAccount
+            if(wrappedEVMAccount && wrappedEVMAccount.account){
+              fixDeserializedWrappedEVMAccount(wrappedEVMAccount)
+              deployNonce = wrappedEVMAccount.account.nonce
+              foundNonce = true
+            }
+          }
+
+          let caAddrBuf = predictContractAddressDirect(txSenderEvmAddr, deployNonce)
+          let caAddr = '0x' + caAddrBuf.toString('hex')
+          appData.newCAAddr = caAddr
+          if (ShardeumFlags.VerboseLogs) console.log(`txPreCrackData found nonce:${foundNonce} found sender:${foundSender} for ${txSenderEvmAddr} nonce:${deployNonce.toString()} ca:${caAddr}`)
+        }        
+      }
+    }
+  },
+
+  crack(timestampedTx, appData) {
     if (ShardeumFlags.VerboseLogs) console.log('Running getKeyFromTransaction', timestampedTx)
     let { tx, timestampReceipt } = timestampedTx
 
@@ -2429,16 +2468,27 @@ shardus.setup({
           type: AccountType.Account,
         })
       } else {
-        //This is a contract create!!
-        //only will work with first deploy, since we do not have a way to get nonce that works with sharding
-        let hack0Nonce = new BN(0)
-        let caAddrBuf = predictContractAddressDirect(txSenderEvmAddr, hack0Nonce)
-        let caAddr = '0x' + caAddrBuf.toString('hex')
-        let shardusAddr = toShardusAddress(caAddr, AccountType.Account)
-        otherAccountKeys.push(shardusAddr)
-        shardusAddressToEVMAccountInfo.set(shardusAddr, { evmAddress: caAddr, type: AccountType.Account })
 
-        if (ShardeumFlags.VerboseLogs) console.log('getKeyFromTransaction: Predicting contract account address:', caAddr, shardusAddr)
+        if(ShardeumFlags.UseTXPreCrack === false){
+          //This is a contract create!!
+          //only will work with first deploy, since we do not have a way to get nonce that works with sharding
+          let hack0Nonce = new BN(0)
+          let caAddrBuf = predictContractAddressDirect(txSenderEvmAddr, hack0Nonce)
+          let caAddr = '0x' + caAddrBuf.toString('hex')
+          let shardusAddr = toShardusAddress(caAddr, AccountType.Account)
+          otherAccountKeys.push(shardusAddr)
+          shardusAddressToEVMAccountInfo.set(shardusAddr, { evmAddress: caAddr, type: AccountType.Account })
+          if (ShardeumFlags.VerboseLogs) console.log('getKeyFromTransaction: Predicting new contract account address:', caAddr, shardusAddr)
+        } else {
+          //use app data!
+          if(appData && appData.newCAAddr){
+            let caAddr = appData.newCAAddr
+            let shardusAddr = toShardusAddress(caAddr, AccountType.Account)
+            otherAccountKeys.push(shardusAddr)
+            shardusAddressToEVMAccountInfo.set(shardusAddr, { evmAddress: caAddr, type: AccountType.Account })
+            if (ShardeumFlags.VerboseLogs) console.log('getKeyFromTransaction: Appdata provided new contract account address:', caAddr, shardusAddr)
+          }
+        }
       }
 
       if (transaction instanceof AccessListEIP2930Transaction && transaction.AccessListJSON) {
