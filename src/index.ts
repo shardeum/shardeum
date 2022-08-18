@@ -670,8 +670,7 @@ async function manuallyCreateAccount(ethAccountID: string, balance = defaultBala
     accountType: AccountType.Account,
   }
   WrappedEVMAccountFunctions.updateEthAccountHash(wrappedEVMAccount)
-  //accounts[shardusAccountID] = wrappedEVMAccount
-  await AccountsStorage.setAccount(shardusAccountID, wrappedEVMAccount)
+  return {accountId: shardusAccountID, wrappedEVMAccount, cycle: latestCycles[0]}
 }
 
 function _containsProtocol(url: string) {
@@ -1715,11 +1714,22 @@ shardus.setup({
         //create genesis accounts before network account since nodes will wait for the network account
         shardus.log(`node ${nodeId} GENERATED_A_NEW_NETWORK_ACCOUNT: `)
         if(ShardeumFlags.SetupGenesisAccount) {
+          let accountCopies = []
           for (let address in genesis) {
             let amount = new BN(genesis[address].wei)
-            await manuallyCreateAccount(address, amount)
+            let {wrappedEVMAccount, accountId, cycle} = await manuallyCreateAccount(address, amount)
+            let accountCopy: ShardusTypes.AccountsCopy = {
+              cycleNumber: cycle.counter,
+              accountId,
+              data: wrappedEVMAccount,
+              hash: wrappedEVMAccount.hash,
+              isGlobal: false,
+              timestamp: wrappedEVMAccount.timestamp
+            }
+            accountCopies.push(accountCopy)
             shardus.log(`node ${nodeId} SETUP GENESIS ACCOUNT: ${address}  amt: ${amount}`)
           }
+          await shardus.debugCommitAccountCopies(accountCopies)
         }
         await sleep(ONE_SECOND * 10)
 
