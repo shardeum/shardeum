@@ -13,7 +13,8 @@ export enum AccountType {
   Debug = 4,
   NetworkAccount = 5,
   NodeAccount = 6,
-  NodeRewardReceipt = 7
+  NodeRewardReceipt = 7,
+  DevAccount = 8
 }
 
 export interface BaseAccount {
@@ -186,6 +187,12 @@ export interface NodeAccount extends BaseAccount {
   id: string
   balance: number
   nodeRewardTime: number
+  hash: string
+  timestamp: number
+}
+
+export interface DevAccount extends BaseAccount {
+  id: string
   hash: string
   timestamp: number
 }

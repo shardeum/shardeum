@@ -48,3 +48,4 @@ export let UseTXPreCrack = true
 export let NewStorageIndex = true
 
 export let useAccountWrites = true
+export let devPublicKey = '774491f80f47fedb119bb861601490f42bc3ea3b57fc63906c0d08e6d777a592'

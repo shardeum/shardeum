@@ -27,6 +27,7 @@ import {
   WrappedAccount,
   WrappedEVMAccount,
   WrappedStates,
+  DevAccount,
 } from './shardeum/shardeumTypes'
 import {getAccountShardusAddress, toShardusAddress, toShardusAddressWithKey} from './shardeum/evmAddress'
 import * as ShardeumFlags from './shardeum/shardeumFlags'
@@ -907,10 +908,6 @@ shardus.registerExternalPost('inject', async (req, res) => {
   let tx = req.body
   if (ShardeumFlags.VerboseLogs) console.log('Transaction injected:', new Date(), tx)
   try {
-    if (tx.isInternalTx && tx.internalTXType === InternalTXType.ChangeConfig) {
-      const response = await shardus.put(tx, false, true)
-      return res.json(response)
-    }
     const response = await shardus.put(tx)
     res.json(response)
   } catch (err) {
@@ -1740,8 +1737,9 @@ async function applyInternalTx(internalTx: InternalTx, wrappedStates: WrappedSta
     //shardeumStateManager.unsetTransactionState(txId)
   }
   if (internalTx.internalTXType === InternalTXType.ChangeConfig) {
-    // const from: NodeAccount = wrappedStates[internalTx.from].data // This will be user/node account. needs review!
     const network: NetworkAccount = wrappedStates[networkAccount].data
+    const devAccount: DevAccount = wrappedStates[internalTx.from].data
+
     let changeOnCycle
     let cycleData: ShardusTypes.Cycle
 
@@ -1771,8 +1769,9 @@ async function applyInternalTx(internalTx: InternalTx, wrappedStates: WrappedSta
     ourAppDefinedData.globalMsg = { address: networkAccount, value, when, source: networkAccount }
 
     if (ShardeumFlags.useAccountWrites) shardus.applyResponseAddChangedAccount(applyResponse, networkAccount, wrappedStates[networkAccount], txId, txTimestamp)
-
+    else network.timestamp = txTimestamp
     // from.timestamp = txTimestamp
+    devAccount.timestamp = txTimestamp
     console.log('Applied change_config tx')
     shardus.log('Applied change_config tx')
   }
@@ -1904,6 +1903,23 @@ const createNodeAccount = (accountId: string) => {
   return account
 }
 
+const createDevAccount = (accountId: string) => {
+  let cycleStart = 0
+  let latestCycles = shardus.getLatestCycles()
+  if (latestCycles != null && latestCycles.length > 0) {
+    cycleStart = latestCycles[0].start * 1000
+    console.log('dev account created time: ', cycleStart)
+  }
+  const account: DevAccount = {
+    id: accountId,
+    accountType: AccountType.DevAccount,
+    hash: '',
+    timestamp: cycleStart,
+  }
+  account.hash = crypto.hashObj(account)
+  return { account, cycle: latestCycles[0] }
+}
+
 const getTxBlock = (timestamp: string) => {
   for (let i = Object.values(blocks).length - 1; i >= 0; i--) {
     if (Number(timestamp) >= blocks[i].header.timestamp.toNumber())
@@ -2005,6 +2021,21 @@ shardus.setup({
             }
             accountCopies.push(accountCopy)
             shardus.log(`node ${nodeId} SETUP GENESIS ACCOUNT: ${address}  amt: ${amount}`)
+          }
+          if (ShardeumFlags.devPublicKey) {
+            const { account, cycle } = createDevAccount(ShardeumFlags.devPublicKey)
+            const devAccount: any = account
+            //accounts[devAccount.id] = devAccount
+            await AccountsStorage.setAccount(devAccount.id, devAccount)
+            let accountCopy: ShardusTypes.AccountsCopy = {
+              cycleNumber: cycle.counter,
+              accountId: devAccount.id,
+              data: devAccount,
+              hash: devAccount.hash,
+              isGlobal: false,
+              timestamp: devAccount.timestamp,
+            }
+            accountCopies.push(accountCopy)
           }
           await shardus.debugCommitAccountCopies(accountCopies)
           if (ShardeumFlags.forwardGenesisAccounts) {
@@ -2137,7 +2168,8 @@ shardus.setup({
         }
       } else if (tx.internalTXType === InternalTXType.ChangeConfig) {
         try {
-          const devPublicKey = shardus.getDevPublicKey()
+          // const devPublicKey = shardus.getDevPublicKey() // This have to be reviewed again whether to get from shardus interface or not 
+          const devPublicKey = ShardeumFlags.devPublicKey
           if (devPublicKey) {
             success = verify(tx, devPublicKey)
             if (!success)
@@ -2747,7 +2779,7 @@ shardus.setup({
         keys.sourceKeys = [internalTx.from]
         keys.targetKeys = [toShardusAddress(internalTx.to, AccountType.Account), networkAccount]
       } else if (internalTx.internalTXType === InternalTXType.ChangeConfig) {
-        // keys.sourceKeys = [tx.from]
+        keys.sourceKeys = [tx.from]
         keys.targetKeys = [networkAccount]
       } else if (internalTx.internalTXType === InternalTXType.ApplyChangeConfig) {
         keys.targetKeys = [networkAccount]
@@ -2932,7 +2964,12 @@ shardus.setup({
 
       let shardusAddress = getAccountShardusAddress(wrappedEVMAccount)
 
-      if (wrappedEVMAccount.accountType !== AccountType.NetworkAccount && wrappedEVMAccount.accountType !== AccountType.NodeAccount && wrappedEVMAccount.accountType !== AccountType.NodeRewardReceipt)
+      if (
+        wrappedEVMAccount.accountType !== AccountType.NetworkAccount &&
+        wrappedEVMAccount.accountType !== AccountType.NodeAccount &&
+        wrappedEVMAccount.accountType !== AccountType.NodeRewardReceipt &&
+        wrappedEVMAccount.accountType !== AccountType.DevAccount
+      )
         WrappedEVMAccountFunctions.fixDeserializedWrappedEVMAccount(wrappedEVMAccount)
 
       //accounts[shardusAddress] = wrappedEVMAccount
@@ -3062,6 +3099,8 @@ shardus.setup({
           // This is the 0000x00000 account
           if (accountId === networkAccount){
             throw Error(`Network Account is not found ${accountId}`)
+          } else if (accountId === ShardeumFlags.devPublicKey){
+            throw Error(`Dev Account is not found ${accountId}`)
           }
           // I think we don't need it now, the dev Key is checked on the validateTxnFields
           // else {
@@ -3577,6 +3616,7 @@ shardus.setup({
     } else {
       txId = crypto.hashObj(tx, true) // compute from tx
     }
+    console.log('running transactionReceiptPass', txId, tx, wrappedStates, applyResponse)
     _transactionReceiptPass(tx, txId, wrappedStates, applyResponse)
 
     //clear this out of the shardeum state map
