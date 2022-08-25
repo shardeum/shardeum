@@ -2088,7 +2088,8 @@ shardus.setup({
       if(isInternalTXGlobal(internalTX) === true){
         return { result: 'pass', reason: 'valid' }
       } else if (tx.internalTXType === InternalTXType.ChangeConfig) {
-        const devPublicKey = shardus.getDevPublicKey()
+        // const devPublicKey = shardus.getDevPublicKey()
+        const devPublicKey = ShardeumFlags.devPublicKey
         if (devPublicKey) {
           let isValid = verify(tx, devPublicKey)
           console.log('isValid', isValid)
