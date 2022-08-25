@@ -465,6 +465,7 @@ function tryGetRemoteAccountCBNoOp(transactionState: TransactionState, type:Acco
 
 async function tryGetRemoteAccountCB(transactionState: TransactionState, type:AccountType, address: string, key: string) : Promise<WrappedEVMAccount> {
   let shardusAddress = toShardusAddressWithKey(address, key, type)
+  if (ShardeumFlags.VerboseLogs) console.log(`Trying to get remote account for address: ${address}, type: ${type}, key: ${key}`)
   let remoteShardusAccount = await shardus.getLocalOrRemoteAccount(shardusAddress)
   if (remoteShardusAccount == undefined) {
     if (ShardeumFlags.VerboseLogs) console.log(`Found no remote account for address: ${address}, type: ${type}, key: ${key}`)
@@ -472,6 +473,7 @@ async function tryGetRemoteAccountCB(transactionState: TransactionState, type:Ac
   }
   let fixedEVMAccount = remoteShardusAccount.data
   fixDeserializedWrappedEVMAccount(fixedEVMAccount)
+  if (ShardeumFlags.VerboseLogs) console.log(`Successfully found remote account for address: ${address}, type: ${type}, key: ${key}`, fixedEVMAccount)
   return fixedEVMAccount
 }
 
@@ -529,16 +531,14 @@ function getTransactionObj(tx: any): Transaction | AccessListEIP2930Transaction 
   const serializedInput = toBuffer(tx.raw)
   try {
     transactionObj = Transaction.fromRlpSerializedTx(serializedInput)
-    if (ShardeumFlags.VerboseLogs) console.log('Legacy tx parsed:', transactionObj)
   } catch (e) {
     // if (ShardeumFlags.VerboseLogs) console.log('Unable to get legacy transaction obj', e)
   }
   if (!transactionObj) {
     try {
       transactionObj = AccessListEIP2930Transaction.fromRlpSerializedTx(serializedInput)
-      if (ShardeumFlags.VerboseLogs) console.log('EIP2930 tx parsed:', transactionObj)
     } catch (e) {
-      if (ShardeumFlags.VerboseLogs) console.log('Unable to get EIP2930 transaction obj', e)
+      if (ShardeumFlags.VerboseLogs) console.log('Unable to get transaction obj', e)
     }
   }
 
@@ -604,8 +604,8 @@ function getDebugTXState(): TransactionState {
   return transactionState
 }
 
-function getCallTXState(): TransactionState {
-  let txId = '0'.repeat(64)
+function getCallTXState(from: string, to: string): TransactionState {
+  let txId = '9'.repeat(64) // use different txId than debug txs
   if (ShardeumFlags.VerboseLogs) console.log('Creating a call tx state for ', txId)
   let transactionState = new TransactionState()
   transactionState.initData(
@@ -1084,24 +1084,15 @@ shardus.registerExternalPost('contract/call', async (req, res) => {
 
       //Overly techincal, should be ported back into SGS as a utility
       let address = caShardusAddress
-      let ourNodeShardData = shardus.stateManager.currentCycleShardData.nodeShardData
-      let minP = ourNodeShardData.consensusStartPartition
-      let maxP = ourNodeShardData.consensusEndPartition
-      // HOMENODEMATHS this seems good.  making sure our node covers this partition
-      let { homePartition } = __ShardFunctions.addressToPartition(shardus.stateManager.currentCycleShardData.shardGlobals, address)
-      let accountIsRemote = __ShardFunctions.partitionInWrappingRange(homePartition, minP, maxP) === false
-      if (accountIsRemote) {
-        let homeNode = __ShardFunctions.findHomeNode(
-          shardus.stateManager.currentCycleShardData.shardGlobals,
-          address,
-          shardus.stateManager.currentCycleShardData.parititionShardDataMap
-        )
-        if (ShardeumFlags.VerboseLogs) console.log(`Node is in remote shard: ${homeNode?.node.externalIp}:${homeNode?.node.externalPort}`)
-        if (homeNode != null && homeNode.node != null) {
-          if (ShardeumFlags.VerboseLogs) console.log(`Node is in remote shard: requesting`)
-          let node = homeNode.node
+      let accountIsRemote = shardus.isAccountRemote(address)
 
-          let postResp = await _internalHackPostWithResp(`${node.externalIp}:${node.externalPort}/contract/call`, callObj)
+      if (accountIsRemote) {
+        let consensusNode = shardus.getRandomConsensusNodeForAccount(address)
+        if (ShardeumFlags.VerboseLogs) console.log(`Node is in remote shard: ${consensusNode?.externalIp}:${consensusNode?.externalPort}`)
+        if (consensusNode != null) {
+          if (ShardeumFlags.VerboseLogs) console.log(`Node is in remote shard: requesting`)
+
+          let postResp = await _internalHackPostWithResp(`${consensusNode.externalIp}:${consensusNode.externalPort}/contract/call`, callObj)
           if (postResp.body != null && postResp.body != '') {
             //getResp.body
 
@@ -1111,7 +1102,7 @@ shardus.registerExternalPost('contract/call', async (req, res) => {
             return res.json({ result: postResp.body.result })
           }
         } else {
-          if (ShardeumFlags.VerboseLogs) console.log(`Node is in remote shard: homenode = null`)
+          if (ShardeumFlags.VerboseLogs) console.log(`Node is in remote shard: consensusNode = null`)
           return res.json({ result: null })
         }
       } else {
@@ -1124,7 +1115,7 @@ shardus.registerExternalPost('contract/call', async (req, res) => {
       return res.json({ result: null, error:'node busy'})
     }
 
-    let callTxState = getCallTXState() //this isn't so great..
+    let callTxState = getCallTXState(callObj.from, callObj.to) //this isn't so great..
 
     let callerAddress = toShardusAddress(callObj.from, AccountType.Account)
     let callerAccount = await AccountsStorage.getAccount(callerAddress)
@@ -1145,6 +1136,7 @@ shardus.registerExternalPost('contract/call', async (req, res) => {
 
     opt['block'] = blocks[latestBlock]
     const callResult = await EVM.runCall(opt)
+    shardeumStateManager.unsetTransactionState(callTxState.linkedTX)
     if (ShardeumFlags.VerboseLogs) console.log('Call Result', callResult.execResult.returnValue.toString('hex'))
 
     if (methodCode === ERC20_BALANCEOF_CODE) {
@@ -1170,7 +1162,7 @@ shardus.registerExternalPost('contract/call', async (req, res) => {
 
     res.json({ result: callResult.execResult.returnValue.toString('hex') })
   } catch (e) {
-    if (ShardeumFlags.VerboseLogs) console.log('Error', e)
+    if (ShardeumFlags.VerboseLogs) console.log('Error eth_call', e)
     return res.json({ result: null })
   }
 })
@@ -1468,7 +1460,7 @@ async function applyInternalTx(internalTx: InternalTx, wrappedStates: WrappedSta
     // console.log('nodeRewardReceipt', nodeRewardReceipt)
     // shardus.log('Applied node_reward tx', from, to)
     console.log('Applied node_reward tx', txId, txTimestamp)
-    shardeumStateManager.unsetTransactionState()
+    shardeumStateManager.unsetTransactionState(txId)
   }
   if (internalTx.internalTXType === InternalTXType.ChangeConfig) {
     // const from: NodeAccount = wrappedStates[internalTx.from].data // This will be user/node account. needs review!
@@ -2369,7 +2361,7 @@ shardus.setup({
 
       // todo can set a jummped value that we return!
 
-    shardeumStateManager.unsetTransactionState()
+    shardeumStateManager.unsetTransactionState(txId)
 
     return applyResponse
   },

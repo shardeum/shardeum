@@ -117,10 +117,20 @@ export default class ShardeumState implements StateManager {
 
   //critical to function
   setTransactionState(transactionState: TransactionState) {
+    if(ShardeumFlags.VerboseLogs) console.log('Setting new transactionState', transactionState.linkedTX)
+    if (this._transactionState) {
+      if(ShardeumFlags.VerboseLogs) console.log(`Try to set new transaction state ${transactionState.linkedTX}. But found existing transaction state ${this._transactionState.linkedTX}`)
+      // TODO: we should find a way handle this condition
+    }
     this._transactionState = transactionState
   }
 
-  unsetTransactionState() {
+  unsetTransactionState(txId: string) {
+    if(ShardeumFlags.VerboseLogs) console.log('Running unsetTransactionState', this._transactionState.linkedTX)
+    if (this._transactionState.linkedTX !== txId) {
+      if(ShardeumFlags.VerboseLogs) console.log('Unable to unset transaction with different txId')
+      // TODO: we should find a way handle this condition
+    }
     this._transactionState = null
   }
 
@@ -157,6 +167,7 @@ export default class ShardeumState implements StateManager {
       }
     }
 
+    if(ShardeumFlags.VerboseLogs) console.log('Unable to find transactionState', address)
     if (this.temporaryParallelOldMode === false) {
       return // the code below will be irrelevant post SGS upgrade
     }
