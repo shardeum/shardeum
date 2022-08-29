@@ -49,13 +49,15 @@ export interface DefaultStateManagerOpts {
  * Interface for getting and setting data from an underlying
  * state trie.
  */
-export default class ShardeumState implements StateManager {
+export default class ShardeumState_OLD implements StateManager {
   _common: Common
-
+  _trie: Trie
+  _storageTries: { [key: string]: Trie }
+  _cache: Cache
   _touched: Set<AddressHex>
   _touchedStack: Set<AddressHex>[]
-  //_checkpointCount: number
-  //_originalStorageCache: Map<AddressHex, Map<AddressHex, Buffer>>
+  _checkpointCount: number
+  _originalStorageCache: Map<AddressHex, Map<AddressHex, Buffer>>
 
   // EIP-2929 address/storage trackers.
   // This maps both the accessed accounts and the accessed storage slots.
@@ -74,9 +76,6 @@ export default class ShardeumState implements StateManager {
   _transactionState: TransactionState
 
   temporaryParallelOldMode: boolean
-
-  //TODO remvoe this once SaveEVMTries option goes away
-  _trie: Trie
 
   /**
    * StateManager is run in DEBUG mode (default: false)
@@ -98,13 +97,13 @@ export default class ShardeumState implements StateManager {
     }
     this._common = common
 
-    this.temporaryParallelOldMode = false
-
-    //this._cache = new Cache(this._trie)
+    this._trie = opts.trie ?? new Trie()
+    this._storageTries = {}
+    this._cache = new Cache(this._trie)
     this._touched = new Set()
     this._touchedStack = []
-    //this._checkpointCount = 0
-    //this._originalStorageCache = new Map()
+    this._checkpointCount = 0
+    this._originalStorageCache = new Map()
     this._accessedStorage = [new Map()]
     this._accessedStorageReverted = [new Map()]
 
@@ -135,19 +134,14 @@ export default class ShardeumState implements StateManager {
     this._transactionState = null
   }
 
-  resetState(){
-    //todo any other reset?
-
-    this._transactionState.resetTransactionState()
-  }
-
   /**
    * Copies the current instance of the `StateManager`
    * at the last fully committed point, i.e. as if all current
    * checkpoints were reverted.
    */
   copy(): StateManager {
-    return new ShardeumState({
+    return new ShardeumState_OLD({
+      trie: this._trie.copy(false),
       common: this._common,
     })
   }
@@ -161,7 +155,10 @@ export default class ShardeumState implements StateManager {
     //side run system on the side for now
     if (this._transactionState != null) {
       if(ShardeumFlags.SaveEVMTries){
-        throw new Error('getAccount SaveEVMTries=true not supported')
+        testAccount = await this._transactionState.getAccount(this._trie, address, false, false)
+        if (this.temporaryParallelOldMode === false) {
+          return testAccount
+        }
       } else {
         testAccount = await this._transactionState.getAccount(null, address, false, false)
         if (this.temporaryParallelOldMode === false) {
@@ -197,7 +194,16 @@ export default class ShardeumState implements StateManager {
     }
 
     throw new Error('putAccount should never get here')
-
+    // // Original implementation:
+    // if (this.DEBUG) {
+    //   debug(
+    //     `Save account address=${address} nonce=${account.nonce} balance=${account.balance} contract=${account.isContract() ? 'yes' : 'no'} empty=${
+    //       account.isEmpty() ? 'yes' : 'no'
+    //     }`
+    //   )
+    // }
+    // this._cache.put(address, account)
+    // this.touchAccount(address)
   }
 
   /**
@@ -212,8 +218,9 @@ export default class ShardeumState implements StateManager {
       return // I think we can just return and ignore this for now
              // need to actually create a plan for deleting data
     }
-    throw new Error('deleteAccount SaveEVMTries=true not supported')
-    //this.touchAccount(address)
+
+    this._cache.del(address)
+    this.touchAccount(address)
   }
 
   /**
@@ -248,7 +255,23 @@ export default class ShardeumState implements StateManager {
     }
 
     throw new Error('putContractCode should never get here')
+    // // Original implementation:
 
+    // 
+    // const codeHash = keccak256(value)
+    // if(ShardeumFlags.VerboseLogs) console.log( 'Storing contract code', codeHash, codeHash.toString('hex'), value)
+
+    // if (codeHash.equals(KECCAK256_NULL)) {
+    //   return
+    // }
+
+    // await this._trie.db.put(codeHash, value)
+
+    // if (this.DEBUG) {
+    //   debug(`Update codeHash (-> ${short(codeHash)}) for account ${address}`)
+    // }
+    // account.codeHash = codeHash
+    // await this.putAccount(address, account)
   }
 
   /**
@@ -261,7 +284,10 @@ export default class ShardeumState implements StateManager {
     //side run system on the side for now
     if (this._transactionState != null) {
       if(ShardeumFlags.SaveEVMTries){
-        throw new Error('getContractCode SaveEVMTries=true not supported')
+        let testAccount = await this._transactionState.getContractCode(this._trie, address, false, false)
+        if (this.temporaryParallelOldMode === false) {
+          return testAccount
+        }
       } else {
         let testAccount = await this._transactionState.getContractCode(null, address, false, false)
         if (this.temporaryParallelOldMode === false) {
@@ -275,7 +301,13 @@ export default class ShardeumState implements StateManager {
     }
 
     throw new Error('getContractCode should never get here')
-
+    // Original implementation:
+    // const account = await this.getAccount(address)
+    // if (!account.isContract()) {
+    //   return Buffer.alloc(0)
+    // }
+    // const code = await this._trie.db.get(account.codeHash)
+    // return code ?? Buffer.alloc(0)
   }
 
   /**
@@ -284,8 +316,12 @@ export default class ShardeumState implements StateManager {
    * @private
    */
   async _lookupStorageTrie(address: Address): Promise<Trie> {
-    throw new Error('_lookupStorageTrie not impl')
-    
+    // from state trie
+    const account = await this.getAccount(address)
+    const storageTrie = this._trie.copy(false)
+    storageTrie.root = account.stateRoot
+    storageTrie.db.checkpoints = []
+    return storageTrie
   }
 
   /**
@@ -294,8 +330,14 @@ export default class ShardeumState implements StateManager {
    * @private
    */
   async _getStorageTrie(address: Address): Promise<Trie> {
-    throw new Error('_getStorageTrie not impl')
-    
+    // from storage cache
+    const addressHex = address.buf.toString('hex')
+    let storageTrie = this._storageTries[addressHex]
+    if (!storageTrie) {
+      // lookup from state
+      storageTrie = await this._lookupStorageTrie(address)
+    }
+    return storageTrie
   }
 
   /**
@@ -328,7 +370,15 @@ export default class ShardeumState implements StateManager {
     }
 
     throw new Error('getContractStorage should never get here')
+    // // Original implementation:
+    // if (key.length !== 32) {
+    //   throw new Error('Storage key must be 32 bytes long')
+    // }
 
+    // const trie = await this._getStorageTrie(address)
+    // const value = await trie.get(key)
+    // const decoded = rlp.decode(value)
+    // return decoded as Buffer
   }
 
   /**
@@ -359,7 +409,29 @@ export default class ShardeumState implements StateManager {
     }
 
     throw new Error('getOriginalContractStorage should never get here')
- 
+    // Original implementation:
+    // if (key.length !== 32) {
+    //   throw new Error('Storage key must be 32 bytes long')
+    // }
+
+    // const addressHex = address.buf.toString('hex')
+    // const keyHex = key.toString('hex')
+
+    // let map: Map<AddressHex, Buffer>
+    // if (!this._originalStorageCache.has(addressHex)) {
+    //   map = new Map()
+    //   this._originalStorageCache.set(addressHex, map)
+    // } else {
+    //   map = this._originalStorageCache.get(addressHex)!
+    // }
+
+    // if (map.has(keyHex)) {
+    //   return map.get(keyHex)!
+    // } else {
+    //   const current = await this.getContractStorage(address, key)
+    //   map.set(keyHex, current)
+    //   return current
+    // }
   }
 
   /**
@@ -367,15 +439,12 @@ export default class ShardeumState implements StateManager {
    * for more explanation.
    */
   _clearOriginalStorageCache(): void {
-    //this._originalStorageCache = new Map()
+    this._originalStorageCache = new Map()
   }
 
   /**
    * Clears the original storage cache. Refer to {@link StateManager.getOriginalContractStorage}
    * for more explanation. Alias of the internal {@link StateManager._clearOriginalStorageCache}
-   * TODO investigate this:
-   * Is there any use in clearOriginalStorageCache??
-   * 
    */
   clearOriginalStorageCache(): void {
     this._clearOriginalStorageCache()
@@ -393,6 +462,25 @@ export default class ShardeumState implements StateManager {
       throw new Error('_modifyContractStorage depricated')      
     }
 
+
+    // eslint-disable-next-line no-async-promise-executor
+    return new Promise(async resolve => {
+      const storageTrie = await this._getStorageTrie(address)
+
+      modifyTrie(storageTrie, async () => {
+        // update storage cache
+        const addressHex = address.buf.toString('hex')
+        this._storageTries[addressHex] = storageTrie
+
+        // update contract stateRoot
+        const contract = this._cache.get(address)
+        contract.stateRoot = storageTrie.root
+
+        await this.putAccount(address, contract)
+        this.touchAccount(address)
+        resolve()
+      })
+    })
   }
 
   /**
@@ -421,7 +509,28 @@ export default class ShardeumState implements StateManager {
     }
 
     throw new Error('putContractStorage should never get here')
-  
+    
+    // let oldValue = value // for debugging
+
+    // value = unpadBuffer(value) // Trims leading zeros from a Buffer.
+
+    // await this._modifyContractStorage(address, async (storageTrie, done) => {
+    //   if (value && value.length) {
+    //     // format input
+    //     const encodedValue = rlp.encode(value)
+    //     if (this.DEBUG) {
+    //       debug(`Update contract storage for account ${address} to ${short(value)}`)
+    //     }
+    //     await storageTrie.put(key, encodedValue)
+    //   } else {
+    //     // deleting a value
+    //     if (this.DEBUG) {
+    //       debug(`Delete contract storage for account`)
+    //     }
+    //     await storageTrie.del(key)
+    //   }
+    //   done()
+    // })
   }
 
   /**
@@ -450,8 +559,6 @@ export default class ShardeumState implements StateManager {
    */
   async checkpoint(): Promise<void> {
 
-    this._touchedStack.push(new Set(Array.from(this._touched)))
-
     if (this._transactionState != null) {
       this._transactionState.checkpoint()
     }
@@ -463,49 +570,71 @@ export default class ShardeumState implements StateManager {
       return // the code below will be irrelevant post SGS upgrade
     }
 
+    // is there any reason to notfiy transactionState objects of a checkpoint?
+
     throw new Error('checkpoint should never get here')
+
+    // Original implementation:
+
+    // this._trie.checkpoint()
+    // this._cache.checkpoint()
+    // this._touchedStack.push(new Set(Array.from(this._touched)))
+    // this._accessedStorage.push(new Map())
+    // this._checkpointCount++
   }
 
   /**
    * Merges a storage map into the last item of the accessed storage stack
    */
-  // private _accessedStorageMerge(storageList: Map<string, Set<string>>[], storageMap: Map<string, Set<string>>) {
-  //   const mapTarget = storageList[storageList.length - 1]
+  private _accessedStorageMerge(storageList: Map<string, Set<string>>[], storageMap: Map<string, Set<string>>) {
+    const mapTarget = storageList[storageList.length - 1]
 
-  //   if (mapTarget) {
-  //     // Note: storageMap is always defined here per definition (TypeScript cannot infer this)
-  //     storageMap?.forEach((slotSet: Set<string>, addressString: string) => {
-  //       const addressExists = mapTarget.get(addressString)
-  //       if (!addressExists) {
-  //         mapTarget.set(addressString, new Set())
-  //       }
-  //       const storageSet = mapTarget.get(addressString)
-  //       slotSet.forEach((value: string) => {
-  //         storageSet!.add(value)
-  //       })
-  //     })
-  //   }
-  // }
+    if (mapTarget) {
+      // Note: storageMap is always defined here per definition (TypeScript cannot infer this)
+      storageMap?.forEach((slotSet: Set<string>, addressString: string) => {
+        const addressExists = mapTarget.get(addressString)
+        if (!addressExists) {
+          mapTarget.set(addressString, new Set())
+        }
+        const storageSet = mapTarget.get(addressString)
+        slotSet.forEach((value: string) => {
+          storageSet!.add(value)
+        })
+      })
+    }
+  }
 
   /**
    * Commits the current change-set to the instance since the
    * last call to checkpoint.
    */
   async commit(): Promise<void> {
-    this._touchedStack.pop()
-
     //side run: shardeum will no-op this in the future
     //  investigate: will it be a problem that EVM may call this for failed functions, or does that all bubble up anyhow?
     if (this.temporaryParallelOldMode === false) {
-      if (this._transactionState != null) {
-        this._transactionState.commit()
-      }
-
       return // the code below will be irrelevant post SGS upgrade
     }
 
     throw new Error('commit should never get here')
 
+    // // Original implementation:
+    // // setup trie checkpointing
+    // await this._trie.commit()
+    // // setup cache checkpointing
+    // this._cache.commit()
+    // this._touchedStack.pop()
+    // this._checkpointCount--
+
+    // // Copy the contents of the map of the current level to a map higher.
+    // const storageMap = this._accessedStorage.pop()
+    // if (storageMap) {
+    //   this._accessedStorageMerge(this._accessedStorage, storageMap)
+    // }
+
+    // if (this._checkpointCount === 0) {
+    //   await this._cache.flush()
+    //   this._clearOriginalStorageCache()
+    // }
   }
 
   /**
@@ -514,16 +643,50 @@ export default class ShardeumState implements StateManager {
    */
   async revert(): Promise<void> {
 
+    //todo deal with touched accounts?  is there any utility to them
+
     if (this._transactionState != null) {
       this._transactionState.revert()
     }
+
 
     //side run: shardeum will no-op this in the future
     //  investigate: will it be a problem that EVM may call this for failed functions, or does that all bubble up anyhow?
     if (this.temporaryParallelOldMode === false) {
       return // the code below will be irrelevant post SGS upgrade
     }
+
+
     throw new Error('revert should never get here')
+    // // Original implementation:
+    // // setup trie checkpointing
+    // await this._trie.revert()
+    // // setup cache checkpointing
+    // this._cache.revert()
+    // this._storageTries = {}
+    // const lastItem = this._accessedStorage.pop()
+    // if (lastItem) {
+    //   this._accessedStorageReverted.push(lastItem)
+    // }
+    // const touched = this._touchedStack.pop()
+    // if (!touched) {
+    //   throw new Error('Reverting to invalid state checkpoint failed')
+    // }
+    // // Exceptional case due to consensus issue in Geth and Parity.
+    // // See [EIP issue #716](https://github.com/ethereum/EIPs/issues/716) for context.
+    // // The RIPEMD precompile has to remain *touched* even when the call reverts,
+    // // and be considered for deletion.
+    // //SHARDIUM hack disable - wont compile
+    // // if (this._touched.has(ripemdPrecompileAddress)) {
+    // //   touched.add(ripemdPrecompileAddress)
+    // // }
+    // this._touched = touched
+    // this._checkpointCount--
+
+    // if (this._checkpointCount === 0) {
+    //   await this._cache.flush()
+    //   this._clearOriginalStorageCache()
+    // }
   }
 
   /**
@@ -541,7 +704,9 @@ export default class ShardeumState implements StateManager {
       return Buffer.from([])
     }
 
-    return undefined
+    await this._cache.flush()
+    const stateRoot = this._trie.root
+    return stateRoot
   }
 
   /**
@@ -557,6 +722,24 @@ export default class ShardeumState implements StateManager {
       return
     }
 
+    // old implementation, should not need this when we use runTX and no blocks
+    // once we are sure clear this out.
+    if (this._checkpointCount !== 0) {
+      throw new Error('Cannot set state root with uncommitted checkpoints')
+    }
+
+    await this._cache.flush()
+
+    if (!stateRoot.equals(this._trie.EMPTY_TRIE_ROOT)) {
+      const hasRoot = await this._trie.checkRoot(stateRoot)
+      if (!hasRoot) {
+        throw new Error('State trie does not contain state root')
+      }
+    }
+
+    this._trie.root = stateRoot
+    this._cache.clear()
+    this._storageTries = {}
   }
 
   /**
@@ -573,6 +756,23 @@ export default class ShardeumState implements StateManager {
       return {result:'no storage when SaveEVMTries === false'}
     }
 
+    return new Promise((resolve, reject) => {
+      this._getStorageTrie(address)
+        .then(trie => {
+          const storage: StorageDump = {}
+          const stream = trie.createReadStream()
+
+          stream.on('data', (val: any) => {
+            storage[val.key.toString('hex')] = val.value.toString('hex')
+          })
+          stream.on('end', () => {
+            resolve(storage)
+          })
+        })
+        .catch(e => {
+          reject(e)
+        })
+    })
   }
 
   /**
@@ -587,7 +787,24 @@ export default class ShardeumState implements StateManager {
       // the idea was to sync all of the contract storage for a certain contract account
       throw new Error('getContractAccountKVPs not valid when SaveEVMTries === false')
     }
-    return undefined
+
+    return new Promise((resolve, reject) => {
+      this._getStorageTrie(address)
+        .then(trie => {
+          const storage: StorageDump = {}
+          const stream = trie.createReadStream()
+
+          stream.on('data', (val: any) => {
+            storage[val.key.toString('hex')] = val.value.toString('hex')
+          })
+          stream.on('end', () => {
+            resolve(storage)
+          })
+        })
+        .catch(e => {
+          reject(e)
+        })
+    })
   }
 
   /**
@@ -613,6 +830,16 @@ export default class ShardeumState implements StateManager {
   async generateCanonicalGenesis(): Promise<void> {
     //only matters if running a blockchain
     throw new Error('generateCanonicalGenesis not valid because we dont run an ethjs blockchain')
+  
+    // original
+    // if (this._checkpointCount !== 0) {
+    //   throw new Error('Cannot create genesis state with uncommitted checkpoints')
+    // }
+
+    // const genesis = await this.hasGenesisState()
+    // if (!genesis) {
+    //   await this.generateGenesis(this._common.genesisState())
+    // }
   }
 
   /**
@@ -622,6 +849,37 @@ export default class ShardeumState implements StateManager {
   async generateGenesis(initState: any): Promise<void> {
     //only matters if running a blockchain
     throw new Error('generateGenesis not valid because we dont run an ethjs blockchain')
+
+    // if (this._checkpointCount !== 0) {
+    //   throw new Error('Cannot create genesis state with uncommitted checkpoints')
+    // }
+
+    // if (this.DEBUG) {
+    //   debug(`Save genesis state into the state trie`)
+    // }
+    // const addresses = Object.keys(initState)
+    // for (const address of addresses) {
+    //   const addr = Address.fromString(address)
+    //   const state = initState[address]
+    //   if (!Array.isArray(state)) {
+    //     // Prior format: address -> balance
+    //     const account = Account.fromAccountData({ balance: state })
+    //     await this._trie.put(addr.buf, account.serialize())
+    //   } else {
+    //     // New format: address -> [balance, code, storage]
+    //     const [balance, code, storage] = state
+    //     const account = Account.fromAccountData({ balance })
+    //     await this._trie.put(addr.buf, account.serialize())
+    //     if (code) {
+    //       await this.putContractCode(addr, toBuffer(code))
+    //     }
+    //     if (storage) {
+    //       for (const [key, value] of Object.values(storage) as [string, string][]) {
+    //         await this.putContractStorage(addr, toBuffer(key), toBuffer(value))
+    //       }
+    //     }
+    //   }
+    // }
   }
 
   /**
@@ -657,13 +915,18 @@ export default class ShardeumState implements StateManager {
       return account != null //&& account.isEmpty() === false
     }
 
-    throw new Error('accountExists SaveEVMTries true not supported')
+    const account = this._cache.lookup(address)
+    if (account && !(account as any).virtual && !this._cache.keyIsDeleted(address)) {
+      return true
+    }
+    if (await this._cache._trie.get(address.buf)) {
+      return true
+    }
+    return false
   }
 
   /** EIP-2929 logic
    * This should only be called from within the EVM
-   * TODO need to push this into transaction state?
-   *   or is it light enought to leave on state manager
    */
 
   /**
@@ -799,7 +1062,6 @@ export default class ShardeumState implements StateManager {
    * as defined in EIP-161 (https://eips.ethereum.org/EIPS/eip-161).
    */
   async cleanupTouchedAccounts(): Promise<void> {
-    this._touched.clear()    
     if(ShardeumFlags.SaveEVMTries === false){
       // not sure yet if we need to implement this..
       //throw new Error('cleanupTouchedAccounts not implemented yet when SaveEVMTries === false')
@@ -807,22 +1069,20 @@ export default class ShardeumState implements StateManager {
     }
 
 
-    // TODO do we need to bring back some of this functionality?
-
-    // if (this._common.gteHardfork('spuriousDragon')) {
-    //   const touchedArray = Array.from(this._touched)
-    //   for (const addressHex of touchedArray) {
-    //     const address = new Address(Buffer.from(addressHex, 'hex'))
-    //     const empty = await this.accountIsEmpty(address)
-    //     if (empty) {
-    //       this._cache.del(address)
-    //       if (this.DEBUG) {
-    //         debug(`Cleanup touched account address=${address} (>= SpuriousDragon)`)
-    //       }
-    //     }
-    //   }
-    // }
-
+    if (this._common.gteHardfork('spuriousDragon')) {
+      const touchedArray = Array.from(this._touched)
+      for (const addressHex of touchedArray) {
+        const address = new Address(Buffer.from(addressHex, 'hex'))
+        const empty = await this.accountIsEmpty(address)
+        if (empty) {
+          this._cache.del(address)
+          if (this.DEBUG) {
+            debug(`Cleanup touched account address=${address} (>= SpuriousDragon)`)
+          }
+        }
+      }
+    }
+    this._touched.clear()
   }
 
   /**
@@ -834,9 +1094,60 @@ export default class ShardeumState implements StateManager {
       // do not need to do this work!
       return
     }
+
+    //todo needs better control over when checkpoints and commits can be made!!
+
+    let address = Address.fromString(addressString)
+    this._trie.checkpoint()
+
+    //contition the buffers to fix issues that are caused by serialization
+    TransactionState.fixUpAccountFields(account)
+
+    //account.stateRoot = Buffer.from(account.stateRoot) //handled in fixUpAccountFields
+    const accountObj = Account.fromAccountData(account)
+    const accountRlp = accountObj.serialize()
+    const accountKeyBuf = address.buf
+    await this._trie.put(accountKeyBuf, accountRlp)
+
+    await this._trie.commit()
+
+    if(ShardeumFlags.SelfTest){
+      //self test function
+      const rlp = await this._trie.get(address.buf)
+      if(rlp == null){
+        throw new Error('setAccountExternal failed to get rlp')
+      }
+      let testAccount = rlp ? Account.fromRlpSerializedAccount(rlp) : undefined
+      if(testAccount == null){
+        throw new Error('setAccountExternal failed to get testAccount')
+      }
+      TransactionState.fixUpAccountFields(testAccount)
+      let s1 = JSON.stringify(testAccount)
+      let s2 = JSON.stringify(account)
+      if(s1 != s2){
+        throw new Error(`setAccountExternal s1 != s2  \n\n  ${s1}   \n\n  ${s2}`)
+      }      
+    }
   }
 
+  async _getOrCreateStorageTrie(stateRoot: Buffer, address: Address): Promise<Trie> {
+    // from storage cache
+    const addressHex = address.buf.toString('hex')
+    let storageTrie = this._storageTries[addressHex]
+    if (!storageTrie) {
+      // lookup from state
+      storageTrie = await this._createStorageTrie(stateRoot, address)
+    }
+    return storageTrie
+  }
 
+  async _createStorageTrie(stateRoot: Buffer, address: Address): Promise<Trie> {
+    // from state trie
+    const storageTrie = this._trie.copy(false)
+    storageTrie.root = stateRoot
+    storageTrie.db.checkpoints = []
+    return storageTrie
+  }
 
   /**
    * For use by the shardeum Dapp to set account data from syncing
@@ -847,6 +1158,33 @@ export default class ShardeumState implements StateManager {
       return
     }
 
+
+    let address = Address.fromString(addressString)
+
+    // const account = await this.getAccount(address)
+    // if()
+    //Trie.e
+    //this.EMPTY_TRIE_ROOT = ethereumjs_util_1.KECCAK256_RLP;
+
+    let storageTrie = await this._getOrCreateStorageTrie(KECCAK256_RLP, address)
+
+    //put trie in storage tries..
+    const addressHex = address.buf.toString('hex')
+    this._storageTries[addressHex] = storageTrie
+
+    //what if storage trie was just created?
+    storageTrie.checkpoint()
+
+    //moved this code to fixDeserializedWrappedEVMAccount()
+    //contition the buffers to fix issues that are caused by serialization
+    // key = Buffer.from(key)
+    // value = Buffer.from(value)
+
+    await storageTrie.put(key, value)
+
+    await storageTrie.commit()
+
+    //UPDATE CA?
   }
 
   /**
@@ -857,5 +1195,18 @@ export default class ShardeumState implements StateManager {
       // do not need to do this work!
       return
     }
+
+    //let address = Address.fromString(addressString)
+
+    this._trie.checkpoint()
+
+    //moved this code to fixDeserializedWrappedEVMAccount()
+    //contition the buffers to fix issues that are caused by serialization
+    // codeHash = Buffer.from(codeHash)
+    // codeByte = Buffer.from(codeByte)
+
+    await this._trie.db.put(codeHash, codeByte)
+
+    await this._trie.commit()
   }
 }
