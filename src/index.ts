@@ -676,11 +676,11 @@ function getCallTXState(from: string, to: string): ShardeumState {
 }
 
 function getApplyTXState(txId:string): ShardeumState{
-  let shardeumState = null
-  let transactionState = shardeumStateTXMap.get(txId)
-  if (transactionState == null) {
+  
+  let shardeumState = shardeumStateTXMap.get(txId)
+  if (shardeumState == null) {
 
-    let shardeumState = new ShardeumState({ common:evmCommon })
+    shardeumState = new ShardeumState({ common:evmCommon })
     let transactionState = new TransactionState()
     transactionState.initData(
       shardeumState,
