@@ -79,8 +79,8 @@ config = merge(config, {
       minNodesToAllowTxs: 1,
       minNodes: process.env.minNodes ? parseInt(process.env.minNodes) : 300,
       maxNodes: 300,
-      maxJoinedPerCycle: 4,
-      maxSyncingPerCycle: 8, 
+      maxJoinedPerCycle: 2,
+      maxSyncingPerCycle: 2, 
       maxRotatedPerCycle: process.env.maxRotatedPerCycle ? parseInt(process.env.maxRotatedPerCycle) : 1,
       firstCycleJoin: 1,
       maxSyncTimeFloor: 18000,
@@ -114,7 +114,7 @@ config = merge(config, {
 config = merge(config, {
   server: {
     sharding: {
-      nodesPerConsensusGroup: process.env.nodesPerConsensusGroup ? parseInt(process.env.nodesPerConsensusGroup) : 5,
+      nodesPerConsensusGroup: process.env.nodesPerConsensusGroup ? parseInt(process.env.nodesPerConsensusGroup) : 50,
       executeInOneShard: true
     },
     stateManager: {
@@ -137,7 +137,7 @@ config = merge(
   config,
   {
     server: {
-      mode: 'release', //TODO must set this to release for public networks or get security on endpoints
+      mode: 'debug', //TODO must set this to release for public networks or get security on endpoints
       debug: {
         startInFatalsLogMode: false, // true setting good for big aws test with nodes joining under stress.
         startInErrorLogMode: true,
