@@ -16,7 +16,7 @@ export interface LoadReport {
   fatal: boolean
 }
 
-let oneJsonAccountPerLine = false
+let oneJsonAccountPerLine = true
 
 export async function loadAccountDataFromDB(shardus: any, options: LoadOptions): Promise<LoadReport> {
   let report: LoadReport = {
