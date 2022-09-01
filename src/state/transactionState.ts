@@ -44,6 +44,7 @@ export default class TransactionState {
   // account data
   firstAccountReads: Map<string, Buffer>
   allAccountWrites: Map<string, Buffer>
+  committedAccountWrites: Map<string, Buffer>
 
   allAccountWritesStack: Map<string, Buffer>[]
 
@@ -78,6 +79,7 @@ export default class TransactionState {
   resetTransactionState() {
     this.firstAccountReads = new Map()
     this.allAccountWrites = new Map()
+    this.committedAccountWrites = new Map()
 
     this.firstContractStorageReads = new Map()
     this.allContractStorageWrites = new Map()
@@ -115,6 +117,7 @@ export default class TransactionState {
 
     this.firstAccountReads = new Map()
     this.allAccountWrites = new Map()
+    this.committedAccountWrites = new Map()
     this.allAccountWritesStack = []
 
     this.firstContractStorageReads = new Map()
@@ -146,20 +149,25 @@ export default class TransactionState {
 
     //flatten accounts maps. from newest to oldest in our stack (newest has the highest array index)
     //only update values if there is not an existing newer value!!
-    for(let i=this.allAccountWritesStack.length-1; i>=0; i--){
-      let accountWrites = this.allAccountWritesStack[i]
-      //process all the values in the stack
-      for(let [key,value] of accountWrites.entries()){
-        //if our flattened list does not have the value yet
-        if (this.allAccountWrites.has(key) === false) {
-          //then flatten the value from the stack into it
-          this.allAccountWrites.set(key,value)
-        }
-      }
-    }
+
+
+
+    // for(let i=this.allAccountWritesStack.length-1; i>=0; i--){
+    //   let accountWrites = this.allAccountWritesStack[i]
+    //   //process all the values in the stack
+    //   for(let [key,value] of accountWrites.entries()){
+    //     //if our flattened list does not have the value yet
+    //     if (this.allAccountWrites.has(key) === false) {
+    //       //then flatten the value from the stack into it
+    //       this.allAccountWrites.set(key,value)
+    //     }
+    //   }
+    // }
 
     //let the apply function take care of wrapping these accounts?
-    return { accounts: this.allAccountWrites, contractStorages: this.allContractStorageWrites, contractBytes: this.allContractBytesWrites }
+    //return { accounts: this.allAccountWrites, contractStorages: this.allContractStorageWrites, contractBytes: this.allContractBytesWrites }
+
+    return { accounts: this.committedAccountWrites, contractStorages: this.allContractStorageWrites, contractBytes: this.allContractBytesWrites }
   }
 
   getTransferBlob() {
@@ -794,9 +802,52 @@ export default class TransactionState {
 
     this.allAccountWrites = new Map()
 
-
+    //this.canCommit = true
   }
 
+  commit(){
+    if(ShardeumFlags.CheckpointRevertSupport === false){
+      return
+    }
+    
+    // can use this se we only commit once until there is another checkpoint?
+    // if(this.canCommit === false){
+    //   //todo log this
+    //   return
+    // }
+    // this.canCommit = false
+
+    let allAtOnce = false
+
+    // THIS version commits all in one go /////////////////
+    //I think it is best to clear this. this will allow the newest values to get in
+    //this does make some assumptions about how many times commit is called though..
+    //@ts-ignore
+    if(allAtOnce === true){
+      this.committedAccountWrites.clear()
+      for(let i=this.allAccountWritesStack.length-1; i>=0; i--){
+        let accountWrites = this.allAccountWritesStack[i]
+        //process all the values in the stack
+        for(let [key,value] of accountWrites.entries()){
+          //if our flattened list does not have the value yet
+          if (this.committedAccountWrites.has(key) === false) {
+            //then flatten the value from the stack into it
+            this.committedAccountWrites.set(key,value)
+          }
+        }
+      }      
+    } else {
+      // this version commits one layer at a time ///// 
+      let accountWrites = this.allAccountWritesStack.pop()
+      for(let [key,value] of accountWrites.entries()){
+        //if our flattened list does not have the value yet
+        if (this.committedAccountWrites.has(key) === false) {
+          //then flatten the value from the stack into it
+          this.committedAccountWrites.set(key,value)
+        }
+      }      
+    }
+  }
   revert(){
     if(ShardeumFlags.CheckpointRevertSupport === false){
       return
@@ -805,7 +856,8 @@ export default class TransactionState {
     //we need checkpoint / revert stack support for accounts so that gas is handled correctly
 
     //the top of the stack becomes our base level set of values.
-    this.allAccountWrites = this.allAccountWritesStack.pop()
+    //this.allAccountWrites = this.allAccountWritesStack.pop()
+    this.allAccountWritesStack.pop()
 
     //other saved values do not need a stack and are simply cleared:
     //this.allAccountWrites.clear()

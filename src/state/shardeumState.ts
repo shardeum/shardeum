@@ -601,6 +601,10 @@ export default class ShardeumState implements StateManager {
     //side run: shardeum will no-op this in the future
     //  investigate: will it be a problem that EVM may call this for failed functions, or does that all bubble up anyhow?
     if (this.temporaryParallelOldMode === false) {
+      if (this._transactionState != null) {
+        this._transactionState.commit()
+      }
+
       return // the code below will be irrelevant post SGS upgrade
     }
 
