@@ -849,7 +849,11 @@ export default class TransactionState {
 
       //If this turns out to be the correct way to handle things, then we may want to do them in 
       //a less hacky way.
-      this.checkpoint()
+      //this.checkpoint()
+
+      this.allAccountWritesStack.push(this.allAccountWrites)
+
+      this.allAccountWrites = new Map()
     }
 
 
