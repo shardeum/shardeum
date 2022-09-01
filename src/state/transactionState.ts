@@ -817,13 +817,29 @@ export default class TransactionState {
     // }
     // this.canCommit = false
 
+    let preCheckpointLogic = false
+    
+    
+    if(preCheckpointLogic){
+      
+      //this is kind of strange, but if checkpoints represent the start of a set of changes,
+      // then the way the rest of things work by putting currne changes in allAccountWrites
+      // we need to actually make allAccountWrites be the top of the stack.
+
+      //If this turns out to be the correct way to handle things, then we may want to do them in 
+      //a less hacky way.
+      this.checkpoint()
+    }
+
+
+
     let allAtOnce = false
 
     // THIS version commits all in one go /////////////////
     //I think it is best to clear this. this will allow the newest values to get in
     //this does make some assumptions about how many times commit is called though..
-    //@ts-ignore
-    if(allAtOnce === true){
+    
+    if(allAtOnce){
       this.committedAccountWrites.clear()
       for(let i=this.allAccountWritesStack.length-1; i>=0; i--){
         let accountWrites = this.allAccountWritesStack[i]
