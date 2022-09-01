@@ -377,9 +377,9 @@ export default class TransactionState {
           let storedRlp = accountWrites.get(addressString)
           account = storedRlp ? Account.fromRlpSerializedAccount(storedRlp) : undefined
           if (this.debugTrace) this.debugTraceLog(`getAccount:(allAccountWritesStack-skipped) addr:${addressString} balance:${account?.balance} nonce:${account?.nonce}`)
-          //return account
+          return account
           //ignore but log this find
-          break
+          //break
         }
       }
     }
