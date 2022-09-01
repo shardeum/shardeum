@@ -817,7 +817,7 @@ export default class TransactionState {
     // }
     // this.canCommit = false
 
-    let preCheckpointLogic = false
+    let preCheckpointLogic = true
     
     
     if(preCheckpointLogic){
@@ -863,6 +863,9 @@ export default class TransactionState {
         }
       }      
     }
+
+    //not 100% sure if we should do this...
+    //this.allAccountWrites.clear()
   }
   revert(){
     if(ShardeumFlags.CheckpointRevertSupport === false){
@@ -874,6 +877,7 @@ export default class TransactionState {
     //the top of the stack becomes our base level set of values.
     //this.allAccountWrites = this.allAccountWritesStack.pop()
     this.allAccountWritesStack.pop()
+    this.allAccountWrites.clear()
 
     //other saved values do not need a stack and are simply cleared:
     //this.allAccountWrites.clear()
