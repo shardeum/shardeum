@@ -340,7 +340,7 @@ export default class TransactionState {
 
   async getAccount(worldStateTrie: Trie, address: Address, originalOnly: boolean, canThrow: boolean): Promise<Account> {
     const addressString = address.toString()
-
+    let account:Account
     if (ShardeumFlags.Virtual0Address && addressString === zeroAddressStr) {
       return zeroAddressAccount
     }
@@ -349,7 +349,11 @@ export default class TransactionState {
       //first check our map as these are the most current account values
       if (this.allAccountWrites.has(addressString)) {
         let storedRlp = this.allAccountWrites.get(addressString)
-        return storedRlp ? Account.fromRlpSerializedAccount(storedRlp) : undefined
+        
+        account = storedRlp ? Account.fromRlpSerializedAccount(storedRlp) : undefined
+
+        if (this.debugTrace) this.debugTraceLog(`getAccount:(allAccountWrites) addr:${addressString} balance:${account?.balance} nonce:${account?.nonce}`)
+        return account
       }
 
       //check stack for changes next.  from newest to oldest
@@ -358,13 +362,17 @@ export default class TransactionState {
         let accountWrites = this.allAccountWritesStack[i]
         if (accountWrites.has(addressString)) {
           let storedRlp = accountWrites.get(addressString)
-          return storedRlp ? Account.fromRlpSerializedAccount(storedRlp) : undefined
+          account = storedRlp ? Account.fromRlpSerializedAccount(storedRlp) : undefined
+          if (this.debugTrace) this.debugTraceLog(`getAccount:(allAccountWritesStack) addr:${addressString} balance:${account?.balance} nonce:${account?.nonce}`)
+          return account
         }
       }
     }
     if (this.firstAccountReads.has(addressString)) {
       let storedRlp = this.firstAccountReads.get(addressString)
-      return storedRlp ? Account.fromRlpSerializedAccount(storedRlp) : undefined
+      account = storedRlp ? Account.fromRlpSerializedAccount(storedRlp) : undefined
+      if (this.debugTrace) this.debugTraceLog(`getAccount:(firstAccountReads) addr:${addressString} balance:${account?.balance} nonce:${account?.nonce}`)
+      return account
     }
 
     if (this.accountInvolvedCB(this, addressString, true) === false) {
@@ -372,7 +380,7 @@ export default class TransactionState {
     }
 
     let storedRlp: Buffer
-    let account:Account
+
 
 
     if(ShardeumFlags.SaveEVMTries){
@@ -396,6 +404,8 @@ export default class TransactionState {
       if(account != null){
         storedRlp = account.serialize()
       }
+
+      if (this.debugTrace) this.debugTraceLog(`getAccount:(AccountsStorage) addr:${addressString} balance:${account?.balance} nonce:${account?.nonce}`)
     }
 
     //attempt to get data from tryGetRemoteAccountCB
@@ -406,6 +416,8 @@ export default class TransactionState {
         //get account aout of the wrapped evm account 
         account = wrappedEVMAccount.account
         storedRlp = account.serialize()
+
+        if (this.debugTrace) this.debugTraceLog(`getAccount:(tryGetRemoteAccountCB) addr:${addressString} balance:${account?.balance} nonce:${account?.nonce}`)
       }
     }
 
