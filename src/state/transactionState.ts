@@ -352,12 +352,19 @@ export default class TransactionState {
     }
 
     if (originalOnly === false) {
+
+      if(this.committedAccountWrites.has(addressString)){
+        let storedRlp = this.allAccountWrites.get(addressString)
+        account = storedRlp ? Account.fromRlpSerializedAccount(storedRlp) : undefined
+        if (this.debugTrace) this.debugTraceLog(`getAccount:(committedAccountWrites) addr:${addressString} balance:${account?.balance} nonce:${account?.nonce}`)
+        return account
+      }
+
+
       //first check our map as these are the most current account values
       if (this.allAccountWrites.has(addressString)) {
         let storedRlp = this.allAccountWrites.get(addressString)
-        
         account = storedRlp ? Account.fromRlpSerializedAccount(storedRlp) : undefined
-
         if (this.debugTrace) this.debugTraceLog(`getAccount:(allAccountWrites) addr:${addressString} balance:${account?.balance} nonce:${account?.nonce}`)
         return account
       }
@@ -369,8 +376,10 @@ export default class TransactionState {
         if (accountWrites.has(addressString)) {
           let storedRlp = accountWrites.get(addressString)
           account = storedRlp ? Account.fromRlpSerializedAccount(storedRlp) : undefined
-          if (this.debugTrace) this.debugTraceLog(`getAccount:(allAccountWritesStack) addr:${addressString} balance:${account?.balance} nonce:${account?.nonce}`)
-          return account
+          if (this.debugTrace) this.debugTraceLog(`getAccount:(allAccountWritesStack-skipped) addr:${addressString} balance:${account?.balance} nonce:${account?.nonce}`)
+          //return account
+          //ignore but log this find
+          break
         }
       }
     }
@@ -858,12 +867,53 @@ export default class TransactionState {
 
 
 
-    let allAtOnce = false
+
 
     // THIS version commits all in one go /////////////////
     //I think it is best to clear this. this will allow the newest values to get in
     //this does make some assumptions about how many times commit is called though..
     
+    this.checkpointCount--
+    if (this.debugTrace) this.debugTraceLog(`checkpointCount:${this.checkpointCount} commit `)
+
+    if(this.checkpointCount === 0){
+      this.flushToCommittedValues()
+    }
+
+
+    //not 100% sure if we should do this...
+    //this.allAccountWrites.clear()
+
+
+  }
+  revert(){
+    if(ShardeumFlags.CheckpointRevertSupport === false){
+      return
+    }
+
+    //we need checkpoint / revert stack support for accounts so that gas is handled correctly
+
+    //the top of the stack becomes our base level set of values.
+    //this.allAccountWrites = this.allAccountWritesStack.pop()
+
+    this.allAccountWrites = this.allAccountWritesStack.pop()
+    this.allAccountWrites.clear()
+
+    //other saved values do not need a stack and are simply cleared:
+    //this.allAccountWrites.clear()
+    this.allContractStorageWrites.clear()
+    this.allContractBytesWritesByAddress.clear()
+
+    this.checkpointCount--
+    if (this.debugTrace) this.debugTraceLog(`checkpointCount:${this.checkpointCount} revert `)
+    if(this.checkpointCount === 0){
+      this.flushToCommittedValues()
+    }
+
+  }
+
+  flushToCommittedValues(){
+    let allAtOnce = false
     if(allAtOnce){
       this.committedAccountWrites.clear()
       for(let i=this.allAccountWritesStack.length-1; i>=0; i--){
@@ -887,34 +937,7 @@ export default class TransactionState {
           this.committedAccountWrites.set(key,value)
         }
       }      
-    }
-
-    //not 100% sure if we should do this...
-    //this.allAccountWrites.clear()
-
-    this.checkpointCount--
-    if (this.debugTrace) this.debugTraceLog(`checkpointCount:${this.checkpointCount} commit `)
-  }
-  revert(){
-    if(ShardeumFlags.CheckpointRevertSupport === false){
-      return
-    }
-
-    //we need checkpoint / revert stack support for accounts so that gas is handled correctly
-
-    //the top of the stack becomes our base level set of values.
-    //this.allAccountWrites = this.allAccountWritesStack.pop()
-    this.allAccountWritesStack.pop()
-    this.allAccountWrites.clear()
-
-    //other saved values do not need a stack and are simply cleared:
-    //this.allAccountWrites.clear()
-    this.allContractStorageWrites.clear()
-    this.allContractBytesWritesByAddress.clear()
-
-    this.checkpointCount--
-
-    if (this.debugTrace) this.debugTraceLog(`checkpointCount:${this.checkpointCount} revert `)
+    }      
 
   }
 
