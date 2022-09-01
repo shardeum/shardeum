@@ -68,6 +68,8 @@ export default class TransactionState {
 
   createdTimestamp: number
 
+  checkpointCount: number
+
   // callbacks
   accountMissCB: accountEvent
   contractStorageMissCB: contractStorageEvent
@@ -92,6 +94,8 @@ export default class TransactionState {
     this.pendingContractBytesCommits = new Map()
 
     this.touchedCAs = new Set()
+
+    this.checkpointCount = 0
   }
 
   initData(
@@ -143,6 +147,8 @@ export default class TransactionState {
     }
 
     this.debugTrace = true
+
+    this.checkpointCount = 0
   }
 
   getWrittenAccounts() {
@@ -815,6 +821,9 @@ export default class TransactionState {
     this.allAccountWrites = new Map()
 
     //this.canCommit = true
+    this.checkpointCount++
+
+    if (this.debugTrace) this.debugTraceLog(`checkpointCount:${this.checkpointCount} checkpoint `)
   }
 
   commit(){
@@ -878,6 +887,9 @@ export default class TransactionState {
 
     //not 100% sure if we should do this...
     //this.allAccountWrites.clear()
+
+    this.checkpointCount--
+    if (this.debugTrace) this.debugTraceLog(`checkpointCount:${this.checkpointCount} commit `)
   }
   revert(){
     if(ShardeumFlags.CheckpointRevertSupport === false){
@@ -895,6 +907,10 @@ export default class TransactionState {
     //this.allAccountWrites.clear()
     this.allContractStorageWrites.clear()
     this.allContractBytesWritesByAddress.clear()
+
+    this.checkpointCount--
+
+    if (this.debugTrace) this.debugTraceLog(`checkpointCount:${this.checkpointCount} revert `)
 
   }
 
