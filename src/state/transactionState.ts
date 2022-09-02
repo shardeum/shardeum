@@ -495,6 +495,9 @@ export default class TransactionState {
     if(this.allAccountWritesStack.length > 0){
       let accountWrites = this.allAccountWritesStack[this.allAccountWritesStack.length-1]
       accountWrites.set(addressString, storedRlp)      
+    } else {
+      //if we are not using checkpoints then use this data to set first account reads
+      this.firstAccountReads.set(addressString, storedRlp)
     }
 
   }
