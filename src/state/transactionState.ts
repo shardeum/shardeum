@@ -847,6 +847,7 @@ export default class TransactionState {
     this.checkpointCount++
 
     if (this.debugTrace) this.debugTraceLog(`checkpointCount:${this.checkpointCount} checkpoint `)
+    if (this.debugTrace) console.log('checkpoint: allAccountWritesStack', this.logAccountWritesStack(this.allAccountWritesStack))
   }
 
   commit(){
@@ -899,10 +900,10 @@ export default class TransactionState {
       for(let [key,value] of accountWrites.entries()){
         newTop.set(key,value)
       }
-      
+      if (this.debugTrace) console.log('commit: updated allAccountWritesStack', this.logAccountWritesStack(this.allAccountWritesStack))
     } else if(this.checkpointCount === 0){
+      if (this.debugTrace) console.log('commit: allAccountWritesStack', this.logAccountWritesStack(this.allAccountWritesStack))
       this.flushToCommittedValues()
-
     }
 
 
@@ -931,6 +932,7 @@ export default class TransactionState {
 
     this.checkpointCount--
     if (this.debugTrace) this.debugTraceLog(`checkpointCount:${this.checkpointCount} revert `)
+    if (this.debugTrace) console.log('revert: allAccountWritesStack', this.logAccountWritesStack(this.allAccountWritesStack))
     if(this.checkpointCount === 0){
 
       //I think this is just supposed to tell the cache(if we had one) to save values to the trie
@@ -942,6 +944,7 @@ export default class TransactionState {
   }
 
   flushToCommittedValues(){
+    if (this.debugTrace) this.debugTraceLog(`Flushing the allAccountWritesStack to committedAccountWrites`)
     let allAtOnce = false
     if(allAtOnce){
       this.committedAccountWrites.clear()
@@ -969,6 +972,27 @@ export default class TransactionState {
     }      
 
   }
+
+    logAccountWrites(accountWrites: Map<string, Buffer>) {
+        let resultMap = new Map()
+        for (const [key, value] of accountWrites.entries()) {
+            let readableAccount: Account = Account.fromRlpSerializedAccount(value)
+            let account: any = {}
+            account.nonce = readableAccount.nonce.toString()
+            account.balance = readableAccount.balance.toString()
+            resultMap.set(key, account)
+        }
+        return resultMap
+    }
+
+    logAccountWritesStack(accountWritesStack: Map<string, Buffer>[]) {
+        let resultStack = []
+        for (let accountWrites of accountWritesStack) {
+            let readableAccountWrites = this.logAccountWrites(accountWrites)
+            resultStack.push(readableAccountWrites)
+        }
+        return resultStack
+    }
 
 
 }
