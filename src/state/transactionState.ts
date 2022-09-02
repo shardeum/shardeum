@@ -352,15 +352,6 @@ export default class TransactionState {
     }
 
     if (originalOnly === false) {
-
-      if(this.committedAccountWrites.has(addressString)){
-        let storedRlp = this.allAccountWrites.get(addressString)
-        account = storedRlp ? Account.fromRlpSerializedAccount(storedRlp) : undefined
-        if (this.debugTrace) this.debugTraceLog(`getAccount:(committedAccountWrites) addr:${addressString} balance:${account?.balance} nonce:${account?.nonce}`)
-        return account
-      }
-
-
       //first check our map as these are the most current account values
       if (this.allAccountWrites.has(addressString)) {
         let storedRlp = this.allAccountWrites.get(addressString)
@@ -383,6 +374,18 @@ export default class TransactionState {
         }
       }
     }
+
+    //check this before first reads
+    //this is allowed even when originalOnly==-true because 
+    //when checkpoints === 0 in ethereumJS it clears original storage
+    //maybe this is moot for accounts, but this can be an example for contract storage.
+    if(this.committedAccountWrites.has(addressString)){
+      let storedRlp = this.committedAccountWrites.get(addressString)
+      account = storedRlp ? Account.fromRlpSerializedAccount(storedRlp) : undefined
+      if (this.debugTrace) this.debugTraceLog(`getAccount:(committedAccountWrites) addr:${addressString} balance:${account?.balance} nonce:${account?.nonce}`)
+      return account
+    }
+
     if (this.firstAccountReads.has(addressString)) {
       let storedRlp = this.firstAccountReads.get(addressString)
       account = storedRlp ? Account.fromRlpSerializedAccount(storedRlp) : undefined
@@ -486,7 +489,14 @@ export default class TransactionState {
 
     if (this.debugTrace) this.debugTraceLog(`putAccount: addr:${addressString} v:${JSON.stringify(accountObj)}`)
 
-    this.allAccountWrites.set(addressString, storedRlp)
+    //this.allAccountWrites.set(addressString, storedRlp)
+
+    //this.checkpoints[this.checkpoints.length - 1]
+    if(this.allAccountWritesStack.length > 0){
+      let accountWrites = this.allAccountWritesStack[this.allAccountWritesStack.length-1]
+      accountWrites.set(addressString, storedRlp)      
+    }
+
   }
 
   insertFirstAccountReads(address: Address, account: Account) {
@@ -825,7 +835,8 @@ export default class TransactionState {
     }
 
     //we need checkpoint / revert stack support for accounts so that gas is handled correctly
-    this.allAccountWritesStack.push(this.allAccountWrites)
+    //this.allAccountWritesStack.push(this.allAccountWrites)
+    this.allAccountWritesStack.push(new Map<string,Buffer>())
 
     this.allAccountWrites = new Map()
 
@@ -847,25 +858,25 @@ export default class TransactionState {
     // }
     // this.canCommit = false
 
-    let preCheckpointLogic = true
+    // let preCheckpointLogic = true
     
     
-    if(preCheckpointLogic){
+    // if(preCheckpointLogic){
       
-      //this is kind of strange, but if checkpoints represent the start of a set of changes,
-      // then the way the rest of things work by putting currne changes in allAccountWrites
-      // we need to actually make allAccountWrites be the top of the stack.
+    //   //this is kind of strange, but if checkpoints represent the start of a set of changes,
+    //   // then the way the rest of things work by putting currne changes in allAccountWrites
+    //   // we need to actually make allAccountWrites be the top of the stack.
 
-      //If this turns out to be the correct way to handle things, then we may want to do them in 
-      //a less hacky way.
-      //this.checkpoint()
+    //   //If this turns out to be the correct way to handle things, then we may want to do them in 
+    //   //a less hacky way.
+    //   //this.checkpoint()
 
-      this.allAccountWritesStack.push(this.allAccountWrites)
+    //   this.allAccountWritesStack.push(this.allAccountWrites)
 
-      this.allAccountWrites = new Map()
-    }
+    //   this.allAccountWrites = new Map()
+    // }
 
-
+    
 
 
 
@@ -876,8 +887,19 @@ export default class TransactionState {
     this.checkpointCount--
     if (this.debugTrace) this.debugTraceLog(`checkpointCount:${this.checkpointCount} commit `)
 
-    if(this.checkpointCount === 0){
+
+    if(this.checkpointCount > 0){
+      //pop the top checkpoint
+      let accountWrites = this.allAccountWritesStack.pop()
+      let newTop = this.allAccountWritesStack[this.allAccountWritesStack.length - 1]
+      //flatten these values to the new top
+      for(let [key,value] of accountWrites.entries()){
+        newTop.set(key,value)
+      }
+      
+    } else if(this.checkpointCount === 0){
       this.flushToCommittedValues()
+
     }
 
 
@@ -907,7 +929,11 @@ export default class TransactionState {
     this.checkpointCount--
     if (this.debugTrace) this.debugTraceLog(`checkpointCount:${this.checkpointCount} revert `)
     if(this.checkpointCount === 0){
-      this.flushToCommittedValues()
+
+      //I think this is just supposed to tell the cache(if we had one) to save values to the trie
+      // how does that apply to what we have given that we have no cache.
+
+      //this.flushToCommittedValues()
     }
 
   }
