@@ -635,7 +635,9 @@ async function manuallyCreateAccount(ethAccountID: string, balance = defaultBala
   let shardusAccountID = toShardusAddress(ethAccountID, AccountType.Account)
 
   let debugTXState = getDebugTXState() //this isn't so great..
+  debugTXState.checkpoint()  
   let newAccount = await createAccount(ethAccountID, debugTXState, balance)
+  debugTXState.commit() 
 
   if (ShardeumFlags.temporaryParallelOldMode === false) {
     let { accounts: accountWrites, contractStorages: contractStorageWrites, contractBytes: contractBytesWrites } = debugTXState.getWrittenAccounts()
@@ -647,9 +649,11 @@ async function manuallyCreateAccount(ethAccountID: string, balance = defaultBala
       let accountObj = Account.fromRlpSerializedAccount(account[1])
 
       let ethAccount = accountObj
+      //I think this only matters for ETH trie
       debugTXState.commitAccount(addressStr, ethAccount) //yikes this wants an await.
     }
   }
+  
 
   if (ShardeumFlags.VerboseLogs) console.log('Tester account created', newAccount)
   const address = Address.fromString(ethAccountID)
