@@ -102,7 +102,7 @@ config = merge(config, {
       }
     },
     loadDetection: {
-      queueLimit: 200, //200 would be ideal at 25 tps but lowering it for now as we find the right network size
+      queueLimit: 130, //use 200 for multi shard networks.  100-130 for single shard networks
       desiredTxTime: 15,
       highThreshold: 0.5,
       lowThreshold: 0.2
@@ -118,7 +118,7 @@ config = merge(config, {
       executeInOneShard: true
     },
     stateManager: {
-      accountBucketSize: 200 //25
+      accountBucketSize: 200 //25  //we need to re-test with higher numbers after some recent improvements
     }
   }
 })
@@ -137,7 +137,7 @@ config = merge(
   config,
   {
     server: {
-      mode: 'debug', //TODO must set this to release for public networks or get security on endpoints
+      mode: 'release', //TODO must set this to release for public networks or get security on endpoints
       debug: {
         startInFatalsLogMode: false, // true setting good for big aws test with nodes joining under stress.
         startInErrorLogMode: true,
