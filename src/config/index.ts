@@ -102,7 +102,7 @@ config = merge(config, {
       }
     },
     loadDetection: {
-      queueLimit: 130, //use 200 for multi shard networks.  100-130 for single shard networks
+      queueLimit: 200, //use 200 for multi shard networks.  100-130 for single shard networks
       desiredTxTime: 15,
       highThreshold: 0.5,
       lowThreshold: 0.2
