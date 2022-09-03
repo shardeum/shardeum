@@ -79,8 +79,8 @@ config = merge(config, {
       minNodesToAllowTxs: 1,
       minNodes: process.env.minNodes ? parseInt(process.env.minNodes) : 300,
       maxNodes: 300,
-      maxJoinedPerCycle: 2,
-      maxSyncingPerCycle: 2, 
+      maxJoinedPerCycle: 4,
+      maxSyncingPerCycle: 8, 
       maxRotatedPerCycle: process.env.maxRotatedPerCycle ? parseInt(process.env.maxRotatedPerCycle) : 1,
       firstCycleJoin: 0,
       maxSyncTimeFloor: 18000,
@@ -114,7 +114,7 @@ config = merge(config, {
 config = merge(config, {
   server: {
     sharding: {
-      nodesPerConsensusGroup: process.env.nodesPerConsensusGroup ? parseInt(process.env.nodesPerConsensusGroup) : 50,
+      nodesPerConsensusGroup: process.env.nodesPerConsensusGroup ? parseInt(process.env.nodesPerConsensusGroup) : 5,
       executeInOneShard: true
     },
     stateManager: {
