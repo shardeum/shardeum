@@ -750,7 +750,6 @@ async function manuallyCreateAccount(ethAccountID: string, balance = defaultBala
   }
   WrappedEVMAccountFunctions.updateEthAccountHash(wrappedEVMAccount)
   return {accountId: shardusAccountID, wrappedEVMAccount, cycle: latestCycles[0]}
-  shardeumStateManager.unsetTransactionState(debugTXState.linkedTX)
 }
 
 function _containsProtocol(url: string) {
@@ -2334,7 +2333,7 @@ shardus.setup({
         }
       }
 
-      if (ShardeumFlags.VerboseLogs) console.log('DBG: all account writes', transactionState.logAccountWrites(accountWrites))
+      if (ShardeumFlags.VerboseLogs) console.log('DBG: all account writes', shardeumState._transactionState.logAccountWrites(accountWrites))
 
       // Handle Account type last, because CAs may depend on CA:Storage or CA:Bytecode updates
       //wrap these accounts and keys up and add them to the applyResponse as additional involved accounts
