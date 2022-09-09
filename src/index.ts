@@ -732,7 +732,7 @@ async function manuallyCreateAccount(ethAccountID: string, balance = defaultBala
 
   if (ShardeumFlags.VerboseLogs) console.log('Tester account created', newAccount)
   const address = Address.fromString(ethAccountID)
-  let account = await EVM.stateManager.getAccount(address)
+  let account = await debugTXState.getAccount(address)
 
   let cycleStart = 0
   let latestCycles = shardus.getLatestCycles()
@@ -1214,7 +1214,7 @@ shardus.registerExternalPost('contract/call', async (req, res) => {
     //@ts-ignore
     EVM.stateManager = null
     //@ts-ignore
-    EVM.stateManager = shardeumStateManager
+    EVM.stateManager = callTxState
     const callResult = await EVM.runCall(opt)
     //shardeumStateManager.unsetTransactionState(callTxState.linkedTX)
     if (ShardeumFlags.VerboseLogs) console.log('Call Result', callResult.execResult.returnValue.toString('hex'))
@@ -2108,7 +2108,7 @@ shardus.setup({
         //@ts-ignore
         EVM.stateManager = null
         //@ts-ignore
-        EVM.stateManager = shardeumStateManager
+        EVM.stateManager = shardeumState
         runTxResult = await EVM.runTx({ block: blockForTx, tx: transaction, skipNonce: !ShardeumFlags.CheckNonce })
         if (ShardeumFlags.VerboseLogs) console.log('runTxResult', txId, runTxResult)
       } catch (e) {
