@@ -1910,7 +1910,7 @@ shardus.setup({
 
     return response
   },
-  validateTxnFields(timestampedTx) {
+  validateTxnFields(timestampedTx, appData: any) {
     let { tx } = timestampedTx
     let txnTimestamp: number = getInjectedOrGeneratedTimestamp(timestampedTx)
 
@@ -1978,6 +1978,11 @@ shardus.setup({
       } else {
         reason = 'Transaction is not signed or signature is not valid'
       }
+
+      if (txObj.nonce.toNumber() < appData.nonce) {
+        success = false
+        reason = 'Transaction has lower nonce than the account nonce in the network'
+      }
     } catch (e) {
       if (ShardeumFlags.VerboseLogs) console.log('validate error', e)
       success = false
@@ -1986,8 +1991,7 @@ shardus.setup({
 
     return {
       success,
-      reason,
-      txnTimestamp,
+      reason, txnTimestamp,
     }
   },
   async apply(timestampedTx, wrappedStates) {
@@ -2458,6 +2462,7 @@ shardus.setup({
     return tx.timestamp ? tx.timestamp : 0
   },
   async txPreCrackData(timestampedTx, appData){
+      console.log('Running txPreCrackData')
     if(ShardeumFlags.UseTXPreCrack === false){
       return
     }
@@ -2468,30 +2473,35 @@ shardus.setup({
         //do nothing if eip2930
       } else {
         //if the TX is a contract deploy, predict the new contract address correctly
-        if (transaction.to == null){
+        if (ShardeumFlags.txNoncePreCheck ||transaction.to == null){
           let foundNonce = false
           let foundSender = false
-          let deployNonce = new BN(0)
+          let nonce = new BN(0)
           let txSenderEvmAddr = transaction.getSenderAddress().toString()
           let transformedSourceKey = toShardusAddress(txSenderEvmAddr, AccountType.Account)
           let remoteShardusAccount = await shardus.getLocalOrRemoteAccount(transformedSourceKey)
           if (remoteShardusAccount == undefined) {
-            //if (ShardeumFlags.VerboseLogs) console.log(`txPreCrackData: found no remote account for address: ${txSenderEvmAddr}, key: ${transformedSourceKey}. using nonce=0`)
+            if (ShardeumFlags.VerboseLogs) console.log(`txPreCrackData: found no remote account for address: ${txSenderEvmAddr}, key: ${transformedSourceKey}. using nonce=0`)
           } else {
             foundSender = true
             let wrappedEVMAccount = remoteShardusAccount.data as WrappedEVMAccount
             if(wrappedEVMAccount && wrappedEVMAccount.account){
               fixDeserializedWrappedEVMAccount(wrappedEVMAccount)
-              deployNonce = wrappedEVMAccount.account.nonce
+              nonce = wrappedEVMAccount.account.nonce
               foundNonce = true
             }
           }
-
-          let caAddrBuf = predictContractAddressDirect(txSenderEvmAddr, deployNonce)
-          let caAddr = '0x' + caAddrBuf.toString('hex')
-          appData.newCAAddr = caAddr
-          if (ShardeumFlags.VerboseLogs) console.log(`txPreCrackData found nonce:${foundNonce} found sender:${foundSender} for ${txSenderEvmAddr} nonce:${deployNonce.toString()} ca:${caAddr}`)
-        }        
+          if (transaction.to == null) {
+            let caAddrBuf = predictContractAddressDirect(txSenderEvmAddr, nonce)
+            let caAddr = '0x' + caAddrBuf.toString('hex')
+            appData.newCAAddr = caAddr
+            if (ShardeumFlags.VerboseLogs) console.log(`txPreCrackData found nonce:${foundNonce} found sender:${foundSender} for ${txSenderEvmAddr} nonce:${nonce.toString()} ca:${caAddr}`)
+          }
+          if (ShardeumFlags.txNoncePreCheck) {
+            appData.nonce = parseInt(nonce.toString())
+            if (ShardeumFlags.VerboseLogs) console.log(`txPreCrackData found nonce:${foundNonce} found sender:${foundSender} for ${txSenderEvmAddr} nonce:${nonce.toString()}`)
+          }
+        }
       }
     }
   },
