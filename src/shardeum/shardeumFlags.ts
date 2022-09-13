@@ -40,7 +40,7 @@ export let AppliedTxsMaps = false //some maps that are not currently used, but m
 
 export let SaveEVMTries = false
 
-export let ChainID = 8080 //Chain.Rinkeby   // The EVM chain ID.  used by CHAINID opcode.  may need Chain.Rinkeby (4)  for local testing 
+export let ChainID = 8081 //Chain.Rinkeby   // The EVM chain ID.  used by CHAINID opcode.  may need Chain.Rinkeby (4)  for local testing 
 
 export let CheckpointRevertSupport = true
 
