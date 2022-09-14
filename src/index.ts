@@ -2465,7 +2465,7 @@ shardus.setup({
     return tx.timestamp ? tx.timestamp : 0
   },
   async txPreCrackData(timestampedTx, appData){
-      console.log('Running txPreCrackData')
+    if (ShardeumFlags.VerboseLogs) console.log('Running txPreCrackData')
     if(ShardeumFlags.UseTXPreCrack === false){
       return
     }

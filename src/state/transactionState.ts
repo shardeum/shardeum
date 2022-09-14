@@ -146,7 +146,7 @@ export default class TransactionState {
       this.firstContractStorageReads = firstContractStorageReads
     }
 
-    this.debugTrace = true
+    this.debugTrace = false
 
     this.checkpointCount = 0
   }
