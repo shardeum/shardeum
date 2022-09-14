@@ -36,6 +36,11 @@ export async function queryArchivedCycles(ip, port, count) {
   return res.data.archivedCycles
 }
 
+export async function queryArchiverTotalData(ip, port) {
+  const res = await axios.get(`http://${ip}:${port}/totalData`)
+  return res.data
+}
+
 export async function waitForNetworkToBeActive(numberOfExpectedNodes) {
   let ready = false
   await _sleep(60000) // wait for 1 minute

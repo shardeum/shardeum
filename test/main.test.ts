@@ -128,17 +128,28 @@ describe('Smoke Testing to the Shardeum Network', () => {
         console.log('TEST: New archivers sync archived data successfully')
         await utils._sleep(60000) // needs to wait while new archiver is syncing data
 
-        const dataFromArchiver_1 = await utils.queryArchivedCycles('localhost', 4000, 5)
-        const dataFromArchiver_2 = await utils.queryArchivedCycles('localhost', 4001, 5)
+        // const dataFromArchiver_1 = await utils.queryArchivedCycles('localhost', 4000, 5)
+        // const dataFromArchiver_2 = await utils.queryArchivedCycles('localhost', 4001, 5)
+        // let hasSameData = true
+        // for (let i = 0; i < dataFromArchiver_1.length; i++) {
+        //     let data1 = dataFromArchiver_1[i]
+        //     let data2 = dataFromArchiver_2[i]
+        //     let isSame = JSON.stringify(data1) === JSON.stringify(data2)
+        //     if (!isSame) {
+        //         hasSameData = isSame
+        //     }
+        // }
+        const dataFromArchiver_1 = await utils.queryArchiverTotalData('localhost', 4000)
+        const dataFromArchiver_2 = await utils.queryArchiverTotalData('localhost', 4001)
         let hasSameData = true
-        for (let i = 0; i < dataFromArchiver_1.length; i++) {
-            let data1 = dataFromArchiver_1[i]
-            let data2 = dataFromArchiver_2[i]
-            let isSame = JSON.stringify(data1) === JSON.stringify(data2)
-            if (!isSame) {
-                hasSameData = isSame
-            }
-        }
+        console.log('Check totalCycles', dataFromArchiver_1.totalCycles, dataFromArchiver_2.totalCycles)
+        if (dataFromArchiver_1.totalCycles !== dataFromArchiver_2.totalCycles) hasSameData = false
+        console.log('Check totalAccounts', dataFromArchiver_1.totalAccounts, dataFromArchiver_2.totalAccounts)
+        if (dataFromArchiver_1.totalAccounts !== dataFromArchiver_2.totalAccounts) hasSameData = false
+        console.log('Check totalTransactions', dataFromArchiver_1.totalTransactions, dataFromArchiver_2.totalTransactions)
+        if (dataFromArchiver_1.totalTransactions !== dataFromArchiver_2.totalTransactions) hasSameData = false
+        console.log('Check totalReceipts', dataFromArchiver_1.totalReceipts, dataFromArchiver_2.totalReceipts)
+        if (dataFromArchiver_1.totalReceipts !== dataFromArchiver_2.totalReceipts) hasSameData = false
         expect(hasSameData).toBe(true)
     })
 
