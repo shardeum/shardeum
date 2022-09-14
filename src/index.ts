@@ -1979,10 +1979,13 @@ shardus.setup({
         reason = 'Transaction is not signed or signature is not valid'
       }
 
-      if (txObj.nonce.toNumber() < appData.nonce) {
-        success = false
-        reason = 'Transaction has lower nonce than the account nonce in the network'
+      if (ShardeumFlags.txNoncePreCheck){
+        if (txObj.nonce.toNumber() < appData.nonce) {
+          success = false
+          reason = 'Transaction has lower nonce than the account nonce in the network'
+        }        
       }
+
     } catch (e) {
       if (ShardeumFlags.VerboseLogs) console.log('validate error', e)
       success = false
