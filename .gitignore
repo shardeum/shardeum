@@ -6,6 +6,7 @@ instances/
 statistics.tsv
 .env
 coverage
+<<<<<<< HEAD
 account-export.json
 
 .sqlite
@@ -22,3 +23,6 @@ scripts/*.old
 scripts/*.json
 #this last one may slows things down, but not sure
 scripts/*/
+=======
+.idea
+>>>>>>> 5f42b24... change AccountStorage s a class

@@ -43,7 +43,7 @@ import {loadAccountDataFromDB} from './shardeum/debugRestoreAccounts'
 import { Block } from '@ethereumjs/block'
 import { ShardeumBlock } from './block/blockchain'
 
-import * as AccountsStorage from './storage/accountStorage'
+import AccountsStorage  from './storage/accountStorage'
 
 
 const env = process.env
@@ -84,6 +84,8 @@ export let genesisAccounts = []
 const ERC20_BALANCEOF_CODE =  '0x70a08231';
 
 const shardus = shardusFactory(config)
+
+const accountStorage = new AccountsStorage()
 
 // const pay_address = '0x50F6D9E5771361Ec8b95D6cfb8aC186342B70120' // testing account for node_reward
 const random_wallet = Wallet.generate()
@@ -240,7 +242,7 @@ export function setGenesisAccounts(accounts = []) {
  */
 
 if(ShardeumFlags.UseDBForAccounts === true){
-  AccountsStorage.init(config.server.baseDir, 'db/shardeum.sqlite')
+  accountStorage.init(config.server.baseDir, 'db/shardeum.sqlite')
 }
 
 //let accounts: WrappedEVMAccountMap = {} //relocated
@@ -674,6 +676,7 @@ async function manuallyCreateAccount(ethAccountID: string, balance = defaultBala
     accountType: AccountType.Account,
   }
   WrappedEVMAccountFunctions.updateEthAccountHash(wrappedEVMAccount)
+
   return {accountId: shardusAccountID, wrappedEVMAccount, cycle: latestCycles[0]}
 }
 
@@ -945,7 +948,7 @@ shardus.registerExternalGet('account/:address', async (req, res) => {
       let id = req.params['address']
       const shardusAddress = toShardusAddressWithKey(id, '', accountType)
       //let account = accounts[shardusAddress]
-      let account = await AccountsStorage.getAccount(shardusAddress)
+      let account = await accountStorage.getAccount(shardusAddress)
       return res.json({ account })
     }
   } catch (error) {
@@ -1061,7 +1064,7 @@ shardus.registerExternalPost('contract/call', async (req, res) => {
         // ERC20 Token balance query
         let caShardusAddress = toShardusAddress(callObj.to, AccountType.Account)
         //to do convert to timestamp query getAccountTimestamp!!
-        caAccount = await AccountsStorage.getAccount(caShardusAddress)
+        caAccount = await accountStorage.getAccount(caShardusAddress)
         if (caAccount) {
           const index = ERC20TokenBalanceMap.findIndex(x => x.to === callObj.to && x.data === callObj.data)
           if (index > -1) {
@@ -1127,7 +1130,7 @@ shardus.registerExternalPost('contract/call', async (req, res) => {
     let callTxState = getCallTXState() //this isn't so great..
 
     let callerAddress = toShardusAddress(callObj.from, AccountType.Account)
-    let callerAccount = await AccountsStorage.getAccount(callerAddress)
+    let callerAccount = await accountStorage.getAccount(callerAddress)
     if (callerAccount) {
       if (ShardeumFlags.VerboseLogs) console.log('callerAddress', callerAccount)
       callTxState.insertFirstAccountReads(opt.caller, callerAccount.account)
@@ -1261,7 +1264,7 @@ shardus.registerExternalGet('accounts', debugMiddleware, async (req, res) => {
   // stable sort on accounts order..  todo, may turn this off later for perf reasons.
 
   //let sorted = JSON.parse(stringify(accounts))
-  let accounts = await AccountsStorage.debugGetAllAccounts()
+  let accounts = await accountStorage.debugGetAllAccounts()
   let sorted = JSON.parse(stringify(accounts))
 
   res.json({ accounts: sorted })
@@ -1275,7 +1278,7 @@ shardus.registerExternalGet('nodeRewardValidate', debugMiddleware, async (req, r
   const expectedBalance = nodeRewardCount * parseInt(oneEth.mul(new BN(INITIAL_PARAMETERS.nodeRewardAmount)).toString()) + parseInt(defaultBalance.toString())
   const shardusAddress = toShardusAddress(pay_address, AccountType.Account)
   //const account = accounts[shardusAddress]
-  const account = await AccountsStorage.getAccount(shardusAddress)
+  const account = await accountStorage.getAccount(shardusAddress)
 
   // const account = await shardus.getLocalOrRemoteAccount(shardusAddress)
   if (!account || !account.account) {
@@ -2179,7 +2182,7 @@ shardus.setup({
           WrappedEVMAccountFunctions.updateEthAccountHash(wrappedEVMAccount)
 
           //accounts[shardusAddress] = wrappedEVMAccount
-          await AccountsStorage.setAccount(shardusAddress, wrappedEVMAccount)
+          await accountStorage.setAccount(shardusAddress, wrappedEVMAccount)
 
           if (ShardeumFlags.VerboseLogs) console.log('Contract account stored', wrappedEVMAccount)
         }
@@ -2604,18 +2607,17 @@ shardus.setup({
     // return WrappedEVMAccountFunctions._calculateAccountHash(wrappedEVMAccount)
 
     //TODO consider if this can be table lookup rather than a recalculation
-    const wrappedEVMAccount = await AccountsStorage.getAccount(accountAddress)
+    const wrappedEVMAccount = await accountStorage.getAccount(accountAddress)
 
     //looks like this wont change much as this is an unused function
     fixDeserializedWrappedEVMAccount(wrappedEVMAccount)
-
 
     return WrappedEVMAccountFunctions._calculateAccountHash(wrappedEVMAccount)
   },
 
   async deleteLocalAccountData() {
     //accounts = {}
-    await AccountsStorage.clearAccounts()
+    await accountStorage.clearAccounts()
   },
 
   async setAccountData(accountRecords) {
@@ -2629,7 +2631,7 @@ shardus.setup({
         WrappedEVMAccountFunctions.fixDeserializedWrappedEVMAccount(wrappedEVMAccount)
 
       //accounts[shardusAddress] = wrappedEVMAccount
-      await AccountsStorage.setAccount(shardusAddress, wrappedEVMAccount)
+      await accountStorage.setAccount(shardusAddress, wrappedEVMAccount)
     }
 
     // update shardeum state. put this in a separate loop, but maybe that is overkill
@@ -2654,7 +2656,7 @@ shardus.setup({
         //get the contract account so we can pass in the state root
         let shardusAddress = toShardusAddress(wrappedEVMAccount.ethAddress, AccountType.Account)
         //let contractAccount = accounts[shardusAddress]
-        const contractAccount = await AccountsStorage.getAccount(shardusAddress)
+        const contractAccount = await accountStorage.getAccount(shardusAddress)
 
         if (contractAccount == null) {
           //todo queue this somehow
@@ -2695,7 +2697,7 @@ shardus.setup({
 
       let accountCreated = false
       //let wrappedEVMAccount = accounts[accountId]
-      let wrappedEVMAccount = await AccountsStorage.getAccount(accountId)
+      let wrappedEVMAccount = await accountStorage.getAccount(accountId)
 
       if (internalTx.internalTXType === InternalTXType.SetGlobalCodeBytes) {
         if (wrappedEVMAccount === null) {
@@ -2775,7 +2777,7 @@ shardus.setup({
       let debugTx = tx as DebugTx
       let accountCreated = false
       //let wrappedEVMAccount = accounts[accountId]
-      let wrappedEVMAccount = await AccountsStorage.getAccount(accountId)
+      let wrappedEVMAccount = await accountStorage.getAccount(accountId)
       if (wrappedEVMAccount == null) {
         let evmAccountInfo = shardusAddressToEVMAccountInfo.get(accountId)
         let evmAccountID = null
@@ -2804,7 +2806,7 @@ shardus.setup({
     if (!tx.raw) throw new Error('getRelevantData: No raw tx')
 
     //let wrappedEVMAccount = accounts[accountId]
-    let wrappedEVMAccount = await AccountsStorage.getAccount(accountId)
+    let wrappedEVMAccount = await accountStorage.getAccount(accountId)
     let accountCreated = false
 
     let txId = crypto.hashObj(tx)
@@ -2901,7 +2903,7 @@ shardus.setup({
     if(ShardeumFlags.UseDBForAccounts === true){
       //direct DB query
       let wrappedResults = []
-      let dbResults = await AccountsStorage.queryAccountsEntryByRanges(accountStart, accountEnd, maxRecords)
+      let dbResults = await accountStorage.queryAccountsEntryByRanges(accountStart, accountEnd, maxRecords)
 
       for(let wrappedEVMAccount of dbResults){
         const wrapped = WrappedEVMAccountFunctions._shardusWrappedAccount(wrappedEVMAccount)
@@ -2910,7 +2912,7 @@ shardus.setup({
       return wrappedResults
     }
 
-    let accounts = AccountsStorage.accounts
+    let accounts = accountStorage.accounts
 
     // Loop all accounts
     for (let addressStr in accounts) {
@@ -2941,17 +2943,18 @@ shardus.setup({
       updateEthAccountHash(updatedEVMAccount)
       const hashBefore = updatedEVMAccount.hash
       //accounts[accountId] = updatedEVMAccount
-      await AccountsStorage.setAccount(accountId, updatedEVMAccount)
+
+      await accountStorage.setAccount(accountId, updatedEVMAccount)
       shardus.applyResponseAddState(
-        applyResponse,
-        updatedEVMAccount,
-        updatedEVMAccount,
-        accountId,
-        applyResponse.txId,
-        applyResponse.txTimestamp,
-        hashBefore,
-        updatedEVMAccount.hash,
-        accountCreated
+          applyResponse,
+          updatedEVMAccount,
+          updatedEVMAccount,
+          accountId,
+          applyResponse.txId,
+          applyResponse.txTimestamp,
+          hashBefore,
+          updatedEVMAccount.hash,
+          accountCreated
       )
       return
     }
@@ -2965,17 +2968,17 @@ shardus.setup({
       updateEthAccountHash(updatedEVMAccount) // This will get the hash of its relevant account type
       const hashAfter = updatedEVMAccount.hash
       //accounts[accountId] = updatedEVMAccount
-      await AccountsStorage.setAccount(accountId, updatedEVMAccount)
+      await accountStorage.setAccount(accountId, updatedEVMAccount)
       shardus.applyResponseAddState(
-        applyResponse,
-        updatedEVMAccount,
-        updatedEVMAccount,
-        accountId,
-        applyResponse.txId,
-        applyResponse.txTimestamp,
-        hashBefore,
-        hashAfter,
-        accountCreated
+          applyResponse,
+          updatedEVMAccount,
+          updatedEVMAccount,
+          accountId,
+          applyResponse.txId,
+          applyResponse.txTimestamp,
+          hashBefore,
+          hashAfter,
+          accountCreated
       )
       return
     }
@@ -3044,7 +3047,7 @@ shardus.setup({
 
     // Save updatedAccount to db / persistent storage
     //accounts[accountId] = updatedEVMAccount
-    await AccountsStorage.setAccount(accountId, updatedEVMAccount)
+    await accountStorage.setAccount(accountId, updatedEVMAccount)
 
     if(ShardeumFlags.AppliedTxsMaps) {
       let ethTxId = shardusTxIdToEthTxId[txId]
@@ -3085,7 +3088,7 @@ shardus.setup({
 
     if(ShardeumFlags.UseDBForAccounts === true){
       //direct DB query
-      let dbResults = await AccountsStorage.queryAccountsEntryByRanges2(accountStart, accountEnd, tsStart, tsEnd, maxRecords, offset)
+      let dbResults = await accountStorage.queryAccountsEntryByRanges2(accountStart, accountEnd, tsStart, tsEnd, maxRecords, offset)
 
       for(let wrappedEVMAccount of dbResults){
         // Process and add to finalResults
@@ -3095,7 +3098,7 @@ shardus.setup({
       return finalResults
     }
 
-    let accounts = AccountsStorage.accounts
+    let accounts = accountStorage.accounts
     // Loop all accounts
     for (let addressStr in accounts) {
       let wrappedEVMAccount = accounts[addressStr]
@@ -3222,7 +3225,7 @@ shardus.setup({
     for (const address of addressList) {
       //const wrappedEVMAccount = accounts[address]
       // TODO perf: could replace with a single query
-      let wrappedEVMAccount = await AccountsStorage.getAccount(address)
+      let wrappedEVMAccount = await accountStorage.getAccount(address)
       if (wrappedEVMAccount) {
         const wrapped = WrappedEVMAccountFunctions._shardusWrappedAccount(wrappedEVMAccount)
         results.push(wrapped)
@@ -3235,6 +3238,7 @@ shardus.setup({
   },
   close() {
     if (ShardeumFlags.VerboseLogs) console.log('Shutting down...')
+    accountStorage.close()
   },
   getTimestampAndHashFromAccount(account) {
     if (account != null) {
