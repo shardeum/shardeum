@@ -7,6 +7,7 @@ import * as AccountsStorage from '../storage/accountStorage'
 import { AccountType, WrappedEVMAccount } from '../shardeum/shardeumTypes';
 import { toShardusAddress, toShardusAddressWithKey } from '../shardeum/evmAddress';
 import { fixDeserializedWrappedEVMAccount } from '../shardeum/wrappedEVMAccountFunctions';
+import {accountStorage} from "../index";
 
 export type accountEvent = (transactionState: TransactionState, address: string) => Promise<boolean>
 export type contractStorageEvent = (transactionState: TransactionState, address: string, key: string) => Promise<boolean>
@@ -412,7 +413,7 @@ export default class TransactionState {
       //figure out if addres to string is ok...
       //also what about RLP format... need to do the extra conversions now, but plan on the best conversion.
       let accountShardusAddress = toShardusAddress(address.toString(), AccountType.Account)
-      let wrappedAccount = await AccountsStorage.getAccount(accountShardusAddress)
+      let wrappedAccount = await accountStorage.getAccount(accountShardusAddress)
       if(wrappedAccount != null){
         fixDeserializedWrappedEVMAccount(wrappedAccount)
         account = wrappedAccount.account        
@@ -562,7 +563,7 @@ export default class TransactionState {
 
       //need: contract address,  code hash  for toShardusAddressWithKey
       let bytesShardusAddress = toShardusAddressWithKey(addressString, codeHashStr, AccountType.ContractCode)
-      let wrappedAccount = await AccountsStorage.getAccount(bytesShardusAddress)
+      let wrappedAccount = await accountStorage.getAccount(bytesShardusAddress)
       if(wrappedAccount != null){
         fixDeserializedWrappedEVMAccount(wrappedAccount)
         storedCodeByte = wrappedAccount.codeByte   
@@ -688,7 +689,7 @@ export default class TransactionState {
       //throw new Error('get from accounts db')
       // toShardusAddressWithKey.. use contract address followed by key
       let storageShardusAddress = toShardusAddressWithKey(addressString, keyString, AccountType.ContractStorage)
-      let wrappedAccount = await AccountsStorage.getAccount(storageShardusAddress)
+      let wrappedAccount = await accountStorage.getAccount(storageShardusAddress)
       if(wrappedAccount != null){
         fixDeserializedWrappedEVMAccount(wrappedAccount)
         storedRlp = wrappedAccount.value   

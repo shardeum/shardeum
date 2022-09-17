@@ -85,7 +85,7 @@ const ERC20_BALANCEOF_CODE =  '0x70a08231';
 
 const shardus = shardusFactory(config)
 
-const accountStorage = new AccountsStorage()
+export const accountStorage = new AccountsStorage()
 
 // const pay_address = '0x50F6D9E5771361Ec8b95D6cfb8aC186342B70120' // testing account for node_reward
 const random_wallet = Wallet.generate()
