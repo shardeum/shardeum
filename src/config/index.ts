@@ -77,14 +77,17 @@ config = merge(config, {
     p2p: {
       cycleDuration: 60,
       minNodesToAllowTxs: 1,
-      minNodes: process.env.minNodes ? parseInt(process.env.minNodes) : 300,
-      maxNodes: 300,
+      minNodes: process.env.minNodes ? parseInt(process.env.minNodes) : 50,
+      maxNodes: 500,
       maxJoinedPerCycle: 4,
       maxSyncingPerCycle: 8, 
       maxRotatedPerCycle: process.env.maxRotatedPerCycle ? parseInt(process.env.maxRotatedPerCycle) : 1,
       firstCycleJoin: 0,
       maxSyncTimeFloor: 18000,
-      syncBoostEnabled: false
+      syncBoostEnabled: false,
+      amountToGrow: 10,
+      amountToShrink: 5,
+      maxDesiredMultiplier: 1.2,
     }
   }
 })
@@ -137,7 +140,7 @@ config = merge(
   config,
   {
     server: {
-      mode: 'release', //TODO must set this to release for public networks or get security on endpoints
+      mode: 'debug', //TODO must set this to release for public networks or get security on endpoints
       debug: {
         startInFatalsLogMode: false, // true setting good for big aws test with nodes joining under stress.
         startInErrorLogMode: true,
