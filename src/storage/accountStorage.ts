@@ -57,15 +57,15 @@ class AccountStorage {
         }
     }
 
-    async  accountExists(address: string): Promise<boolean> {
-          if (ShardeumFlags.UseDBForAccounts === true) {
-              //todo replace with specific sql query, or even a shardus cache check
-              let account = await this.storage.getAccountsEntry(address)
-              return account != null
-          } else {
-              return this.accounts[address] != null
-          }
-      }
+    async accountExists(address: string): Promise<boolean> {
+        if (ShardeumFlags.UseDBForAccounts === true) {
+            //todo replace with specific sql query, or even a shardus cache check
+            let account = await this.storage.getAccountsEntry(address)
+            return account != null
+        } else {
+            return this.accounts[address] != null
+        }
+    }
 
     async setAccount(address: string, account: WrappedEVMAccount): Promise<void> {
         if (ShardeumFlags.UseDBForAccounts === true) {
