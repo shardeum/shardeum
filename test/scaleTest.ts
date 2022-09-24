@@ -1,7 +1,6 @@
 import execa from 'execa'
 import * as utils from './testUtils'
 import { join } from 'path'
-import { kill } from 'process'
 const {
   performance,
 } = require('perf_hooks');
@@ -22,7 +21,7 @@ export async function waitForNetworkLoad(load, value) {
           totalLoad += node.currentLoad.networkLoad
         }
         avgLoad = totalLoad / Object.keys(activeNodes).length
-        console.log('avg load', avgLoad)
+        // console.log('avg load', avgLoad)
         if (load === 'high' && avgLoad >= value) isCriteriaMet = true
         else if (load === 'low' && avgLoad <= value) isCriteriaMet = true
         else {
@@ -53,7 +52,7 @@ export async function waitForNetworkScaling(desired: number, _timeout: number = 
       if(_timeout < 0 ) continue;
       const now = performance.now();
       const elapsed = Math.floor(now - start) / 60000;
-      console.log(elapsed, "min");
+      // console.log(elapsed, "min");
       if(_timeout > 0 && _timeout < elapsed) {
         return false; //timeout!!!,  network has failed to scale within the max time, returning false;
       }
@@ -65,31 +64,17 @@ export async function waitForNetworkScaling(desired: number, _timeout: number = 
 export const scaleTest = (START_NETWORK_SIZE: number) => {
   test('Auto scale up the network successfully', async () => {
     console.log('TEST: Auto scale up the network successfully')
-    let spamCommand = `npx hardhat load_test --type eth_transfer --tps 200 --duration 600 --eoa 1000`
+    let spamCommand = `npx hardhat load_test --type eth_transfer --tps 300 --duration 1800 --eoa 1000`
     let spamProcess = execa.command(`cd ${LOAD_TESTER} && ${spamCommand}`, opts)
-    console.log(process.pid)
-    console.log(spamProcess.pid)
     let isLoadIncreased = await waitForNetworkLoad('high', 0.2)
 
-    console.log('Waiting for network to scale up...')
+    let hasNetworkScaledUp = await waitForNetworkScaling(START_NETWORK_SIZE * 2, 40)
 
-    let hasNetworkScaledUp = await waitForNetworkScaling(START_NETWORK_SIZE * 2, 30)
-    spamProcess.cancel()
+    // this is a little hacky, because execa doesn't provide functionality for killing process tree
+    process.kill(spamProcess.pid);
+    process.kill(spamProcess.pid + 1);
+    process.kill(spamProcess.pid + 2);
 
-    // try {
-    //   await spamProcess;
-    //   spamProcess.kill('SIGTERM')
-    //   spamProcess.cancel()
-    // } catch (e) {
-    //   console.log((await spamProcess).isCanceled); // true
-	  //   console.log(e.isCanceled); // true
-    // }
-
-    // try {
-    //   execa.commandSync(`kill -9 ${process.pid - 1}`, { ...opts, stdio: [0, 1, 2] })
-    // } catch(e){
-    //   console.log(e)
-    // }
     expect(isLoadIncreased).toBe(true)
     expect(hasNetworkScaledUp).toBe(true)
   })
@@ -108,6 +93,9 @@ export const scaleTest = (START_NETWORK_SIZE: number) => {
     console.log('TEST: Data is correctly synced across the nodes after network scaled down')
     let { in_sync, out_sync } = await utils.getInsyncAll()
 
+    console.log(in_sync, out_sync);
+
+    utils._sleep(6000 * 30);
     expect(in_sync === START_NETWORK_SIZE).toBe(true)
     expect(out_sync === 0).toBe(true)
   })
