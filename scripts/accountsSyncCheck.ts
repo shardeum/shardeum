@@ -2,8 +2,8 @@ const sqlite3 = require('sqlite3').verbose()
 import fs from 'fs'
 let db: any
 
-const instancesDirPath = '../instances'
-const numberOfNodes = 15
+const instancesDirPath = 'instances'
+const numberOfNodes = 8
 const saveAccountsDataAsFile = false
 
 let consensorAccounts: any = []
@@ -14,6 +14,7 @@ const archiverAccountsFileName = 'archiverAccounts'
 
 export async function initShardeumDB(node) {
   const dbName = `${instancesDirPath}/shardus-instance-${node}/db/shardeum.sqlite`
+  console.log(dbName)
   db = new sqlite3.Database(dbName)
   // await run('PRAGMA journal_mode=WAL');
   console.log('Database initialized.')
@@ -89,7 +90,7 @@ const getAccountsDataFromConsensors = async () => {
       if (!consensorAccounts.find((acc: any) => acc.accountId === account.accountId)) consensorAccounts.push(account)
     }
   }
-  console.log('Total Number of Accounts', consensorAccounts.length)
+  console.log('Total Number of Accounts From Consensors', consensorAccounts.length)
   if (saveAccountsDataAsFile) fs.writeFileSync(consensorAccountsFileName, JSON.stringify(consensorAccounts, null, 2))
 }
 
@@ -102,7 +103,7 @@ export async function queryAccountCountFromArchiver() {
     console.log(e)
   }
 
-  console.log('Account count', accounts)
+  // console.log('Account count', accounts)
   if (accounts) accounts = accounts['COUNT(*)']
   else accounts = 0
   return accounts
@@ -143,12 +144,12 @@ const getAccountsDataFromArchiver = async () => {
     archiverAccounts = [...archiverAccounts, ...accounts]
     i += limit
   }
-  console.log(archiverAccounts.length)
+  console.log('Total Number of Accounts From Archiver', archiverAccounts.length)
   if (saveAccountsDataAsFile) fs.writeFileSync(archiverAccountsFileName, JSON.stringify(archiverAccounts, null, 2))
 }
 
 const checkAccountsDataSync = async () => {
-  console.log('Checking consensor data against archiver!')
+  console.log('Missing Accounts on Archiver!')
   for (let account1 of consensorAccounts) {
     let found = false
     for (let account2 of archiverAccounts) {
@@ -160,7 +161,7 @@ const checkAccountsDataSync = async () => {
       console.log(account1.accountId)
     }
   }
-  console.log('Checking archiver data against consensor!')
+  console.log('Missing Accounts on Consensors!')
   for (let account1 of archiverAccounts) {
     let found = false
     for (let account2 of consensorAccounts) {
