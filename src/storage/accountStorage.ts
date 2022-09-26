@@ -136,10 +136,19 @@ export async function queryAccountsEntryByRanges(accountStart, accountEnd, maxRe
   }
 }
 
-export async function queryAccountsEntryByRanges2(accountStart, accountEnd, tsStart, tsEnd, maxRecords, offset): Promise<WrappedEVMAccount[]> {
+export async function queryAccountsEntryByRanges2(accountStart, accountEnd, tsStart, tsEnd, maxRecords, offset, accountOffset): Promise<WrappedEVMAccount[]> {
   if (ShardeumFlags.UseDBForAccounts === true) {
     let processedResults = []
-    let results = await storage.queryAccountsEntryByRanges2(accountStart, accountEnd, tsStart, tsEnd, maxRecords, offset)
+    let results
+    
+    if(accountOffset != null && accountOffset.length > 0){
+      results = await storage.queryAccountsEntryByRanges3(accountStart, accountEnd, tsStart, tsEnd, maxRecords, accountOffset)  
+    } else {
+      results = await storage.queryAccountsEntryByRanges2(accountStart, accountEnd, tsStart, tsEnd, maxRecords, offset)      
+    }
+
+
+
     for (let result of results) {
       if (isString(result.data)) {
         result.data = JSON.parse(result.data as string)

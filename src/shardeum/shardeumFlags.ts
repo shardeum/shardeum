@@ -45,3 +45,7 @@ export let ChainID = process.env.CHAIN_ID || 8081 //Chain.Rinkeby   // The EVM c
 export let CheckpointRevertSupport = true
 
 export let UseTXPreCrack = true
+
+export let NewStorageIndex = true
+
+

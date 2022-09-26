@@ -2,6 +2,7 @@
 
 import models from './models'
 
+import * as ShardeumFlags from '../shardeum/shardeumFlags'
 import Sqlite3Storage from './sqlite3storage'
 import * as Sequelize from 'sequelize'
 const Op = Sequelize.Op
@@ -39,12 +40,14 @@ class Storage {
     console.log('shardeum storage init complete:' )
 
     //would be neat if this wasn't needed here (refactor so storage stays more generic?)
-    // await this.storage.runCreate(
-    //   'CREATE TABLE if not exists `accountsEntry` (`accountId` VARCHAR(255) NOT NULL, `timestamp` BIGINT NOT NULL, `data` JSON NOT NULL, `hash` VARCHAR(255) NOT NULL, PRIMARY KEY (`accountId`, `timestamp`))'
-    // )
     await this.storage.runCreate(
       'CREATE TABLE if not exists `accountsEntry` (`accountId` VARCHAR(255) NOT NULL, `timestamp` BIGINT NOT NULL, `data` JSON NOT NULL, PRIMARY KEY (`accountId`))'
     )
+
+    if(ShardeumFlags.NewStorageIndex) {
+      //add index to timestamp
+      await this.storage.run('CREATE INDEX timestamp1 ON accountsEntry(timestamp)')
+    }
 
     // get models and helper methods from the storage class we just initializaed.
     this.storageModels = this.storage.storageModels
@@ -94,6 +97,28 @@ class Storage {
       throw new Error(e)
     }
   }
+
+  async queryAccountsEntryByRanges3(
+    accountStart:string,
+    accountEnd:string,
+    tsStart:number,
+    tsEnd:number,
+    limit:number,
+    accountOffset:string,
+  ): Promise<AccountsEntry[]> {
+    this._checkInit()
+    try {
+      const query = `SELECT * FROM accountsEntry WHERE (timestamp, accountId) >= (${tsStart}, "${accountOffset}") 
+                      AND timestamp < ${tsEnd} 
+                      AND accountId <= "${accountEnd}" AND accountId >= "${accountStart}" 
+                      ORDER BY timestamp, accountId  LIMIT ${limit}`
+      const result = await this._query(query, [ ])
+      return result
+    } catch (e) {
+      throw new Error(e)
+    }
+  }
+
 
   async queryAccountsEntryByRanges2(
     accountStart:string,

@@ -3178,7 +3178,7 @@ shardus.setup({
     //
     this.updateAccountFull(wrappedData, localCache, applyResponse)
   },
-  async getAccountDataByRange(accountStart, accountEnd, tsStart, tsEnd, maxRecords, offset=0): Promise<ShardusTypes.WrappedData[]> {
+  async getAccountDataByRange(accountStart, accountEnd, tsStart, tsEnd, maxRecords, offset=0, accountOffset=""): Promise<ShardusTypes.WrappedData[]> {
     const results:WrappedEVMAccount[] = []
     const start = parseInt(accountStart, 16)
     const end = parseInt(accountEnd, 16)
@@ -3187,7 +3187,7 @@ shardus.setup({
 
     if(ShardeumFlags.UseDBForAccounts === true){
       //direct DB query
-      let dbResults = await AccountsStorage.queryAccountsEntryByRanges2(accountStart, accountEnd, tsStart, tsEnd, maxRecords, offset)
+      let dbResults = await AccountsStorage.queryAccountsEntryByRanges2(accountStart, accountEnd, tsStart, tsEnd, maxRecords, offset, accountOffset)
 
       for(let wrappedEVMAccount of dbResults){
         // Process and add to finalResults
