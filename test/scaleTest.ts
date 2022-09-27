@@ -65,16 +65,17 @@ export async function waitForNetworkScaling(desired: number, _timeout: number = 
 export const scaleTest = (START_NETWORK_SIZE: number, EXPECTED_ACTIVE_NODES: number) => {
   test('Auto scale up the network successfully', async () => {
     console.log('TEST: Auto scale up the network successfully')
-    let spamCommand = `npx hardhat load_test --type eth_transfer --tps 300 --duration 1800 --eoa 1000`
+    // TODO: Add a smart way to decide how much tps to use according to the network size later
+    let spamCommand = `node node_modules/.bin/hardhat load_test --type eth_transfer --tps 20 --duration 1800 --eoa 5000`
     let spamProcess = execa.command(`cd ${LOAD_TESTER} && ${spamCommand}`, opts)
     let isLoadIncreased = await waitForNetworkLoad('high', 0.2)
 
-    let hasNetworkScaledUp = await waitForNetworkScaling(START_NETWORK_SIZE * 2, 40)
+    let hasNetworkScaledUp = await waitForNetworkScaling(EXPECTED_ACTIVE_NODES, 40)
 
-    // this is a little hacky, because execa doesn't provide functionality for killing process tree
-    process.kill(spamProcess.pid);
+    // this is a little hacky to kill the load tester
+    console.log(spamProcess.pid)
+    spamProcess.cancel()
     process.kill(spamProcess.pid + 1);
-    process.kill(spamProcess.pid + 2);
 
     expect(isLoadIncreased).toBe(true)
     expect(hasNetworkScaledUp).toBe(true)
