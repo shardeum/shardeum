@@ -1,7 +1,7 @@
 import * as utils from './testUtils'
 import axios from 'axios'
 
-export async function getAccountsReport(_shuffle: boolean =  true) {
+export async function getAccountsReport(_shuffle: boolean =  false) {
   const activeNodes = await utils.queryActiveNodes()
   const activeNodeList: any = Object.values(activeNodes)
   const index = _shuffle ? Math.floor(Math.random()*activeNodeList.length) : 0;
