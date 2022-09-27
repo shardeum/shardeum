@@ -105,7 +105,7 @@ config = merge(config, {
       }
     },
     loadDetection: {
-      queueLimit: 200, //use 200 for multi shard networks.  100-130 for single shard networks
+      queueLimit: 100, //use 200 for multi shard networks.  100-130 for single shard networks
       desiredTxTime: 15,
       highThreshold: 0.5,
       lowThreshold: 0.2
@@ -117,7 +117,7 @@ config = merge(config, {
 config = merge(config, {
   server: {
     sharding: {
-      nodesPerConsensusGroup: process.env.nodesPerConsensusGroup ? parseInt(process.env.nodesPerConsensusGroup) : 5,
+      nodesPerConsensusGroup: process.env.nodesPerConsensusGroup ? parseInt(process.env.nodesPerConsensusGroup) : 50,
       executeInOneShard: true
     },
     stateManager: {
