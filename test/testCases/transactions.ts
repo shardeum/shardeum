@@ -70,18 +70,4 @@ export const transactionsTest = (START_NETWORK_SIZE: number, EXPECTED_ACTIVE_NOD
     // TBC: rejected should be less than 3% of total injected
     expect(report.totalRejected).toBeLessThanOrEqual(report.totalInjected * 0.03)
   })
-
-  it('Data is correctly synced across the nodes', async () => {
-    console.log('TEST: Data is correctly synced across the nodes')
-    let result = await utils.getInsyncAll()
-    let in_sync = result.in_sync === START_NETWORK_SIZE || (EXPECTED_ACTIVE_NODES && result.in_sync === EXPECTED_ACTIVE_NODES)
-    if (!in_sync) {
-      await utils._sleep(5000)
-      result = await utils.getInsyncAll()
-      in_sync = result.in_sync === START_NETWORK_SIZE || (EXPECTED_ACTIVE_NODES && result.in_sync === EXPECTED_ACTIVE_NODES)
-    }
-    const out_sync = result.out_sync === 0
-    expect(in_sync).toBe(true)
-    expect(out_sync).toBe(true)
-  })
 }

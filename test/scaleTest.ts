@@ -7,6 +7,7 @@ const {
 const opts = { shell: true }
 const LOAD_TESTER = join(__dirname, '../../load-tester') // spam-client repo path
 // const abortController = new AbortController()
+import { dataSyncTest } from './dataSyncTest'
 
 export async function waitForNetworkLoad(load, value) {
   let isCriteriaMet = false
@@ -91,12 +92,6 @@ export const scaleTest = (START_NETWORK_SIZE: number) => {
 
   test('Data is correctly synced across the nodes after network scaled down', async () => {
     console.log('TEST: Data is correctly synced across the nodes after network scaled down')
-    let { in_sync, out_sync } = await utils.getInsyncAll()
-
-    console.log(in_sync, out_sync);
-
-    utils._sleep(6000 * 30);
-    expect(in_sync === START_NETWORK_SIZE).toBe(true)
-    expect(out_sync === 0).toBe(true)
+    dataSyncTest(12, 12)
   })
 }
