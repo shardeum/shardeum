@@ -25,9 +25,26 @@ export async function resetReport() {
   return res.data
 }
 
-export async function queryLatestCycleRecordFromArchiver() {
-  const res = await axios.get(`http://${ARCHIVER_HOST}/cycleinfo/1`)
-  if (res.data.cycleInfo.length > 0) return res.data.cycleInfo[0]
+export async function queryLatestCycleRecordFromArchiver(ip, port, cycleCount) {
+  const res = await axios.get(`http://${ip}:${port}/cycleinfo/${cycleCount}`)
+  if (res.data.cycleInfo.length > 0)
+    if (cycleCount === 1) return res.data.cycleInfo[0]
+    else return res.data.cycleInfo
+  else return null
+}
+
+export async function queryLatestReceiptFromArchiver(ip, port, cycleCount) {
+  const res = await axios.get(`http://${ip}:${port}/receipt/${cycleCount}`)
+  if (res.data.receipts.length > 0)
+    if (cycleCount === 1) return res.data.receipts[0]
+    else return res.data.receipts
+  else return null
+}
+
+export async function queryReceiptsByCycle(ip, port, startCycle, endCycle) {
+  const res = await axios.get(`http://${ip}:${port}/receipt?startCycle=${startCycle}&endCycle=${endCycle}&type=tally`)
+  //${archiverURL}/receipt?startCycle=${startCycle}&endCycle=${endCycle}&type=tally
+  if (res.data.receipts.length > 0) return res.data.receipts
   else return null
 }
 
@@ -57,7 +74,7 @@ export async function waitForNetworkToBeActive(numberOfExpectedNodes) {
 
     // Math.max needed to be done because initially attempt is 0, zero times zero is zero.
     // also the reason for adding more delay is because it's not enough
-    if (!ready) await _sleep(10000 * Math.max((attempt/2),1))
+    if (!ready) await _sleep(10000 * Math.max(attempt / 2, 1))
     if (attempt === numberOfExpectedNodes * 3) break // 3 attempts is in one cycle, total cycle is number of Nodes
     attempt++
   }
@@ -69,7 +86,7 @@ export async function waitForArchiverToJoin(ip, port) {
 
   while (!ready) {
     try {
-      let cycleRecord = await queryLatestCycleRecordFromArchiver()
+      let cycleRecord = await queryLatestCycleRecordFromArchiver('localhost', 4000, 1)
       let newArchiver = cycleRecord.joinedArchivers[0]
       if (newArchiver) {
         if (newArchiver.ip === ip && newArchiver.port === port) ready = true
@@ -90,7 +107,7 @@ export async function getInsyncAll() {
   let lines = result.data.split('\n')
   let in_sync = 0
   let out_sync = 0
-  let outOfSyncNodes = []
+  let outOfSyncNodes: any = []
   for (let line of lines) {
     line = line.trim()
     if (line.includes('inSync')) {

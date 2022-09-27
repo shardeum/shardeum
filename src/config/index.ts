@@ -78,7 +78,7 @@ config = merge(config, {
       cycleDuration: 60,
       minNodesToAllowTxs: 1,
       minNodes: process.env.minNodes ? parseInt(process.env.minNodes) : 50,
-      maxNodes: 500,
+      maxNodes: process.env.maxNodes ? parseInt(process.env.maxNodes) : 500,
       maxJoinedPerCycle: 4,
       maxSyncingPerCycle: 8, 
       maxRotatedPerCycle: process.env.maxRotatedPerCycle ? parseInt(process.env.maxRotatedPerCycle) : 1,

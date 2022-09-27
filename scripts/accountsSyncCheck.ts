@@ -1,4 +1,5 @@
 const sqlite3 = require('sqlite3').verbose()
+import axios from 'axios'
 import fs from 'fs'
 let db: any
 
@@ -80,18 +81,31 @@ export async function queryAccountsFromConsensor() {
   return accounts
 }
 
-const getAccountsDataFromConsensors = async () => {
-  let startingNode = 9001
-  for (let i = 0; i < numberOfNodes; i++) {
-    await initShardeumDB(startingNode + i)
+export const getAccountsDataFromConsensors = async () => {
+  const res = await axios.get(`http://localhost:4000/full-nodelist`)
+
+  for (let nodeinfo of res.data.nodeList) {
+    const node = nodeinfo.port
+    await initShardeumDB(node)
     const accounts = await queryAccountsFromConsensor()
-    console.log('Node', i + 1, accounts.length)
+    console.log('Node', node, accounts.length)
     for (const account of accounts) {
       if (!consensorAccounts.find((acc: any) => acc.accountId === account.accountId)) consensorAccounts.push(account)
     }
   }
+
+  // let startingNode = 9001
+  // for (let i = 0; i < numberOfNodes; i++) {
+  //   await initShardeumDB(startingNode + i)
+  //   const accounts = await queryAccountsFromConsensor()
+  //   console.log('Node', i + 1, accounts.length)
+  //   for (const account of accounts) {
+  //     if (!consensorAccounts.find((acc: any) => acc.accountId === account.accountId)) consensorAccounts.push(account)
+  //   }
+  // }
   console.log('Total Number of Accounts From Consensors', consensorAccounts.length)
   if (saveAccountsDataAsFile) fs.writeFileSync(consensorAccountsFileName, JSON.stringify(consensorAccounts, null, 2))
+  return consensorAccounts
 }
 
 export async function queryAccountCountFromArchiver() {
@@ -127,7 +141,7 @@ export async function queryAccountsFromArchiver(skip = 0, limit = 10000) {
   return accounts
 }
 
-const getAccountsDataFromArchiver = async () => {
+export const getAccountsDataFromArchiver = async () => {
   const dbName = `${instancesDirPath}/db/archiverdb-4000.sqlite3`
   db = new sqlite3.Database(dbName)
   await run('PRAGMA journal_mode=WAL')
@@ -146,6 +160,7 @@ const getAccountsDataFromArchiver = async () => {
   }
   console.log('Total Number of Accounts From Archiver', archiverAccounts.length)
   if (saveAccountsDataAsFile) fs.writeFileSync(archiverAccountsFileName, JSON.stringify(archiverAccounts, null, 2))
+  return archiverAccounts
 }
 
 const checkAccountsDataSync = async () => {
@@ -175,10 +190,10 @@ const checkAccountsDataSync = async () => {
   }
 }
 
-const runProgram = async () => {
-  await getAccountsDataFromConsensors()
-  await getAccountsDataFromArchiver()
-  await checkAccountsDataSync()
-}
+// const runProgram = async () => {
+//   await getAccountsDataFromConsensors()
+//   await getAccountsDataFromArchiver()
+//   await checkAccountsDataSync()
+// }
 
-runProgram()
+// runProgram()
