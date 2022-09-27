@@ -18,8 +18,8 @@ const LOAD_TESTER = join(__dirname, '../../load-tester') // spam-client repo pat
 
 describe('Smoke Testing to the Shardeum Network', () => {
 
-    it('Start a new network successfully', async () => {
-        console.log('TEST: Start a new network successfully')
+    it('Start a new network ', async () => {
+        console.log('TEST: Start a new network ')
         if (USE_EXISTING_NETWORK) {
             console.log('Using existing active network')
             let activeNodes = await utils.queryActiveNodes()
@@ -32,7 +32,7 @@ describe('Smoke Testing to the Shardeum Network', () => {
             } catch (e) {
                 console.log('Unable to remove instances folder')
             }
-            execa.commandSync(`shardus create --no-log-rotation  ${START_NETWORK_SIZE}`, { ...opts, stdio: [0, 1, 2] })
+            execa.commandSync(`shardus create --no-log-rotation  ${START_NETWORK_SIZE}`, { ...opts, /*stdio: [0, 1, 2]*/ })
             const isNetworkActive = await utils.waitForNetworkToBeActive(START_NETWORK_SIZE)
             expect(isNetworkActive).toBe(true)
         }
@@ -58,7 +58,7 @@ describe('Smoke Testing to the Shardeum Network', () => {
         // const { stdout, stderr } = await execa.command(`cd ${SPAM_CLIENT_DIR} && ls `, opts)
         // console.log(stdout, stderr)
         // execa.command('ls').stdout.pipe(process.stdout)
-        execa.commandSync(`cd ${LOAD_TESTER} && ${spamCommand}`, { ...opts, stdio: [0, 1, 2] })
+        execa.commandSync(`cd ${LOAD_TESTER} && ${spamCommand}`, { ...opts, /*stdio: [0, 1, 2]*/ })
         await utils._sleep(durationMiliSecond + 10000) // extra 10s for processing pending txs in the queue
 
         let report = await utils.queryLatestReport()
@@ -89,7 +89,7 @@ describe('Smoke Testing to the Shardeum Network', () => {
         // const { stdout, stderr } = await execa.command(`cd ${SPAM_CLIENT_DIR} && ls `, opts)
         // console.log(stdout, stderr)
         // execa.command('ls').stdout.pipe(process.stdout)
-        execa.commandSync(`cd ${LOAD_TESTER} && ${spamCommand}`, { ...opts, stdio: [0, 1, 2] })
+        execa.commandSync(`cd ${LOAD_TESTER} && ${spamCommand}`, { ...opts, /*stdio: [0, 1, 2]*/ })
         await utils._sleep(durationMiliSecond + 10000) // extra 10s for processing pending txs in the queue
 
         let report = await utils.queryLatestReport()
@@ -111,11 +111,11 @@ describe('Smoke Testing to the Shardeum Network', () => {
         expect(out_sync).toBe(true)
     })
 
-    test('Start new archivers successfully', async () => {
-        console.log('TEST: Start new archivers successfully')
+    test('Start new archivers ', async () => {
+        console.log('TEST: Start new archivers ')
 
         try {
-            execa.commandSync('shardus-network start --archivers 1', { ...opts, stdio: [0, 1, 2] })
+            execa.commandSync('shardus-network start --archivers 1', { ...opts, /*stdio: [0, 1, 2]*/ })
         } catch (e) {
             console.log(e)
         }
@@ -124,8 +124,8 @@ describe('Smoke Testing to the Shardeum Network', () => {
         expect(hasNewArchiverJoined).toBe(true)
     })
 
-    test('New archivers sync archived data successfully', async () => {
-        console.log('TEST: New archivers sync archived data successfully')
+    test('New archivers sync archived data ', async () => {
+        console.log('TEST: New archivers sync archived data ')
         await utils._sleep(60000) // needs to wait while new archiver is syncing data
 
         // const dataFromArchiver_1 = await utils.queryArchivedCycles('localhost', 4000, 5)
@@ -154,7 +154,7 @@ describe('Smoke Testing to the Shardeum Network', () => {
     })
 
 
-    test('Cleans a network successfully', async () => {
+    test('Cleans a network ', async () => {
         execa.commandSync('shardus stop', { stdio: [0, 1, 2] })
         await utils._sleep(3000)
         execa.commandSync('shardus clean', { stdio: [0, 1, 2] })

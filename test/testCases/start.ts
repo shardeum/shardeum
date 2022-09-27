@@ -18,13 +18,13 @@ export const startTest = (START_NETWORK_SIZE, EXPECTED_ACTIVE_NODES = null) => {
       expect(Object.keys(activeNodes).length).toBe(EXPECTED_ACTIVE_NODES || START_NETWORK_SIZE)
     } else {
       try {
-        execa.commandSync('shardus stop', { stdio: [0, 1, 2] })
+        await execa.command('shardus stop')
         await utils._sleep(3000)
-        execa.commandSync('rm -rf instances')
+        await execa.command('rm -rf instances')
       } catch (e) {
         console.log('Unable to remove instances folder')
       }
-      execa.commandSync(`shardus create  ${START_NETWORK_SIZE}`, { ...opts, stdio: [0, 1, 2] })
+      execa.commandSync(`shardus create  ${START_NETWORK_SIZE}`, { ...opts, /* stdio: [0, 1, 2] */ })
       const isNetworkActive = await utils.waitForNetworkToBeActive(EXPECTED_ACTIVE_NODES || START_NETWORK_SIZE)
       expect(isNetworkActive).toBe(true)
     }

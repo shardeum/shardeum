@@ -81,7 +81,7 @@ export async function waitForNetworkToBeActive(numberOfExpectedNodes) {
   return ready
 }
 
-export async function waitForArchiverToJoin(ip, port) {
+export async function waitForArchiverToJoin(ip: string, port: number) {
   let ready = false
 
   while (!ready) {
@@ -92,11 +92,12 @@ export async function waitForArchiverToJoin(ip, port) {
         if (newArchiver.ip === ip && newArchiver.port === port) ready = true
       }
     } catch (e) {
-      console.log('error while checking new archiver to join', e.message)
+        console.log('error while checking new archiver to join', e.message)
+        return ready;
     }
     if (!ready) await _sleep(10000)
   }
-  return true
+  return ready
 }
 
 export async function getInsyncAll() {

@@ -9,12 +9,12 @@ export const archiverTest = (startNewAchiver = false, checkTotalDataCheck = fals
     test('Start new archivers successfully', async () => {
       console.log('TEST: Start new archivers successfully')
 
-      try {
-        execa.commandSync('shardus start --archivers 1', { ...opts, stdio: [0, 1, 2] })
-      } catch (e) {
-        console.log(e)
-      }
-      let hasNewArchiverJoined = await utils.waitForArchiverToJoin('localhost', 4001)
+    try {
+      execa.commandSync('shardus start --archivers 1', { ...opts, /*stdio: [0, 1, 2]*/ })
+    } catch (e) {
+      console.log(e)
+    }
+    let hasNewArchiverJoined = await utils.waitForArchiverToJoin('localhost', 4001)
 
       expect(hasNewArchiverJoined).toBe(true)
     })

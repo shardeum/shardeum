@@ -1,11 +1,13 @@
 import * as utils from './testUtils'
 import axios from 'axios'
 
-export async function getAccountsReport() {
+export async function getAccountsReport(_shuffle: boolean =  true) {
   const activeNodes = await utils.queryActiveNodes()
   const activeNodeList: any = Object.values(activeNodes)
-  const host = activeNodeList[0].nodeIpInfo.externalIp + ':' + activeNodeList[0].nodeIpInfo.externalPort
+  const index = _shuffle ? Math.floor(Math.random()*activeNodeList.length) : 0;
+  const host = activeNodeList[index].nodeIpInfo.externalIp + ':' + activeNodeList[index].nodeIpInfo.externalPort
   let result = await axios.get(`http://${host}/accounts`)
+    console.log(host);
   return result.data
 }
 
