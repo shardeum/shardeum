@@ -15,7 +15,7 @@ export const startTest = (START_NETWORK_SIZE, EXPECTED_ACTIVE_NODES = null) => {
     if (USE_EXISTING_NETWORK) {
       console.log('Using existing active network')
       let activeNodes = await utils.queryActiveNodes()
-      expect(Object.keys(activeNodes).length).toBe(START_NETWORK_SIZE)
+      expect(Object.keys(activeNodes).length).toBe(EXPECTED_ACTIVE_NODES || START_NETWORK_SIZE)
     } else {
       try {
         execa.commandSync('shardus stop', { stdio: [0, 1, 2] })
