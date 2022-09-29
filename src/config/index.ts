@@ -117,7 +117,7 @@ config = merge(config, {
 config = merge(config, {
   server: {
     sharding: {
-      nodesPerConsensusGroup: process.env.nodesPerConsensusGroup ? parseInt(process.env.nodesPerConsensusGroup) : 50,
+      nodesPerConsensusGroup: process.env.nodesPerConsensusGroup ? parseInt(process.env.nodesPerConsensusGroup) : 5,
       executeInOneShard: true
     },
     stateManager: {
@@ -140,7 +140,7 @@ config = merge(
   config,
   {
     server: {
-      mode: 'release', //TODO must set this to "release" for public networks or get security on endpoints. use "debug" for easier debugging
+      mode: 'debug', //TODO must set this to "release" for public networks or get security on endpoints. use "debug" for easier debugging
       debug: {
         startInFatalsLogMode: false, // true setting good for big aws test with nodes joining under stress.
         startInErrorLogMode: true,
