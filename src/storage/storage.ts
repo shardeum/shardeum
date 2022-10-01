@@ -46,7 +46,7 @@ class Storage {
 
     if(ShardeumFlags.NewStorageIndex) {
       //add index to timestamp
-      await this.storage.run('CREATE INDEX timestamp1 ON accountsEntry(timestamp)')
+      await this.storage.run('CREATE INDEX IF NOT EXISTS timestamp1 ON accountsEntry(timestamp)')
     }
 
     // get models and helper methods from the storage class we just initializaed.
