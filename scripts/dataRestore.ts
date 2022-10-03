@@ -1,15 +1,12 @@
 import fs from 'fs'
 import path from 'path' //require('path')
-const { Sequelize, Model } = require('sequelize')
+const { Sequelize } = require('sequelize')
 import * as WrappedEVMAccountFunctions from '../src/shardeum/wrappedEVMAccountFunctions'
-import TransactionState from '../src/state/transactionState'
 import * as crypto from '@shardus/crypto-utils'
-import { accounts } from '../src/storage/accountStorage'
-import { Utils } from 'sequelize/types'
 
 crypto.init('69fa4195670576c0160d660c3be36556ff8d504725be8a59b5a96509e0c994bc')
 
-let accountsMap = new Map()
+let accountsMap = new Map<string, any>()
 const emptyCodeHash = 'c5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470'
 let dbFiles = [
   {
@@ -42,7 +39,7 @@ async function dbFilesFromFolders() {
         let isDir = fs.lstatSync(filepath).isDirectory()
         if (isDir) {
           //console.log(file);
-          let filepath2 = path.resolve(directory, filepath + '/db/shardeum.sqlite')          
+          let filepath2 = path.resolve(directory, filepath + '/db/shardeum.sqlite')
           let size = fs.lstatSync(filepath2)?.size ?? -1
           console.log(filepath2 + ' ' + size)
 
@@ -67,13 +64,12 @@ async function main() {
   let stats = {
     patchedOld_codeHash: 0,
     accountsToCheckCodeHash: 0,
-    timestampUpgrades:0
+    timestampUpgrades: 0,
   }
 
   for (let dbFile of dbFiles) {
     let tsUpgrades = 0
     try {
-
       let newestAccounts = await getNewestAccountsFromDB(dbFile.filename)
       for (let account of newestAccounts) {
         if (dbFile.loadAccountType === 'contractStorage') {
@@ -88,7 +84,7 @@ async function main() {
           //add all...
           //existingAccounts.push(account)
           //existingAccounts.sort((a, b) => b.timestamp - a.timestamp)
-          if(account.timestamp > existingAccounts[0].timestamp){
+          if (account.timestamp > existingAccounts[0].timestamp) {
             existingAccounts[0] = account
             stats.timestampUpgrades++
             tsUpgrades++
@@ -105,7 +101,7 @@ async function main() {
 
   let repairOldCodeHash = false
   if (repairOldCodeHash) {
-    let accountsToCheckCodeHash = []
+    let accountsToCheckCodeHash: string[] = []
     for (let [accountId, accountData] of accountsMap) {
       let newestAccount = accountData[0]
       if (newestAccount.data.accountType === 0) {
@@ -188,7 +184,7 @@ async function main() {
   //writableStream.write('[')
   for (let i = 0; i < finalAccounts.length; i++) {
     let account = finalAccounts[i]
-    writableStream.write(JSON.stringify(account))//JSON.stringify(account, null, 2)) // + (i < finalAccounts.length)?',\n':'')
+    writableStream.write(JSON.stringify(account)) //JSON.stringify(account, null, 2)) // + (i < finalAccounts.length)?',\n':'')
     // if (i < finalAccounts.length - 1) {
     //   writableStream.write(',\n')
     // }
@@ -220,7 +216,10 @@ async function getNewestAccountsFromDB(db: string) {
   const queryString = `SELECT a.accountId,a.data,a.timestamp FROM accountsEntry a INNER JOIN (SELECT accountId, MAX(timestamp) timestamp FROM accountsEntry GROUP BY accountId) b ON a.accountId = b.accountId AND a.timestamp = b.timestamp order by a.accountId asc`
   let accounts = await database.query(queryString, { raw: true })
   accounts = accounts[0]
-  accounts = accounts.map(acc => ({ ...acc, data: JSON.parse(acc.data) }))
+  accounts = accounts.map(acc => {
+    const data = JSON.parse(acc.data)
+    return { ...acc, data: JSON.parse(acc.data), hash: data.hash, isGlobal: acc.accountId === '0'.repeat(64), cycleNumber: 0 }
+  })
   //database.close()
   return accounts
 }
@@ -230,7 +229,6 @@ function sleep(ms) {
     setTimeout(resolve, ms)
   })
 }
-
 
 //main()
 dbFilesFromFolders()
