@@ -42,8 +42,7 @@ async function dbFilesFromFolders() {
         let isDir = fs.lstatSync(filepath).isDirectory()
         if (isDir) {
           //console.log(file);
-          let filepath2 = path.resolve(directory, filepath + '/db/db.sqlite')
-          let filepathRel = file + '/db/db.sqlite'
+          let filepath2 = path.resolve(directory, filepath + '/db/shardeum.sqlite')          
           let size = fs.lstatSync(filepath2)?.size ?? -1
           console.log(filepath2 + ' ' + size)
 
@@ -137,7 +136,7 @@ async function main() {
         else accountIdArr += `'${accountId}',`
       }
       accountIdArr = '(' + accountIdArr + ')'
-      let queryStr = `SELECT a.accountId,a.data,a.timestamp,a.hash,a.isGlobal,a.cycleNumber FROM accountsCopy a INNER JOIN (SELECT accountId, MIN(timestamp) timestamp FROM accountsCopy GROUP BY accountId) b ON a.accountId = b.accountId AND a.timestamp = b.timestamp WHERE a.accountId IN ${accountIdArr} order by a.timestamp asc`
+      let queryStr = `SELECT a.accountId,a.data,a.timestamp FROM accountsEntry a INNER JOIN (SELECT accountId, MIN(timestamp) timestamp FROM accountsEntry GROUP BY accountId) b ON a.accountId = b.accountId AND a.timestamp = b.timestamp WHERE a.accountId IN ${accountIdArr} order by a.timestamp asc`
 
       let oldAccounts = await db.query(queryStr, { raw: true })
       oldAccounts = oldAccounts[0]
@@ -218,7 +217,7 @@ function getDB(db: string) {
 
 async function getNewestAccountsFromDB(db: string) {
   const database = getDB(db)
-  const queryString = `SELECT a.accountId,a.data,a.timestamp,a.hash,a.isGlobal,a.cycleNumber FROM accountsCopy a INNER JOIN (SELECT accountId, MAX(timestamp) timestamp FROM accountsCopy GROUP BY accountId) b ON a.accountId = b.accountId AND a.timestamp = b.timestamp order by a.accountId asc`
+  const queryString = `SELECT a.accountId,a.data,a.timestamp FROM accountsEntry a INNER JOIN (SELECT accountId, MAX(timestamp) timestamp FROM accountsEntry GROUP BY accountId) b ON a.accountId = b.accountId AND a.timestamp = b.timestamp order by a.accountId asc`
   let accounts = await database.query(queryString, { raw: true })
   accounts = accounts[0]
   accounts = accounts.map(acc => ({ ...acc, data: JSON.parse(acc.data) }))
