@@ -17,6 +17,7 @@ export interface LoadReport {
 }
 
 let oneJsonAccountPerLine = true
+let loadInitialDataPerBatch = false
 
 export async function loadAccountDataFromDB(shardus: any, options: LoadOptions): Promise<LoadReport> {
   let report: LoadReport = {
@@ -40,6 +41,7 @@ export async function loadAccountDataFromDB(shardus: any, options: LoadOptions):
     }
 
     let accountArray = []
+    let totalAccounts = 0
     if(oneJsonAccountPerLine === false){
       const accountFileText = fs.readFileSync(path, 'utf8')
       if (accountFileText == null) {
@@ -48,7 +50,42 @@ export async function loadAccountDataFromDB(shardus: any, options: LoadOptions):
       accountArray = JSON.parse(accountFileText)
       if (accountArray == null) {
         return report
-      }      
+      }
+    } else if (loadInitialDataPerBatch === true) {
+      const rl = readline.createInterface({
+        input: fs.createReadStream(path),
+        output: process.stdout,
+        terminal: false,
+        crlfDelay: Infinity,
+      })
+      rl.on('line', async line => {
+        if (line != '') {
+          try {
+            const account = JSON.parse(line)
+            if (account != null) {
+              accountArray.push(account)
+              totalAccounts++
+            }
+            if (accountArray.length % 1000 === 0) {
+              rl.pause()
+              await processAccountsData(shardus, report, accountArray)
+              accountArray = []
+              rl.resume()
+            }
+          } catch (ex) {
+            console.log('Error in parsing the line', line, ex)
+          }
+        }
+      })
+      await once(rl, 'close')
+      await processAccountsData(shardus, report, accountArray)
+      if (accountArray.length > 0) {
+        await processAccountsData(shardus, report, accountArray)
+        accountArray = []
+      }
+      if (logVerbose) shardus.log(`loadAccountDataFromDB ${totalAccounts}`)
+      console.log(`loadAccountDataFromDB: ${totalAccounts}`)
+      return report
     } else {
       const rl = readline.createInterface({
         input: fs.createReadStream(path),
@@ -80,82 +117,7 @@ export async function loadAccountDataFromDB(shardus: any, options: LoadOptions):
     //     //transform global account?
     //     await shardus.debugSetAccountState(wrappedResponse)
     // }
-
-    let lastTS = -1
-    let accountArrayClean = []
-    for (let account of accountArray) {
-      //account.isGlobal = (account.isGlobal === 1)? true : false
-      try{
-        account.data = JSON.parse(account.data)
-        // skip account with accountIds starting with "0x"
-        if (account.accountId.indexOf('0x') >= 0) continue
-      } catch (error){
-        if(report.loadFailed < 100){
-          //log first 100 parsing errors
-          console.log(`error parsing ${account.data}`)          
-        }
-        report.loadFailed++
-        continue
-      }
-
-      account.isGlobal = Boolean(account.isGlobal)
-      account.cycleNumber = 0 //force to 0.  later if we use a cycle offset, then we leave cycle number alone
-                              //but for now we have to start back at 0 in a new network
-
-      if(account.timestamp === 0){
-        account.timestamp = 1 //fix some old data to have non zero timestamps
-      }
-
-      if(account.data.timestamp === 0){
-        account.data.timestamp = 1 //fix some old data to have non zero timestamps
-      }
-
-      // in liberty 1.0 contract accounts were globbal.  They are now going to be non global in 
-      // liberty 1.1   We will keep the network account as global though
-      if(account.accountId != networkAccount){
-        account.isGlobal = false
-      }
-
-      if (account.timestamp < lastTS) {
-        //accounts are descending timestamps.
-        throw new Error(`invalid timestamp sort: ${account.timestamp}`)
-      }
-      lastTS = account.timestamp
-
-      accountArrayClean.push(account)
-    }
-
-    //replace with the clean array
-    accountArray = accountArrayClean
-
-    let firstAccount = accountArray[0]
-    if (logVerbose) shardus.log(`loadAccountDataFromDB ${JSON.stringify(firstAccount)}`)
-
-    if (ShardeumFlags.forwardGenesisAccounts) {
-      let bucketSize = ShardeumFlags.DebugRestoreArchiveBatch
-      let limit = bucketSize
-      let j = limit
-      for (let i = 0; i < accountArray.length; i = j) {
-        console.log(i, limit)
-        const accountsToForward = accountArray.slice(i, limit)
-        try {
-          await shardus.forwardAccounts(accountsToForward)
-        } catch (error) {
-          console.log(`loadAccountDataFromDB:` + error.name + ': ' + error.message + ' at ' + error.stack)
-        }
-        j = limit
-        limit += bucketSize
-        await sleep(1000)
-      }
-    } else {
-      await shardus.forwardAccounts(accountArray.length)
-      setGenesisAccounts(accountArray) // As an assumption to save in memory, so that when it's queried it can reponse fast, we can make it query from DB later 
-    }
-
-    await shardus.debugCommitAccountCopies(accountArray)
-
-    report.loadCount = accountArray.length //todo make this more closed loop on how many accounts were loaded
-    report.passed = true
+    await processAccountsData(shardus, report, accountArray)
     if (logVerbose) shardus.log(`loadAccountDataFromDB success`)
     //accountsCopy.json
   } catch (error) {
@@ -165,4 +127,85 @@ export async function loadAccountDataFromDB(shardus: any, options: LoadOptions):
     throw new Error(`loadAccountDataFromDB:` + error.name + ': ' + error.message + ' at ' + error.stack)
   }
   return report
+}
+
+export const processAccountsData = async (shardus, report: LoadReport, accountArray) => {
+  let logVerbose = ShardeumFlags.VerboseLogs
+  let lastTS = -1
+  let accountArrayClean = []
+  for (let account of accountArray) {
+    //account.isGlobal = (account.isGlobal === 1)? true : false
+    try {
+      account.data = JSON.parse(account.data)
+      // skip account with accountIds starting with "0x"
+      if (account.accountId.indexOf('0x') >= 0) continue
+    } catch (error) {
+      if (report.loadFailed < 100) {
+        //log first 100 parsing errors
+        console.log(`error parsing ${account.data}`)
+      }
+      report.loadFailed++
+      continue
+    }
+
+    account.isGlobal = Boolean(account.isGlobal)
+    account.cycleNumber = 0 //force to 0.  later if we use a cycle offset, then we leave cycle number alone
+    //but for now we have to start back at 0 in a new network
+
+    if (account.timestamp === 0) {
+      account.timestamp = 1 //fix some old data to have non zero timestamps
+    }
+
+    if (account.data.timestamp === 0) {
+      account.data.timestamp = 1 //fix some old data to have non zero timestamps
+    }
+
+    // in liberty 1.0 contract accounts were globbal.  They are now going to be non global in
+    // liberty 1.1   We will keep the network account as global though
+    if (account.accountId != networkAccount) {
+      account.isGlobal = false
+    }
+
+    if (account.timestamp < lastTS) {
+      //accounts are descending timestamps.
+      throw new Error(`invalid timestamp sort: ${account.timestamp}`)
+    }
+    lastTS = account.timestamp
+
+    accountArrayClean.push(account)
+  }
+
+  //replace with the clean array
+  accountArray = accountArrayClean
+
+  if (report.loadCount === 0) {
+    let firstAccount = accountArray[0]
+    if (logVerbose) shardus.log(`loadAccountDataFromDB ${JSON.stringify(firstAccount)}`)
+  }
+
+  if (ShardeumFlags.forwardGenesisAccounts) {
+    let bucketSize = ShardeumFlags.DebugRestoreArchiveBatch
+    let limit = bucketSize
+    let j = limit
+    for (let i = 0; i < accountArray.length; i = j) {
+      console.log(i, limit)
+      const accountsToForward = accountArray.slice(i, limit)
+      try {
+        await shardus.forwardAccounts(accountsToForward)
+      } catch (error) {
+        console.log(`loadAccountDataFromDB:` + error.name + ': ' + error.message + ' at ' + error.stack)
+      }
+      j = limit
+      limit += bucketSize
+      if (accountsToForward < accountArray.length) await sleep(1000)
+    }
+  } else {
+    await shardus.forwardAccounts(accountArray.length)
+    setGenesisAccounts(accountArray) // As an assumption to save in memory, so that when it's queried it can reponse fast, we can make it query from DB later
+  }
+
+  await shardus.debugCommitAccountCopies(accountArray)
+
+  report.loadCount = report.loadCount + accountArray.length //todo make this more closed loop on how many accounts were loaded
+  report.passed = true
 }
