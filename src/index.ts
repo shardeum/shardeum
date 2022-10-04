@@ -608,15 +608,15 @@ async function getReadableAccountInfo(account) {
 
 /**
  * Cant be used in parallel
- * @returns 
+ * @returns
  */
 function getDebugTXState(): ShardeumState {
   let txId = '7'.repeat(64)
   if (ShardeumFlags.VerboseLogs) console.log('Creating a debug tx ShardeumState for ')
-  
+
   let shardeumState = debugShardeumState
   if (shardeumState == null) {
-    shardeumState = new ShardeumState({ common:evmCommon }) 
+    shardeumState = new ShardeumState({ common:evmCommon })
     let transactionState = new TransactionState()
     transactionState.initData(
       shardeumState,
@@ -648,15 +648,15 @@ function getDebugTXState(): ShardeumState {
 /**
  * only use for the duration of a call and then give up on it
  * ?? will this work
- * @param from 
- * @param to 
- * @returns 
+ * @param from
+ * @param to
+ * @returns
  */
 function getCallTXState(from: string, to: string): ShardeumState {
   let txId = '9'.repeat(64) // use different txId than debug txs
   if (ShardeumFlags.VerboseLogs) console.log('Creating a call tx ShardeumState for ', txId)
 
-  let shardeumState = new ShardeumState({ common:evmCommon }) 
+  let shardeumState = new ShardeumState({ common:evmCommon })
   let transactionState = new TransactionState()
   transactionState.initData(
     shardeumState,
@@ -675,8 +675,30 @@ function getCallTXState(from: string, to: string): ShardeumState {
   return shardeumState
 }
 
+function getPreRunTXState(txId: string): ShardeumState {
+    if (ShardeumFlags.VerboseLogs) console.log('Creating a call tx ShardeumState for ', txId)
+
+    let shardeumState = new ShardeumState({ common:evmCommon })
+    let transactionState = new TransactionState()
+    transactionState.initData(
+        shardeumState,
+        {
+            storageMiss: accountMissNoOp,
+            contractStorageMiss: contractStorageMissNoOp,
+            accountInvolved: accountInvolvedNoOp,
+            contractStorageInvolved: contractStorageInvolvedNoOp,
+            tryGetRemoteAccountCB: tryGetRemoteAccountCB
+        },
+        txId,
+        undefined,
+        undefined
+    )
+    shardeumState.setTransactionState(transactionState)
+    return shardeumState
+}
+
 function getApplyTXState(txId:string): ShardeumState{
-  
+
   let shardeumState = shardeumStateTXMap.get(txId)
   if (shardeumState == null) {
 
@@ -712,9 +734,9 @@ async function manuallyCreateAccount(ethAccountID: string, balance = defaultBala
   let shardusAccountID = toShardusAddress(ethAccountID, AccountType.Account)
 
   let debugTXState = getDebugTXState() //this isn't so great..
-  debugTXState.checkpoint()  
+  debugTXState.checkpoint()
   let newAccount = await createAccount(ethAccountID, debugTXState, balance)
-  debugTXState.commit() 
+  debugTXState.commit()
 
   //if (ShardeumFlags.temporaryParallelOldMode === false) {
     let { accounts: accountWrites, contractStorages: contractStorageWrites, contractBytes: contractBytesWrites } = debugTXState._transactionState.getWrittenAccounts()
@@ -1245,6 +1267,160 @@ shardus.registerExternalPost('contract/call', async (req, res) => {
     if (ShardeumFlags.VerboseLogs) console.log('Error eth_call', e)
     return res.json({ result: null })
   }
+})
+
+shardus.registerExternalPost('contract/accesslist', async (req, res) => {
+    if(trySpendServicePoints(ShardeumFlags.ServicePoints['contract/accesslist'].endpoint) === false){
+        return res.json({result: null, error:'node busy'})
+    }
+
+    try {
+        const callObj = req.body
+        if (ShardeumFlags.VerboseLogs) console.log('callObj', callObj)
+        let opt = {
+            to: Address.fromString(callObj.to),
+            caller: Address.fromString(callObj.from),
+            origin: Address.fromString(callObj.from), // The tx.origin is also the caller here
+            data: toBuffer(callObj.data),
+            value: new BN(String(parseInt(callObj.value.hex)))
+        }
+        if (callObj.to) {
+            opt['to'] = Address.fromString(callObj.to)
+        }
+
+        if (callObj.gas) {
+            opt['gasLimit'] = new BN(Number(callObj.gas))
+        }
+
+        if (callObj.gasPrice) {
+            opt['gasPrice'] = callObj.gasPrice
+        }
+
+        let caShardusAddress;
+        const methodCode = callObj.data.substr(0, 10)
+        let caAccount
+
+        if (opt['to']) {
+            caShardusAddress = toShardusAddress(callObj.to, AccountType.Account)
+        }
+
+        if (opt['to']) {
+            console.log('Calling to ', callObj.to, caShardusAddress)
+
+            let address = caShardusAddress
+            let accountIsRemote = shardus.isAccountRemote(address)
+
+            if (accountIsRemote) {
+                let consensusNode = shardus.getRandomConsensusNodeForAccount(address)
+                if (ShardeumFlags.VerboseLogs) console.log(`Node is in remote shard: ${consensusNode?.externalIp}:${consensusNode?.externalPort}`)
+                if (consensusNode != null) {
+                    if (ShardeumFlags.VerboseLogs) console.log(`Node is in remote shard: requesting`)
+
+                    let postResp = await _internalHackPostWithResp(`${consensusNode.externalIp}:${consensusNode.externalPort}/contract/prerun`, callObj)
+                    if (postResp.body != null && postResp.body != '') {
+                        //getResp.body
+
+                        if (ShardeumFlags.VerboseLogs) console.log(`Node is in remote shard: gotResp:${JSON.stringify(postResp.body)}`)
+                        //res.json({ result: callResult.execResult.returnValue.toString('hex') })
+                        //return res.json({ result: '0x' + postResp.body })   //I think the 0x is worse?
+                        return res.json({ result: postResp.body.result })
+                    }
+                } else {
+                    if (ShardeumFlags.VerboseLogs) console.log(`Node is in remote shard: consensusNode = null`)
+                    return res.json({ result: null })
+                }
+            } else {
+                if (ShardeumFlags.VerboseLogs) console.log(`Node is in remote shard: false`)
+            }
+        }
+
+        // if we are going to handle the call directly charge 20 points
+        if(trySpendServicePoints(ShardeumFlags.ServicePoints['contract/call'].direct) === false){
+            return res.json({ result: null, error:'node busy'})
+        }
+
+        let txId = crypto.hashObj(callObj)
+        let preRunTxState = getPreRunTXState(txId)
+
+        let callerAddress = toShardusAddress(callObj.from, AccountType.Account)
+        let callerAccount = await AccountsStorage.getAccount(callerAddress)
+        if (callerAccount) {
+            if (ShardeumFlags.VerboseLogs) console.log('callerAddress', callerAccount)
+            preRunTxState._transactionState.insertFirstAccountReads(opt.caller, callerAccount.account)
+        } else {
+            const acctData = {
+                nonce: 0,
+                balance: oneEth.mul(new BN(100)), // 100 eth.  This is a temporary account that will never exist.
+            }
+            const fakeAccount = Account.fromAccountData(acctData)
+            preRunTxState._transactionState.insertFirstAccountReads(opt.caller, fakeAccount)
+        }
+
+        opt['block'] = blocks[latestBlock]
+
+        //@ts-ignore
+        EVM.stateManager = null
+        //@ts-ignore
+        EVM.stateManager = preRunTxState
+        console.log('runCall callOption', opt)
+        const callResult = await EVM.runCall(opt)
+        let readAccounts = preRunTxState._transactionState.getReadAccounts()
+        let writtenAccounts = preRunTxState._transactionState.getWrittenAccounts()
+        let allInvolvedContracts = []
+        let accessList = []
+        for (let [key, storageMap] of writtenAccounts.contractStorages) {
+            if(!allInvolvedContracts.includes(key)) allInvolvedContracts.push(key)
+        }
+        for (let [key, storageMap] of readAccounts.contractStorages) {
+            if(!allInvolvedContracts.includes(key)) allInvolvedContracts.push(key)
+        }
+        for (let [codeHash, contractByteWrite] of readAccounts.contractBytes) {
+            let contractAddress = contractByteWrite.contractAddress.toString()
+            if(!allInvolvedContracts.includes(contractAddress)) allInvolvedContracts.push(contractAddress)
+        }
+        if (ShardeumFlags.VerboseLogs) {
+            console.log('allInvolvedContracts', allInvolvedContracts)
+            console.log('Read accounts', readAccounts)
+            console.log('Written accounts', writtenAccounts)
+        }
+
+        for (let address of allInvolvedContracts) {
+            let allKeys = new Set()
+            let readKeysMap = readAccounts.contractStorages.get(address)
+            let writeKeyMap = writtenAccounts.contractStorages.get(address)
+            if (readKeysMap) {
+                for (let [key, value] of readKeysMap) {
+                    if (!allKeys.has(key)) allKeys.add(key)
+                }
+            }
+
+            if (writeKeyMap) {
+                for (let [key, value] of writeKeyMap) {
+                    if (!allKeys.has(key)) allKeys.add(key)
+                }
+            }
+
+            for (let [codeHash, byteReads] of readAccounts.contractBytes) {
+                let contractAddress = byteReads.contractAddress.toString()
+                if (contractAddress !== address) continue
+                if (!allKeys.has(codeHash)) allKeys.add(codeHash)
+            }
+            let accessListItem = [address, Array.from(allKeys).map(key => '0x' + key)]
+            accessList.push(accessListItem)
+        }
+
+        if (ShardeumFlags.VerboseLogs) console.log('Predicted accessList', accessList)
+
+        if (callResult.execResult.exceptionError) {
+            if (ShardeumFlags.VerboseLogs) console.log('Execution Error:', callResult.execResult.exceptionError)
+            return res.json({ result: null })
+        }
+
+        res.json({ result: callResult.execResult.returnValue.toString('hex'), accessList })
+    } catch (e) {
+        if (ShardeumFlags.VerboseLogs) console.log('Error predict accessList', e)
+        return res.json({ result: null })
+    }
 })
 
 shardus.registerExternalGet('tx/:hash', async (req, res) => {
@@ -2053,7 +2229,7 @@ shardus.setup({
     // }
 
     let shardeumState = getApplyTXState(txId)
-    
+
 
     //ah shoot this binding will not be "thread safe" may need to make it part of the EEI for this tx? idk.
     //shardeumStateManager.setTransactionState(transactionState)
@@ -2728,7 +2904,7 @@ shardus.setup({
 
     //Is this ok
     let shardeumState = getCallTXState('setAccountData', 'setAccountData' )
-    
+
     // update shardeum state. put this in a separate loop, but maybe that is overkill
     // I was thinking we could checkpoint and commit the changes on the outer loop,
     // but now I am not so sure that is safe, and best case may need a mutex
