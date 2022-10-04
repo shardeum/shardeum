@@ -151,6 +151,10 @@ export default class TransactionState {
     this.checkpointCount = 0
   }
 
+  getReadAccounts() {
+      return { accounts: this.firstAccountReads, contractStorages: this.firstContractStorageReads, contractBytes: this.firstContractBytesReads }
+  }
+
   getWrittenAccounts() {
 
     //flatten accounts maps. from newest to oldest in our stack (newest has the highest array index)
@@ -846,8 +850,8 @@ export default class TransactionState {
     //this.canCommit = true
     this.checkpointCount++
 
-    if (this.debugTrace) this.debugTraceLog(`checkpointCount:${this.checkpointCount} checkpoint `)
-    if (this.debugTrace) console.log('checkpoint: allAccountWritesStack', this.logAccountWritesStack(this.allAccountWritesStack))
+    // if (this.debugTrace) this.debugTraceLog(`checkpointCount:${this.checkpointCount} checkpoint `)
+    // if (this.debugTrace) console.log('checkpoint: allAccountWritesStack', this.logAccountWritesStack(this.allAccountWritesStack))
   }
 
   commit(){
@@ -900,9 +904,9 @@ export default class TransactionState {
       for(let [key,value] of accountWrites.entries()){
         newTop.set(key,value)
       }
-      if (this.debugTrace) console.log('commit: updated allAccountWritesStack', this.logAccountWritesStack(this.allAccountWritesStack))
+      // if (this.debugTrace) console.log('commit: updated allAccountWritesStack', this.logAccountWritesStack(this.allAccountWritesStack))
     } else if(this.checkpointCount === 0){
-      if (this.debugTrace) console.log('commit: allAccountWritesStack', this.logAccountWritesStack(this.allAccountWritesStack))
+      // if (this.debugTrace) console.log('commit: allAccountWritesStack', this.logAccountWritesStack(this.allAccountWritesStack))
       this.flushToCommittedValues()
     }
 
