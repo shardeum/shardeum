@@ -101,11 +101,13 @@ config = merge(config, {
         internal: 0.8,
         external: 0.8,
         txTimeInQueue: 0.7,
-        queueLength: 0.8
+        queueLength: 0.8,
+        executeQueueLength: 0.8,
       }
     },
     loadDetection: {
-      queueLimit: 100, //use 200 for multi shard networks.  100-130 for single shard networks
+      queueLimit: 400, //EXSS does the main limiting now queue limit is a secondary limit 
+      executeQueueLimit: 100,
       desiredTxTime: 15,
       highThreshold: 0.5,
       lowThreshold: 0.2
