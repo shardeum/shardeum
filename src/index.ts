@@ -1282,7 +1282,7 @@ shardus.registerExternalPost('contract/accesslist', async (req, res) => {
             caller: Address.fromString(callObj.from),
             origin: Address.fromString(callObj.from), // The tx.origin is also the caller here
             data: toBuffer(callObj.data),
-            value: new BN(String(parseInt(callObj.value.hex)))
+            value: callObj.value && callObj.value.hex ? new BN(String(parseInt(callObj.value.hex))) : new BN('0')
         }
         if (callObj.to) {
             opt['to'] = Address.fromString(callObj.to)
