@@ -100,6 +100,10 @@ export function toShardusAddressWithKey(addressStr: string, secondaryAddressStr:
     return secondaryAddressStr.slice(2).toLowerCase()
   }
 
+  if (accountType === AccountType.NetworkAccount || accountType === AccountType.NodeAccount || accountType === AccountType.NodeRewardReceipt) {
+    return addressStr.toLowerCase()
+  }
+
   // receipt or contract bytes remain down past here
   if (addressStr.length === 64) {
     //unexpected case but lets allow it

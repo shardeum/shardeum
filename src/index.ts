@@ -75,7 +75,7 @@ export let readableBlocks = {}
 export const INITIAL_PARAMETERS: NetworkParameters = {
   title: 'Initial parameters',
   description: 'These are the initial network parameters Shardeum started with',
-  nodeRewardInterval: ONE_MINUTE * 5, // 10 minutes for testing
+  nodeRewardInterval: ONE_MINUTE * 10, // 10 minutes for testing
   nodeRewardAmount: 1, // 1 ETH
   nodePenalty: 10,
   stakeRequired: 5,
@@ -1047,8 +1047,7 @@ shardus.registerExternalGet('account/:address', async (req, res) => {
       let accountType = parseInt(req.query.type)
       let id = req.params['address']
       const shardusAddress = toShardusAddressWithKey(id, '', accountType)
-      //let account = accounts[shardusAddress]
-      let account = await AccountsStorage.getAccount(shardusAddress)
+      const account = await shardus.getLocalOrRemoteAccount(shardusAddress)
       return res.json({ account })
     }
   } catch (error) {
@@ -1533,19 +1532,21 @@ shardus.registerExternalGet('nodeRewardValidate', debugMiddleware, async (req, r
   //   return res.json(`endpoint not available`)
   // }
 
+  if (nodeRewardCount === 0) {
+    return res.json({ success: true, data: 'This node is still early for node rewards!' })
+  }
+
   const expectedBalance = nodeRewardCount * parseInt(oneEth.mul(new BN(INITIAL_PARAMETERS.nodeRewardAmount)).toString()) + parseInt(defaultBalance.toString())
   const shardusAddress = toShardusAddress(pay_address, AccountType.Account)
-  //const account = accounts[shardusAddress]
-  const account = await AccountsStorage.getAccount(shardusAddress)
 
-  // const account = await shardus.getLocalOrRemoteAccount(shardusAddress)
-  if (!account || !account.account) {
+  const account = await shardus.getLocalOrRemoteAccount(shardusAddress)
+  if (!account || !account.data) {
     console.log(`Pay address ${pay_address} is not found!`)
     return res.json({ success: false, data: `Pay address ${pay_address} is not found!` })
   }
   // let data = account.account
-  fixDeserializedWrappedEVMAccount(account)
-  let readableAccount = await getReadableAccountInfo(account)
+  fixDeserializedWrappedEVMAccount(account.data)
+  let readableAccount = await getReadableAccountInfo(account.data)
   console.log(expectedBalance, readableAccount.balance)
   if (expectedBalance === parseInt(readableAccount.balance)) {
     return res.json({ success: true, data: 'Node reward is adding successfully!' })
