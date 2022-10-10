@@ -2007,6 +2007,9 @@ shardus.setup({
             shardus.log(`node ${nodeId} SETUP GENESIS ACCOUNT: ${address}  amt: ${amount}`)
           }
           await shardus.debugCommitAccountCopies(accountCopies)
+          if (ShardeumFlags.forwardGenesisAccounts) {
+            await shardus.forwardAccounts(accountCopies)
+          }
         }
         await sleep(ONE_SECOND * 10)
 

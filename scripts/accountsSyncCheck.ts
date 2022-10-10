@@ -142,7 +142,7 @@ export async function queryAccountsFromArchiver(skip = 0, limit = 10000) {
 }
 
 export const getAccountsDataFromArchiver = async () => {
-  const dbName = `${instancesDirPath}/db/archiverdb-4000.sqlite3`
+  const dbName = `${instancesDirPath}/archiver-db/archiverdb-4000.sqlite3`
   db = new sqlite3.Database(dbName)
   await run('PRAGMA journal_mode=WAL')
   console.log('Database initialized.')
