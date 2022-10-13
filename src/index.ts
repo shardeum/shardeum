@@ -1,50 +1,53 @@
 import stringify from 'fast-json-stable-stringify'
 import * as crypto from '@shardus/crypto-utils'
-import { Account, Address, BN, bufferToHex, isValidAddress, toBuffer } from 'ethereumjs-util'
-import { AccessListEIP2930Transaction, Transaction } from '@ethereumjs/tx'
-import Common, { Chain } from '@ethereumjs/common';
+import {Account, Address, BN, bufferToHex, isValidAddress, toBuffer} from 'ethereumjs-util'
+import {AccessListEIP2930Transaction, Transaction} from '@ethereumjs/tx'
+import Common, {Chain} from '@ethereumjs/common';
 import VM from '@ethereumjs/vm'
-import { parse as parseUrl } from 'url'
+import {parse as parseUrl} from 'url'
 import got from 'got'
 import 'dotenv/config'
-import { ShardeumState, TransactionState } from './state'
-import { __ShardFunctions, ShardusTypes } from '@shardus/core'
-import { ContractByteWrite } from './state/transactionState'
-import { version } from '../package.json'
+import {ShardeumState, TransactionState} from './state'
+import {__ShardFunctions, ShardusTypes} from '@shardus/core'
+import {ContractByteWrite} from './state/transactionState'
+import {version} from '../package.json'
 import {
   AccountType,
+  BlockMap,
   DebugTx,
   DebugTXType,
   EVMAccountInfo,
   InternalTx,
   InternalTXType,
+  NetworkAccount,
+  NetworkParameters,
+  NodeAccount,
   OurAppDefinedData,
   ReadableReceipt,
   WrappedAccount,
   WrappedEVMAccount,
-  WrappedEVMAccountMap,
   WrappedStates,
-  NetworkAccount,
-  NetworkParameters,
-  NodeAccount,
-  BlockMap,
 } from './shardeum/shardeumTypes'
-import { getAccountShardusAddress, toShardusAddress, toShardusAddressWithKey } from './shardeum/evmAddress'
+import {getAccountShardusAddress, toShardusAddress, toShardusAddressWithKey} from './shardeum/evmAddress'
 import * as ShardeumFlags from './shardeum/shardeumFlags'
 import * as WrappedEVMAccountFunctions from './shardeum/wrappedEVMAccountFunctions'
-import { fixDeserializedWrappedEVMAccount, predictContractAddressDirect, updateEthAccountHash } from './shardeum/wrappedEVMAccountFunctions'
-import { replacer, zeroAddressStr, sleep, isEqualOrNewerVersion } from './utils'
+import {
+  fixDeserializedWrappedEVMAccount,
+  predictContractAddressDirect,
+  updateEthAccountHash
+} from './shardeum/wrappedEVMAccountFunctions'
+import {isEqualOrNewerVersion, replacer, sleep, zeroAddressStr} from './utils'
 import config from './config'
-import { RunTxResult } from '@ethereumjs/vm/dist/runTx'
-import { RunState } from '@ethereumjs/vm/dist/evm/interpreter'
+import {RunTxResult} from '@ethereumjs/vm/dist/runTx'
+import {RunState} from '@ethereumjs/vm/dist/evm/interpreter'
 import Wallet from 'ethereumjs-wallet'
 import genesis from './config/genesis.json'
 import {loadAccountDataFromDB} from './shardeum/debugRestoreAccounts'
-import { Block } from '@ethereumjs/block'
-import { ShardeumBlock } from './block/blockchain'
+import {Block} from '@ethereumjs/block'
+import {ShardeumBlock} from './block/blockchain'
 
 import * as AccountsStorage from './storage/accountStorage'
-import { StateManager } from '@ethereumjs/vm/dist/state';
+import {StateManager} from '@ethereumjs/vm/dist/state';
 
 
 const env = process.env
@@ -1595,7 +1598,13 @@ async function applyInternalTx(internalTx: InternalTx, wrappedStates: WrappedSta
   const applyResponse: ShardusTypes.ApplyResponse = shardus.createApplyResponse(txId, txTimestamp)
   if (internalTx.internalTXType === InternalTXType.InitNetwork) {
     const network: NetworkAccount = wrappedStates[networkAccount].data
-    network.timestamp = txTimestamp
+    if (ShardeumFlags.useAccountWrites) {
+      let writtenAccount = JSON.parse(JSON.stringify(wrappedStates[networkAccount]))
+      writtenAccount.data.timestamp = txTimestamp
+      shardus.applyResponseAddChangedAccount(applyResponse, networkAccount, writtenAccount, txId, txTimestamp)
+    } else {
+      network.timestamp = txTimestamp
+    }
     console.log(`init_network NETWORK_ACCOUNT: ${stringify(network)}`)
     shardus.log('Applied init_network transaction', network)
   }
@@ -1682,6 +1691,11 @@ async function applyInternalTx(internalTx: InternalTx, wrappedStates: WrappedSta
     from.nodeRewardTime = txTimestamp
     from.timestamp = txTimestamp
 
+    if (ShardeumFlags.useAccountWrites) {
+      let toAccountShardusAddress = toShardusAddress(internalTx.to, AccountType.Account)
+      shardus.applyResponseAddChangedAccount(applyResponse, toAccountShardusAddress, wrappedStates[toAccountShardusAddress], txId, txTimestamp)
+    }
+
     let readableReceipt: ReadableReceipt = {
       transactionHash: txId,
       transactionIndex: '0x1',
@@ -1755,6 +1769,8 @@ async function applyInternalTx(internalTx: InternalTx, wrappedStates: WrappedSta
     // network will consens that this is the correct value
     ourAppDefinedData.globalMsg = { address: networkAccount, value, when, source: networkAccount }
 
+    if (ShardeumFlags.useAccountWrites) shardus.applyResponseAddChangedAccount(applyResponse, networkAccount, wrappedStates[networkAccount], txId, txTimestamp)
+
     // from.timestamp = txTimestamp
     console.log('Applied change_config tx')
     shardus.log('Applied change_config tx')
@@ -1763,6 +1779,7 @@ async function applyInternalTx(internalTx: InternalTx, wrappedStates: WrappedSta
     const network: NetworkAccount = wrappedStates[networkAccount].data
     network.timestamp = txTimestamp
     network.listOfChanges.push(internalTx.change)
+    if (ShardeumFlags.useAccountWrites) shardus.applyResponseAddChangedAccount(applyResponse, networkAccount, wrappedStates[networkAccount], txId, txTimestamp)
     console.log(`Applied CHANGE_CONFIG GLOBAL transaction: ${stringify(network)}`)
     shardus.log('Applied CHANGE_CONFIG GLOBAL transaction', stringify(network))
   }
@@ -1951,6 +1968,7 @@ const getOrCreateBlockFromTimestamp = (timestamp: number, scheduleNextBlock = fa
  */
 shardus.setup({
   async sync(): Promise<void> {
+    if (ShardeumFlags.useAccountWrites) shardus.useAccountWrites()
     if (ShardeumFlags.GlobalNetworkAccount) {
       if (shardus.p2p.isFirstSeed) {
         await sleep(ONE_SECOND * 5)
@@ -3225,7 +3243,7 @@ shardus.setup({
     const updatedEVMAccount: WrappedEVMAccount = wrappedData.data
     const prevStateId = wrappedData.prevStateId
 
-    if (ShardeumFlags.VerboseLogs) console.log('updatedEVMAccount', updatedEVMAccount)
+    if (ShardeumFlags.VerboseLogs) console.log('updatedEVMAccount before hashUpdate', updatedEVMAccount)
 
     if (updatedEVMAccount.accountType === AccountType.Debug) {
       // Update hash
@@ -3268,6 +3286,7 @@ shardus.setup({
         hashAfter,
         accountCreated
       )
+      if (ShardeumFlags.VerboseLogs) console.log('updatedEVMAccount after hashUpdate', updatedEVMAccount)
       return
     }
 
@@ -3530,11 +3549,16 @@ shardus.setup({
     if (ShardeumFlags.VerboseLogs) console.log('Shutting down...')
   },
   getTimestampAndHashFromAccount(account) {
-    if (account != null) {
+    if (account != null && account.hash) {
       let wrappedEVMAccount = account as WrappedEVMAccount
       return {
         timestamp: wrappedEVMAccount.timestamp,
         hash: wrappedEVMAccount.hash,
+      }
+    } else if (account !== null && account.stateId) {
+      return {
+        timestamp: account.timestamp,
+        hash: account.stateId
       }
     }
     return {
