@@ -200,7 +200,7 @@ export const processAccountsData = async (shardus, report: LoadReport, accountAr
       }
       j = limit
       limit += bucketSize
-      if (accountsToForward < accountArray.length) await sleep(1000)
+      await sleep(1000)
     }
   } else {
     await shardus.forwardAccounts(accountArray.length)
