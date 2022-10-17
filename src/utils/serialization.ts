@@ -1,7 +1,7 @@
 import { UseBase64BufferEncoding } from '../shardeum/shardeumFlags'
 import { stringify } from './stringify'
 
-export function SerialiseToJsonString(obj: any): string {
+export function SerializeToJsonString(obj: any): string {
   if (UseBase64BufferEncoding) {
     return stringify(obj, { bufferEncoding: 'base64' })
   } else {
@@ -9,7 +9,7 @@ export function SerialiseToJsonString(obj: any): string {
   }
 }
 
-export function DeserialiseFromJsonString<T>(jsonString: string): T {
+export function DeSerializeFromJsonString<T>(jsonString: string): T {
   let parsedStruct
   if (UseBase64BufferEncoding) {
     parsedStruct = <T>JSON.parse(jsonString, base64BufferReviver)

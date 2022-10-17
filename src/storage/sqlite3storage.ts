@@ -5,7 +5,7 @@ import path from 'path'
 import * as Sequelize from 'sequelize'
 
 import config from '../config'
-import {isObject, SerialiseToJsonString} from '../utils'
+import {isObject, SerializeToJsonString} from '../utils'
 
 const Op = Sequelize.Op
 const sqlite3 = require('sqlite3').verbose()
@@ -201,7 +201,7 @@ class Sqlite3Storage {
         let value = object[column]
 
         if (table.isColumnJSON[column]) {
-          value = SerialiseToJsonString(value)
+          value = SerializeToJsonString(value)
         }
         // if (logFlags.console) console.log(`column: ${column}  ${value}`)
         inputs.push(value)
@@ -413,7 +413,7 @@ class Sqlite3Storage {
           paramEntry.sql = `${paramEntry.name} ${paramEntry.type} ?`
 
           if (table.isColumnJSON[paramEntry.name]) {
-            paramEntry.v1 = SerialiseToJsonString(paramEntry.v1)
+            paramEntry.v1 = SerializeToJsonString(paramEntry.v1)
           }
           paramEntry.vals = [paramEntry.v1]
         }

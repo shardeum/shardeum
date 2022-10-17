@@ -1,10 +1,11 @@
-import {Account, BN, generateAddress} from 'ethereumjs-util'
+import { Account, BN, generateAddress } from 'ethereumjs-util'
 
-import {AccountType, WrappedEVMAccount} from './shardeumTypes'
+import { AccountType, WrappedEVMAccount } from './shardeumTypes'
 import * as crypto from '@shardus/crypto-utils'
-import {TransactionState} from '../state'
-import {getAccountShardusAddress} from './evmAddress'
-import {ShardusTypes} from '@shardus/core'
+import { TransactionState } from '../state'
+import { getAccountShardusAddress } from './evmAddress'
+import { ShardusTypes } from '@shardus/core'
+import { UseBase64BufferEncoding } from './shardeumFlags'
 
 export function accountSpecificHash(wrappedEVMAccount: WrappedEVMAccount): string {
   let hash
@@ -21,7 +22,7 @@ export function accountSpecificHash(wrappedEVMAccount: WrappedEVMAccount): strin
   if (wrappedEVMAccount.accountType === AccountType.Account) {
     //Hash the full account, if we knew EOA vs CA we could mabe skip some steps.
     hash = crypto.hashObj(wrappedEVMAccount.account)
-  } else if(wrappedEVMAccount.accountType === AccountType.Debug) {
+  } else if (wrappedEVMAccount.accountType === AccountType.Debug) {
     hash = crypto.hashObj(wrappedEVMAccount)
   } else if (wrappedEVMAccount.accountType === AccountType.ContractStorage) {
     hash = crypto.hashObj({ key: wrappedEVMAccount.key, value: wrappedEVMAccount.value })
@@ -55,18 +56,20 @@ export function _shardusWrappedAccount(wrappedEVMAccount: WrappedEVMAccount): Sh
 }
 
 /**
- * make in place repairs to deseriazlied wrappedEVMAccount
+ * make in place repairs to deserialized wrappedEVMAccount
  * @param wrappedEVMAccount
  */
 export function fixDeserializedWrappedEVMAccount(wrappedEVMAccount: WrappedEVMAccount) {
-  //  console.log('fixDeserializedWrappedEVMAccount', wrappedEVMAccount)
   if (wrappedEVMAccount.accountType === AccountType.Account) {
-    TransactionState.fixUpAccountFields(wrappedEVMAccount.account)
-    //need to take the seriazlied data and put create a proper account object from it
-    const accountObj = Account.fromAccountData(wrappedEVMAccount.account)
-    wrappedEVMAccount.account = accountObj
+    TransactionState.fixAccountFields(wrappedEVMAccount.account)
+    wrappedEVMAccount.account = Account.fromAccountData(wrappedEVMAccount.account)
   }
+  if (!UseBase64BufferEncoding) {
+    fixWrappedEVMAccountBuffers(wrappedEVMAccount)
+  }
+}
 
+function fixWrappedEVMAccountBuffers(wrappedEVMAccount: WrappedEVMAccount) {
   if (wrappedEVMAccount.accountType === AccountType.ContractCode) {
     wrappedEVMAccount.codeHash = Buffer.from(wrappedEVMAccount.codeHash)
     wrappedEVMAccount.codeByte = Buffer.from(wrappedEVMAccount.codeByte)
@@ -77,8 +80,8 @@ export function fixDeserializedWrappedEVMAccount(wrappedEVMAccount: WrappedEVMAc
   }
 }
 
-export function predictContractAddress(wrappedEVMAccount: WrappedEVMAccount) : Buffer  {
-  if(wrappedEVMAccount.accountType != AccountType.Account){
+export function predictContractAddress(wrappedEVMAccount: WrappedEVMAccount): Buffer {
+  if (wrappedEVMAccount.accountType != AccountType.Account) {
     throw new Error('predictContractAddress requires AccountType.Account')
   }
   let fromStr = wrappedEVMAccount.ethAddress
@@ -87,14 +90,14 @@ export function predictContractAddress(wrappedEVMAccount: WrappedEVMAccount) : B
   return addressBuffer
 }
 
-export function predictContractAddressDirect(ethAddress:string, nonce:BN) : Buffer   {
+export function predictContractAddressDirect(ethAddress: string, nonce: BN): Buffer {
   let fromStr = ethAddress
-  if(fromStr.length === 42){
+  if (fromStr.length === 42) {
     fromStr = fromStr.slice(2) //trim 0x
   }
-  let fromBuffer = Buffer.from(fromStr,'hex')
+  let fromBuffer = Buffer.from(fromStr, 'hex')
 
-  let nonceBuffer:Buffer = Buffer.from(nonce.toArray())
+  let nonceBuffer: Buffer = Buffer.from(nonce.toArray())
   let addressBuffer = generateAddress(fromBuffer, nonceBuffer)
   return addressBuffer
 }

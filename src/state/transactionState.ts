@@ -2,17 +2,18 @@ import { Account, Address, bufferToHex, keccak256, KECCAK256_NULL, rlp, unpadBuf
 import { SecureTrie as Trie } from 'merkle-patricia-tree'
 import { ShardeumState } from '.'
 import * as ShardeumFlags from '../shardeum/shardeumFlags'
-import {zeroAddressAccount, zeroAddressStr} from "../utils";
+import { zeroAddressAccount, zeroAddressStr } from '../utils'
 import * as AccountsStorage from '../storage/accountStorage'
-import { AccountType, WrappedEVMAccount } from '../shardeum/shardeumTypes';
-import { toShardusAddress, toShardusAddressWithKey } from '../shardeum/evmAddress';
-import { fixDeserializedWrappedEVMAccount } from '../shardeum/wrappedEVMAccountFunctions';
+import { AccountType, WrappedEVMAccount } from '../shardeum/shardeumTypes'
+import { toShardusAddress, toShardusAddressWithKey } from '../shardeum/evmAddress'
+import { fixDeserializedWrappedEVMAccount } from '../shardeum/wrappedEVMAccountFunctions'
+import { UseBase64BufferEncoding } from '../shardeum/shardeumFlags'
 
 export type accountEvent = (transactionState: TransactionState, address: string) => Promise<boolean>
 export type contractStorageEvent = (transactionState: TransactionState, address: string, key: string) => Promise<boolean>
 export type involvedEvent = (transactionState: TransactionState, address: string, isRead: boolean) => boolean
 export type keyInvolvedEvent = (transactionState: TransactionState, address: string, key: string, isRead: boolean) => boolean
-export type getAccountEvent = (transactionState: TransactionState, type:AccountType, address: string, key: string) => Promise<WrappedEVMAccount>
+export type getAccountEvent = (transactionState: TransactionState, type: AccountType, address: string, key: string) => Promise<WrappedEVMAccount>
 
 export interface ShardeumStorageCallbacks {
   storageMiss: accountEvent
@@ -105,7 +106,6 @@ export default class TransactionState {
     firstReads: Map<string, Buffer>,
     firstContractStorageReads: Map<string, Map<string, Buffer>>
   ) {
-
     this.createdTimestamp = Date.now()
 
     this.linkedTX = linkedTX
@@ -160,8 +160,6 @@ export default class TransactionState {
     //flatten accounts maps. from newest to oldest in our stack (newest has the highest array index)
     //only update values if there is not an existing newer value!!
 
-
-
     // for(let i=this.allAccountWritesStack.length-1; i>=0; i--){
     //   let accountWrites = this.allAccountWritesStack[i]
     //   //process all the values in the stack
@@ -177,7 +175,11 @@ export default class TransactionState {
     //let the apply function take care of wrapping these accounts?
     //return { accounts: this.allAccountWrites, contractStorages: this.allContractStorageWrites, contractBytes: this.allContractBytesWrites }
 
-    return { accounts: this.committedAccountWrites, contractStorages: this.allContractStorageWrites, contractBytes: this.allContractBytesWrites }
+    return {
+      accounts: this.committedAccountWrites,
+      contractStorages: this.allContractStorageWrites,
+      contractBytes: this.allContractBytesWrites,
+    }
   }
 
   getTransferBlob() {
@@ -211,7 +213,13 @@ export default class TransactionState {
         //@ts-ignore
         account.balance = '0x' + account.balance
       }
+      if (!UseBase64BufferEncoding) {
+        this.fixAccountBuffers(account)
+      }
     }
+  }
+
+  private static fixAccountBuffers(account) {
     if (account.stateRoot.data) {
       account.stateRoot = Buffer.from(account.stateRoot.data)
     }
@@ -234,7 +242,7 @@ export default class TransactionState {
       return
     }
 
-    if(ShardeumFlags.SaveEVMTries){
+    if (ShardeumFlags.SaveEVMTries) {
       this.shardeumState._trie.checkpoint()
 
       //IFF this is a contract account we need to update any pending contract storage values!!
@@ -265,7 +273,7 @@ export default class TransactionState {
         for (let [key, contractByteWrite] of contractBytesCommits) {
           let codeHash = contractByteWrite.codeHash
           let codeByte = contractByteWrite.codeByte
-          if(ShardeumFlags.VerboseLogs) console.log( `Storing contract code for ${address.toString()}`, codeHash, codeByte)
+          if (ShardeumFlags.VerboseLogs) console.log(`Storing contract code for ${address.toString()}`, codeHash, codeByte)
 
           //decided to move this back to commit. since codebytes are global we need to be able to commit them without changing a contract account
           //push codeByte to the worldStateTrie.db
@@ -295,7 +303,6 @@ export default class TransactionState {
       //await this._trie.del(keyBuf)
     } else {
       //save to accounts
-
     }
   }
 
@@ -305,9 +312,8 @@ export default class TransactionState {
    * @param codeHash
    * @param contractByte
    */
-   async commitContractBytes(contractAddress: string, codeHash: Buffer, contractByte: Buffer) {
-
-    if(ShardeumFlags.SaveEVMTries){
+  async commitContractBytes(contractAddress: string, codeHash: Buffer, contractByte: Buffer) {
+    if (ShardeumFlags.SaveEVMTries) {
       //only put this in the pending commit structure. we will do the real commit when updating the account
       if (this.pendingContractBytesCommits.has(contractAddress)) {
         let contractBytesCommit = this.pendingContractBytesCommits.get(contractAddress)
@@ -328,12 +334,11 @@ export default class TransactionState {
 
       if (this.debugTrace) this.debugTraceLog(`commitContractBytes:contractCode codeHash:${codeHash.toString('hex')} v:${contractByte.toString('hex')}`)
     }
-
   }
 
   async commitContractStorage(contractAddress: string, keyString: string, value: Buffer) {
     //store all writes to the persistant trie.
-    if(ShardeumFlags.SaveEVMTries){
+    if (ShardeumFlags.SaveEVMTries) {
       //only put this in the pending commit structure. we will do the real commit when updating the account
       if (this.pendingContractStorageCommits.has(contractAddress)) {
         let contractStorageCommits = this.pendingContractStorageCommits.get(contractAddress)
@@ -350,7 +355,7 @@ export default class TransactionState {
 
   async getAccount(worldStateTrie: Trie, address: Address, originalOnly: boolean, canThrow: boolean): Promise<Account> {
     const addressString = address.toString()
-    let account:Account
+    let account: Account
     if (ShardeumFlags.Virtual0Address && addressString === zeroAddressStr) {
       return zeroAddressAccount
     }
@@ -366,7 +371,7 @@ export default class TransactionState {
 
       //check stack for changes next.  from newest to oldest
       //new changes are pushed to the end of the array
-      for(let i=this.allAccountWritesStack.length-1; i>=0; i--){
+      for (let i = this.allAccountWritesStack.length - 1; i >= 0; i--) {
         let accountWrites = this.allAccountWritesStack[i]
         if (accountWrites.has(addressString)) {
           let storedRlp = accountWrites.get(addressString)
@@ -380,10 +385,10 @@ export default class TransactionState {
     }
 
     //check this before first reads
-    //this is allowed even when originalOnly==-true because 
+    //this is allowed even when originalOnly==-true because
     //when checkpoints === 0 in ethereumJS it clears original storage
     //maybe this is moot for accounts, but this can be an example for contract storage.
-    if(this.committedAccountWrites.has(addressString)){
+    if (this.committedAccountWrites.has(addressString)) {
       let storedRlp = this.committedAccountWrites.get(addressString)
       account = storedRlp ? Account.fromRlpSerializedAccount(storedRlp) : undefined
       if (this.debugTrace) this.debugTraceLog(`getAccount:(committedAccountWrites) addr:${addressString} balance:${account?.balance} nonce:${account?.nonce}`)
@@ -403,27 +408,24 @@ export default class TransactionState {
 
     let storedRlp: Buffer
 
-
-
-    if(ShardeumFlags.SaveEVMTries){
+    if (ShardeumFlags.SaveEVMTries) {
       //see if we can get it from the storage trie.
       storedRlp = await worldStateTrie.get(address.buf)
       account = storedRlp ? Account.fromRlpSerializedAccount(storedRlp) : undefined
     } else {
-      //get from accounts 
+      //get from accounts
       //throw new Error('get from accounts db')
 
       //figure out if addres to string is ok...
       //also what about RLP format... need to do the extra conversions now, but plan on the best conversion.
       let accountShardusAddress = toShardusAddress(address.toString(), AccountType.Account)
       let wrappedAccount = await AccountsStorage.getAccount(accountShardusAddress)
-      if(wrappedAccount != null){
+      if (wrappedAccount != null) {
         fixDeserializedWrappedEVMAccount(wrappedAccount)
-        account = wrappedAccount.account        
+        account = wrappedAccount.account
       }
 
-
-      if(account != null){
+      if (account != null) {
         storedRlp = account.serialize()
       }
 
@@ -432,10 +434,10 @@ export default class TransactionState {
 
     //attempt to get data from tryGetRemoteAccountCB
     //this can be a long wait only suitable in some cases
-    if(account == undefined){
-      let wrappedEVMAccount = await this.tryGetRemoteAccountCB(this, AccountType.Account, addressString, null )
-      if(wrappedEVMAccount != undefined){
-        //get account aout of the wrapped evm account 
+    if (account == undefined) {
+      let wrappedEVMAccount = await this.tryGetRemoteAccountCB(this, AccountType.Account, addressString, null)
+      if (wrappedEVMAccount != undefined) {
+        //get account aout of the wrapped evm account
         account = wrappedEVMAccount.account
         storedRlp = account.serialize()
 
@@ -496,14 +498,13 @@ export default class TransactionState {
     //this.allAccountWrites.set(addressString, storedRlp)
 
     //this.checkpoints[this.checkpoints.length - 1]
-    if(this.allAccountWritesStack.length > 0){
-      let accountWrites = this.allAccountWritesStack[this.allAccountWritesStack.length-1]
-      accountWrites.set(addressString, storedRlp)      
+    if (this.allAccountWritesStack.length > 0) {
+      let accountWrites = this.allAccountWritesStack[this.allAccountWritesStack.length - 1]
+      accountWrites.set(addressString, storedRlp)
     } else {
       //if we are not using checkpoints then use this data to set first account reads
       this.firstAccountReads.set(addressString, storedRlp)
     }
-
   }
 
   insertFirstAccountReads(address: Address, account: Account) {
@@ -554,9 +555,9 @@ export default class TransactionState {
       throw new Error('unable to proceed, cant involve contract bytes')
     }
 
-    let storedCodeByte:Buffer
-    let codeBytes :Buffer
-    if(ShardeumFlags.SaveEVMTries){
+    let storedCodeByte: Buffer
+    let codeBytes: Buffer
+    if (ShardeumFlags.SaveEVMTries) {
       //see if we can get it from the worldStateTrie.db
       storedCodeByte = await worldStateTrie.db.get(codeHash)
       codeBytes = storedCodeByte // seems to be no conversio needed for codebytes.
@@ -567,23 +568,22 @@ export default class TransactionState {
       //need: contract address,  code hash  for toShardusAddressWithKey
       let bytesShardusAddress = toShardusAddressWithKey(addressString, codeHashStr, AccountType.ContractCode)
       let wrappedAccount = await AccountsStorage.getAccount(bytesShardusAddress)
-      if(wrappedAccount != null){
+      if (wrappedAccount != null) {
         fixDeserializedWrappedEVMAccount(wrappedAccount)
-        storedCodeByte = wrappedAccount.codeByte   
-        codeBytes = storedCodeByte    
+        storedCodeByte = wrappedAccount.codeByte
+        codeBytes = storedCodeByte
       }
     }
 
     //attempt to get data from tryGetRemoteAccountCB
     //this can be a long wait only suitable in some cases
-    if(codeBytes == undefined){
-      let wrappedEVMAccount = await this.tryGetRemoteAccountCB(this, AccountType.ContractCode, addressString, codeHashStr )
-      if(wrappedEVMAccount != undefined && wrappedEVMAccount.codeByte){
+    if (codeBytes == undefined) {
+      let wrappedEVMAccount = await this.tryGetRemoteAccountCB(this, AccountType.ContractCode, addressString, codeHashStr)
+      if (wrappedEVMAccount != undefined && wrappedEVMAccount.codeByte) {
         //get account aout of the wrapped evm account
         codeBytes = wrappedEVMAccount.codeByte
       }
     }
-
 
     //Storage miss!!!, account not on this shard
     if (codeBytes == undefined) {
@@ -604,7 +604,11 @@ export default class TransactionState {
 
     // storage hit!!! data exists in this shard
     //put this in our first reads map
-    this.firstContractBytesReads.set(codeHashStr, { codeHash: codeHash, contractByte: codeBytes, contractAddress: contractAddress })
+    this.firstContractBytesReads.set(codeHashStr, {
+      codeHash: codeHash,
+      contractByte: codeBytes,
+      contractAddress: contractAddress,
+    })
     return codeBytes
   }
 
@@ -682,36 +686,34 @@ export default class TransactionState {
 
     let storedRlp
     let storedValue
-    if(ShardeumFlags.SaveEVMTries){
+    if (ShardeumFlags.SaveEVMTries) {
       //see if we can get it from the storage trie.
       storedRlp = await storage.get(key)
       storedValue = storedRlp ? rlp.decode(storedRlp) : undefined
-      if(ShardeumFlags.VerboseLogs) console.log( `storedValue for ${key.toString('hex')}`, storedValue)    
+      if (ShardeumFlags.VerboseLogs) console.log(`storedValue for ${key.toString('hex')}`, storedValue)
     } else {
       //get from accounts db
       //throw new Error('get from accounts db')
       // toShardusAddressWithKey.. use contract address followed by key
       let storageShardusAddress = toShardusAddressWithKey(addressString, keyString, AccountType.ContractStorage)
       let wrappedAccount = await AccountsStorage.getAccount(storageShardusAddress)
-      if(wrappedAccount != null){
+      if (wrappedAccount != null) {
         fixDeserializedWrappedEVMAccount(wrappedAccount)
-        storedRlp = wrappedAccount.value   
-        storedValue = storedRlp ? rlp.decode(storedRlp) : undefined    
+        storedRlp = wrappedAccount.value
+        storedValue = storedRlp ? rlp.decode(storedRlp) : undefined
       }
     }
 
-
     //attempt to get data from tryGetRemoteAccountCB
     //this can be a long wait only suitable in some cases
-    if(storedValue == undefined){
+    if (storedValue == undefined) {
       let wrappedEVMAccount = await this.tryGetRemoteAccountCB(this, AccountType.ContractStorage, addressString, keyString)
-      if(wrappedEVMAccount != undefined && wrappedEVMAccount.value){
+      if (wrappedEVMAccount != undefined && wrappedEVMAccount.value) {
         //get account aout of the wrapped evm account
         storedRlp = wrappedEVMAccount.value
         storedValue = storedRlp ? rlp.decode(storedRlp) : undefined
       }
     }
-
 
     //Storage miss!!!, account not on this shard
     if (storedValue == undefined) {
@@ -776,6 +778,7 @@ export default class TransactionState {
     // CA values..  oh shoot.. we cant do this in a data forwarded situation.
     this.touchedCAs.add(addressString)
   }
+
   insertFirstContractStorageReads(address: Address, keyString: string, value: Buffer) {
     const addressString = address.toString()
 
@@ -797,7 +800,6 @@ export default class TransactionState {
     contractStorageReads.set(keyString, storedRlp)
     this.touchedCAs.add(addressString)
   }
-
 
   //should go away with SaveEVMTries = false
   async exectutePendingCAStateRoots() {
@@ -833,17 +835,17 @@ export default class TransactionState {
   }
 
   debugTraceLog(message: string) {
-    if(ShardeumFlags.VerboseLogs) console.log( `DBG:${this.linkedTX} msg:${message}`)
+    if (ShardeumFlags.VerboseLogs) console.log(`DBG:${this.linkedTX} msg:${message}`)
   }
 
-  checkpoint(){
-    if(ShardeumFlags.CheckpointRevertSupport === false){
+  checkpoint() {
+    if (ShardeumFlags.CheckpointRevertSupport === false) {
       return
     }
 
     //we need checkpoint / revert stack support for accounts so that gas is handled correctly
     //this.allAccountWritesStack.push(this.allAccountWrites)
-    this.allAccountWritesStack.push(new Map<string,Buffer>())
+    this.allAccountWritesStack.push(new Map<string, Buffer>())
 
     this.allAccountWrites = new Map()
 
@@ -854,11 +856,11 @@ export default class TransactionState {
     // if (this.debugTrace) console.log('checkpoint: allAccountWritesStack', this.logAccountWritesStack(this.allAccountWritesStack))
   }
 
-  commit(){
-    if(ShardeumFlags.CheckpointRevertSupport === false){
+  commit() {
+    if (ShardeumFlags.CheckpointRevertSupport === false) {
       return
     }
-    
+
     // can use this se we only commit once until there is another checkpoint?
     // if(this.canCommit === false){
     //   //todo log this
@@ -867,15 +869,14 @@ export default class TransactionState {
     // this.canCommit = false
 
     // let preCheckpointLogic = true
-    
-    
+
     // if(preCheckpointLogic){
-      
+
     //   //this is kind of strange, but if checkpoints represent the start of a set of changes,
     //   // then the way the rest of things work by putting currne changes in allAccountWrites
     //   // we need to actually make allAccountWrites be the top of the stack.
 
-    //   //If this turns out to be the correct way to handle things, then we may want to do them in 
+    //   //If this turns out to be the correct way to handle things, then we may want to do them in
     //   //a less hacky way.
     //   //this.checkpoint()
 
@@ -884,19 +885,14 @@ export default class TransactionState {
     //   this.allAccountWrites = new Map()
     // }
 
-    
-
-
-
     // THIS version commits all in one go /////////////////
     //I think it is best to clear this. this will allow the newest values to get in
     //this does make some assumptions about how many times commit is called though..
-    
+
     this.checkpointCount--
     if (this.debugTrace) this.debugTraceLog(`checkpointCount:${this.checkpointCount} commit `)
 
-
-    if(this.checkpointCount > 0){
+    if (this.checkpointCount > 0) {
       //pop the top checkpoint
       let accountWrites = this.allAccountWritesStack.pop()
       let newTop = this.allAccountWritesStack[this.allAccountWritesStack.length - 1]
@@ -910,14 +906,12 @@ export default class TransactionState {
       this.flushToCommittedValues()
     }
 
-
     //not 100% sure if we should do this...
     //this.allAccountWrites.clear()
-
-
   }
-  revert(){
-    if(ShardeumFlags.CheckpointRevertSupport === false){
+
+  revert() {
+    if (ShardeumFlags.CheckpointRevertSupport === false) {
       return
     }
 
@@ -937,66 +931,60 @@ export default class TransactionState {
     this.checkpointCount--
     if (this.debugTrace) this.debugTraceLog(`checkpointCount:${this.checkpointCount} revert `)
     if (this.debugTrace) console.log('revert: allAccountWritesStack', this.logAccountWritesStack(this.allAccountWritesStack))
-    if(this.checkpointCount === 0){
-
+    if (this.checkpointCount === 0) {
       //I think this is just supposed to tell the cache(if we had one) to save values to the trie
       // how does that apply to what we have given that we have no cache.
-
       //this.flushToCommittedValues()
     }
-
   }
 
-  flushToCommittedValues(){
+  flushToCommittedValues() {
     if (this.debugTrace) this.debugTraceLog(`Flushing the allAccountWritesStack to committedAccountWrites`)
     let allAtOnce = false
-    if(allAtOnce){
+    if (allAtOnce) {
       this.committedAccountWrites.clear()
-      for(let i=this.allAccountWritesStack.length-1; i>=0; i--){
+      for (let i = this.allAccountWritesStack.length - 1; i >= 0; i--) {
         let accountWrites = this.allAccountWritesStack[i]
         //process all the values in the stack
-        for(let [key,value] of accountWrites.entries()){
+        for (let [key, value] of accountWrites.entries()) {
           //if our flattened list does not have the value yet
           if (this.committedAccountWrites.has(key) === false) {
             //then flatten the value from the stack into it
-            this.committedAccountWrites.set(key,value)
+            this.committedAccountWrites.set(key, value)
           }
         }
-      }      
+      }
     } else {
-      // this version commits one layer at a time ///// 
+      // this version commits one layer at a time /////
       let accountWrites = this.allAccountWritesStack.pop()
-      for(let [key,value] of accountWrites.entries()){
+      for (let [key, value] of accountWrites.entries()) {
         //if our flattened list does not have the value yet
         if (this.committedAccountWrites.has(key) === false) {
           //then flatten the value from the stack into it
-          this.committedAccountWrites.set(key,value)
+          this.committedAccountWrites.set(key, value)
         }
-      }      
-    }      
-
+      }
+    }
   }
 
-    logAccountWrites(accountWrites: Map<string, Buffer>) {
-        let resultMap = new Map()
-        for (const [key, value] of accountWrites.entries()) {
-            let readableAccount: Account = Account.fromRlpSerializedAccount(value)
-            let account: any = {}
-            account.nonce = readableAccount.nonce.toString()
-            account.balance = readableAccount.balance.toString()
-            resultMap.set(key, account)
-        }
-        return resultMap
+  logAccountWrites(accountWrites: Map<string, Buffer>) {
+    let resultMap = new Map()
+    for (const [key, value] of accountWrites.entries()) {
+      let readableAccount: Account = Account.fromRlpSerializedAccount(value)
+      let account: any = {}
+      account.nonce = readableAccount.nonce.toString()
+      account.balance = readableAccount.balance.toString()
+      resultMap.set(key, account)
     }
+    return resultMap
+  }
 
-    logAccountWritesStack(accountWritesStack: Map<string, Buffer>[]) {
-        let resultStack = []
-        for (let accountWrites of accountWritesStack) {
-            let readableAccountWrites = this.logAccountWrites(accountWrites)
-            resultStack.push(readableAccountWrites)
-        }
-        return resultStack
+  logAccountWritesStack(accountWritesStack: Map<string, Buffer>[]) {
+    let resultStack = []
+    for (let accountWrites of accountWritesStack) {
+      let readableAccountWrites = this.logAccountWrites(accountWrites)
+      resultStack.push(readableAccountWrites)
     }
-
-
+    return resultStack
+  }
 }

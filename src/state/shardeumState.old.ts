@@ -163,7 +163,7 @@ export default class ShardeumState_OLD implements StateManager {
         testAccount = await this._transactionState.getAccount(null, address, false, false)
         if (this.temporaryParallelOldMode === false) {
           return testAccount
-        }        
+        }
       }
     }
 
@@ -242,7 +242,7 @@ export default class ShardeumState_OLD implements StateManager {
    */
   async putContractCode(address: Address, value: Buffer): Promise<void> {
     const account = await this.getAccount(address) //TODO figure out if we need this when ShardeumFlags.SaveEVMTries === false
-                                                   //It could be triggering some marking/including of accounts, but that 
+                                                   //It could be triggering some marking/including of accounts, but that
                                                    //may be moot now.
 
     if (this._transactionState != null) {
@@ -257,7 +257,7 @@ export default class ShardeumState_OLD implements StateManager {
     throw new Error('putContractCode should never get here')
     // // Original implementation:
 
-    // 
+    //
     // const codeHash = keccak256(value)
     // if(ShardeumFlags.VerboseLogs) console.log( 'Storing contract code', codeHash, codeHash.toString('hex'), value)
 
@@ -292,7 +292,7 @@ export default class ShardeumState_OLD implements StateManager {
         let testAccount = await this._transactionState.getContractCode(null, address, false, false)
         if (this.temporaryParallelOldMode === false) {
           return testAccount
-        }        
+        }
       }
     }
 
@@ -459,7 +459,7 @@ export default class ShardeumState_OLD implements StateManager {
   async _modifyContractStorage(address: Address, modifyTrie: (storageTrie: Trie, done: Function) => void): Promise<void> {
 
     if(ShardeumFlags.SaveEVMTries === false){
-      throw new Error('_modifyContractStorage depricated')      
+      throw new Error('_modifyContractStorage depricated')
     }
 
 
@@ -509,7 +509,7 @@ export default class ShardeumState_OLD implements StateManager {
     }
 
     throw new Error('putContractStorage should never get here')
-    
+
     // let oldValue = value // for debugging
 
     // value = unpadBuffer(value) // Trims leading zeros from a Buffer.
@@ -816,7 +816,7 @@ export default class ShardeumState_OLD implements StateManager {
   async hasGenesisState(): Promise<boolean> {
     //only matters if running a blockchain
     throw new Error('hasGenesisState not valid because we dont run an ethjs blockchain')
-  
+
     // original
     // const root = this._common.genesis().stateRoot
     // return await this._trie.checkRoot(toBuffer(root))
@@ -830,7 +830,7 @@ export default class ShardeumState_OLD implements StateManager {
   async generateCanonicalGenesis(): Promise<void> {
     //only matters if running a blockchain
     throw new Error('generateCanonicalGenesis not valid because we dont run an ethjs blockchain')
-  
+
     // original
     // if (this._checkpointCount !== 0) {
     //   throw new Error('Cannot create genesis state with uncommitted checkpoints')
@@ -1101,7 +1101,7 @@ export default class ShardeumState_OLD implements StateManager {
     this._trie.checkpoint()
 
     //contition the buffers to fix issues that are caused by serialization
-    TransactionState.fixUpAccountFields(account)
+    TransactionState.fixAccountFields(account)
 
     //account.stateRoot = Buffer.from(account.stateRoot) //handled in fixUpAccountFields
     const accountObj = Account.fromAccountData(account)
@@ -1121,12 +1121,12 @@ export default class ShardeumState_OLD implements StateManager {
       if(testAccount == null){
         throw new Error('setAccountExternal failed to get testAccount')
       }
-      TransactionState.fixUpAccountFields(testAccount)
+      TransactionState.fixAccountFields(testAccount)
       let s1 = JSON.stringify(testAccount)
       let s2 = JSON.stringify(account)
       if(s1 != s2){
         throw new Error(`setAccountExternal s1 != s2  \n\n  ${s1}   \n\n  ${s2}`)
-      }      
+      }
     }
   }
 
