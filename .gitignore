@@ -22,6 +22,6 @@ scripts/*.old
 scripts/*.json
 #this last one may slows things down, but not sure
 scripts/*/
-
+.idea
 consensorAccounts.json
 archiverAccounts.json

@@ -9,15 +9,19 @@ const objKeys =
     return keys
   }
 
-export function stringify(val: any, bufferEncoding: 'base64' | 'hex' = 'base64'): string {
-  const returnVal = stringifier(val, false, bufferEncoding)
+export interface stringifierOptions {
+  bufferEncoding: 'base64' | 'hex' | 'none'
+}
+
+export function stringify(val: any, options: stringifierOptions): string {
+  let returnVal = stringifier(val, false, options)
   if (returnVal !== undefined) {
     return '' + returnVal
   }
   return ''
 }
 
-function stringifier(val: any, isArrayProp: boolean, bufferEncoding: 'base64' | 'hex'): string | null | undefined {
+function stringifier(val: any, isArrayProp: boolean, options: stringifierOptions): string | null | undefined {
   let i, max, str, keys, key, propVal, toStr
   if (val === true) {
     return 'true'
@@ -30,21 +34,21 @@ function stringifier(val: any, isArrayProp: boolean, bufferEncoding: 'base64' | 
       if (val === null) {
         return null
       } else if (val.toJSON && typeof val.toJSON === 'function') {
-        return stringifier(val.toJSON(), isArrayProp, bufferEncoding)
+        return stringifier(val.toJSON(), isArrayProp, options)
       } else {
         toStr = objToString.call(val)
         if (toStr === '[object Array]') {
           str = '['
           max = val.length - 1
           for (i = 0; i < max; i++) {
-            str += stringifier(val[i], true, bufferEncoding) + ','
+            str += stringifier(val[i], true, options) + ','
           }
           if (max > -1) {
-            str += stringifier(val[i], true, bufferEncoding)
+            str += stringifier(val[i], true, options)
           }
           return str + ']'
-        } else if (toStr === '[object Object]' && objKeys(val).length == 2 && objKeys(val).includes('type') && val['type'] == 'Buffer') {
-          switch (bufferEncoding) {
+        } else if (options.bufferEncoding !== 'none' && isBufferValue(toStr, val)) {
+          switch (options.bufferEncoding) {
             case 'base64':
               return JSON.stringify({
                 data: Buffer.from(val['data']).toString('base64'),
@@ -64,7 +68,7 @@ function stringifier(val: any, isArrayProp: boolean, bufferEncoding: 'base64' | 
           i = 0
           while (i < max) {
             key = keys[i]
-            propVal = stringifier(val[key], false, bufferEncoding)
+            propVal = stringifier(val[key], false, options)
             if (propVal !== undefined) {
               if (str) {
                 str += ','
@@ -86,4 +90,8 @@ function stringifier(val: any, isArrayProp: boolean, bufferEncoding: 'base64' | 
     default:
       return isFinite(val) ? val : null
   }
+}
+
+function isBufferValue(toStr, val: Object) {
+  return toStr === '[object Object]' && objKeys(val).length == 2 && objKeys(val).includes('type') && val['type'] == 'Buffer'
 }
