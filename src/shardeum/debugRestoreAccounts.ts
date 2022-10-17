@@ -17,7 +17,7 @@ export interface LoadReport {
 }
 
 let oneJsonAccountPerLine = true
-let loadInitialDataPerBatch = false
+let loadInitialDataPerBatch = true
 
 export async function loadAccountDataFromDB(shardus: any, options: LoadOptions): Promise<LoadReport> {
   let report: LoadReport = {
@@ -68,8 +68,10 @@ export async function loadAccountDataFromDB(shardus: any, options: LoadOptions):
             }
             if (accountArray.length % 1000 === 0) {
               rl.pause()
-              await processAccountsData(shardus, report, accountArray)
-              accountArray = []
+              await processAccountsData(shardus, report, [...accountArray])
+              if (accountArray.length >= 1000) {
+                accountArray = accountArray.slice(1000, accountArray.length)
+              }
               rl.resume()
             }
           } catch (ex) {
@@ -78,7 +80,6 @@ export async function loadAccountDataFromDB(shardus: any, options: LoadOptions):
         }
       })
       await once(rl, 'close')
-      await processAccountsData(shardus, report, accountArray)
       if (accountArray.length > 0) {
         await processAccountsData(shardus, report, accountArray)
         accountArray = []
@@ -142,7 +143,7 @@ export const processAccountsData = async (shardus, report: LoadReport, accountAr
     } catch (error) {
       if (report.loadFailed < 100) {
         //log first 100 parsing errors
-        console.log(`error parsing ${account.data}`)
+        console.log(`error parsing`, account.data)
       }
       report.loadFailed++
       continue
@@ -187,9 +188,11 @@ export const processAccountsData = async (shardus, report: LoadReport, accountAr
     let bucketSize = ShardeumFlags.DebugRestoreArchiveBatch
     let limit = bucketSize
     let j = limit
+    let accountsToForward
     for (let i = 0; i < accountArray.length; i = j) {
-      console.log(i, limit)
-      const accountsToForward = accountArray.slice(i, limit)
+      if (i === 0 && accountArray.length < limit) accountsToForward = accountArray
+      else accountsToForward = accountArray.slice(i, limit)
+      console.log(i, accountsToForward.length)
       try {
         await shardus.forwardAccounts(accountsToForward)
       } catch (error) {
