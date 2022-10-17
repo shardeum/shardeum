@@ -192,7 +192,7 @@ export default class TransactionState {
    * accounts need some adjustments after being deseralized
    * @param account
    */
-  static fixUpAccountFields(account) {
+  static fixAccountFields(account) {
     //hmm some hacks to fix data after getting copied around..
     if (typeof account.nonce === 'string') {
       //account.nonce = new BN(account.nonce)
@@ -286,7 +286,7 @@ export default class TransactionState {
         }
       }
 
-      TransactionState.fixUpAccountFields(account)
+      TransactionState.fixAccountFields(account)
 
       account.stateRoot = Buffer.from(account.stateRoot)
 
@@ -488,7 +488,7 @@ export default class TransactionState {
     if (this.accountInvolvedCB(this, addressString, false) === false) {
       throw new Error('unable to proceed, cant involve account')
     }
-    TransactionState.fixUpAccountFields(account)
+    TransactionState.fixAccountFields(account)
 
     const accountObj = Account.fromAccountData(account)
     let storedRlp = accountObj.serialize()
@@ -514,7 +514,7 @@ export default class TransactionState {
       throw new Error('unable to proceed, cant involve account')
     }
 
-    TransactionState.fixUpAccountFields(account)
+    TransactionState.fixAccountFields(account)
 
     const accountObj = Account.fromAccountData(account)
     let storedRlp = accountObj.serialize()
