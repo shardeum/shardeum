@@ -1,25 +1,10 @@
-import {
-  AccountType,
-  DebugTx,
-  DebugTXType,
-  EVMAccountInfo,
-  InternalTx,
-  InternalTXType,
-  OurAppDefinedData,
-  ReadableReceipt,
-  WrappedAccount,
-  WrappedEVMAccount,
-  WrappedEVMAccountMap,
-  WrappedStates,
-  NetworkAccount,
-  NetworkParameters,
-  NodeAccount,
-} from '../shardeum/shardeumTypes'
+import { WrappedEVMAccount, WrappedEVMAccountMap } from '../shardeum/shardeumTypes'
 
 import * as ShardeumFlags from '../shardeum/shardeumFlags'
 import Storage from '../storage/storage'
+import { DeSerializeFromJsonString } from '../utils'
 
-const isString = (x) => {
+const isString = x => {
   return Object.prototype.toString.call(x) === '[object String]'
 }
 
@@ -30,17 +15,14 @@ export let storage: Storage = null
 
 let isInitialized = false
 
-export async function init(baseDir:string, dbPath:string){
-  storage = new Storage(
-    baseDir,
-    dbPath
-  )
+export async function init(baseDir: string, dbPath: string) {
+  storage = new Storage(baseDir, dbPath)
 
   //we have to lazy init storage, because this init happens very early
 }
 
-export async function lazyInit(){
-  if(isInitialized === false){
+export async function lazyInit() {
+  if (isInitialized === false) {
     await storage.init()
     isInitialized = true
   }
@@ -52,7 +34,7 @@ export async function getAccount(address: string): Promise<WrappedEVMAccount> {
     if (!account) return
 
     if (isString(account.data)) {
-      account.data = JSON.parse(account.data as string)
+      account.data = DeSerializeFromJsonString<WrappedEVMAccount>(account.data)
     }
 
     return account.data
@@ -90,7 +72,7 @@ export async function setAccount(address: string, account: WrappedEVMAccount): P
       data: account,
     }
 
-    if(account.timestamp === 0){
+    if (account.timestamp === 0) {
       throw new Error('setAccount timestamp should not be 0')
     }
 
@@ -140,14 +122,12 @@ export async function queryAccountsEntryByRanges2(accountStart, accountEnd, tsSt
   if (ShardeumFlags.UseDBForAccounts === true) {
     let processedResults = []
     let results
-    
-    if(accountOffset != null && accountOffset.length > 0){
-      results = await storage.queryAccountsEntryByRanges3(accountStart, accountEnd, tsStart, tsEnd, maxRecords, accountOffset)  
+
+    if (accountOffset != null && accountOffset.length > 0) {
+      results = await storage.queryAccountsEntryByRanges3(accountStart, accountEnd, tsStart, tsEnd, maxRecords, accountOffset)
     } else {
-      results = await storage.queryAccountsEntryByRanges2(accountStart, accountEnd, tsStart, tsEnd, maxRecords, offset)      
+      results = await storage.queryAccountsEntryByRanges2(accountStart, accountEnd, tsStart, tsEnd, maxRecords, offset)
     }
-
-
 
     for (let result of results) {
       if (isString(result.data)) {

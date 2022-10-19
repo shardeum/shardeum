@@ -39,7 +39,7 @@ export let AppliedTxsMaps = false //some maps that are not currently used, but m
 
 export let SaveEVMTries = false
 
-export let ChainID = process.env.CHAIN_ID || 8080 //Chain.Rinkeby   // The EVM chain ID.  used by CHAINID opcode.  may need Chain.Rinkeby (4)  for local testing 
+export let ChainID = process.env.CHAIN_ID || 8080 //Chain.Rinkeby   // The EVM chain ID.  used by CHAINID opcode.  may need Chain.Rinkeby (4)  for local testing
 
 export let CheckpointRevertSupport = true
 
@@ -47,5 +47,8 @@ export let UseTXPreCrack = true
 
 export let NewStorageIndex = true
 
+export let UseBase64BufferEncoding = false
+
 export let useAccountWrites = true
+
 export let devPublicKey = '774491f80f47fedb119bb861601490f42bc3ea3b57fc63906c0d08e6d777a592'

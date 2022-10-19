@@ -1,12 +1,11 @@
 /* eslint-disable no-empty */
-import stringify from 'fast-stable-stringify'
 import fs from 'fs'
 //import Log4js from 'log4js'
 import path from 'path'
 import * as Sequelize from 'sequelize'
 
 import config from '../config'
-import { sleep } from '../utils'
+import {isObject, SerializeToJsonString} from '../utils'
 
 const Op = Sequelize.Op
 const sqlite3 = require('sqlite3').verbose()
@@ -20,16 +19,6 @@ interface Sqlite3Storage {
   storageModels: any
   db: any
   oldDb: any
-}
-
-export const isObject = val => {
-  if (val === null) {
-    return false
-  }
-  if (Array.isArray(val)) {
-    return false
-  }
-  return typeof val === 'function' || typeof val === 'object'
 }
 
 class Sqlite3Storage {
@@ -113,14 +102,13 @@ class Sqlite3Storage {
       //   //Snapshot.setOldDataPath(oldDirPath)
       //   this.oldDb = new sqlite3.Database(`${oldDirPath}/db.sqlite`)
       // }
-
       // shardus can take care of moving the database!!
       //@ts-ignore
       // if(config.storage.options.saveOldDBFiles){
       //   fs.renameSync(dbDir, oldDirPath)
       //   if (oldDirPath) {
       //     this.oldDb = new sqlite3.Database(`${oldDirPath}/db.sqlite`)
-      //   }        
+      //   }
       // } else {
       //   //recursive delete of db folder
       //   try{
@@ -130,7 +118,7 @@ class Sqlite3Storage {
       //     await sleep(5000)
       //     fs.rmdirSync(dbDir, { recursive: true })
       //   }
-      // }      
+      // }
     } catch (e) {
       // if (config.p2p.startInWitnessMode) {
       //   throw new Error('Unable to start in witness mode: no old data')
@@ -138,7 +126,6 @@ class Sqlite3Storage {
     }
 
     try {
-
       // Create dbDir if it doesn't exist
       await _ensureExists(dbDir)
       //this.mainLogger.info('Created Database directory.')
@@ -149,11 +136,10 @@ class Sqlite3Storage {
         this.db = new sqlite3.Database(this.dbPath)
       }
 
-
       await this.run('PRAGMA synchronous = OFF')
       console.log('PRAGMA synchronous = OFF')
       //@ts-ignore
-      if(config?.storage?.options?.walMode === true){
+      if (config?.storage?.options?.walMode === true) {
         await this.run('PRAGMA journal_mode = WAL')
         console.log('PRAGMA journal_mode = WAL')
       } else {
@@ -161,20 +147,18 @@ class Sqlite3Storage {
         console.log('PRAGMA journal_mode = MEMORY')
       }
       //@ts-ignore
-      if(config?.storage?.options?.exclusiveLockMode === true){
+      if (config?.storage?.options?.exclusiveLockMode === true) {
         await this.run('PRAGMA locking_mode = EXCLUSIVE')
         console.log('PRAGMA locking_mode = EXCLUSIVE')
       }
-
     } catch (e) {
-      
       throw new Error('shardeum storage init error ' + e.name + ': ' + e.message + ' at ' + e.stack)
-      
     }
 
     this.initialized = true
     //this.mainLogger.info('Database initialized.')
   }
+
   async close() {
     // //this.mainLogger.info('Closing Database connections.')
     await this.db.close()
@@ -217,7 +201,7 @@ class Sqlite3Storage {
         let value = object[column]
 
         if (table.isColumnJSON[column]) {
-          value = stringify(value)
+          value = SerializeToJsonString(value)
         }
         // if (logFlags.console) console.log(`column: ${column}  ${value}`)
         inputs.push(value)
@@ -264,6 +248,7 @@ class Sqlite3Storage {
       //this.profiler.profileSectionEnd('db')
     }
   }
+
   async _readOld(table, params, opts) {
     try {
       //this.profiler.profileSectionStart('db')
@@ -324,6 +309,7 @@ class Sqlite3Storage {
       //this.profiler.profileSectionEnd('db')
     }
   }
+
   _delete(table, where, opts) {
     try {
       //this.profiler.profileSectionStart('db')
@@ -427,7 +413,7 @@ class Sqlite3Storage {
           paramEntry.sql = `${paramEntry.name} ${paramEntry.type} ?`
 
           if (table.isColumnJSON[paramEntry.name]) {
-            paramEntry.v1 = stringify(paramEntry.v1)
+            paramEntry.v1 = SerializeToJsonString(paramEntry.v1)
           }
           paramEntry.vals = [paramEntry.v1]
         }
@@ -509,6 +495,7 @@ class Sqlite3Storage {
       })
     })
   }
+
   get(sql, params = []) {
     return new Promise((resolve, reject) => {
       this.db.get(sql, params, (err, result) => {
@@ -536,6 +523,7 @@ class Sqlite3Storage {
       })
     })
   }
+
   allOld(sql, params = []) {
     return new Promise((resolve, reject) => {
       this.oldDb.all(sql, params, (err, rows) => {
