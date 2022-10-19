@@ -1473,7 +1473,7 @@ shardus.registerExternalGet('tx/:hash', async (req, res) => {
 //
 //   let runState: RunStateWithLogs = appliedTx.receipt.execResult.runState
 //   if (!runState) {
-//     if (ShardeumFlags.VerboseLogs) console.log(`No runState found in the receipt for ${txHash}`) 
+//     if (ShardeumFlags.VerboseLogs) console.log(`No runState found in the receipt for ${txHash}`)
 //   }
 //
 //   if (runState && runState.logs)
@@ -1715,7 +1715,7 @@ async function applyInternalTx(internalTx: InternalTx, wrappedStates: WrappedSta
       nodeRewardReceipt.timestamp = txTimestamp
       nodeRewardReceipt.readableReceipt = readableReceipt
       nodeRewardReceipt.txId = txId
-      nodeRewardReceipt.txFrom = from.id 
+      nodeRewardReceipt.txFrom = from.id
     } else {
       nodeRewardReceipt = {
         timestamp: txTimestamp,
@@ -1768,18 +1768,34 @@ async function applyInternalTx(internalTx: InternalTx, wrappedStates: WrappedSta
     // network will consens that this is the correct value
     ourAppDefinedData.globalMsg = { address: networkAccount, value, when, source: networkAccount }
 
-    if (ShardeumFlags.useAccountWrites) shardus.applyResponseAddChangedAccount(applyResponse, networkAccount, wrappedStates[networkAccount], txId, txTimestamp)
-    else network.timestamp = txTimestamp
-    // from.timestamp = txTimestamp
-    devAccount.timestamp = txTimestamp
+    if (ShardeumFlags.useAccountWrites) {
+      let networkAccountCopy = JSON.parse(JSON.stringify(wrappedStates[networkAccount]))
+      let devAccountCopy = JSON.parse(JSON.stringify(wrappedStates[internalTx.from]))
+
+      networkAccountCopy.timestamp = txTimestamp
+      devAccountCopy.timestamp = txTimestamp
+
+      shardus.applyResponseAddChangedAccount(applyResponse, networkAccount, networkAccountCopy, txId, txTimestamp)
+      shardus.applyResponseAddChangedAccount(applyResponse, internalTx.from, devAccountCopy, txId, txTimestamp)
+    } else {
+      network.timestamp = txTimestamp
+      devAccount.timestamp = txTimestamp
+    }
     console.log('Applied change_config tx')
     shardus.log('Applied change_config tx')
   }
   if (internalTx.internalTXType === InternalTXType.ApplyChangeConfig) {
     const network: NetworkAccount = wrappedStates[networkAccount].data
-    network.timestamp = txTimestamp
-    network.listOfChanges.push(internalTx.change)
-    if (ShardeumFlags.useAccountWrites) shardus.applyResponseAddChangedAccount(applyResponse, networkAccount, wrappedStates[networkAccount], txId, txTimestamp)
+
+    if (ShardeumFlags.useAccountWrites) {
+      let networkAccountCopy = JSON.parse(JSON.stringify(wrappedStates[networkAccount]))
+      networkAccountCopy.timestamp = txTimestamp
+      networkAccountCopy.listOfChanges.push(internalTx.change)
+      shardus.applyResponseAddChangedAccount(applyResponse, networkAccount, networkAccountCopy, txId, txTimestamp)
+    } else {
+      network.timestamp = txTimestamp
+      network.listOfChanges.push(internalTx.change)
+    }
     console.log(`Applied CHANGE_CONFIG GLOBAL transaction: ${stringify(network)}`)
     shardus.log('Applied CHANGE_CONFIG GLOBAL transaction', stringify(network))
   }
@@ -1885,7 +1901,7 @@ const createNetworkAccount = (accountId: string, timestamp: number) => {
     hash: '',
     timestamp: 0,
   }
-  account.hash = crypto.hashObj(account)
+  account.hash = WrappedEVMAccountFunctions._calculateAccountHash(account)
   console.log('INITIAL_HASH: ', account.hash)
   return account
 }
@@ -1899,7 +1915,7 @@ const createNodeAccount = (accountId: string) => {
     hash: '',
     timestamp: 0,
   }
-  account.hash = crypto.hashObj(account)
+  account.hash = WrappedEVMAccountFunctions._calculateAccountHash(account)
   return account
 }
 
@@ -1916,7 +1932,7 @@ const createDevAccount = (accountId: string) => {
     hash: '',
     timestamp: cycleStart,
   }
-  account.hash = crypto.hashObj(account)
+  account.hash = WrappedEVMAccountFunctions._calculateAccountHash(account)
   return { account, cycle: latestCycles[0] }
 }
 
@@ -2169,7 +2185,7 @@ shardus.setup({
         }
       } else if (tx.internalTXType === InternalTXType.ChangeConfig) {
         try {
-          // const devPublicKey = shardus.getDevPublicKey() // This have to be reviewed again whether to get from shardus interface or not 
+          // const devPublicKey = shardus.getDevPublicKey() // This have to be reviewed again whether to get from shardus interface or not
           const devPublicKey = ShardeumFlags.devPublicKey
           if (devPublicKey) {
             success = verify(tx, devPublicKey)
@@ -2218,7 +2234,7 @@ shardus.setup({
         if (txObj.nonce.toNumber() < appData.nonce) {
           success = false
           reason = 'Transaction has lower nonce than the account nonce in the network'
-        }        
+        }
       }
 
     } catch (e) {

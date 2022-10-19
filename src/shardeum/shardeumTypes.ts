@@ -210,3 +210,7 @@ export interface ApplyChangeConfig {
   change: any
   timestamp: number
 }
+
+// export interface InternalAccount extends NodeAccount, NetworkAccount, DevAccount {}
+
+export type InternalAccount = NodeAccount | NetworkAccount | DevAccount
