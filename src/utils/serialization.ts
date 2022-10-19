@@ -16,7 +16,6 @@ export function DeSerializeFromJsonString<T>(jsonString: string): T {
   } else {
     parsedStruct = <T>JSON.parse(jsonString)
   }
-  this.fixer(parsedStruct)
   return parsedStruct
 }
 
