@@ -1,13 +1,13 @@
 import { Account, BN, generateAddress } from 'ethereumjs-util'
 
-import {AccountType, WrappedEVMAccount, InternalAccount } from './shardeumTypes'
+import { AccountType, WrappedEVMAccount, InternalAccount } from './shardeumTypes'
 import * as crypto from '@shardus/crypto-utils'
 import { TransactionState } from '../state'
 import { getAccountShardusAddress } from './evmAddress'
 import { ShardusTypes } from '@shardus/core'
 import { UseBase64BufferEncoding } from './shardeumFlags'
 
-export function isWrappedEVMAccount(obj : any): obj is WrappedEVMAccount {
+export function isWrappedEVMAccount(obj: any): obj is WrappedEVMAccount {
   return 'ethAddress' in obj
 }
 
@@ -27,7 +27,7 @@ export function accountSpecificHash(account: WrappedEVMAccount | InternalAccount
   if (account.accountType === AccountType.Account) {
     //Hash the full account, if we knew EOA vs CA we could mabe skip some steps.
     hash = crypto.hashObj(account.account)
-  } else if(account.accountType === AccountType.Debug) {
+  } else if (account.accountType === AccountType.Debug) {
     hash = crypto.hashObj(account)
   } else if (account.accountType === AccountType.ContractStorage) {
     hash = crypto.hashObj({ key: account.key, value: account.value })

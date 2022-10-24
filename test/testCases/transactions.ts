@@ -28,7 +28,7 @@ export const transactionsTest = (START_NETWORK_SIZE: number, EXPECTED_ACTIVE_NOD
     // const { stdout, stderr } = await execa.command(`cd ${SPAM_CLIENT_DIR} && ls `, opts)
     // console.log(stdout, stderr)
     // execa.command('ls').stdout.pipe(process.stdout)
-    execa.commandSync(`cd ${LOAD_TESTER} && ${spamCommand}`, { ...opts, /*stdio: [0, 1, 2]*/ })
+    execa.commandSync(`cd ${LOAD_TESTER} && ${spamCommand}`, { ...opts /*stdio: [0, 1, 2]*/ })
     await utils._sleep(durationMiliSecond + 10000) // extra 10s for processing pending txs in the queue
 
     let report = await utils.queryLatestReport()
@@ -41,7 +41,9 @@ export const transactionsTest = (START_NETWORK_SIZE: number, EXPECTED_ACTIVE_NOD
   })
 
   it('Process token transfer txs of 2 ERC20 contracts at the rate of 5 txs per second for 1 min', async () => {
-    console.log('TEST: Process token transfer txs of 2 ERC20 contracts at the rate of 5 txs per second for 1 min')
+    console.log(
+      'TEST: Process token transfer txs of 2 ERC20 contracts at the rate of 5 txs per second for 1 min'
+    )
 
     // const activeNodes = await utils.queryActiveNodes()
     // const nodeCount = Object.keys(activeNodes).length
@@ -59,7 +61,7 @@ export const transactionsTest = (START_NETWORK_SIZE: number, EXPECTED_ACTIVE_NOD
     // const { stdout, stderr } = await execa.command(`cd ${SPAM_CLIENT_DIR} && ls `, opts)
     // console.log(stdout, stderr)
     // execa.command('ls').stdout.pipe(process.stdout)
-    execa.commandSync(`cd ${LOAD_TESTER} && ${spamCommand}`, { ...opts, /*stdio: [0, 1, 2]*/ })
+    execa.commandSync(`cd ${LOAD_TESTER} && ${spamCommand}`, { ...opts /*stdio: [0, 1, 2]*/ })
     await utils._sleep(durationMiliSecond + 10000) // extra 10s for processing pending txs in the queue
 
     let report = await utils.queryLatestReport()

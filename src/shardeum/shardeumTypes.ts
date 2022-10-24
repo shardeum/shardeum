@@ -14,7 +14,7 @@ export enum AccountType {
   NetworkAccount = 5,
   NodeAccount = 6,
   NodeRewardReceipt = 7,
-  DevAccount = 8
+  DevAccount = 8,
 }
 
 export interface BaseAccount {
@@ -72,7 +72,7 @@ export enum InternalTXType {
   InitNetwork,
   NodeReward,
   ChangeConfig,
-  ApplyChangeConfig
+  ApplyChangeConfig,
 }
 
 export enum DebugTXType {
@@ -95,7 +95,7 @@ export interface InternalTx extends InternalTxBase {
   to?: string
   accountData?: WrappedEVMAccount
   network?: string // Network Account
-  nodeId?: string, // Node Account
+  nodeId?: string // Node Account
   change?: any // change config
   cycle?: number // change config
   config?: any // change config
@@ -133,7 +133,7 @@ export interface OurAppDefinedData {
       accountData?: WrappedEVMAccount
       from?: string
       change?: {
-        cycle: ShardusTypes.Cycle,
+        cycle: ShardusTypes.Cycle
         change: any
       }
     }

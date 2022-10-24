@@ -32,11 +32,11 @@ if (process.env.APP_SEEDLIST) {
             {
               ip: process.env.APP_SEEDLIST,
               port: 4000,
-              publicKey: '758b1c119412298802cd28dbfa394cdfeecc4074492d60844cc192d632d84de3'
-            }
-          ]
+              publicKey: '758b1c119412298802cd28dbfa394cdfeecc4074492d60844cc192d632d84de3',
+            },
+          ],
         },
-      }
+      },
     },
     { arrayMerge: overwriteMerge }
   )
@@ -48,9 +48,9 @@ if (process.env.APP_MONITOR) {
     {
       server: {
         reporting: {
-          recipient: `http://${process.env.APP_MONITOR}:3000/api`
-        }
-      }
+          recipient: `http://${process.env.APP_MONITOR}:3000/api`,
+        },
+      },
     },
     { arrayMerge: overwriteMerge }
   )
@@ -63,9 +63,9 @@ if (process.env.APP_IP) {
       server: {
         ip: {
           externalIp: process.env.APP_IP,
-          internalIp: process.env.APP_IP
-        }
-      }
+          internalIp: process.env.APP_IP,
+        },
+      },
     },
     { arrayMerge: overwriteMerge }
   )
@@ -80,7 +80,7 @@ config = merge(config, {
       minNodes: process.env.minNodes ? parseInt(process.env.minNodes) : 100,
       maxNodes: process.env.maxNodes ? parseInt(process.env.maxNodes) : 600,
       maxJoinedPerCycle: 4,
-      maxSyncingPerCycle: 8, 
+      maxSyncingPerCycle: 8,
       maxRotatedPerCycle: process.env.maxRotatedPerCycle ? parseInt(process.env.maxRotatedPerCycle) : 1,
       firstCycleJoin: 0,
       maxSyncTimeFloor: 18000,
@@ -89,8 +89,8 @@ config = merge(config, {
       amountToShrink: 5,
       maxDesiredMultiplier: 1.2,
       maxScaleReqs: 250 //todo this will become a variable config but this should work for a 500 node demo
-    }
-  }
+    },
+  },
 })
 
 // rateLimiting and loadDetection settings
@@ -104,33 +104,35 @@ config = merge(config, {
         txTimeInQueue: 0.7,
         queueLength: 0.8,
         executeQueueLength: 0.8,
-      }
+      },
     },
     loadDetection: {
-      queueLimit: 400, //EXSS does the main limiting now queue limit is a secondary limit 
+      queueLimit: 400, //EXSS does the main limiting now queue limit is a secondary limit
       executeQueueLimit: 100,
       desiredTxTime: 15,
       highThreshold: 0.5,
-      lowThreshold: 0.2
-    }
-  }
+      lowThreshold: 0.2,
+    },
+  },
 })
 
 // some sharding and state manager settings
 config = merge(config, {
   server: {
     sharding: {
-      nodesPerConsensusGroup: process.env.nodesPerConsensusGroup ? parseInt(process.env.nodesPerConsensusGroup) : 10,
+      nodesPerConsensusGroup: process.env.nodesPerConsensusGroup
+        ? parseInt(process.env.nodesPerConsensusGroup)
+        : 10,
       nodesPerEdge: process.env.nodesPerEdge ? parseInt(process.env.nodesPerEdge) : 2,
-      executeInOneShard: true
+      executeInOneShard: true,
     },
     stateManager: {
-      accountBucketSize: 200 //25  //we need to re-test with higher numbers after some recent improvements
-    }
-  }
+      accountBucketSize: 200, //25  //we need to re-test with higher numbers after some recent improvements
+    },
+  },
 })
 
-// // some storage settings. 
+// // some storage settings.
 // config = merge(config, {
 //   storage: {
 //     saveOldDBFiles: false,
@@ -150,12 +152,12 @@ config = merge(
         startInErrorLogMode: true,
         robustQueryDebug: true,
         fakeNetworkDelay: 0,
-        disableSnapshots: true,// //dont check in if set to true
+        disableSnapshots: true, // //dont check in if set to true
         countEndpointStart: -1,
         hashedDevAuth: '117151a0d719f329a4a570b4ccde4bbb1ec12fa6a7a870a1471ed170e7f08d70', //todo remove this after alpha 1.0
-        devPublicKey:'774491f80f47fedb119bb861601490f42bc3ea3b57fc63906c0d08e6d777a592'
-      }
-    }
+        devPublicKey: '774491f80f47fedb119bb861601490f42bc3ea3b57fc63906c0d08e6d777a592',
+      },
+    },
   },
   { arrayMerge: overwriteMerge }
 )

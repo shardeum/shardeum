@@ -7,11 +7,10 @@ import Sqlite3Storage from './sqlite3storage'
 import * as Sequelize from 'sequelize'
 const Op = Sequelize.Op
 
-
 interface AccountsEntry {
-  accountId: string,
-  timestamp: number,
-  data: any  //could be a string or a WrappedEVMAccount ...
+  accountId: string
+  timestamp: number
+  data: any //could be a string or a WrappedEVMAccount ...
 }
 
 interface Storage {
@@ -28,7 +27,7 @@ interface Storage {
 }
 
 class Storage {
-  storage:Sqlite3Storage = null
+  storage: Sqlite3Storage = null
 
   constructor(baseDir: string, dbPath: string) {
     this.storage = new Sqlite3Storage(models, baseDir, dbPath)
@@ -37,14 +36,14 @@ class Storage {
   async init() {
     console.log('shardeum storage init:' + this.storage.dbPath)
     await this.storage.init()
-    console.log('shardeum storage init complete:' )
+    console.log('shardeum storage init complete:')
 
     //would be neat if this wasn't needed here (refactor so storage stays more generic?)
     await this.storage.runCreate(
       'CREATE TABLE if not exists `accountsEntry` (`accountId` VARCHAR(255) NOT NULL, `timestamp` BIGINT NOT NULL, `data` JSON NOT NULL, PRIMARY KEY (`accountId`))'
     )
 
-    if(ShardeumFlags.NewStorageIndex) {
+    if (ShardeumFlags.NewStorageIndex) {
       //add index to timestamp
       await this.storage.run('CREATE INDEX IF NOT EXISTS timestamp1 ON accountsEntry(timestamp)')
     }
@@ -70,7 +69,7 @@ class Storage {
     if (!this.initialized) throw new Error('Storage not initialized.')
   }
 
-  async createOrReplaceAccountEntry(accountEntry:AccountsEntry) {
+  async createOrReplaceAccountEntry(accountEntry: AccountsEntry) {
     this._checkInit()
     try {
       await this._create(this.storageModels.accountsEntry, accountEntry, {
@@ -80,7 +79,7 @@ class Storage {
       throw new Error(e)
     }
   }
-  
+
   async getAccountsEntry(accountId): Promise<AccountsEntry> {
     this._checkInit()
     try {
@@ -92,19 +91,19 @@ class Storage {
           raw: true,
         }
       )
-      if(result.length > 0) return result[0]
+      if (result.length > 0) return result[0]
     } catch (e) {
       throw new Error(e)
     }
   }
 
   async queryAccountsEntryByRanges3(
-    accountStart:string,
-    accountEnd:string,
-    tsStart:number,
-    tsEnd:number,
-    limit:number,
-    accountOffset:string,
+    accountStart: string,
+    accountEnd: string,
+    tsStart: number,
+    tsEnd: number,
+    limit: number,
+    accountOffset: string
   ): Promise<AccountsEntry[]> {
     this._checkInit()
     try {
@@ -112,21 +111,20 @@ class Storage {
                       AND timestamp < ${tsEnd} 
                       AND accountId <= "${accountEnd}" AND accountId >= "${accountStart}" 
                       ORDER BY timestamp, accountId  LIMIT ${limit}`
-      const result = await this._query(query, [ ])
+      const result = await this._query(query, [])
       return result
     } catch (e) {
       throw new Error(e)
     }
   }
 
-
   async queryAccountsEntryByRanges2(
-    accountStart:string,
-    accountEnd:string,
-    tsStart:number,
-    tsEnd:number,
-    limit:number,
-    offset:number
+    accountStart: string,
+    accountEnd: string,
+    tsStart: number,
+    tsEnd: number,
+    limit: number,
+    offset: number
   ): Promise<AccountsEntry[]> {
     this._checkInit()
     try {
@@ -154,9 +152,9 @@ class Storage {
   }
 
   async queryAccountsEntryByRanges(
-    accountStart:string,
-    accountEnd:string,
-    limit:number,
+    accountStart: string,
+    accountEnd: string,
+    limit: number
     //offset:number
   ): Promise<AccountsEntry[]> {
     this._checkInit()
@@ -165,7 +163,6 @@ class Storage {
         this.storageModels.accountsEntry,
         {
           accountId: { [Op.between]: [accountStart, accountEnd] },
-
         },
         {
           limit: limit,
@@ -201,6 +198,5 @@ class Storage {
       throw new Error(e)
     }
   }
-
 }
 export default Storage

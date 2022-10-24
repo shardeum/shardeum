@@ -21,7 +21,12 @@ export function DeSerializeFromJsonString<T>(jsonString: string): T {
 
 function base64BufferReviver(key: string, value: any) {
   const originalObject = value
-  if (isObject(originalObject) && originalObject.hasOwnProperty('dataType') && originalObject.dataType && originalObject.dataType == 'bh') {
+  if (
+    isObject(originalObject) &&
+    originalObject.hasOwnProperty('dataType') &&
+    originalObject.dataType &&
+    originalObject.dataType == 'bh'
+  ) {
     return GetBufferFromField(originalObject, 'base64')
   } else {
     return value

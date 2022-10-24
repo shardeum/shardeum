@@ -64,7 +64,8 @@ const devAccount = {
   address: '62055d06f99210dbcb581c94e527862e67ffa1b402f277de30afe7cf995b9c05',
   keys: {
     publicKey: '62055d06f99210dbcb581c94e527862e67ffa1b402f277de30afe7cf995b9c05',
-    secretKey: '293d6590182ac0ea7c2eca4f2b7855c47bb6072af2d2199167aebf25c5e9389662055d06f99210dbcb581c94e527862e67ffa1b402f277de30afe7cf995b9c05',
+    secretKey:
+      '293d6590182ac0ea7c2eca4f2b7855c47bb6072af2d2199167aebf25c5e9389662055d06f99210dbcb581c94e527862e67ffa1b402f277de30afe7cf995b9c05',
   },
 }
 
@@ -88,41 +89,43 @@ async function injectTx(tx) {
   }
 }
 
-vorpal.command('change config', 'Send a stringified JSON config object to be updated by shardus').action(async function(args, callback) {
-  const answers = await this.prompt([
-    {
-      type: 'number',
-      name: 'cycle',
-      message: 'Enter the cycle on which the change should take place (or "-1" for 3 cycles from now): ',
-      default: -1,
-      filter: value => parseInt(value),
-    },
-    {
-      type: 'input',
-      name: 'config',
-      message: 'Enter the stringified JSON config object: ',
-      default: '{ "p2p": { "minNodes": 50, "maxNodes": 500 } }', //JSON.stringify(testConfig),
-    },
-  ])
-  try {
-    this.log(JSON.parse(answers.config))
-    const tx = {
-      isInternalTx: true,
-      internalTXType: 3,
-      from: devAccount.address,
-      cycle: answers.cycle,
-      config: answers.config,
-      timestamp: Date.now(),
+vorpal
+  .command('change config', 'Send a stringified JSON config object to be updated by shardus')
+  .action(async function(args, callback) {
+    const answers = await this.prompt([
+      {
+        type: 'number',
+        name: 'cycle',
+        message: 'Enter the cycle on which the change should take place (or "-1" for 3 cycles from now): ',
+        default: -1,
+        filter: value => parseInt(value),
+      },
+      {
+        type: 'input',
+        name: 'config',
+        message: 'Enter the stringified JSON config object: ',
+        default: '{ "p2p": { "minNodes": 50, "maxNodes": 500 } }', //JSON.stringify(testConfig),
+      },
+    ])
+    try {
+      this.log(JSON.parse(answers.config))
+      const tx = {
+        isInternalTx: true,
+        internalTXType: 3,
+        from: devAccount.address,
+        cycle: answers.cycle,
+        config: answers.config,
+        timestamp: Date.now(),
+      }
+      crypto.signObj(tx, devAccount.keys.secretKey, devAccount.keys.publicKey)
+      injectTx(tx).then(res => {
+        this.log(res)
+        callback()
+      })
+    } catch (err) {
+      this.log(err.message, 'Using backup Json config file instead of the input that was given')
     }
-    crypto.signObj(tx, devAccount.keys.secretKey, devAccount.keys.publicKey)
-    injectTx(tx).then(res => {
-      this.log(res)
-      callback()
-    })
-  } catch (err) {
-    this.log(err.message, 'Using backup Json config file instead of the input that was given')
-  }
-})
+  })
 
 vorpal.delimiter('>').show()
 vorpal.exec('change config')

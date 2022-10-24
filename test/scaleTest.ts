@@ -1,9 +1,7 @@
 import execa from 'execa'
 import * as utils from './testUtils'
 import { join } from 'path'
-const {
-  performance,
-} = require('perf_hooks');
+const { performance } = require('perf_hooks')
 const opts = { shell: true }
 const LOAD_TESTER = join(__dirname, '../../load-tester') // spam-client repo path
 // const abortController = new AbortController()
@@ -41,7 +39,7 @@ export async function waitForNetworkLoad(load, value) {
 // negative number in _timeout will result in infinte waiting time
 export async function waitForNetworkScaling(desired: number, _timeout: number = -1) {
   let isCriteriaMet = false
-  const start = performance.now();
+  const start = performance.now()
   while (!isCriteriaMet) {
     try {
       let activeNodes = await utils.queryActiveNodes()
@@ -49,13 +47,13 @@ export async function waitForNetworkScaling(desired: number, _timeout: number = 
       else await utils._sleep(10000)
     } catch (e) {
       await utils._sleep(30000)
-    } finally{
-      if(_timeout < 0 ) continue;
-      const now = performance.now();
-      const elapsed = Math.floor(now - start) / 60000;
+    } finally {
+      if (_timeout < 0) continue
+      const now = performance.now()
+      const elapsed = Math.floor(now - start) / 60000
       // console.log(elapsed, "min");
-      if(_timeout > 0 && _timeout < elapsed) {
-        return false; //timeout!!!,  network has failed to scale within the max time, returning false;
+      if (_timeout > 0 && _timeout < elapsed) {
+        return false //timeout!!!,  network has failed to scale within the max time, returning false;
       }
     }
   }
@@ -75,7 +73,7 @@ export const scaleTest = (START_NETWORK_SIZE: number, EXPECTED_ACTIVE_NODES: num
     // this is a little hacky to kill the load tester
     console.log(spamProcess.pid)
     spamProcess.cancel()
-    process.kill(spamProcess.pid + 1);
+    process.kill(spamProcess.pid + 1)
 
     expect(isLoadIncreased).toBe(true)
     expect(hasNetworkScaledUp).toBe(true)

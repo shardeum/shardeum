@@ -42,7 +42,9 @@ export async function queryLatestReceiptFromArchiver(ip, port, cycleCount) {
 }
 
 export async function queryReceiptsByCycle(ip, port, startCycle, endCycle) {
-  const res = await axios.get(`http://${ip}:${port}/receipt?startCycle=${startCycle}&endCycle=${endCycle}&type=tally`)
+  const res = await axios.get(
+    `http://${ip}:${port}/receipt?startCycle=${startCycle}&endCycle=${endCycle}&type=tally`
+  )
   //${archiverURL}/receipt?startCycle=${startCycle}&endCycle=${endCycle}&type=tally
   if (res.data.receipts.length > 0) return res.data.receipts
   else return null
@@ -92,8 +94,8 @@ export async function waitForArchiverToJoin(ip: string, port: number) {
         if (newArchiver.ip === ip && newArchiver.port === port) ready = true
       }
     } catch (e) {
-        console.log('error while checking new archiver to join', e.message)
-        return ready;
+      console.log('error while checking new archiver to join', e.message)
+      return ready
     }
     if (!ready) await _sleep(10000)
   }

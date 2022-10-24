@@ -4,7 +4,17 @@ const Set = require('core-js-pure/es/set')
 
 import { debug as createDebugLogger } from 'debug'
 import { SecureTrie as Trie } from 'merkle-patricia-tree'
-import { Account, Address, toBuffer, keccak256, KECCAK256_NULL, rlp, unpadBuffer, bufferToHex, KECCAK256_RLP } from 'ethereumjs-util'
+import {
+  Account,
+  Address,
+  toBuffer,
+  keccak256,
+  KECCAK256_NULL,
+  rlp,
+  unpadBuffer,
+  bufferToHex,
+  KECCAK256_RLP,
+} from 'ethereumjs-util'
 import Common, { Chain, Hardfork } from '@ethereumjs/common'
 import { StateManager, StorageDump } from '@ethereumjs/vm/src/state/interface'
 import Cache from './cache'
@@ -118,24 +128,28 @@ export default class ShardeumState implements StateManager {
 
   //critical to function
   setTransactionState(transactionState: TransactionState) {
-    if(ShardeumFlags.VerboseLogs) console.log('Setting new transactionState', transactionState.linkedTX)
+    if (ShardeumFlags.VerboseLogs) console.log('Setting new transactionState', transactionState.linkedTX)
     if (this._transactionState) {
-      if(ShardeumFlags.VerboseLogs) console.log(`Try to set new transaction state ${transactionState.linkedTX}. But found existing transaction state ${this._transactionState.linkedTX}`)
+      if (ShardeumFlags.VerboseLogs)
+        console.log(
+          `Try to set new transaction state ${transactionState.linkedTX}. But found existing transaction state ${this._transactionState.linkedTX}`
+        )
       // TODO: we should find a way handle this condition
     }
     this._transactionState = transactionState
   }
 
   unsetTransactionState(txId: string) {
-    if(ShardeumFlags.VerboseLogs) console.log('Running unsetTransactionState', this._transactionState.linkedTX)
+    if (ShardeumFlags.VerboseLogs)
+      console.log('Running unsetTransactionState', this._transactionState.linkedTX)
     if (this._transactionState.linkedTX !== txId) {
-      if(ShardeumFlags.VerboseLogs) console.log('Unable to unset transaction with different txId')
+      if (ShardeumFlags.VerboseLogs) console.log('Unable to unset transaction with different txId')
       // TODO: we should find a way handle this condition
     }
     this._transactionState = null
   }
 
-  resetState(){
+  resetState() {
     //todo any other reset?
 
     this._transactionState.resetTransactionState()
@@ -160,17 +174,17 @@ export default class ShardeumState implements StateManager {
     let testAccount
     //side run system on the side for now
     if (this._transactionState != null) {
-      if(ShardeumFlags.SaveEVMTries){
+      if (ShardeumFlags.SaveEVMTries) {
         throw new Error('getAccount SaveEVMTries=true not supported')
       } else {
         testAccount = await this._transactionState.getAccount(null, address, false, false)
         if (this.temporaryParallelOldMode === false) {
           return testAccount
-        }        
+        }
       }
     }
 
-    if(ShardeumFlags.VerboseLogs) console.log('Unable to find transactionState', address)
+    if (ShardeumFlags.VerboseLogs) console.log('Unable to find transactionState', address)
     if (this.temporaryParallelOldMode === false) {
       return // the code below will be irrelevant post SGS upgrade
     }
@@ -197,7 +211,6 @@ export default class ShardeumState implements StateManager {
     }
 
     throw new Error('putAccount should never get here')
-
   }
 
   /**
@@ -208,9 +221,9 @@ export default class ShardeumState implements StateManager {
     if (this.DEBUG) {
       debug(`Delete account ${address}`)
     }
-    if(ShardeumFlags.SaveEVMTries === false){
+    if (ShardeumFlags.SaveEVMTries === false) {
       return // I think we can just return and ignore this for now
-             // need to actually create a plan for deleting data
+      // need to actually create a plan for deleting data
     }
     throw new Error('deleteAccount SaveEVMTries=true not supported')
     //this.touchAccount(address)
@@ -235,8 +248,8 @@ export default class ShardeumState implements StateManager {
    */
   async putContractCode(address: Address, value: Buffer): Promise<void> {
     const account = await this.getAccount(address) //TODO figure out if we need this when ShardeumFlags.SaveEVMTries === false
-                                                   //It could be triggering some marking/including of accounts, but that 
-                                                   //may be moot now.
+    //It could be triggering some marking/including of accounts, but that
+    //may be moot now.
 
     if (this._transactionState != null) {
       //side run system on the side for now
@@ -248,7 +261,6 @@ export default class ShardeumState implements StateManager {
     }
 
     throw new Error('putContractCode should never get here')
-
   }
 
   /**
@@ -260,13 +272,13 @@ export default class ShardeumState implements StateManager {
   async getContractCode(address: Address): Promise<Buffer> {
     //side run system on the side for now
     if (this._transactionState != null) {
-      if(ShardeumFlags.SaveEVMTries){
+      if (ShardeumFlags.SaveEVMTries) {
         throw new Error('getContractCode SaveEVMTries=true not supported')
       } else {
         let testAccount = await this._transactionState.getContractCode(null, address, false, false)
         if (this.temporaryParallelOldMode === false) {
           return testAccount
-        }        
+        }
       }
     }
 
@@ -275,7 +287,6 @@ export default class ShardeumState implements StateManager {
     }
 
     throw new Error('getContractCode should never get here')
-
   }
 
   /**
@@ -285,7 +296,6 @@ export default class ShardeumState implements StateManager {
    */
   async _lookupStorageTrie(address: Address): Promise<Trie> {
     throw new Error('_lookupStorageTrie not impl')
-    
   }
 
   /**
@@ -295,7 +305,6 @@ export default class ShardeumState implements StateManager {
    */
   async _getStorageTrie(address: Address): Promise<Trie> {
     throw new Error('_getStorageTrie not impl')
-    
   }
 
   /**
@@ -310,7 +319,7 @@ export default class ShardeumState implements StateManager {
   async getContractStorage(address: Address, key: Buffer): Promise<Buffer> {
     let testAccount
     if (this._transactionState != null) {
-      if(ShardeumFlags.SaveEVMTries){
+      if (ShardeumFlags.SaveEVMTries) {
         let storageTrie = await this._getStorageTrie(address)
         testAccount = await this._transactionState.getContractStorage(storageTrie, address, key, false, false)
         if (this.temporaryParallelOldMode === false) {
@@ -328,7 +337,6 @@ export default class ShardeumState implements StateManager {
     }
 
     throw new Error('getContractStorage should never get here')
-
   }
 
   /**
@@ -341,9 +349,15 @@ export default class ShardeumState implements StateManager {
    */
   async getOriginalContractStorage(address: Address, key: Buffer): Promise<Buffer> {
     if (this._transactionState != null) {
-      if(ShardeumFlags.SaveEVMTries){
+      if (ShardeumFlags.SaveEVMTries) {
         let storageTrie = await this._getStorageTrie(address)
-        let testAccount = await this._transactionState.getContractStorage(storageTrie, address, key, true, false)
+        let testAccount = await this._transactionState.getContractStorage(
+          storageTrie,
+          address,
+          key,
+          true,
+          false
+        )
         if (this.temporaryParallelOldMode === false) {
           return testAccount
         }
@@ -359,7 +373,6 @@ export default class ShardeumState implements StateManager {
     }
 
     throw new Error('getOriginalContractStorage should never get here')
- 
   }
 
   /**
@@ -375,7 +388,7 @@ export default class ShardeumState implements StateManager {
    * for more explanation. Alias of the internal {@link StateManager._clearOriginalStorageCache}
    * TODO investigate this:
    * Is there any use in clearOriginalStorageCache??
-   * 
+   *
    */
   clearOriginalStorageCache(): void {
     this._clearOriginalStorageCache()
@@ -387,12 +400,13 @@ export default class ShardeumState implements StateManager {
    * @param address -  Address of the account whose storage is to be modified
    * @param modifyTrie - Function to modify the storage trie of the account
    */
-  async _modifyContractStorage(address: Address, modifyTrie: (storageTrie: Trie, done: Function) => void): Promise<void> {
-
-    if(ShardeumFlags.SaveEVMTries === false){
-      throw new Error('_modifyContractStorage depricated')      
+  async _modifyContractStorage(
+    address: Address,
+    modifyTrie: (storageTrie: Trie, done: Function) => void
+  ): Promise<void> {
+    if (ShardeumFlags.SaveEVMTries === false) {
+      throw new Error('_modifyContractStorage depricated')
     }
-
   }
 
   /**
@@ -421,7 +435,6 @@ export default class ShardeumState implements StateManager {
     }
 
     throw new Error('putContractStorage should never get here')
-  
   }
 
   /**
@@ -429,17 +442,15 @@ export default class ShardeumState implements StateManager {
    * @param address -  Address to clear the storage of
    */
   async clearContractStorage(address: Address): Promise<void> {
-    if(ShardeumFlags.SaveEVMTries === false){
+    if (ShardeumFlags.SaveEVMTries === false) {
       //throw new Error('todo implement update to clearContractStorage ')
       return
-
     } else {
       //I am not convinced this was safe to do before.  I think it was an oversight/unfinished
       await this._modifyContractStorage(address, (storageTrie, done) => {
         storageTrie.root = storageTrie.EMPTY_TRIE_ROOT
         done()
       })
-
     }
   }
 
@@ -449,13 +460,11 @@ export default class ShardeumState implements StateManager {
    * `commit` or `reverted` by calling rollback.
    */
   async checkpoint(): Promise<void> {
-
     this._touchedStack.push(new Set(Array.from(this._touched)))
 
     if (this._transactionState != null) {
       this._transactionState.checkpoint()
     }
-
 
     //side run: shardeum will no-op this in the future
     //  investigate: will it be a problem that EVM may call this for failed functions, or does that all bubble up anyhow?
@@ -505,7 +514,6 @@ export default class ShardeumState implements StateManager {
     }
 
     throw new Error('commit should never get here')
-
   }
 
   /**
@@ -513,7 +521,6 @@ export default class ShardeumState implements StateManager {
    * last call to checkpoint.
    */
   async revert(): Promise<void> {
-
     if (this._transactionState != null) {
       this._transactionState.revert()
     }
@@ -533,8 +540,7 @@ export default class ShardeumState implements StateManager {
    * @returns {Promise<Buffer>} - Returns the state-root of the `StateManager`
    */
   async getStateRoot(): Promise<Buffer> {
-
-    if(ShardeumFlags.SaveEVMTries === false){
+    if (ShardeumFlags.SaveEVMTries === false) {
       //may not need to do anything. but we need to trace where this is used
       //looks like just Pre-Byzantium paths use this in a receipt
       //throw new Error('todo implement update to getStateRoot ')
@@ -552,11 +558,10 @@ export default class ShardeumState implements StateManager {
    * @param stateRoot - The state-root to reset the instance to
    */
   async setStateRoot(stateRoot: Buffer): Promise<void> {
-    if(ShardeumFlags.SaveEVMTries === false){
+    if (ShardeumFlags.SaveEVMTries === false) {
       //should not need this when we use runTX and no blocks
       return
     }
-
   }
 
   /**
@@ -567,12 +572,11 @@ export default class ShardeumState implements StateManager {
    * Both are represented as hex strings without the `0x` prefix.
    */
   async dumpStorage(address: Address): Promise<StorageDump> {
-    if(ShardeumFlags.SaveEVMTries === false){
+    if (ShardeumFlags.SaveEVMTries === false) {
       // this was kinda nice. looks like we are loosing a way to find all of the storage for a single contract.
       //    ...would that be crazy to add to a relational DB.  After all this is just debugging stuff here
-      return {result:'no storage when SaveEVMTries === false'}
+      return { result: 'no storage when SaveEVMTries === false' }
     }
-
   }
 
   /**
@@ -582,7 +586,7 @@ export default class ShardeumState implements StateManager {
    * @returns
    */
   async getContractAccountKVPs(address: Address): Promise<StorageDump> {
-    if(ShardeumFlags.SaveEVMTries === false){
+    if (ShardeumFlags.SaveEVMTries === false) {
       // this was our function, and looks like we dont need it.
       // the idea was to sync all of the contract storage for a certain contract account
       throw new Error('getContractAccountKVPs not valid when SaveEVMTries === false')
@@ -599,7 +603,7 @@ export default class ShardeumState implements StateManager {
   async hasGenesisState(): Promise<boolean> {
     //only matters if running a blockchain
     throw new Error('hasGenesisState not valid because we dont run an ethjs blockchain')
-  
+
     // original
     // const root = this._common.genesis().stateRoot
     // return await this._trie.checkRoot(toBuffer(root))
@@ -648,7 +652,7 @@ export default class ShardeumState implements StateManager {
    * @param address - Address of the `account` to check
    */
   async accountExists(address: Address): Promise<boolean> {
-    if(ShardeumFlags.SaveEVMTries === false){
+    if (ShardeumFlags.SaveEVMTries === false) {
       // let accountShardusAddress = toShardusAddress(address.toString(), AccountType.Account)
       // let exists = await AccountsStorage.accountExists(accountShardusAddress)
       // return exists
@@ -799,13 +803,12 @@ export default class ShardeumState implements StateManager {
    * as defined in EIP-161 (https://eips.ethereum.org/EIPS/eip-161).
    */
   async cleanupTouchedAccounts(): Promise<void> {
-    this._touched.clear()    
-    if(ShardeumFlags.SaveEVMTries === false){
+    this._touched.clear()
+    if (ShardeumFlags.SaveEVMTries === false) {
       // not sure yet if we need to implement this..
       //throw new Error('cleanupTouchedAccounts not implemented yet when SaveEVMTries === false')
       return
     }
-
 
     // TODO do we need to bring back some of this functionality?
 
@@ -822,38 +825,38 @@ export default class ShardeumState implements StateManager {
     //     }
     //   }
     // }
-
   }
 
   /**
    * For use by the shardeum Dapp to set account data from syncing
    */
   async setAccountExternal(addressString: string, account: Account) {
-
-    if(ShardeumFlags.SaveEVMTries === false){
+    if (ShardeumFlags.SaveEVMTries === false) {
       // do not need to do this work!
       return
     }
   }
 
-
-
   /**
    * For use by the shardeum Dapp to set account data from syncing
    */
-  async setContractAccountKeyValueExternal(stateRoot: Buffer, addressString: string, key: Buffer, value: Buffer) {
-    if(ShardeumFlags.SaveEVMTries === false){
+  async setContractAccountKeyValueExternal(
+    stateRoot: Buffer,
+    addressString: string,
+    key: Buffer,
+    value: Buffer
+  ) {
+    if (ShardeumFlags.SaveEVMTries === false) {
       // do not need to do this work!
       return
     }
-
   }
 
   /**
    * For use by the shardeum Dapp to set account data from syncing
    */
   async setContractBytesExternal(codeHash: Buffer, codeByte: Buffer) {
-    if(ShardeumFlags.SaveEVMTries === false){
+    if (ShardeumFlags.SaveEVMTries === false) {
       // do not need to do this work!
       return
     }

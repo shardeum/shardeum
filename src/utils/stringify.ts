@@ -93,5 +93,10 @@ function stringifier(val: any, isArrayProp: boolean, options: stringifierOptions
 }
 
 function isBufferValue(toStr, val: Object) {
-  return toStr === '[object Object]' && objKeys(val).length == 2 && objKeys(val).includes('type') && val['type'] == 'Buffer'
+  return (
+    toStr === '[object Object]' &&
+    objKeys(val).length == 2 &&
+    objKeys(val).includes('type') &&
+    val['type'] == 'Buffer'
+  )
 }

@@ -35,14 +35,14 @@ export async function loadAccountDataFromDB(shardus: any, options: LoadOptions):
 
     path = Path.resolve('./', path)
 
-    if(fs.existsSync(path) === false){
+    if (fs.existsSync(path) === false) {
       console.log(`loadAccountDataFromDB: ${path}  does not exist`)
       return report
     }
 
     let accountArray = []
     let totalAccounts = 0
-    if(oneJsonAccountPerLine === false){
+    if (oneJsonAccountPerLine === false) {
       const accountFileText = fs.readFileSync(path, 'utf8')
       if (accountFileText == null) {
         return report
@@ -92,21 +92,19 @@ export async function loadAccountDataFromDB(shardus: any, options: LoadOptions):
         input: fs.createReadStream(path),
         output: process.stdout,
         terminal: false,
-        crlfDelay: Infinity
+        crlfDelay: Infinity,
       })
-      rl.on('line', (line) => {
-        if(line != ''){
-          try{
+      rl.on('line', line => {
+        if (line != '') {
+          try {
             const account = JSON.parse(line)
-            if(account != null){
+            if (account != null) {
               accountArray.push(account)
             }
-          } catch(ex){
-
-          }
+          } catch (ex) {}
         }
       })
-      await once(rl, 'close');
+      await once(rl, 'close')
     }
 
     if (logVerbose) shardus.log(`loadAccountDataFromDB ${accountArray.length}`)

@@ -5,7 +5,7 @@ import path from 'path'
 import * as Sequelize from 'sequelize'
 
 import config from '../config'
-import {isObject, SerializeToJsonString} from '../utils'
+import { isObject, SerializeToJsonString } from '../utils'
 
 const Op = Sequelize.Op
 const sqlite3 = require('sqlite3').verbose()

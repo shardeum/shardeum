@@ -9,12 +9,12 @@ export const archiverTest = (startNewAchiver = false, checkTotalDataCheck = fals
     test('Start new archivers successfully', async () => {
       console.log('TEST: Start new archivers successfully')
 
-    try {
-      execa.commandSync('shardus start --archivers 1', { ...opts, /*stdio: [0, 1, 2]*/ })
-    } catch (e) {
-      console.log(e)
-    }
-    let hasNewArchiverJoined = await utils.waitForArchiverToJoin('localhost', 4001)
+      try {
+        execa.commandSync('shardus start --archivers 1', { ...opts /*stdio: [0, 1, 2]*/ })
+      } catch (e) {
+        console.log(e)
+      }
+      let hasNewArchiverJoined = await utils.waitForArchiverToJoin('localhost', 4001)
 
       expect(hasNewArchiverJoined).toBe(true)
     })
@@ -50,8 +50,13 @@ export const archiverTest = (startNewAchiver = false, checkTotalDataCheck = fals
       if (dataFromArchiver_1.totalCycles !== dataFromArchiver_2.totalCycles) hasSameCyclesData = false
       console.log('Check totalAccounts', dataFromArchiver_1.totalAccounts, dataFromArchiver_2.totalAccounts)
       if (dataFromArchiver_1.totalAccounts !== dataFromArchiver_2.totalAccounts) hasSameAccountsData = false
-      console.log('Check totalTransactions', dataFromArchiver_1.totalTransactions, dataFromArchiver_2.totalTransactions)
-      if (dataFromArchiver_1.totalTransactions !== dataFromArchiver_2.totalTransactions) hasSameTransactionsData = false
+      console.log(
+        'Check totalTransactions',
+        dataFromArchiver_1.totalTransactions,
+        dataFromArchiver_2.totalTransactions
+      )
+      if (dataFromArchiver_1.totalTransactions !== dataFromArchiver_2.totalTransactions)
+        hasSameTransactionsData = false
       console.log('Check totalReceipts', dataFromArchiver_1.totalReceipts, dataFromArchiver_2.totalReceipts)
       if (dataFromArchiver_1.totalReceipts !== dataFromArchiver_2.totalReceipts) hasSameReceiptsData = false
       // expect(hasSameData).toBe(true)

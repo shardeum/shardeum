@@ -24,8 +24,10 @@ export const startTest = (START_NETWORK_SIZE, EXPECTED_ACTIVE_NODES = null) => {
       } catch (e) {
         console.log('Unable to remove instances folder')
       }
-      execa.commandSync(`shardus create  ${START_NETWORK_SIZE}`, { ...opts, /* stdio: [0, 1, 2] */ })
-      const isNetworkActive = await utils.waitForNetworkToBeActive(EXPECTED_ACTIVE_NODES || START_NETWORK_SIZE)
+      execa.commandSync(`shardus create  ${START_NETWORK_SIZE}`, { ...opts /* stdio: [0, 1, 2] */ })
+      const isNetworkActive = await utils.waitForNetworkToBeActive(
+        EXPECTED_ACTIVE_NODES || START_NETWORK_SIZE
+      )
       expect(isNetworkActive).toBe(true)
     }
   })

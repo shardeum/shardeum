@@ -15,13 +15,21 @@ export function getAccountShardusAddress(wrappedEVMAccount: WrappedEVMAccount): 
 
   if (wrappedEVMAccount.accountType === AccountType.ContractStorage) {
     //addressSource = wrappedEVMAccount.key
-    let shardusAddress = toShardusAddressWithKey(wrappedEVMAccount.ethAddress, wrappedEVMAccount.key, wrappedEVMAccount.accountType)
+    let shardusAddress = toShardusAddressWithKey(
+      wrappedEVMAccount.ethAddress,
+      wrappedEVMAccount.key,
+      wrappedEVMAccount.accountType
+    )
     return shardusAddress
   }
   if (wrappedEVMAccount.accountType === AccountType.ContractCode) {
     //in this case ethAddress is the code hash which is what we want for the key
     //wrappedEVMAccount.codeHash.toString('hex')
-    let shardusAddress = toShardusAddressWithKey(wrappedEVMAccount.contractAddress, wrappedEVMAccount.ethAddress, wrappedEVMAccount.accountType)
+    let shardusAddress = toShardusAddressWithKey(
+      wrappedEVMAccount.contractAddress,
+      wrappedEVMAccount.ethAddress,
+      wrappedEVMAccount.accountType
+    )
     return shardusAddress
   }
   if (wrappedEVMAccount.accountType === AccountType.Receipt) {
@@ -29,7 +37,7 @@ export function getAccountShardusAddress(wrappedEVMAccount: WrappedEVMAccount): 
     let shardusAddress = toShardusAddress(addressSource, wrappedEVMAccount.accountType)
     return shardusAddress
   }
-  
+
   let otherAccount: any = wrappedEVMAccount
   if (
     otherAccount.accountType === AccountType.NetworkAccount ||
@@ -47,7 +55,11 @@ export function getAccountShardusAddress(wrappedEVMAccount: WrappedEVMAccount): 
   return shardusAddress
 }
 
-export function toShardusAddressWithKey(addressStr: string, secondaryAddressStr: string, accountType: AccountType): string {
+export function toShardusAddressWithKey(
+  addressStr: string,
+  secondaryAddressStr: string,
+  accountType: AccountType
+): string {
   if (accountType === AccountType.Account) {
     if (addressStr.length != 42) {
       throw new Error('must pass in a 42 character hex addressStr for AccountType.Account type.')
@@ -99,12 +111,18 @@ export function toShardusAddressWithKey(addressStr: string, secondaryAddressStr:
       return secondaryAddressStr.toLowerCase()
     }
     if (secondaryAddressStr.length != 66) {
-      throw new Error(`must pass in a 66 character 32 byte address for non Account types. use the key for storage and codehash contractbytes ${addressStr.length}`)
+      throw new Error(
+        `must pass in a 66 character 32 byte address for non Account types. use the key for storage and codehash contractbytes ${addressStr.length}`
+      )
     }
     return secondaryAddressStr.slice(2).toLowerCase()
   }
 
-  if (accountType === AccountType.NetworkAccount || accountType === AccountType.NodeAccount || accountType === AccountType.NodeRewardReceipt) {
+  if (
+    accountType === AccountType.NetworkAccount ||
+    accountType === AccountType.NodeAccount ||
+    accountType === AccountType.NodeRewardReceipt
+  ) {
     return addressStr.toLowerCase()
   }
 
@@ -115,7 +133,9 @@ export function toShardusAddressWithKey(addressStr: string, secondaryAddressStr:
   }
 
   if (addressStr.length != 66) {
-    throw new Error(`must pass in a 66 character 32 byte address for non Account types. use the key for storage and codehash contractbytes ${addressStr.length}`)
+    throw new Error(
+      `must pass in a 66 character 32 byte address for non Account types. use the key for storage and codehash contractbytes ${addressStr.length}`
+    )
   }
 
   //so far rest of the accounts are just using the 32 byte eth address for a shardus address minus the "0x"
@@ -128,7 +148,9 @@ export function toShardusAddressWithKey(addressStr: string, secondaryAddressStr:
 
 export function toShardusAddress(addressStr: string, accountType: AccountType): string {
   if (accountType === AccountType.ContractStorage || accountType === AccountType.ContractCode) {
-    throw new Error(`toShardusAddress does not work anymore with type ContractStorage, use toShardusAddressWithKey instead`)
+    throw new Error(
+      `toShardusAddress does not work anymore with type ContractStorage, use toShardusAddressWithKey instead`
+    )
   }
 
   if (accountType === AccountType.Account || accountType === AccountType.Debug) {
@@ -154,7 +176,9 @@ export function toShardusAddress(addressStr: string, accountType: AccountType): 
   }
 
   if (addressStr.length != 66) {
-    throw new Error(`must pass in a 66 character 32 byte address for non Account types. use the key for storage and codehash contractbytes ${addressStr.length}`)
+    throw new Error(
+      `must pass in a 66 character 32 byte address for non Account types. use the key for storage and codehash contractbytes ${addressStr.length}`
+    )
   }
 
   //so far rest of the accounts are just using the 32 byte eth address for a shardus address minus the "0x"

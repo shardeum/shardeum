@@ -1,7 +1,6 @@
 import execa from 'execa'
 import * as utils from '../testUtils'
 
-
 export const stopTest = () => {
   test('Cleans a network successfully', async () => {
     execa.commandSync('shardus stop', { stdio: [0, 1, 2] })
