@@ -7,7 +7,7 @@ export let contractStorageKeySilo = true // do we want to calcultate contract st
 // export let temporaryParallelOldMode = false // Set of temporary hacks that allow running ShardeumState with some old logic.
 //                                             // TODO retire this, it should always be false now
 export let globalCodeBytes = false //do codebytes (contract code) use global accounts?
-export let VerboseLogs = true //set this to false to reduce logging that can impact perf tests or demos
+export let VerboseLogs = false //set this to false to reduce logging that can impact perf tests or demos
 export let Virtual0Address = true
 export let GlobalNetworkAccount = true
 export let NodeReward = false // NodeRewardENV || true //false //

@@ -66,7 +66,6 @@ export function _shardusWrappedAccount(wrappedEVMAccount: WrappedEVMAccount): Sh
  */
 export function fixDeserializedWrappedEVMAccount(wrappedEVMAccount: WrappedEVMAccount) {
   if (wrappedEVMAccount.accountType === AccountType.Account) {
-    console.log('ARHAM: wrappedEVMAccount', wrappedEVMAccount.account, JSON.stringify(wrappedEVMAccount))
     TransactionState.fixAccountFields(wrappedEVMAccount.account)
     wrappedEVMAccount.account = Account.fromAccountData(wrappedEVMAccount.account)
   }

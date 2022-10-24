@@ -75,7 +75,7 @@ if (process.env.APP_IP) {
 config = merge(config, {
   server: {
     p2p: {
-      cycleDuration: 30,
+      cycleDuration: 60,
       minNodesToAllowTxs: 1,
       minNodes: process.env.minNodes ? parseInt(process.env.minNodes) : 100,
       maxNodes: process.env.maxNodes ? parseInt(process.env.maxNodes) : 600,
@@ -149,7 +149,7 @@ config = merge(
       mode: 'debug', //TODO must set this to "release" for public networks or get security on endpoints. use "debug" for easier debugging
       debug: {
         startInFatalsLogMode: false, // true setting good for big aws test with nodes joining under stress.
-        startInErrorLogMode: false,
+        startInErrorLogMode: true,
         robustQueryDebug: true,
         fakeNetworkDelay: 0,
         disableSnapshots: true, // //dont check in if set to true

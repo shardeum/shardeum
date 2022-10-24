@@ -25,3 +25,4 @@ scripts/*/
 .idea
 consensorAccounts.json
 archiverAccounts.json
+.DS_Store
