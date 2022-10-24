@@ -1201,8 +1201,6 @@ shardus.registerExternalPost('contract/call', async (req, res) => {
         let caShardusAddress = toShardusAddress(callObj.to, AccountType.Account)
         //to do convert to timestamp query getAccountTimestamp!!
         caAccount = await AccountsStorage.getAccount(caShardusAddress)
-        console.log('[Debug log temp] caAccount:', caAccount)
-        console.log('[Debug log temp] caAccount stringify:', JSON.stringify(caAccount))
         if (caAccount) {
           const index = ERC20TokenBalanceMap.findIndex(x => x.to === callObj.to && x.data === callObj.data)
           if (index > -1) {
