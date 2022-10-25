@@ -69,9 +69,7 @@ export function fixDeserializedWrappedEVMAccount(wrappedEVMAccount: WrappedEVMAc
     TransactionState.fixAccountFields(wrappedEVMAccount.account)
     wrappedEVMAccount.account = Account.fromAccountData(wrappedEVMAccount.account)
   }
-  if (!UseBase64BufferEncoding) {
-    fixWrappedEVMAccountBuffers(wrappedEVMAccount)
-  }
+  fixWrappedEVMAccountBuffers(wrappedEVMAccount)
 }
 
 function fixWrappedEVMAccountBuffers(wrappedEVMAccount: WrappedEVMAccount) {
