@@ -86,3 +86,5 @@ Repeat until desired behavior is achieved...
    ```
    $ shardus network clean
    ```
+# CONTRIBUTING
+Please read this contribution [guide](./CONTRIBUTING.md).
