@@ -37,7 +37,7 @@ import {
   predictContractAddressDirect,
   updateEthAccountHash,
 } from './shardeum/wrappedEVMAccountFunctions'
-import { isEqualOrNewerVersion, replacer, sleep, zeroAddressStr } from './utils'
+import { isEqualOrNewerVersion, replacer, SerializeToJsonString, sleep, zeroAddressStr } from './utils'
 import config from './config'
 import { RunTxResult } from '@ethereumjs/vm/dist/runTx'
 import { RunState } from '@ethereumjs/vm/dist/evm/interpreter'
@@ -1196,6 +1196,8 @@ shardus.registerExternalPost('contract/call', async (req, res) => {
         let caShardusAddress = toShardusAddress(callObj.to, AccountType.Account)
         //to do convert to timestamp query getAccountTimestamp!!
         caAccount = await AccountsStorage.getAccount(caShardusAddress)
+        console.log('[Debug log temp] caAccount:', caAccount)
+        console.log('[Debug log temp] caAccount stringify:', JSON.stringify(caAccount))
         if (caAccount) {
           const index = ERC20TokenBalanceMap.findIndex(x => x.to === callObj.to && x.data === callObj.data)
           if (index > -1) {
@@ -1573,7 +1575,7 @@ shardus.registerExternalGet('accounts', debugMiddleware, async (req, res) => {
 
   //let sorted = JSON.parse(stringify(accounts))
   let accounts = await AccountsStorage.debugGetAllAccounts()
-  let sorted = JSON.parse(stringify(accounts))
+  let sorted = JSON.parse(SerializeToJsonString(accounts))
 
   res.json({ accounts: sorted })
 })

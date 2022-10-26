@@ -112,7 +112,7 @@ export async function queryAccountsEntryByRanges(
     let results = await storage.queryAccountsEntryByRanges(accountStart, accountEnd, maxRecords)
     for (let result of results) {
       if (isString(result.data)) {
-        result.data = JSON.parse(result.data as string)
+        result.data = DeSerializeFromJsonString(result.data as string)
       }
       processedResults.push(result.data)
     }
@@ -157,7 +157,7 @@ export async function queryAccountsEntryByRanges2(
 
     for (let result of results) {
       if (isString(result.data)) {
-        result.data = JSON.parse(result.data as string)
+        result.data = DeSerializeFromJsonString(result.data as string)
       }
       processedResults.push(result.data)
     }

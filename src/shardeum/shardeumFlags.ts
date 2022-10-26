@@ -7,12 +7,12 @@ export let contractStorageKeySilo = true // do we want to calcultate contract st
 // export let temporaryParallelOldMode = false // Set of temporary hacks that allow running ShardeumState with some old logic.
 //                                             // TODO retire this, it should always be false now
 export let globalCodeBytes = false //do codebytes (contract code) use global accounts?
-export let VerboseLogs = false //set this to false to reduce logging that can impact perf tests or demos
+export let VerboseLogs = true //set this to false to reduce logging that can impact perf tests or demos
 export let Virtual0Address = true
 export let GlobalNetworkAccount = true
 export let NodeReward = false // NodeRewardENV || true //false //
 export let FirstNodeRewardCycle = 100
-export let blockProductionRate = 6 // generate new block every 6s
+export let blockProductionRate = 3 // generate new block every 6s
 export let maxNumberOfOldBlocks = 256
 export let SelfTest = false
 export let ServicePointsPerSecond = 100 //service function points per second
@@ -47,7 +47,7 @@ export let UseTXPreCrack = true
 
 export let NewStorageIndex = true
 
-export let UseBase64BufferEncoding = false
+export let UseBase64BufferEncoding = true 
 
 export let useAccountWrites = true
 
