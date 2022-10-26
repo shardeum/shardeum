@@ -77,8 +77,8 @@ config = merge(config, {
     p2p: {
       cycleDuration: 60,
       minNodesToAllowTxs: 1,
-      minNodes: process.env.minNodes ? parseInt(process.env.minNodes) : 50,
-      maxNodes: process.env.maxNodes ? parseInt(process.env.maxNodes) : 500,
+      minNodes: process.env.minNodes ? parseInt(process.env.minNodes) : 100,
+      maxNodes: process.env.maxNodes ? parseInt(process.env.maxNodes) : 600,
       maxJoinedPerCycle: 4,
       maxSyncingPerCycle: 8, 
       maxRotatedPerCycle: process.env.maxRotatedPerCycle ? parseInt(process.env.maxRotatedPerCycle) : 1,
@@ -88,6 +88,7 @@ config = merge(config, {
       amountToGrow: 10,
       amountToShrink: 5,
       maxDesiredMultiplier: 1.2,
+      maxScaleReqs: 250 //todo this will become a variable config but this should work for a 500 node demo
     }
   }
 })
