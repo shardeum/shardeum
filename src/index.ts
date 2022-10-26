@@ -88,10 +88,7 @@ export let genesisAccounts = []
 const ERC20_BALANCEOF_CODE = '0x70a08231'
 
 const shardus = shardusFactory(config, {
-  customStringifier: function (data: any): string {
-    console.log('Reached here', SerializeToJsonString(data))
-    return SerializeToJsonString(data)
-  },
+  customStringifier: SerializeToJsonString
 })
 
 // const pay_address = '0x50F6D9E5771361Ec8b95D6cfb8aC186342B70120' // testing account for node_reward

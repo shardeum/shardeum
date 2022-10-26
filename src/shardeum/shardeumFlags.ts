@@ -47,7 +47,7 @@ export let UseTXPreCrack = true
 
 export let NewStorageIndex = true
 
-export let UseBase64BufferEncoding = true 
+export let UseBase64BufferEncoding = true
 
 export let useAccountWrites = true
 
