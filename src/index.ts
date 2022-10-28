@@ -4,6 +4,7 @@ import { Account, Address, BN, bufferToHex, isValidAddress, toBuffer } from 'eth
 import { AccessListEIP2930Transaction, Transaction } from '@ethereumjs/tx'
 import Common, { Chain } from '@ethereumjs/common'
 import VM from '@ethereumjs/vm'
+import ShardeumVM from './vm'
 import { parse as parseUrl } from 'url'
 import got from 'got'
 import 'dotenv/config'
@@ -314,7 +315,11 @@ function initEVMSingletons() {
 
   //let EVM = new VM({ common, stateManager: shardeumStateManager, blockchain: shardeumBlock })
 
-  EVM = new VM({ common: evmCommon, stateManager: undefined, blockchain: shardeumBlock })
+  if (ShardeumFlags.useShardeumVM) {
+    EVM = new ShardeumVM({ common: evmCommon, stateManager: undefined, blockchain: shardeumBlock })
+  } else {
+    EVM = new VM({ common: evmCommon, stateManager: undefined, blockchain: shardeumBlock })
+  }
 
   //todo need to evict old data
   ////transactionStateMap = new Map<string, TransactionState>()
@@ -2865,7 +2870,30 @@ shardus.setup({
     let { tx, timestampReceipt } = timestampedTx
     if (isInternalTx(tx) === false && isDebugTx(tx) === false) {
       const transaction = getTransactionObj(tx)
+      if (transaction instanceof AccessListEIP2930Transaction && transaction.AccessListJSON) {
+        //do nothing if eip2930
+      } else {
+        //if the TX is a contract deploy, predict the new contract address correctly
+        if (ShardeumFlags.txNoncePreCheck || transaction.to == null) {
+          let foundNonce = false
+          let foundSender = false
+          let nonce = new BN(0)
+          let txSenderEvmAddr = transaction.getSenderAddress().toString()
+          let transformedSourceKey = toShardusAddress(txSenderEvmAddr, AccountType.Account)
 
+          let queueCount = 0
+          let countPromise:Promise<number> = undefined
+          if (ShardeumFlags.txNoncePreCheck){
+            //parallel fetch
+            countPromise = shardus.getLocalOrRemoteAccountQueueCount(transformedSourceKey)
+          }
+          let remoteShardusAccount = await shardus.getLocalOrRemoteAccount(transformedSourceKey)
+          if (ShardeumFlags.txNoncePreCheck){
+            //parallel fetch
+            queueCount = await countPromise
+          }
+        }
+      }
       let isEIP2930 =
         transaction instanceof AccessListEIP2930Transaction && transaction.AccessListJSON != null
 

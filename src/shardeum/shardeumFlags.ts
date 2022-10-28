@@ -51,4 +51,10 @@ export let UseBase64BufferEncoding = false
 
 export let useAccountWrites = true
 
+export let useShardeumVM = true
+
+export let chargeConstantTxFee = true
+
+export let constantTxFee = '1000000000000000000' // 1 SHM
+
 export let devPublicKey = '774491f80f47fedb119bb861601490f42bc3ea3b57fc63906c0d08e6d777a592'
