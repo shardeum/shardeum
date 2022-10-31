@@ -1354,16 +1354,12 @@ shardus.registerExternalPost('contract/accesslist', async (req, res) => {
           if (ShardeumFlags.VerboseLogs) console.log(`Node is in remote shard: requesting`)
 
           let postResp = await _internalHackPostWithResp(
-            `${consensusNode.externalIp}:${consensusNode.externalPort}/contract/prerun`,
+            `${consensusNode.externalIp}:${consensusNode.externalPort}/contract/accesslist`,
             callObj
           )
           if (postResp.body != null && postResp.body != '') {
-            //getResp.body
-
             /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`Node is in remote shard: gotResp:${JSON.stringify(postResp.body)}`)
-            //res.json({ result: callResult.execResult.returnValue.toString('hex') })
-            //return res.json({ result: '0x' + postResp.body })   //I think the 0x is worse?
-            return res.json({ result: postResp.body.result })
+            return res.json({ ...postResp.body })
           }
         } else {
           if (ShardeumFlags.VerboseLogs) console.log(`Node is in remote shard: consensusNode = null`)
