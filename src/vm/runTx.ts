@@ -370,7 +370,12 @@ async function _runTx(this: VM, opts: RunTxOpts): Promise<RunTxResult> {
 
   // Update from account's nonce and balance
   fromAccount.nonce.iaddn(1)
-  const txCost = tx.gasLimit.mul(gasPrice)
+  let txCost
+  if (chargeConstantTxFee) {
+    txCost = new BN(constantTxFee)
+  } else {
+    txCost = tx.gasLimit.mul(gasPrice)
+  }
   fromAccount.balance.isub(txCost)
   await state.putAccount(caller, fromAccount)
   if (this.DEBUG) {
@@ -444,18 +449,18 @@ async function _runTx(this: VM, opts: RunTxOpts): Promise<RunTxResult> {
       debug(`No tx gasRefund`)
     }
   }
+  let actualTxCost
   if (chargeConstantTxFee) {
-    const customTxFee = new BN(constantTxFee)
-    results.gasUsed = customTxFee.div(gasPrice) // (1 SHM / gasPrice = gasCharged)
+    actualTxCost = new BN(constantTxFee)
+  } else {
+    actualTxCost = results.gasUsed.mul(gasPrice)
   }
 
   results.amountSpent = results.gasUsed.mul(gasPrice) // should be equal to 1 SHM
 
   // Update sender's balance
   fromAccount = await state.getAccount(caller)
-  const actualTxCost = results.gasUsed.mul(gasPrice)
   const txCostDiff = txCost.sub(actualTxCost)
-  console.log('tx cost diff', txCostDiff)
   fromAccount.balance.iadd(txCostDiff)
   await state.putAccount(caller, fromAccount)
   if (this.DEBUG) {
