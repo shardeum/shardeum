@@ -17,7 +17,7 @@ export let maxNumberOfOldBlocks = 256
 export let SelfTest = false
 export let ServicePointsPerSecond = 100 //service function points per second
 export let SetupGenesisAccount = true
-export let EVMReceiptsAsAccounts = false
+export let EVMReceiptsAsAccounts = true
 export let ServicePoints = {
   ['debug-points']: 20,
   ['account/:address']: 5,
@@ -28,7 +28,7 @@ export let ServicePoints = {
 export let DebugRestoreFile = 'account-export.json' //'accounts-by-ts.json'
 export let DebugRestoreArchiveBatch = 2000
 export let CheckNonce = true
-export let txNoncePreCheck = false
+export let txNoncePreCheck = true
 export let forwardGenesisAccounts = true // To send accounts from consensor rather than pulling from archiver
 
 export let UseDBForAccounts = true //Use Sql to store in memory accounts instead of simple accounts object map

@@ -122,7 +122,7 @@ config = merge(config, {
     sharding: {
       nodesPerConsensusGroup: process.env.nodesPerConsensusGroup
         ? parseInt(process.env.nodesPerConsensusGroup)
-        : 10,
+        : 5,
       nodesPerEdge: process.env.nodesPerEdge ? parseInt(process.env.nodesPerEdge) : 2,
       executeInOneShard: true,
     },
@@ -150,7 +150,7 @@ config = merge(
       debug: {
         startInFatalsLogMode: false, // true setting good for big aws test with nodes joining under stress.
         startInErrorLogMode: true,
-        robustQueryDebug: true,
+        robustQueryDebug: false,
         fakeNetworkDelay: 0,
         disableSnapshots: true, // //dont check in if set to true
         countEndpointStart: -1,

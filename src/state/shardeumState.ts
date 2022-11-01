@@ -130,10 +130,7 @@ export default class ShardeumState implements StateManager {
   setTransactionState(transactionState: TransactionState) {
     if (ShardeumFlags.VerboseLogs) console.log('Setting new transactionState', transactionState.linkedTX)
     if (this._transactionState) {
-      if (ShardeumFlags.VerboseLogs)
-        console.log(
-          `Try to set new transaction state ${transactionState.linkedTX}. But found existing transaction state ${this._transactionState.linkedTX}`
-        )
+      /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log( `Try to set new transaction state ${transactionState.linkedTX}. But found existing transaction state ${this._transactionState.linkedTX}` )
       // TODO: we should find a way handle this condition
     }
     this._transactionState = transactionState
