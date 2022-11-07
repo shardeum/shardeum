@@ -2144,7 +2144,7 @@ shardus.setup({
           }
           await shardus.debugCommitAccountCopies(accountCopies)
           if (ShardeumFlags.forwardGenesisAccounts) {
-            await shardus.forwardAccounts(accountCopies)
+            await shardus.forwardAccounts({ accounts: accountCopies })
           }
         }
         await sleep(ONE_SECOND * 10)

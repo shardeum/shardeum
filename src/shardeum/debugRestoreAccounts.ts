@@ -5,6 +5,7 @@ import * as Path from 'path'
 import { sleep } from '../utils'
 import * as readline from 'readline'
 import { once } from 'events'
+import { AccountType } from './shardeumTypes'
 export interface LoadOptions {
   file: string
 }
@@ -131,7 +132,10 @@ export async function loadAccountDataFromDB(shardus: any, options: LoadOptions):
 export const processAccountsData = async (shardus, report: LoadReport, accountArray) => {
   let logVerbose = ShardeumFlags.VerboseLogs
   let lastTS = -1
-  let accountArrayClean = []
+  let accountArrayClean = {
+    accounts: [],
+    receipts: [],
+  }
   for (let account of accountArray) {
     //account.isGlobal = (account.isGlobal === 1)? true : false
     try {
@@ -171,41 +175,72 @@ export const processAccountsData = async (shardus, report: LoadReport, accountAr
     }
     lastTS = account.timestamp
 
-    accountArrayClean.push(account)
+    // Filter out failed EVM Receipts to get stored
+    // if (account.data.accountType) {
+    //   if (
+    //     account.data.accountType === AccountType.Receipt ||
+    //     account.data.accountType === AccountType.NodeRewardReceipt
+    //   ) {
+    //     if (account.data.readableReceipt.status === 0) continue
+    //   }
+    // }
+
+    if (!ShardeumFlags.EVMReceiptsAsAccounts) {
+      if (
+        account.data.accountType === AccountType.Receipt ||
+        account.data.accountType === AccountType.NodeRewardReceipt
+      )
+        accountArrayClean.receipts.push(account)
+      else accountArrayClean.accounts.push(account)
+    } else {
+      accountArrayClean.accounts.push(account)
+    }
   }
 
   //replace with the clean array
-  accountArray = accountArrayClean
+  // accountArray = accountArrayClean
 
   if (report.loadCount === 0) {
-    let firstAccount = accountArray[0]
+    let firstAccount = accountArrayClean.accounts[0]
     if (logVerbose) shardus.log(`loadAccountDataFromDB ${JSON.stringify(firstAccount)}`)
   }
 
   if (ShardeumFlags.forwardGenesisAccounts) {
-    let bucketSize = ShardeumFlags.DebugRestoreArchiveBatch
-    let limit = bucketSize
-    let j = limit
-    let accountsToForward
-    for (let i = 0; i < accountArray.length; i = j) {
-      if (i === 0 && accountArray.length < limit) accountsToForward = accountArray
-      else accountsToForward = accountArray.slice(i, limit)
-      console.log(i, accountsToForward.length)
-      try {
-        await shardus.forwardAccounts(accountsToForward)
-      } catch (error) {
-        console.log(`loadAccountDataFromDB:` + error.name + ': ' + error.message + ' at ' + error.stack)
-      }
-      j = limit
-      limit += bucketSize
-      await sleep(1000)
+    // let bucketSize = ShardeumFlags.DebugRestoreArchiveBatch
+    // let limit = bucketSize
+    // let j = limit
+    // let accountsToForward
+    // for (let i = 0; i < accountArray.length; i = j) {
+    //   if (i === 0 && accountArray.length < limit) accountsToForward = accountArray
+    //   else accountsToForward = accountArray.slice(i, limit)
+    //   console.log(i, accountsToForward.length)
+    //   try {
+    //     await shardus.forwardAccounts(accountsToForward)
+    //   } catch (error) {
+    //     console.log(`loadAccountDataFromDB:` + error.name + ': ' + error.message + ' at ' + error.stack)
+    //   }
+    //   j = limit
+    //   limit += bucketSize
+    //   await sleep(1000)
+    // }
+    try {
+      console.log(
+        'Restore data to forward',
+        'accounts size',
+        accountArrayClean.accounts.length,
+        'receipts size',
+        accountArrayClean.receipts.length
+      )
+      await shardus.forwardAccounts(accountArrayClean)
+    } catch (error) {
+      console.log(`loadAccountDataFromDB:` + error.name + ': ' + error.message + ' at ' + error.stack)
     }
   } else {
-    await shardus.forwardAccounts(accountArray.length)
-    setGenesisAccounts(accountArray) // As an assumption to save in memory, so that when it's queried it can reponse fast, we can make it query from DB later
+    await shardus.forwardAccounts(accountArrayClean.accounts)
+    setGenesisAccounts(accountArrayClean.accounts) // As an assumption to save in memory, so that when it's queried it can reponse fast, we can make it query from DB later
   }
 
-  await shardus.debugCommitAccountCopies(accountArray)
+  await shardus.debugCommitAccountCopies(accountArrayClean.accounts)
 
   report.loadCount = report.loadCount + accountArray.length //todo make this more closed loop on how many accounts were loaded
   report.passed = true
