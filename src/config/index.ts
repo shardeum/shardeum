@@ -77,15 +77,15 @@ config = merge(config, {
     p2p: {
       cycleDuration: 60,
       minNodesToAllowTxs: 1,
-      minNodes: process.env.minNodes ? parseInt(process.env.minNodes) : 100,
-      maxNodes: process.env.maxNodes ? parseInt(process.env.maxNodes) : 600,
-      maxJoinedPerCycle: 4,
-      maxSyncingPerCycle: 8,
+      minNodes: process.env.minNodes ? parseInt(process.env.minNodes) : 250,
+      maxNodes: process.env.maxNodes ? parseInt(process.env.maxNodes) : 1200,
+      maxJoinedPerCycle: 10,
+      maxSyncingPerCycle: 10,
       maxRotatedPerCycle: process.env.maxRotatedPerCycle ? parseInt(process.env.maxRotatedPerCycle) : 1,
       firstCycleJoin: 0,
       maxSyncTimeFloor: 18000,
       syncBoostEnabled: false,
-      amountToGrow: 10,
+      amountToGrow: 30,
       amountToShrink: 5,
       maxDesiredMultiplier: 1.2,
       maxScaleReqs: 250 //todo this will become a variable config but this should work for a 500 node demo
@@ -109,7 +109,7 @@ config = merge(config, {
     loadDetection: {
       queueLimit: 400, //EXSS does the main limiting now queue limit is a secondary limit
       executeQueueLimit: 100,
-      desiredTxTime: 15,
+      desiredTxTime: 15, //15
       highThreshold: 0.5,
       lowThreshold: 0.2,
     },
@@ -122,7 +122,7 @@ config = merge(config, {
     sharding: {
       nodesPerConsensusGroup: process.env.nodesPerConsensusGroup
         ? parseInt(process.env.nodesPerConsensusGroup)
-        : 5,
+        : 10,
       nodesPerEdge: process.env.nodesPerEdge ? parseInt(process.env.nodesPerEdge) : 2,
       executeInOneShard: true,
     },

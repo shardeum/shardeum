@@ -15,9 +15,9 @@ export let FirstNodeRewardCycle = 100
 export let blockProductionRate = 6 // generate new block every 6s
 export let maxNumberOfOldBlocks = 256
 export let SelfTest = false
-export let ServicePointsPerSecond = 100 //service function points per second
+export let ServicePointsPerSecond = 200 //service function points per second
 export let SetupGenesisAccount = true
-export let EVMReceiptsAsAccounts = true
+export let EVMReceiptsAsAccounts = false
 export let ServicePoints = {
   ['debug-points']: 20,
   ['account/:address']: 5,
@@ -27,8 +27,8 @@ export let ServicePoints = {
 }
 export let DebugRestoreFile = 'account-export.json' //'accounts-by-ts.json'
 export let DebugRestoreArchiveBatch = 2000
-export let CheckNonce = true
-export let txNoncePreCheck = true
+export let CheckNonce = false
+export let txNoncePreCheck = false
 export let forwardGenesisAccounts = true // To send accounts from consensor rather than pulling from archiver
 
 export let UseDBForAccounts = true //Use Sql to store in memory accounts instead of simple accounts object map
@@ -55,6 +55,6 @@ export let useShardeumVM = true
 
 export let chargeConstantTxFee = true
 
-export let constantTxFee = '1000000000000000000' // 1 SHM
+export let constantTxFee = '10000000000000'//0.00001 SHM   //'1000000000000000000' // 1 SHM
 
 export let devPublicKey = '774491f80f47fedb119bb861601490f42bc3ea3b57fc63906c0d08e6d777a592'
