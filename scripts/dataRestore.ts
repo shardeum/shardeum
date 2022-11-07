@@ -3,6 +3,7 @@ import path from 'path' //require('path')
 const { Sequelize } = require('sequelize')
 import * as WrappedEVMAccountFunctions from '../src/shardeum/wrappedEVMAccountFunctions'
 import * as crypto from '@shardus/crypto-utils'
+import { SerializeToJsonString } from '../src/utils'
 
 crypto.init('69fa4195670576c0160d660c3be36556ff8d504725be8a59b5a96509e0c994bc')
 
@@ -52,7 +53,7 @@ async function dbFilesFromFolders() {
         console.log(error)
       }
     })
-    //console.log(JSON.stringify(dbFiles, null, 2))
+    // console.log(JSON.stringify(dbFiles, null, 2))
   })
 
   await sleep(1000)
@@ -96,7 +97,9 @@ async function main() {
     } catch (error) {
       console.error('Unable to connect to the database:', error)
     }
-    console.log(`size of accounts map after db: ${dbFile.filename} ${accountsMap.size}  tsUpgrades:${tsUpgrades}`)
+    console.log(
+      `size of accounts map after db: ${dbFile.filename} ${accountsMap.size}  tsUpgrades:${tsUpgrades}`
+    )
   }
 
   let repairOldCodeHash = false
@@ -174,7 +177,9 @@ async function main() {
 
   let finalAccounts = Array.from(accountsMap.values())
   finalAccounts = finalAccounts.map(acc => (Array.isArray(acc) ? acc[0] : acc))
-  finalAccounts = finalAccounts.sort((a, b) => a.timestamp - b.timestamp).map(acc => ({ ...acc, data: JSON.stringify(acc.data) }))
+  finalAccounts = finalAccounts
+    .sort((a, b) => a.timestamp - b.timestamp)
+    .map(acc => ({ ...acc, data: JSON.stringify(acc.data) }))
   //RangeError: Invalid string length means out of memory!
   //fs.writeFileSync('account-export.json', JSON.stringify(finalAccounts, null, 2))
   console.log(JSON.stringify(stats, null, 2))
@@ -184,7 +189,12 @@ async function main() {
   //writableStream.write('[')
   for (let i = 0; i < finalAccounts.length; i++) {
     let account = finalAccounts[i]
-    writableStream.write(JSON.stringify(account)) //JSON.stringify(account, null, 2)) // + (i < finalAccounts.length)?',\n':'')
+    writableStream.write(
+      JSON.stringify({
+        ...account,
+        data: SerializeToJsonString(account.data),
+      })
+    ) //JSON.stringify(account, null, 2)) // + (i < finalAccounts.length)?',\n':'')
     // if (i < finalAccounts.length - 1) {
     //   writableStream.write(',\n')
     // }
@@ -218,7 +228,13 @@ async function getNewestAccountsFromDB(db: string) {
   accounts = accounts[0]
   accounts = accounts.map(acc => {
     const data = JSON.parse(acc.data)
-    return { ...acc, data: JSON.parse(acc.data), hash: data.hash, isGlobal: acc.accountId === '0'.repeat(64), cycleNumber: 0 }
+    return {
+      ...acc,
+      data: JSON.parse(acc.data),
+      hash: data.hash,
+      isGlobal: acc.accountId === '0'.repeat(64),
+      cycleNumber: 0,
+    }
   })
   //database.close()
   return accounts
