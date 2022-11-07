@@ -27,8 +27,8 @@ export let ServicePoints = {
 }
 export let DebugRestoreFile = 'account-export.json' //'accounts-by-ts.json'
 export let DebugRestoreArchiveBatch = 2000
-export let CheckNonce = false
-export let txNoncePreCheck = false
+export let CheckNonce = true
+export let txNoncePreCheck = true
 export let forwardGenesisAccounts = true // To send accounts from consensor rather than pulling from archiver
 
 export let UseDBForAccounts = true //Use Sql to store in memory accounts instead of simple accounts object map
@@ -55,6 +55,6 @@ export let useShardeumVM = true
 
 export let chargeConstantTxFee = true
 
-export let constantTxFee = '10000000000000'//0.00001 SHM   //'1000000000000000000' // 1 SHM
+export let constantTxFee = '1000000000000000000' // '10000000000000'//0.00001 SHM   //'1000000000000000000' // 1 SHM
 
 export let devPublicKey = '774491f80f47fedb119bb861601490f42bc3ea3b57fc63906c0d08e6d777a592'
