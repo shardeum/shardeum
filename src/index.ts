@@ -2324,9 +2324,9 @@ shardus.setup({
         if (txNonce != perfectCount) {
           success = false
           reason = `Transaction nonce != ${txNonce} ${perfectCount}`
-          /* prettier-ignore */ /*if (ShardeumFlags.VerboseLogs)*/ console.log(`nonce fail: perfectCount:${perfectCount} != ${txNonce}.    nonce:${appData.nonce}  queueCount:${appData.queueCount} `)
+          /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`nonce fail: perfectCount:${perfectCount} != ${txNonce}.    nonce:${appData.nonce}  queueCount:${appData.queueCount} `)
         } else {
-          /* prettier-ignore */ /*if (ShardeumFlags.VerboseLogs)*/ console.log(`nonce pass: perfectCount:${perfectCount} == ${txNonce}.    nonce:${appData.nonce}  queueCount:${appData.queueCount} `)
+          /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`nonce pass: perfectCount:${perfectCount} == ${txNonce}.    nonce:${appData.nonce}  queueCount:${appData.queueCount} `)
         }
       }
     } catch (e) {
