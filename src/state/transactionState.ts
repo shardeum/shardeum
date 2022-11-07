@@ -230,9 +230,7 @@ export default class TransactionState {
         //@ts-ignore
         account.balance = '0x' + account.balance
       }
-      if (!UseBase64BufferEncoding) {
-        this.fixAccountBuffers(account)
-      }
+      this.fixAccountBuffers(account)
     }
   }
 

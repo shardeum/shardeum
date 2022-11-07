@@ -38,7 +38,7 @@ import {
   predictContractAddressDirect,
   updateEthAccountHash,
 } from './shardeum/wrappedEVMAccountFunctions'
-import { isEqualOrNewerVersion, replacer, sleep, zeroAddressStr } from './utils'
+import { isEqualOrNewerVersion, replacer, SerializeToJsonString, sleep, zeroAddressStr } from './utils'
 import config from './config'
 import { RunTxResult } from '@ethereumjs/vm/dist/runTx'
 import { RunState } from '@ethereumjs/vm/dist/evm/interpreter'
@@ -88,7 +88,9 @@ export let genesisAccounts = []
 
 const ERC20_BALANCEOF_CODE = '0x70a08231'
 
-const shardus = shardusFactory(config)
+const shardus = shardusFactory(config, {
+  customStringifier: SerializeToJsonString,
+})
 
 // const pay_address = '0x50F6D9E5771361Ec8b95D6cfb8aC186342B70120' // testing account for node_reward
 const random_wallet = Wallet.generate()
@@ -1553,7 +1555,7 @@ shardus.registerExternalGet('accounts', debugMiddleware, async (req, res) => {
 
   //let sorted = JSON.parse(stringify(accounts))
   let accounts = await AccountsStorage.debugGetAllAccounts()
-  let sorted = JSON.parse(stringify(accounts))
+  let sorted = JSON.parse(SerializeToJsonString(accounts))
 
   res.json({ accounts: sorted })
 })

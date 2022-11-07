@@ -1,53 +1,43 @@
 {
-    // Use IntelliSense to learn about possible attributes.
-    // Hover to view descriptions of existing attributes.
-    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
-    "version": "0.2.0",
-    "configurations": [
-        {
-            "name": "runTXperf",
-            "program": "${workspaceFolder}/dist/tests/runTXperf.js",
-            "request": "launch",
-            "skipFiles": [
-                "<node_internals>/**"
-            ],
-            "type": "pwa-node"
-        },
-        {
-            "name": "Attach by Process ID",
-            "processId": "${command:PickProcess}",
-            "request": "attach",
-            "skipFiles": [
-                "<node_internals>/**"
-            ],
-            "type": "pwa-node"
-        },
-        {
-            //this seems to work pretty well when other methods are breaking.
-            "type": "node",
-            "request": "attach",
-            "name": "Attach by Process Better",
-            "processId": "${command:PickProcess}", // or hardcode the process id here i.e. "15684"
-            "port": 9229,
-            //"restart": true,
-            "sourceMaps": true,
-            "protocol": "inspector" ,
-            "skipFiles": [
-                "<node_internals>/**"
-            ]
-        },        
-        {
-            "type": "pwa-node",
-            "request": "launch",
-            "name": "Launch Program",
-            "skipFiles": [
-                "<node_internals>/**"
-            ],
-            "program": "${workspaceFolder}\\src\\index.ts",
-            "preLaunchTask": "tsc: build - tsconfig.json",
-            "outFiles": [
-                "${workspaceFolder}/dist/**/*.js"
-            ]
-        }
-    ]
+  // Use IntelliSense to learn about possible attributes.
+  // Hover to view descriptions of existing attributes.
+  // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "runTXperf",
+      "program": "${workspaceFolder}/dist/tests/runTXperf.js",
+      "request": "launch",
+      "skipFiles": ["<node_internals>/**"],
+      "type": "node"
+    },
+    {
+      "name": "Attach by Process ID",
+      "processId": "${command:PickProcess}",
+      "request": "attach",
+      "skipFiles": ["<node_internals>/**"],
+      "type": "node"
+    },
+    {
+      //this seems to work pretty well when other methods are breaking.
+      "type": "node",
+      "request": "attach",
+      "name": "Attach by Process Better",
+      "processId": "${command:PickProcess}", // or hardcode the process id here i.e. "15684"
+      "port": 9229,
+      //"restart": true,
+      "sourceMaps": true,
+      "protocol": "inspector",
+      "skipFiles": ["<node_internals>/**"]
+    },
+    {
+      "type": "node",
+      "request": "launch",
+      "name": "Launch Program",
+      "skipFiles": ["<node_internals>/**"],
+      "program": "${workspaceFolder}/src/index.ts",
+      "preLaunchTask": "tsc: build - tsconfig.json",
+      "outFiles": ["${workspaceFolder}/dist/**/*.js"]
+    }
+  ]
 }

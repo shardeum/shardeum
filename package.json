@@ -13,6 +13,7 @@
     "fix": "gts fix",
     "lint": "tsc --noEmit && eslint '*/**/*.{js,ts,tsx}' --quiet --fix",
     "prepare": "npm run compile",
+    "restart": "npm run prepare && shardus stop && shardus clean && shardus start",
     "pretest": "npm run compile",
     "posttest": "",
     "dbg": "shardus start 3 && shardus stop && rm -rf instances/",
