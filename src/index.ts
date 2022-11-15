@@ -2,7 +2,7 @@ import stringify from 'fast-json-stable-stringify'
 import * as crypto from '@shardus/crypto-utils'
 import { Account, Address, BN, bufferToHex, isValidAddress, toBuffer } from 'ethereumjs-util'
 import { AccessListEIP2930Transaction, Transaction } from '@ethereumjs/tx'
-import Common, { Chain } from '@ethereumjs/common'
+import Common, { Chain, Hardfork } from '@ethereumjs/common'
 import VM from '@ethereumjs/vm'
 import ShardeumVM from './vm'
 import { parse as parseUrl } from 'url'
@@ -263,18 +263,6 @@ let EVMReceiptsToKeep = 1000
 //In debug mode the default value is 100 SHM.  This is needed for certain load test operations
 const defaultBalance = isDebugMode() ? oneEth.mul(new BN(100)) : new BN(0)
 
-const supportedHardforks = [
-  'chainstart',
-  'homestead',
-  'tangerineWhistle',
-  'spuriousDragon',
-  'byzantium',
-  'constantinople',
-  'petersburg',
-  'istanbul',
-  'berlin',
-]
-
 // TODO move this to a db table
 let transactionFailHashMap: any = {}
 
@@ -302,8 +290,7 @@ let evmCommon
 function initEVMSingletons() {
   let chainIDBN = new BN(ShardeumFlags.ChainID)
 
-  //let common = new Common({ chain: ShardeumFlags.ChainID, supportedHardforks })
-  evmCommon = new Common({ chain: Chain.Mainnet, supportedHardforks })
+  evmCommon = new Common({ chain: Chain.Mainnet, hardfork: Hardfork.Merge })
 
   //hack override this function.  perhaps a nice thing would be to use forCustomChain to create a custom common object
   evmCommon.chainIdBN = () => {

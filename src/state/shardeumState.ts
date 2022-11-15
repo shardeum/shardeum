@@ -1,31 +1,11 @@
-import { add } from 'lodash'
-
 const Set = require('core-js-pure/es/set')
-
 import { debug as createDebugLogger } from 'debug'
 import { SecureTrie as Trie } from 'merkle-patricia-tree'
-import {
-  Account,
-  Address,
-  toBuffer,
-  keccak256,
-  KECCAK256_NULL,
-  rlp,
-  unpadBuffer,
-  bufferToHex,
-  KECCAK256_RLP,
-} from 'ethereumjs-util'
+import { Account, Address } from 'ethereumjs-util'
 import Common, { Chain, Hardfork } from '@ethereumjs/common'
 import { StateManager, StorageDump } from '@ethereumjs/vm/src/state/interface'
-import Cache from './cache'
-//import { getActivePrecompiles, ripemdPrecompileAddress } from '@ethereumjs/vm/src/evm/precompiles'
-//import { short } from '@ethereumjs/vm/src/evm/opcodes'
-import { AccessList, AccessListItem } from '@ethereumjs/tx'
 import TransactionState from './transactionState'
 import {ShardeumFlags} from '../shardeum/shardeumFlags'
-import * as AccountsStorage from '../storage/accountStorage'
-import { toShardusAddress } from '../shardeum/evmAddress'
-import { AccountType } from '../shardeum/shardeumTypes'
 
 const debug = createDebugLogger('vm:state')
 
@@ -104,7 +84,7 @@ export default class ShardeumState implements StateManager {
   constructor(opts: DefaultStateManagerOpts = {}) {
     let common = opts.common
     if (!common) {
-      common = new Common({ chain: Chain.Mainnet, hardfork: Hardfork.Petersburg })
+      common = new Common({ chain: Chain.Mainnet, hardfork: Hardfork.Merge })
     }
     this._common = common
 

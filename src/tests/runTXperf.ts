@@ -1,21 +1,19 @@
 import Common, { Chain, Hardfork } from '@ethereumjs/common'
 // eslint-disable-next-line node/no-extraneous-import
-import { Transaction, TxData } from '@ethereumjs/tx'
+import { Transaction } from '@ethereumjs/tx'
 import VM from '@ethereumjs/vm'
-import { readFileSync } from 'fs'
 import fs from 'fs'
 import path from 'path'
 
 import { ShardeumState } from '../state'
 
-import { Account, Address, BN, toBuffer, bufferToHex, bufferToInt } from 'ethereumjs-util'
+import { Account, Address, BN, toBuffer } from 'ethereumjs-util'
 
 import * as crypto from '@shardus/crypto-utils'
-import { json } from 'express'
-//import { json } from 'stream/consumers';
+
 crypto.init('69fa4195670576c0160d660c3be36556ff8d504725be8a59b5a96509e0c994bc')
 
-const common = new Common({ chain: Chain.Mainnet, hardfork: Hardfork.Berlin })
+const common = new Common({ chain: Chain.Mainnet, hardfork: Hardfork.Merge })
 
 let shardeumStateManager = new ShardeumState() //as StateManager
 const vm = new VM({ common, stateManager: shardeumStateManager })

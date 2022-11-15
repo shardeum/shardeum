@@ -62,7 +62,7 @@ export abstract class BaseStateManager {
   constructor(opts: DefaultStateManagerOpts) {
     let common = opts.common
     if (!common) {
-      common = new Common({ chain: Chain.Mainnet, hardfork: Hardfork.Petersburg })
+      common = new Common({ chain: Chain.Mainnet, hardfork: Hardfork.Merge })
     }
     this._common = common
 
@@ -99,9 +99,9 @@ export abstract class BaseStateManager {
   async putAccount(address: Address, account: Account): Promise<void> {
     if (this.DEBUG) {
       this._debug(
-        `Save account address=${address} nonce=${account.nonce} balance=${
-          account.balance
-        } contract=${account.isContract() ? 'yes' : 'no'} empty=${account.isEmpty() ? 'yes' : 'no'}`
+        `Save account address=${address} nonce=${account.nonce} balance=${account.balance} contract=${
+          account.isContract() ? 'yes' : 'no'
+        } empty=${account.isEmpty() ? 'yes' : 'no'}`
       )
     }
     this._cache.put(address, account)
@@ -460,10 +460,7 @@ export abstract class BaseStateManager {
    *
    * @returns - an [@ethereumjs/tx](https://github.com/ethereumjs/ethereumjs-monorepo/packages/tx) `AccessList`
    */
-  generateAccessList(
-    addressesRemoved: Address[] = [],
-    addressesOnlyStorage: Address[] = []
-  ): AccessList {
+  generateAccessList(addressesRemoved: Address[] = [], addressesOnlyStorage: Address[] = []): AccessList {
     // Merge with the reverted storage list
     const mergedStorage = [...this._accessedStorage, ...this._accessedStorageReverted]
 
@@ -480,14 +477,13 @@ export abstract class BaseStateManager {
     const accessList: AccessList = []
     folded.forEach((slots, addressStr) => {
       const address = Address.fromString(`0x${addressStr}`)
-      const check1 = getActivePrecompiles(this._common).find((a) => a.equals(address))
-      const check2 = addressesRemoved.find((a) => a.equals(address))
-      const check3 =
-        addressesOnlyStorage.find((a) => a.equals(address)) !== undefined && slots.size === 0
+      const check1 = getActivePrecompiles(this._common).find(a => a.equals(address))
+      const check2 = addressesRemoved.find(a => a.equals(address))
+      const check3 = addressesOnlyStorage.find(a => a.equals(address)) !== undefined && slots.size === 0
 
       if (!check1 && !check2 && !check3) {
         const storageSlots = Array.from(slots)
-          .map((s) => `0x${s}`)
+          .map(s => `0x${s}`)
           .sort()
         const accessListItem: AccessListItem = {
           address: `0x${addressStr}`,
