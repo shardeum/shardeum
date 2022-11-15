@@ -2327,9 +2327,9 @@ shardus.setup({
         if (txNonce != perfectCount) {
           success = false
           reason = `Transaction nonce != ${txNonce} ${perfectCount}`
-          /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`nonce fail: perfectCount:${perfectCount} != ${txNonce}.    nonce:${appData.nonce}  queueCount:${appData.queueCount} `)
+          /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`nonce fail: perfectCount:${perfectCount} != ${txNonce}.    current nonce:${appData.nonce}  queueCount:${appData.queueCount} txHash: ${txObj.hash().toString('hex')} `)
         } else {
-          /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`nonce pass: perfectCount:${perfectCount} == ${txNonce}.    nonce:${appData.nonce}  queueCount:${appData.queueCount} `)
+          /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`nonce pass: perfectCount:${perfectCount} == ${txNonce}.    current nonce:${appData.nonce}  queueCount:${appData.queueCount}  txHash: ${txObj.hash().toString('hex')}`)
         }
       }
     } catch (e) {
@@ -2885,8 +2885,8 @@ shardus.setup({
         let txSenderEvmAddr = transaction.getSenderAddress().toString()
         let transformedSourceKey = toShardusAddress(txSenderEvmAddr, AccountType.Account)
 
-        let queueCount = 0
-        let countPromise: Promise<number> = undefined
+        let queueCountResult = {count: 0, committingAppData: []}
+        let countPromise: Promise<any> = undefined
         if (ShardeumFlags.txNoncePreCheck) {
           //parallel fetch
           countPromise = shardus.getLocalOrRemoteAccountQueueCount(transformedSourceKey)
@@ -2894,11 +2894,13 @@ shardus.setup({
         let remoteShardusAccount = await shardus.getLocalOrRemoteAccount(transformedSourceKey)
         if (ShardeumFlags.txNoncePreCheck) {
           //parallel fetch
-          queueCount = await countPromise
+          queueCountResult = await countPromise
+          // queueCountResult = await shardus.getLocalOrRemoteAccountQueueCount(transformedSourceKey)
+          if(ShardeumFlags.VerboseLogs) console.log('queueCountResult:', queueCountResult)
         }
 
         if (remoteShardusAccount == undefined) {
-          /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log( `txPreCrackData: found no remote account for address: ${txSenderEvmAddr}, key: ${transformedSourceKey}. using nonce=0` )
+          /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log( `txPreCrackData: found no local or remote account for address: ${txSenderEvmAddr}, key: ${transformedSourceKey}. using nonce=0` )
         } else {
           foundSender = true
           let wrappedEVMAccount = remoteShardusAccount.data as WrappedEVMAccount
@@ -2916,11 +2918,18 @@ shardus.setup({
           /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log( `txPreCrackData found nonce:${foundNonce} found sender:${foundSender} for ${txSenderEvmAddr} nonce:${nonce.toString()} ca:${caAddr}` )
         }
         if (ShardeumFlags.txNoncePreCheck) {
+          appData.queueCount = queueCountResult.count
           appData.nonce = parseInt(nonce.toString())
-          appData.queueCount = queueCount
-          /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log( `txPreCrackData found nonce:${foundNonce} found sender:${foundSender} for ${txSenderEvmAddr} nonce:${nonce.toString()} queueCount:${queueCount.toString()}` )
+          if (queueCountResult.committingAppData.length > 0) {
+            let highestCommittingNonce = queueCountResult.committingAppData.map(appData => appData.txNonce).sort()[0]
+            let expectedAccountNonce = highestCommittingNonce + 1
+            if (appData.nonce < expectedAccountNonce) appData.nonce = expectedAccountNonce
+          }
+          appData.txNonce = transaction.nonce.toNumber()
+          /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log( `txPreCrackData found nonce:${foundNonce} found sender:${foundSender} for ${txSenderEvmAddr} nonce:${nonce.toString()} queueCount:${queueCountResult.count.toString()}` )
         }
       }
+        if(ShardeumFlags.VerboseLogs) console.log(`txPreCrackData final result: txNonce: ${appData.txNonce}, currentNonce: ${appData.nonce}, queueCount: ${appData.queueCount}`)
     }
   },
 
