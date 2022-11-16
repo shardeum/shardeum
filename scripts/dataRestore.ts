@@ -9,7 +9,7 @@ const sqlite3 = require('sqlite3').verbose()
 async function main () {
     const myArgs = process.argv.slice(2)
     if (myArgs.length != 2) {
-        console.error(' two args are required. <baseDirectory> and <blockSize> ')
+        console.error(' two args are required. <baseDirectory> and <batchSize> ')
         process.exit(1)
     }
     const baseDirectory = myArgs[0] ?? '.'
@@ -86,7 +86,7 @@ async function writeDBToTarget(dbFile, targetDB, batchSize) {
                 for (let account of accounts) {
                     const data = JSON.parse(account.data)
                     const dataStr = JSON.stringify(data).replace(/'/g,"''");
-                    let insertQuery = `insert into accountsEntry (accountId, timestamp, data) values (\'${account.accountId}\', ${account.timestamp}, \'${dataStr}\')`
+                    let insertQuery = `insert or replace into accountsEntry (accountId, timestamp, data) values (\'${account.accountId}\', ${account.timestamp}, \'${dataStr}\')`
                     targetDB.run(insertQuery)
                     latestAccountId = account.accountId
                     rowCount++
