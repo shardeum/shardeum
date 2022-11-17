@@ -1,5 +1,6 @@
 import fs from "fs";
 import path from "path";
+import { SerializeToJsonString } from '../src/utils'
 const { Sequelize } = require('sequelize')
 const sqlite3 = require('sqlite3').verbose()
 
@@ -126,7 +127,7 @@ async function exportToJSON(targetDbPath, targetJsonPath, batchSize) {
             accounts = accounts[0]
             for (let account of accounts) {
                 const dataObj = JSON.parse(account.data)
-                let dataStr = JSON.stringify(dataObj).replace(/"/g, '\\"')
+                let dataStr = SerializeToJsonString(dataObj)
                 let jsonString = `{ "accountId" : "${account.accountId}", "timestamp" : ${account.timestamp}, "data": "${dataStr}" }`
                 writableStream.write(jsonString)
                 writableStream.write('\n')
