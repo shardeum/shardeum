@@ -152,6 +152,7 @@ export interface ReadableReceipt {
   cumulativeGasUsed: string
   gasUsed: string
   logs: any[]
+  logsBloom: string
   contractAddress: string | null
   from: string
   to: string

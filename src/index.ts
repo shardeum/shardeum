@@ -1759,6 +1759,7 @@ async function applyInternalTx(
       cumulativeGasUsed: '0x0',
       gasUsed: '0x0',
       logs: null,
+      logsBloom: null,
       contractAddress: null,
       from: from.id,
       to: to.ethAddress,
@@ -2499,6 +2500,7 @@ shardus.setup({
         blockHash: readableBlocks[latestBlock].hash,
         cumulativeGasUsed: '0x',
         logs: null,
+        logsBloom: null,
         gasUsed: '0x',
         contractAddress: caAddr,
         from: transaction.getSenderAddress().toString(),
@@ -2788,6 +2790,7 @@ shardus.setup({
         cumulativeGasUsed: '0x' + runTxResult.gasUsed.toString('hex'),
         gasUsed: '0x' + runTxResult.gasUsed.toString('hex'),
         logs: logs,
+        logsBloom: bufferToHex(runTxResult.receipt.bitvector),
         contractAddress: runTxResult.createdAddress ? runTxResult.createdAddress.toString() : null,
         from: transaction.getSenderAddress().toString(),
         to: transaction.to ? transaction.to.toString() : null,
@@ -2868,7 +2871,7 @@ shardus.setup({
     let { tx, timestampReceipt } = timestampedTx
     if (isInternalTx(tx) === false && isDebugTx(tx) === false) {
       const transaction = getTransactionObj(tx)
-     
+
       let isEIP2930 =
         transaction instanceof AccessListEIP2930Transaction && transaction.AccessListJSON != null
 
