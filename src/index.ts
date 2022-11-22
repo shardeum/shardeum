@@ -1315,149 +1315,14 @@ shardus.registerExternalPost('contract/accesslist', async (req, res) => {
 
   try {
     const callObj = req.body
-    if (ShardeumFlags.VerboseLogs) console.log('callObj', callObj)
-    let opt = {
-      to: Address.fromString(callObj.to),
-      caller: Address.fromString(callObj.from),
-      origin: Address.fromString(callObj.from), // The tx.origin is also the caller here
-      data: toBuffer(callObj.data),
-      value: callObj.value && callObj.value.hex ? new BN(String(parseInt(callObj.value.hex))) : new BN('0'),
-    }
-    if (callObj.to) {
-      opt['to'] = Address.fromString(callObj.to)
-    }
+    if (ShardeumFlags.VerboseLogs) console.log('AccessList endpoint callObj', callObj)
 
-    if (callObj.gas) {
-      opt['gasLimit'] = new BN(Number(callObj.gas))
-    }
+    let accessList = await generateAccessList(callObj)
 
-    if (callObj.gasPrice) {
-      opt['gasPrice'] = callObj.gasPrice
-    }
-
-    let caShardusAddress
-    const methodCode = callObj.data.substr(0, 10)
-    let caAccount
-
-    if (opt['to']) {
-      caShardusAddress = toShardusAddress(callObj.to, AccountType.Account)
-    }
-
-    if (opt['to']) {
-      if (ShardeumFlags.VerboseLogs) console.log('Calling to ', callObj.to, caShardusAddress)
-
-      let address = caShardusAddress
-      let accountIsRemote = shardus.isAccountRemote(address)
-
-      if (accountIsRemote) {
-        let consensusNode = shardus.getRandomConsensusNodeForAccount(address)
-        /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`Node is in remote shard: ${consensusNode?.externalIp}:${consensusNode?.externalPort}`)
-        if (consensusNode != null) {
-          if (ShardeumFlags.VerboseLogs) console.log(`Node is in remote shard: requesting`)
-
-          let postResp = await _internalHackPostWithResp(
-            `${consensusNode.externalIp}:${consensusNode.externalPort}/contract/accesslist`,
-            callObj
-          )
-          if (postResp.body != null && postResp.body != '') {
-            /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`Node is in remote shard: gotResp:${JSON.stringify(postResp.body)}`)
-            return res.json({ ...postResp.body })
-          }
-        } else {
-          if (ShardeumFlags.VerboseLogs) console.log(`Node is in remote shard: consensusNode = null`)
-          return res.json({ result: null })
-        }
-      } else {
-        if (ShardeumFlags.VerboseLogs) console.log(`Node is in remote shard: false`)
-      }
-    }
-
-    // if we are going to handle the call directly charge 20 points
-    if (trySpendServicePoints(ShardeumFlags.ServicePoints['contract/call'].direct) === false) {
-      return res.json({ result: null, error: 'node busy' })
-    }
-
-    let txId = crypto.hashObj(callObj)
-    let preRunTxState = getPreRunTXState(txId)
-
-    let callerAddress = toShardusAddress(callObj.from, AccountType.Account)
-    let callerAccount = await AccountsStorage.getAccount(callerAddress)
-    if (callerAccount) {
-      if (ShardeumFlags.VerboseLogs) console.log('callerAddress', callerAccount)
-      preRunTxState._transactionState.insertFirstAccountReads(opt.caller, callerAccount.account)
-    } else {
-      const acctData = {
-        nonce: 0,
-        balance: oneEth.mul(new BN(100)), // 100 eth.  This is a temporary account that will never exist.
-      }
-      const fakeAccount = Account.fromAccountData(acctData)
-      preRunTxState._transactionState.insertFirstAccountReads(opt.caller, fakeAccount)
-    }
-
-    opt['block'] = blocks[latestBlock]
-
-    //@ts-ignore
-    EVM.stateManager = null
-    //@ts-ignore
-    EVM.stateManager = preRunTxState
-    console.log('runCall callOption', opt)
-    const callResult = await EVM.runCall(opt)
-    let readAccounts = preRunTxState._transactionState.getReadAccounts()
-    let writtenAccounts = preRunTxState._transactionState.getWrittenAccounts()
-    let allInvolvedContracts = []
-    let accessList = []
-    for (let [key, storageMap] of writtenAccounts.contractStorages) {
-      if (!allInvolvedContracts.includes(key)) allInvolvedContracts.push(key)
-    }
-    for (let [key, storageMap] of readAccounts.contractStorages) {
-      if (!allInvolvedContracts.includes(key)) allInvolvedContracts.push(key)
-    }
-    for (let [codeHash, contractByteWrite] of readAccounts.contractBytes) {
-      let contractAddress = contractByteWrite.contractAddress.toString()
-      if (!allInvolvedContracts.includes(contractAddress)) allInvolvedContracts.push(contractAddress)
-    }
-    if (ShardeumFlags.VerboseLogs) {
-      console.log('allInvolvedContracts', allInvolvedContracts)
-      console.log('Read accounts', readAccounts)
-      console.log('Written accounts', writtenAccounts)
-    }
-
-    for (let address of allInvolvedContracts) {
-      let allKeys = new Set()
-      let readKeysMap = readAccounts.contractStorages.get(address)
-      let writeKeyMap = writtenAccounts.contractStorages.get(address)
-      if (readKeysMap) {
-        for (let [key, value] of readKeysMap) {
-          if (!allKeys.has(key)) allKeys.add(key)
-        }
-      }
-
-      if (writeKeyMap) {
-        for (let [key, value] of writeKeyMap) {
-          if (!allKeys.has(key)) allKeys.add(key)
-        }
-      }
-
-      for (let [codeHash, byteReads] of readAccounts.contractBytes) {
-        let contractAddress = byteReads.contractAddress.toString()
-        if (contractAddress !== address) continue
-        if (!allKeys.has(codeHash)) allKeys.add(codeHash)
-      }
-      let accessListItem = [address, Array.from(allKeys).map(key => '0x' + key)]
-      accessList.push(accessListItem)
-    }
-
-    if (ShardeumFlags.VerboseLogs) console.log('Predicted accessList', accessList)
-
-    if (callResult.execResult.exceptionError) {
-      if (ShardeumFlags.VerboseLogs) console.log('Execution Error:', callResult.execResult.exceptionError)
-      return res.json({ result: null })
-    }
-
-    res.json({ result: callResult.execResult.returnValue.toString('hex'), accessList })
+    res.json(accessList)
   } catch (e) {
     if (ShardeumFlags.VerboseLogs) console.log('Error predict accessList', e)
-    return res.json({ result: null })
+    return res.json([])
   }
 })
 
@@ -1958,15 +1823,15 @@ function getInjectedOrGeneratedTimestamp(timestampedTx) {
   let { tx, timestampReceipt } = timestampedTx
   let txnTimestamp: number
 
-  if (tx.timestamp) {
-    txnTimestamp = tx.timestamp
-    if (ShardeumFlags.VerboseLogs) {
-      console.log(`Timestamp ${txnTimestamp} is extracted from the injected tx.`)
-    }
-  } else if (timestampReceipt && timestampReceipt.timestamp) {
+  if (timestampReceipt && timestampReceipt.timestamp) {
     txnTimestamp = timestampReceipt.timestamp
     if (ShardeumFlags.VerboseLogs) {
       console.log(`Timestamp ${txnTimestamp} is generated by the network nodes.`)
+    }
+  } else if (tx.timestamp) {
+    txnTimestamp = tx.timestamp
+    if (ShardeumFlags.VerboseLogs) {
+      console.log(`Timestamp ${txnTimestamp} is extracted from the injected tx.`)
     }
   }
   return txnTimestamp
@@ -2070,6 +1935,139 @@ const getOrCreateBlockFromTimestamp = (timestamp: number, scheduleNextBlock = fa
   }
   pruneOldBlocks()
   return block
+}
+
+async function generateAccessList(callObj: any) : Promise<any[]> {
+  let opt = {
+    to: Address.fromString(callObj.to),
+    caller: Address.fromString(callObj.from),
+    origin: Address.fromString(callObj.from), // The tx.origin is also the caller here
+    data: toBuffer(callObj.data),
+    value: new BN(String(parseInt(callObj.value)))
+  }
+
+  if (callObj.to) {
+    opt['to'] = Address.fromString(callObj.to)
+  }
+
+  if (callObj.gas) {
+    opt['gasLimit'] = new BN(Number(callObj.gas))
+  }
+
+  if (callObj.gasPrice) {
+    opt['gasPrice'] = callObj.gasPrice
+  }
+
+  let caShardusAddress
+  if (opt['to']) {
+    caShardusAddress = toShardusAddress(callObj.to, AccountType.Account)
+  }
+
+  if (opt['to']) {
+    if (ShardeumFlags.VerboseLogs) console.log('Generating accessList to ', opt.to, caShardusAddress)
+
+    let address = caShardusAddress
+    let accountIsRemote = shardus.isAccountRemote(address)
+
+    if (accountIsRemote) {
+      let consensusNode = shardus.getRandomConsensusNodeForAccount(address)
+      /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`Node is in remote shard: ${consensusNode?.externalIp}:${consensusNode?.externalPort}`)
+      if (consensusNode != null) {
+        if (ShardeumFlags.VerboseLogs) console.log(`Node is in remote shard: requesting`)
+
+        let postResp = await _internalHackPostWithResp(
+          `${consensusNode.externalIp}:${consensusNode.externalPort}/contract/accesslist`, callObj)
+        if (ShardeumFlags.VerboseLogs) console.log('Accesslist response from node', consensusNode.externalPort, postResp.body)
+        if (postResp.body != null && postResp.body != '') {
+          /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`Node is in remote shard: gotResp:${JSON.stringify(postResp.body)}`)
+          if (Array.isArray(postResp.body) && postResp.body.length) return postResp.body
+          else return []
+        }
+      } else {
+        if (ShardeumFlags.VerboseLogs) console.log(`Node is in remote shard: consensusNode = null`)
+        return
+      }
+    } else {
+      if (ShardeumFlags.VerboseLogs) console.log(`Node is in remote shard: false`)
+    }
+  }
+
+  let txId = crypto.hashObj(opt)
+  let preRunTxState = getPreRunTXState(txId)
+
+  let callerAddress = toShardusAddress(callObj.from, AccountType.Account)
+  let callerAccount = await AccountsStorage.getAccount(callerAddress)
+  if (callerAccount) {
+    preRunTxState._transactionState.insertFirstAccountReads(opt.caller, callerAccount.account)
+  } else {
+    const acctData = {
+      nonce: 0,
+      balance: oneEth.mul(new BN(100)), // 100 eth.  This is a temporary account that will never exist.
+    }
+    const fakeAccount = Account.fromAccountData(acctData)
+    preRunTxState._transactionState.insertFirstAccountReads(opt.caller, fakeAccount)
+  }
+
+  opt['block'] = blocks[latestBlock]
+
+  //@ts-ignore
+  EVM.stateManager = null
+  //@ts-ignore
+  EVM.stateManager = preRunTxState
+  const callResult = await EVM.runCall(opt)
+
+  let readAccounts = preRunTxState._transactionState.getReadAccounts()
+  let writtenAccounts = preRunTxState._transactionState.getWrittenAccounts()
+  let allInvolvedContracts = []
+  let accessList = []
+  for (let [key, storageMap] of writtenAccounts.contractStorages) {
+    if (!allInvolvedContracts.includes(key)) allInvolvedContracts.push(key)
+  }
+  for (let [key, storageMap] of readAccounts.contractStorages) {
+    if (!allInvolvedContracts.includes(key)) allInvolvedContracts.push(key)
+  }
+  for (let [codeHash, contractByteWrite] of readAccounts.contractBytes) {
+    let contractAddress = contractByteWrite.contractAddress.toString()
+    if (!allInvolvedContracts.includes(contractAddress)) allInvolvedContracts.push(contractAddress)
+  }
+  if (ShardeumFlags.VerboseLogs) {
+    console.log('allInvolvedContracts', allInvolvedContracts)
+    console.log('Read accounts', readAccounts)
+    console.log('Written accounts', writtenAccounts)
+  }
+
+  for (let address of allInvolvedContracts) {
+    let allKeys = new Set()
+    let readKeysMap = readAccounts.contractStorages.get(address)
+    let writeKeyMap = writtenAccounts.contractStorages.get(address)
+    if (readKeysMap) {
+      for (let [key, value] of readKeysMap) {
+        if (!allKeys.has(key)) allKeys.add(key)
+      }
+    }
+
+    if (writeKeyMap) {
+      for (let [key, value] of writeKeyMap) {
+        if (!allKeys.has(key)) allKeys.add(key)
+      }
+    }
+
+    for (let [codeHash, byteReads] of readAccounts.contractBytes) {
+      let contractAddress = byteReads.contractAddress.toString()
+      if (contractAddress !== address) continue
+      if (!allKeys.has(codeHash)) allKeys.add(codeHash)
+    }
+    let accessListItem = [address, Array.from(allKeys).map(key => '0x' + key)]
+    accessList.push(accessListItem)
+  }
+
+  if (ShardeumFlags.VerboseLogs) console.log('Predicted accessList', accessList)
+
+  if (callResult.execResult.exceptionError) {
+    if (ShardeumFlags.VerboseLogs) console.log('Execution Error:', callResult.execResult.exceptionError)
+    return
+  }
+  return accessList
 }
 
 /***
@@ -2370,7 +2368,7 @@ shardus.setup({
     const shardusReceiptAddress = toShardusAddressWithKey(ethTxId, '', AccountType.Receipt)
     let txId = crypto.hashObj(tx)
     // Create an applyResponse which will be used to tell Shardus that the tx has been applied
-    if (ShardeumFlags.VerboseLogs) console.log('DBG', new Date(), 'attempting to apply tx', txId, ethTxId, tx)
+    if (ShardeumFlags.VerboseLogs) console.log('DBG', new Date(), 'attempting to apply tx', txId, ethTxId, tx, wrappedStates)
     const applyResponse = shardus.createApplyResponse(txId, txTimestamp)
 
     //Now we need to get a transaction state object.  For single sharded networks this will be a new object.
@@ -2862,15 +2860,18 @@ shardus.setup({
 
     return applyResponse
   },
-  getTimestampFromTransaction(tx) {
-    return tx.timestamp ? tx.timestamp : 0
+  getTimestampFromTransaction(tx, appData: any) {
+    if (ShardeumFlags.VerboseLogs) console.log('Running getTimestampFromTransaction', tx, appData)
+    if (ShardeumFlags.txAccessListGenerate && appData && appData.requestNewTimestamp) {
+      if (ShardeumFlags.VerboseLogs) console.log('Requesting new timestamp', appData)
+      return -1
+    } else return tx.timestamp ? tx.timestamp : 0
   },
-  async txPreCrackData(timestampedTx, appData) {
-    if (ShardeumFlags.VerboseLogs) console.log('Running txPreCrackData')
+  async txPreCrackData(tx, appData) {
+    if (ShardeumFlags.VerboseLogs) console.log('Running txPreCrackData', tx, appData)
     if (ShardeumFlags.UseTXPreCrack === false) {
       return
     }
-    let { tx, timestampReceipt } = timestampedTx
     if (isInternalTx(tx) === false && isDebugTx(tx) === false) {
       const transaction = getTransactionObj(tx)
 
@@ -2928,8 +2929,23 @@ shardus.setup({
           appData.txNonce = transaction.nonce.toNumber()
           /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log( `txPreCrackData found nonce:${foundNonce} found sender:${foundSender} for ${txSenderEvmAddr} nonce:${nonce.toString()} queueCount:${queueCountResult.count.toString()}` )
         }
+
       }
-        if(ShardeumFlags.VerboseLogs) console.log(`txPreCrackData final result: txNonce: ${appData.txNonce}, currentNonce: ${appData.nonce}, queueCount: ${appData.queueCount}`)
+
+      if (ShardeumFlags.txAccessListGenerate && transaction.to && isEIP2930 === false) {
+        // generate access list for non EIP 2930 txs
+        let callObj = {
+          from: await transaction.getSenderAddress().toString(),
+          to: transaction.to.toString(),
+          value: '0x' + transaction.value.toString('hex'),
+          data: '0x' + transaction.data.toString('hex'),
+          gasLimit: '0x' + transaction.gasLimit.toString('hex')
+        }
+        let generatedAccessList = await generateAccessList(callObj)
+        appData.accessList = generatedAccessList ? generatedAccessList : null
+        appData.requestNewTimestamp = true
+      }
+      if(ShardeumFlags.VerboseLogs) console.log(`txPreCrackData final result: txNonce: ${appData.txNonce}, currentNonce: ${appData.nonce}, queueCount: ${appData.queueCount}, appData ${JSON.stringify(appData)}`)
     }
   },
 
@@ -3085,7 +3101,37 @@ shardus.setup({
           }
           result.storageKeys = result.storageKeys.concat(storageKeys)
         }
+      } else {
+        if (ShardeumFlags.txAccessListGenerate && appData.accessList) {
+          // we have pre-generated accessList
+          for (let accessListItem of appData.accessList) {
+            let address = accessListItem[0]
+            if (address) {
+              let shardusAddr = toShardusAddress(address, AccountType.Account)
+              shardusAddressToEVMAccountInfo.set(shardusAddr, {
+                evmAddress: address,
+                type: AccountType.Account,
+              })
+              otherAccountKeys.push(shardusAddr)
+            }
+            //let storageKeys = accessListItem.storageKeys.map(key => toShardusAddress(key, AccountType.ContractStorage))
+            let storageKeys = []
+            for (let storageKey of accessListItem[1]) {
+              //let shardusAddr = toShardusAddress(storageKey, AccountType.ContractStorage)
+              let shardusAddr = toShardusAddressWithKey(address, storageKey, AccountType.ContractStorage)
+
+              shardusAddressToEVMAccountInfo.set(shardusAddr, {
+                evmAddress: shardusAddr,
+                contractAddress: address,
+                type: AccountType.ContractStorage,
+              })
+              storageKeys.push(shardusAddr)
+            }
+            result.storageKeys = result.storageKeys.concat(storageKeys)
+          }
+        }
       }
+
 
       // make sure the receipt address is in the get keys from transaction..
       // This will technically cause an empty account to get created but this will get overriden with the
