@@ -52,7 +52,6 @@ import * as AccountsStorage from './storage/accountStorage'
 import { StateManager } from '@ethereumjs/vm/dist/state'
 
 const env = process.env
-
 let { shardusFactory } = require('@shardus/core')
 
 crypto.init('69fa4195670576c0160d660c3be36556ff8d504725be8a59b5a96509e0c994bc')
@@ -517,10 +516,10 @@ function contractStorageInvolvedNoOp(
 }
 
 function tryGetRemoteAccountCBNoOp(
-  transactionState: TransactionState,
-  type: AccountType,
-  address: string,
-  key: string
+  _transactionState: TransactionState,
+  _type: AccountType,
+  _address: string,
+  _key: string
 ): Promise<WrappedEVMAccount> {
   return undefined
 }
@@ -542,6 +541,19 @@ async function tryGetRemoteAccountCB(
   fixDeserializedWrappedEVMAccount(fixedEVMAccount)
   /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log( `Successfully found remote account for address: ${address}, type: ${type}, key: ${key}`, fixedEVMAccount )
   return fixedEVMAccount
+}
+
+/**
+ * This checks whether access list generation was used and logs an error if it was. Thus, we will have feedback
+ * for when access list generation does not work correctly
+ */
+function tryGetRemoteAccountCBLogError(
+  _transactionState: TransactionState,
+  _type: AccountType,
+  _address: string,
+  _key: string
+): Promise<WrappedEVMAccount> {
+  return undefined
 }
 
 /***
@@ -735,7 +747,18 @@ function getPreRunTXState(txId: string): ShardeumState {
   return shardeumState
 }
 
-function getApplyTXState(txId: string): ShardeumState {
+function getApplyTXState({
+  txId,
+  tryGetRemoteAccountCB = tryGetRemoteAccountCBNoOp,
+}: {
+  txId: string
+  tryGetRemoteAccountCB?: (
+    transactionState: TransactionState,
+    type: AccountType,
+    address: string,
+    key: string
+  ) => Promise<WrappedEVMAccount>
+}): ShardeumState {
   let shardeumState = shardeumStateTXMap.get(txId)
   if (shardeumState == null) {
     shardeumState = new ShardeumState({ common: evmCommon })
@@ -747,7 +770,7 @@ function getApplyTXState(txId: string): ShardeumState {
         contractStorageMiss,
         accountInvolved,
         contractStorageInvolved,
-        tryGetRemoteAccountCB: tryGetRemoteAccountCBNoOp,
+        tryGetRemoteAccountCB,
       },
       txId,
       undefined,
@@ -1578,7 +1601,7 @@ async function applyInternalTx(
     //   //to allow shardus to pass in this extra data blob (unless we find a way to run it through wrapped states??)
     // }
 
-    let shardeumState = getApplyTXState(txId)
+    let shardeumState = getApplyTXState({ txId })
 
     //ah shoot this binding will not be "thread safe" may need to make it part of the EEI for this tx? idk.
     //shardeumStateManager.setTransactionState(transactionState)
@@ -2387,7 +2410,7 @@ shardus.setup({
     }
   },
   async apply(timestampedTx, wrappedStates) {
-    let { tx, timestampReceipt } = timestampedTx
+    let { tx } = timestampedTx
     const txTimestamp = getInjectedOrGeneratedTimestamp(timestampedTx)
     // Validate the tx
     const { result, reason } = this.validateTransaction(tx)
@@ -2410,7 +2433,7 @@ shardus.setup({
     const transaction: Transaction | AccessListEIP2930Transaction = getTransactionObj(tx)
     const ethTxId = bufferToHex(transaction.hash())
     const shardusReceiptAddress = toShardusAddressWithKey(ethTxId, '', AccountType.Receipt)
-    let txId = crypto.hashObj(tx)
+    const txId = crypto.hashObj(tx)
     // Create an applyResponse which will be used to tell Shardus that the tx has been applied
     if (ShardeumFlags.VerboseLogs) console.log('DBG', new Date(), 'attempting to apply tx', txId, ethTxId, tx, wrappedStates)
     const applyResponse = shardus.createApplyResponse(txId, txTimestamp)
@@ -2441,12 +2464,18 @@ shardus.setup({
     //   //to allow shardus to pass in this extra data blob (unless we find a way to run it through wrapped states??)
     // }
 
-    let shardeumState = getApplyTXState(txId)
+    // Only log errors for getting a remote account if the transaction is EIP2930 compliant
+    const tryGetRemoteAccountCB =
+      transaction instanceof AccessListEIP2930Transaction
+        ? tryGetRemoteAccountCBLogError
+        : tryGetRemoteAccountCBNoOp
+
+    const shardeumState = getApplyTXState({ txId, tryGetRemoteAccountCB })
 
     //ah shoot this binding will not be "thread safe" may need to make it part of the EEI for this tx? idk.
     //shardeumStateManager.setTransactionState(transactionState)
 
-    // loop through the wrappedStates an insert them into the transactionState as first*Reads
+    // loop through the wrappedStates and insert them into the transactionState as first*Reads
     for (let accountId in wrappedStates) {
       if (shardusReceiptAddress === accountId) {
         //have to skip the created receipt account
@@ -2455,7 +2484,7 @@ shardus.setup({
 
       let wrappedEVMAccount: WrappedEVMAccount = wrappedStates[accountId].data
       fixDeserializedWrappedEVMAccount(wrappedEVMAccount)
-      let address
+      let address: Address
       if (wrappedEVMAccount.accountType === AccountType.ContractCode)
         address = Address.fromString(wrappedEVMAccount.contractAddress)
       else address = Address.fromString(wrappedEVMAccount.ethAddress)
@@ -3473,7 +3502,7 @@ shardus.setup({
     //   //to allow shardus to pass in this extra data blob (unless we find a way to run it through wrapped states??)
     // }
 
-    let shardeumState = getApplyTXState(txId)
+    let shardeumState = getApplyTXState({ txId })
 
     // Create the account if it doesn't exist
     if (typeof wrappedEVMAccount === 'undefined' || wrappedEVMAccount === null) {
@@ -3658,7 +3687,7 @@ shardus.setup({
     //   //TODO possibly need a blob to re-init with?
     // }
 
-    let shardeumState = getApplyTXState(txId)
+    let shardeumState = getApplyTXState({ txId })
 
     if (updatedEVMAccount.accountType === AccountType.Account) {
       //if account?
