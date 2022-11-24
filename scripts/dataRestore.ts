@@ -1,5 +1,6 @@
 import fs from "fs";
 import path from "path";
+import { DeSerializeFromJsonString } from "../src/utils"
 const { Sequelize } = require('sequelize')
 const sqlite3 = require('sqlite3').verbose()
 
@@ -84,8 +85,7 @@ async function writeDBToTarget(dbFile, targetDB, batchSize) {
             await targetDB.serialize(function () {
                 targetDB.run("begin transaction");
                 for (let account of accounts) {
-                    const data = JSON.parse(account.data)
-                    const dataStr = JSON.stringify(data).replace(/'/g,"''");
+                    const dataStr = JSON.stringify(DeSerializeFromJsonString(account.data)).replace(/'/g,"''");
                     let insertQuery = `insert into accountsEntry (accountId, timestamp, data) values (\'${account.accountId}\', ${account.timestamp}, \'${dataStr}\')`
                     targetDB.run(insertQuery)
                     latestAccountId = account.accountId
@@ -119,9 +119,8 @@ async function exportToJSON(targetDbPath, targetJsonPath, batchSize) {
     let targetDB = getDB(targetDbPath)
     const writableStream = fs.createWriteStream(targetJsonPath)
     try {
-        let latestAccountId = '00' //  storing latest value of every batch make the pagination faster
         for (let i = 0; ; i += batchSize) {
-            const queryString = `SELECT * FROM accountsEntry WHERE accountId > \'${latestAccountId}\' order by accountId asc LIMIT ${batchSize}`
+            const queryString = `SELECT * FROM accountsEntry order by timestamp asc LIMIT ${batchSize} offset ${i}`
             let accounts = await targetDB.query(queryString)
             accounts = accounts[0]
             for (let account of accounts) {
@@ -130,7 +129,6 @@ async function exportToJSON(targetDbPath, targetJsonPath, batchSize) {
                 let jsonString = `{ "accountId" : "${account.accountId}", "timestamp" : ${account.timestamp}, "data": "${dataStr}" }`
                 writableStream.write(jsonString)
                 writableStream.write('\n')
-                latestAccountId = account.accountId
                 rowCount++
             }
             if (rowCount % 100000 == 0) {
