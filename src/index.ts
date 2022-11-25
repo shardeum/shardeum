@@ -2314,13 +2314,21 @@ shardus.setup({
         reason = 'Transaction is not signed or signature is not valid'
       }
 
+      if (ShardeumFlags.txBalancePreCheck && appData != null) {
+        console.log('thant: doing balance check', appData)
+        let minBalance = ShardeumFlags.constantTxFee ? new BN(ShardeumFlags.constantTxFee) : new BN(1)
+        let accountBalance = new BN(appData.balance)
+        if (accountBalance.lt(minBalance)) {
+          success = false
+          reason = `Sender does not have enough balance.`
+          /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`balance fail: sender ${txObj.getSenderAddress()} does not have enough balance. Min balance: ${minBalance.toString()}, Account balance: ${accountBalance.toString()}`)
+        } else {
+          /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`balance pass: sender ${txObj.getSenderAddress()} has balance of ${accountBalance.toString()}`)
+        }
+      }
+
       if (ShardeumFlags.txNoncePreCheck && appData != null) {
         let txNonce = txObj.nonce.toNumber()
-        // if (txNonce < appData.nonce) {
-        //   success = false
-        //   reason = 'Transaction has lower nonce than the account nonce in the network'
-        // }
-
         let perfectCount = appData.nonce + appData.queueCount
         if (txNonce != perfectCount) {
           success = false
@@ -2879,10 +2887,11 @@ shardus.setup({
         transaction instanceof AccessListEIP2930Transaction && transaction.AccessListJSON != null
 
       //if the TX is a contract deploy, predict the new contract address correctly
-      if (ShardeumFlags.txNoncePreCheck || (transaction.to == null && isEIP2930 === false)) {
+      if (ShardeumFlags.txNoncePreCheck || ShardeumFlags.txBalancePreCheck || (transaction.to == null && isEIP2930 === false)) {
         let foundNonce = false
         let foundSender = false
         let nonce = new BN(0)
+        let balance = new BN(0).toString()
         let txSenderEvmAddr = transaction.getSenderAddress().toString()
         let transformedSourceKey = toShardusAddress(txSenderEvmAddr, AccountType.Account)
 
@@ -2908,6 +2917,7 @@ shardus.setup({
           if (wrappedEVMAccount && wrappedEVMAccount.account) {
             fixDeserializedWrappedEVMAccount(wrappedEVMAccount)
             nonce = wrappedEVMAccount.account.nonce
+            balance = wrappedEVMAccount.account.balance.toString()
             foundNonce = true
           }
         }
@@ -2918,6 +2928,8 @@ shardus.setup({
           appData.newCAAddr = caAddr
           /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log( `txPreCrackData found nonce:${foundNonce} found sender:${foundSender} for ${txSenderEvmAddr} nonce:${nonce.toString()} ca:${caAddr}` )
         }
+
+        // Attach nonce, queueCount and txNonce to appData
         if (ShardeumFlags.txNoncePreCheck) {
           appData.queueCount = queueCountResult.count
           appData.nonce = parseInt(nonce.toString())
@@ -2930,6 +2942,10 @@ shardus.setup({
           /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log( `txPreCrackData found nonce:${foundNonce} found sender:${foundSender} for ${txSenderEvmAddr} nonce:${nonce.toString()} queueCount:${queueCountResult.count.toString()}` )
         }
 
+        // Attach balance to appData
+        if (ShardeumFlags.txBalancePreCheck) {
+          appData.balance = balance
+        }
       }
 
       if (ShardeumFlags.txAccessListGenerate && transaction.to && isEIP2930 === false) {
