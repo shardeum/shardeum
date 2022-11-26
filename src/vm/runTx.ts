@@ -456,7 +456,7 @@ async function _runTx(this: VM, opts: RunTxOpts): Promise<RunTxResult> {
     actualTxCost = results.gasUsed.mul(gasPrice)
   }
 
-  results.amountSpent = results.gasUsed.mul(gasPrice) // should be equal to 1 SHM
+  results.amountSpent = actualTxCost
 
   // Update sender's balance
   fromAccount = await state.getAccount(caller)

@@ -48,6 +48,7 @@ export interface WrappedEVMAccount extends BaseAccount {
   //variant data: Receipt related
   receipt?: TxReceipt
   readableReceipt?: ReadableReceipt
+  amountSpent?: string  // transactionFee
   txId?: string
   txFrom?: string
   balance?: number // For debug tx
