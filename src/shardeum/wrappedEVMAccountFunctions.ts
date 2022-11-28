@@ -5,7 +5,7 @@ import * as crypto from '@shardus/crypto-utils'
 import { TransactionState } from '../state'
 import { getAccountShardusAddress } from './evmAddress'
 import { ShardusTypes } from '@shardus/core'
-import { UseBase64BufferEncoding } from './shardeumFlags'
+import { ShardeumFlags } from './shardeumFlags'
 
 export function isWrappedEVMAccount(obj: any): obj is WrappedEVMAccount {
   return 'ethAddress' in obj

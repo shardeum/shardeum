@@ -1,13 +1,12 @@
 import { Account, Address, bufferToHex, keccak256, KECCAK256_NULL, rlp, unpadBuffer } from 'ethereumjs-util'
 import { SecureTrie as Trie } from 'merkle-patricia-tree'
 import { ShardeumState } from '.'
-import * as ShardeumFlags from '../shardeum/shardeumFlags'
+import {ShardeumFlags} from '../shardeum/shardeumFlags'
 import { zeroAddressAccount, zeroAddressStr } from '../utils'
 import * as AccountsStorage from '../storage/accountStorage'
 import { AccountType, WrappedEVMAccount } from '../shardeum/shardeumTypes'
 import { toShardusAddress, toShardusAddressWithKey } from '../shardeum/evmAddress'
 import { fixDeserializedWrappedEVMAccount } from '../shardeum/wrappedEVMAccountFunctions'
-import { UseBase64BufferEncoding } from '../shardeum/shardeumFlags'
 
 export type accountEvent = (transactionState: TransactionState, address: string) => Promise<boolean>
 export type contractStorageEvent = (

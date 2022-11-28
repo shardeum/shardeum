@@ -31,7 +31,7 @@ import {
   DevAccount,
 } from './shardeum/shardeumTypes'
 import { getAccountShardusAddress, toShardusAddress, toShardusAddressWithKey } from './shardeum/evmAddress'
-import * as ShardeumFlags from './shardeum/shardeumFlags'
+import { ShardeumFlags, updateShardeumFlag, updateServicePoints} from './shardeum/shardeumFlags'
 import * as WrappedEVMAccountFunctions from './shardeum/wrappedEVMAccountFunctions'
 import {
   fixDeserializedWrappedEVMAccount,
@@ -1029,29 +1029,66 @@ shardus.registerExternalGet('dumpShardeumStateMap', debugMiddleware, async (req,
   }
 })
 
-// //this is not used by the web faucet.  probably could remove it
-// shardus.registerExternalPost('faucet', async (req, res) => {
-//   if(isDebugMode()){
-//     return res.json(`endpoint not available`)
-//   }
+shardus.registerExternalGet('debug-shardeum-flags', debugMiddleware, async (req, res) => {
+  try {
+    return res.json({ShardeumFlags})
+  } catch(e) {
+    console.log(e)
+    return {error: e.message}
+  }
+})
 
-//   let tx = req.body
-//   let id = tx.address as string
-//   setupTester(id)
-//   try {
-//     let activeNodes = shardus.p2p.state.getNodes()
-//     if (activeNodes) {
-//       for (let node of activeNodes.values()) {
-//         _internalHackGet(`${node.externalIp}:${node.externalPort}/faucet-one?id=${id}`)
-//         res.write(`${node.externalIp}:${node.externalPort}/faucet-one?id=${id}\n`)
-//       }
-//     }
-//     res.write(`sending faucet request to all nodes\n`)
-//   } catch (e) {
-//     res.write(`${e}\n`)
-//   }
-//   res.end()
-// })
+shardus.registerExternalGet('debug-set-shardeum-flag', debugMiddleware, async (req, res) => {
+  let value
+  let key
+  try {
+    key = req.query.key as string
+    value = req.query.value as string
+    if (value == null) {
+      return res.json(`debug-set-shardeum-flag: ${value} == null`)
+    }
+
+    let typedValue: boolean | number | string
+
+    if (value === 'true') typedValue = true
+    else if (value === 'false') typedValue = false
+    else if (!Number.isNaN(Number(value))) typedValue = Number(value)
+
+    // hack to make txFee works with bn.js
+    if (key === 'constantTxFee') value = String(value)
+
+    updateShardeumFlag(key, typedValue)
+
+    return res.json({[key]: ShardeumFlags[key]})
+  } catch (err) {
+    return res.json(`debug-set-shardeum-flag: ${key} ${err.message} `)
+  }
+})
+shardus.registerExternalGet('debug-set-service-point', debugMiddleware, async (req, res) => {
+  let value
+  let key1
+  let key2
+  try {
+    key1 = req.query.key1 as string
+    key2 = req.query.key2 as string
+    value = req.query.value as string
+    if (value == null) {
+      return res.json(`debug-set-service-point: ${value} == null`)
+    }
+    if (Number.isNaN(Number(value))) {
+      console.log(`Invalid service point`, value)
+      return res.json({error: `Invalid service point`})
+    }
+
+    let typedValue: number = Number(value)
+
+    updateServicePoints(key1, key2, typedValue)
+
+    return res.json({ServicePoints: ShardeumFlags['ServicePoints']})
+  } catch (err) {
+    return res.json(`debug-set-service-point: ${value} ${err}`)
+  }
+})
 
 shardus.registerExternalGet('account/:address', async (req, res) => {
   if (trySpendServicePoints(ShardeumFlags.ServicePoints['account/:address']) === false) {
@@ -2315,7 +2352,6 @@ shardus.setup({
       }
 
       if (ShardeumFlags.txBalancePreCheck && appData != null) {
-        console.log('thant: doing balance check', appData)
         let minBalance = ShardeumFlags.constantTxFee ? new BN(ShardeumFlags.constantTxFee) : new BN(1)
         let accountBalance = new BN(appData.balance)
         if (accountBalance.lt(minBalance)) {
@@ -2870,7 +2906,7 @@ shardus.setup({
   },
   getTimestampFromTransaction(tx, appData: any) {
     if (ShardeumFlags.VerboseLogs) console.log('Running getTimestampFromTransaction', tx, appData)
-    if (ShardeumFlags.txAccessListGenerate && appData && appData.requestNewTimestamp) {
+    if (ShardeumFlags.autoGenerateAccessList && appData && appData.requestNewTimestamp) {
       if (ShardeumFlags.VerboseLogs) console.log('Requesting new timestamp', appData)
       return -1
     } else return tx.timestamp ? tx.timestamp : 0
@@ -2948,7 +2984,7 @@ shardus.setup({
         }
       }
 
-      if (ShardeumFlags.txAccessListGenerate && transaction.to && isEIP2930 === false) {
+      if (ShardeumFlags.autoGenerateAccessList && transaction.to && isEIP2930 === false) {
         // generate access list for non EIP 2930 txs
         let callObj = {
           from: await transaction.getSenderAddress().toString(),
@@ -3118,7 +3154,7 @@ shardus.setup({
           result.storageKeys = result.storageKeys.concat(storageKeys)
         }
       } else {
-        if (ShardeumFlags.txAccessListGenerate && appData.accessList) {
+        if (ShardeumFlags.autoGenerateAccessList && appData.accessList) {
           // we have pre-generated accessList
           for (let accessListItem of appData.accessList) {
             let address = accessListItem[0]

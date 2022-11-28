@@ -1,6 +1,6 @@
 import VM from '@ethereumjs/vm'
 import { default as runTx, RunTxOpts, RunTxResult } from './runTx'
-import * as ShardeumFlags from '../shardeum/shardeumFlags'
+import {ShardeumFlags} from '../shardeum/shardeumFlags'
 
 export default class ShardeumVM extends VM {
   constructor(opts = {}) {

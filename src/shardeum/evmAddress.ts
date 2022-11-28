@@ -1,6 +1,6 @@
 import { AccountType, WrappedEVMAccount } from './shardeumTypes'
 
-import * as ShardeumFlags from './shardeumFlags'
+import {ShardeumFlags} from './shardeumFlags'
 import { Account } from 'ethereumjs-util'
 
 /**
