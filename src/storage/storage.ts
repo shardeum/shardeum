@@ -2,7 +2,7 @@
 
 import models from './models'
 
-import * as ShardeumFlags from '../shardeum/shardeumFlags'
+import {ShardeumFlags} from '../shardeum/shardeumFlags'
 import Sqlite3Storage from './sqlite3storage'
 import * as Sequelize from 'sequelize'
 const Op = Sequelize.Op

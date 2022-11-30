@@ -1,6 +1,6 @@
 import { WrappedEVMAccount, WrappedEVMAccountMap } from '../shardeum/shardeumTypes'
 
-import * as ShardeumFlags from '../shardeum/shardeumFlags'
+import {ShardeumFlags} from '../shardeum/shardeumFlags'
 import Storage from '../storage/storage'
 import { DeSerializeFromJsonString } from '../utils'
 

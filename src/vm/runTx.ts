@@ -25,11 +25,11 @@ import type {
   PreByzantiumTxReceipt,
   PostByzantiumTxReceipt,
 } from '@ethereumjs/vm/src/types'
-
-import {chargeConstantTxFee, constantTxFee} from '../shardeum/shardeumFlags'
+import {ShardeumFlags} from '../shardeum/shardeumFlags'
 
 const debug = createDebugLogger('vm:tx')
 const debugGas = createDebugLogger('vm:tx:gas')
+let {chargeConstantTxFee, constantTxFee} = ShardeumFlags
 
 /**
  * Options for the `runTx` method.
@@ -456,7 +456,7 @@ async function _runTx(this: VM, opts: RunTxOpts): Promise<RunTxResult> {
     actualTxCost = results.gasUsed.mul(gasPrice)
   }
 
-  results.amountSpent = results.gasUsed.mul(gasPrice) // should be equal to 1 SHM
+  results.amountSpent = actualTxCost
 
   // Update sender's balance
   fromAccount = await state.getAccount(caller)

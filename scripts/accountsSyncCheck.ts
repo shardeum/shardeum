@@ -10,8 +10,8 @@ const saveAccountsDataAsFile = false
 let consensorAccounts: any = []
 let archiverAccounts: any = []
 
-const consensorAccountsFileName = 'consensorAccounts'
-const archiverAccountsFileName = 'archiverAccounts'
+const consensorAccountsFileName = 'instances/consensorAccounts'
+const archiverAccountsFileName = 'instances/archiverAccounts'
 
 export async function initShardeumDB(node) {
   const dbName = `${instancesDirPath}/shardus-instance-${node}/db/shardeum.sqlite`
@@ -90,7 +90,8 @@ export const getAccountsDataFromConsensors = async () => {
     const accounts = await queryAccountsFromConsensor()
     console.log('Node', node, accounts.length)
     for (const account of accounts) {
-      if (!consensorAccounts.find((acc: any) => acc.accountId === account.accountId)) consensorAccounts.push(account)
+      if (!consensorAccounts.find((acc: any) => acc.accountId === account.accountId))
+        consensorAccounts.push(account)
     }
   }
 
@@ -104,7 +105,8 @@ export const getAccountsDataFromConsensors = async () => {
   //   }
   // }
   console.log('Total Number of Accounts From Consensors', consensorAccounts.length)
-  if (saveAccountsDataAsFile) fs.writeFileSync(consensorAccountsFileName, JSON.stringify(consensorAccounts, null, 2))
+  if (saveAccountsDataAsFile)
+    fs.writeFileSync(consensorAccountsFileName, JSON.stringify(consensorAccounts, null, 2))
   return consensorAccounts
 }
 
@@ -159,7 +161,8 @@ export const getAccountsDataFromArchiver = async () => {
     i += limit
   }
   console.log('Total Number of Accounts From Archiver', archiverAccounts.length)
-  if (saveAccountsDataAsFile) fs.writeFileSync(archiverAccountsFileName, JSON.stringify(archiverAccounts, null, 2))
+  if (saveAccountsDataAsFile)
+    fs.writeFileSync(archiverAccountsFileName, JSON.stringify(archiverAccounts, null, 2))
   return archiverAccounts
 }
 
@@ -190,10 +193,10 @@ const checkAccountsDataSync = async () => {
   }
 }
 
-// const runProgram = async () => {
-//   await getAccountsDataFromConsensors()
-//   await getAccountsDataFromArchiver()
-//   await checkAccountsDataSync()
-// }
+const runProgram = async () => {
+  await getAccountsDataFromConsensors()
+  await getAccountsDataFromArchiver()
+  await checkAccountsDataSync()
+}
 
-// runProgram()
+runProgram()

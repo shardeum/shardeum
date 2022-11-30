@@ -1,6 +1,6 @@
 import * as fs from 'fs'
 import { setGenesisAccounts, networkAccount } from '..'
-import * as ShardeumFlags from '../shardeum/shardeumFlags'
+import {ShardeumFlags} from '../shardeum/shardeumFlags'
 import * as Path from 'path'
 import { sleep } from '../utils'
 import * as readline from 'readline'
