@@ -122,8 +122,8 @@ config = merge(config, {
     sharding: {
       nodesPerConsensusGroup: process.env.nodesPerConsensusGroup
         ? parseInt(process.env.nodesPerConsensusGroup)
-        : 128,
-      nodesPerEdge: process.env.nodesPerEdge ? parseInt(process.env.nodesPerEdge) : 2,
+        : 109,
+      nodesPerEdge: process.env.nodesPerEdge ? parseInt(process.env.nodesPerEdge) : 10,
       executeInOneShard: true,
     },
     stateManager: {
