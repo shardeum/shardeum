@@ -274,6 +274,7 @@ interface RunStateWithLogs extends RunState {
 }
 
 let EVM: VM
+let preRunEVM: VM
 let shardeumBlock: ShardeumBlock
 //let transactionStateMap:Map<string, TransactionState>
 
@@ -309,6 +310,7 @@ function initEVMSingletons() {
   } else {
     EVM = new VM({ common: evmCommon, stateManager: undefined, blockchain: shardeumBlock })
   }
+  preRunEVM = new ShardeumVM({ common: evmCommon, stateManager: undefined, blockchain: shardeumBlock })
 
   //todo need to evict old data
   ////transactionStateMap = new Map<string, TransactionState>()
@@ -2035,10 +2037,10 @@ async function generateAccessList(callObj: any) : Promise<any[]> {
   opt['block'] = blocks[latestBlock]
 
   //@ts-ignore
-  EVM.stateManager = null
+  preRunEVM.stateManager = null
   //@ts-ignore
-  EVM.stateManager = preRunTxState
-  const callResult = await EVM.runCall(opt)
+  preRunEVM.stateManager = preRunTxState
+  const callResult = await preRunEVM.runCall(opt)
 
   let readAccounts = preRunTxState._transactionState.getReadAccounts()
   let writtenAccounts = preRunTxState._transactionState.getWrittenAccounts()
