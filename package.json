@@ -41,13 +41,14 @@
     "dotenv": "^16.0.0",
     "ethereumjs-util": "^7.1.3",
     "ethereumjs-wallet": "^1.0.2",
+    "ethers": "^5.7.2",
     "fast-stable-stringify": "^1.0.0",
     "got": "^9.6.0",
     "gts": "^3.1.0",
-    "typescript": "^4.5.2",
-    "vorpal": "^1.12.0",
+    "sequelize": "^6.15.1",
     "sqlite3": "^4.2.0",
-    "sequelize": "^6.15.1"
+    "typescript": "^4.5.2",
+    "vorpal": "^1.12.0"
   },
   "devDependencies": {
     "@shardus/archiver": "^3.2.12",

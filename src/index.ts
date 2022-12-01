@@ -1,9 +1,19 @@
 import stringify from 'fast-json-stable-stringify'
 import * as crypto from '@shardus/crypto-utils'
-import { Account, Address, BN, bufferToHex, isValidAddress, toBuffer } from 'ethereumjs-util'
+import {
+  Account,
+  Address,
+  BN,
+  bufferToHex,
+  isValidAddress,
+  toBuffer,
+  setLengthLeft,
+  rlp,
+} from 'ethereumjs-util'
 import { AccessListEIP2930Transaction, Transaction } from '@ethereumjs/tx'
 import Common, { Chain, Hardfork } from '@ethereumjs/common'
 import VM from '@ethereumjs/vm'
+import { ethers } from 'ethers'
 import ShardeumVM from './vm'
 import { parse as parseUrl } from 'url'
 import got from 'got'
@@ -1136,6 +1146,26 @@ shardus.registerExternalPost('contract/call', async (req, res) => {
       caShardusAddress = toShardusAddress(callObj.to, AccountType.Account)
       if (methodCode === ERC20_BALANCEOF_CODE) {
         // ERC20 Token balance query
+        if (ShardeumFlags.tokenBalanceQueryFromCS) {
+          const tokenAddress = callObj.to
+          const addressToQuery = `0x${callObj.data.substring(34)}`
+          if (isValidAddress(addressToQuery)) {
+            let balanceMapSlot = '0x0'
+            let storageKey = ethers.utils.solidityKeccak256(
+              ['uint', 'uint'],
+              [addressToQuery, balanceMapSlot]
+            )
+            const shardusAddress = callObj.to.slice(2).substr(0, 8) + storageKey.substring(10)
+            const contractStorageAccount = await shardus.getLocalOrRemoteAccount(shardusAddress)
+            let value = '0x'
+            if (contractStorageAccount) {
+              let data = contractStorageAccount.data as WrappedEVMAccount
+              fixDeserializedWrappedEVMAccount(data)
+              value = bufferToHex(setLengthLeft(rlp.decode(data.value), 32))
+            }
+            return res.json({ result: value })
+          }
+        }
         let caShardusAddress = toShardusAddress(callObj.to, AccountType.Account)
         //to do convert to timestamp query getAccountTimestamp!!
         caAccount = await AccountsStorage.getAccount(caShardusAddress)

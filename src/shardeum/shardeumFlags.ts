@@ -48,6 +48,7 @@ interface ShardeumFlags {
   cacheMaxCycleAge: number
   cacheMaxItemPerTopic: number
   generateMemoryPatternData: boolean
+  tokenBalanceQueryFromCS: boolean // ERC-20/721 token balance query from constract storage instead of EVM.runCall
 }
 
 const NodeRewardENV = process.env.NodeReward ? (process.env.NodeReward === 'true' ? true : false) : null
@@ -96,6 +97,7 @@ export let ShardeumFlags: ShardeumFlags = {
     ['tx/:hash']: 5,
   },
   generateMemoryPatternData: true,
+  tokenBalanceQueryFromCS: true
 }
 
 export function updateShardeumFlag(key: string, value: any) {
