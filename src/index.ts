@@ -50,6 +50,7 @@ import { ShardeumBlock } from './block/blockchain'
 
 import * as AccountsStorage from './storage/accountStorage'
 import { StateManager } from '@ethereumjs/vm/dist/state'
+import { nestedCountersInstance } from '@shardus/core'
 
 const env = process.env
 
@@ -511,6 +512,20 @@ function tryGetRemoteAccountCBNoOp(
   address: string,
   key: string
 ): Promise<WrappedEVMAccount> {
+
+  if(ShardeumFlags.VerboseLogs){
+    if(type === AccountType.Account){
+      nestedCountersInstance.countEvent('shardeum', 'account inject miss')
+      console.log(`account miss: ${address} tx:${this.linkedTX}`)
+    } else if(type === AccountType.ContractCode){
+      nestedCountersInstance.countEvent('shardeum', 'account bytes inject miss')
+      console.log(`account bytes miss: ${address} key: ${key} tx:${this.linkedTX}`)
+    } else if(type === AccountType.ContractStorage){
+      nestedCountersInstance.countEvent('shardeum', 'account storage inject miss')
+      console.log(`account storage miss: ${address} key: ${key} tx:${this.linkedTX}`)
+    }
+  }
+
   return undefined
 }
 
