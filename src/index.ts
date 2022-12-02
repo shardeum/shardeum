@@ -125,6 +125,7 @@ function verify(obj, expectedPk?) {
 const pointsAverageInterval = 2 // seconds
 
 let servicePointSpendHistory: { points: number; ts: number }[] = []
+let debugLastTotalServicePoints = 0
 
 /**
  * Allows us to attempt to spend points.  We have ShardeumFlags.ServicePointsPerSecond
@@ -149,6 +150,7 @@ function trySpendServicePoints(points: number): boolean {
     }
   }
 
+  debugLastTotalServicePoints = totalPoints
   //is the new operation too expensive?
   if (totalPoints + points > maxAllowedPoints) {
     return false
@@ -279,7 +281,7 @@ let preRunEVM: VM
 let shardeumBlock: ShardeumBlock
 //let transactionStateMap:Map<string, TransactionState>
 
-//Per TX or Eth call shardeum State
+//Per TX or Eth call shardeum State.  Note the key is the shardus transaction id
 let shardeumStateTXMap: Map<string, ShardeumState>
 //let shardeumStateCallMap:Map<string, ShardeumState>
 //let shardeumStatePool:ShardeumState[]
@@ -287,6 +289,8 @@ let debugShardeumState: ShardeumState = null
 
 let shardusAddressToEVMAccountInfo: Map<string, EVMAccountInfo>
 let evmCommon
+
+let debugAppdata: Map<string, any>
 
 //todo refactor some object init into here
 function initEVMSingletons() {
@@ -325,6 +329,8 @@ function initEVMSingletons() {
 
   //todo need to evict old data
   shardusAddressToEVMAccountInfo = new Map<string, EVMAccountInfo>()
+
+  debugAppdata = new Map<string, any>()
 }
 
 initEVMSingletons()
@@ -524,6 +530,8 @@ function tryGetRemoteAccountCBNoOp(
       nestedCountersInstance.countEvent('shardeum', 'account storage inject miss')
       console.log(`account storage miss: ${address} key: ${key} tx:${this.linkedTX}`)
     }
+    logAccessList('tryGetRemoteAccountCBNoOp access list:', transactionState.appData)
+    
   }
 
   return undefined
@@ -880,6 +888,12 @@ async function _internalHackPostWithResp(url: string, body: any) {
   }
 }
 
+function logAccessList(message:string, appData:any){
+  if(appData != null && appData.accessList != null){
+    if(ShardeumFlags.VerboseLogs) console.log(`access list for ${message} ${JSON.stringify(appData.accessList)}`)
+  }
+}
+
 /***
  *    ######## ##    ## ########  ########   #######  #### ##    ## ########  ######
  *    ##       ###   ## ##     ## ##     ## ##     ##  ##  ###   ##    ##    ##    ##
@@ -934,10 +948,10 @@ shardus.registerExternalGet('debug-points', debugMiddleware, async (req, res) =>
 
   let points = Number(req.query.points ?? ShardeumFlags.ServicePoints['debug-points'])
   if (trySpendServicePoints(points) === false) {
-    return res.json({ error: 'node busy', points, servicePointSpendHistory })
+    return res.json({ error: 'node busy', points, servicePointSpendHistory, debugLastTotalServicePoints })
   }
 
-  return res.json(`spent points: ${points}  ${JSON.stringify(servicePointSpendHistory)} `)
+  return res.json(`spent points: ${points} total:${debugLastTotalServicePoints}  ${JSON.stringify(servicePointSpendHistory)} `)
 })
 
 shardus.registerExternalPost('inject', async (req, res) => {
@@ -1400,6 +1414,32 @@ shardus.registerExternalGet('tx/:hash', async (req, res) => {
     res.json({ error })
   }
 })
+
+shardus.registerExternalGet('debug-appdata/:hash', debugMiddleware, async (req, res) => {
+  // if(isDebugMode()){
+  //   return res.json(`endpoint not available`)
+  // }
+  const txHash = req.params['hash']
+  // const shardusAddress = toShardusAddressWithKey(txHash, '', AccountType.Receipt)
+
+  // let shardeumState = shardeumStateTXMap.get(txHash)
+  // if(shardeumState == null){
+  //   return res.json(JSON.stringify({result:`shardeumState not found`}))
+  // }
+
+  // let appData = shardeumState._transactionState?.appData
+
+  let appData = debugAppdata.get(txHash)
+
+  if(appData == null){
+    return res.json(JSON.stringify({result:`no appData`}))
+  }
+
+  return res.json(`${JSON.stringify(appData)}`)
+})
+
+
+
 
 // shardus.registerExternalGet('tx/:hash', async (req, res) => {
 //   const txHash = req.params['hash']
@@ -2240,6 +2280,7 @@ shardus.setup({
       }
     }
   },
+  //need to evaluate this part of the shardus core api. seems unused
   validateTransaction(tx) {
     if (isInternalTx(tx)) {
       let internalTX = tx as InternalTx
@@ -2364,11 +2405,17 @@ shardus.setup({
       let isSignatureValid = txObj.validate()
       if (ShardeumFlags.VerboseLogs) console.log('validate evm tx', isSigned, isSignatureValid)
 
+      //const txId = '0x' + crypto.hashObj(timestampedTx.tx)
+      const txHash = bufferToHex(txObj.hash())
+      //TODO limit size of this !!! or make debug only
+      debugAppdata.set(txHash , appData)
+
       if (isSigned && isSignatureValid) {
         success = true
         reason = ''
       } else {
         reason = 'Transaction is not signed or signature is not valid'
+        nestedCountersInstance.countEvent('shardeum', 'validate - sign ' + (isSigned)?'failed':'missing')
       }
 
       if (ShardeumFlags.txBalancePreCheck && appData != null) {
@@ -2378,6 +2425,7 @@ shardus.setup({
           success = false
           reason = `Sender does not have enough balance.`
           /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`balance fail: sender ${txObj.getSenderAddress()} does not have enough balance. Min balance: ${minBalance.toString()}, Account balance: ${accountBalance.toString()}`)
+          nestedCountersInstance.countEvent('shardeum', 'validate - insufficient balance')
         } else {
           /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`balance pass: sender ${txObj.getSenderAddress()} has balance of ${accountBalance.toString()}`)
         }
@@ -2390,12 +2438,14 @@ shardus.setup({
           success = false
           reason = `Transaction nonce != ${txNonce} ${perfectCount}`
           /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`nonce fail: perfectCount:${perfectCount} != ${txNonce}.    current nonce:${appData.nonce}  queueCount:${appData.queueCount} txHash: ${txObj.hash().toString('hex')} `)
+          nestedCountersInstance.countEvent('shardeum', 'validate - nonce fail')
         } else {
           /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`nonce pass: perfectCount:${perfectCount} == ${txNonce}.    current nonce:${appData.nonce}  queueCount:${appData.queueCount}  txHash: ${txObj.hash().toString('hex')}`)
         }
       }
     } catch (e) {
       if (ShardeumFlags.VerboseLogs) console.log('validate error', e)
+      nestedCountersInstance.countEvent('shardeum', 'validate - exception')
       success = false
       reason = e.message
     }
@@ -2406,7 +2456,7 @@ shardus.setup({
       txnTimestamp,
     }
   },
-  async apply(timestampedTx, wrappedStates) {
+  async apply(timestampedTx, wrappedStates, appData) {
     let { tx, timestampReceipt } = timestampedTx
     const txTimestamp = getInjectedOrGeneratedTimestamp(timestampedTx)
     // Validate the tx
@@ -2462,6 +2512,7 @@ shardus.setup({
     // }
 
     let shardeumState = getApplyTXState(txId)
+    shardeumState._transactionState.appData = appData
 
     //ah shoot this binding will not be "thread safe" may need to make it part of the EEI for this tx? idk.
     //shardeumStateManager.setTransactionState(transactionState)
@@ -3018,6 +3069,8 @@ shardus.setup({
         appData.requestNewTimestamp = true
       }
       if(ShardeumFlags.VerboseLogs) console.log(`txPreCrackData final result: txNonce: ${appData.txNonce}, currentNonce: ${appData.nonce}, queueCount: ${appData.queueCount}, appData ${JSON.stringify(appData)}`)
+
+      
     }
   },
 
@@ -3107,12 +3160,14 @@ shardus.setup({
       allKeys: [],
       timestamp: timestamp,
     }
+    const txId = crypto.hashObj(tx)
     try {
       let otherAccountKeys = []
       let txSenderEvmAddr = transaction.getSenderAddress().toString()
       let txToEvmAddr = transaction.to ? transaction.to.toString() : undefined
       let transformedSourceKey = toShardusAddress(txSenderEvmAddr, AccountType.Account)
       let transformedTargetKey = transaction.to ? toShardusAddress(txToEvmAddr, AccountType.Account) : ''
+
       result.sourceKeys.push(transformedSourceKey)
       shardusAddressToEVMAccountInfo.set(transformedSourceKey, {
         evmAddress: txSenderEvmAddr,
@@ -3235,7 +3290,7 @@ shardus.setup({
     return {
       keys: result,
       timestamp,
-      id: crypto.hashObj(tx),
+      id: txId,
     }
   },
 

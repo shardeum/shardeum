@@ -84,6 +84,8 @@ export default class TransactionState {
 
   checkpointCount: number
 
+  appData: any
+
   // callbacks
   accountMissCB: accountEvent
   contractStorageMissCB: contractStorageEvent
@@ -1105,4 +1107,6 @@ export default class TransactionState {
     }
     return resultStack
   }
+
+
 }
