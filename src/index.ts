@@ -1149,21 +1149,24 @@ shardus.registerExternalPost('contract/call', async (req, res) => {
         if (ShardeumFlags.tokenBalanceQueryFromCS) {
           const tokenAddress = callObj.to
           const addressToQuery = `0x${callObj.data.substring(34)}`
-          if (isValidAddress(addressToQuery)) {
+          if (isValidAddress(tokenAddress) && isValidAddress(addressToQuery)) {
             let balanceMapSlot = '0x0'
+            // currently it's depending on ethers lib to calculate storageKey
+            // TODO - Research about if ethereumjs-utils has a way to calculate it
             let storageKey = ethers.utils.solidityKeccak256(
               ['uint', 'uint'],
               [addressToQuery, balanceMapSlot]
             )
-            const shardusAddress = callObj.to.slice(2).substr(0, 8) + storageKey.substring(10)
+            const shardusAddress = tokenAddress.slice(2).substr(0, 8) + storageKey.substring(10)
             const contractStorageAccount = await shardus.getLocalOrRemoteAccount(shardusAddress)
-            let value = '0x'
+            let value = toBuffer('0x')
             if (contractStorageAccount) {
               let data = contractStorageAccount.data as WrappedEVMAccount
               fixDeserializedWrappedEVMAccount(data)
-              value = bufferToHex(setLengthLeft(rlp.decode(data.value), 32))
+              value = rlp.decode(data.value)
             }
-            return res.json({ result: value })
+            const result = setLengthLeft(value, 32).toString('hex')
+            return res.json({ result })
           }
         }
         let caShardusAddress = toShardusAddress(callObj.to, AccountType.Account)
