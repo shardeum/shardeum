@@ -1388,7 +1388,7 @@ shardus.registerExternalGet('tx/:hash', async (req, res) => {
 
   const txHash = req.params['hash']
   if (!ShardeumFlags.EVMReceiptsAsAccounts) {
-    let evmReceipt = appliedEVMReceipts.find(receipt => receipt.txId === txHash)
+    let evmReceipt = appliedEVMReceipts.find(receipt => receipt.txHash === txHash)
     if (!evmReceipt) return res.json({ tx: 'Not found' })
     let data = evmReceipt.receipt.data
     fixDeserializedWrappedEVMAccount(data)
@@ -2947,17 +2947,6 @@ shardus.setup({
         shardusWrappedAccount,
         crypto.hashObj(shardusWrappedAccount)
       )
-      // this is to expose tx data for json rpc server
-      appliedEVMReceipts.push({
-        txId: ethTxId,
-        injected: tx,
-        receipt: shardusWrappedAccount,
-      })
-      if (appliedEVMReceipts.length > EVMReceiptsToKeep + 10) {
-        let extra = appliedEVMReceipts.length - EVMReceiptsToKeep
-        appliedEVMReceipts.splice(0, extra)
-        if (ShardeumFlags.VerboseLogs) console.log('EVMReceipts Kept', appliedEVMReceipts.length)
-      }
     }
     if (ShardeumFlags.VerboseLogs) console.log('Applied txId', txId, txTimestamp)
 
@@ -4019,6 +4008,22 @@ shardus.setup({
     //Updating to be on only with verbose logs
     /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log('running transactionReceiptPass', txId, tx, wrappedStates, applyResponse)
     _transactionReceiptPass(tx, txId, wrappedStates, applyResponse)
+
+    // this is to expose evm receipt for json rpc server
+    if (!ShardeumFlags.EVMReceiptsAsAccounts) {
+      if (applyResponse.appReceiptData) {
+        appliedEVMReceipts.push({
+          txHash: applyResponse.appReceiptData?.data['ethAddress'],
+          injected: tx,
+          receipt: applyResponse.appReceiptData,
+        })
+        if (appliedEVMReceipts.length > EVMReceiptsToKeep + 10) {
+          let extra = appliedEVMReceipts.length - EVMReceiptsToKeep
+          appliedEVMReceipts.splice(0, extra)
+          if (ShardeumFlags.VerboseLogs) console.log('EVMReceipts Kept', appliedEVMReceipts.length)
+        }
+      }
+    }
 
     //clear this out of the shardeum state map
     if (shardeumStateTXMap.has(txId)) {
