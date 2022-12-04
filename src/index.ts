@@ -1159,14 +1159,13 @@ shardus.registerExternalPost('contract/call', async (req, res) => {
             )
             const shardusAddress = tokenAddress.slice(2).substr(0, 8) + storageKey.substring(10)
             const contractStorageAccount = await shardus.getLocalOrRemoteAccount(shardusAddress)
-            let value = toBuffer('0x')
             if (contractStorageAccount) {
               let data = contractStorageAccount.data as WrappedEVMAccount
               fixDeserializedWrappedEVMAccount(data)
-              value = rlp.decode(data.value)
+              const value = rlp.decode(data.value)
+              const result = setLengthLeft(value, 32).toString('hex')
+              return res.json({ result })
             }
-            const result = setLengthLeft(value, 32).toString('hex')
-            return res.json({ result })
           }
         }
         let caShardusAddress = toShardusAddress(callObj.to, AccountType.Account)
