@@ -1146,7 +1146,7 @@ shardus.registerExternalPost('contract/call', async (req, res) => {
       caShardusAddress = toShardusAddress(callObj.to, AccountType.Account)
       if (methodCode === ERC20_BALANCEOF_CODE) {
         // ERC20 Token balance query
-        if (ShardeumFlags.tokenBalanceQueryFromCS) {
+        if (ShardeumFlags.useDirectTokenBalance) {
           const tokenAddress = callObj.to
           const addressToQuery = `0x${callObj.data.substring(34)}`
           if (isValidAddress(tokenAddress) && isValidAddress(addressToQuery)) {
