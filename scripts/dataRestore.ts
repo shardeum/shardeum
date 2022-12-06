@@ -125,8 +125,9 @@ async function exportToJSON(targetDbPath, targetJsonPath, batchSize) {
             accounts = accounts[0]
             for (let account of accounts) {
                 const dataObj = JSON.parse(account.data)
+                dataObj.timestamp = 1
                 let dataStr = JSON.stringify(dataObj).replace(/"/g, '\\"')
-                let jsonString = `{ "accountId" : "${account.accountId}", "timestamp" : ${account.timestamp}, "data": "${dataStr}" }`
+                let jsonString = `{ "accountId" : "${account.accountId}", "timestamp" : 1, "data": "${dataStr}" }`
                 writableStream.write(jsonString)
                 writableStream.write('\n')
                 rowCount++
