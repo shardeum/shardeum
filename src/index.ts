@@ -31,7 +31,7 @@ import {
   DevAccount,
 } from './shardeum/shardeumTypes'
 import { getAccountShardusAddress, toShardusAddress, toShardusAddressWithKey } from './shardeum/evmAddress'
-import { ShardeumFlags, updateShardeumFlag, updateServicePoints} from './shardeum/shardeumFlags'
+import { ShardeumFlags, updateShardeumFlag, updateServicePoints } from './shardeum/shardeumFlags'
 import * as WrappedEVMAccountFunctions from './shardeum/wrappedEVMAccountFunctions'
 import {
   fixDeserializedWrappedEVMAccount,
@@ -43,14 +43,13 @@ import config from './config'
 import { RunTxResult } from '@ethereumjs/vm/dist/runTx'
 import { RunState } from '@ethereumjs/vm/dist/evm/interpreter'
 import Wallet from 'ethereumjs-wallet'
-import genesis from './config/genesis.json'
-import { loadAccountDataFromDB } from './shardeum/debugRestoreAccounts'
 import { Block } from '@ethereumjs/block'
 import { ShardeumBlock } from './block/blockchain'
 
 import * as AccountsStorage from './storage/accountStorage'
 import { StateManager } from '@ethereumjs/vm/dist/state'
 import { nestedCountersInstance } from '@shardus/core'
+import { sync } from './setup'
 
 const env = process.env
 
@@ -107,11 +106,6 @@ let nodeRewardCount = 0
 function isDebugMode() {
   //@ts-ignore
   return config.server.mode === 'debug'
-}
-
-function isVerboseEnabled() {
-  let logVerbose = shardus.getLogFlags().verbose
-  return logVerbose
 }
 
 function verify(obj, expectedPk?) {
@@ -353,8 +347,6 @@ initEVMSingletons()
  */
 async function accountMiss(transactionState: TransactionState, address: string): Promise<boolean> {
   //Get the first read version of data that we have collected so far
-  let transferBlob = transactionState.getTransferBlob()
-  let txID = transactionState.linkedTX
 
   // TODO implment this in shardus global server.  It will send the read accounts and TX info to
   // to a remote shard so that we can restart the EVM
@@ -373,14 +365,8 @@ async function accountMiss(transactionState: TransactionState, address: string):
  * @param address
  * @param key
  */
-async function contractStorageMiss(
-  transactionState: TransactionState,
-  address: string,
-  key: string
-): Promise<boolean> {
+async function contractStorageMiss(transactionState: TransactionState): Promise<boolean> {
   //Get the first read version of data that we have collected so far
-  let transferBlob = transactionState.getTransferBlob()
-  let txID = transactionState.linkedTX
 
   //NOTE  We do not need this for the january milestone!
 
@@ -518,20 +504,18 @@ function tryGetRemoteAccountCBNoOp(
   address: string,
   key: string
 ): Promise<WrappedEVMAccount> {
-
-  if(ShardeumFlags.VerboseLogs){
-    if(type === AccountType.Account){
+  if (ShardeumFlags.VerboseLogs) {
+    if (type === AccountType.Account) {
       nestedCountersInstance.countEvent('shardeum', 'account inject miss')
       console.log(`account miss: ${address} tx:${this.linkedTX}`)
-    } else if(type === AccountType.ContractCode){
+    } else if (type === AccountType.ContractCode) {
       nestedCountersInstance.countEvent('shardeum', 'account bytes inject miss')
       console.log(`account bytes miss: ${address} key: ${key} tx:${this.linkedTX}`)
-    } else if(type === AccountType.ContractStorage){
+    } else if (type === AccountType.ContractStorage) {
       nestedCountersInstance.countEvent('shardeum', 'account storage inject miss')
       console.log(`account storage miss: ${address} key: ${key} tx:${this.linkedTX}`)
     }
     logAccessList('tryGetRemoteAccountCBNoOp access list:', transactionState.appData)
-    
   }
 
   return undefined
@@ -628,17 +612,6 @@ function getTransactionObj(tx: any): Transaction | AccessListEIP2930Transaction 
   if (transactionObj) {
     return transactionObj
   } else throw Error('tx obj fail')
-}
-
-function getReadableTransaction(tx) {
-  const transaction = getTransactionObj(tx)
-  if (!transaction) return { error: 'not found' }
-  return {
-    from: transaction.getSenderAddress().toString(),
-    to: transaction.to ? transaction.to.toString() : '',
-    value: transaction.value.toString(),
-    data: bufferToHex(transaction.data),
-  }
 }
 
 async function getReadableAccountInfo(account) {
@@ -771,61 +744,6 @@ function getApplyTXState(txId: string): ShardeumState {
   return shardeumState
 }
 
-/**
- * This creates an account outside of any EVM transaction
- * @param ethAccountID
- * @param balance
- */
-async function manuallyCreateAccount(ethAccountID: string, balance = defaultBalance) {
-  //await sleep(4 * 60 * 1000) // wait 4 minutes to init account
-
-  let shardusAccountID = toShardusAddress(ethAccountID, AccountType.Account)
-
-  let debugTXState = getDebugTXState() //this isn't so great..
-  debugTXState.checkpoint()
-  let newAccount = await createAccount(ethAccountID, debugTXState, balance)
-  debugTXState.commit()
-
-  //if (ShardeumFlags.temporaryParallelOldMode === false) {
-  let {
-    accounts: accountWrites,
-    contractStorages: contractStorageWrites,
-    contractBytes: contractBytesWrites,
-  } = debugTXState._transactionState.getWrittenAccounts()
-
-  //need to commit the account now... this is such a hack!!
-  for (let account of accountWrites.entries()) {
-    //1. wrap and save/update this to shardeum accounts[] map
-    let addressStr = account[0]
-    let accountObj = Account.fromRlpSerializedAccount(account[1])
-
-    let ethAccount = accountObj
-    debugTXState._transactionState.commitAccount(addressStr, ethAccount) //yikes this wants an await.
-  }
-  //}
-
-  if (ShardeumFlags.VerboseLogs) console.log('Tester account created', newAccount)
-  const address = Address.fromString(ethAccountID)
-  let account = await debugTXState.getAccount(address)
-
-  let cycleStart = 0
-  let latestCycles = shardus.getLatestCycles()
-  if (latestCycles != null && latestCycles.length > 0) {
-    cycleStart = latestCycles[0].start * 1000
-    console.log('Tester account created time: ', cycleStart)
-  }
-
-  let wrappedEVMAccount = {
-    timestamp: cycleStart,
-    account,
-    ethAddress: ethAccountID,
-    hash: '',
-    accountType: AccountType.Account,
-  }
-  WrappedEVMAccountFunctions.updateEthAccountHash(wrappedEVMAccount)
-  return { accountId: shardusAccountID, wrappedEVMAccount, cycle: latestCycles[0] }
-}
-
 function _containsProtocol(url: string) {
   if (!url.match('https?://*')) return false
   return true
@@ -835,37 +753,6 @@ function _normalizeUrl(url: string) {
   let normalized = url
   if (!_containsProtocol(url)) normalized = 'http://' + url
   return normalized
-}
-
-async function _internalHackGet(url: string) {
-  let normalized = _normalizeUrl(url)
-  let host = parseUrl(normalized, true)
-  try {
-    await got.get(host, {
-      timeout: 1000,
-      retry: 0,
-      throwHttpErrors: false,
-      //parseJson: (text:string)=>{},
-      //json: false, // the whole reason for _internalHackGet was because we dont want the text response to mess things up
-      //  and as a debug non shipping endpoint did not want to add optional parameters to http module
-    })
-  } catch (e) {}
-}
-
-async function _internalHackGetWithResp(url: string) {
-  let normalized = _normalizeUrl(url)
-  let host = parseUrl(normalized, true)
-  try {
-    const res = await got.get(host, {
-      timeout: 1000,
-      retry: 0,
-      throwHttpErrors: false,
-      //parseJson: (text:string)=>{},
-      //json: false, // the whole reason for _internalHackGet was because we dont want the text response to mess things up
-      //  and as a debug non shipping endpoint did not want to add optional parameters to http module
-    })
-    return res
-  } catch (e) {}
 }
 
 async function _internalHackPostWithResp(url: string, body: any) {
@@ -888,9 +775,10 @@ async function _internalHackPostWithResp(url: string, body: any) {
   }
 }
 
-function logAccessList(message:string, appData:any){
-  if(appData != null && appData.accessList != null){
-    if(ShardeumFlags.VerboseLogs) console.log(`access list for ${message} ${JSON.stringify(appData.accessList)}`)
+function logAccessList(message: string, appData: any) {
+  if (appData != null && appData.accessList != null) {
+    if (ShardeumFlags.VerboseLogs)
+      console.log(`access list for ${message} ${JSON.stringify(appData.accessList)}`)
   }
 }
 
@@ -951,7 +839,11 @@ shardus.registerExternalGet('debug-points', debugMiddleware, async (req, res) =>
     return res.json({ error: 'node busy', points, servicePointSpendHistory, debugLastTotalServicePoints })
   }
 
-  return res.json(`spent points: ${points} total:${debugLastTotalServicePoints}  ${JSON.stringify(servicePointSpendHistory)} `)
+  return res.json(
+    `spent points: ${points} total:${debugLastTotalServicePoints}  ${JSON.stringify(
+      servicePointSpendHistory
+    )} `
+  )
 })
 
 shardus.registerExternalPost('inject', async (req, res) => {
@@ -1049,10 +941,10 @@ shardus.registerExternalGet('dumpShardeumStateMap', debugMiddleware, async (req,
 
 shardus.registerExternalGet('debug-shardeum-flags', debugMiddleware, async (req, res) => {
   try {
-    return res.json({ShardeumFlags})
-  } catch(e) {
+    return res.json({ ShardeumFlags })
+  } catch (e) {
     console.log(e)
-    return {error: e.message}
+    return { error: e.message }
   }
 })
 
@@ -1077,7 +969,7 @@ shardus.registerExternalGet('debug-set-shardeum-flag', debugMiddleware, async (r
 
     updateShardeumFlag(key, typedValue)
 
-    return res.json({[key]: ShardeumFlags[key]})
+    return res.json({ [key]: ShardeumFlags[key] })
   } catch (err) {
     return res.json(`debug-set-shardeum-flag: ${key} ${err.message} `)
   }
@@ -1095,14 +987,14 @@ shardus.registerExternalGet('debug-set-service-point', debugMiddleware, async (r
     }
     if (Number.isNaN(Number(value))) {
       console.log(`Invalid service point`, value)
-      return res.json({error: `Invalid service point`})
+      return res.json({ error: `Invalid service point` })
     }
 
     let typedValue: number = Number(value)
 
     updateServicePoints(key1, key2, typedValue)
 
-    return res.json({ServicePoints: ShardeumFlags['ServicePoints']})
+    return res.json({ ServicePoints: ShardeumFlags['ServicePoints'] })
   } catch (err) {
     return res.json(`debug-set-service-point: ${value} ${err}`)
   }
@@ -1431,15 +1323,12 @@ shardus.registerExternalGet('debug-appdata/:hash', debugMiddleware, async (req, 
 
   let appData = debugAppdata.get(txHash)
 
-  if(appData == null){
-    return res.json(JSON.stringify({result:`no appData`}))
+  if (appData == null) {
+    return res.json(JSON.stringify({ result: `no appData` }))
   }
 
   return res.json(`${JSON.stringify(appData)}`)
 })
-
-
-
 
 // shardus.registerExternalGet('tx/:hash', async (req, res) => {
 //   const txHash = req.params['hash']
@@ -1918,7 +1807,7 @@ function getInjectedOrGeneratedTimestamp(timestampedTx) {
   return txnTimestamp
 }
 
-const createNetworkAccount = (accountId: string, timestamp: number) => {
+const createNetworkAccount = (accountId: string) => {
   const account: NetworkAccount = {
     id: accountId,
     accountType: AccountType.NetworkAccount,
@@ -1955,29 +1844,6 @@ const createNodeAccount = (accountId: string) => {
   }
   account.hash = WrappedEVMAccountFunctions._calculateAccountHash(account)
   return account
-}
-
-const createDevAccount = (accountId: string) => {
-  let cycleStart = 0
-  let latestCycles = shardus.getLatestCycles()
-  if (latestCycles != null && latestCycles.length > 0) {
-    cycleStart = latestCycles[0].start * 1000
-    console.log('dev account created time: ', cycleStart)
-  }
-  const account: DevAccount = {
-    id: accountId,
-    accountType: AccountType.DevAccount,
-    hash: '',
-    timestamp: cycleStart,
-  }
-  account.hash = WrappedEVMAccountFunctions._calculateAccountHash(account)
-  return { account, cycle: latestCycles[0] }
-}
-
-const getTxBlock = (timestamp: string) => {
-  for (let i = Object.values(blocks).length - 1; i >= 0; i--) {
-    if (Number(timestamp) >= blocks[i].header.timestamp.toNumber()) return blocks[latestBlock]
-  }
 }
 
 const getOrCreateBlockFromTimestamp = (timestamp: number, scheduleNextBlock = false): Block => {
@@ -2018,7 +1884,7 @@ const getOrCreateBlockFromTimestamp = (timestamp: number, scheduleNextBlock = fa
   return block
 }
 
-async function generateAccessList(callObj: any) : Promise<any[]> {
+async function generateAccessList(callObj: any): Promise<any[]> {
   try {
     let valueInHexString: string
     if (!callObj.value) {
@@ -2034,7 +1900,7 @@ async function generateAccessList(callObj: any) : Promise<any[]> {
       caller: Address.fromString(callObj.from),
       origin: Address.fromString(callObj.from), // The tx.origin is also the caller here
       data: toBuffer(callObj.data),
-      value: new BN(valueInHexString, 16)
+      value: new BN(valueInHexString, 16),
     }
 
     if (callObj.to) {
@@ -2068,8 +1934,11 @@ async function generateAccessList(callObj: any) : Promise<any[]> {
           if (ShardeumFlags.VerboseLogs) console.log(`Node is in remote shard: requesting`)
 
           let postResp = await _internalHackPostWithResp(
-            `${consensusNode.externalIp}:${consensusNode.externalPort}/contract/accesslist`, callObj)
-          if (ShardeumFlags.VerboseLogs) console.log('Accesslist response from node', consensusNode.externalPort, postResp.body)
+            `${consensusNode.externalIp}:${consensusNode.externalPort}/contract/accesslist`,
+            callObj
+          )
+          if (ShardeumFlags.VerboseLogs)
+            console.log('Accesslist response from node', consensusNode.externalPort, postResp.body)
           if (postResp.body != null && postResp.body != '') {
             /* prettier-ignore */
             if (ShardeumFlags.VerboseLogs) console.log(`Node is in remote shard: gotResp:${JSON.stringify(postResp.body)}`)
@@ -2187,100 +2056,7 @@ async function generateAccessList(callObj: any) : Promise<any[]> {
  * }
  */
 shardus.setup({
-  async sync(): Promise<void> {
-    if (ShardeumFlags.useAccountWrites) shardus.useAccountWrites()
-    if (ShardeumFlags.GlobalNetworkAccount) {
-      if (shardus.p2p.isFirstSeed) {
-        await sleep(ONE_SECOND * 5)
-
-        const nodeId = shardus.getNodeId()
-        const nodeInfo = shardus.getNode(nodeId)
-        // const when = Date.now() + configs.ONE_SECOND * 10
-
-        //await sleep(ONE_SECOND * 20)
-        if (ShardeumFlags.DebugRestoreFile != null && ShardeumFlags.DebugRestoreFile != '') {
-          let loadOptions = {
-            file: ShardeumFlags.DebugRestoreFile,
-          }
-          let report = await loadAccountDataFromDB(shardus, loadOptions)
-          //shardus.log('loadAccountDataFromDB:' + JSON.stringify(report))
-          console.log('loadAccountDataFromDB:' + JSON.stringify(report))
-        }
-
-        //create genesis accounts before network account since nodes will wait for the network account
-        shardus.log(`node ${nodeId} GENERATED_A_NEW_NETWORK_ACCOUNT: `)
-        if (ShardeumFlags.SetupGenesisAccount) {
-          let accountCopies = []
-          for (let address in genesis) {
-            let amount = new BN(genesis[address].wei)
-            let { wrappedEVMAccount, accountId, cycle } = await manuallyCreateAccount(address, amount)
-            let accountCopy: ShardusTypes.AccountsCopy = {
-              cycleNumber: cycle.counter,
-              accountId,
-              data: wrappedEVMAccount,
-              hash: wrappedEVMAccount.hash,
-              isGlobal: false,
-              timestamp: wrappedEVMAccount.timestamp,
-            }
-            accountCopies.push(accountCopy)
-            shardus.log(`node ${nodeId} SETUP GENESIS ACCOUNT: ${address}  amt: ${amount}`)
-          }
-          if (ShardeumFlags.devPublicKey) {
-            const { account, cycle } = createDevAccount(ShardeumFlags.devPublicKey)
-            const devAccount: any = account
-            //accounts[devAccount.id] = devAccount
-            await AccountsStorage.setAccount(devAccount.id, devAccount)
-            let accountCopy: ShardusTypes.AccountsCopy = {
-              cycleNumber: cycle.counter,
-              accountId: devAccount.id,
-              data: devAccount,
-              hash: devAccount.hash,
-              isGlobal: false,
-              timestamp: devAccount.timestamp,
-            }
-            accountCopies.push(accountCopy)
-          }
-          await shardus.debugCommitAccountCopies(accountCopies)
-          if (ShardeumFlags.forwardGenesisAccounts) {
-            await shardus.forwardAccounts({ accounts: accountCopies })
-          }
-        }
-        await sleep(ONE_SECOND * 10)
-
-        const when = Date.now()
-        const existingNetworkAccount = await shardus.getLocalOrRemoteAccount(networkAccount)
-        if (existingNetworkAccount) {
-          shardus.log('NETWORK_ACCOUNT ALREADY EXISTED: ', existingNetworkAccount)
-          await sleep(ONE_SECOND * 5)
-        } else {
-          let value = {
-            isInternalTx: true,
-            internalTXType: InternalTXType.InitNetwork,
-            timestamp: when,
-            network: networkAccount,
-          }
-          //value = shardus.signAsNode(value)
-          shardus.setGlobal(networkAccount, value, when, networkAccount)
-
-          // shardus.log(`node ${nodeId} GENERATED_A_NEW_NETWORK_ACCOUNT: `)
-          // if(ShardeumFlags.SetupGenesisAccount) {
-          //   for (let address in genesis) {
-          //     let amount = new BN(genesis[address].wei)
-          //     await manuallyCreateAccount(address, amount)
-          //     shardus.log(`node ${nodeId} SETUP GENESIS ACCOUNT: ${address}  amt: ${amount}`)
-          //   }
-          // }
-          // await sleep(ONE_SECOND * 10)
-        }
-      } else {
-        while (!(await shardus.getLocalOrRemoteAccount(networkAccount))) {
-          console.log('waiting..')
-          await sleep(1000)
-        }
-      }
-    }
-  },
-  //need to evaluate this part of the shardus core api. seems unused
+  sync: sync(shardus, evmCommon),
   validateTransaction(tx) {
     if (isInternalTx(tx)) {
       let internalTX = tx as InternalTx
@@ -2306,7 +2082,6 @@ shardus.setup({
     }
 
     if (isDebugTx(tx)) {
-      let debugTx = tx as DebugTx
       //todo validate debug TX
       return { result: 'pass', reason: 'all_allowed' }
     }
@@ -2408,14 +2183,14 @@ shardus.setup({
       //const txId = '0x' + crypto.hashObj(timestampedTx.tx)
       const txHash = bufferToHex(txObj.hash())
       //TODO limit size of this !!! or make debug only
-      debugAppdata.set(txHash , appData)
+      debugAppdata.set(txHash, appData)
 
       if (isSigned && isSignatureValid) {
         success = true
         reason = ''
       } else {
         reason = 'Transaction is not signed or signature is not valid'
-        nestedCountersInstance.countEvent('shardeum', 'validate - sign ' + (isSigned)?'failed':'missing')
+        nestedCountersInstance.countEvent('shardeum', 'validate - sign ' + isSigned ? 'failed' : 'missing')
       }
 
       if (ShardeumFlags.txBalancePreCheck && appData != null) {
@@ -2457,7 +2232,7 @@ shardus.setup({
     }
   },
   async apply(timestampedTx, wrappedStates, appData) {
-    let { tx, timestampReceipt } = timestampedTx
+    let { tx } = timestampedTx
     const txTimestamp = getInjectedOrGeneratedTimestamp(timestampedTx)
     // Validate the tx
     const { result, reason } = this.validateTransaction(tx)
@@ -2482,7 +2257,8 @@ shardus.setup({
     const shardusReceiptAddress = toShardusAddressWithKey(ethTxId, '', AccountType.Receipt)
     let txId = crypto.hashObj(tx)
     // Create an applyResponse which will be used to tell Shardus that the tx has been applied
-    if (ShardeumFlags.VerboseLogs) console.log('DBG', new Date(), 'attempting to apply tx', txId, ethTxId, tx, wrappedStates)
+    if (ShardeumFlags.VerboseLogs)
+      console.log('DBG', new Date(), 'attempting to apply tx', txId, ethTxId, tx, wrappedStates)
     const applyResponse = shardus.createApplyResponse(txId, txTimestamp)
 
     //Now we need to get a transaction state object.  For single sharded networks this will be a new object.
@@ -2994,7 +2770,11 @@ shardus.setup({
         transaction instanceof AccessListEIP2930Transaction && transaction.AccessListJSON != null
 
       //if the TX is a contract deploy, predict the new contract address correctly
-      if (ShardeumFlags.txNoncePreCheck || ShardeumFlags.txBalancePreCheck || (transaction.to == null && isEIP2930 === false)) {
+      if (
+        ShardeumFlags.txNoncePreCheck ||
+        ShardeumFlags.txBalancePreCheck ||
+        (transaction.to == null && isEIP2930 === false)
+      ) {
         let foundNonce = false
         let foundSender = false
         let nonce = new BN(0)
@@ -3002,7 +2782,7 @@ shardus.setup({
         let txSenderEvmAddr = transaction.getSenderAddress().toString()
         let transformedSourceKey = toShardusAddress(txSenderEvmAddr, AccountType.Account)
 
-        let queueCountResult = {count: 0, committingAppData: []}
+        let queueCountResult = { count: 0, committingAppData: [] }
         let countPromise: Promise<any> = undefined
         if (ShardeumFlags.txNoncePreCheck) {
           //parallel fetch
@@ -3013,7 +2793,7 @@ shardus.setup({
           //parallel fetch
           queueCountResult = await countPromise
           // queueCountResult = await shardus.getLocalOrRemoteAccountQueueCount(transformedSourceKey)
-          if(ShardeumFlags.VerboseLogs) console.log('queueCountResult:', queueCountResult)
+          if (ShardeumFlags.VerboseLogs) console.log('queueCountResult:', queueCountResult)
         }
 
         if (remoteShardusAccount == undefined) {
@@ -3041,7 +2821,9 @@ shardus.setup({
           appData.queueCount = queueCountResult.count
           appData.nonce = parseInt(nonce.toString())
           if (queueCountResult.committingAppData.length > 0) {
-            let highestCommittingNonce = queueCountResult.committingAppData.map(appData => appData.txNonce).sort()[0]
+            let highestCommittingNonce = queueCountResult.committingAppData
+              .map(appData => appData.txNonce)
+              .sort()[0]
             let expectedAccountNonce = highestCommittingNonce + 1
             if (appData.nonce < expectedAccountNonce) appData.nonce = expectedAccountNonce
           }
@@ -3062,21 +2844,24 @@ shardus.setup({
           to: transaction.to.toString(),
           value: '0x' + transaction.value.toString('hex'),
           data: '0x' + transaction.data.toString('hex'),
-          gasLimit: '0x' + transaction.gasLimit.toString('hex')
+          gasLimit: '0x' + transaction.gasLimit.toString('hex'),
         }
         let generatedAccessList = await generateAccessList(callObj)
         appData.accessList = generatedAccessList ? generatedAccessList : null
         appData.requestNewTimestamp = true
       }
-      if(ShardeumFlags.VerboseLogs) console.log(`txPreCrackData final result: txNonce: ${appData.txNonce}, currentNonce: ${appData.nonce}, queueCount: ${appData.queueCount}, appData ${JSON.stringify(appData)}`)
-
-      
+      if (ShardeumFlags.VerboseLogs)
+        console.log(
+          `txPreCrackData final result: txNonce: ${appData.txNonce}, currentNonce: ${
+            appData.nonce
+          }, queueCount: ${appData.queueCount}, appData ${JSON.stringify(appData)}`
+        )
     }
   },
 
   crack(timestampedTx, appData) {
     if (ShardeumFlags.VerboseLogs) console.log('Running getKeyFromTransaction', timestampedTx)
-    let { tx, timestampReceipt } = timestampedTx
+    let { tx } = timestampedTx
 
     if (ShardeumFlags.VerboseLogs) console.log('Running getKeyFromTransaction tx', tx)
     let timestamp: number = getInjectedOrGeneratedTimestamp(timestampedTx)
@@ -3259,7 +3044,6 @@ shardus.setup({
         }
       }
 
-
       // make sure the receipt address is in the get keys from transaction..
       // This will technically cause an empty account to get created but this will get overriden with the
       // correct values as a result of apply().  There are several ways we could optimize this in the future
@@ -3391,7 +3175,7 @@ shardus.setup({
   },
   async getRelevantData(accountId, timestampedTx) {
     if (ShardeumFlags.VerboseLogs) console.log('Running getRelevantData', accountId, timestampedTx)
-    let { tx, timestampReceipt } = timestampedTx
+    let { tx } = timestampedTx
     if (isInternalTx(tx)) {
       let internalTx = tx as InternalTx
 
@@ -3410,7 +3194,7 @@ shardus.setup({
       if (internalTx.internalTXType === InternalTXType.InitNetwork) {
         if (!wrappedEVMAccount) {
           if (accountId === networkAccount) {
-            wrappedEVMAccount = createNetworkAccount(accountId, tx.timestamp) as any
+            wrappedEVMAccount = createNetworkAccount(accountId) as any
           } else {
             wrappedEVMAccount = createNodeAccount(accountId) as any
           }
@@ -3484,7 +3268,6 @@ shardus.setup({
       )
     }
     if (isDebugTx(tx)) {
-      let debugTx = tx as DebugTx
       let accountCreated = false
       //let wrappedEVMAccount = accounts[accountId]
       let wrappedEVMAccount = await AccountsStorage.getAccount(accountId)
@@ -3747,7 +3530,6 @@ shardus.setup({
       let bufferValue = updatedEVMAccount.value
       await shardeumState._transactionState.commitContractStorage(addressStr, key, bufferValue)
     } else if (updatedEVMAccount.accountType === AccountType.ContractCode) {
-      let addressStr = updatedEVMAccount.ethAddress
       let contractAddress = updatedEVMAccount.contractAddress
       let codeHash = updatedEVMAccount.codeHash
       let codeByte = updatedEVMAccount.codeByte
@@ -3961,7 +3743,7 @@ shardus.setup({
   // },
 
   //TODO this seems to be unused, can we ditch it?
-  async deleteAccountData(addressList) {
+  async deleteAccountData() {
     // UNUSED!! ??
     // for (const address of addressList) {
     //   delete accounts[address]
