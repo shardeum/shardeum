@@ -48,9 +48,18 @@ export const sync = (shardus: Shardus, evmCommon: Common) => async (): Promise<v
       //create genesis accounts before network account since nodes will wait for the network account
       shardus.log(`node ${nodeId} GENERATED_A_NEW_NETWORK_ACCOUNT: `)
       if (ShardeumFlags.SetupGenesisAccount) {
+        let skippedAccountCount = 0
         let accountCopies = []
         for (let address in genesis) {
           let amount = new BN(genesis[address].wei)
+
+          let shardusAccountID = toShardusAddress(address, AccountType.Account)
+          const existingAccount = await shardus.getLocalOrRemoteAccount(shardusAccountID)
+          if (existingAccount) {
+            skippedAccountCount += 1
+            continue
+          }
+
           let { wrappedEVMAccount, accountId, cycle } = await manuallyCreateAccount(
             address,
             amount,
@@ -68,6 +77,7 @@ export const sync = (shardus: Shardus, evmCommon: Common) => async (): Promise<v
           accountCopies.push(accountCopy)
           shardus.log(`node ${nodeId} SETUP GENESIS ACCOUNT: ${address}  amt: ${amount}`)
         }
+        console.log(`Skipped ${skippedAccountCount} genesis accounts`)
         if (ShardeumFlags.devPublicKey) {
           const { account, cycle } = createDevAccount(ShardeumFlags.devPublicKey, shardus.getLatestCycles())
           const devAccount: any = account
