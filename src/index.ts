@@ -38,7 +38,7 @@ import {
   predictContractAddressDirect,
   updateEthAccountHash,
 } from './shardeum/wrappedEVMAccountFunctions'
-import { isEqualOrNewerVersion, replacer, SerializeToJsonString, sleep, zeroAddressStr } from './utils'
+import { isEqualOrNewerVersion, replacer, SerializeToJsonString, sleep, zeroAddressStr, emptyCodeHash } from './utils'
 import config from './config'
 import { RunTxResult } from '@ethereumjs/vm/dist/runTx'
 import { RunState } from '@ethereumjs/vm/dist/evm/interpreter'
@@ -2998,11 +2998,13 @@ shardus.setup({
 
       let isEIP2930 =
         transaction instanceof AccessListEIP2930Transaction && transaction.AccessListJSON != null
+      let isContractInteraction = false
 
       //if the TX is a contract deploy, predict the new contract address correctly
       if (ShardeumFlags.txNoncePreCheck || ShardeumFlags.txBalancePreCheck || (transaction.to == null && isEIP2930 === false)) {
         let foundNonce = false
         let foundSender = false
+        let foundTarget = false
         let nonce = new BN(0)
         let balance = new BN(0).toString()
         let txSenderEvmAddr = transaction.getSenderAddress().toString()
@@ -3015,6 +3017,13 @@ shardus.setup({
           countPromise = shardus.getLocalOrRemoteAccountQueueCount(transformedSourceKey)
         }
         let remoteShardusAccount = await shardus.getLocalOrRemoteAccount(transformedSourceKey)
+
+        let remoteTargetAccount = null
+        if (transaction.to) {
+          let txTargetEvmAddr = transaction.to.toString()
+          let transformedTargetKey = toShardusAddress(txTargetEvmAddr, AccountType.Account)
+          remoteTargetAccount = await shardus.getLocalOrRemoteAccount(transformedTargetKey)
+        }
         if (ShardeumFlags.txNoncePreCheck) {
           //parallel fetch
           queueCountResult = await countPromise
@@ -3034,6 +3043,21 @@ shardus.setup({
             foundNonce = true
           }
         }
+
+        if (remoteTargetAccount == undefined) {
+          /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log( `txPreCrackData: found no local or remote account for target address` )
+        } else {
+          foundTarget = true
+          let wrappedEVMAccount = remoteTargetAccount.data as WrappedEVMAccount
+          if (wrappedEVMAccount && wrappedEVMAccount.account) {
+            fixDeserializedWrappedEVMAccount(wrappedEVMAccount)
+            const codeHashString = wrappedEVMAccount.account.codeHash.toString('hex')
+            if (codeHashString && codeHashString !== emptyCodeHash) {
+              isContractInteraction = true
+            }
+          }
+        }
+
         //Predict the new CA address if not eip2930.  is this correct though?
         if (transaction.to == null && isEIP2930 === false) {
           let caAddrBuf = predictContractAddressDirect(txSenderEvmAddr, nonce)
@@ -3061,7 +3085,7 @@ shardus.setup({
         }
       }
 
-      if (ShardeumFlags.autoGenerateAccessList && transaction.to && isEIP2930 === false) {
+      if (isContractInteraction && ShardeumFlags.autoGenerateAccessList && transaction.to && isEIP2930 === false) {
         // generate access list for non EIP 2930 txs
         let callObj = {
           from: await transaction.getSenderAddress().toString(),
@@ -3086,9 +3110,7 @@ shardus.setup({
     if (ShardeumFlags.VerboseLogs) console.log('Running getKeyFromTransaction', timestampedTx)
     let { tx, timestampReceipt } = timestampedTx
 
-    if (ShardeumFlags.VerboseLogs) console.log('Running getKeyFromTransaction tx', tx)
     let timestamp: number = getInjectedOrGeneratedTimestamp(timestampedTx)
-    if (ShardeumFlags.VerboseLogs) console.log('Running getKeyFromTransaction timestamp', timestamp)
 
     if (isInternalTx(tx)) {
       let internalTx = tx as InternalTx
