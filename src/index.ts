@@ -92,6 +92,7 @@ const ERC20_BALANCEOF_CODE = '0x70a08231'
 const shardus = shardusFactory(config, {
   customStringifier: SerializeToJsonString,
 })
+const profilerInstance = shardus.getShardusProfiler()
 
 // const pay_address = '0x50F6D9E5771361Ec8b95D6cfb8aC186342B70120' // testing account for node_reward
 const random_wallet = Wallet.generate()
@@ -531,7 +532,6 @@ function tryGetRemoteAccountCBNoOp(
       console.log(`account storage miss: ${address} key: ${key} tx:${this.linkedTX}`)
     }
     logAccessList('tryGetRemoteAccountCBNoOp access list:', transactionState.appData)
-    
   }
 
   return undefined
@@ -2989,6 +2989,12 @@ shardus.setup({
     }
     if (isInternalTx(tx) === false && isDebugTx(tx) === false) {
       const transaction = getTransactionObj(tx)
+      const shardusTxId = crypto.hashObj(tx)
+      const ethTxId = bufferToHex(transaction.hash())
+      if (ShardeumFlags.VerboseLogs) {
+        console.log(`EVM tx ${ethTxId} is mapped to shardus tx ${shardusTxId}`)
+        console.log(`Shardus tx ${shardusTxId} is mapped to EVM tx ${ethTxId}`)
+      }
 
       let isEIP2930 =
         transaction instanceof AccessListEIP2930Transaction && transaction.AccessListJSON != null
@@ -3064,13 +3070,15 @@ shardus.setup({
           data: '0x' + transaction.data.toString('hex'),
           gasLimit: '0x' + transaction.gasLimit.toString('hex')
         }
+
+        profilerInstance.scopedProfileSectionStart('accesslist-generate')
         let generatedAccessList = await generateAccessList(callObj)
+        profilerInstance.scopedProfileSectionEnd('accesslist-generate')
+
         appData.accessList = generatedAccessList ? generatedAccessList : null
         appData.requestNewTimestamp = true
       }
       if(ShardeumFlags.VerboseLogs) console.log(`txPreCrackData final result: txNonce: ${appData.txNonce}, currentNonce: ${appData.nonce}, queueCount: ${appData.queueCount}, appData ${JSON.stringify(appData)}`)
-
-      
     }
   },
 
