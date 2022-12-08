@@ -49,7 +49,8 @@ import { ShardeumBlock } from './block/blockchain'
 import * as AccountsStorage from './storage/accountStorage'
 import { StateManager } from '@ethereumjs/vm/dist/state'
 import { nestedCountersInstance } from '@shardus/core'
-import { sync } from './setup'
+import { sync, validateTransaction } from './setup'
+import { isInternalTx, isInternalTXGlobal, verify, isDebugTx, getTransactionObj } from './setup/helpers'
 
 const env = process.env
 
@@ -106,13 +107,6 @@ let nodeRewardCount = 0
 function isDebugMode() {
   //@ts-ignore
   return config.server.mode === 'debug'
-}
-
-function verify(obj, expectedPk?) {
-  if (expectedPk) {
-    if (obj.sign.owner !== expectedPk) return false
-  }
-  return crypto.verifyObj(obj)
 }
 
 // grab this
@@ -579,39 +573,6 @@ async function createAccount(
   }
   WrappedEVMAccountFunctions.updateEthAccountHash(wrappedEVMAccount)
   return wrappedEVMAccount
-}
-
-function isInternalTx(tx: any): boolean {
-  if (tx.isInternalTx) {
-    return true
-  }
-  return false
-}
-
-function isDebugTx(tx: any): boolean {
-  return tx.isDebugTx != null
-}
-
-function getTransactionObj(tx: any): Transaction | AccessListEIP2930Transaction {
-  if (!tx.raw) throw Error('fail')
-  let transactionObj
-  const serializedInput = toBuffer(tx.raw)
-  try {
-    transactionObj = Transaction.fromRlpSerializedTx(serializedInput)
-  } catch (e) {
-    // if (ShardeumFlags.VerboseLogs) console.log('Unable to get legacy transaction obj', e)
-  }
-  if (!transactionObj) {
-    try {
-      transactionObj = AccessListEIP2930Transaction.fromRlpSerializedTx(serializedInput)
-    } catch (e) {
-      if (ShardeumFlags.VerboseLogs) console.log('Unable to get transaction obj', e)
-    }
-  }
-
-  if (transactionObj) {
-    return transactionObj
-  } else throw Error('tx obj fail')
 }
 
 async function getReadableAccountInfo(account) {
@@ -1451,14 +1412,6 @@ shardus.registerExternalGet('genesis_accounts', async (req, res) => {
  *    #### ##    ##    ##    ######## ##     ## ##    ## ##     ## ########       ##    ##     ##
  */
 
-function isInternalTXGlobal(internalTx: InternalTx) {
-  return (
-    internalTx.internalTXType === InternalTXType.SetGlobalCodeBytes ||
-    internalTx.internalTXType === InternalTXType.ApplyChangeConfig ||
-    internalTx.internalTXType === InternalTXType.InitNetwork
-  )
-}
-
 async function applyInternalTx(
   internalTx: InternalTx,
   wrappedStates: WrappedStates,
@@ -2057,67 +2010,7 @@ async function generateAccessList(callObj: any): Promise<any[]> {
  */
 shardus.setup({
   sync: sync(shardus, evmCommon),
-  validateTransaction(tx) {
-    if (isInternalTx(tx)) {
-      let internalTX = tx as InternalTx
-      if (isInternalTXGlobal(internalTX) === true) {
-        return { result: 'pass', reason: 'valid' }
-      } else if (tx.internalTXType === InternalTXType.ChangeConfig) {
-        // const devPublicKey = shardus.getDevPublicKey()
-        const devPublicKey = ShardeumFlags.devPublicKey
-        if (devPublicKey) {
-          let isValid = verify(tx, devPublicKey)
-          console.log('isValid', isValid)
-          if (isValid) return { result: 'pass', reason: 'valid' }
-          else return { result: 'fail', reason: 'Invalid signature' }
-        } else {
-          return { result: 'fail', reason: 'Dev key is not defined on the server!' }
-        }
-      } else {
-        //todo validate internal TX
-        let isValid = crypto.verifyObj(internalTX)
-        if (isValid) return { result: 'pass', reason: 'valid' }
-        else return { result: 'fail', reason: 'Invalid signature' }
-      }
-    }
-
-    if (isDebugTx(tx)) {
-      //todo validate debug TX
-      return { result: 'pass', reason: 'all_allowed' }
-    }
-    let txObj = getTransactionObj(tx)
-    const response = {
-      result: 'fail',
-      reason: 'Transaction is not valid. Cannot get txObj.',
-    }
-    if (!txObj) return response
-
-    if (!txObj.isSigned() || !txObj.validate()) {
-      response.reason = 'Transaction is not signed or signature is not valid.'
-      return response
-    }
-
-    try {
-      let senderAddress = txObj.getSenderAddress()
-      if (!senderAddress) {
-        return {
-          result: 'fail',
-          reason: 'Cannot derive sender address from tx',
-        }
-      }
-    } catch (e) {
-      if (ShardeumFlags.VerboseLogs) console.log('Validation error', e)
-      response.result = 'fail'
-      response.reason = e
-      return response
-    }
-    // TODO: more validation here
-
-    response.result = 'pass'
-    response.reason = 'all_allowed'
-
-    return response
-  },
+  validateTransaction: validateTransaction,
   validateTxnFields(timestampedTx, appData: any) {
     let { tx } = timestampedTx
     let txnTimestamp: number = getInjectedOrGeneratedTimestamp(timestampedTx)
