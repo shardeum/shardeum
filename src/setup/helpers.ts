@@ -1,7 +1,7 @@
 import { InternalTx, InternalTXType } from '../shardeum/shardeumTypes'
 import * as crypto from '@shardus/crypto-utils'
 import { AccessListEIP2930Transaction, Transaction } from '@ethereumjs/tx'
-import { Account, Address, BN, bufferToHex, isValidAddress, toBuffer } from 'ethereumjs-util'
+import { toBuffer } from 'ethereumjs-util'
 import { ShardeumFlags } from '../shardeum/shardeumFlags'
 
 export function isInternalTx(tx: any): boolean {
