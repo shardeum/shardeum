@@ -1265,7 +1265,7 @@ shardus.registerExternalPost('contract/accesslist', async (req, res) => {
     const callObj = req.body
     if (ShardeumFlags.VerboseLogs) console.log('AccessList endpoint callObj', callObj)
 
-    let accessList = await generateAccessList(callObj)
+    let {accessList,shardusMemoryPatterns} = await generateAccessList(callObj)
 
     res.json(accessList)
   } catch (e) {
@@ -1332,7 +1332,11 @@ shardus.registerExternalGet('debug-appdata/:hash', debugMiddleware, async (req, 
     return res.json(JSON.stringify({ result: `no appData` }))
   }
 
-  return res.json(`${JSON.stringify(appData)}`)
+  //return res.json(`${JSON.stringify(appData)}`)
+
+  res.write(`${JSON.stringify(appData, null, 2)}`)
+
+  res.end()
 })
 
 // shardus.registerExternalGet('tx/:hash', async (req, res) => {
@@ -1898,7 +1902,7 @@ const getOrCreateBlockFromTimestamp = (timestamp: number, scheduleNextBlock = fa
   return block
 }
 
-async function generateAccessList(callObj: any): Promise<any[]> {
+async function generateAccessList(callObj: any): Promise<{accessList:any[], shardusMemoryPatterns:any }> {
   try {
     let valueInHexString: string
     if (!callObj.value) {
@@ -1909,6 +1913,7 @@ async function generateAccessList(callObj: any): Promise<any[]> {
       valueInHexString = callObj.value
     }
 
+    
     let opt = {
       to: Address.fromString(callObj.to),
       caller: Address.fromString(callObj.from),
@@ -1953,15 +1958,22 @@ async function generateAccessList(callObj: any): Promise<any[]> {
           )
           if (ShardeumFlags.VerboseLogs)
             console.log('Accesslist response from node', consensusNode.externalPort, postResp.body)
-          if (postResp.body != null && postResp.body != '') {
+          if (postResp.body != null && postResp.body != '' && postResp.body.accessList != null) {
             /* prettier-ignore */
             if (ShardeumFlags.VerboseLogs) console.log(`Node is in remote shard: gotResp:${JSON.stringify(postResp.body)}`)
-            if (Array.isArray(postResp.body) && postResp.body.length) return postResp.body
-            else return []
+            // if (Array.isArray(postResp.body) && postResp.body.length){
+            //    return {accessList : postResp.body, postResp.body}
+            // }
+            if (Array.isArray(postResp.body.accessList) && postResp.body.accessList.length){
+              return {accessList : postResp.body.accessList, shardusMemoryPatterns: postResp.body.shardusMemoryPatterns}
+            }
+            else {
+              return {accessList : [], shardusMemoryPatterns: null}
+            }
           }
         } else {
           if (ShardeumFlags.VerboseLogs) console.log(`Node is in remote shard: consensusNode = null`)
-          return
+          return {accessList : [], shardusMemoryPatterns: null}
         }
       } else {
         if (ShardeumFlags.VerboseLogs) console.log(`Node is in remote shard: false`)
@@ -1996,16 +2008,82 @@ async function generateAccessList(callObj: any): Promise<any[]> {
     let writtenAccounts = preRunTxState._transactionState.getWrittenAccounts()
     let allInvolvedContracts = []
     let accessList = []
+
+    //get a full picture of the read/write 'bits'
+    let readSet = new Set()
+    let writeSet = new Set()
+    //let readOnlySet = new Set()
+    let writeOnceSet = new Set()
+    
+    
     for (let [key, storageMap] of writtenAccounts.contractStorages) {
       if (!allInvolvedContracts.includes(key)) allInvolvedContracts.push(key)
+      
+      let shardusKey = toShardusAddress(key, AccountType.Account)
+      writeSet.add(shardusKey)
+      for(let storageAddress of storageMap.keys()){
+        shardusKey = toShardusAddressWithKey(key, storageAddress, AccountType.ContractStorage)
+        writeSet.add(shardusKey)
+      }
     }
     for (let [key, storageMap] of readAccounts.contractStorages) {
       if (!allInvolvedContracts.includes(key)) allInvolvedContracts.push(key)
+      
+      let shardusKey = toShardusAddress(key, AccountType.Account)
+      readSet.add(shardusKey)
+      for(let storageAddress of storageMap.keys()){
+        shardusKey = toShardusAddressWithKey(key, storageAddress, AccountType.ContractStorage)
+        readSet.add(shardusKey)
+      }
     }
+
     for (let [codeHash, contractByteWrite] of readAccounts.contractBytes) {
       let contractAddress = contractByteWrite.contractAddress.toString()
       if (!allInvolvedContracts.includes(contractAddress)) allInvolvedContracts.push(contractAddress)
+
+      let shardusKey = toShardusAddressWithKey(contractAddress, codeHash, AccountType.ContractCode)
+      readSet.add(shardusKey)
     }
+
+    for (let [codeHash, contractByteWrite] of writtenAccounts.contractBytes) {
+      let contractAddress = contractByteWrite.contractAddress.toString()
+      let shardusKey = toShardusAddressWithKey(contractAddress, codeHash, AccountType.ContractCode)
+      writeSet.add(shardusKey)
+      //special case shardeum behavoir.  contract bytes can only be written once
+      writeOnceSet.add(shardusKey)
+    }
+    for (let [codeHash, contractByteWrite] of writtenAccounts.accounts) {
+      let shardusKey = toShardusAddress(codeHash, AccountType.Account)
+      writeSet.add(shardusKey)
+    }
+    for (let [codeHash, contractByteWrite] of readAccounts.accounts) {
+      let shardusKey = toShardusAddress(codeHash, AccountType.Account)
+      readSet.add(shardusKey)
+    }
+
+    //process our keys into one of four sets (writeOnceSet defined above)
+    let readOnlySet = new Set()
+    let writeOnlySet = new Set()  
+    let readWriteSet = new Set()  
+    for(let key of writeSet.values()){
+      if(readSet.has(key)){
+        readWriteSet.add(key)
+      } else {
+        writeOnlySet.add(key)
+      }
+    }
+    for(let key of readSet.values()){
+      if(writeSet.has(key) === false){
+        readOnlySet.add(key)
+      }
+    }  
+    let shardusMemoryPatterns = {
+      ro: Array.from(readOnlySet),
+      rw: Array.from(readWriteSet),
+      wo: Array.from(writeOnlySet),
+      on: Array.from(writeOnceSet),
+    }
+
     if (ShardeumFlags.VerboseLogs) {
       console.log('allInvolvedContracts', allInvolvedContracts)
       console.log('Read accounts', readAccounts)
@@ -2041,12 +2119,12 @@ async function generateAccessList(callObj: any): Promise<any[]> {
 
     if (callResult.execResult.exceptionError) {
       if (ShardeumFlags.VerboseLogs) console.log('Execution Error:', callResult.execResult.exceptionError)
-      return
+      return {accessList : [], shardusMemoryPatterns: null}
     }
-    return accessList
+    return {accessList, shardusMemoryPatterns}
   } catch (e) {
     console.log(`Error: generateAccessList`, e)
-    return
+    return {accessList : [], shardusMemoryPatterns: null}
   }
 }
 
@@ -2891,11 +2969,12 @@ shardus.setup({
         }
 
         profilerInstance.scopedProfileSectionStart('accesslist-generate')
-        let generatedAccessList = await generateAccessList(callObj)
+        let {accessList:generatedAccessList, shardusMemoryPatterns} = await generateAccessList(callObj)
         profilerInstance.scopedProfileSectionEnd('accesslist-generate')
 
         appData.accessList = generatedAccessList ? generatedAccessList : null
         appData.requestNewTimestamp = true
+        appData.shardusMemoryPatterns = shardusMemoryPatterns
       }
       if(ShardeumFlags.VerboseLogs) console.log(`txPreCrackData final result: txNonce: ${appData.txNonce}, currentNonce: ${appData.nonce}, queueCount: ${appData.queueCount}, appData ${JSON.stringify(appData)}`)
     }
@@ -2907,6 +2986,7 @@ shardus.setup({
 
     let timestamp: number = getInjectedOrGeneratedTimestamp(timestampedTx)
 
+    let shardusMemoryPatterns = {}
     if (isInternalTx(tx)) {
       let internalTx = tx as InternalTx
       const keys = {
@@ -3055,6 +3135,8 @@ shardus.setup({
         }
       } else {
         if (ShardeumFlags.autoGenerateAccessList && appData.accessList) {
+
+          shardusMemoryPatterns = appData.shardusMemoryPatterns
           // we have pre-generated accessList
           for (let accessListItem of appData.accessList) {
             let address = accessListItem[0]
@@ -3115,6 +3197,7 @@ shardus.setup({
       keys: result,
       timestamp,
       id: txId,
+      shardusMemoryPatterns
     }
   },
 
