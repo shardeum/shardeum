@@ -47,6 +47,7 @@ interface ShardeumFlags {
   devPublicKey: string
   cacheMaxCycleAge: number
   cacheMaxItemPerTopic: number
+  generateMemoryPatternData: boolean
 }
 
 const NodeRewardENV = process.env.NodeReward ? (process.env.NodeReward === 'true' ? true : false) : null
@@ -94,6 +95,7 @@ export let ShardeumFlags: ShardeumFlags = {
     ['contract/accesslist']: { endpoint: 5, direct: 20 },
     ['tx/:hash']: 5,
   },
+  generateMemoryPatternData: true,
 }
 
 export function updateShardeumFlag(key: string, value: any) {

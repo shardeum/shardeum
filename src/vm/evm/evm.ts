@@ -20,10 +20,12 @@ import { short } from './opcodes/util'
 import * as eof from './opcodes/eof'
 import { Log } from './types'
 import { default as Interpreter, InterpreterOpts, RunState } from './interpreter'
+import { ShardeumFlags } from '../../shardeum/shardeumFlags'
 
 const debug = createDebugLogger('vm:evm')
 const debugGas = createDebugLogger('vm:evm:gas')
 
+const ZERO = new BN(0)
 /**
  * Result of executing a message via the {@link EVM}.
  */
@@ -235,6 +237,7 @@ export default class EVM {
     return result
   }
 
+
   async _executeCall(message: Message): Promise<EVMResult> {
     const account = await this._state.getAccount(message.caller)
     // Reduce tx value from sender
@@ -247,7 +250,16 @@ export default class EVM {
     let errorMessage
     if (!message.delegatecall) {
       try {
-        await this._addToBalance(toAccount, message)
+        
+        //SHARDEUM FORK:  
+        //APF: only add to balance it there will be a change in balance.
+        //it does not appear that this could mess up a payable endpoint
+        //TODO: need to review if this breaks functionality of createing an EOA via 0 balance transfer...
+        //if it did break that would it matter?
+        if (ShardeumFlags.VerboseLogs) console.log(`add balance: ${message.to.toString()} ${message.value.toNumber()} skip: ${message.value <= ZERO}`)
+        if(message.value > ZERO){
+          await this._addToBalance(toAccount, message)          
+        }
       } catch (e: any) {
         errorMessage = e
       }
@@ -363,7 +375,9 @@ export default class EVM {
     // Add tx value to the `to` account
     let errorMessage
     try {
-      await this._addToBalance(toAccount, message)
+      //Need to keep this.  Even though it may not change the balance
+      //it is the only thing that will cause the new contract account to be created
+      await this._addToBalance(toAccount, message)          
     } catch (e: any) {
       errorMessage = e
     }

@@ -541,6 +541,12 @@ export default class TransactionState {
       return
     }
 
+    if (this.debugTrace && ShardeumFlags.VerboseLogs) {
+      //print the calls stack that is calling put account
+      let er = new Error()
+      console.log(`put account: ${addressString} stack: ${er.stack} `)      
+    }
+
     if (this.accountInvolvedCB(this, addressString, false) === false) {
       throw new Error('unable to proceed, cant involve account')
     }

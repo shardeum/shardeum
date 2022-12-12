@@ -2004,6 +2004,13 @@ async function generateAccessList(callObj: any): Promise<{accessList:any[], shar
     EVM.stateManager = preRunTxState
     const callResult = await EVM.runCall(opt)
 
+
+    // const callResult = = await EVM.runTx({
+    //   block: blocks[latestBlock],
+    //   tx: transaction,
+    //   skipNonce: !ShardeumFlags.CheckNonce,
+    // })
+
     let readAccounts = preRunTxState._transactionState.getReadAccounts()
     let writtenAccounts = preRunTxState._transactionState.getWrittenAccounts()
     let allInvolvedContracts = []
@@ -2020,7 +2027,8 @@ async function generateAccessList(callObj: any): Promise<{accessList:any[], shar
       if (!allInvolvedContracts.includes(key)) allInvolvedContracts.push(key)
 
       let shardusKey = toShardusAddress(key, AccountType.Account)
-      writeSet.add(shardusKey)
+      //writeSet.add(shardusKey) //don't assume we write to this account!
+      //let written accounts handle that!
       for(let storageAddress of storageMap.keys()){
         shardusKey = toShardusAddressWithKey(key, storageAddress, AccountType.ContractStorage)
         writeSet.add(shardusKey)
@@ -2030,7 +2038,8 @@ async function generateAccessList(callObj: any): Promise<{accessList:any[], shar
       if (!allInvolvedContracts.includes(key)) allInvolvedContracts.push(key)
 
       let shardusKey = toShardusAddress(key, AccountType.Account)
-      readSet.add(shardusKey)
+      readSet.add(shardusKey) //putting this is just to be "nice"
+      //later we can remove the assumption that a CA is always read
       for(let storageAddress of storageMap.keys()){
         shardusKey = toShardusAddressWithKey(key, storageAddress, AccountType.ContractStorage)
         readSet.add(shardusKey)
@@ -2077,11 +2086,15 @@ async function generateAccessList(callObj: any): Promise<{accessList:any[], shar
         readOnlySet.add(key)
       }
     }
-    let shardusMemoryPatterns = {
-      ro: Array.from(readOnlySet),
-      rw: Array.from(readWriteSet),
-      wo: Array.from(writeOnlySet),
-      on: Array.from(writeOnceSet),
+    let shardusMemoryPatterns = null
+    
+    if(ShardeumFlags.generateMemoryPatternData){
+      shardusMemoryPatterns = {
+        ro: Array.from(readOnlySet),
+        rw: Array.from(readWriteSet),
+        wo: Array.from(writeOnlySet),
+        on: Array.from(writeOnceSet),
+      }      
     }
 
     if (ShardeumFlags.VerboseLogs) {
@@ -2274,7 +2287,11 @@ shardus.setup({
 
       //const txId = '0x' + crypto.hashObj(timestampedTx.tx)
       const txHash = bufferToHex(txObj.hash())
-      //TODO limit size of this !!! or make debug only
+
+      //limit debug app data size.  (a queue would be nicer, but this is very simple)
+      if(debugAppdata.size > 1000){
+        debugAppdata.clear()
+      }      
       debugAppdata.set(txHash, appData)
 
       if (isSigned && isSignatureValid) {
