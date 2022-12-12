@@ -1913,9 +1913,8 @@ async function generateAccessList(callObj: any): Promise<{accessList:any[], shar
       valueInHexString = callObj.value
     }
 
-
     let opt = {
-      to: Address.fromString(callObj.to),
+      to: callObj.to ? Address.fromString(callObj.to) : null,
       caller: Address.fromString(callObj.from),
       origin: Address.fromString(callObj.from), // The tx.origin is also the caller here
       data: toBuffer(callObj.data),
@@ -1937,9 +1936,11 @@ async function generateAccessList(callObj: any): Promise<{accessList:any[], shar
     let caShardusAddress
     if (opt['to']) {
       caShardusAddress = toShardusAddress(callObj.to, AccountType.Account)
+    } else if (callObj.newContractAddress != null) {
+      caShardusAddress = toShardusAddress(callObj.newContractAddress, AccountType.Account)
     }
 
-    if (opt['to']) {
+    if (caShardusAddress != null) {
       if (ShardeumFlags.VerboseLogs) console.log('Generating accessList to ', opt.to, caShardusAddress)
 
       let address = caShardusAddress
@@ -2882,7 +2883,7 @@ shardus.setup({
 
       let isEIP2930 =
         transaction instanceof AccessListEIP2930Transaction && transaction.AccessListJSON != null
-      let isContractInteraction = false
+      let isSimpleTransfer = false
 
       //if the TX is a contract deploy, predict the new contract address correctly
       if (
@@ -2940,8 +2941,8 @@ shardus.setup({
           if (wrappedEVMAccount && wrappedEVMAccount.account) {
             fixDeserializedWrappedEVMAccount(wrappedEVMAccount)
             const codeHashString = wrappedEVMAccount.account.codeHash.toString('hex')
-            if (codeHashString && codeHashString !== emptyCodeHash) {
-              isContractInteraction = true
+            if (codeHashString && codeHashString === emptyCodeHash) {
+              isSimpleTransfer = true
             }
           }
         }
@@ -2975,14 +2976,15 @@ shardus.setup({
         }
       }
 
-      if (isContractInteraction && ShardeumFlags.autoGenerateAccessList && transaction.to && isEIP2930 === false) {
+      if (!isSimpleTransfer && ShardeumFlags.autoGenerateAccessList && isEIP2930 === false) {
         // generate access list for non EIP 2930 txs
         let callObj = {
           from: await transaction.getSenderAddress().toString(),
-          to: transaction.to.toString(),
+          to: transaction.to ? transaction.to.toString() : null,
           value: '0x' + transaction.value.toString('hex'),
           data: '0x' + transaction.data.toString('hex'),
-          gasLimit: '0x' + transaction.gasLimit.toString('hex')
+          gasLimit: '0x' + transaction.gasLimit.toString('hex'),
+          newContractAddress: appData.newCAAddr
         }
 
         profilerInstance.scopedProfileSectionStart('accesslist-generate')
