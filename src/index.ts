@@ -1285,7 +1285,7 @@ shardus.registerExternalGet('tx/:hash', async (req, res) => {
       const dataId = toShardusAddressWithKey(txHash, '', AccountType.Receipt)
       const cachedAppData = await shardus.getLocalOrRemoteCachedAppData('receipt', dataId)
       if (ShardeumFlags.VerboseLogs) console.log(`cachedAppData for tx hash ${txHash}`, cachedAppData)
-      return res.json({account: cachedAppData })
+      return res.json({account: cachedAppData.appData ? cachedAppData.appData : cachedAppData })
     } catch (e) {
       console.log('Unable to get tx receipt', e)
       return res.json({account: null})
@@ -1913,7 +1913,7 @@ async function generateAccessList(callObj: any): Promise<{accessList:any[], shar
       valueInHexString = callObj.value
     }
 
-    
+
     let opt = {
       to: Address.fromString(callObj.to),
       caller: Address.fromString(callObj.from),
@@ -2014,11 +2014,11 @@ async function generateAccessList(callObj: any): Promise<{accessList:any[], shar
     let writeSet = new Set()
     //let readOnlySet = new Set()
     let writeOnceSet = new Set()
-    
-    
+
+
     for (let [key, storageMap] of writtenAccounts.contractStorages) {
       if (!allInvolvedContracts.includes(key)) allInvolvedContracts.push(key)
-      
+
       let shardusKey = toShardusAddress(key, AccountType.Account)
       writeSet.add(shardusKey)
       for(let storageAddress of storageMap.keys()){
@@ -2028,7 +2028,7 @@ async function generateAccessList(callObj: any): Promise<{accessList:any[], shar
     }
     for (let [key, storageMap] of readAccounts.contractStorages) {
       if (!allInvolvedContracts.includes(key)) allInvolvedContracts.push(key)
-      
+
       let shardusKey = toShardusAddress(key, AccountType.Account)
       readSet.add(shardusKey)
       for(let storageAddress of storageMap.keys()){
@@ -2063,8 +2063,8 @@ async function generateAccessList(callObj: any): Promise<{accessList:any[], shar
 
     //process our keys into one of four sets (writeOnceSet defined above)
     let readOnlySet = new Set()
-    let writeOnlySet = new Set()  
-    let readWriteSet = new Set()  
+    let writeOnlySet = new Set()
+    let readWriteSet = new Set()
     for(let key of writeSet.values()){
       if(readSet.has(key)){
         readWriteSet.add(key)
@@ -2076,7 +2076,7 @@ async function generateAccessList(callObj: any): Promise<{accessList:any[], shar
       if(writeSet.has(key) === false){
         readOnlySet.add(key)
       }
-    }  
+    }
     let shardusMemoryPatterns = {
       ro: Array.from(readOnlySet),
       rw: Array.from(readWriteSet),
