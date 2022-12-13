@@ -1,6 +1,6 @@
 import * as fs from 'fs'
 import { setGenesisAccounts, networkAccount } from '..'
-import {ShardeumFlags} from '../shardeum/shardeumFlags'
+import { ShardeumFlags } from '../shardeum/shardeumFlags'
 import * as Path from 'path'
 import { sleep } from '../utils'
 import * as readline from 'readline'
@@ -231,12 +231,15 @@ export const processAccountsData = async (shardus, report: LoadReport, accountAr
         'receipts size',
         accountArrayClean.receipts.length
       )
-      await shardus.forwardAccounts(accountArrayClean)
+      await shardus.forwardAccounts({
+        accounts: accountArrayClean.accounts,
+        receipts: accountArrayClean.receipts,
+      })
     } catch (error) {
       console.log(`loadAccountDataFromDB:` + error.name + ': ' + error.message + ' at ' + error.stack)
     }
   } else {
-    await shardus.forwardAccounts(accountArrayClean.accounts)
+    await shardus.forwardAccounts({ accounts: accountArrayClean.accounts, receipts: [] })
     setGenesisAccounts(accountArrayClean.accounts) // As an assumption to save in memory, so that when it's queried it can reponse fast, we can make it query from DB later
   }
 
