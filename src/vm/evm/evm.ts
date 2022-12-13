@@ -250,15 +250,19 @@ export default class EVM {
     let errorMessage
     if (!message.delegatecall) {
       try {
-        
-        //SHARDEUM FORK:  
+
+        //SHARDEUM FORK:
         //APF: only add to balance it there will be a change in balance.
         //it does not appear that this could mess up a payable endpoint
         //TODO: need to review if this breaks functionality of createing an EOA via 0 balance transfer...
         //if it did break that would it matter?
-        if (ShardeumFlags.VerboseLogs) console.log(`add balance: ${message.to.toString()} ${message.value.toNumber()} skip: ${message.value <= ZERO}`)
-        if(message.value > ZERO){
-          await this._addToBalance(toAccount, message)          
+        if (ShardeumFlags.VerboseLogs) {
+            let to = message.to ? message.to.toString() : ''
+            let value = message.value ? message.value.toString() : 0
+            console.log(`add balance: ${to} ${value} skip: ${message.value.lte(ZERO)}`)
+        }
+        if(message.value.gt(ZERO)){
+          await this._addToBalance(toAccount, message)
         }
       } catch (e: any) {
         errorMessage = e
@@ -377,7 +381,7 @@ export default class EVM {
     try {
       //Need to keep this.  Even though it may not change the balance
       //it is the only thing that will cause the new contract account to be created
-      await this._addToBalance(toAccount, message)          
+      await this._addToBalance(toAccount, message)
     } catch (e: any) {
       errorMessage = e
     }

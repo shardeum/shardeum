@@ -255,7 +255,6 @@ let appliedTxs = {} //this appears to be unused. will it still be unused if we u
 let shardusTxIdToEthTxId = {} //this appears to only support appliedTxs
 const oneEth = new BN(10).pow(new BN(18))
 
-let appliedEVMReceipts = [] // To use with EVMReceiptsAsAccounts false
 let EVMReceiptsToKeep = 1000
 
 //In debug mode the default value is 100 SHM.  This is needed for certain load test operations
@@ -1285,7 +1284,7 @@ shardus.registerExternalGet('tx/:hash', async (req, res) => {
       const dataId = toShardusAddressWithKey(txHash, '', AccountType.Receipt)
       const cachedAppData = await shardus.getLocalOrRemoteCachedAppData('receipt', dataId)
       if (ShardeumFlags.VerboseLogs) console.log(`cachedAppData for tx hash ${txHash}`, cachedAppData)
-      return res.json({account: cachedAppData.appData ? cachedAppData.appData : cachedAppData })
+      return res.json({account: cachedAppData.data ? cachedAppData.data : cachedAppData })
     } catch (e) {
       console.log('Unable to get tx receipt', e)
       return res.json({account: null})
@@ -1790,8 +1789,8 @@ async function _transactionReceiptPass(
   console.log('_transactionReceiptPass appReceiptData', appReceiptData)
 
   if (appReceiptData) {
-    const dataId = toShardusAddressWithKey(appReceiptData.readableReceipt.transactionHash, '', AccountType.Receipt)
-    await shardus.sendCorrespondingCachedAppData('receipt', dataId, appReceiptData, shardus.stateManager.currentCycleShardData.cycleNumber, appReceiptData.txFrom, appReceiptData.txId)
+    const dataId = toShardusAddressWithKey(appReceiptData.data.readableReceipt.transactionHash, '', AccountType.Receipt)
+    await shardus.sendCorrespondingCachedAppData('receipt', dataId, appReceiptData, shardus.stateManager.currentCycleShardData.cycleNumber, appReceiptData.data.txFrom, appReceiptData.data.txId)
   }
 
   //If this apply response has a global message defined then call setGlobal()
@@ -2088,14 +2087,14 @@ async function generateAccessList(callObj: any): Promise<{accessList:any[], shar
       }
     }
     let shardusMemoryPatterns = null
-    
+
     if(ShardeumFlags.generateMemoryPatternData){
       shardusMemoryPatterns = {
         ro: Array.from(readOnlySet),
         rw: Array.from(readWriteSet),
         wo: Array.from(writeOnlySet),
         on: Array.from(writeOnceSet),
-      }      
+      }
     }
 
     if (ShardeumFlags.VerboseLogs) {
@@ -2292,7 +2291,7 @@ shardus.setup({
       //limit debug app data size.  (a queue would be nicer, but this is very simple)
       if(debugAppdata.size > 1000){
         debugAppdata.clear()
-      }      
+      }
       debugAppdata.set(txHash, appData)
 
       if (isSigned && isSignatureValid) {
@@ -2826,23 +2825,13 @@ shardus.setup({
         )
       }
     } else {
+      const receiptShardusAccount = WrappedEVMAccountFunctions._shardusWrappedAccount(wrappedReceiptAccount)
       //put this in the apply response
       shardus.applyResponseAddReceiptData(
         applyResponse,
-        wrappedReceiptAccount,
-        crypto.hashObj(wrappedReceiptAccount)
+        receiptShardusAccount,
+        crypto.hashObj(receiptShardusAccount)
       )
-      // this is to expose tx data for json rpc server
-      appliedEVMReceipts.push({
-        txId: ethTxId,
-        injected: tx,
-        receipt: wrappedReceiptAccount,
-      })
-      if (appliedEVMReceipts.length > EVMReceiptsToKeep + 10) {
-        let extra = appliedEVMReceipts.length - EVMReceiptsToKeep
-        appliedEVMReceipts.splice(0, extra)
-        if (ShardeumFlags.VerboseLogs) console.log('EVMReceipts Kept', appliedEVMReceipts.length)
-      }
     }
     if (ShardeumFlags.VerboseLogs) console.log('Applied txId', txId, txTimestamp)
 
