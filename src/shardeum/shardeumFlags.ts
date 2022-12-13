@@ -45,6 +45,8 @@ interface ShardeumFlags {
   chargeConstantTxFee: boolean
   constantTxFee: string // '10000000000000'//0.00001 SHM   //'1000000000000000000' // 1 SHM
   devPublicKey: string
+  cacheMaxCycleAge: number
+  cacheMaxItemPerTopic: number
 }
 
 const NodeRewardENV = process.env.NodeReward ? (process.env.NodeReward === 'true' ? true : false) : null
@@ -83,6 +85,8 @@ export let ShardeumFlags: ShardeumFlags = {
   chargeConstantTxFee: true,
   constantTxFee: '10000000000000',
   devPublicKey: '774491f80f47fedb119bb861601490f42bc3ea3b57fc63906c0d08e6d777a592',
+  cacheMaxCycleAge: 5,
+  cacheMaxItemPerTopic: 4500,
   ServicePoints: {
     ['debug-points']: 20,
     ['account/:address']: 5,

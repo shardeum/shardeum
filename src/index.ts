@@ -38,7 +38,7 @@ import {
   predictContractAddressDirect,
   updateEthAccountHash,
 } from './shardeum/wrappedEVMAccountFunctions'
-import { isEqualOrNewerVersion, replacer, SerializeToJsonString, sleep, zeroAddressStr } from './utils'
+import { isEqualOrNewerVersion, replacer, SerializeToJsonString, sleep, zeroAddressStr, emptyCodeHash } from './utils'
 import config from './config'
 import { RunTxResult } from '@ethereumjs/vm/dist/runTx'
 import { RunState } from '@ethereumjs/vm/dist/evm/interpreter'
@@ -91,6 +91,7 @@ const ERC20_BALANCEOF_CODE = '0x70a08231'
 const shardus = shardusFactory(config, {
   customStringifier: SerializeToJsonString,
 })
+const profilerInstance = shardus.getShardusProfiler()
 
 // const pay_address = '0x50F6D9E5771361Ec8b95D6cfb8aC186342B70120' // testing account for node_reward
 const random_wallet = Wallet.generate()
@@ -1280,11 +1281,15 @@ shardus.registerExternalGet('tx/:hash', async (req, res) => {
 
   const txHash = req.params['hash']
   if (!ShardeumFlags.EVMReceiptsAsAccounts) {
-    let evmReceipt = appliedEVMReceipts.find(receipt => receipt.txId === txHash)
-    if (!evmReceipt) return res.json({ tx: 'Not found' })
-    let data = evmReceipt.receipt.data
-    fixDeserializedWrappedEVMAccount(data)
-    return res.json({ account: data })
+    try {
+      const dataId = toShardusAddressWithKey(txHash, '', AccountType.Receipt)
+      const cachedAppData = await shardus.getLocalOrRemoteCachedAppData('receipt', dataId)
+      if (ShardeumFlags.VerboseLogs) console.log(`cachedAppData for tx hash ${txHash}`, cachedAppData)
+      return res.json({account: cachedAppData })
+    } catch (e) {
+      console.log('Unable to get tx receipt', e)
+      return res.json({account: null})
+    }
   }
   try {
     //const shardusAddress = toShardusAddressWithKey(txHash.slice(0, 42), txHash, AccountType.Receipt)
@@ -1776,6 +1781,15 @@ async function _transactionReceiptPass(
     return
   }
   let ourAppDefinedData = applyResponse.appDefinedData as OurAppDefinedData
+  let appReceiptData = applyResponse.appReceiptData
+
+  console.log('_transactionReceiptPass appReceiptData', appReceiptData)
+
+  if (appReceiptData) {
+    const dataId = toShardusAddressWithKey(appReceiptData.readableReceipt.transactionHash, '', AccountType.Receipt)
+    await shardus.sendCorrespondingCachedAppData('receipt', dataId, appReceiptData, shardus.stateManager.currentCycleShardData.cycleNumber, appReceiptData.txFrom, appReceiptData.txId)
+  }
+
   //If this apply response has a global message defined then call setGlobal()
   if (ourAppDefinedData.globalMsg) {
     let { address, value, when, source } = ourAppDefinedData.globalMsg
@@ -2716,18 +2730,17 @@ shardus.setup({
         )
       }
     } else {
-      const shardusWrappedAccount = WrappedEVMAccountFunctions._shardusWrappedAccount(wrappedReceiptAccount)
       //put this in the apply response
       shardus.applyResponseAddReceiptData(
         applyResponse,
-        shardusWrappedAccount,
-        crypto.hashObj(shardusWrappedAccount)
+        wrappedReceiptAccount,
+        crypto.hashObj(wrappedReceiptAccount)
       )
       // this is to expose tx data for json rpc server
       appliedEVMReceipts.push({
         txId: ethTxId,
         injected: tx,
-        receipt: shardusWrappedAccount,
+        receipt: wrappedReceiptAccount,
       })
       if (appliedEVMReceipts.length > EVMReceiptsToKeep + 10) {
         let extra = appliedEVMReceipts.length - EVMReceiptsToKeep
@@ -2765,9 +2778,16 @@ shardus.setup({
     }
     if (isInternalTx(tx) === false && isDebugTx(tx) === false) {
       const transaction = getTransactionObj(tx)
+      const shardusTxId = crypto.hashObj(tx)
+      const ethTxId = bufferToHex(transaction.hash())
+      if (ShardeumFlags.VerboseLogs) {
+        console.log(`EVM tx ${ethTxId} is mapped to shardus tx ${shardusTxId}`)
+        console.log(`Shardus tx ${shardusTxId} is mapped to EVM tx ${ethTxId}`)
+      }
 
       let isEIP2930 =
         transaction instanceof AccessListEIP2930Transaction && transaction.AccessListJSON != null
+      let isContractInteraction = false
 
       //if the TX is a contract deploy, predict the new contract address correctly
       if (
@@ -2777,6 +2797,7 @@ shardus.setup({
       ) {
         let foundNonce = false
         let foundSender = false
+        let foundTarget = false
         let nonce = new BN(0)
         let balance = new BN(0).toString()
         let txSenderEvmAddr = transaction.getSenderAddress().toString()
@@ -2789,6 +2810,13 @@ shardus.setup({
           countPromise = shardus.getLocalOrRemoteAccountQueueCount(transformedSourceKey)
         }
         let remoteShardusAccount = await shardus.getLocalOrRemoteAccount(transformedSourceKey)
+
+        let remoteTargetAccount = null
+        if (transaction.to) {
+          let txTargetEvmAddr = transaction.to.toString()
+          let transformedTargetKey = toShardusAddress(txTargetEvmAddr, AccountType.Account)
+          remoteTargetAccount = await shardus.getLocalOrRemoteAccount(transformedTargetKey)
+        }
         if (ShardeumFlags.txNoncePreCheck) {
           //parallel fetch
           queueCountResult = await countPromise
@@ -2808,6 +2836,21 @@ shardus.setup({
             foundNonce = true
           }
         }
+
+        if (remoteTargetAccount == undefined) {
+          /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log( `txPreCrackData: found no local or remote account for target address` )
+        } else {
+          foundTarget = true
+          let wrappedEVMAccount = remoteTargetAccount.data as WrappedEVMAccount
+          if (wrappedEVMAccount && wrappedEVMAccount.account) {
+            fixDeserializedWrappedEVMAccount(wrappedEVMAccount)
+            const codeHashString = wrappedEVMAccount.account.codeHash.toString('hex')
+            if (codeHashString && codeHashString !== emptyCodeHash) {
+              isContractInteraction = true
+            }
+          }
+        }
+
         //Predict the new CA address if not eip2930.  is this correct though?
         if (transaction.to == null && isEIP2930 === false) {
           let caAddrBuf = predictContractAddressDirect(txSenderEvmAddr, nonce)
@@ -2837,35 +2880,32 @@ shardus.setup({
         }
       }
 
-      if (ShardeumFlags.autoGenerateAccessList && transaction.to && isEIP2930 === false) {
+      if (isContractInteraction && ShardeumFlags.autoGenerateAccessList && transaction.to && isEIP2930 === false) {
         // generate access list for non EIP 2930 txs
         let callObj = {
           from: await transaction.getSenderAddress().toString(),
           to: transaction.to.toString(),
           value: '0x' + transaction.value.toString('hex'),
           data: '0x' + transaction.data.toString('hex'),
-          gasLimit: '0x' + transaction.gasLimit.toString('hex'),
+          gasLimit: '0x' + transaction.gasLimit.toString('hex')
         }
+
+        profilerInstance.scopedProfileSectionStart('accesslist-generate')
         let generatedAccessList = await generateAccessList(callObj)
+        profilerInstance.scopedProfileSectionEnd('accesslist-generate')
+
         appData.accessList = generatedAccessList ? generatedAccessList : null
         appData.requestNewTimestamp = true
       }
-      if (ShardeumFlags.VerboseLogs)
-        console.log(
-          `txPreCrackData final result: txNonce: ${appData.txNonce}, currentNonce: ${
-            appData.nonce
-          }, queueCount: ${appData.queueCount}, appData ${JSON.stringify(appData)}`
-        )
+      if(ShardeumFlags.VerboseLogs) console.log(`txPreCrackData final result: txNonce: ${appData.txNonce}, currentNonce: ${appData.nonce}, queueCount: ${appData.queueCount}, appData ${JSON.stringify(appData)}`)
     }
   },
 
   crack(timestampedTx, appData) {
     if (ShardeumFlags.VerboseLogs) console.log('Running getKeyFromTransaction', timestampedTx)
-    let { tx } = timestampedTx
+    let { tx, timestampReceipt } = timestampedTx
 
-    if (ShardeumFlags.VerboseLogs) console.log('Running getKeyFromTransaction tx', tx)
     let timestamp: number = getInjectedOrGeneratedTimestamp(timestampedTx)
-    if (ShardeumFlags.VerboseLogs) console.log('Running getKeyFromTransaction timestamp', timestamp)
 
     if (isInternalTx(tx)) {
       let internalTx = tx as InternalTx
@@ -3953,6 +3993,8 @@ if (ShardeumFlags.GlobalNetworkAccount) {
           await sleep(cycleInterval * 2)
         }
         lastReward = Date.now()
+
+        shardus.registerCacheTopic('receipt', ShardeumFlags.cacheMaxCycleAge, ShardeumFlags.cacheMaxItemPerTopic)
 
         return setTimeout(networkMaintenance, cycleInterval)
       }
