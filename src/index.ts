@@ -2022,6 +2022,12 @@ async function generateAccessList(callObj: any): Promise<{accessList:any[], shar
     //let readOnlySet = new Set()
     let writeOnceSet = new Set()
 
+    //always make the sender rw.  This is because the sender will always spend gas and increment nonce
+    if(callObj.from != null && callObj.from.length > 0){
+      let shardusKey = toShardusAddress(callObj.from, AccountType.Account)
+      writeSet.add(shardusKey)   
+      readSet.add(shardusKey)   
+    }
 
     for (let [key, storageMap] of writtenAccounts.contractStorages) {
       if (!allInvolvedContracts.includes(key)) allInvolvedContracts.push(key)

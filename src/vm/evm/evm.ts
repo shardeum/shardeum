@@ -242,7 +242,14 @@ export default class EVM {
     const account = await this._state.getAccount(message.caller)
     // Reduce tx value from sender
     if (!message.delegatecall) {
-      await this._reduceSenderBalance(account, message)
+      if (ShardeumFlags.VerboseLogs) {
+        let to = message.to ? message.to.toString() : ''
+        let value = message.value ? message.value.toString() : 0
+        console.log(`reduce balance: ${to} ${value} skip: ${message.value.lte(ZERO)}`)
+      }
+      if(message.value.gt(ZERO)){
+        await this._reduceSenderBalance(account, message)
+      }
     }
     // Load `to` account
     const toAccount = await this._state.getAccount(message.to)
