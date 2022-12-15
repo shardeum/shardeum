@@ -72,14 +72,16 @@ export let blocks: BlockMap = {}
 export let blocksByHash = {}
 export let readableBlocks = {}
 
+const oneEth = new BN(10).pow(new BN(18))
+
 // INITIAL NETWORK PARAMETERS FOR Shardeum
 export const INITIAL_PARAMETERS: NetworkParameters = {
   title: 'Initial parameters',
   description: 'These are the initial network parameters Shardeum started with',
   nodeRewardInterval: ONE_MINUTE * 10, // 10 minutes for testing
-  nodeRewardAmount: 1, // 1 ETH
+  nodeRewardAmount: 1, // 1 SHM
   nodePenalty: 10,
-  stakeRequired: 5,
+  stakeRequired: oneEth.mul(new BN(10)), // 10 SHM
   maintenanceInterval: ONE_DAY,
   maintenanceFee: 0,
 }
@@ -253,7 +255,6 @@ if (ShardeumFlags.UseDBForAccounts === true) {
 //may need these later.  if so, move to DB
 let appliedTxs = {} //this appears to be unused. will it still be unused if we use receipts as app data
 let shardusTxIdToEthTxId = {} //this appears to only support appliedTxs
-const oneEth = new BN(10).pow(new BN(18))
 
 let EVMReceiptsToKeep = 1000
 
@@ -1487,7 +1488,8 @@ async function applyInternalTx(
   if (internalTx.internalTXType === InternalTXType.InitNetwork) {
     const network: NetworkAccount = wrappedStates[networkAccount].data
     if (ShardeumFlags.useAccountWrites) {
-      let writtenAccount = JSON.parse(JSON.stringify(wrappedStates[networkAccount]))
+      let writtenAccount = wrappedStates[networkAccount]
+      writtenAccount.timestamp = txTimestamp
       writtenAccount.data.timestamp = txTimestamp
       shardus.applyResponseAddChangedAccount(applyResponse, networkAccount, writtenAccount, txId, txTimestamp)
     } else {
@@ -1673,12 +1675,13 @@ async function applyInternalTx(
     ourAppDefinedData.globalMsg = { address: networkAccount, value, when, source: networkAccount }
 
     if (ShardeumFlags.useAccountWrites) {
-      let networkAccountCopy = JSON.parse(JSON.stringify(wrappedStates[networkAccount]))
-      let devAccountCopy = JSON.parse(JSON.stringify(wrappedStates[internalTx.from]))
+      let networkAccountCopy = wrappedStates[networkAccount]
+      let devAccountCopy = wrappedStates[internalTx.from]
 
       networkAccountCopy.timestamp = txTimestamp
       devAccountCopy.timestamp = txTimestamp
-
+      networkAccountCopy.data.timestamp = txTimestamp
+      devAccountCopy.data.timestamp = txTimestamp
       shardus.applyResponseAddChangedAccount(
         applyResponse,
         networkAccount,
@@ -1704,9 +1707,10 @@ async function applyInternalTx(
     const network: NetworkAccount = wrappedStates[networkAccount].data
 
     if (ShardeumFlags.useAccountWrites) {
-      let networkAccountCopy = JSON.parse(JSON.stringify(wrappedStates[networkAccount]))
+      let networkAccountCopy = wrappedStates[networkAccount]
       networkAccountCopy.timestamp = txTimestamp
-      networkAccountCopy.listOfChanges.push(internalTx.change)
+      networkAccountCopy.data.timestamp = txTimestamp
+      networkAccountCopy.data.listOfChanges.push(internalTx.change)
       shardus.applyResponseAddChangedAccount(
         applyResponse,
         networkAccount,
@@ -3582,51 +3586,6 @@ shardus.setup({
 
     if (ShardeumFlags.VerboseLogs) console.log('updatedEVMAccount before hashUpdate', updatedEVMAccount)
 
-    if (updatedEVMAccount.accountType === AccountType.Debug) {
-      // Update hash
-      updateEthAccountHash(updatedEVMAccount)
-      const hashBefore = updatedEVMAccount.hash
-      //accounts[accountId] = updatedEVMAccount
-      await AccountsStorage.setAccount(accountId, updatedEVMAccount)
-      shardus.applyResponseAddState(
-        applyResponse,
-        updatedEVMAccount,
-        updatedEVMAccount,
-        accountId,
-        applyResponse.txId,
-        applyResponse.txTimestamp,
-        hashBefore,
-        updatedEVMAccount.hash,
-        accountCreated
-      )
-      return
-    }
-    if (
-      updatedEVMAccount.accountType === AccountType.NetworkAccount ||
-      updatedEVMAccount.accountType === AccountType.NodeAccount ||
-      updatedEVMAccount.accountType === AccountType.NodeRewardReceipt
-    ) {
-      // Update hash
-      const hashBefore = updatedEVMAccount.hash
-      updateEthAccountHash(updatedEVMAccount) // This will get the hash of its relevant account type
-      const hashAfter = updatedEVMAccount.hash
-      //accounts[accountId] = updatedEVMAccount
-      await AccountsStorage.setAccount(accountId, updatedEVMAccount)
-      shardus.applyResponseAddState(
-        applyResponse,
-        updatedEVMAccount,
-        updatedEVMAccount,
-        accountId,
-        applyResponse.txId,
-        applyResponse.txTimestamp,
-        hashBefore,
-        hashAfter,
-        accountCreated
-      )
-      if (ShardeumFlags.VerboseLogs) console.log('updatedEVMAccount after hashUpdate', updatedEVMAccount)
-      return
-    }
-
     //fix any issues from seralization
     fixDeserializedWrappedEVMAccount(updatedEVMAccount)
 
@@ -3653,7 +3612,16 @@ shardus.setup({
     //   //TODO possibly need a blob to re-init with?
     // }
 
-    let shardeumState = getApplyTXState(txId)
+    let shardeumState
+    if (
+      updatedEVMAccount.accountType !== AccountType.Debug &&
+      updatedEVMAccount.accountType !== AccountType.NetworkAccount &&
+      updatedEVMAccount.accountType !== AccountType.NodeAccount &&
+      updatedEVMAccount.accountType !== AccountType.NodeRewardReceipt &&
+      updatedEVMAccount.accountType !== AccountType.DevAccount
+    ) {
+      shardeumState = getApplyTXState(txId)
+    }
 
     if (updatedEVMAccount.accountType === AccountType.Account) {
       //if account?
@@ -3689,6 +3657,8 @@ shardus.setup({
     let hashBefore = prevStateId
     WrappedEVMAccountFunctions.updateEthAccountHash(updatedEVMAccount)
     let hashAfter = updatedEVMAccount.hash
+
+    if (ShardeumFlags.VerboseLogs) console.log('updatedEVMAccount after hashUpdate', updatedEVMAccount)
 
     // Save updatedAccount to db / persistent storage
     //accounts[accountId] = updatedEVMAccount

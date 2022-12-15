@@ -182,7 +182,7 @@ export interface NetworkParameters {
   nodeRewardInterval: number
   nodeRewardAmount: number
   nodePenalty: number
-  stakeRequired: number
+  stakeRequired: BN
   maintenanceInterval: number
   maintenanceFee: number
 }
