@@ -70,11 +70,6 @@ export interface EVMAccountInfo {
   contractAddress?: string
 }
 
-export enum StakeLock {
-  Stake = 1,
-  Unlocked = 2,
-}
-
 export enum InternalTXType {
   SetGlobalCodeBytes,
   InitNetwork,
@@ -204,8 +199,7 @@ export interface NodeAccount2 extends BaseAccount {
   id: string
   hash: string
   timestamp: number
-  stakeLock: StakeLock //an enum
-  stake: BN //amount of coins in stake
+  stakeLock: BN //amount of coins in stake
   reward: BN
   rewardStartTime: number
   rewardEndTime: number
