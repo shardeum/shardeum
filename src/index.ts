@@ -49,7 +49,7 @@ import { ShardeumBlock } from './block/blockchain'
 import * as AccountsStorage from './storage/accountStorage'
 import { StateManager } from '@ethereumjs/vm/dist/state'
 import { nestedCountersInstance } from '@shardus/core'
-import { sync } from './setup'
+import { sync } from './setup/sync'
 
 const env = process.env
 
