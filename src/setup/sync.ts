@@ -94,7 +94,7 @@ export const sync = (shardus: Shardus, evmCommon: Common) => async (): Promise<v
         }
         await shardus.debugCommitAccountCopies(accountCopies)
         if (ShardeumFlags.forwardGenesisAccounts) {
-          await shardus.forwardAccounts(accountCopies)
+          await shardus.forwardAccounts({ accounts: accountCopies, receipts: [] })
         }
       }
       await sleep(ONE_SECOND * 10)

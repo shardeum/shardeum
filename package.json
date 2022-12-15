@@ -35,7 +35,7 @@
   "license": "ISC",
   "dependencies": {
     "@ethereumjs/vm": "^5.6.0",
-    "@shardus/core": "^2.7.6",
+    "@shardus/core": "^2.7.7",
     "@shardus/crypto-utils": "^4.0.4",
     "deepmerge": "^4.2.2",
     "dotenv": "^16.0.0",
