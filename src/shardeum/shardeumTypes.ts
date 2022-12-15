@@ -15,6 +15,7 @@ export enum AccountType {
   NodeAccount = 6,
   NodeRewardReceipt = 7,
   DevAccount = 8,
+  NodeAccount2 = 9,
 }
 
 export interface BaseAccount {
@@ -48,10 +49,11 @@ export interface WrappedEVMAccount extends BaseAccount {
   //variant data: Receipt related
   receipt?: TxReceipt
   readableReceipt?: ReadableReceipt
-  amountSpent?: string  // transactionFee
+  amountSpent?: string // transactionFee
   txId?: string
   txFrom?: string
   balance?: number // For debug tx
+  operatorAccount?: OperatorAccount
 }
 
 export interface WrappedEVMAccountMap {
@@ -66,6 +68,11 @@ export interface EVMAccountInfo {
   type: AccountType
   evmAddress: string
   contractAddress?: string
+}
+
+export enum StakeLock {
+  Stake = 1,
+  Unlocked = 2,
 }
 
 export enum InternalTXType {
@@ -193,10 +200,28 @@ export interface NodeAccount extends BaseAccount {
   timestamp: number
 }
 
+export interface NodeAccount2 extends BaseAccount {
+  id: string
+  hash: string
+  timestamp: number
+  stakeLock: StakeLock //an enum
+  stake: BN //amount of coins in stake
+  reward: BN
+  rewardStartTime: number
+  rewardEndTime: number
+  penalty: BN
+}
+
 export interface DevAccount extends BaseAccount {
   id: string
   hash: string
   timestamp: number
+}
+
+export interface OperatorAccount {
+  stake: BN
+  nominee: string
+  certExp: number
 }
 
 export interface ChangeConfig {
