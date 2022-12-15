@@ -199,6 +199,7 @@ export interface NodeAccount2 extends BaseAccount {
   id: string
   hash: string
   timestamp: number
+  nominator: string
   stakeLock: BN //amount of coins in stake
   reward: BN
   rewardStartTime: number
