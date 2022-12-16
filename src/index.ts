@@ -1,27 +1,23 @@
-import { Block } from '@ethereumjs/block'
-import Common, { Chain, Hardfork } from '@ethereumjs/common'
-import { AccessListEIP2930Transaction, Transaction } from '@ethereumjs/tx'
-import VM from '@ethereumjs/vm'
-import { RunState } from '@ethereumjs/vm/dist/evm/interpreter'
-import { RunTxResult } from '@ethereumjs/vm/dist/runTx'
-import { ShardusTypes, __ShardFunctions } from '@shardus/core'
-import * as crypto from '@shardus/crypto-utils'
-import 'dotenv/config'
-import { Account, Address, BN, bufferToHex, isValidAddress, toBuffer } from 'ethereumjs-util'
-import Wallet from 'ethereumjs-wallet'
 import stringify from 'fast-json-stable-stringify'
-import got from 'got'
+import * as crypto from '@shardus/crypto-utils'
+import { Account, Address, BN, bufferToHex, isValidAddress, toBuffer } from 'ethereumjs-util'
+import { AccessListEIP2930Transaction, Transaction } from '@ethereumjs/tx'
+import Common, { Chain, Hardfork } from '@ethereumjs/common'
+import VM from '@ethereumjs/vm'
+import ShardeumVM from './vm'
 import { parse as parseUrl } from 'url'
+import got from 'got'
+import 'dotenv/config'
+import { ShardeumState, TransactionState } from './state'
+import { __ShardFunctions, ShardusTypes } from '@shardus/core'
+import { ContractByteWrite } from './state/transactionState'
 import { version } from '../package.json'
-import { ShardeumBlock } from './block/blockchain'
-import config from './config'
-import { getAccountShardusAddress, toShardusAddress, toShardusAddressWithKey } from './shardeum/evmAddress'
-import { ShardeumFlags, updateServicePoints, updateShardeumFlag } from './shardeum/shardeumFlags'
 import {
   AccountType,
   BlockMap,
   DebugTx,
-  DebugTXType, DevAccount, EVMAccountInfo,
+  DebugTXType,
+  EVMAccountInfo,
   InternalTx,
   InternalTXType,
   NetworkAccount,
@@ -31,29 +27,36 @@ import {
   ReadableReceipt,
   WrappedAccount,
   WrappedEVMAccount,
-  WrappedStates
+  WrappedStates,
+  DevAccount,
 } from './shardeum/shardeumTypes'
+import { getAccountShardusAddress, toShardusAddress, toShardusAddressWithKey } from './shardeum/evmAddress'
+import { ShardeumFlags, updateShardeumFlag, updateServicePoints } from './shardeum/shardeumFlags'
 import * as WrappedEVMAccountFunctions from './shardeum/wrappedEVMAccountFunctions'
 import {
   fixDeserializedWrappedEVMAccount,
   predictContractAddressDirect,
-  updateEthAccountHash
+  updateEthAccountHash,
 } from './shardeum/wrappedEVMAccountFunctions'
-import { ShardeumState, TransactionState } from './state'
-import { ContractByteWrite } from './state/transactionState'
 import {
-  emptyCodeHash, isEqualOrNewerVersion,
+  isEqualOrNewerVersion,
   replacer,
   SerializeToJsonString,
   sleep,
-  zeroAddressStr
+  zeroAddressStr,
+  emptyCodeHash,
 } from './utils'
-import ShardeumVM from './vm'
+import config from './config'
+import { RunTxResult } from '@ethereumjs/vm/dist/runTx'
+import { RunState } from '@ethereumjs/vm/dist/evm/interpreter'
+import Wallet from 'ethereumjs-wallet'
+import { Block } from '@ethereumjs/block'
+import { ShardeumBlock } from './block/blockchain'
 
+import * as AccountsStorage from './storage/accountStorage'
 import { StateManager } from '@ethereumjs/vm/dist/state'
 import { nestedCountersInstance } from '@shardus/core'
 import { sync } from './setup/sync'
-import * as AccountsStorage from './storage/accountStorage'
 
 const env = process.env
 
