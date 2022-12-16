@@ -1,23 +1,27 @@
-import stringify from 'fast-json-stable-stringify'
-import * as crypto from '@shardus/crypto-utils'
-import { Account, Address, BN, bufferToHex, isValidAddress, toBuffer } from 'ethereumjs-util'
-import { AccessListEIP2930Transaction, Transaction } from '@ethereumjs/tx'
+import { Block } from '@ethereumjs/block'
 import Common, { Chain, Hardfork } from '@ethereumjs/common'
+import { AccessListEIP2930Transaction, Transaction } from '@ethereumjs/tx'
 import VM from '@ethereumjs/vm'
-import ShardeumVM from './vm'
-import { parse as parseUrl } from 'url'
-import got from 'got'
+import { RunState } from '@ethereumjs/vm/dist/evm/interpreter'
+import { RunTxResult } from '@ethereumjs/vm/dist/runTx'
+import { ShardusTypes, __ShardFunctions } from '@shardus/core'
+import * as crypto from '@shardus/crypto-utils'
 import 'dotenv/config'
-import { ShardeumState, TransactionState } from './state'
-import { __ShardFunctions, ShardusTypes } from '@shardus/core'
-import { ContractByteWrite } from './state/transactionState'
+import { Account, Address, BN, bufferToHex, isValidAddress, toBuffer } from 'ethereumjs-util'
+import Wallet from 'ethereumjs-wallet'
+import stringify from 'fast-json-stable-stringify'
+import got from 'got'
+import { parse as parseUrl } from 'url'
 import { version } from '../package.json'
+import { ShardeumBlock } from './block/blockchain'
+import config from './config'
+import { getAccountShardusAddress, toShardusAddress, toShardusAddressWithKey } from './shardeum/evmAddress'
+import { ShardeumFlags, updateServicePoints, updateShardeumFlag } from './shardeum/shardeumFlags'
 import {
   AccountType,
   BlockMap,
   DebugTx,
-  DebugTXType,
-  EVMAccountInfo,
+  DebugTXType, DevAccount, EVMAccountInfo,
   InternalTx,
   InternalTXType,
   NetworkAccount,
@@ -27,29 +31,29 @@ import {
   ReadableReceipt,
   WrappedAccount,
   WrappedEVMAccount,
-  WrappedStates,
-  DevAccount,
+  WrappedStates
 } from './shardeum/shardeumTypes'
-import { getAccountShardusAddress, toShardusAddress, toShardusAddressWithKey } from './shardeum/evmAddress'
-import { ShardeumFlags, updateShardeumFlag, updateServicePoints } from './shardeum/shardeumFlags'
 import * as WrappedEVMAccountFunctions from './shardeum/wrappedEVMAccountFunctions'
 import {
   fixDeserializedWrappedEVMAccount,
   predictContractAddressDirect,
-  updateEthAccountHash,
+  updateEthAccountHash
 } from './shardeum/wrappedEVMAccountFunctions'
-import { isEqualOrNewerVersion, replacer, SerializeToJsonString, sleep, zeroAddressStr, emptyCodeHash } from './utils'
-import config from './config'
-import { RunTxResult } from '@ethereumjs/vm/dist/runTx'
-import { RunState } from '@ethereumjs/vm/dist/evm/interpreter'
-import Wallet from 'ethereumjs-wallet'
-import { Block } from '@ethereumjs/block'
-import { ShardeumBlock } from './block/blockchain'
+import { ShardeumState, TransactionState } from './state'
+import { ContractByteWrite } from './state/transactionState'
+import {
+  emptyCodeHash, isEqualOrNewerVersion,
+  replacer,
+  SerializeToJsonString,
+  sleep,
+  zeroAddressStr
+} from './utils'
+import ShardeumVM from './vm'
 
-import * as AccountsStorage from './storage/accountStorage'
 import { StateManager } from '@ethereumjs/vm/dist/state'
 import { nestedCountersInstance } from '@shardus/core'
 import { sync } from './setup/sync'
+import * as AccountsStorage from './storage/accountStorage'
 
 const env = process.env
 
@@ -522,9 +526,7 @@ function tryGetRemoteAccountCBNoOp(
   return undefined
 }
 
-function monitorEventCBNoOp(category: string, name: string, count: number, message: string) {
-
-}
+function monitorEventCBNoOp(category: string, name: string, count: number, message: string) {}
 
 async function tryGetRemoteAccountCB(
   transactionState: TransactionState,
@@ -655,7 +657,7 @@ function getDebugTXState(): ShardeumState {
         accountInvolved: accountInvolvedNoOp,
         contractStorageInvolved: contractStorageInvolvedNoOp,
         tryGetRemoteAccountCB: tryGetRemoteAccountCBNoOp,
-        monitorEventCB: monitorEventCBNoOp
+        monitorEventCB: monitorEventCBNoOp,
       },
       txId,
       undefined,
@@ -695,7 +697,7 @@ function getCallTXState(from: string, to: string): ShardeumState {
       accountInvolved: accountInvolvedNoOp,
       contractStorageInvolved: contractStorageInvolvedNoOp,
       tryGetRemoteAccountCB: tryGetRemoteAccountCB,
-      monitorEventCB: monitorEventCBNoOp
+      monitorEventCB: monitorEventCBNoOp,
     },
     txId,
     undefined,
@@ -718,7 +720,7 @@ function getPreRunTXState(txId: string): ShardeumState {
       accountInvolved: accountInvolvedNoOp,
       contractStorageInvolved: contractStorageInvolvedNoOp,
       tryGetRemoteAccountCB: tryGetRemoteAccountCB,
-      monitorEventCB: monitorEventCBNoOp
+      monitorEventCB: monitorEventCBNoOp,
     },
     txId,
     undefined,
@@ -741,7 +743,7 @@ function getApplyTXState(txId: string): ShardeumState {
         accountInvolved,
         contractStorageInvolved,
         tryGetRemoteAccountCB: tryGetRemoteAccountCBNoOp,
-        monitorEventCB: shardus.monitorEvent.bind(shardus)
+        monitorEventCB: shardus.monitorEvent.bind(shardus),
       },
       txId,
       undefined,
@@ -1273,7 +1275,7 @@ shardus.registerExternalPost('contract/accesslist', async (req, res) => {
     const callObj = req.body
     if (ShardeumFlags.VerboseLogs) console.log('AccessList endpoint callObj', callObj)
 
-    let {accessList,shardusMemoryPatterns} = await generateAccessList(callObj)
+    let { accessList, shardusMemoryPatterns } = await generateAccessList(callObj)
 
     res.json(accessList)
   } catch (e) {
@@ -1294,10 +1296,10 @@ shardus.registerExternalGet('tx/:hash', async (req, res) => {
       let cachedAppData = await shardus.getLocalOrRemoteCachedAppData('receipt', dataId)
       if (ShardeumFlags.VerboseLogs) console.log(`cachedAppData for tx hash ${txHash}`, cachedAppData)
       if (cachedAppData && cachedAppData.appData) cachedAppData = cachedAppData.appData
-      return res.json({account: cachedAppData.data ? cachedAppData.data : cachedAppData })
+      return res.json({ account: cachedAppData.data ? cachedAppData.data : cachedAppData })
     } catch (e) {
       console.log('Unable to get tx receipt', e)
-      return res.json({account: null})
+      return res.json({ account: null })
     }
   } else {
     try {
@@ -1803,8 +1805,19 @@ async function _transactionReceiptPass(
   console.log('_transactionReceiptPass appReceiptData', appReceiptData)
 
   if (appReceiptData) {
-    const dataId = toShardusAddressWithKey(appReceiptData.data.readableReceipt.transactionHash, '', AccountType.Receipt)
-    await shardus.sendCorrespondingCachedAppData('receipt', dataId, appReceiptData, shardus.stateManager.currentCycleShardData.cycleNumber, appReceiptData.data.txFrom, appReceiptData.data.txId)
+    const dataId = toShardusAddressWithKey(
+      appReceiptData.data.readableReceipt.transactionHash,
+      '',
+      AccountType.Receipt
+    )
+    await shardus.sendCorrespondingCachedAppData(
+      'receipt',
+      dataId,
+      appReceiptData,
+      shardus.stateManager.currentCycleShardData.cycleNumber,
+      appReceiptData.data.txFrom,
+      appReceiptData.data.txId
+    )
   }
 
   //If this apply response has a global message defined then call setGlobal()
@@ -1915,7 +1928,7 @@ const getOrCreateBlockFromTimestamp = (timestamp: number, scheduleNextBlock = fa
   return block
 }
 
-async function generateAccessList(callObj: any): Promise<{accessList:any[], shardusMemoryPatterns:any }> {
+async function generateAccessList(callObj: any): Promise<{ accessList: any[]; shardusMemoryPatterns: any }> {
   try {
     let valueInHexString: string
     if (!callObj.value) {
@@ -1978,16 +1991,18 @@ async function generateAccessList(callObj: any): Promise<{accessList:any[], shar
             // if (Array.isArray(postResp.body) && postResp.body.length){
             //    return {accessList : postResp.body, postResp.body}
             // }
-            if (Array.isArray(postResp.body.accessList) && postResp.body.accessList.length){
-              return {accessList : postResp.body.accessList, shardusMemoryPatterns: postResp.body.shardusMemoryPatterns}
-            }
-            else {
-              return {accessList : [], shardusMemoryPatterns: null}
+            if (Array.isArray(postResp.body.accessList) && postResp.body.accessList.length) {
+              return {
+                accessList: postResp.body.accessList,
+                shardusMemoryPatterns: postResp.body.shardusMemoryPatterns,
+              }
+            } else {
+              return { accessList: [], shardusMemoryPatterns: null }
             }
           }
         } else {
           if (ShardeumFlags.VerboseLogs) console.log(`Node is in remote shard: consensusNode = null`)
-          return {accessList : [], shardusMemoryPatterns: null}
+          return { accessList: [], shardusMemoryPatterns: null }
         }
       } else {
         if (ShardeumFlags.VerboseLogs) console.log(`Node is in remote shard: false`)
@@ -2018,7 +2033,6 @@ async function generateAccessList(callObj: any): Promise<{accessList:any[], shar
     EVM.stateManager = preRunTxState
     const callResult = await EVM.runCall(opt)
 
-
     // const callResult = = await EVM.runTx({
     //   block: blocks[latestBlock],
     //   tx: transaction,
@@ -2037,7 +2051,7 @@ async function generateAccessList(callObj: any): Promise<{accessList:any[], shar
     let writeOnceSet = new Set()
 
     //always make the sender rw.  This is because the sender will always spend gas and increment nonce
-    if(callObj.from != null && callObj.from.length > 0){
+    if (callObj.from != null && callObj.from.length > 0) {
       let shardusKey = toShardusAddress(callObj.from, AccountType.Account)
       writeSet.add(shardusKey)
       readSet.add(shardusKey)
@@ -2049,7 +2063,7 @@ async function generateAccessList(callObj: any): Promise<{accessList:any[], shar
       let shardusKey = toShardusAddress(key, AccountType.Account)
       //writeSet.add(shardusKey) //don't assume we write to this account!
       //let written accounts handle that!
-      for(let storageAddress of storageMap.keys()){
+      for (let storageAddress of storageMap.keys()) {
         shardusKey = toShardusAddressWithKey(key, storageAddress, AccountType.ContractStorage)
         writeSet.add(shardusKey)
       }
@@ -2060,7 +2074,7 @@ async function generateAccessList(callObj: any): Promise<{accessList:any[], shar
       let shardusKey = toShardusAddress(key, AccountType.Account)
       readSet.add(shardusKey) //putting this is just to be "nice"
       //later we can remove the assumption that a CA is always read
-      for(let storageAddress of storageMap.keys()){
+      for (let storageAddress of storageMap.keys()) {
         shardusKey = toShardusAddressWithKey(key, storageAddress, AccountType.ContractStorage)
         readSet.add(shardusKey)
       }
@@ -2094,21 +2108,21 @@ async function generateAccessList(callObj: any): Promise<{accessList:any[], shar
     let readOnlySet = new Set()
     let writeOnlySet = new Set()
     let readWriteSet = new Set()
-    for(let key of writeSet.values()){
-      if(readSet.has(key)){
+    for (let key of writeSet.values()) {
+      if (readSet.has(key)) {
         readWriteSet.add(key)
       } else {
         writeOnlySet.add(key)
       }
     }
-    for(let key of readSet.values()){
-      if(writeSet.has(key) === false){
+    for (let key of readSet.values()) {
+      if (writeSet.has(key) === false) {
         readOnlySet.add(key)
       }
     }
     let shardusMemoryPatterns = null
 
-    if(ShardeumFlags.generateMemoryPatternData){
+    if (ShardeumFlags.generateMemoryPatternData) {
       shardusMemoryPatterns = {
         ro: Array.from(readOnlySet),
         rw: Array.from(readWriteSet),
@@ -2152,12 +2166,12 @@ async function generateAccessList(callObj: any): Promise<{accessList:any[], shar
 
     if (callResult.execResult.exceptionError) {
       if (ShardeumFlags.VerboseLogs) console.log('Execution Error:', callResult.execResult.exceptionError)
-      return {accessList : [], shardusMemoryPatterns: null}
+      return { accessList: [], shardusMemoryPatterns: null }
     }
-    return {accessList, shardusMemoryPatterns}
+    return { accessList, shardusMemoryPatterns }
   } catch (e) {
     console.log(`Error: generateAccessList`, e)
-    return {accessList : [], shardusMemoryPatterns: null}
+    return { accessList: [], shardusMemoryPatterns: null }
   }
 }
 
@@ -2311,7 +2325,7 @@ shardus.setup({
       const txHash = bufferToHex(txObj.hash())
 
       //limit debug app data size.  (a queue would be nicer, but this is very simple)
-      if(debugAppdata.size > 1000){
+      if (debugAppdata.size > 1000) {
         debugAppdata.clear()
       }
       debugAppdata.set(txHash, appData)
@@ -3202,7 +3216,6 @@ shardus.setup({
         }
       } else {
         if (ShardeumFlags.autoGenerateAccessList && appData.accessList) {
-
           shardusMemoryPatterns = appData.shardusMemoryPatterns
           // we have pre-generated accessList
           for (let accessListItem of appData.accessList) {
@@ -3264,7 +3277,7 @@ shardus.setup({
       keys: result,
       timestamp,
       id: txId,
-      shardusMemoryPatterns
+      shardusMemoryPatterns,
     }
   },
 
@@ -4110,7 +4123,11 @@ if (ShardeumFlags.GlobalNetworkAccount) {
         }
         lastReward = Date.now()
 
-        shardus.registerCacheTopic('receipt', ShardeumFlags.cacheMaxCycleAge, ShardeumFlags.cacheMaxItemPerTopic)
+        shardus.registerCacheTopic(
+          'receipt',
+          ShardeumFlags.cacheMaxCycleAge,
+          ShardeumFlags.cacheMaxItemPerTopic
+        )
 
         return setTimeout(networkMaintenance, cycleInterval)
       }
