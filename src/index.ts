@@ -507,19 +507,23 @@ function tryGetRemoteAccountCBNoOp(
 ): Promise<WrappedEVMAccount> {
   if (ShardeumFlags.VerboseLogs) {
     if (type === AccountType.Account) {
-      nestedCountersInstance.countEvent('shardeum', 'account inject miss')
       console.log(`account miss: ${address} tx:${this.linkedTX}`)
+      transactionState.tryRemoteHistory.account.push(address)
     } else if (type === AccountType.ContractCode) {
-      nestedCountersInstance.countEvent('shardeum', 'account bytes inject miss')
       console.log(`account bytes miss: ${address} key: ${key} tx:${this.linkedTX}`)
+      transactionState.tryRemoteHistory.storage.push(`${address}_${key}`)
     } else if (type === AccountType.ContractStorage) {
-      nestedCountersInstance.countEvent('shardeum', 'account storage inject miss')
       console.log(`account storage miss: ${address} key: ${key} tx:${this.linkedTX}`)
+      transactionState.tryRemoteHistory.codeBytes.push(`${address}_${key}`)
     }
     logAccessList('tryGetRemoteAccountCBNoOp access list:', transactionState.appData)
   }
 
   return undefined
+}
+
+function monitorEventCBNoOp(category: string, name: string, count: number, message: string) {
+
 }
 
 async function tryGetRemoteAccountCB(
@@ -651,6 +655,7 @@ function getDebugTXState(): ShardeumState {
         accountInvolved: accountInvolvedNoOp,
         contractStorageInvolved: contractStorageInvolvedNoOp,
         tryGetRemoteAccountCB: tryGetRemoteAccountCBNoOp,
+        monitorEventCB: monitorEventCBNoOp
       },
       txId,
       undefined,
@@ -690,6 +695,7 @@ function getCallTXState(from: string, to: string): ShardeumState {
       accountInvolved: accountInvolvedNoOp,
       contractStorageInvolved: contractStorageInvolvedNoOp,
       tryGetRemoteAccountCB: tryGetRemoteAccountCB,
+      monitorEventCB: monitorEventCBNoOp
     },
     txId,
     undefined,
@@ -712,6 +718,7 @@ function getPreRunTXState(txId: string): ShardeumState {
       accountInvolved: accountInvolvedNoOp,
       contractStorageInvolved: contractStorageInvolvedNoOp,
       tryGetRemoteAccountCB: tryGetRemoteAccountCB,
+      monitorEventCB: monitorEventCBNoOp
     },
     txId,
     undefined,
@@ -734,6 +741,7 @@ function getApplyTXState(txId: string): ShardeumState {
         accountInvolved,
         contractStorageInvolved,
         tryGetRemoteAccountCB: tryGetRemoteAccountCBNoOp,
+        monitorEventCB: shardus.monitorEvent.bind(shardus)
       },
       txId,
       undefined,
@@ -1283,32 +1291,34 @@ shardus.registerExternalGet('tx/:hash', async (req, res) => {
   if (!ShardeumFlags.EVMReceiptsAsAccounts) {
     try {
       const dataId = toShardusAddressWithKey(txHash, '', AccountType.Receipt)
-      const cachedAppData = await shardus.getLocalOrRemoteCachedAppData('receipt', dataId)
+      let cachedAppData = await shardus.getLocalOrRemoteCachedAppData('receipt', dataId)
       if (ShardeumFlags.VerboseLogs) console.log(`cachedAppData for tx hash ${txHash}`, cachedAppData)
+      if (cachedAppData && cachedAppData.appData) cachedAppData = cachedAppData.appData
       return res.json({account: cachedAppData.data ? cachedAppData.data : cachedAppData })
     } catch (e) {
       console.log('Unable to get tx receipt', e)
       return res.json({account: null})
     }
-  }
-  try {
-    //const shardusAddress = toShardusAddressWithKey(txHash.slice(0, 42), txHash, AccountType.Receipt)
-    const shardusAddress = toShardusAddressWithKey(txHash, '', AccountType.Receipt)
-    const account = await shardus.getLocalOrRemoteAccount(shardusAddress)
-    if (!account || !account.data) {
-      if (transactionFailHashMap[txHash]) {
-        /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log( `Tx Hash ${txHash} is found in the failed transactions list`, transactionFailHashMap[txHash] )
-        return res.json({ account: transactionFailHashMap[txHash] })
+  } else {
+    try {
+      //const shardusAddress = toShardusAddressWithKey(txHash.slice(0, 42), txHash, AccountType.Receipt)
+      const shardusAddress = toShardusAddressWithKey(txHash, '', AccountType.Receipt)
+      const account = await shardus.getLocalOrRemoteAccount(shardusAddress)
+      if (!account || !account.data) {
+        if (transactionFailHashMap[txHash]) {
+          /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log( `Tx Hash ${txHash} is found in the failed transactions list`, transactionFailHashMap[txHash] )
+          return res.json({ account: transactionFailHashMap[txHash] })
+        }
+        /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`No tx found for ${shardusAddress}`) //, accounts[shardusAddress])
+        return res.json({ account: null })
       }
-      /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`No tx found for ${shardusAddress}`) //, accounts[shardusAddress])
-      return res.json({ account: null })
+      let data = account.data
+      fixDeserializedWrappedEVMAccount(data)
+      res.json({ account: data })
+    } catch (error) {
+      console.log(error)
+      res.json({ error })
     }
-    let data = account.data
-    fixDeserializedWrappedEVMAccount(data)
-    res.json({ account: data })
-  } catch (error) {
-    console.log(error)
-    res.json({ error })
   }
 })
 
@@ -2029,8 +2039,8 @@ async function generateAccessList(callObj: any): Promise<{accessList:any[], shar
     //always make the sender rw.  This is because the sender will always spend gas and increment nonce
     if(callObj.from != null && callObj.from.length > 0){
       let shardusKey = toShardusAddress(callObj.from, AccountType.Account)
-      writeSet.add(shardusKey)   
-      readSet.add(shardusKey)   
+      writeSet.add(shardusKey)
+      readSet.add(shardusKey)
     }
 
     for (let [key, storageMap] of writtenAccounts.contractStorages) {

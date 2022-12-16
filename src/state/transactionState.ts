@@ -28,12 +28,26 @@ export type getAccountEvent = (
   key: string
 ) => Promise<WrappedEVMAccount>
 
+export type monitorEvent = (
+  category: string,
+  name: string,
+  count: number,
+  message: string
+) => void
+
 export interface ShardeumStorageCallbacks {
   storageMiss: accountEvent
   contractStorageMiss: contractStorageEvent
   accountInvolved: involvedEvent
   contractStorageInvolved: keyInvolvedEvent
   tryGetRemoteAccountCB: getAccountEvent
+  monitorEventCB: monitorEvent
+}
+
+export interface TryRemoteAccountHistory {
+  account: string[]
+  storage: string[]
+  codeBytes: string[]
 }
 
 //how to know about getting original version vs putted version..
@@ -75,6 +89,8 @@ export default class TransactionState {
   pendingContractStorageCommits: Map<string, Map<string, Buffer>>
   pendingContractBytesCommits: Map<string, Map<string, any>>
 
+  tryRemoteHistory: TryRemoteAccountHistory
+
   // touched CAs:  //TBD step 2.+ see docs
   touchedCAs: Set<string>
 
@@ -93,6 +109,7 @@ export default class TransactionState {
   contractStorageInvolvedCB: keyInvolvedEvent
 
   tryGetRemoteAccountCB: getAccountEvent
+  monitorEventCB: monitorEvent
 
   resetTransactionState() {
     this.firstAccountReads = new Map()
@@ -109,6 +126,12 @@ export default class TransactionState {
     this.pendingContractStorageCommits = new Map()
     this.pendingContractBytesCommits = new Map()
 
+    this.tryRemoteHistory = {
+      account: [],
+      storage: [],
+      codeBytes: []
+    }
+
     this.touchedCAs = new Set()
 
     this.checkpointCount = 0
@@ -119,7 +142,7 @@ export default class TransactionState {
     callbacks: ShardeumStorageCallbacks,
     linkedTX,
     firstReads: Map<string, Buffer>,
-    firstContractStorageReads: Map<string, Map<string, Buffer>>
+    firstContractStorageReads: Map<string, Map<string, Buffer>>,
   ) {
     this.createdTimestamp = Date.now()
 
@@ -133,6 +156,7 @@ export default class TransactionState {
     this.accountInvolvedCB = callbacks.accountInvolved
     this.contractStorageInvolvedCB = callbacks.contractStorageInvolved
     this.tryGetRemoteAccountCB = callbacks.tryGetRemoteAccountCB
+    this.monitorEventCB = callbacks.monitorEventCB
 
     this.firstAccountReads = new Map()
     this.allAccountWrites = new Map()
@@ -148,6 +172,12 @@ export default class TransactionState {
 
     this.pendingContractStorageCommits = new Map()
     this.pendingContractBytesCommits = new Map()
+
+    this.tryRemoteHistory = {
+      account: [],
+      storage: [],
+      codeBytes: []
+    }
 
     this.touchedCAs = new Set()
 
@@ -544,7 +574,7 @@ export default class TransactionState {
     if (/*this.debugTrace &&*/ ShardeumFlags.VerboseLogs) {
       //print the calls stack that is calling put account
       let er = new Error()
-      console.log(`put account: ${addressString} tx:${this.linkedTX} stack: ${er.stack} `)      
+      console.log(`put account: ${addressString} tx:${this.linkedTX} stack: ${er.stack} `)
     }
 
     if (this.accountInvolvedCB(this, addressString, false) === false) {
@@ -1061,6 +1091,24 @@ export default class TransactionState {
       //I think this is just supposed to tell the cache(if we had one) to save values to the trie
       // how does that apply to what we have given that we have no cache.
       //this.flushToCommittedValues()
+    }
+
+    if(ShardeumFlags.VerboseLogs){
+      // monitor counts the last tried remote accounts
+      let lastAccountTryRemote = this.tryRemoteHistory.account.length > 0 ? this.tryRemoteHistory.account[this.tryRemoteHistory.account.length - 1] : null
+      let lastStorageTryRemote = this.tryRemoteHistory.storage.length > 0 ? this.tryRemoteHistory.storage[this.tryRemoteHistory.storage.length - 1] : null
+      let lastCodeBytesTryRemote = this.tryRemoteHistory.codeBytes.length > 0 ? this.tryRemoteHistory.codeBytes[this.tryRemoteHistory.codeBytes.length - 1] : null
+
+
+      if (lastAccountTryRemote != null) {
+        this.monitorEventCB('shardeum', 'eoa_ca inject miss', 1, lastAccountTryRemote)
+      }
+      if (lastStorageTryRemote != null) {
+        this.monitorEventCB('shardeum', 'account storage inject miss', 1, lastStorageTryRemote)
+      }
+      if (lastCodeBytesTryRemote != null) {
+        this.monitorEventCB('shardeum', 'code bytes miss', 1, lastCodeBytesTryRemote)
+      }      
     }
   }
 

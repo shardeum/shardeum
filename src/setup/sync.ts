@@ -210,6 +210,7 @@ function getDebugTXState(evmCommon: Common): ShardeumState {
         accountInvolved: accountInvolvedNoOp,
         contractStorageInvolved: contractStorageInvolvedNoOp,
         tryGetRemoteAccountCB: tryGetRemoteAccountCBNoOp,
+        monitorEventCB: () => {}
       },
       txId,
       undefined,
