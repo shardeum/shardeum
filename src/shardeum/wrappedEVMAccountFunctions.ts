@@ -17,6 +17,7 @@ export function accountSpecificHash(account: WrappedEVMAccount | InternalAccount
   if (
     account.accountType === AccountType.NetworkAccount ||
     account.accountType === AccountType.NodeAccount ||
+    account.accountType === AccountType.NodeAccount2 ||
     account.accountType === AccountType.NodeRewardReceipt ||
     account.accountType === AccountType.DevAccount
   ) {

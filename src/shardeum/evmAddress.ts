@@ -1,6 +1,6 @@
 import { AccountType, WrappedEVMAccount } from './shardeumTypes'
 
-import {ShardeumFlags} from './shardeumFlags'
+import { ShardeumFlags } from './shardeumFlags'
 import { Account } from 'ethereumjs-util'
 
 /**
@@ -42,6 +42,7 @@ export function getAccountShardusAddress(wrappedEVMAccount: WrappedEVMAccount): 
   if (
     otherAccount.accountType === AccountType.NetworkAccount ||
     otherAccount.accountType === AccountType.NodeAccount ||
+    otherAccount.accountType === AccountType.NodeAccount2 ||
     otherAccount.accountType === AccountType.DevAccount
   ) {
     return otherAccount.id
@@ -121,7 +122,9 @@ export function toShardusAddressWithKey(
   if (
     accountType === AccountType.NetworkAccount ||
     accountType === AccountType.NodeAccount ||
-    accountType === AccountType.NodeRewardReceipt
+    accountType === AccountType.NodeAccount2 ||
+    accountType === AccountType.NodeRewardReceipt ||
+    accountType === AccountType.DevAccount
   ) {
     return addressStr.toLowerCase()
   }

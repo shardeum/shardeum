@@ -3333,6 +3333,7 @@ shardus.setup({
       if (
         wrappedEVMAccount.accountType !== AccountType.NetworkAccount &&
         wrappedEVMAccount.accountType !== AccountType.NodeAccount &&
+        wrappedEVMAccount.accountType !== AccountType.NodeAccount2 &&
         wrappedEVMAccount.accountType !== AccountType.NodeRewardReceipt &&
         wrappedEVMAccount.accountType !== AccountType.DevAccount
       )
@@ -3671,9 +3672,6 @@ shardus.setup({
 
     if (ShardeumFlags.VerboseLogs) console.log('updatedEVMAccount before hashUpdate', updatedEVMAccount)
 
-    //fix any issues from seralization
-    fixDeserializedWrappedEVMAccount(updatedEVMAccount)
-
     // oof, we dont have the TXID!!!
     let txId = applyResponse?.txId
     // let transactionState = transactionStateMap.get(txId)
@@ -3702,9 +3700,12 @@ shardus.setup({
       updatedEVMAccount.accountType !== AccountType.Debug &&
       updatedEVMAccount.accountType !== AccountType.NetworkAccount &&
       updatedEVMAccount.accountType !== AccountType.NodeAccount &&
+      updatedEVMAccount.accountType !== AccountType.NodeAccount2 &&
       updatedEVMAccount.accountType !== AccountType.NodeRewardReceipt &&
       updatedEVMAccount.accountType !== AccountType.DevAccount
     ) {
+      //fix any issues from seralization
+      fixDeserializedWrappedEVMAccount(updatedEVMAccount)
       shardeumState = getApplyTXState(txId)
     }
 
