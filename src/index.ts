@@ -2182,6 +2182,8 @@ async function generateAccessList(callObj: any): Promise<{accessList:any[], shar
  */
 shardus.setup({
   sync: sync(shardus, evmCommon),
+  //validateTransaction is not a standard sharus function.  When we cleanup index.ts we need to move it out of here
+  //also appdata and wrapped accounts should be passed in?
   validateTransaction(tx) {
     if (isInternalTx(tx)) {
       let internalTX = tx as InternalTx
@@ -2324,6 +2326,8 @@ shardus.setup({
 
       if (ShardeumFlags.txBalancePreCheck && appData != null) {
         let minBalance = ShardeumFlags.constantTxFee ? new BN(ShardeumFlags.constantTxFee) : new BN(1)
+        //check with value added in
+        minBalance = minBalance.add(txObj.value)
         let accountBalance = new BN(appData.balance)
         if (accountBalance.lt(minBalance)) {
           success = false
@@ -2894,7 +2898,8 @@ shardus.setup({
         transaction instanceof AccessListEIP2930Transaction && transaction.AccessListJSON != null
       let isSimpleTransfer = false
 
-      //if the TX is a contract deploy, predict the new contract address correctly
+      //if the TX is a contract deploy, predict the new contract address correctly (needs sender's nonce)
+      //remote fetch of sender EOA also allows fast balance and nonce checking (assuming we get some queue hints as well from shardus core)
       if (
         ShardeumFlags.txNoncePreCheck ||
         ShardeumFlags.txBalancePreCheck ||
@@ -2985,24 +2990,58 @@ shardus.setup({
         }
       }
 
+      //also run access list generation if needed 
       if (!isSimpleTransfer && ShardeumFlags.autoGenerateAccessList && isEIP2930 === false) {
-        // generate access list for non EIP 2930 txs
-        let callObj = {
-          from: await transaction.getSenderAddress().toString(),
-          to: transaction.to ? transaction.to.toString() : null,
-          value: '0x' + transaction.value.toString('hex'),
-          data: '0x' + transaction.data.toString('hex'),
-          gasLimit: '0x' + transaction.gasLimit.toString('hex'),
-          newContractAddress: appData.newCAAddr
+        let success = true
+        let reason = ""
+        //early pass on balance check to avoid expensive access list generation.
+        if (ShardeumFlags.txBalancePreCheck && appData != null) {
+          let minBalance = ShardeumFlags.constantTxFee ? new BN(ShardeumFlags.constantTxFee) : new BN(1)
+          //check with value added in
+          minBalance = minBalance.add(transaction.value)
+          let accountBalance = new BN(appData.balance)
+          if (accountBalance.lt(minBalance)) {
+            success = false
+            /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`precrack balance fail: sender ${transaction.getSenderAddress()} does not have enough balance. Min balance: ${minBalance.toString()}, Account balance: ${accountBalance.toString()}`)
+            nestedCountersInstance.countEvent('shardeum', 'precrack - insufficient balance')
+          } else {
+            /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`precrack balance pass: sender ${transaction.getSenderAddress()} has balance of ${accountBalance.toString()}`)
+          }
+        }
+  
+        if (ShardeumFlags.txNoncePreCheck && appData != null) {
+          let txNonce = transaction.nonce.toNumber()
+          let perfectCount = appData.nonce + appData.queueCount
+          if (txNonce != perfectCount) {
+            success = false
+            reason = `Transaction nonce != ${txNonce} ${perfectCount}`
+            /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`precrack nonce fail: perfectCount:${perfectCount} != ${txNonce}.    current nonce:${appData.nonce}  queueCount:${appData.queueCount} txHash: ${transaction.hash().toString('hex')} `)
+            nestedCountersInstance.countEvent('shardeum', 'precrack - nonce fail')
+          } else {
+            /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`precrack nonce pass: perfectCount:${perfectCount} == ${txNonce}.    current nonce:${appData.nonce}  queueCount:${appData.queueCount}  txHash: ${transaction.hash().toString('hex')}`)
+          }
         }
 
-        profilerInstance.scopedProfileSectionStart('accesslist-generate')
-        let {accessList:generatedAccessList, shardusMemoryPatterns} = await generateAccessList(callObj)
-        profilerInstance.scopedProfileSectionEnd('accesslist-generate')
+        if(success === true){
+          // generate access list for non EIP 2930 txs
+          let callObj = {
+            from: await transaction.getSenderAddress().toString(),
+            to: transaction.to ? transaction.to.toString() : null,
+            value: '0x' + transaction.value.toString('hex'),
+            data: '0x' + transaction.data.toString('hex'),
+            gasLimit: '0x' + transaction.gasLimit.toString('hex'),
+            newContractAddress: appData.newCAAddr
+          }
 
-        appData.accessList = generatedAccessList ? generatedAccessList : null
-        appData.requestNewTimestamp = true
-        appData.shardusMemoryPatterns = shardusMemoryPatterns
+          profilerInstance.scopedProfileSectionStart('accesslist-generate')
+          let {accessList:generatedAccessList, shardusMemoryPatterns} = await generateAccessList(callObj)
+          profilerInstance.scopedProfileSectionEnd('accesslist-generate')
+
+          appData.accessList = generatedAccessList ? generatedAccessList : null
+          appData.requestNewTimestamp = true
+          appData.shardusMemoryPatterns = shardusMemoryPatterns  
+          nestedCountersInstance.countEvent('shardeum', 'precrack - generateAccessList')   
+        }
       }
       if(ShardeumFlags.VerboseLogs) console.log(`txPreCrackData final result: txNonce: ${appData.txNonce}, currentNonce: ${appData.nonce}, queueCount: ${appData.queueCount}, appData ${JSON.stringify(appData)}`)
     }
