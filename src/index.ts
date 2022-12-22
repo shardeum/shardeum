@@ -29,6 +29,7 @@ import {
   WrappedEVMAccount,
   WrappedStates,
   DevAccount,
+  SetCertTime,
 } from './shardeum/shardeumTypes'
 import { getAccountShardusAddress, toShardusAddress, toShardusAddressWithKey } from './shardeum/evmAddress'
 import { ShardeumFlags, updateShardeumFlag, updateServicePoints } from './shardeum/shardeumFlags'
@@ -57,6 +58,7 @@ import * as AccountsStorage from './storage/accountStorage'
 import { StateManager } from '@ethereumjs/vm/dist/state'
 import { nestedCountersInstance } from '@shardus/core'
 import { sync } from './setup/sync'
+import { applySetCertTimeTx, isSetCertTimeTx, validateSetCertTimeTx } from './tx/setCertTime'
 
 const env = process.env
 
@@ -1484,10 +1486,15 @@ function isInternalTXGlobal(internalTx: InternalTx) {
 }
 
 async function applyInternalTx(
-  internalTx: InternalTx,
+  tx: any,
   wrappedStates: WrappedStates,
   txTimestamp: number
 ): Promise<ShardusTypes.ApplyResponse> {
+  if (isSetCertTimeTx(tx)) {
+    let setCertTimeTx = tx as SetCertTime
+    return applySetCertTimeTx(shardus, setCertTimeTx, wrappedStates, txTimestamp)
+  }
+  let internalTx = tx as InternalTx
   if (internalTx.internalTXType === InternalTXType.SetGlobalCodeBytes) {
     const wrappedEVMAccount: WrappedEVMAccount = wrappedStates[internalTx.from].data
     //just update the timestamp?
@@ -2217,6 +2224,8 @@ shardus.setup({
         } else {
           return { result: 'fail', reason: 'Dev key is not defined on the server!' }
         }
+      } else if (tx.internalTXType === InternalTXType.SetCertTime) {
+        return { result: 'pass', reason: 'valid' }
       } else {
         //todo validate internal TX
         let isValid = crypto.verifyObj(internalTX)
@@ -2273,6 +2282,17 @@ shardus.setup({
         txnTimestamp,
       }
     }
+
+    if (isSetCertTimeTx(tx)) {
+      let setCertTimeTx = tx as SetCertTime
+      const result = validateSetCertTimeTx(setCertTimeTx, appData)
+      return {
+        success: result.isValid,
+        reason: result.reason,
+        txnTimestamp,
+      }
+    }
+
     if (isInternalTx(tx)) {
       let internalTX = tx as InternalTx
       let success = false
@@ -2391,10 +2411,7 @@ shardus.setup({
     }
 
     if (isInternalTx(tx)) {
-      let internalTx = tx as InternalTx
-      //todo validate internal TX
-
-      return applyInternalTx(internalTx, wrappedStates, txTimestamp)
+      return applyInternalTx(tx, wrappedStates, txTimestamp)
     }
 
     if (isDebugTx(tx)) {
@@ -3092,6 +3109,9 @@ shardus.setup({
         keys.targetKeys = [networkAccount]
       } else if (internalTx.internalTXType === InternalTXType.ApplyChangeConfig) {
         keys.targetKeys = [networkAccount]
+      } else if (internalTx.internalTXType === InternalTXType.SetCertTime) {
+        keys.sourceKeys = [tx.nominator, networkAccount]
+        keys.targetKeys = [tx.nominee]
       }
       keys.allKeys = keys.allKeys.concat(keys.sourceKeys, keys.targetKeys, keys.storageKeys)
       // temporary hack for creating a receipt of node reward tx

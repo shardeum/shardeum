@@ -76,6 +76,7 @@ export enum InternalTXType {
   NodeReward,
   ChangeConfig,
   ApplyChangeConfig,
+  SetCertTime,
 }
 
 export enum DebugTXType {
@@ -102,6 +103,14 @@ export interface InternalTx extends InternalTxBase {
   change?: any // change config
   cycle?: number // change config
   config?: any // change config
+  sign: ShardusTypes.Sign
+}
+
+export interface SetCertTime extends InternalTxBase {
+  nominee: string
+  nominator: string
+  duration: number
+  timestamp: number
   sign: ShardusTypes.Sign
 }
 
