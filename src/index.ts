@@ -1490,9 +1490,11 @@ async function applyInternalTx(
   wrappedStates: WrappedStates,
   txTimestamp: number
 ): Promise<ShardusTypes.ApplyResponse> {
+  let txId = crypto.hashObj(tx)
+  const applyResponse: ShardusTypes.ApplyResponse = shardus.createApplyResponse(txId, txTimestamp)
   if (isSetCertTimeTx(tx)) {
     let setCertTimeTx = tx as SetCertTime
-    return applySetCertTimeTx(shardus, setCertTimeTx, wrappedStates, txTimestamp)
+    applySetCertTimeTx(shardus, setCertTimeTx, wrappedStates, txTimestamp, applyResponse)
   }
   let internalTx = tx as InternalTx
   if (internalTx.internalTXType === InternalTXType.SetGlobalCodeBytes) {
@@ -1505,8 +1507,6 @@ async function applyInternalTx(
     fixDeserializedWrappedEVMAccount(wrappedEVMAccount)
   }
 
-  let txId = crypto.hashObj(internalTx)
-  const applyResponse: ShardusTypes.ApplyResponse = shardus.createApplyResponse(txId, txTimestamp)
   if (internalTx.internalTXType === InternalTXType.InitNetwork) {
     const network: NetworkAccount = wrappedStates[networkAccount].data
     if (ShardeumFlags.useAccountWrites) {
@@ -3024,7 +3024,7 @@ shardus.setup({
         }
       }
 
-      //also run access list generation if needed 
+      //also run access list generation if needed
       if (!isSimpleTransfer && ShardeumFlags.autoGenerateAccessList && isEIP2930 === false) {
         let success = true
         let reason = ""
@@ -3042,7 +3042,7 @@ shardus.setup({
             /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`precrack balance pass: sender ${transaction.getSenderAddress()} has balance of ${accountBalance.toString()}`)
           }
         }
-  
+
         if (ShardeumFlags.txNoncePreCheck && appData != null) {
           let txNonce = transaction.nonce.toNumber()
           let perfectCount = appData.nonce + appData.queueCount
@@ -3073,8 +3073,8 @@ shardus.setup({
 
           appData.accessList = generatedAccessList ? generatedAccessList : null
           appData.requestNewTimestamp = true
-          appData.shardusMemoryPatterns = shardusMemoryPatterns  
-          nestedCountersInstance.countEvent('shardeum', 'precrack - generateAccessList')   
+          appData.shardusMemoryPatterns = shardusMemoryPatterns
+          nestedCountersInstance.countEvent('shardeum', 'precrack - generateAccessList')
         }
       }
       if(ShardeumFlags.VerboseLogs) console.log(`txPreCrackData final result: txNonce: ${appData.txNonce}, currentNonce: ${appData.nonce}, queueCount: ${appData.queueCount}, appData ${JSON.stringify(appData)}`)

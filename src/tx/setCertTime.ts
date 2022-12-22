@@ -74,11 +74,12 @@ export function validateSetCertTimeState(tx: SetCertTime, wrappedStates: Wrapped
   }
 }
 
-export async function applySetCertTimeTx(
+export function applySetCertTimeTx(
   shardus,
   tx: SetCertTime,
   wrappedStates: WrappedStates,
-  txTimestamp: number
+  txTimestamp: number,
+  applyResponse: ShardusTypes.ApplyResponse
 ) {
   const isValidRequest = validateSetCertTimeState(tx, wrappedStates)
   if (!isValidRequest.isValid) {
@@ -98,7 +99,6 @@ export async function applySetCertTimeTx(
 
   // Apply state
   const txId = crypto.hashObj(tx)
-  const applyResponse: ShardusTypes.ApplyResponse = shardus.createApplyResponse(txId, txTimestamp)
   shardus.applyResponseAddChangedAccount(
     applyResponse,
     operatorAccountAddress,
