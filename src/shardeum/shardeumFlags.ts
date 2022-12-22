@@ -85,7 +85,7 @@ export let ShardeumFlags: ShardeumFlags = {
   useAccountWrites: true,
   useShardeumVM: true,
   chargeConstantTxFee: true,
-  constantTxFee: '1000000000000000000',  // '10000000000000'//0.00001 SHM   //'1000000000000000000' // 1 SHM
+  constantTxFee: '10000000000000',  // '10000000000000'//0.00001 SHM   //'1000000000000000000' // 1 SHM
   devPublicKey: '774491f80f47fedb119bb861601490f42bc3ea3b57fc63906c0d08e6d777a592',
   cacheMaxCycleAge: 5,
   cacheMaxItemPerTopic: 4500,
