@@ -1,4 +1,3 @@
-const vorpal = require('vorpal')()
 const crypto = require('@shardus/crypto-utils')
 const axios = require('axios')
 crypto.init('69fa4195670576c0160d660c3be36556ff8d504725be8a59b5a96509e0c994bc')
@@ -89,43 +88,62 @@ async function injectTx(tx) {
   }
 }
 
-vorpal
-  .command('change config', 'Send a stringified JSON config object to be updated by shardus')
-  .action(async function(args, callback) {
-    const answers = await this.prompt([
-      {
-        type: 'number',
-        name: 'cycle',
-        message: 'Enter the cycle on which the change should take place (or "-1" for 3 cycles from now): ',
-        default: -1,
-        filter: value => parseInt(value),
-      },
-      {
-        type: 'input',
-        name: 'config',
-        message: 'Enter the stringified JSON config object: ',
-        default: '{ "p2p": { "minNodes": 50, "maxNodes": 500 } }', //JSON.stringify(testConfig),
-      },
-    ])
-    try {
-      this.log(JSON.parse(answers.config))
-      const tx = {
-        isInternalTx: true,
-        internalTXType: 3,
-        from: devAccount.address,
-        cycle: answers.cycle,
-        config: answers.config,
-        timestamp: Date.now(),
-      }
-      crypto.signObj(tx, devAccount.keys.secretKey, devAccount.keys.publicKey)
-      injectTx(tx).then(res => {
-        this.log(res)
-        callback()
-      })
-    } catch (err) {
-      this.log(err.message, 'Using backup Json config file instead of the input that was given')
+async function changeConfig() {
+  const inquirer = await import('inquirer')
+  const prompt = inquirer.createPromptModule()
+  const answers = await prompt([
+    {
+      type: 'number',
+      name: 'cycle',
+      message: 'Enter the cycle on which the change should take place (or "-1" for 3 cycles from now): ',
+      default: -1,
+      filter: value => parseInt(value),
+    },
+    {
+      type: 'input',
+      name: 'config',
+      message: 'Enter the stringified JSON config object: ',
+      default: '{ "p2p": { "minNodes": 50, "maxNodes": 500 } }', //JSON.stringify(testConfig),
+    },
+  ])
+  try {
+    console.log(JSON.parse(answers.config))
+    const tx = {
+      isInternalTx: true,
+      internalTXType: 3,
+      from: devAccount.address,
+      cycle: answers.cycle,
+      config: answers.config,
+      timestamp: Date.now(),
     }
-  })
+    crypto.signObj(tx, devAccount.keys.secretKey, devAccount.keys.publicKey)
+    await injectTx(tx).then(res => {
+      console.log(res)
+    })
+  } catch (err) {
+    console.log(err.message, 'Using backup Json config file instead of the input that was given')
+  }
+}
 
-vorpal.delimiter('>').show()
-vorpal.exec('change config')
+changeConfig()
+  .then(() => {
+    const cliffy = require('cliffy')
+
+    const cli = new cliffy.CLI().setDelimiter('>')
+
+    cli.addCommand('change-config', {
+      description: 'Send a stringified JSON config object to be updated by shardus',
+      action: async () => {
+        await changeConfig()
+      }
+    })
+
+    cli.addCommand("exit", {
+      description: "exit",
+      action: () => {
+        process.exit(0)
+      } 
+    })
+
+    cli.show()
+  })
