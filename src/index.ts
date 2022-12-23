@@ -60,7 +60,6 @@ import { nestedCountersInstance } from '@shardus/core'
 import { sync } from './setup/sync'
 import { applySetCertTimeTx, isSetCertTimeTx, validateSetCertTimeTx } from './tx/setCertTime'
 import { Request, Response } from 'express'
-import { ValidationError } from 'sequelize/types'
 
 const env = process.env
 
