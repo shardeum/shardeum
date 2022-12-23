@@ -59,6 +59,7 @@ import { StateManager } from '@ethereumjs/vm/dist/state'
 import { nestedCountersInstance } from '@shardus/core'
 import { sync } from './setup/sync'
 import { applySetCertTimeTx, isSetCertTimeTx, validateSetCertTimeTx } from './tx/setCertTime'
+import { Request, Response } from 'express'
 
 const env = process.env
 
@@ -1465,6 +1466,30 @@ shardus.registerExternalGet('genesis_accounts', async (req, res) => {
     accounts = genesisAccounts.slice(skip, limit)
   }
   res.json({ success: true, accounts })
+})
+
+interface QueryCertRequest {
+  nominee: string
+  nominator: string
+  sign?: ShardusTypes.Sign[]
+}
+
+function validateQueryCertRequest(req: QueryCertRequest): { success: boolean; reason: string } {
+  return { success: true, reason: '' }
+}
+
+interface QueryCertResponse {
+  nominator: string
+  nominee: string
+  stake: BN
+  certExp: number
+  signs?: ShardusTypes.Sign[]
+}
+
+shardus.registerExternalPut('query_certificate', async (req: Request, res: Response) => {
+  const queryCertReq = req.body as QueryCertRequest
+  const reqValidationResult = validateQueryCertRequest(queryCertReq)
+  if (!reqValidationResult.success) res.json(reqValidationResult)
 })
 
 /***
@@ -3027,7 +3052,7 @@ shardus.setup({
       //also run access list generation if needed
       if (!isSimpleTransfer && ShardeumFlags.autoGenerateAccessList && isEIP2930 === false) {
         let success = true
-        let reason = ""
+        let reason = ''
         //early pass on balance check to avoid expensive access list generation.
         if (ShardeumFlags.txBalancePreCheck && appData != null) {
           let minBalance = ShardeumFlags.constantTxFee ? new BN(ShardeumFlags.constantTxFee) : new BN(1)
@@ -3056,7 +3081,7 @@ shardus.setup({
           }
         }
 
-        if(success === true){
+        if (success === true) {
           // generate access list for non EIP 2930 txs
           let callObj = {
             from: await transaction.getSenderAddress().toString(),
@@ -3064,11 +3089,11 @@ shardus.setup({
             value: '0x' + transaction.value.toString('hex'),
             data: '0x' + transaction.data.toString('hex'),
             gasLimit: '0x' + transaction.gasLimit.toString('hex'),
-            newContractAddress: appData.newCAAddr
+            newContractAddress: appData.newCAAddr,
           }
 
           profilerInstance.scopedProfileSectionStart('accesslist-generate')
-          let {accessList:generatedAccessList, shardusMemoryPatterns} = await generateAccessList(callObj)
+          let { accessList: generatedAccessList, shardusMemoryPatterns } = await generateAccessList(callObj)
           profilerInstance.scopedProfileSectionEnd('accesslist-generate')
 
           appData.accessList = generatedAccessList ? generatedAccessList : null
@@ -3077,7 +3102,12 @@ shardus.setup({
           nestedCountersInstance.countEvent('shardeum', 'precrack - generateAccessList')
         }
       }
-      if(ShardeumFlags.VerboseLogs) console.log(`txPreCrackData final result: txNonce: ${appData.txNonce}, currentNonce: ${appData.nonce}, queueCount: ${appData.queueCount}, appData ${JSON.stringify(appData)}`)
+      if (ShardeumFlags.VerboseLogs)
+        console.log(
+          `txPreCrackData final result: txNonce: ${appData.txNonce}, currentNonce: ${
+            appData.nonce
+          }, queueCount: ${appData.queueCount}, appData ${JSON.stringify(appData)}`
+        )
     }
   },
 
