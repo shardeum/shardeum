@@ -1524,9 +1524,9 @@ async function applyInternalTx(
     const network: NetworkAccount = wrappedStates[networkAccount].data
     if (ShardeumFlags.useAccountWrites) {
       let writtenAccount = wrappedStates[networkAccount]
-      writtenAccount.timestamp = txTimestamp
       writtenAccount.data.timestamp = txTimestamp
-      shardus.applyResponseAddChangedAccount(applyResponse, networkAccount, writtenAccount, txId, txTimestamp)
+      const wrappedChangedAccount = WrappedEVMAccountFunctions._shardusWrappedAccount(writtenAccount.data)
+      shardus.applyResponseAddChangedAccount(applyResponse, networkAccount, wrappedChangedAccount, txId, txTimestamp)
     } else {
       network.timestamp = txTimestamp
     }
@@ -1712,9 +1712,6 @@ async function applyInternalTx(
     if (ShardeumFlags.useAccountWrites) {
       let networkAccountCopy = wrappedStates[networkAccount]
       let devAccountCopy = wrappedStates[internalTx.from]
-
-      networkAccountCopy.timestamp = txTimestamp
-      devAccountCopy.timestamp = txTimestamp
       networkAccountCopy.data.timestamp = txTimestamp
       devAccountCopy.data.timestamp = txTimestamp
       shardus.applyResponseAddChangedAccount(
@@ -1743,7 +1740,6 @@ async function applyInternalTx(
 
     if (ShardeumFlags.useAccountWrites) {
       let networkAccountCopy = wrappedStates[networkAccount]
-      networkAccountCopy.timestamp = txTimestamp
       networkAccountCopy.data.timestamp = txTimestamp
       networkAccountCopy.data.listOfChanges.push(internalTx.change)
       shardus.applyResponseAddChangedAccount(
