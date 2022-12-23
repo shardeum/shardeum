@@ -25,7 +25,7 @@ export function validateSetCertTimeTx(tx: SetCertTime, appData: any): { isValid:
     return { isValid: false, reason: 'Invalid nominee address' }
   }
   if (!isValidAddress(tx.nominator)) {
-    return { isValid: false, reason: 'Invalid nominee address' }
+    return { isValid: false, reason: 'Invalid nominator address' }
   }
   if (tx.duration <= 0) {
     return { isValid: false, reason: 'Duration in cert tx must be > 0' }
