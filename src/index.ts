@@ -60,6 +60,7 @@ import { nestedCountersInstance } from '@shardus/core'
 import { sync } from './setup/sync'
 import { applySetCertTimeTx, isSetCertTimeTx, validateSetCertTimeTx } from './tx/setCertTime'
 import { Request, Response } from 'express'
+import { CertSignaturesResult, queryCertificateHandler, StakeCert } from './handlers/queryCertificate'
 
 const env = process.env
 
@@ -115,6 +116,8 @@ console.log('Pay Address', pay_address, isValidAddress(pay_address))
 //console.log('pk',random_wallet.getPrivateKey())
 
 let nodeRewardCount = 0
+
+export let stakeCert: StakeCert
 
 function isDebugMode() {
   //@ts-ignore
@@ -1468,81 +1471,14 @@ shardus.registerExternalGet('genesis_accounts', async (req, res) => {
   res.json({ success: true, accounts })
 })
 
-interface QueryCertRequest {
-  nominee: string
-  nominator: string
-  sign?: ShardusTypes.Sign
-}
-
-function validateQueryCertRequest(req: QueryCertRequest, rawBody: any): ValidatorError {
-  if (!isValidAddress(req.nominee)) {
-    return { success: false, reason: 'Invalid nominee address' }
-  }
-  if (!isValidAddress(req.nominator)) {
-    return { success: false, reason: 'Invalid nominator address' }
-  }
-  try {
-    if (!crypto.verifyObj(rawBody)) return { success: false, reason: 'Invalid signature for QueryCert tx' }
-  } catch (e) {
-    return { success: false, reason: 'Invalid signature for QueryCert tx' }
-  }
-
-  return { success: true, reason: '' }
-}
-
-interface StakeCert {
-  nominator: string
-  nominee: string
-  stake: BN
-  certExp: number
-  signs?: ShardusTypes.Sign[]
-}
-
-interface ValidatorError {
-  success: boolean
-  reason: string
-}
-
 shardus.registerExternalPut('query_certificate', async (req: Request, res: Response) => {
-  const queryCertReq = req.body as QueryCertRequest
-  const reqValidationResult = validateQueryCertRequest(queryCertReq, req.body)
-  if (!reqValidationResult.success) return res.json(reqValidationResult)
-
-  const operatorAccount = await getEVMAccountDataForAddress(queryCertReq.nominator)
-  if (!operatorAccount) return res.json({ success: false, reason: 'Failed to fetch operator account state' })
-  const nodeAccount = await getEVMAccountDataForAddress(queryCertReq.nominee)
-  if (!nodeAccount) return res.json({ success: false, reason: 'Failed to fetch node account state' })
-
-  const currentTimestamp = Math.round(Date.now() / 1000)
-
-  // check operator cert validity
-  if (operatorAccount.operatorAccount.certExp > currentTimestamp)
-    return res.json({
-      success: false,
-      reason: 'Operator certificate has expired',
-    })
-
-  return res.json(await getCertSignatures(queryCertReq))
+  const queryCertRes = await queryCertificateHandler(req, shardus)
+  if (queryCertRes.success) {
+    let successRes = queryCertRes as CertSignaturesResult
+    stakeCert = successRes.signedStakeCert
+  }
+  return res.json(queryCertRes)
 })
-
-async function getEVMAccountDataForAddress(evmAddress: string): Promise<WrappedEVMAccount | undefined> {
-  const shardusAddress = toShardusAddress(evmAddress, AccountType.Account)
-  const account = await shardus.getLocalOrRemoteAccount(shardusAddress)
-  if (!account) return undefined
-  let data = account.data
-  fixDeserializedWrappedEVMAccount(data)
-  return data
-}
-
-export type CertSignaturesResult = {
-  success: boolean
-  signedStakeCert?: StakeCert
-}
-
-async function getCertSignatures(certQueryData: QueryCertRequest): Promise<CertSignaturesResult> {
-  // TODO: implement this
-  return { success: true }
-}
 
 /***
  *    #### ##    ## ######## ######## ########  ##    ##    ###    ##          ######## ##     ##
