@@ -45,6 +45,8 @@ interface ShardeumFlags {
   chargeConstantTxFee: boolean
   constantTxFee: string // '10000000000000'//0.00001 SHM   //'1000000000000000000' // 1 SHM
   devPublicKey: string
+  stakeTargetAddress: string
+  stakeAmount: string // stake amount in wei
   cacheMaxCycleAge: number
   cacheMaxItemPerTopic: number
   generateMemoryPatternData: boolean
@@ -87,6 +89,8 @@ export let ShardeumFlags: ShardeumFlags = {
   chargeConstantTxFee: true,
   constantTxFee: '10000000000000',  // '10000000000000'//0.00001 SHM   //'1000000000000000000' // 1 SHM
   devPublicKey: '774491f80f47fedb119bb861601490f42bc3ea3b57fc63906c0d08e6d777a592',
+  stakeTargetAddress: '0x0000000000000000000000000000000000000001',
+  stakeAmount: '5000000000000000000', // 5 SHM
   cacheMaxCycleAge: 5,
   cacheMaxItemPerTopic: 4500,
   ServicePoints: {

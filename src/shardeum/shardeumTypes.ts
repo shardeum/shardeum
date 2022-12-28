@@ -53,7 +53,7 @@ export interface WrappedEVMAccount extends BaseAccount {
   txId?: string
   txFrom?: string
   balance?: number // For debug tx
-  operatorAccount?: OperatorAccount
+  operatorAccountInfo?: OperatorAccountInfo
 }
 
 export interface WrappedEVMAccountMap {
@@ -77,6 +77,8 @@ export enum InternalTXType {
   ChangeConfig,
   ApplyChangeConfig,
   SetCertTime,
+  Stake,
+  Unstake
 }
 
 export enum DebugTXType {
@@ -110,6 +112,14 @@ export interface SetCertTime extends InternalTxBase {
   nominee: string
   nominator: string
   duration: number
+  timestamp: number
+  sign: ShardusTypes.Sign
+}
+
+export interface StakeCoinsTX extends InternalTxBase {
+  nominee: string
+  nominator: string
+  stake: BN
   timestamp: number
   sign: ShardusTypes.Sign
 }
@@ -222,7 +232,7 @@ export interface DevAccount extends BaseAccount {
   timestamp: number
 }
 
-export interface OperatorAccount {
+export interface OperatorAccountInfo {
   stake: BN
   nominee: string
   certExp: number

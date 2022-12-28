@@ -51,8 +51,8 @@ export function validateSetCertTimeState(tx: SetCertTime, wrappedStates: Wrapped
   if (operatorEVMAccount == undefined) {
     /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`setCertTime apply: found no wrapped state for operator account ${tx.nominator}`)
   } else {
-    if (operatorEVMAccount && operatorEVMAccount.operatorAccount) {
-      committedStake = operatorEVMAccount.operatorAccount.stake
+    if (operatorEVMAccount && operatorEVMAccount.operatorAccountInfo) {
+      committedStake = operatorEVMAccount.operatorAccountInfo.stake
     }
   }
 
@@ -92,7 +92,7 @@ export function applySetCertTimeTx(
 
   // Update state
   const serverConfig: any = config.server
-  operatorEVMAccount.operatorAccount.certExp = serverConfig.p2p.cycleDuration * ONE_SECOND * tx.duration
+  operatorEVMAccount.operatorAccountInfo.certExp = serverConfig.p2p.cycleDuration * ONE_SECOND * tx.duration
   operatorEVMAccount.account.balance = operatorEVMAccount.account.balance.sub(
     new BN(ShardeumFlags.constantTxFee)
   )

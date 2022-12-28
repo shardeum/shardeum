@@ -64,7 +64,7 @@ export async function queryCertificateHandler(
   const currentTimestamp = Math.round(Date.now() / 1000)
 
   // check operator cert validity
-  if (operatorAccount.operatorAccount.certExp > currentTimestamp)
+  if (operatorAccount.operatorAccountInfo.certExp > currentTimestamp)
     return {
       success: false,
       reason: 'Operator certificate has expired',
