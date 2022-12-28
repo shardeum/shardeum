@@ -74,7 +74,7 @@ let { shardusFactory } = require('@shardus/core')
 
 crypto.init('69fa4195670576c0160d660c3be36556ff8d504725be8a59b5a96509e0c994bc')
 
-export const networkAccount = '0'.repeat(64)
+export const networkAccount = '0'.repeat(64) //address
 
 // HELPFUL TIME CONSTANTS IN MILLISECONDS
 export const ONE_SECOND = 1000
@@ -4378,6 +4378,7 @@ shardus.setup({
   getJoinData() {
     const joinData = {
       version,
+      stakeCert,
     }
     return joinData
   },
@@ -4391,6 +4392,87 @@ shardus.setup({
         reason: `version number is old. Our app version is ${version}. Join request node app version is ${data.appJoinData.version}`,
       }
     }
+
+    if(ShardeumFlags.StakingEnabled){
+      const nodeAcc = data.sign.owner   
+      const stake_cert: StakeCert = data.stakeCert
+      const tx_time = data.joinRequestTimestamp as number
+
+      if(nodeAcc !== stake_cert.nominee){
+        return {
+          success: false,
+          reason: `Nominated address and tx signature owner doesn't match, nominee: ${stake_cert.nominee}, sign owner: ${nodeAcc}`,
+        }
+      }
+
+      if(tx_time > stake_cert.certExp){
+        return {
+          success: false,
+          reason: `Certificate has expired at ${stake_cert.certExp}`,
+        }
+      }
+
+
+      const serverConfig: any = config.server
+      const two_cycle_ms = serverConfig.p2p.cycleDuration * 2 * 1000
+
+      // stake certification should not expired for at least 2 cycle.
+      if((Date.now() + two_cycle_ms) > stake_cert.certExp){
+        return {
+          success: false,
+          reason: `Certificate will be expired really soon.`,
+        }
+      }
+
+      const minStakeRequired = AccountsStorage.cachedNetworkAccount.current.stakeRequired
+
+      if(stake_cert.stake < minStakeRequired) {
+        return {
+          success: false,
+          reason: `Minimum stake amount requirement does not meet.`,
+        }
+      }
+
+      const pickedNode: ShardusTypes.Sign[] = []
+      const requiredSig = ShardeumFlags.MinStakeCertSig
+      for(let i = 0; i < stake_cert.signs.length; i++){
+        const node = shardus.getNode(stake_cert.signs[i].owner)
+
+        if(node){
+          pickedNode.push(node);
+        }
+
+        // early break loop
+        if(pickedNode.length >= requiredSig){
+          break
+        }
+
+      }
+
+      if(pickedNode.length < requiredSig){
+        return {
+          success: false,
+          reason: `Not enough stake certification signature owner in the node list anymore`
+        }
+      }
+
+      for(let i = 0; i  < pickedNode.length; i++){
+        const tmp_stakeCert = {
+          nominator: stake_cert.nominator,
+          nominee: stake_cert.nominee,
+          certExp: stake_cert.certExp,
+          sign: pickedNode[i]
+        }
+        if(!crypto.verifyObj(tmp_stakeCert)){
+          return {
+            success: false,
+            reason: `Stake certification signature is invalid: ${pickedNode[i]}`
+          }
+        }
+      }
+
+    }
+
     return {
       success: true,
     }

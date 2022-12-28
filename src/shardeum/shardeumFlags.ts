@@ -51,6 +51,7 @@ interface ShardeumFlags {
   cacheMaxItemPerTopic: number
   generateMemoryPatternData: boolean
   StakingEnabled: boolean
+  MinStakeCertSig: number
 }
 
 const NodeRewardENV = process.env.NodeReward ? (process.env.NodeReward === 'true' ? true : false) : null
@@ -101,7 +102,8 @@ export let ShardeumFlags: ShardeumFlags = {
     ['tx/:hash']: 5,
   },
   generateMemoryPatternData: true,
-  StakingEnabled: false
+  StakingEnabled: false,
+  MinStakeCertSig: 5 // this is the minimum amount of signature required for stake certification. will move to network param in future.
 }
 
 export function updateShardeumFlag(key: string, value: any) {

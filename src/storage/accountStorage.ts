@@ -1,8 +1,9 @@
-import { WrappedEVMAccount, WrappedEVMAccountMap } from '../shardeum/shardeumTypes'
+import { NetworkAccount, WrappedEVMAccount, WrappedEVMAccountMap } from '../shardeum/shardeumTypes'
 
 import {ShardeumFlags} from '../shardeum/shardeumFlags'
 import Storage from '../storage/storage'
 import { DeSerializeFromJsonString } from '../utils'
+import { networkAccount } from '..'
 
 const isString = x => {
   return Object.prototype.toString.call(x) === '[object String]'
@@ -64,6 +65,7 @@ export async function accountExists(address: string): Promise<boolean> {
   }
 }
 
+export let cachedNetworkAccount: NetworkAccount // an actual obj
 export async function setAccount(address: string, account: WrappedEVMAccount): Promise<void> {
   if (ShardeumFlags.UseDBForAccounts === true) {
     let accountEntry = {
@@ -75,8 +77,11 @@ export async function setAccount(address: string, account: WrappedEVMAccount): P
     if (account.timestamp === 0) {
       throw new Error('setAccount timestamp should not be 0')
     }
-
     await storage.createOrReplaceAccountEntry(accountEntry)
+
+    if(address === networkAccount){
+      cachedNetworkAccount = account as any as NetworkAccount
+    }
   } else {
     accounts[address] = account
   }
