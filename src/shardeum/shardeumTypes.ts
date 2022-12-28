@@ -78,7 +78,8 @@ export enum InternalTXType {
   ApplyChangeConfig,
   SetCertTime,
   Stake,
-  Unstake
+  Unstake,
+  InitRewardTimes,
 }
 
 export enum DebugTXType {
@@ -105,6 +106,7 @@ export interface InternalTx extends InternalTxBase {
   change?: any // change config
   cycle?: number // change config
   config?: any // change config
+  nominee?: string // Node Account2
   sign: ShardusTypes.Sign
 }
 
@@ -121,6 +123,13 @@ export interface StakeCoinsTX extends InternalTxBase {
   nominator: string
   stake: BN
   timestamp: number
+  sign: ShardusTypes.Sign
+}
+
+export interface InitRewardTimes extends InternalTxBase {
+  nominee: string
+  timestamp: number
+  nodeActivatedTime: number
   sign: ShardusTypes.Sign
 }
 

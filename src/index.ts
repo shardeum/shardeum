@@ -32,7 +32,8 @@ import {
   SetCertTime,
   StakeCoinsTX,
   NodeAccount2,
-  OperatorAccountInfo
+  OperatorAccountInfo,
+  InitRewardTimes,
 } from './shardeum/shardeumTypes'
 import { getAccountShardusAddress, toShardusAddress, toShardusAddressWithKey } from './shardeum/evmAddress'
 import { ShardeumFlags, updateShardeumFlag, updateServicePoints } from './shardeum/shardeumFlags'
@@ -64,6 +65,7 @@ import { sync } from './setup/sync'
 import { applySetCertTimeTx, isSetCertTimeTx, validateSetCertTimeTx } from './tx/setCertTime'
 import { Request, Response } from 'express'
 import { CertSignaturesResult, queryCertificateHandler, StakeCert } from './handlers/queryCertificate'
+import { applyInitRewardTimesTx, validateInitRewardTimesTx, validateInitRewardTimesTxnFields } from './tx/initRewardTimes'
 
 const env = process.env
 
@@ -1768,6 +1770,10 @@ async function applyInternalTx(
     console.log(`Applied CHANGE_CONFIG GLOBAL transaction: ${stringify(network)}`)
     shardus.log('Applied CHANGE_CONFIG GLOBAL transaction', stringify(network))
   }
+  if (internalTx.internalTXType === InternalTXType.InitRewardTimes) {
+    let rewardTimesTx = internalTx as InitRewardTimes
+    applyInitRewardTimesTx(shardus, rewardTimesTx, txId, txTimestamp, wrappedStates, applyResponse)
+  }
   return applyResponse
 }
 
@@ -2247,6 +2253,8 @@ shardus.setup({
         }
       } else if (tx.internalTXType === InternalTXType.SetCertTime) {
         return { result: 'pass', reason: 'valid' }
+      } else if (tx.internalTXType === InternalTXType.InitRewardTimes) {
+        return validateInitRewardTimesTx(tx, shardus)
       } else {
         //todo validate internal TX
         let isValid = crypto.verifyObj(internalTX)
@@ -2340,6 +2348,10 @@ shardus.setup({
         } catch (e) {
           reason = 'Invalid signature for internal tx'
         }
+      } else if (tx.internalTXType === InternalTXType.InitRewardTimes) {
+        let result = validateInitRewardTimesTxnFields(tx, shardus)
+        success = result.success
+        reason = result.reason
       } else {
         try {
           success = crypto.verifyObj(internalTX)
@@ -3305,7 +3317,9 @@ shardus.setup({
       } else if (internalTx.internalTXType === InternalTXType.SetCertTime) {
         keys.sourceKeys = [tx.nominator, networkAccount]
         keys.targetKeys = [tx.nominee]
-      }
+      } else if (internalTx.internalTXType === InternalTXType.InitRewardTimes) {
+        keys.sourceKeys = [tx.nominee]
+      }      
       keys.allKeys = keys.allKeys.concat(keys.sourceKeys, keys.targetKeys, keys.storageKeys)
       // temporary hack for creating a receipt of node reward tx
       if (internalTx.internalTXType === InternalTXType.NodeReward) {
@@ -3684,6 +3698,13 @@ shardus.setup({
       if (internalTx.internalTXType === InternalTXType.ApplyChangeConfig) {
         if (!wrappedEVMAccount) {
           throw Error(`Network Account is not found ${accountId}`)
+        }
+      }
+      if (internalTx.internalTXType === InternalTXType.InitRewardTimes) {
+        if (!wrappedEVMAccount) {
+          if (accountId === internalTx.nominee) {
+            throw Error(`Node Account <nominee> is not found ${accountId}`)
+          }
         }
       }
       if (ShardeumFlags.VerboseLogs) console.log('Running getRelevantData', wrappedEVMAccount)
@@ -4277,6 +4298,53 @@ shardus.setup({
     }
     return {
       success: true,
+    }
+  },
+  async eventNotify(data: ShardusTypes.ShardusEvent) {
+    if (ShardeumFlags.StakingEnabled === false) return
+    if (ShardeumFlags.VerboseLogs) console.log(`Running eventNotify`, data)
+
+    const nodeId = shardus.getNodeId()
+    const node = shardus.getNode(nodeId)
+
+    if (node.status !== 'active') {
+      console.log('This node is not active yet')
+      return
+    }
+
+    const eventType = data.type
+    let latestCycles: ShardusTypes.Cycle[] = shardus.getLatestCycles()
+    let currentCycle = latestCycles[0]
+    if (!currentCycle) {
+      console.log('No cycle records found', latestCycles)
+      return
+    }
+    // Address as the hash of node public Key and current cycle
+    const address = crypto.hashObj({
+      nodePublicKey: data.publicKey,
+      counter: currentCycle.counter,
+    })
+    // Seems it needs to wait a bit for first active node
+    if (shardus.p2p.isFirstSeed) {
+      await sleep(1000)
+    }
+    const nodes = shardus.getClosestNodes(address, 5)
+    if (ShardeumFlags.VerboseLogs) console.log('closest nodes', nodes)
+
+    if (nodes.includes(nodeId)) {
+      if (eventType === 'node-activated') {
+        let tx = {
+          isInternalTx: true,
+          internalTXType: InternalTXType.InitRewardTimes,
+          nominee: data.publicKey,
+          nodeActivatedTime: data.time,
+          // timestamp: Date.now(),
+        } as InitRewardTimes
+        tx = shardus.signAsNode(tx)
+        const result = await shardus.put(tx)
+        console.log('INJECTED_INIT_REWARD_TIMES_TX', result)
+      }
+    } else if (eventType === 'node-deactivated') {
     }
   },
 })
