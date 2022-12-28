@@ -3850,7 +3850,7 @@ shardus.setup({
         }
 
         // attach OperatorAccountInfo if it is a staking tx
-        if (appData.internalTx && appData.internalTXType === InternalTXType.Stake) {
+        if (appData != null && appData.internalTx && appData.internalTXType === InternalTXType.Stake) {
           let stakeCoinsTx: StakeCoinsTX = appData.internalTx
           console.log('Adding operator account info to wrappedEVMAccount', evmAccountID, stakeCoinsTx.nominator)
           if (evmAccountID === stakeCoinsTx.nominator) {
