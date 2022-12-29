@@ -1,7 +1,7 @@
 import { ShardusTypes } from '@shardus/core'
 import * as crypto from '@shardus/crypto-utils'
 import { BN, isValidAddress } from 'ethereumjs-util'
-import { Request, Response } from 'express'
+import { Request } from 'express'
 import { toShardusAddress } from '../shardeum/evmAddress'
 import { AccountType, WrappedEVMAccount } from '../shardeum/shardeumTypes'
 import { fixDeserializedWrappedEVMAccount } from '../shardeum/wrappedEVMAccountFunctions'
@@ -70,7 +70,12 @@ export async function queryCertificateHandler(
       reason: 'Operator certificate has expired',
     }
 
-  return await getCertSignatures(queryCertReq)
+  return await getCertSignatures(shardus, {
+    nominator: queryCertReq.nominator,
+    nominee: queryCertReq.nominee,
+    stake: operatorAccount.operatorAccountInfo.stake,
+    certExp: operatorAccount.operatorAccountInfo.certExp,
+  })
 }
 
 async function getEVMAccountDataForAddress(
@@ -85,7 +90,18 @@ async function getEVMAccountDataForAddress(
   return data
 }
 
-export async function getCertSignatures(certQueryData: QueryCertRequest): Promise<CertSignaturesResult> {
-  // TODO: implement this
-  return { success: true }
+export async function getCertSignatures(shardus: any, certData: StakeCert): Promise<CertSignaturesResult> {
+  const signedAppData = await shardus.getAppDataSignatures(
+    'sign-app-data',
+    crypto.hashObj(certData),
+    5,
+    certData
+  )
+  if (!signedAppData.success) {
+    return {
+      success: false,
+    }
+  }
+  certData.signs = signedAppData.signatures
+  return { success: true, signedStakeCert: certData }
 }

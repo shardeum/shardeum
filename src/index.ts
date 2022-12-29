@@ -34,7 +34,7 @@ import {
   WrappedAccount,
   WrappedEVMAccount,
   WrappedStates,
-  OperatorAccountInfo
+  OperatorAccountInfo,
 } from './shardeum/shardeumTypes'
 import { getAccountShardusAddress, toShardusAddress, toShardusAddressWithKey } from './shardeum/evmAddress'
 import { ShardeumFlags, updateServicePoints, updateShardeumFlag } from './shardeum/shardeumFlags'
@@ -4285,6 +4285,23 @@ shardus.setup({
       }
     }
     return results
+  },
+  async signAppData(
+    type: string,
+    hash: string,
+    nodesToSign: number,
+    appData: any
+  ): Promise<ShardusTypes.SignedAppDataResultEnum> {
+    if (hash != crypto.hashObj(appData)) return ShardusTypes.SignedAppDataResultEnum.rejected
+    switch (type) {
+      case 'sign-stake-cert':
+        if (nodesToSign != 5) return ShardusTypes.SignedAppDataResultEnum.rejected
+        const stakeCert = appData as StakeCert
+        if (!stakeCert.nominator || !stakeCert.nominee || !stakeCert.stake || !stakeCert.certExp)
+          return ShardusTypes.SignedAppDataResultEnum.rejected
+        break
+    }
+    return ShardusTypes.SignedAppDataResultEnum.rejected
   },
   getAccountDebugValue(wrappedAccount) {
     return `${stringify(wrappedAccount)}`
