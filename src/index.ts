@@ -312,7 +312,7 @@ let debugAppdata: Map<string, any>
 function initEVMSingletons() {
   let chainIDBN = new BN(ShardeumFlags.ChainID)
 
-  evmCommon = new Common({ chain: Chain.Mainnet, hardfork: Hardfork.Merge })
+  evmCommon = new Common({ chain: Chain.Mainnet })
 
   //hack override this function.  perhaps a nice thing would be to use forCustomChain to create a custom common object
   evmCommon.chainIdBN = () => {
@@ -532,10 +532,10 @@ function tryGetRemoteAccountCBNoOp(
       transactionState.tryRemoteHistory.account.push(address)
     } else if (type === AccountType.ContractCode) {
       console.log(`account bytes miss: ${address} key: ${key} tx:${this.linkedTX}`)
-      transactionState.tryRemoteHistory.storage.push(`${address}_${key}`)
+      transactionState.tryRemoteHistory.codeBytes.push(`${address}_${key}`)
     } else if (type === AccountType.ContractStorage) {
       console.log(`account storage miss: ${address} key: ${key} tx:${this.linkedTX}`)
-      transactionState.tryRemoteHistory.codeBytes.push(`${address}_${key}`)
+      transactionState.tryRemoteHistory.storage.push(`${address}_${key}`)
     }
     logAccessList('tryGetRemoteAccountCBNoOp access list:', transactionState.appData)
   }
@@ -1322,7 +1322,7 @@ shardus.registerExternalGet('tx/:hash', async (req, res) => {
       let cachedAppData = await shardus.getLocalOrRemoteCachedAppData('receipt', dataId)
       if (ShardeumFlags.VerboseLogs) console.log(`cachedAppData for tx hash ${txHash}`, cachedAppData)
       if (cachedAppData && cachedAppData.appData) cachedAppData = cachedAppData.appData
-      return res.json({ account: cachedAppData.data ? cachedAppData.data : cachedAppData })
+      return res.json({ account: cachedAppData?.data ? cachedAppData.data : cachedAppData })
     } catch (e) {
       console.log('Unable to get tx receipt', e)
       return res.json({ account: null })

@@ -1,12 +1,12 @@
-import VM from '@ethereumjs/vm'
+import VM, {VMOpts} from '@ethereumjs/vm'
 import { default as runTx, RunTxOpts, RunTxResult } from './runTx'
 import { default as runCall, RunCallOpts } from './runCall'
 import {ShardeumFlags} from '../shardeum/shardeumFlags'
 import { EVMResult } from './evm/evm'
 
 export default class ShardeumVM extends VM {
-  constructor(opts = {}) {
-    super()
+  constructor(opts: VMOpts = {}) {
+    super(opts)
   }
 
   async runTx(opts): Promise<any> {
