@@ -64,8 +64,8 @@ import { sync } from './setup/sync'
 import { applySetCertTimeTx, isSetCertTimeTx, validateSetCertTimeTx, injectSetCertTimeTx } from './tx/setCertTime'
 import { applyClaimRewardTx, isClaimRewardTx, validateClaimRewardTx, injectClaimRewardTx } from './tx/claimReward'
 import { Request, Response } from 'express'
-import { CertSignaturesResult, queryCertificateHandler, StakeCert, getCertSignatures } from './handlers/queryCertificate'
-import { applyInitRewardTimesTx, validateInitRewardTimesTx, validateInitRewardTimesTxnFields } from './tx/initRewardTimes'
+import { CertSignaturesResult, queryCertificateHandler, StakeCert } from './handlers/queryCertificate'
+import * as InitRewardTimesTx from './tx/initRewardTimes'
 
 const env = process.env
 
@@ -1776,7 +1776,7 @@ async function applyInternalTx(
   }
   if (internalTx.internalTXType === InternalTXType.InitRewardTimes) {
     let rewardTimesTx = internalTx as InitRewardTimes
-    applyInitRewardTimesTx(shardus, rewardTimesTx, txId, txTimestamp, wrappedStates, applyResponse)
+    InitRewardTimesTx.apply(shardus, rewardTimesTx, txId, txTimestamp, wrappedStates, applyResponse)
   }
   if (internalTx.internalTXType === InternalTXType.ClaimReward) {
     let claimRewardTx = internalTx as ClaimRewardTX
@@ -2262,7 +2262,7 @@ shardus.setup({
       } else if (tx.internalTXType === InternalTXType.SetCertTime) {
         return { result: 'pass', reason: 'valid' }
       } else if (tx.internalTXType === InternalTXType.InitRewardTimes) {
-        return validateInitRewardTimesTx(tx, shardus)
+        return InitRewardTimesTx.validate(tx, shardus)
       } else {
         //todo validate internal TX
         let isValid = crypto.verifyObj(internalTX)
@@ -2357,7 +2357,7 @@ shardus.setup({
           reason = 'Invalid signature for internal tx'
         }
       } else if (tx.internalTXType === InternalTXType.InitRewardTimes) {
-        let result = validateInitRewardTimesTxnFields(tx, shardus)
+        let result = InitRewardTimesTx.validateFields(tx, shardus)
         success = result.success
         reason = result.reason
       } else {
@@ -3714,6 +3714,15 @@ shardus.setup({
       }
       if (internalTx.internalTXType === InternalTXType.InitRewardTimes) {
         if (!wrappedEVMAccount) {
+          // Node Account has to be already created at this point.
+          if (accountId === internalTx.nominee) {
+            throw Error(`Node Account <nominee> is not found ${accountId}`)
+          }
+        }
+      }
+      if (internalTx.internalTXType === InternalTXType.ClaimReward) {
+        if (!wrappedEVMAccount) {
+          // Node Account has to be already created at this point.
           if (accountId === internalTx.nominee) {
             throw Error(`Node Account <nominee> is not found ${accountId}`)
           }
@@ -4380,7 +4389,7 @@ shardus.setup({
     }
   },
   async eventNotify(data: ShardusTypes.ShardusEvent) {
-    if (ShardeumFlags.StakingEnabled === false) return
+    // if (ShardeumFlags.StakingEnabled === false) return
     if (ShardeumFlags.VerboseLogs) console.log(`Running eventNotify`, data)
 
     const nodeId = shardus.getNodeId()
@@ -4403,7 +4412,7 @@ shardus.setup({
       nodePublicKey: data.publicKey,
       counter: currentCycle.counter,
     })
-    // Seems it needs to wait a bit for first active node
+    // Seems it needs that to wait a bit for the first node to be active before querying getClosestNodes
     if (shardus.p2p.isFirstSeed) {
       await sleep(1000)
     }

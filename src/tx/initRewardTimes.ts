@@ -1,13 +1,10 @@
 import { Shardus, ShardusTypes } from '@shardus/core'
 import * as crypto from '@shardus/crypto-utils'
 import { ShardeumFlags } from '../shardeum/shardeumFlags'
-import { NodeAccount2, InitRewardTimes, WrappedStates } from '../shardeum/shardeumTypes'
+import { NodeAccount2, InitRewardTimes, WrappedStates, InternalTx } from '../shardeum/shardeumTypes'
 
-export function validateInitRewardTimesTxnFields(
-  tx: InitRewardTimes,
-  shardus: Shardus
-): { success: boolean; reason: string } {
-  if (ShardeumFlags.VerboseLogs) console.log('initRewardTimesTX', tx)
+export function validateFields(tx: InitRewardTimes, shardus: Shardus): { success: boolean; reason: string } {
+  if (ShardeumFlags.VerboseLogs) console.log('Validating InitRewardTimesTX fields', tx)
   if (!tx.nominee || tx.nominee === '')
     return { success: false, reason: 'nominee field is not found in setRewardTimes Tx' }
   if (!tx.nodeActivatedTime)
@@ -24,11 +21,12 @@ export function validateInitRewardTimesTxnFields(
   return { success: true, reason: 'valid' }
 }
 
-export function validateInitRewardTimesTx(
-  tx: InitRewardTimes,
-  shardus: Shardus
-): { result: string; reason: string } {
-  if (ShardeumFlags.VerboseLogs) console.log('initRewardTimesTX', tx)
+export function validatePreCrackData(shardus, tx: InternalTx, appData) {
+  if (ShardeumFlags.VerboseLogs) console.log('Validating InitRewardTimesTX PreCrackData', tx)
+}
+
+export function validate(tx: InitRewardTimes, shardus: Shardus): { result: string; reason: string } {
+  if (ShardeumFlags.VerboseLogs) console.log('Validating InitRewardTimesTX', tx)
   let isValid = crypto.verifyObj(tx)
   if (!isValid) return { result: 'fail', reason: 'Invalid signature' }
   const latestCycles = shardus.getLatestCycles(5)
@@ -39,7 +37,7 @@ export function validateInitRewardTimesTx(
   return { result: 'pass', reason: 'valid' }
 }
 
-export function applyInitRewardTimesTx(
+export function apply(
   shardus,
   tx: InitRewardTimes,
   txId: string,
@@ -59,5 +57,5 @@ export function applyInitRewardTimesTx(
     nodeAccount.rewardEndTime = 0
     nodeAccount.timestamp = txTimestamp
   }
-  console.log('Applied set_reward_times tx', tx.nominee)
+  console.log('Applied InitRewardTimesTX for', tx.nominee)
 }
