@@ -9,7 +9,7 @@ import { parse as parseUrl } from 'url'
 import got from 'got'
 import 'dotenv/config'
 import { ShardeumState, TransactionState } from './state'
-import { __ShardFunctions, ShardusTypes } from '@shardus/core'
+import { __ShardFunctions, nestedCountersInstance, ShardusTypes } from '@shardus/core'
 import { ContractByteWrite } from './state/transactionState'
 import { version } from '../package.json'
 import {
@@ -17,26 +17,26 @@ import {
   BlockMap,
   DebugTx,
   DebugTXType,
+  DevAccount,
   EVMAccountInfo,
+  InitRewardTimes,
   InternalTx,
   InternalTXType,
   NetworkAccount,
   NetworkParameters,
   NodeAccount,
+  NodeAccount2,
   OurAppDefinedData,
   ReadableReceipt,
+  SetCertTime,
+  StakeCoinsTX,
+  ClaimRewardTX,
   WrappedAccount,
   WrappedEVMAccount,
   WrappedStates,
-  DevAccount,
-  SetCertTime,
-  StakeCoinsTX,
-  NodeAccount2,
-  OperatorAccountInfo,
-  InitRewardTimes,
 } from './shardeum/shardeumTypes'
 import { getAccountShardusAddress, toShardusAddress, toShardusAddressWithKey } from './shardeum/evmAddress'
-import { ShardeumFlags, updateShardeumFlag, updateServicePoints } from './shardeum/shardeumFlags'
+import { ShardeumFlags, updateServicePoints, updateShardeumFlag } from './shardeum/shardeumFlags'
 import * as WrappedEVMAccountFunctions from './shardeum/wrappedEVMAccountFunctions'
 import {
   fixDeserializedWrappedEVMAccount,
@@ -44,12 +44,12 @@ import {
   updateEthAccountHash,
 } from './shardeum/wrappedEVMAccountFunctions'
 import {
+  emptyCodeHash,
   isEqualOrNewerVersion,
   replacer,
   SerializeToJsonString,
   sleep,
   zeroAddressStr,
-  emptyCodeHash,
 } from './utils'
 import config from './config'
 import { RunTxResult } from '@ethereumjs/vm/dist/runTx'
@@ -60,11 +60,11 @@ import { ShardeumBlock } from './block/blockchain'
 
 import * as AccountsStorage from './storage/accountStorage'
 import { StateManager } from '@ethereumjs/vm/dist/state'
-import { nestedCountersInstance } from '@shardus/core'
 import { sync } from './setup/sync'
 import { applySetCertTimeTx, isSetCertTimeTx, validateSetCertTimeTx, injectSetCertTimeTx } from './tx/setCertTime'
+import { applyClaimRewardTx, isClaimRewardTx, validateClaimRewardTx, injectClaimRewardTx } from './tx/claimReward'
 import { Request, Response } from 'express'
-import { CertSignaturesResult, queryCertificateHandler, StakeCert } from './handlers/queryCertificate'
+import { CertSignaturesResult, queryCertificateHandler, StakeCert, getCertSignatures } from './handlers/queryCertificate'
 import { applyInitRewardTimesTx, validateInitRewardTimesTx, validateInitRewardTimesTxnFields } from './tx/initRewardTimes'
 
 const env = process.env
@@ -95,8 +95,8 @@ export const INITIAL_PARAMETERS: NetworkParameters = {
   title: 'Initial parameters',
   description: 'These are the initial network parameters Shardeum started with',
   nodeRewardInterval: ONE_MINUTE * 10, // 10 minutes for testing
-  nodeRewardAmount: 1, // 1 SHM
-  nodePenalty: 10,
+  nodeRewardAmount: oneEth, // 1 SHM
+  nodePenalty: oneEth.mul(new BN(10)), // 10 SHM
   stakeRequired: oneEth.mul(new BN(10)), // 10 SHM
   maintenanceInterval: ONE_DAY,
   maintenanceFee: 0,
@@ -1612,7 +1612,8 @@ async function applyInternalTx(
     if (ShardeumFlags.EVMReceiptsAsAccounts) {
       nodeRewardReceipt = wrappedStates[txId].data // Current node reward receipt hash is set with txId
     }
-    from.balance += network.current.nodeRewardAmount // This is not needed and will have to delete `balance` field eventually
+    from.balance.add(network.current.nodeRewardAmount) // This is not needed and will have to delete `balance` field
+    // eventually
     shardus.log(`Reward from ${internalTx.from} to ${internalTx.to}`)
     shardus.log('TO ACCOUNT', to)
 
@@ -1777,6 +1778,10 @@ async function applyInternalTx(
     let rewardTimesTx = internalTx as InitRewardTimes
     applyInitRewardTimesTx(shardus, rewardTimesTx, txId, txTimestamp, wrappedStates, applyResponse)
   }
+  if (internalTx.internalTXType === InternalTXType.ClaimReward) {
+    let claimRewardTx = internalTx as ClaimRewardTX
+    applyClaimRewardTx(shardus, claimRewardTx, wrappedStates, txTimestamp, applyResponse)
+  }
   return applyResponse
 }
 
@@ -1921,7 +1926,7 @@ const createNodeAccount = (accountId: string) => {
   const account: NodeAccount = {
     id: accountId,
     accountType: AccountType.NodeAccount,
-    balance: 0,
+    balance: new BN(0),
     nodeRewardTime: 0,
     hash: '',
     timestamp: 0,
@@ -2466,8 +2471,6 @@ shardus.setup({
     if (result !== 'pass') {
       throw new Error(`invalid transaction, reason: ${reason}. tx: ${JSON.stringify(tx)}`)
     }
-
-
 
     if (appData.internalTx && appData.internalTXType === InternalTXType.Unstake) {
       // todo: apply the unstake tx here
@@ -3325,7 +3328,10 @@ shardus.setup({
         keys.targetKeys = [tx.nominee]
       } else if (internalTx.internalTXType === InternalTXType.InitRewardTimes) {
         keys.sourceKeys = [tx.nominee]
-      }      
+      } else if (internalTx.internalTXType === InternalTXType.ClaimReward) {
+        keys.sourceKeys = [tx.nominee]
+        keys.targetKeys = [networkAccount]
+      }
       keys.allKeys = keys.allKeys.concat(keys.sourceKeys, keys.targetKeys, keys.storageKeys)
       // temporary hack for creating a receipt of node reward tx
       if (internalTx.internalTXType === InternalTXType.NodeReward) {
@@ -3707,6 +3713,13 @@ shardus.setup({
         }
       }
       if (internalTx.internalTXType === InternalTXType.InitRewardTimes) {
+        if (!wrappedEVMAccount) {
+          if (accountId === internalTx.nominee) {
+            throw Error(`Node Account <nominee> is not found ${accountId}`)
+          }
+        }
+      }
+      if (internalTx.internalTXType === InternalTXType.ClaimReward) {
         if (!wrappedEVMAccount) {
           if (accountId === internalTx.nominee) {
             throw Error(`Node Account <nominee> is not found ${accountId}`)
@@ -4411,6 +4424,8 @@ shardus.setup({
         console.log('INJECTED_INIT_REWARD_TIMES_TX', result)
       }
     } else if (eventType === 'node-deactivated') {
+      const result = await injectClaimRewardTx(shardus, data)
+      console.log('INJECTED_CLAIM_REWARD_TX', result)
     }
   },
 })

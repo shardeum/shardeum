@@ -85,7 +85,7 @@ async function getEVMAccountDataForAddress(
   return data
 }
 
-async function getCertSignatures(certQueryData: QueryCertRequest): Promise<CertSignaturesResult> {
+export async function getCertSignatures(certQueryData: QueryCertRequest): Promise<CertSignaturesResult> {
   // TODO: implement this
   return { success: true }
 }
