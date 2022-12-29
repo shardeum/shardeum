@@ -62,7 +62,7 @@ import * as AccountsStorage from './storage/accountStorage'
 import { StateManager } from '@ethereumjs/vm/dist/state'
 import { nestedCountersInstance } from '@shardus/core'
 import { sync } from './setup/sync'
-import { applySetCertTimeTx, isSetCertTimeTx, validateSetCertTimeTx } from './tx/setCertTime'
+import { applySetCertTimeTx, isSetCertTimeTx, validateSetCertTimeTx, injectSetCertTimeTx } from './tx/setCertTime'
 import { Request, Response } from 'express'
 import { CertSignaturesResult, queryCertificateHandler, StakeCert } from './handlers/queryCertificate'
 import { applyInitRewardTimesTx, validateInitRewardTimesTx, validateInitRewardTimesTxnFields } from './tx/initRewardTimes'
@@ -121,6 +121,9 @@ console.log('Pay Address', pay_address, isValidAddress(pay_address))
 //console.log('pk',random_wallet.getPrivateKey())
 
 let nodeRewardCount = 0
+
+let lastCertTimeTxTimestamp: number = 0
+let lastCertTimeTxCycle: number | null = null
 
 export let stakeCert: StakeCert
 
@@ -2533,6 +2536,9 @@ shardus.setup({
       let nomineeNodeAccount2Address = stakeCoinsTx.nominee
       const operatorEVMAccount: WrappedEVMAccount = wrappedStates[operatorShardusAddress].data
       operatorEVMAccount.timestamp = txTimestamp
+
+      // todo: operatorAccountInfo field may not exist in the operatorEVMAccount yet
+
       operatorEVMAccount.operatorAccountInfo.stake = stakeCoinsTx.stake
       operatorEVMAccount.operatorAccountInfo.nominee = stakeCoinsTx.nominee
       operatorEVMAccount.operatorAccountInfo.certExp = 0
@@ -3615,7 +3621,7 @@ shardus.setup({
     }
   },
   async getRelevantData(accountId, timestampedTx, appData: any) {
-    if (ShardeumFlags.VerboseLogs) console.log('Running getRelevantData', accountId, timestampedTx)
+    if (ShardeumFlags.VerboseLogs) console.log('Running getRelevantData', accountId, timestampedTx, appData)
     let { tx } = timestampedTx
 
     if (isInternalTx(tx)) {
@@ -3871,9 +3877,9 @@ shardus.setup({
         }
 
         // attach OperatorAccountInfo if it is a staking tx
-        if (appData != null && appData.internalTx && appData.internalTXType === InternalTXType.Stake) {
+        if (isStakeRelatedTx) {
           let stakeCoinsTx: StakeCoinsTX = appData.internalTx
-          console.log('Adding operator account info to wrappedEVMAccount', evmAccountID, stakeCoinsTx.nominator)
+          if (ShardeumFlags.VerboseLogs) console.log('Adding operator account info to wrappedEVMAccount', evmAccountID, stakeCoinsTx.nominator)
           if (evmAccountID === stakeCoinsTx.nominator) {
             wrappedEVMAccount.operatorAccountInfo = {
               stake: new BN(0),
@@ -4298,6 +4304,66 @@ shardus.setup({
     }
     return {
       success: true,
+    }
+  },
+  async isReadyToJoin() {
+    if (ShardeumFlags.StakingEnabled === false) return true
+    if (ShardeumFlags.VerboseLogs) console.log(`Running isReadyToJoin`)
+
+    let latestCycles: ShardusTypes.Cycle[] = shardus.getLatestCycles(1)
+    let currentCycle = latestCycles[0]
+    if (!currentCycle) return false
+
+    if (lastCertTimeTxTimestamp === 0) {
+      // inject setCertTimeTx for the first time
+      await injectSetCertTimeTx(shardus)
+
+      // set lastCertTimeTxTimestamp and cycle
+      lastCertTimeTxTimestamp = Date.now()
+      lastCertTimeTxCycle = currentCycle.counter
+
+      // return false and query/check again in next cycle
+      return false
+    }
+    if (lastCertTimeTxTimestamp > 0) { // we have already submitted setCertTime
+      // query the certificate from the network
+      let certQueryData: any
+      let {success, signedStakeCert} = await getCertSignatures(certQueryData)
+
+      if (success === false) return false
+
+      let remainingValidTime = signedStakeCert.certExp - Date.now()
+      let isExpiringSoon = remainingValidTime <= currentCycle.start + 3 * ONE_SECOND * currentCycle.duration
+
+      // if cert is going to expire soon, inject a new setCertTimeTx
+      if (isExpiringSoon) {
+        await injectSetCertTimeTx(shardus)
+
+        lastCertTimeTxTimestamp = Date.now()
+        lastCertTimeTxCycle = currentCycle.counter
+
+        // return false and check again in next cycle
+        return false
+      } else {
+        let isValid = true
+        // todo: validate the cert here
+
+        if (!isValid) return false
+
+        // cert if valid and not expiring soon
+        stakeCert = signedStakeCert
+        return true
+      }
+    }
+    // every 3 cycle, inject a new setCertTime tx
+    if (lastCertTimeTxTimestamp > 0 &&  currentCycle.counter >= lastCertTimeTxCycle + 3) {
+      await injectSetCertTimeTx(shardus)
+
+      lastCertTimeTxTimestamp = Date.now()
+      lastCertTimeTxCycle = currentCycle.counter
+
+      // return false and check again in next cycle
+      return false
     }
   },
   async eventNotify(data: ShardusTypes.ShardusEvent) {

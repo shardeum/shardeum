@@ -20,6 +20,19 @@ export function isSetCertTimeTx(tx: any): boolean {
   return false
 }
 
+export async function injectSetCertTimeTx(shardus) {
+  let ourNodeId = await shardus.getNodeId()
+  let ourNode = await shardus.getNode(ourNodeId)
+  let tx = {
+    nominee: ourNode.publicKey,
+    nominator: '',
+    duration: 10,
+    timestamp: Date.now(),
+  }
+  tx = shardus.signAsNode(tx)
+  await shardus.put(tx)
+}
+
 export function validateSetCertTimeTx(tx: SetCertTime, appData: any): { isValid: boolean; reason: string } {
   if (!isValidAddress(tx.nominee)) {
     return { isValid: false, reason: 'Invalid nominee address' }
