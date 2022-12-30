@@ -64,7 +64,7 @@ import { sync } from './setup/sync'
 import { applySetCertTimeTx, isSetCertTimeTx, validateSetCertTimeTx, injectSetCertTimeTx } from './tx/setCertTime'
 import { applyClaimRewardTx, isClaimRewardTx, validateClaimRewardTx, injectClaimRewardTx } from './tx/claimReward'
 import { Request, Response } from 'express'
-import { CertSignaturesResult, queryCertificateHandler, StakeCert } from './handlers/queryCertificate'
+import { CertSignaturesResult, getCertSignatures, queryCertificateHandler, StakeCert } from './handlers/queryCertificate'
 import * as InitRewardTimesTx from './tx/initRewardTimes'
 
 const env = process.env
