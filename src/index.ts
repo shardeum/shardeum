@@ -34,6 +34,7 @@ import {
   WrappedAccount,
   WrappedEVMAccount,
   WrappedStates,
+  OperatorAccountInfo
 } from './shardeum/shardeumTypes'
 import { getAccountShardusAddress, toShardusAddress, toShardusAddressWithKey } from './shardeum/evmAddress'
 import { ShardeumFlags, updateServicePoints, updateShardeumFlag } from './shardeum/shardeumFlags'
@@ -192,7 +193,7 @@ function pruneOldBlocks() {
           delete blocks[block]
           delete blocksByHash[blockHash]
           delete readableBlocks[block]
-          /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log( 'Lengths of blocks after pruning', Object.keys(blocksByHash).length, Object.keys(readableBlocks).length )
+          /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log('Lengths of blocks after pruning', Object.keys(blocksByHash).length, Object.keys(readableBlocks).length)
         } catch (e) {
           console.log('Error: pruneOldBlocks', e)
         }
@@ -560,7 +561,7 @@ async function tryGetRemoteAccountCB(
   }
   let fixedEVMAccount = remoteShardusAccount.data
   fixDeserializedWrappedEVMAccount(fixedEVMAccount)
-  /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log( `Successfully found remote account for address: ${address}, type: ${type}, key: ${key}`, fixedEVMAccount )
+  /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`Successfully found remote account for address: ${address}, type: ${type}, key: ${key}`, fixedEVMAccount)
   return fixedEVMAccount
 }
 
@@ -1334,7 +1335,7 @@ shardus.registerExternalGet('tx/:hash', async (req, res) => {
       const account = await shardus.getLocalOrRemoteAccount(shardusAddress)
       if (!account || !account.data) {
         if (transactionFailHashMap[txHash]) {
-          /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log( `Tx Hash ${txHash} is found in the failed transactions list`, transactionFailHashMap[txHash] )
+          /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`Tx Hash ${txHash} is found in the failed transactions list`, transactionFailHashMap[txHash])
           return res.json({ account: transactionFailHashMap[txHash] })
         }
         /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`No tx found for ${shardusAddress}`) //, accounts[shardusAddress])
@@ -1543,7 +1544,13 @@ async function applyInternalTx(
       let writtenAccount = wrappedStates[networkAccount]
       writtenAccount.data.timestamp = txTimestamp
       const wrappedChangedAccount = WrappedEVMAccountFunctions._shardusWrappedAccount(writtenAccount.data)
-      shardus.applyResponseAddChangedAccount(applyResponse, networkAccount, wrappedChangedAccount, txId, txTimestamp)
+      shardus.applyResponseAddChangedAccount(
+        applyResponse,
+        networkAccount,
+        wrappedChangedAccount,
+        txId,
+        txTimestamp
+      )
     } else {
       network.timestamp = txTimestamp
     }
@@ -1596,7 +1603,7 @@ async function applyInternalTx(
           )
           let accountIsRemote = __ShardFunctions.partitionInWrappingRange(homePartition, minP, maxP) === false
 
-          /* prettier-ignore */ console.log( 'DBG', 'tx insert data', txId, `accountIsRemote: ${accountIsRemote} acc:${address} key:${wrappedEVMAccount.key} type:${wrappedEVMAccount.accountType}` )
+          /* prettier-ignore */ console.log('DBG', 'tx insert data', txId, `accountIsRemote: ${accountIsRemote} acc:${address} key:${wrappedEVMAccount.key} type:${wrappedEVMAccount.accountType}`)
         }
 
         if (wrappedEVMAccount.accountType === AccountType.Account) {
@@ -1938,7 +1945,7 @@ const createNodeAccount = (accountId: string) => {
 const getOrCreateBlockFromTimestamp = (timestamp: number, scheduleNextBlock = false): Block => {
   if (ShardeumFlags.VerboseLogs) console.log('Getting block from timestamp', timestamp)
   if (ShardeumFlags.VerboseLogs && blocks[latestBlock]) {
-    /* prettier-ignore */ console.log( 'Latest block timestamp', blocks[latestBlock].header.timestamp, blocks[latestBlock].header.timestamp.toNumber() + 6000 )
+    /* prettier-ignore */ console.log('Latest block timestamp', blocks[latestBlock].header.timestamp, blocks[latestBlock].header.timestamp.toNumber() + 6000)
     /* prettier-ignore */ console.log('Latest block number', blocks[latestBlock].header.number.toNumber())
   }
   if (blocks[latestBlock] && blocks[latestBlock].header.timestamp.toNumber() >= timestamp) {
@@ -2434,15 +2441,24 @@ shardus.setup({
         if (ShardeumFlags.VerboseLogs) console.log('Validating stake coins tx fields', appData.internalTx)
         let stakeCoinsTx = appData.internalTx as StakeCoinsTX
         let minStakeAmount = new BN(ShardeumFlags.stakeAmount)
-        if (stakeCoinsTx.nominator == null || stakeCoinsTx.nominator.toLowerCase() !== txObj.getSenderAddress().toString()) {
-          if (ShardeumFlags.VerboseLogs) console.log(`nominator vs tx signer`, stakeCoinsTx.nominator, txObj.getSenderAddress().toString())
+        if (
+          stakeCoinsTx.nominator == null ||
+          stakeCoinsTx.nominator.toLowerCase() !== txObj.getSenderAddress().toString()
+        ) {
+          if (ShardeumFlags.VerboseLogs)
+            console.log(`nominator vs tx signer`, stakeCoinsTx.nominator, txObj.getSenderAddress().toString())
           success = false
           reason = `Invalid nominator address in stake coins tx`
         } else if (stakeCoinsTx.nominee == null) {
           success = false
           reason = `Invalid nominee address in stake coins tx`
         } else if (!stakeCoinsTx.stake.eq(txObj.value)) {
-          if (ShardeumFlags.VerboseLogs) console.log(`Tx value and stake amount are different`, stakeCoinsTx.stake.toString(), txObj.value.toString())
+          if (ShardeumFlags.VerboseLogs)
+            console.log(
+              `Tx value and stake amount are different`,
+              stakeCoinsTx.stake.toString(),
+              txObj.value.toString()
+            )
           success = false
           reason = `Tx value and stake amount are different`
         } else if (stakeCoinsTx.stake.lt(minStakeAmount)) {
@@ -2524,7 +2540,7 @@ shardus.setup({
     shardeumState._transactionState.appData = appData
 
     if (appData.internalTx && appData.internalTXType === InternalTXType.Stake) {
-      if(ShardeumFlags.VerboseLogs) console.log('applying stake tx', wrappedStates, appData)
+      if (ShardeumFlags.VerboseLogs) console.log('applying stake tx', wrappedStates, appData)
       // todo: apply the stake tx here
 
       // get stake tx from appData.internalTx
@@ -2541,33 +2557,36 @@ shardus.setup({
       operatorEVMAccount.timestamp = txTimestamp
 
       // todo: operatorAccountInfo field may not exist in the operatorEVMAccount yet
-
+      if (operatorEVMAccount.operatorAccountInfo == null) {
+        operatorEVMAccount.operatorAccountInfo = { stake: null, nominee: '', certExp: null }
+      }
       operatorEVMAccount.operatorAccountInfo.stake = stakeCoinsTx.stake
       operatorEVMAccount.operatorAccountInfo.nominee = stakeCoinsTx.nominee
       operatorEVMAccount.operatorAccountInfo.certExp = 0
+      fixDeserializedWrappedEVMAccount(operatorEVMAccount)
 
       let totalAmountToDeduct = stakeCoinsTx.stake.add(new BN(ShardeumFlags.constantTxFee))
-      operatorEVMAccount.account.balance.sub(totalAmountToDeduct)
-      operatorEVMAccount.account.nonce.add(new BN('1'))
+      operatorEVMAccount.account.balance = operatorEVMAccount.account.balance.sub(totalAmountToDeduct)
+      operatorEVMAccount.account.nonce = operatorEVMAccount.account.nonce.add(new BN('1'))
 
       let operatorEVMAddress: Address = Address.fromString(stakeCoinsTx.nominator)
       await shardeumState.putAccount(operatorEVMAddress, operatorEVMAccount.account)
-
       const nodeAccount2: NodeAccount2 = wrappedStates[nomineeNodeAccount2Address].data
       nodeAccount2.nominator = stakeCoinsTx.nominator
       nodeAccount2.stakeLock = stakeCoinsTx.stake
+      nodeAccount2.timestamp = txTimestamp
 
       if (ShardeumFlags.useAccountWrites) {
         // for operator evm account
-        let {
-          accounts: accountWrites,
-        } = shardeumState._transactionState.getWrittenAccounts()
+        let { accounts: accountWrites } = shardeumState._transactionState.getWrittenAccounts()
+        console.log('\nAccount Writes: ', accountWrites)
         for (let account of accountWrites.entries()) {
           let addressStr = account[0]
           if (ShardeumFlags.Virtual0Address && addressStr === zeroAddressStr) {
             continue
           }
           let accountObj = Account.fromRlpSerializedAccount(account[1])
+          console.log('\nWritten Account Object: ', accountObj)
 
           let wrappedEVMAccount: WrappedEVMAccount = {
             timestamp: txTimestamp,
@@ -2627,7 +2646,7 @@ shardus.setup({
         amountSpent: totalAmountToDeduct.toString(),
         txId,
         accountType: AccountType.Receipt,
-        txFrom: stakeCoinsTx.nominator
+        txFrom: stakeCoinsTx.nominator,
       }
       /* prettier-ignore */
       if (ShardeumFlags.VerboseLogs) console.log(`DBG Receipt Account for txId ${ethTxId}`, wrappedReceiptAccount)
@@ -2654,7 +2673,7 @@ shardus.setup({
         )
       }
       return applyResponse
-  }
+    }
 
     //ah shoot this binding will not be "thread safe" may need to make it part of the EEI for this tx? idk.
     //shardeumStateManager.setTransactionState(transactionState)
@@ -2684,7 +2703,7 @@ shardus.setup({
         )
         let accountIsRemote = __ShardFunctions.partitionInWrappingRange(homePartition, minP, maxP) === false
 
-        /* prettier-ignore */ console.log( 'DBG', 'tx insert data', txId, `accountIsRemote: ${accountIsRemote} acc:${address} key:${wrappedEVMAccount.key} type:${wrappedEVMAccount.accountType}` )
+        /* prettier-ignore */ console.log('DBG', 'tx insert data', txId, `accountIsRemote: ${accountIsRemote} acc:${address} key:${wrappedEVMAccount.key} type:${wrappedEVMAccount.accountType}`)
       }
 
       if (wrappedEVMAccount.accountType === AccountType.Account) {
@@ -3171,7 +3190,7 @@ shardus.setup({
         }
 
         if (remoteShardusAccount == undefined) {
-          /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log( `txPreCrackData: found no local or remote account for address: ${txSenderEvmAddr}, key: ${transformedSourceKey}. using nonce=0` )
+          /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`txPreCrackData: found no local or remote account for address: ${txSenderEvmAddr}, key: ${transformedSourceKey}. using nonce=0`)
         } else {
           foundSender = true
           let wrappedEVMAccount = remoteShardusAccount.data as WrappedEVMAccount
@@ -3184,7 +3203,7 @@ shardus.setup({
         }
 
         if (remoteTargetAccount == undefined) {
-          /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log( `txPreCrackData: found no local or remote account for target address` )
+          /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`txPreCrackData: found no local or remote account for target address`)
         } else {
           foundTarget = true
           let wrappedEVMAccount = remoteTargetAccount.data as WrappedEVMAccount
@@ -3202,7 +3221,7 @@ shardus.setup({
           let caAddrBuf = predictContractAddressDirect(txSenderEvmAddr, nonce)
           let caAddr = '0x' + caAddrBuf.toString('hex')
           appData.newCAAddr = caAddr
-          /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log( `txPreCrackData found nonce:${foundNonce} found sender:${foundSender} for ${txSenderEvmAddr} nonce:${nonce.toString()} ca:${caAddr}` )
+          /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`txPreCrackData found nonce:${foundNonce} found sender:${foundSender} for ${txSenderEvmAddr} nonce:${nonce.toString()} ca:${caAddr}`)
         }
 
         // Attach nonce, queueCount and txNonce to appData
@@ -3217,7 +3236,7 @@ shardus.setup({
             if (appData.nonce < expectedAccountNonce) appData.nonce = expectedAccountNonce
           }
           appData.txNonce = transaction.nonce.toNumber()
-          /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log( `txPreCrackData found nonce:${foundNonce} found sender:${foundSender} for ${txSenderEvmAddr} nonce:${nonce.toString()} queueCount:${queueCountResult.count.toString()}` )
+          /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`txPreCrackData found nonce:${foundNonce} found sender:${foundSender} for ${txSenderEvmAddr} nonce:${nonce.toString()} queueCount:${queueCountResult.count.toString()}`)
         }
 
         // Attach balance to appData
@@ -3227,7 +3246,12 @@ shardus.setup({
       }
 
       //also run access list generation if needed
-      if (!isSimpleTransfer && ShardeumFlags.autoGenerateAccessList && isEIP2930 === false && !isStakeRelatedTx) {
+      if (
+        !isSimpleTransfer &&
+        ShardeumFlags.autoGenerateAccessList &&
+        isEIP2930 === false &&
+        !isStakeRelatedTx
+      ) {
         let success = true
         let reason = ''
         //early pass on balance check to avoid expensive access list generation.
@@ -3286,12 +3310,16 @@ shardus.setup({
           appData.internalTx = getStakeTxBlobFromEVMTx(transaction)
           appData.internalTXType = appData.internalTx.internalTXType
           if (appData.internalTx.stake) appData.internalTx.stake = new BN(appData.internalTx.stake)
-
-        } catch(e) {
+        } catch (e) {
           console.log('Error: while doing preCrack for stake tx', e)
         }
       }
-      if(ShardeumFlags.VerboseLogs) console.log(`txPreCrackData final result: txNonce: ${appData.txNonce}, currentNonce: ${appData.nonce}, queueCount: ${appData.queueCount}, appData ${JSON.stringify(appData)}`)
+      if (ShardeumFlags.VerboseLogs)
+        console.log(
+          `txPreCrackData final result: txNonce: ${appData.txNonce}, currentNonce: ${
+            appData.nonce
+          }, queueCount: ${appData.queueCount}, appData ${JSON.stringify(appData)}`
+        )
     }
   },
 
@@ -3424,7 +3452,7 @@ shardus.setup({
           let shardusAddr = toShardusAddress(caAddr, AccountType.Account)
           otherAccountKeys.push(shardusAddr)
           shardusAddressToEVMAccountInfo.set(shardusAddr, { evmAddress: caAddr, type: AccountType.Account })
-          /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log( 'getKeyFromTransaction: Predicting new contract account address:', caAddr, shardusAddr )
+          /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log('getKeyFromTransaction: Predicting new contract account address:', caAddr, shardusAddr)
         } else {
           //use app data!
           if (appData && appData.newCAAddr) {
@@ -3432,7 +3460,7 @@ shardus.setup({
             let shardusAddr = toShardusAddress(caAddr, AccountType.Account)
             otherAccountKeys.push(shardusAddr)
             shardusAddressToEVMAccountInfo.set(shardusAddr, { evmAddress: caAddr, type: AccountType.Account })
-            /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log( 'getKeyFromTransaction: Appdata provided new contract account address:', caAddr, shardusAddr )
+            /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log('getKeyFromTransaction: Appdata provided new contract account address:', caAddr, shardusAddr)
           }
         }
       }
@@ -3503,7 +3531,7 @@ shardus.setup({
       if (ShardeumFlags.EVMReceiptsAsAccounts) {
         const txHash = bufferToHex(transaction.hash())
         const shardusReceiptAddress = toShardusAddressWithKey(txHash, '', AccountType.Receipt)
-        /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log( `getKeyFromTransaction: adding tx receipt key: ${shardusReceiptAddress} ts:${tx.timestamp}` )
+        /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`getKeyFromTransaction: adding tx receipt key: ${shardusReceiptAddress} ts:${tx.timestamp}`)
         additionalAccounts.push(shardusReceiptAddress)
       }
 
@@ -3606,7 +3634,7 @@ shardus.setup({
         if (contractAccount && contractAccount.account == null) {
           //todo queue this somehow
           //throw Error(`contractAccount.account not found for ${wrappedEVMAccount.ethAddress} / ${shardusAddress} ${JSON.stringify(contractAccount)} `)
-          /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log( `contractAccount.account not found for ${ wrappedEVMAccount.ethAddress } / ${shardusAddress} ${JSON.stringify(contractAccount)} ` )
+          /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`contractAccount.account not found for ${wrappedEVMAccount.ethAddress} / ${shardusAddress} ${JSON.stringify(contractAccount)} `)
           //continue
         }
 
@@ -3783,7 +3811,7 @@ shardus.setup({
     if (isStakeRelatedTx) {
       let stakeTxBlob: StakeCoinsTX = appData.internalTx
 
-        // if it is nominee, create 'NodeAccount'
+      // if it is nominee, create 'NodeAccount'
       if (accountId === stakeTxBlob.nominee) {
         let accountCreated = false
         //let wrappedEVMAccount = accounts[accountId]
@@ -3804,7 +3832,7 @@ shardus.setup({
               rewardStartTime: 0,
               rewardEndTime: 0,
               penalty: new BN(0),
-              accountType: AccountType.NodeAccount2
+              accountType: AccountType.NodeAccount2,
             }
             WrappedEVMAccountFunctions.updateEthAccountHash(nodeAccount2)
           }
@@ -3894,12 +3922,17 @@ shardus.setup({
         // attach OperatorAccountInfo if it is a staking tx
         if (isStakeRelatedTx) {
           let stakeCoinsTx: StakeCoinsTX = appData.internalTx
-          if (ShardeumFlags.VerboseLogs) console.log('Adding operator account info to wrappedEVMAccount', evmAccountID, stakeCoinsTx.nominator)
+          if (ShardeumFlags.VerboseLogs)
+            console.log(
+              'Adding operator account info to wrappedEVMAccount',
+              evmAccountID,
+              stakeCoinsTx.nominator
+            )
           if (evmAccountID === stakeCoinsTx.nominator) {
             wrappedEVMAccount.operatorAccountInfo = {
               stake: new BN(0),
               nominee: '',
-              certExp: 0
+              certExp: 0,
             }
           }
         }
@@ -3912,7 +3945,7 @@ shardus.setup({
           hash: '',
           accountType: AccountType.ContractStorage,
         }
-        /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log( `Creating new contract storage account key:${evmAccountID} in contract address ${wrappedEVMAccount.ethAddress}` )
+        /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`Creating new contract storage account key:${evmAccountID} in contract address ${wrappedEVMAccount.ethAddress}`)
       } else {
         throw new Error(`getRelevantData: invalid accoun type ${accountType}`)
       }
