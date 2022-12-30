@@ -1,7 +1,25 @@
 import { Shardus, ShardusTypes } from '@shardus/core'
 import * as crypto from '@shardus/crypto-utils'
 import { ShardeumFlags } from '../shardeum/shardeumFlags'
-import { NodeAccount2, InitRewardTimes, WrappedStates, InternalTx } from '../shardeum/shardeumTypes'
+import {
+  NodeAccount2,
+  InitRewardTimes,
+  WrappedStates,
+  InternalTx,
+  InternalTXType,
+} from '../shardeum/shardeumTypes'
+
+export async function injectInitRewardTimesTx(shardus, eventData: ShardusTypes.ShardusEvent) {
+  let tx = {
+    isInternalTx: true,
+    internalTXType: InternalTXType.InitRewardTimes,
+    nominee: eventData.publicKey,
+    nodeActivatedTime: eventData.time,
+    // timestamp: Date.now(),
+  } as InitRewardTimes
+  tx = shardus.signAsNode(tx)
+  return await shardus.put(tx)
+}
 
 export function validateFields(tx: InitRewardTimes, shardus: Shardus): { success: boolean; reason: string } {
   if (ShardeumFlags.VerboseLogs) console.log('Validating InitRewardTimesTX fields', tx)
@@ -14,10 +32,12 @@ export function validateFields(tx: InitRewardTimes, shardus: Shardus): { success
   let isValid = crypto.verifyObj(tx)
   if (!isValid) return { success: false, reason: 'Invalid signature' }
   const latestCycles = shardus.getLatestCycles(5)
-  const isInActiveList = latestCycles.some(cycle => cycle.activatedPublicKeys.includes(tx.nominee))
-  if (ShardeumFlags.VerboseLogs) console.log('isInActiveList', isInActiveList)
-  if (!isInActiveList)
+  const nodeActivedCycle = latestCycles.find(cycle => cycle.activatedPublicKeys.includes(tx.nominee))
+  if (ShardeumFlags.VerboseLogs) console.log('nodeActivedCycle', nodeActivedCycle)
+  if (!nodeActivedCycle)
     return { success: false, reason: 'The node publicKey is not found in the recently actived nodes!' }
+  if (nodeActivedCycle.start !== tx.nodeActivatedTime)
+    return { success: false, reason: 'The cycle start time and nodeActivatedTime does not match!' }
   return { success: true, reason: 'valid' }
 }
 
@@ -30,10 +50,12 @@ export function validate(tx: InitRewardTimes, shardus: Shardus): { result: strin
   let isValid = crypto.verifyObj(tx)
   if (!isValid) return { result: 'fail', reason: 'Invalid signature' }
   const latestCycles = shardus.getLatestCycles(5)
-  const isInActiveList = latestCycles.some(cycle => cycle.activatedPublicKeys.includes(tx.nominee))
-  if (ShardeumFlags.VerboseLogs) console.log('isInActiveList', isInActiveList)
-  if (!isInActiveList)
+  const nodeActivedCycle = latestCycles.find(cycle => cycle.activatedPublicKeys.includes(tx.nominee))
+  if (ShardeumFlags.VerboseLogs) console.log('nodeActivedCycle', nodeActivedCycle)
+  if (!nodeActivedCycle)
     return { result: 'fail', reason: 'The node publicKey is not found in the recently actived nodes!' }
+  if (nodeActivedCycle.start !== tx.nodeActivatedTime)
+    return { result: 'fail', reason: 'The cycle start time and nodeActivatedTime does not match!' }
   return { result: 'pass', reason: 'valid' }
 }
 

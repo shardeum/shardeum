@@ -29,7 +29,7 @@ export async function injectClaimRewardTx(shardus, eventData: ShardusTypes.Shard
     internalTXType: InternalTXType.ClaimReward,
   }
   tx = shardus.signAsNode(tx)
-  await shardus.put(tx)
+  return await shardus.put(tx)
 }
 
 export function validateClaimRewardTx(tx: ClaimRewardTX, appData: any): { isValid: boolean; reason: string } {

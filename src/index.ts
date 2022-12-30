@@ -3728,13 +3728,6 @@ shardus.setup({
           }
         }
       }
-      if (internalTx.internalTXType === InternalTXType.ClaimReward) {
-        if (!wrappedEVMAccount) {
-          if (accountId === internalTx.nominee) {
-            throw Error(`Node Account <nominee> is not found ${accountId}`)
-          }
-        }
-      }
       if (ShardeumFlags.VerboseLogs) console.log('Running getRelevantData', wrappedEVMAccount)
       return shardus.createWrappedResponse(
         accountId,
@@ -4389,7 +4382,7 @@ shardus.setup({
     }
   },
   async eventNotify(data: ShardusTypes.ShardusEvent) {
-    // if (ShardeumFlags.StakingEnabled === false) return
+    if (ShardeumFlags.StakingEnabled === false) return
     if (ShardeumFlags.VerboseLogs) console.log(`Running eventNotify`, data)
 
     const nodeId = shardus.getNodeId()
@@ -4421,20 +4414,12 @@ shardus.setup({
 
     if (nodes.includes(nodeId)) {
       if (eventType === 'node-activated') {
-        let tx = {
-          isInternalTx: true,
-          internalTXType: InternalTXType.InitRewardTimes,
-          nominee: data.publicKey,
-          nodeActivatedTime: data.time,
-          // timestamp: Date.now(),
-        } as InitRewardTimes
-        tx = shardus.signAsNode(tx)
-        const result = await shardus.put(tx)
+        const result = await InitRewardTimesTx.injectInitRewardTimesTx(shardus, data)
         console.log('INJECTED_INIT_REWARD_TIMES_TX', result)
+      } else if (eventType === 'node-deactivated') {
+        const result = await injectClaimRewardTx(shardus, data)
+        console.log('INJECTED_CLAIM_REWARD_TX', result)
       }
-    } else if (eventType === 'node-deactivated') {
-      const result = await injectClaimRewardTx(shardus, data)
-      console.log('INJECTED_CLAIM_REWARD_TX', result)
     }
   },
 })
