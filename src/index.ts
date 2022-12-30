@@ -656,6 +656,7 @@ async function getReadableAccountInfo(account) {
       balance: account.account.balance.toString(),
       stateRoot: bufferToHex(account.account.stateRoot),
       codeHash: bufferToHex(account.account.codeHash),
+      operatorAccountInfo: account.operatorAccountInfo ? account.operatorAccountInfo : null
     }
   } catch (e) {
     if (ShardeumFlags.VerboseLogs) console.log('Unable to get readable account', e)
@@ -2541,14 +2542,13 @@ shardus.setup({
 
     if (appData.internalTx && appData.internalTXType === InternalTXType.Stake) {
       if (ShardeumFlags.VerboseLogs) console.log('applying stake tx', wrappedStates, appData)
-      // todo: apply the stake tx here
 
       // get stake tx from appData.internalTx
       let stakeCoinsTx: StakeCoinsTX = appData.internalTx
 
-      // validate tx timestamp, compare timestamp against account's timestamp
+      // todo: validate tx timestamp, compare timestamp against account's timestamp
 
-      // validate cert exp
+      // todo: validate cert exp
 
       // set stake value, nominee, cert in OperatorAcc (if not set yet)
       let operatorShardusAddress = toShardusAddress(stakeCoinsTx.nominator, AccountType.Account)
@@ -2558,7 +2558,7 @@ shardus.setup({
 
       // todo: operatorAccountInfo field may not exist in the operatorEVMAccount yet
       if (operatorEVMAccount.operatorAccountInfo == null) {
-        operatorEVMAccount.operatorAccountInfo = { stake: null, nominee: '', certExp: null }
+        operatorEVMAccount.operatorAccountInfo = { stake: new BN(0), nominee: '', certExp: null }
       }
       operatorEVMAccount.operatorAccountInfo.stake = stakeCoinsTx.stake
       operatorEVMAccount.operatorAccountInfo.nominee = stakeCoinsTx.nominee
@@ -2570,7 +2570,10 @@ shardus.setup({
       operatorEVMAccount.account.nonce = operatorEVMAccount.account.nonce.add(new BN('1'))
 
       let operatorEVMAddress: Address = Address.fromString(stakeCoinsTx.nominator)
+      await shardeumState.checkpoint()
       await shardeumState.putAccount(operatorEVMAddress, operatorEVMAccount.account)
+      await shardeumState.commit()
+
       const nodeAccount2: NodeAccount2 = wrappedStates[nomineeNodeAccount2Address].data
       nodeAccount2.nominator = stakeCoinsTx.nominator
       nodeAccount2.stakeLock = stakeCoinsTx.stake
@@ -2588,13 +2591,7 @@ shardus.setup({
           let accountObj = Account.fromRlpSerializedAccount(account[1])
           console.log('\nWritten Account Object: ', accountObj)
 
-          let wrappedEVMAccount: WrappedEVMAccount = {
-            timestamp: txTimestamp,
-            account: accountObj,
-            ethAddress: addressStr,
-            hash: '',
-            accountType: AccountType.Account,
-          }
+          let wrappedEVMAccount: WrappedEVMAccount = {...operatorEVMAccount, account: accountObj}
 
           updateEthAccountHash(wrappedEVMAccount)
           const wrappedChangedAccount = WrappedEVMAccountFunctions._shardusWrappedAccount(wrappedEVMAccount)
