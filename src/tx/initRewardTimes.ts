@@ -8,6 +8,7 @@ import {
   InternalTx,
   InternalTXType,
 } from '../shardeum/shardeumTypes'
+import * as WrappedEVMAccountFunctions from '../shardeum/wrappedEVMAccountFunctions'
 
 export async function injectInitRewardTimesTx(shardus, eventData: ShardusTypes.ShardusEvent) {
   let tx = {
@@ -67,17 +68,20 @@ export function apply(
   wrappedStates: WrappedStates,
   applyResponse: ShardusTypes.ApplyResponse
 ) {
-  const nodeAccount: NodeAccount2 = wrappedStates[tx.nominee].data
+  let nodeAccount: NodeAccount2 = wrappedStates[tx.nominee].data
+  nodeAccount.rewardStartTime = tx.nodeActivatedTime
+  nodeAccount.rewardEndTime = 0
+  nodeAccount.timestamp = txTimestamp
   if (ShardeumFlags.useAccountWrites) {
-    let nodeAccountCopy = wrappedStates[tx.nominee]
-    nodeAccountCopy.data.rewardStartTime = tx.nodeActivatedTime
-    nodeAccountCopy.data.rewardEndTime = 0
-    nodeAccountCopy.data.timestamp = txTimestamp
-    shardus.applyResponseAddChangedAccount(applyResponse, tx.nominee, nodeAccountCopy, txId, txTimestamp)
-  } else {
-    nodeAccount.rewardStartTime = tx.nodeActivatedTime
-    nodeAccount.rewardEndTime = 0
-    nodeAccount.timestamp = txTimestamp
+    const wrappedAccount: any = nodeAccount
+    const wrappedChangedAccount = WrappedEVMAccountFunctions._shardusWrappedAccount(wrappedAccount)
+    shardus.applyResponseAddChangedAccount(
+      applyResponse,
+      tx.nominee,
+      wrappedChangedAccount,
+      txId,
+      txTimestamp
+    )
   }
   console.log('Applied InitRewardTimesTX for', tx.nominee)
 }
