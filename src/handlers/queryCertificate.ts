@@ -20,11 +20,12 @@ export type CertSignaturesResult = {
 }
 
 export interface StakeCert {
-  nominator: string
-  nominee: string
-  stake: BN
-  certExp: number
-  signs?: ShardusTypes.Sign[]
+  nominator: string //the operator acount that nominated a node account
+  nominee: string //the node account that was nominated
+  stake: BN //the ammount staked
+  certExp: number //cert expiration time in seconds
+  signs?: ShardusTypes.Sign[] //this is used when when the cert has a list of valid signatures
+  sign?: ShardusTypes.Sign //this is use when we need to sign and unsigned cert. signs and sign will not exist yet when sign() is called
 }
 
 export interface ValidatorError {
@@ -47,6 +48,19 @@ function validateQueryCertRequest(req: QueryCertRequest, rawBody: any): Validato
 
   return { success: true, reason: '' }
 }
+
+
+/**
+ * This function needs to send a request to the external query_certificate endpoint of an active node 
+ * there should probably be some checks also to make sure we are ready for this
+ * 
+ * 
+ */
+export async function queryCertificate() : Promise<CertSignaturesResult | ValidatorError> {
+
+  throw new Error('todo implement')
+}
+
 
 export async function queryCertificateHandler(
   req: Request,

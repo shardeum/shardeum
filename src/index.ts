@@ -4291,17 +4291,44 @@ shardus.setup({
     hash: string,
     nodesToSign: number,
     appData: any
-  ): Promise<ShardusTypes.SignedAppDataResultEnum> {
-    if (hash != crypto.hashObj(appData)) return ShardusTypes.SignedAppDataResultEnum.rejected
+  ): Promise<ShardusTypes.SignAppDataResult> {
+    let fail:ShardusTypes.SignAppDataResult = { success: false, signature: null }
+
+    // the hash passed in is actually the address used for selecting which node should be signed.
+    // if (hash != crypto.hashObj(appData)){
+    //   if (ShardeumFlags.VerboseLogs) console.log(`signAppData failed ${type} `)
+    //   return fail
+    // } 
+
     switch (type) {
       case 'sign-stake-cert':
-        if (nodesToSign != 5) return ShardusTypes.SignedAppDataResultEnum.rejected
+        if (nodesToSign != 5) return fail
         const stakeCert = appData as StakeCert
-        if (!stakeCert.nominator || !stakeCert.nominee || !stakeCert.stake || !stakeCert.certExp)
-          return ShardusTypes.SignedAppDataResultEnum.rejected
-        break
+        if (!stakeCert.nominator || !stakeCert.nominee || !stakeCert.stake || !stakeCert.certExp){
+          if (ShardeumFlags.VerboseLogs) console.log(`signAppData format failed ${type} ${JSON.stringify(stakeCert)} `)
+          return fail
+        }
+
+        //validate that the cert has not expired
+        const currentTimestamp = Math.round(Date.now() / 1000)
+        if (stakeCert.certExp > currentTimestamp){
+          if (ShardeumFlags.VerboseLogs) console.log(`signAppData cert expired ${type} ${JSON.stringify(stakeCert)} `)
+          return fail
+        }
+        //TODO validate that stake meets minimum requirments by checking the cached global network account settings
+        //TODO check the staking amount matches the operator account (nominator) info  (getLocalOrRemote)
+        //TOOO check that the operatorAccount .nominee matches our cert
+
+        delete stakeCert.sign
+        delete stakeCert.signs
+        const signedCert:StakeCert = shardus.signAsNode(stakeCert)
+        const result:ShardusTypes.SignAppDataResult = { success: true, signature: signedCert.sign }
+        if (ShardeumFlags.VerboseLogs) console.log(`signAppData passed ${type} ${JSON.stringify(stakeCert)}`)
+        nestedCountersInstance.countEvent('shardeum', 'sign-stake-cert - passed')
+        return result
+        //break
     }
-    return ShardusTypes.SignedAppDataResultEnum.rejected
+    return fail
   },
   getAccountDebugValue(wrappedAccount) {
     return `${stringify(wrappedAccount)}`
@@ -4376,6 +4403,12 @@ shardus.setup({
     let currentCycle = latestCycles[0]
     if (!currentCycle) return false
 
+
+    //TODO:  a future PR will add a cachedNetworkAccount that we can check here
+    //If we dont have a cachedNetworkAccount yet we will call queryCertificate() to initiate a query_certificate transaction
+    //(some notes below on this too)
+    //Also if our cer is expired then we will also request a new one via queryCertificate()
+
     if (lastCertTimeTxTimestamp === 0) {
       // inject setCertTimeTx for the first time
       await injectSetCertTimeTx(shardus)
@@ -4390,7 +4423,14 @@ shardus.setup({
     if (lastCertTimeTxTimestamp > 0) { // we have already submitted setCertTime
       // query the certificate from the network
       let certQueryData: any
-      let {success, signedStakeCert} = await getCertSignatures(certQueryData)
+      
+      //TODO we need a query certificate instead of getCertSignatures
+      //query certificate will run the full process to propose a cert and then ask for signatures
+      //getCertSignatures is lower level and expects a filled out cert to be passed in
+      //We should add a funtion queryCertificate() that when called in the validator will
+      //create and send a query_certificate transaction
+      //note that query_certificate is an external enpoint rather than a full "transaction"
+      let {success, signedStakeCert} = await getCertSignatures(shardus, certQueryData)
 
       if (success === false) return false
 
