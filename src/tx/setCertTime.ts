@@ -11,6 +11,7 @@ import {
   WrappedEVMAccount,
   WrappedStates,
 } from '../shardeum/shardeumTypes'
+import * as AccountsStorage from '../storage/accountStorage'
 import { fixDeserializedWrappedEVMAccount } from '../shardeum/wrappedEVMAccountFunctions'
 
 export function isSetCertTimeTx(tx: any): boolean {
@@ -69,17 +70,10 @@ export function validateSetCertTimeState(tx: SetCertTime, wrappedStates: Wrapped
     }
   }
 
-  const networkAccountData: NetworkAccount = wrappedStates[networkAccount].data
-  if (networkAccountData == undefined) {
-    /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`setCertTime apply: found no wrapped state for network account ${networkAccount}`)
-  } else {
-    if (networkAccountData && networkAccountData.current) {
-      stakeRequired = networkAccountData.current.stakeRequired
-    }
-  }
+  const minStakeRequired = AccountsStorage.cachedNetworkAccount.current.stakeRequired
 
   // validate operator stake
-  if (committedStake < stakeRequired) {
+  if (committedStake < minStakeRequired) {
     return {
       isValid: false,
       reason: 'Operator has not staked the required amount',
