@@ -54,7 +54,8 @@ function validateQueryCertRequest(req: QueryCertRequest, rawBody: any): Validato
  * This function needs to send a request to the external query_certificate endpoint of an active node 
  * there should probably be some checks also to make sure we are ready for this
  * 
- * 
+ * This function should save the resulting StakeCert on a local variable so it can be used by
+ * isReadyToJoin
  */
 export async function queryCertificate() : Promise<CertSignaturesResult | ValidatorError> {
 
