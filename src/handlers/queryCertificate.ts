@@ -1,10 +1,11 @@
-import { ShardusTypes } from '@shardus/core'
+import { Shardus, ShardusTypes } from '@shardus/core'
 import * as crypto from '@shardus/crypto-utils'
 import { BN, isValidAddress } from 'ethereumjs-util'
 import { Request } from 'express'
 import { toShardusAddress } from '../shardeum/evmAddress'
-import { AccountType, WrappedEVMAccount } from '../shardeum/shardeumTypes'
+import { AccountType, NodeAccountQueryResponse, WrappedEVMAccount } from '../shardeum/shardeumTypes'
 import { fixDeserializedWrappedEVMAccount } from '../shardeum/wrappedEVMAccountFunctions'
+import { shardusPutToNode } from '../utils/requests'
 
 // types
 
@@ -50,14 +51,65 @@ function validateQueryCertRequest(req: QueryCertRequest, rawBody: any): Validato
 }
 
 /**
- * This function needs to send a request to the external query_certificate endpoint of an active node
- * there should probably be some checks also to make sure we are ready for this
+ * Query a random consensus node for the current node certificate by calling query-certificate
+ * on the chosen node. The nominator is chosen by querying `node-account/:address` on the
+ * randomly chosen consensu node
  *
- * This function should save the resulting StakeCert on a local variable so it can be used by
- * isReadyToJoin
+ * @param shardus
+ * @returns
  */
-export async function queryCertificate(): Promise<CertSignaturesResult | ValidatorError> {
-  throw new Error('todo implement')
+export async function queryCertificate(shardus: Shardus): Promise<CertSignaturesResult | ValidatorError> {
+  const nodeId = shardus.getNodeId()
+  const randomConsensusNode = shardus.getRandomConsensusNodeForAccount(nodeId)
+
+  // TODO: Replace this logic when `node-account/:address` endpoint is implemented
+  // This function should be called on the `randomConsensusNode`
+  const stubNodeAccount = async (address: string): Promise<NodeAccountQueryResponse> => {
+    return {
+      success: true,
+      nodeAccount: {
+        accountType: AccountType.NodeAccount2,
+        id: 'stub-id',
+        hash: 'stub-hash',
+        timestamp: Date.now(),
+        nominator: 'stub-nominator',
+        stakeLock: new BN('123'),
+        reward: new BN('2'),
+        rewardStartTime: Date.now(),
+        rewardEndTime: Date.now(),
+        penalty: new BN('1'),
+      },
+    }
+  }
+
+  const callQueryCertificate = async (
+    signedCertRequest: QueryCertRequest
+  ): Promise<CertSignaturesResult | ValidatorError> => {
+    try {
+      const res = await shardusPutToNode<CertSignaturesResult>(randomConsensusNode, '/query-certificate', {
+        data: signedCertRequest,
+        // Custom timeout because this request is expected to take a while
+        timeout: 15000,
+      })
+      return res.data
+    } catch (error) {
+      return {
+        success: false,
+        reason: 'Failed to get query certificate',
+      }
+    }
+  }
+
+  const nodeAccountQueryResponse = await stubNodeAccount(nodeId)
+  const nominator = nodeAccountQueryResponse.nodeAccount?.id
+
+  const certRequest = {
+    nominee: nodeId,
+    nominator: nominator,
+  }
+  const signedCertRequest: QueryCertRequest = shardus.signAsNode(certRequest)
+
+  return callQueryCertificate(signedCertRequest)
 }
 
 export async function queryCertificateHandler(

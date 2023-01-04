@@ -280,3 +280,8 @@ export interface ApplyChangeConfig {
 // export interface InternalAccount extends NodeAccount, NetworkAccount, DevAccount {}
 
 export type InternalAccount = NodeAccount | NetworkAccount | DevAccount
+
+export interface NodeAccountQueryResponse {
+  success: boolean
+  nodeAccount?: NodeAccount2
+}

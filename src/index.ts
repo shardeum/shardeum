@@ -1501,7 +1501,7 @@ shardus.registerExternalGet('genesis_accounts', async (req, res) => {
   res.json({ success: true, accounts })
 })
 
-shardus.registerExternalPut('query_certificate', async (req: Request, res: Response) => {
+shardus.registerExternalPut('query-certificate', async (req: Request, res: Response) => {
   const queryCertRes = await queryCertificateHandler(req, shardus)
   if (queryCertRes.success) {
     let successRes = queryCertRes as CertSignaturesResult
