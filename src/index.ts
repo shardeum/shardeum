@@ -1502,8 +1502,8 @@ shardus.registerExternalGet('nodeRewardValidate', debugMiddleware, async (req, r
 
 shardus.registerExternalGet('genesis_accounts', async (req, res) => {
   const { start } = req.query
-  if (!start) {
-    return res.json({ success: false, reason: 'start value is not defined!' })
+  if (!start || typeof start !== 'string') {
+    return res.json({ success: false, reason: 'start value is invalid!' })
   }
   const skip = parseInt(start)
   const limit = skip + 1000
