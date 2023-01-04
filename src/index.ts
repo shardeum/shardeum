@@ -4714,6 +4714,8 @@ shardus.setup({
       //We should add a funtion queryCertificate() that when called in the validator will
       //create and send a query_certificate transaction
       //note that query_certificate is an external enpoint rather than a full "transaction"
+
+      
       // let { success, signedStakeCert } = await getCertSignatures(shardus, certQueryData)
 
       // if (success === false) return false
@@ -4761,6 +4763,11 @@ shardus.setup({
     if (ShardeumFlags.StakingEnabled === false) return
     if (ShardeumFlags.VerboseLogs) console.log(`Running eventNotify`, data)
 
+    // We can skip staking related txs for the first node
+    if (shardus.p2p.isFirstSeed) {
+      return
+    }
+
     const nodeId = shardus.getNodeId()
     const node = shardus.getNode(nodeId)
 
@@ -4781,10 +4788,6 @@ shardus.setup({
       nodePublicKey: data.publicKey,
       counter: currentCycle.counter,
     })
-    // Seems it needs that to wait a bit for the first node to be active before querying getClosestNodes
-    if (shardus.p2p.isFirstSeed) {
-      await sleep(1000)
-    }
     const nodes = shardus.getClosestNodes(address, 5)
     if (ShardeumFlags.VerboseLogs) console.log('closest nodes', nodes)
 
