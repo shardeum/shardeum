@@ -48,9 +48,10 @@ export interface ValidatorError {
 }
 
 function validateQueryCertRequest(req: QueryCertRequest, rawBody: any): ValidatorError {
-  if (!isValidAddress(req.nominee)) {
-    return { success: false, reason: 'Invalid nominee address' }
-  }
+  // nominee is NodeAccount2, will need here to verify address with other methods
+  // if (!isValidAddress(req.nominee)) {
+  //   return { success: false, reason: 'Invalid nominee address' }
+  // }
   if (!isValidAddress(req.nominator)) {
     return { success: false, reason: 'Invalid nominator address' }
   }
@@ -89,11 +90,15 @@ export async function queryCertificate(
     signedCertRequest: QueryCertRequest
   ): Promise<CertSignaturesResult | ValidatorError> => {
     try {
-      const res = await shardusPutToNode<CertSignaturesResult>(randomConsensusNode, '/query-certificate', {
-        data: signedCertRequest,
-        // Custom timeout because this request is expected to take a while
-        timeout: 15000,
-      })
+      const res = await shardusPutToNode<CertSignaturesResult>(
+        randomConsensusNode,
+        '/query-certificate',
+        signedCertRequest,
+        {
+          // Custom timeout because this request is expected to take a while
+          timeout: 15000,
+        }
+      )
       return res.data
     } catch (error) {
       return {
@@ -116,7 +121,7 @@ export async function queryCertificate(
   const signedCertRequest: QueryCertRequest = shardus.signAsNode(certRequest)
   console.log('signedCertRequest', signedCertRequest)
 
-  return callQueryCertificate(signedCertRequest)
+  return await callQueryCertificate(signedCertRequest)
 }
 
 export async function getNodeAccountWithRetry(
@@ -144,7 +149,7 @@ async function getNodeAccount(
   try {
     const res = await shardusGetFromNode<any>(
       randomConsensusNode,
-      `account/:address`.replace(':address', nodeAccountId),
+      `/account/:address`.replace(':address', nodeAccountId),
       { params: { type: AccountType.NodeAccount2 } }
     )
     if (!res.data.account) {
@@ -165,7 +170,7 @@ export async function InjectTxToConsensor(
   tx: any // Sign Object
 ): Promise<InjectTxResponse | ValidatorError> {
   try {
-    const res = await shardusPostToNode<any>(randomConsensusNode, `inject`, tx)
+    const res = await shardusPostToNode<any>(randomConsensusNode, `/inject`, tx)
     if (!res.data.success) {
       return { success: false, reason: res.data.reason }
     }
@@ -185,7 +190,8 @@ export async function queryCertificateHandler(
 
   const operatorAccount = await getEVMAccountDataForAddress(shardus, queryCertReq.nominator)
   if (!operatorAccount) return { success: false, reason: 'Failed to fetch operator account state' }
-  const nodeAccount = await getEVMAccountDataForAddress(shardus, queryCertReq.nominee)
+  // TODO: look into why nodeAccount is queried here
+  const nodeAccount = await shardus.getLocalOrRemoteAccount(queryCertReq.nominee)
   if (!nodeAccount) return { success: false, reason: 'Failed to fetch node account state' }
 
   const currentTimestamp = Math.round(Date.now() / 1000)
@@ -205,7 +211,6 @@ export async function queryCertificateHandler(
   })
 }
 
-// This seems to need pass accountType with correct accountType (e.g. AccountType.NodeAccount2, etc)
 async function getEVMAccountDataForAddress(
   shardus: Shardus,
   evmAddress: string

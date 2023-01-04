@@ -11,8 +11,8 @@ export const shardusPost = async <ResponseType>(url: string, data: any, config: 
   return response
 }
 
-export const shardusPut = async <ResponseType>(url: string, config: AxiosRequestConfig) => {
-  const response = axios.put<ResponseType>(url, config)
+export const shardusPut = async <ResponseType>(url: string, data: any, config: AxiosRequestConfig) => {
+  const response = axios.put<ResponseType>(url, data, config)
   return response
 }
 
@@ -59,16 +59,17 @@ export const shardusPostToNode = async <ResponseType>(
 export const shardusPutToNode = async <ResponseType>(
   node: ShardusTypes.Node,
   path: string,
+  data?: any,
   config?: AxiosRequestConfig
 ) => {
   const url = urlFromNode(node, path)
-  return shardusPut<ResponseType>(url, config)
+  return shardusPut<ResponseType>(url, data, config)
 }
 
 // Update the node type here; We can import from P2P.P2PTypes.Node from '@shardus/type' lib but seems it's not installed yet
 const urlFromNode = (node: any, path: string) => {
   const host = normalizeUrl(`${node.ip}:${node.port}`)
-  const url = `${host}/${path}`
+  const url = `${host}${path}`
   return url
 }
 

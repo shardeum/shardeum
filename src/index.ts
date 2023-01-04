@@ -4700,11 +4700,11 @@ shardus.setup({
       // we have already submitted setCertTime
       // query the certificate from the network
       let res: any = await queryCertificate(shardus, publicKey, activeNodes)
+      if (ShardeumFlags.VerboseLogs) console.log('queryCertificate', res)
       if (!res.success) {
-        console.log('queryCertificate', res.reason)
         return false
       }
-      const certQueryData: StakeCert = res.signedStakeCert
+      const signedStakeCert: StakeCert = res.signedStakeCert
 
       //TODO we need a query certificate instead of getCertSignatures
       //query certificate will run the full process to propose a cert and then ask for signatures
@@ -4712,16 +4712,17 @@ shardus.setup({
       //We should add a funtion queryCertificate() that when called in the validator will
       //create and send a query_certificate transaction
       //note that query_certificate is an external enpoint rather than a full "transaction"
-      let { success, signedStakeCert } = await getCertSignatures(shardus, certQueryData)
+      // let { success, signedStakeCert } = await getCertSignatures(shardus, certQueryData)
 
-      if (success === false) return false
+      // if (success === false) return false
 
       let remainingValidTime = signedStakeCert.certExp - Date.now()
       let isExpiringSoon = remainingValidTime <= latestCycle.start + 3 * ONE_SECOND * latestCycle.duration
 
       // if cert is going to expire soon, inject a new setCertTimeTx
       if (isExpiringSoon) {
-        await injectSetCertTimeTx(shardus, publicKey, activeNodes)
+        const res = await injectSetCertTimeTx(shardus, publicKey, activeNodes)
+        if(!res.success) return false
 
         lastCertTimeTxTimestamp = Date.now()
         lastCertTimeTxCycle = latestCycle.counter
@@ -4741,7 +4742,8 @@ shardus.setup({
     }
     // every 3 cycle, inject a new setCertTime tx
     if (lastCertTimeTxTimestamp > 0 && latestCycle.counter >= lastCertTimeTxCycle + 3) {
-      await injectSetCertTimeTx(shardus, publicKey, activeNodes)
+      const res = await injectSetCertTimeTx(shardus, publicKey, activeNodes)
+      if(!res.success) return false
 
       lastCertTimeTxTimestamp = Date.now()
       lastCertTimeTxCycle = latestCycle.counter

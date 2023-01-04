@@ -49,12 +49,12 @@ export async function injectSetCertTimeTx(shardus: Shardus, publicKey: string, a
   }
   tx = shardus.signAsNode(tx)
   const result = await InjectTxToConsensor(randomConsensusNode, tx)
-  console.log('INJECTED_INIT_REWARD_TIMES_TX', result)
+  console.log('INJECTED_SET_CERT_TIME_TX', result)
   return result
 }
 
 export function validateSetCertTimeTx(tx: SetCertTime, appData: any): { isValid: boolean; reason: string } {
-  // nominee is NodeAccount2, have to verify with other methods the address
+  // nominee is NodeAccount2, will need here to verify address with other methods
   // if (!isValidAddress(tx.nominee)) {
   //   return { isValid: false, reason: 'Invalid nominee address' }
   // }
