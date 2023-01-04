@@ -35,7 +35,6 @@ import {
   WrappedAccount,
   WrappedEVMAccount,
   WrappedStates,
-  OperatorAccountInfo,
 } from './shardeum/shardeumTypes'
 import { getAccountShardusAddress, toShardusAddress, toShardusAddressWithKey } from './shardeum/evmAddress'
 import { ShardeumFlags, updateServicePoints, updateShardeumFlag } from './shardeum/shardeumFlags'
@@ -59,7 +58,6 @@ import { RunState } from '@ethereumjs/vm/dist/evm/interpreter'
 import Wallet from 'ethereumjs-wallet'
 import { Block } from '@ethereumjs/block'
 import { ShardeumBlock } from './block/blockchain'
-
 import * as AccountsStorage from './storage/accountStorage'
 import { StateManager } from '@ethereumjs/vm/dist/state'
 import { sync } from './setup/sync'
@@ -81,8 +79,6 @@ import * as InitRewardTimesTx from './tx/initRewardTimes'
 import { shardusFactory } from '@shardus/core'
 
 const env = process.env
-
-let { shardusFactory } = require('@shardus/core')
 
 crypto.init('69fa4195670576c0160d660c3be36556ff8d504725be8a59b5a96509e0c994bc')
 
@@ -571,7 +567,10 @@ async function tryGetRemoteAccountCB(
     /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`Found no remote account for address: ${address}, type: ${type}, key: ${key}`)
     return
   }
-  let fixedEVMAccount = remoteShardusAccount.data
+  const fixedEVMAccount = remoteShardusAccount.data
+  if (!WrappedEVMAccountFunctions.isWrappedEVMAccount(fixedEVMAccount)) {
+     return
+  }
   fixDeserializedWrappedEVMAccount(fixedEVMAccount)
   /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`Successfully found remote account for address: ${address}, type: ${type}, key: ${key}`, fixedEVMAccount)
   return fixedEVMAccount
@@ -914,12 +913,20 @@ shardus.registerExternalGet('eth_blockNumber', async (req, res) => {
 })
 
 shardus.registerExternalGet('eth_getBlockByNumber', async (req, res) => {
-  let blockNumber = req.query.blockNumber
-  if (blockNumber === 'latest') blockNumber = latestBlock
-  if (ShardeumFlags.VerboseLogs) console.log('Req: eth_getBlockByNumber', blockNumber)
-  if (blockNumber == null) {
+  const rawBlockNumber = req.query.blockNumber;
+  if (rawBlockNumber == null) {
     return res.json({ error: 'Invalid block number' })
   }
+  
+  let blockNumber: number;
+  if (rawBlockNumber === 'latest') {
+    blockNumber = latestBlock
+  } else {
+    blockNumber = Number(rawBlockNumber)
+  }
+
+  if (ShardeumFlags.VerboseLogs) console.log('Req: eth_getBlockByNumber', blockNumber)
+  
   return res.json({ block: readableBlocks[blockNumber] })
 })
 
