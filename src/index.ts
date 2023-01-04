@@ -1483,11 +1483,11 @@ shardus.registerExternalGet('nodeRewardValidate', debugMiddleware, async (req, r
   const shardusAddress = toShardusAddress(pay_address, AccountType.Account)
 
   const account = await shardus.getLocalOrRemoteAccount(shardusAddress)
-  if (!account || !account.data) {
+  if (!account || !account.data || !WrappedEVMAccountFunctions.isWrappedEVMAccount(account.data)) {
     console.log(`Pay address ${pay_address} is not found!`)
     return res.json({ success: false, data: `Pay address ${pay_address} is not found!` })
   }
-  // let data = account.account
+  
   fixDeserializedWrappedEVMAccount(account.data)
   let readableAccount = await getReadableAccountInfo(account.data)
   console.log(expectedBalance, readableAccount.balance)
