@@ -108,6 +108,7 @@ export interface InternalTx extends InternalTxBase {
   cycle?: number // change config
   config?: any // change config
   nominee?: string // Node Account2
+  nominator?: string // EVM Account (OperAcc)
   sign: ShardusTypes.Sign
 }
 

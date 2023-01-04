@@ -5,6 +5,7 @@ import { networkAccount, ONE_SECOND } from '..'
 import config from '../config'
 import { ShardeumFlags } from '../shardeum/shardeumFlags'
 import {
+  AccountType,
   InternalTXType,
   NodeAccountQueryResponse,
   SetCertTime,
@@ -16,7 +17,8 @@ import { fixDeserializedWrappedEVMAccount } from '../shardeum/wrappedEVMAccountF
 import { Shardus } from '@shardus/core'
 import { getNodeAccountWithRetry, InjectTxToConsensor } from '../handlers/queryCertificate'
 import { getRandom } from '../utils'
-import { shardusPost } from '../utils/requests'
+import { toShardusAddress } from '../shardeum/evmAddress'
+import * as WrappedEVMAccountFunctions from '../shardeum/wrappedEVMAccountFunctions'
 
 export function isSetCertTimeTx(tx: any): boolean {
   if (tx.isInternalTx && tx.internalTXType === InternalTXType.SetCertTime) {
@@ -26,7 +28,7 @@ export function isSetCertTimeTx(tx: any): boolean {
 }
 
 export async function injectSetCertTimeTx(shardus: Shardus, publicKey: string, activeNodes: any) {
-  // Query the nodeAccount is ready before injecting setCertTime
+  // Query the nodeAccount and see if it is ready before injecting setCertTime
   const accountQueryResponse = await getNodeAccountWithRetry(publicKey, activeNodes)
   if (!accountQueryResponse.success) return accountQueryResponse
 
@@ -78,7 +80,8 @@ export function validateSetCertTimeState(tx: SetCertTime, wrappedStates: Wrapped
   let committedStake = new BN(0)
   let stakeRequired = new BN(0)
 
-  const operatorEVMAccount: WrappedEVMAccount = wrappedStates[tx.nominator].data
+  const operatorEVMAccount: WrappedEVMAccount =
+    wrappedStates[toShardusAddress(tx.nominator, AccountType.Account)].data
   fixDeserializedWrappedEVMAccount(operatorEVMAccount)
   if (operatorEVMAccount == undefined) {
     /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`setCertTime apply: found no wrapped state for operator account ${tx.nominator}`)
@@ -93,10 +96,11 @@ export function validateSetCertTimeState(tx: SetCertTime, wrappedStates: Wrapped
   // validate operator stake
   if (committedStake < minStakeRequired) {
     return {
-      isValid: false,
+      result: 'fail',
       reason: 'Operator has not staked the required amount',
     }
   }
+  return { result: 'pass', reason: 'valid' }
 }
 
 export function applySetCertTimeTx(
@@ -107,13 +111,16 @@ export function applySetCertTimeTx(
   applyResponse: ShardusTypes.ApplyResponse
 ) {
   const isValidRequest = validateSetCertTimeState(tx, wrappedStates)
-  if (!isValidRequest.isValid) {
+  if (isValidRequest.result === 'fail') {
     /* prettier-ignore */ console.log(`Invalid SetCertTimeTx state, operator account ${tx.nominator}, reason: ${isValidRequest.reason}`)
   }
   const operatorAccountAddress = tx.nominator
-  const operatorEVMAccount: WrappedEVMAccount = wrappedStates[tx.nominator].data
+  const operatorEVMAccount: WrappedEVMAccount =
+    wrappedStates[toShardusAddress(tx.nominator, AccountType.Account)].data
   operatorEVMAccount.timestamp = txTimestamp
   fixDeserializedWrappedEVMAccount(operatorEVMAccount)
+
+  console.log('operatorEVMAccount Before', operatorEVMAccount)
 
   // Update state
   const serverConfig: any = config.server
@@ -122,13 +129,18 @@ export function applySetCertTimeTx(
     new BN(ShardeumFlags.constantTxFee)
   )
 
+  console.log('operatorEVMAccount After', operatorEVMAccount)
+
   // Apply state
   const txId = crypto.hashObj(tx)
-  shardus.applyResponseAddChangedAccount(
-    applyResponse,
-    operatorAccountAddress,
-    operatorAccountAddress,
-    txId,
-    txTimestamp
-  )
+  if (ShardeumFlags.useAccountWrites) {
+    const wrappedChangedAccount = WrappedEVMAccountFunctions._shardusWrappedAccount(operatorEVMAccount)
+    shardus.applyResponseAddChangedAccount(
+      applyResponse,
+      operatorAccountAddress,
+      wrappedChangedAccount,
+      txId,
+      txTimestamp
+    )
+  }
 }

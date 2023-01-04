@@ -1071,7 +1071,6 @@ shardus.registerExternalGet('account/:address', async (req, res) => {
       else res.json({ account: data })
     } else {
       let accountType = parseInt(req.query.type)
-      console.log('req.query', req.query)
       let id = req.params['address']
       const shardusAddress = toShardusAddressWithKey(id, '', accountType)
       const account = await shardus.getLocalOrRemoteAccount(shardusAddress)
@@ -3535,8 +3534,8 @@ shardus.setup({
       } else if (internalTx.internalTXType === InternalTXType.ApplyChangeConfig) {
         keys.targetKeys = [networkAccount]
       } else if (internalTx.internalTXType === InternalTXType.SetCertTime) {
-        keys.sourceKeys = [tx.nominator, networkAccount]
-        keys.targetKeys = [tx.nominee]
+        keys.sourceKeys = [tx.nominee]
+        keys.targetKeys = [toShardusAddress(tx.nominator, AccountType.Account), networkAccount]
       } else if (internalTx.internalTXType === InternalTXType.InitRewardTimes) {
         keys.sourceKeys = [tx.nominee]
       } else if (internalTx.internalTXType === InternalTXType.ClaimReward) {
@@ -3936,6 +3935,16 @@ shardus.setup({
           // Node Account has to be already created at this point.
           if (accountId === internalTx.nominee) {
             throw Error(`Node Account <nominee> is not found ${accountId}`)
+          }
+        }
+      }
+      if (internalTx.internalTXType === InternalTXType.SetCertTime) {
+        if (!wrappedEVMAccount ) {
+          // Node Account or EVM Account(Nominator) has to be already created at this point.
+          if (accountId === internalTx.nominee) {
+            throw Error(`Node Account <nominee> is not found ${accountId}`)
+          } else if (accountId === internalTx.nominator) {
+            throw Error(`EVM Account <nominator> is not found ${accountId}`)
           }
         }
       }
@@ -4667,7 +4676,8 @@ shardus.setup({
   // Update the activeNodes type here; We can import from P2P.P2PTypes.Node from '@shardus/type' lib but seems it's not installed yet
   async isReadyToJoin(latestCycle: ShardusTypes.Cycle, publicKey: string, activeNodes: any[]) {
     if (ShardeumFlags.StakingEnabled === false) return true
-    console.log(`Running isReadyToJoin`, latestCycle, publicKey, activeNodes)
+    if (ShardeumFlags.VerboseLogs) console.log(`Running isReadyToJoin`, latestCycle, publicKey, activeNodes)
+
 
     //TODO:  a future PR will add a cachedNetworkAccount that we can check here
     //If we dont have a cachedNetworkAccount yet we will call queryCertificate() to initiate a query_certificate transaction
@@ -4691,7 +4701,7 @@ shardus.setup({
       // query the certificate from the network
       let res: any = await queryCertificate(shardus, publicKey, activeNodes)
       if (!res.success) {
-        console.log('Fail to get certificate', res.reason)
+        console.log('queryCertificate', res.reason)
         return false
       }
       const certQueryData: StakeCert = res.signedStakeCert

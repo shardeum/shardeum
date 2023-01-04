@@ -84,7 +84,6 @@ export async function queryCertificate(
   }
 
   const randomConsensusNode: any = getRandom(activeNodes, 1)[0]
-  console.log('randomConsensusNode', randomConsensusNode)
 
   const callQueryCertificate = async (
     signedCertRequest: QueryCertRequest
@@ -115,7 +114,7 @@ export async function queryCertificate(
     nominator: nominator,
   }
   const signedCertRequest: QueryCertRequest = shardus.signAsNode(certRequest)
-  console.log(signedCertRequest)
+  console.log('signedCertRequest', signedCertRequest)
 
   return callQueryCertificate(signedCertRequest)
 }
@@ -172,7 +171,6 @@ export async function InjectTxToConsensor(
     }
     return res.data as InjectTxResponse
   } catch (error) {
-    console.log('res res', error)
     return { success: false, reason: (error as Error).message }
   }
 }
