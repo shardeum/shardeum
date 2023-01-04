@@ -78,6 +78,7 @@ import {
   StakeCert,
 } from './handlers/queryCertificate'
 import * as InitRewardTimesTx from './tx/initRewardTimes'
+import { shardusFactory } from '@shardus/core'
 
 const env = process.env
 
