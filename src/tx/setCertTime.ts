@@ -124,7 +124,8 @@ export function applySetCertTimeTx(
 
   // Update state
   const serverConfig: any = config.server
-  operatorEVMAccount.operatorAccountInfo.certExp = serverConfig.p2p.cycleDuration * ONE_SECOND * tx.duration
+  operatorEVMAccount.operatorAccountInfo.certExp =
+    txTimestamp + serverConfig.p2p.cycleDuration * ONE_SECOND * tx.duration
   operatorEVMAccount.account.balance = operatorEVMAccount.account.balance.sub(
     new BN(ShardeumFlags.constantTxFee)
   )

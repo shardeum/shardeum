@@ -4506,8 +4506,10 @@ shardus.setup({
         }
 
         //validate that the cert has not expired
-        const currentTimestamp = Math.round(Date.now() / 1000)
-        if (stakeCert.certExp > currentTimestamp){
+        // const currentTimestamp = Math.round(Date.now() / 1000)
+        const currentTimestamp = Date.now()
+
+        if (stakeCert.certExp < currentTimestamp){
           if (ShardeumFlags.VerboseLogs) console.log(`signAppData cert expired ${type} ${JSON.stringify(stakeCert)} `)
           return fail
         }
@@ -4717,7 +4719,10 @@ shardus.setup({
       // if (success === false) return false
 
       let remainingValidTime = signedStakeCert.certExp - Date.now()
-      let isExpiringSoon = remainingValidTime <= latestCycle.start + 3 * ONE_SECOND * latestCycle.duration
+      console.log('remainingValidTime', remainingValidTime, 3 * ONE_SECOND * latestCycle.duration)
+      // let isExpiringSoon = remainingValidTime <= latestCycle.start + 3 * ONE_SECOND * latestCycle.duration
+      let isExpiringSoon = remainingValidTime <= 3 * ONE_SECOND * latestCycle.duration
+
 
       // if cert is going to expire soon, inject a new setCertTimeTx
       if (isExpiringSoon) {

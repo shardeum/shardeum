@@ -194,10 +194,13 @@ export async function queryCertificateHandler(
   const nodeAccount = await shardus.getLocalOrRemoteAccount(queryCertReq.nominee)
   if (!nodeAccount) return { success: false, reason: 'Failed to fetch node account state' }
 
-  const currentTimestamp = Math.round(Date.now() / 1000)
+  // const currentTimestamp = Math.round(Date.now() / 1000)
+  const currentTimestamp = Date.now()
+
+  console.log('currentTimestamp', currentTimestamp, operatorAccount.operatorAccountInfo.certExp)
 
   // check operator cert validity
-  if (operatorAccount.operatorAccountInfo.certExp > currentTimestamp)
+  if (operatorAccount.operatorAccountInfo.certExp < currentTimestamp)
     return {
       success: false,
       reason: 'Operator certificate has expired',
