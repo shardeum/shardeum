@@ -6,7 +6,7 @@ import { toShardusAddress } from '../shardeum/evmAddress'
 import { AccountType, NodeAccountQueryResponse, WrappedEVMAccount } from '../shardeum/shardeumTypes'
 import { fixDeserializedWrappedEVMAccount } from '../shardeum/wrappedEVMAccountFunctions'
 import { getRandom } from '../utils'
-import { shardusGetFromNode, shardusPutToNode } from '../utils/requests'
+import { shardusGetFromNode, shardusPostToNode, shardusPutToNode } from '../utils/requests'
 
 // constants
 
@@ -99,11 +99,11 @@ export async function queryCertificate(
     }
   }
 
-  const accountQueryResponse = await getNodeAccountWithRetry(shardus, publicKey, activeNodes)
+  const accountQueryResponse = await getNodeAccountWithRetry(publicKey, activeNodes)
   if (!accountQueryResponse.success) return accountQueryResponse
 
   const nodeAccountQueryResponse = accountQueryResponse as NodeAccountQueryResponse
-  const nominator = nodeAccountQueryResponse.nodeAccount?.id
+  const nominator = nodeAccountQueryResponse.nodeAccount?.nominator
 
   const certRequest = {
     nominee: publicKey,
@@ -115,15 +115,14 @@ export async function queryCertificate(
   return callQueryCertificate(signedCertRequest)
 }
 
-async function getNodeAccountWithRetry(
-  shardus: Shardus,
-  nodeId: string,
+export async function getNodeAccountWithRetry(
+  nodeAccountId: string,
   activeNodes
 ): Promise<NodeAccountQueryResponse | ValidatorError> {
   let i = 0
   while (i <= maxNodeAccountRetries) {
     const randomConsensusNode: any = getRandom(activeNodes, 1)[0]
-    const resp = await getNodeAccount(randomConsensusNode, nodeId)
+    const resp = await getNodeAccount(randomConsensusNode, nodeAccountId)
     if (resp.success) return resp
     else {
       const err = resp as ValidatorError
@@ -136,22 +135,43 @@ async function getNodeAccountWithRetry(
 
 async function getNodeAccount(
   randomConsensusNode: any,
-  nodeId: string
+  nodeAccountId: string
 ): Promise<NodeAccountQueryResponse | ValidatorError> {
   try {
     const res = await shardusGetFromNode<any>(
       randomConsensusNode,
-      `account/:address`.replace(':address', nodeId),
+      `account/:address`.replace(':address', nodeAccountId),
       { params: { type: AccountType.NodeAccount2 } }
     )
-    if (!res.data.success && !res.data.nodeAccount) {
+    if (!res.data.account) {
       return { success: false, reason: errNodeAccountNotFound }
     }
     if (res.data.error == errNodeBusy) {
       return { success: false, reason: errNodeBusy }
     }
-    return res.data as NodeAccountQueryResponse
+    return { success: true, nodeAccount: res.data.account.data } as NodeAccountQueryResponse
   } catch (error) {
+    return { success: false, reason: (error as Error).message }
+  }
+}
+
+// Move this helper function to utils or somewhere
+export async function InjectTxToConsensor(
+  randomConsensusNode: any,
+  tx: any // Sign Object
+): Promise<NodeAccountQueryResponse | ValidatorError> {
+  try {
+    const res = await shardusPostToNode<any>(randomConsensusNode, `inject`, { data: tx })
+    console.log('res res', res)
+    if (!res.data.account) {
+      return { success: false, reason: errNodeAccountNotFound }
+    }
+    if (res.data.error == errNodeBusy) {
+      return { success: false, reason: errNodeBusy }
+    }
+    return { success: true, nodeAccount: res.data.account } as NodeAccountQueryResponse
+  } catch (error) {
+    console.log('res res', error)
     return { success: false, reason: (error as Error).message }
   }
 }

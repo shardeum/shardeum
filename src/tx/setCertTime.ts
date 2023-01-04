@@ -6,13 +6,17 @@ import config from '../config'
 import { ShardeumFlags } from '../shardeum/shardeumFlags'
 import {
   InternalTXType,
-  NetworkAccount,
+  NodeAccountQueryResponse,
   SetCertTime,
   WrappedEVMAccount,
   WrappedStates,
 } from '../shardeum/shardeumTypes'
 import * as AccountsStorage from '../storage/accountStorage'
 import { fixDeserializedWrappedEVMAccount } from '../shardeum/wrappedEVMAccountFunctions'
+import { Shardus } from '@shardus/core'
+import { getNodeAccountWithRetry, InjectTxToConsensor } from '../handlers/queryCertificate'
+import { getRandom } from '../utils'
+import { shardusPost } from '../utils/requests'
 
 export function isSetCertTimeTx(tx: any): boolean {
   if (tx.isInternalTx && tx.internalTXType === InternalTXType.SetCertTime) {
@@ -21,17 +25,28 @@ export function isSetCertTimeTx(tx: any): boolean {
   return false
 }
 
-export async function injectSetCertTimeTx(shardus, publicKey, activeNodes) {
-  // Validate the node info is ready before injecting setCertTime
+export async function injectSetCertTimeTx(shardus: Shardus, publicKey: string, activeNodes: any) {
+  // Query the nodeAccount is ready before injecting setCertTime
+  const accountQueryResponse = await getNodeAccountWithRetry(publicKey, activeNodes)
+  if (!accountQueryResponse.success) return accountQueryResponse
+
+  const nodeAccountQueryResponse = accountQueryResponse as NodeAccountQueryResponse
+  const nominator = nodeAccountQueryResponse.nodeAccount?.nominator
+
+  // TODO: Validate the nodeAccount
+
+  // Inject the setCertTime Tx
+  const randomConsensusNode: any = getRandom(activeNodes, 1)[0]
   let tx = {
     nominee: publicKey,
-    nominator: '',
+    nominator,
     duration: 10,
-    timestamp: Date.now(),
+    // timestamp: Date.now(),
   }
   tx = shardus.signAsNode(tx)
-  // Inject to an active node
-  // await shardus.put(tx)
+  console.log('Inject setCertTime Tx', tx)
+  await InjectTxToConsensor(randomConsensusNode, tx)
+  return { success: true }
 }
 
 export function validateSetCertTimeTx(tx: SetCertTime, appData: any): { isValid: boolean; reason: string } {

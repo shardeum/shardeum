@@ -80,7 +80,7 @@ export enum InternalTXType {
   Stake,
   Unstake,
   InitRewardTimes,
-  ClaimReward
+  ClaimReward,
 }
 
 export enum DebugTXType {
@@ -142,11 +142,11 @@ export interface InitRewardTimes extends InternalTxBase {
 }
 
 export interface ClaimRewardTX extends InternalTxBase {
-    nominee: string
-    timestamp: number
-    deactivatedNodeId: string
-    nodeDeactivatedTime: number
-    sign: ShardusTypes.Sign
+  nominee: string
+  timestamp: number
+  deactivatedNodeId: string
+  nodeDeactivatedTime: number
+  sign: ShardusTypes.Sign
 }
 
 export interface DebugTx {
@@ -284,4 +284,8 @@ export type InternalAccount = NodeAccount | NetworkAccount | DevAccount
 export interface NodeAccountQueryResponse {
   success: boolean
   nodeAccount?: NodeAccount2
+}
+
+export interface InjectTxResponse {
+  success: boolean
 }

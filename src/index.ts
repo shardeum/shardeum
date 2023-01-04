@@ -4663,9 +4663,10 @@ shardus.setup({
       success: true,
     }
   },
+  // Update the activeNodes type here; We can import from P2P.P2PTypes.Node from '@shardus/type' lib but seems it's not installed yet
   async isReadyToJoin(latestCycle: ShardusTypes.Cycle, publicKey: string, activeNodes: any[]) {
     if (ShardeumFlags.StakingEnabled === false) return true
-    if (ShardeumFlags.VerboseLogs) console.log(`Running isReadyToJoin`, latestCycle, publicKey, activeNodes)
+    console.log(`Running isReadyToJoin`, latestCycle, publicKey, activeNodes)
 
     //TODO:  a future PR will add a cachedNetworkAccount that we can check here
     //If we dont have a cachedNetworkAccount yet we will call queryCertificate() to initiate a query_certificate transaction
@@ -4674,7 +4675,8 @@ shardus.setup({
 
     if (lastCertTimeTxTimestamp === 0) {
       // inject setCertTimeTx for the first time
-      await injectSetCertTimeTx(shardus, publicKey, activeNodes)
+      const res = await injectSetCertTimeTx(shardus, publicKey, activeNodes)
+      if(!res.success) return false
 
       // set lastCertTimeTxTimestamp and cycle
       lastCertTimeTxTimestamp = Date.now()
