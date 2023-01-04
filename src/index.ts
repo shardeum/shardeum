@@ -1071,6 +1071,7 @@ shardus.registerExternalGet('account/:address', async (req, res) => {
       else res.json({ account: data })
     } else {
       let accountType = parseInt(req.query.type)
+      console.log('req.query', req.query)
       let id = req.params['address']
       const shardusAddress = toShardusAddressWithKey(id, '', accountType)
       const account = await shardus.getLocalOrRemoteAccount(shardusAddress)

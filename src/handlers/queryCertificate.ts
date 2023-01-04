@@ -3,7 +3,12 @@ import * as crypto from '@shardus/crypto-utils'
 import { BN, isValidAddress } from 'ethereumjs-util'
 import { Request } from 'express'
 import { toShardusAddress } from '../shardeum/evmAddress'
-import { AccountType, NodeAccountQueryResponse, WrappedEVMAccount } from '../shardeum/shardeumTypes'
+import {
+  AccountType,
+  InjectTxResponse,
+  NodeAccountQueryResponse,
+  WrappedEVMAccount,
+} from '../shardeum/shardeumTypes'
 import { fixDeserializedWrappedEVMAccount } from '../shardeum/wrappedEVMAccountFunctions'
 import { getRandom } from '../utils'
 import { shardusGetFromNode, shardusPostToNode, shardusPutToNode } from '../utils/requests'
@@ -159,17 +164,13 @@ async function getNodeAccount(
 export async function InjectTxToConsensor(
   randomConsensusNode: any,
   tx: any // Sign Object
-): Promise<NodeAccountQueryResponse | ValidatorError> {
+): Promise<InjectTxResponse | ValidatorError> {
   try {
-    const res = await shardusPostToNode<any>(randomConsensusNode, `inject`, { data: tx })
-    console.log('res res', res)
-    if (!res.data.account) {
-      return { success: false, reason: errNodeAccountNotFound }
+    const res = await shardusPostToNode<any>(randomConsensusNode, `inject`, tx)
+    if (!res.data.success) {
+      return { success: false, reason: res.data.reason }
     }
-    if (res.data.error == errNodeBusy) {
-      return { success: false, reason: errNodeBusy }
-    }
-    return { success: true, nodeAccount: res.data.account } as NodeAccountQueryResponse
+    return res.data as InjectTxResponse
   } catch (error) {
     console.log('res res', error)
     return { success: false, reason: (error as Error).message }

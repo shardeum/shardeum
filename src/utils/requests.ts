@@ -6,8 +6,8 @@ export const shardusGet = async <ResponseType>(url: string, config: AxiosRequest
   return response
 }
 
-export const shardusPost = async <ResponseType>(url: string, config: AxiosRequestConfig) => {
-  const response = axios.post<ResponseType>(url, config)
+export const shardusPost = async <ResponseType>(url: string, data: any, config: AxiosRequestConfig) => {
+  const response = axios.post<ResponseType>(url, data, config)
   return response
 }
 
@@ -42,10 +42,11 @@ export const shardusGetFromNode = async <ResponseType>(
 export const shardusPostToNode = async <ResponseType>(
   node: ShardusTypes.Node,
   path: string,
+  data?: any,
   config?: AxiosRequestConfig
 ) => {
   const url = urlFromNode(node, path)
-  return shardusPost<ResponseType>(url, config)
+  return shardusPost<ResponseType>(url, data, config)
 }
 
 /**
