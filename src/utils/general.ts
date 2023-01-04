@@ -46,3 +46,19 @@ export function isEqualOrNewerVersion(oldVer: string, newVer: string) {
   }
   return false
 }
+
+// From: https://stackoverflow.com/a/19270021
+export function getRandom<T>(arr: T[], n: number): T[] {
+  let len = arr.length
+  const taken = new Array(len)
+  if (n > len) {
+    n = len
+  }
+  const result = new Array(n)
+  while (n--) {
+    const x = Math.floor(Math.random() * len)
+    result[n] = arr[x in taken ? taken[x] : x]
+    taken[x] = --len in taken ? taken[len] : len
+  }
+  return result
+}

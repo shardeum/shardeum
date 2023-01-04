@@ -64,10 +64,10 @@ export const shardusPutToNode = async <ResponseType>(
   return shardusPut<ResponseType>(url, config)
 }
 
-const urlFromNode = (node: ShardusTypes.Node, path: string) => {
-  const host = normalizeUrl(`${node.externalIp}:${node.externalPort}`)
+// Update the node type here
+const urlFromNode = (node: any, path: string) => {
+  const host = normalizeUrl(`${node.ip}:${node.port}`)
   const url = `${host}${path}`
-
   return url
 }
 

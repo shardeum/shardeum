@@ -21,17 +21,17 @@ export function isSetCertTimeTx(tx: any): boolean {
   return false
 }
 
-export async function injectSetCertTimeTx(shardus) {
-  let ourNodeId = await shardus.getNodeId()
-  let ourNode = await shardus.getNode(ourNodeId)
+export async function injectSetCertTimeTx(shardus, publicKey, activeNodes) {
+  // Validate the node info is ready before injecting setCertTime
   let tx = {
-    nominee: ourNode.publicKey,
+    nominee: publicKey,
     nominator: '',
     duration: 10,
     timestamp: Date.now(),
   }
   tx = shardus.signAsNode(tx)
-  await shardus.put(tx)
+  // Inject to an active node
+  // await shardus.put(tx)
 }
 
 export function validateSetCertTimeTx(tx: SetCertTime, appData: any): { isValid: boolean; reason: string } {

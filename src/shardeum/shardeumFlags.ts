@@ -102,7 +102,7 @@ export let ShardeumFlags: ShardeumFlags = {
     ['tx/:hash']: 5,
   },
   generateMemoryPatternData: true,
-  StakingEnabled: false,
+  StakingEnabled: true,
   MinStakeCertSig: 5 // this is the minimum amount of signature required for stake certification. will move to network param in future.
 }
 

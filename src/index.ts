@@ -74,6 +74,7 @@ import { Request, Response } from 'express'
 import {
   CertSignaturesResult,
   getCertSignatures,
+  queryCertificate,
   queryCertificateHandler,
   StakeCert,
 } from './handlers/queryCertificate'
@@ -4662,14 +4663,9 @@ shardus.setup({
       success: true,
     }
   },
-  async isReadyToJoin() {
+  async isReadyToJoin(latestCycle: ShardusTypes.Cycle, publicKey: string, activeNodes: any[]) {
     if (ShardeumFlags.StakingEnabled === false) return true
-    if (ShardeumFlags.VerboseLogs) console.log(`Running isReadyToJoin`)
-
-    let latestCycles: ShardusTypes.Cycle[] = shardus.getLatestCycles(1)
-    let currentCycle = latestCycles[0]
-    if (!currentCycle) return false
-
+    if (ShardeumFlags.VerboseLogs) console.log(`Running isReadyToJoin`, latestCycle, publicKey, activeNodes)
 
     //TODO:  a future PR will add a cachedNetworkAccount that we can check here
     //If we dont have a cachedNetworkAccount yet we will call queryCertificate() to initiate a query_certificate transaction
@@ -4678,38 +4674,44 @@ shardus.setup({
 
     if (lastCertTimeTxTimestamp === 0) {
       // inject setCertTimeTx for the first time
-      await injectSetCertTimeTx(shardus)
+      await injectSetCertTimeTx(shardus, publicKey, activeNodes)
 
       // set lastCertTimeTxTimestamp and cycle
       lastCertTimeTxTimestamp = Date.now()
-      lastCertTimeTxCycle = currentCycle.counter
+      lastCertTimeTxCycle = latestCycle.counter
 
       // return false and query/check again in next cycle
       return false
     }
-    if (lastCertTimeTxTimestamp > 0) { // we have already submitted setCertTime
+    if (lastCertTimeTxTimestamp > 0) {
+      // we have already submitted setCertTime
       // query the certificate from the network
-      let certQueryData: any
-      
+      let res: any = await queryCertificate(shardus, publicKey, activeNodes)
+      if (!res.success) {
+        console.log('Fail to get certificate', res.reason)
+        return false
+      }
+      const certQueryData: StakeCert = res.signedStakeCert
+
       //TODO we need a query certificate instead of getCertSignatures
       //query certificate will run the full process to propose a cert and then ask for signatures
       //getCertSignatures is lower level and expects a filled out cert to be passed in
       //We should add a funtion queryCertificate() that when called in the validator will
       //create and send a query_certificate transaction
       //note that query_certificate is an external enpoint rather than a full "transaction"
-      let {success, signedStakeCert} = await getCertSignatures(shardus, certQueryData)
+      let { success, signedStakeCert } = await getCertSignatures(shardus, certQueryData)
 
       if (success === false) return false
 
       let remainingValidTime = signedStakeCert.certExp - Date.now()
-      let isExpiringSoon = remainingValidTime <= currentCycle.start + 3 * ONE_SECOND * currentCycle.duration
+      let isExpiringSoon = remainingValidTime <= latestCycle.start + 3 * ONE_SECOND * latestCycle.duration
 
       // if cert is going to expire soon, inject a new setCertTimeTx
       if (isExpiringSoon) {
-        await injectSetCertTimeTx(shardus)
+        await injectSetCertTimeTx(shardus, publicKey, activeNodes)
 
         lastCertTimeTxTimestamp = Date.now()
-        lastCertTimeTxCycle = currentCycle.counter
+        lastCertTimeTxCycle = latestCycle.counter
 
         // return false and check again in next cycle
         return false
@@ -4725,11 +4727,11 @@ shardus.setup({
       }
     }
     // every 3 cycle, inject a new setCertTime tx
-    if (lastCertTimeTxTimestamp > 0 &&  currentCycle.counter >= lastCertTimeTxCycle + 3) {
-      await injectSetCertTimeTx(shardus)
+    if (lastCertTimeTxTimestamp > 0 && latestCycle.counter >= lastCertTimeTxCycle + 3) {
+      await injectSetCertTimeTx(shardus, publicKey, activeNodes)
 
       lastCertTimeTxTimestamp = Date.now()
-      lastCertTimeTxCycle = currentCycle.counter
+      lastCertTimeTxCycle = latestCycle.counter
 
       // return false and check again in next cycle
       return false

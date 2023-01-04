@@ -5,6 +5,7 @@ import { Request } from 'express'
 import { toShardusAddress } from '../shardeum/evmAddress'
 import { AccountType, NodeAccountQueryResponse, WrappedEVMAccount } from '../shardeum/shardeumTypes'
 import { fixDeserializedWrappedEVMAccount } from '../shardeum/wrappedEVMAccountFunctions'
+import { getRandom } from '../utils'
 import { shardusGetFromNode, shardusPutToNode } from '../utils/requests'
 
 // constants
@@ -65,9 +66,20 @@ function validateQueryCertRequest(req: QueryCertRequest, rawBody: any): Validato
  * @param shardus
  * @returns
  */
-export async function queryCertificate(shardus: Shardus): Promise<CertSignaturesResult | ValidatorError> {
-  const nodeId = shardus.getNodeId()
-  const randomConsensusNode = shardus.getRandomConsensusNodeForAccount(nodeId)
+export async function queryCertificate(
+  shardus: Shardus,
+  publicKey,
+  activeNodes
+): Promise<CertSignaturesResult | ValidatorError> {
+  if (activeNodes.length === 0) {
+    return {
+      success: false,
+      reason: 'activeNodes list is 0 to get query certificate',
+    }
+  }
+
+  const randomConsensusNode: any = getRandom(activeNodes, 1)[0]
+  console.log('randomConsensusNode', randomConsensusNode)
 
   const callQueryCertificate = async (
     signedCertRequest: QueryCertRequest
@@ -87,28 +99,30 @@ export async function queryCertificate(shardus: Shardus): Promise<CertSignatures
     }
   }
 
-  const accountQueryResponse = await getNodeAccountWithRetry(shardus, nodeId)
+  const accountQueryResponse = await getNodeAccountWithRetry(shardus, publicKey, activeNodes)
   if (!accountQueryResponse.success) return accountQueryResponse
 
   const nodeAccountQueryResponse = accountQueryResponse as NodeAccountQueryResponse
   const nominator = nodeAccountQueryResponse.nodeAccount?.id
 
   const certRequest = {
-    nominee: nodeId,
+    nominee: publicKey,
     nominator: nominator,
   }
   const signedCertRequest: QueryCertRequest = shardus.signAsNode(certRequest)
+  console.log(signedCertRequest)
 
   return callQueryCertificate(signedCertRequest)
 }
 
 async function getNodeAccountWithRetry(
   shardus: Shardus,
-  nodeId: string
+  nodeId: string,
+  activeNodes
 ): Promise<NodeAccountQueryResponse | ValidatorError> {
   let i = 0
   while (i <= maxNodeAccountRetries) {
-    const randomConsensusNode = shardus.getRandomConsensusNodeForAccount(nodeId)
+    const randomConsensusNode: any = getRandom(activeNodes, 1)[0]
     const resp = await getNodeAccount(randomConsensusNode, nodeId)
     if (resp.success) return resp
     else {
@@ -172,6 +186,7 @@ export async function queryCertificateHandler(
   })
 }
 
+// This seems to need pass accountType with correct accountType (e.g. AccountType.NodeAccount2, etc)
 async function getEVMAccountDataForAddress(
   shardus: Shardus,
   evmAddress: string
@@ -179,7 +194,7 @@ async function getEVMAccountDataForAddress(
   const shardusAddress = toShardusAddress(evmAddress, AccountType.Account)
   const account = await shardus.getLocalOrRemoteAccount(shardusAddress)
   if (!account) return undefined
-  let data = account.data
+  let data: any = account.data
   fixDeserializedWrappedEVMAccount(data)
   return data
 }
