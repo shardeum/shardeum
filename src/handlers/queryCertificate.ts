@@ -5,7 +5,14 @@ import { Request } from 'express'
 import { toShardusAddress } from '../shardeum/evmAddress'
 import { AccountType, NodeAccountQueryResponse, WrappedEVMAccount } from '../shardeum/shardeumTypes'
 import { fixDeserializedWrappedEVMAccount } from '../shardeum/wrappedEVMAccountFunctions'
-import { shardusPutToNode } from '../utils/requests'
+import { shardusGetFromNode, shardusPutToNode } from '../utils/requests'
+
+// constants
+
+const maxNodeAccountRetries = 3
+
+const errNodeAccountNotFound = 'node account not found'
+const errNodeBusy = 'node busy'
 
 // types
 
@@ -21,9 +28,9 @@ export type CertSignaturesResult = {
 }
 
 export interface StakeCert {
-  nominator: string //the operator acount that nominated a node account
+  nominator: string //the operator account that nominated a node account
   nominee: string //the node account that was nominated
-  stake: BN //the ammount staked
+  stake: BN //the amount staked
   certExp: number //cert expiration time in seconds
   signs?: ShardusTypes.Sign[] //this is used when when the cert has a list of valid signatures
   sign?: ShardusTypes.Sign //this is use when we need to sign and unsigned cert. signs and sign will not exist yet when sign() is called
@@ -52,8 +59,8 @@ function validateQueryCertRequest(req: QueryCertRequest, rawBody: any): Validato
 
 /**
  * Query a random consensus node for the current node certificate by calling query-certificate
- * on the chosen node. The nominator is chosen by querying `node-account/:address` on the
- * randomly chosen consensu node
+ * on the chosen node. The nominator is chosen by querying `account/:address` on the
+ * randomly chosen consensus node
  *
  * @param shardus
  * @returns
@@ -61,26 +68,6 @@ function validateQueryCertRequest(req: QueryCertRequest, rawBody: any): Validato
 export async function queryCertificate(shardus: Shardus): Promise<CertSignaturesResult | ValidatorError> {
   const nodeId = shardus.getNodeId()
   const randomConsensusNode = shardus.getRandomConsensusNodeForAccount(nodeId)
-
-  // TODO: Replace this logic when `node-account/:address` endpoint is implemented
-  // This function should be called on the `randomConsensusNode`
-  const stubNodeAccount = async (address: string): Promise<NodeAccountQueryResponse> => {
-    return {
-      success: true,
-      nodeAccount: {
-        accountType: AccountType.NodeAccount2,
-        id: 'stub-id',
-        hash: 'stub-hash',
-        timestamp: Date.now(),
-        nominator: 'stub-nominator',
-        stakeLock: new BN('123'),
-        reward: new BN('2'),
-        rewardStartTime: Date.now(),
-        rewardEndTime: Date.now(),
-        penalty: new BN('1'),
-      },
-    }
-  }
 
   const callQueryCertificate = async (
     signedCertRequest: QueryCertRequest
@@ -100,7 +87,10 @@ export async function queryCertificate(shardus: Shardus): Promise<CertSignatures
     }
   }
 
-  const nodeAccountQueryResponse = await stubNodeAccount(nodeId)
+  const accountQueryResponse = await getNodeAccountWithRetry(shardus, nodeId)
+  if (!accountQueryResponse.success) return accountQueryResponse
+
+  const nodeAccountQueryResponse = accountQueryResponse as NodeAccountQueryResponse
   const nominator = nodeAccountQueryResponse.nodeAccount?.id
 
   const certRequest = {
@@ -112,9 +102,49 @@ export async function queryCertificate(shardus: Shardus): Promise<CertSignatures
   return callQueryCertificate(signedCertRequest)
 }
 
+async function getNodeAccountWithRetry(
+  shardus: Shardus,
+  nodeId: string
+): Promise<NodeAccountQueryResponse | ValidatorError> {
+  let i = 0
+  while (i <= maxNodeAccountRetries) {
+    const randomConsensusNode = shardus.getRandomConsensusNodeForAccount(nodeId)
+    const resp = await getNodeAccount(randomConsensusNode, nodeId)
+    if (resp.success) return resp
+    else {
+      const err = resp as ValidatorError
+      if (err.reason == errNodeAccountNotFound) return err
+      else i++
+    }
+  }
+  return { success: false, reason: errNodeBusy }
+}
+
+async function getNodeAccount(
+  randomConsensusNode: any,
+  nodeId: string
+): Promise<NodeAccountQueryResponse | ValidatorError> {
+  try {
+    const res = await shardusGetFromNode<any>(
+      randomConsensusNode,
+      `account/:address`.replace(':address', nodeId),
+      { params: { type: AccountType.NodeAccount2 } }
+    )
+    if (!res.data.success && !res.data.nodeAccount) {
+      return { success: false, reason: errNodeAccountNotFound }
+    }
+    if (res.data.error == errNodeBusy) {
+      return { success: false, reason: errNodeBusy }
+    }
+    return res.data as NodeAccountQueryResponse
+  } catch (error) {
+    return { success: false, reason: (error as Error).message }
+  }
+}
+
 export async function queryCertificateHandler(
   req: Request,
-  shardus: any
+  shardus: Shardus
 ): Promise<CertSignaturesResult | ValidatorError> {
   const queryCertReq = req.body as QueryCertRequest
   const reqValidationResult = validateQueryCertRequest(queryCertReq, req.body)
@@ -143,7 +173,7 @@ export async function queryCertificateHandler(
 }
 
 async function getEVMAccountDataForAddress(
-  shardus: any,
+  shardus: Shardus,
   evmAddress: string
 ): Promise<WrappedEVMAccount | undefined> {
   const shardusAddress = toShardusAddress(evmAddress, AccountType.Account)
@@ -154,7 +184,10 @@ async function getEVMAccountDataForAddress(
   return data
 }
 
-export async function getCertSignatures(shardus: any, certData: StakeCert): Promise<CertSignaturesResult> {
+export async function getCertSignatures(
+  shardus: Shardus,
+  certData: StakeCert
+): Promise<CertSignaturesResult> {
   const signedAppData = await shardus.getAppDataSignatures(
     'sign-app-data',
     crypto.hashObj(certData),
