@@ -1069,7 +1069,7 @@ shardus.registerExternalGet('account/:address', async (req, res) => {
       const id = req.params['address']
       const shardusAddress = toShardusAddress(id, AccountType.Account)
       const account = await shardus.getLocalOrRemoteAccount(shardusAddress)
-      if (!account) {
+      if (!account || !WrappedEVMAccountFunctions.isWrappedEVMAccount(account.data)) {
         return res.json({ account: null })
       }
       let data = account.data
@@ -1078,7 +1078,7 @@ shardus.registerExternalGet('account/:address', async (req, res) => {
       if (readableAccount) return res.json({ account: readableAccount })
       else res.json({ account: data })
     } else {
-      let accountType = parseInt(req.query.type)
+      let accountType = parseInt(req.query.type as string)
       let id = req.params['address']
       const shardusAddress = toShardusAddressWithKey(id, '', accountType)
       const account = await shardus.getLocalOrRemoteAccount(shardusAddress)
@@ -1343,8 +1343,9 @@ shardus.registerExternalGet('tx/:hash', async (req, res) => {
       const dataId = toShardusAddressWithKey(txHash, '', AccountType.Receipt)
       let cachedAppData = await shardus.getLocalOrRemoteCachedAppData('receipt', dataId)
       if (ShardeumFlags.VerboseLogs) console.log(`cachedAppData for tx hash ${txHash}`, cachedAppData)
-      if (cachedAppData && cachedAppData.appData) cachedAppData = cachedAppData.appData
-      return res.json({ account: cachedAppData?.data ? cachedAppData.data : cachedAppData })
+
+      const { appData } = cachedAppData
+      return res.json({ account: appData?.data ? appData.data : cachedAppData })
     } catch (e) {
       console.log('Unable to get tx receipt', e)
       return res.json({ account: null })
@@ -1361,6 +1362,9 @@ shardus.registerExternalGet('tx/:hash', async (req, res) => {
         }
         /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`No tx found for ${shardusAddress}`) //, accounts[shardusAddress])
         return res.json({ account: null })
+      }
+      if (!WrappedEVMAccountFunctions.isWrappedEVMAccount(account.data)) {
+        return res.json({account: null})
       }
       let data = account.data
       fixDeserializedWrappedEVMAccount(data)
