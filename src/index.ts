@@ -918,11 +918,9 @@ shardus.registerExternalGet('eth_getBlockByNumber', async (req, res) => {
     return res.json({ error: 'Invalid block number' })
   }
   
-  let blockNumber: number;
+  let blockNumber = Number(rawBlockNumber);
   if (rawBlockNumber === 'latest') {
     blockNumber = latestBlock
-  } else {
-    blockNumber = Number(rawBlockNumber)
   }
 
   if (ShardeumFlags.VerboseLogs) console.log('Req: eth_getBlockByNumber', blockNumber)
@@ -931,8 +929,11 @@ shardus.registerExternalGet('eth_getBlockByNumber', async (req, res) => {
 })
 
 shardus.registerExternalGet('eth_getBlockByHash', async (req, res) => {
-  let blockHash = req.query.blockHash
-  if (blockHash === 'latest') blockHash = readableBlocks[latestBlock].hash
+  let blockHash = req.query.blockHash as string
+
+  if (blockHash === 'latest') {
+    blockHash = readableBlocks[latestBlock].hash
+  }
   if (ShardeumFlags.VerboseLogs) console.log('Req: eth_getBlockByHash', blockHash)
   let blockNumber = blocksByHash[blockHash]
   return res.json({ block: readableBlocks[blockNumber] })
