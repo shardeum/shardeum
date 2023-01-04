@@ -127,6 +127,13 @@ export interface StakeCoinsTX extends InternalTxBase {
   sign: ShardusTypes.Sign
 }
 
+export interface UnstakeCoinsTX extends InternalTxBase {
+  nominee: string
+  nominator: string
+  timestamp: number
+  sign: ShardusTypes.Sign
+}
+
 export interface InitRewardTimes extends InternalTxBase {
   nominee: string
   timestamp: number
@@ -236,7 +243,7 @@ export interface NodeAccount2 extends BaseAccount {
   id: string
   hash: string
   timestamp: number
-  nominator: string
+  nominator: string | null
   stakeLock: BN //amount of coins in stake
   reward: BN
   rewardStartTime: number

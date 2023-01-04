@@ -2,7 +2,7 @@ import stringify from 'fast-json-stable-stringify'
 import * as crypto from '@shardus/crypto-utils'
 import { Account, Address, BN, bufferToHex, isValidAddress, toAscii, toBuffer } from 'ethereumjs-util'
 import { AccessListEIP2930Transaction, Transaction } from '@ethereumjs/tx'
-import Common, { Chain, Hardfork } from '@ethereumjs/common'
+import Common, { Chain } from '@ethereumjs/common'
 import VM from '@ethereumjs/vm'
 import ShardeumVM from './vm'
 import { parse as parseUrl } from 'url'
@@ -15,6 +15,7 @@ import { version } from '../package.json'
 import {
   AccountType,
   BlockMap,
+  ClaimRewardTX,
   DebugTx,
   DebugTXType,
   DevAccount,
@@ -30,7 +31,7 @@ import {
   ReadableReceipt,
   SetCertTime,
   StakeCoinsTX,
-  ClaimRewardTX,
+  UnstakeCoinsTX,
   WrappedAccount,
   WrappedEVMAccount,
   WrappedStates,
@@ -64,16 +65,11 @@ import { StateManager } from '@ethereumjs/vm/dist/state'
 import { sync } from './setup/sync'
 import {
   applySetCertTimeTx,
+  injectSetCertTimeTx,
   isSetCertTimeTx,
   validateSetCertTimeTx,
-  injectSetCertTimeTx,
 } from './tx/setCertTime'
-import {
-  applyClaimRewardTx,
-  isClaimRewardTx,
-  validateClaimRewardTx,
-  injectClaimRewardTx,
-} from './tx/claimReward'
+import { applyClaimRewardTx, injectClaimRewardTx } from './tx/claimReward'
 import { Request, Response } from 'express'
 import {
   CertSignaturesResult,
@@ -671,7 +667,7 @@ async function getReadableAccountInfo(account) {
       balance: account.account.balance.toString(),
       stateRoot: bufferToHex(account.account.stateRoot),
       codeHash: bufferToHex(account.account.codeHash),
-      operatorAccountInfo: account.operatorAccountInfo ? account.operatorAccountInfo : null,
+      operatorAccountInfo: account.operatorAccountInfo ? account.operatorAccountInfo : null
     }
   } catch (e) {
     if (ShardeumFlags.VerboseLogs) console.log('Unable to get readable account', e)
@@ -2158,13 +2154,14 @@ async function generateAccessList(callObj: any): Promise<{ accessList: any[]; sh
 
     for (let [codeHash, contractByteWrite] of writtenAccounts.contractBytes) {
       let contractAddress = contractByteWrite.contractAddress.toString()
+      if (!allInvolvedContracts.includes(contractAddress)) allInvolvedContracts.push(contractAddress)
       let shardusKey = toShardusAddressWithKey(contractAddress, codeHash, AccountType.ContractCode)
       writeSet.add(shardusKey)
       //special case shardeum behavoir.  contract bytes can only be written once
       writeOnceSet.add(shardusKey)
     }
-    for (let [codeHash, contractByteWrite] of writtenAccounts.accounts) {
-      let shardusKey = toShardusAddress(codeHash, AccountType.Account)
+    for (let [key, contractByteWrite] of writtenAccounts.accounts) {
+      let shardusKey = toShardusAddress(key, AccountType.Account)
       writeSet.add(shardusKey)
     }
     for (let [codeHash, contractByteWrite] of readAccounts.accounts) {
@@ -2222,6 +2219,11 @@ async function generateAccessList(callObj: any): Promise<{ accessList: any[]; sh
       }
 
       for (let [codeHash, byteReads] of readAccounts.contractBytes) {
+        let contractAddress = byteReads.contractAddress.toString()
+        if (contractAddress !== address) continue
+        if (!allKeys.has(codeHash)) allKeys.add(codeHash)
+      }
+      for (let [codeHash, byteReads] of writtenAccounts.contractBytes) {
         let contractAddress = byteReads.contractAddress.toString()
         if (contractAddress !== address) continue
         if (!allKeys.has(codeHash)) allKeys.add(codeHash)
@@ -2457,6 +2459,7 @@ shardus.setup({
         if (ShardeumFlags.VerboseLogs) console.log('Validating stake coins tx fields', appData.internalTx)
         let stakeCoinsTx = appData.internalTx as StakeCoinsTX
         let minStakeAmount = new BN(ShardeumFlags.stakeAmount)
+        if (typeof stakeCoinsTx.stake === 'string') stakeCoinsTx.stake = new BN(stakeCoinsTx.stake, 16)
         if (
           stakeCoinsTx.nominator == null ||
           stakeCoinsTx.nominator.toLowerCase() !== txObj.getSenderAddress().toString()
@@ -2481,6 +2484,20 @@ shardus.setup({
           success = false
           reason = `Stake amount is less than minimum required stake amount`
         }
+      }
+
+      if (appData && appData.internalTx && appData.internalTXType === InternalTXType.Unstake) {
+        if (ShardeumFlags.VerboseLogs) console.log('Validating unstake coins tx fields', appData.internalTx)
+        let unstakeCoinsTX = appData.internalTx as UnstakeCoinsTX
+        if (unstakeCoinsTX.nominator == null || unstakeCoinsTX.nominator.toLowerCase() !== txObj.getSenderAddress().toString()) {
+          if (ShardeumFlags.VerboseLogs) console.log(`nominator vs tx signer`, unstakeCoinsTX.nominator, txObj.getSenderAddress().toString())
+          success = false
+          reason = `Invalid nominator address in stake coins tx`
+        } else if (unstakeCoinsTX.nominee == null) {
+          success = false
+          reason = `Invalid nominee address in stake coins tx`
+        }
+        // todo: check the nominator account timestamp against ? may be no needed cos it evm tx has a nonce check too
       }
     } catch (e) {
       if (ShardeumFlags.VerboseLogs) console.log('validate error', e)
@@ -2589,6 +2606,8 @@ shardus.setup({
       await shardeumState.putAccount(operatorEVMAddress, operatorEVMAccount.account)
       await shardeumState.commit()
 
+      let updatedOperatorEVMAccount = await shardeumState.getAccount(operatorEVMAddress)
+
       const nodeAccount2: NodeAccount2 = wrappedStates[nomineeNodeAccount2Address].data
       nodeAccount2.nominator = stakeCoinsTx.nominator
       nodeAccount2.stakeLock = stakeCoinsTx.stake
@@ -2596,7 +2615,9 @@ shardus.setup({
 
       if (ShardeumFlags.useAccountWrites) {
         // for operator evm account
-        let { accounts: accountWrites } = shardeumState._transactionState.getWrittenAccounts()
+        let {
+          accounts: accountWrites,
+        } = shardeumState._transactionState.getWrittenAccounts()
         console.log('\nAccount Writes: ', accountWrites)
         for (let account of accountWrites.entries()) {
           let addressStr = account[0]
@@ -2606,7 +2627,9 @@ shardus.setup({
           let accountObj = Account.fromRlpSerializedAccount(account[1])
           console.log('\nWritten Account Object: ', accountObj)
 
-          let wrappedEVMAccount: WrappedEVMAccount = { ...operatorEVMAccount, account: accountObj }
+         console.log('written account Obj', accountObj)
+
+          let wrappedEVMAccount: WrappedEVMAccount = {...operatorEVMAccount, account: accountObj}
 
           updateEthAccountHash(wrappedEVMAccount)
           const wrappedChangedAccount = WrappedEVMAccountFunctions._shardusWrappedAccount(wrappedEVMAccount)
@@ -2659,6 +2682,152 @@ shardus.setup({
         txId,
         accountType: AccountType.Receipt,
         txFrom: stakeCoinsTx.nominator,
+      }
+      /* prettier-ignore */
+      if (ShardeumFlags.VerboseLogs) console.log(`DBG Receipt Account for txId ${ethTxId}`, wrappedReceiptAccount)
+
+      if (ShardeumFlags.EVMReceiptsAsAccounts) {
+        if (ShardeumFlags.VerboseLogs) console.log(`Applied stake tx ${txId}`)
+        if (ShardeumFlags.VerboseLogs) console.log(`Applied stake tx eth ${ethTxId}`)
+        const wrappedChangedAccount = WrappedEVMAccountFunctions._shardusWrappedAccount(wrappedReceiptAccount)
+        if (shardus.applyResponseAddChangedAccount != null) {
+          shardus.applyResponseAddChangedAccount(
+            applyResponse,
+            wrappedChangedAccount.accountId,
+            wrappedChangedAccount,
+            txId,
+            wrappedChangedAccount.timestamp
+          )
+        }
+      } else {
+        const receiptShardusAccount = WrappedEVMAccountFunctions._shardusWrappedAccount(wrappedReceiptAccount)
+        shardus.applyResponseAddReceiptData(
+          applyResponse,
+          receiptShardusAccount,
+          crypto.hashObj(receiptShardusAccount)
+        )
+      }
+      return applyResponse
+    }
+
+    if (appData.internalTx && appData.internalTXType === InternalTXType.Unstake) {
+      if (ShardeumFlags.VerboseLogs) console.log('applying unstake tx', wrappedStates, appData)
+
+      // get unstake tx from appData.internalTx
+      let unstakeCoinsTX: UnstakeCoinsTX = appData.internalTx
+
+      // todo: validate tx timestamp, compare timestamp against account's timestamp
+
+      // todo: validate cert exp
+
+      // set stake value, nominee, cert in OperatorAcc (if not set yet)
+      let operatorShardusAddress = toShardusAddress(unstakeCoinsTX.nominator, AccountType.Account)
+      let nomineeNodeAccount2Address = unstakeCoinsTX.nominee
+      const operatorEVMAccount: WrappedEVMAccount = wrappedStates[operatorShardusAddress].data
+      operatorEVMAccount.timestamp = txTimestamp
+
+      if (operatorEVMAccount.operatorAccountInfo == null) {
+        throw new Error(`Unable to apply Unstake tx because operator account info does not exist for ${unstakeCoinsTX.nominator}`)
+      }
+      fixDeserializedWrappedEVMAccount(operatorEVMAccount)
+
+      let nodeAccount2: NodeAccount2 = wrappedStates[nomineeNodeAccount2Address].data
+
+      let currentBalance = operatorEVMAccount.account.balance
+      let stake = new BN(operatorEVMAccount.operatorAccountInfo.stake, 16)
+      let reward = new BN(nodeAccount2.reward)
+      let penalty = new BN(nodeAccount2.penalty)
+      let txFee = new BN(ShardeumFlags.constantTxFee)
+      if (ShardeumFlags.VerboseLogs) console.log('calculating new balance after unstake', currentBalance, stake, reward, penalty, txFee)
+      let newBalance = currentBalance.add(stake).add(reward).sub(penalty).sub(txFee)
+      operatorEVMAccount.account.balance = newBalance
+      operatorEVMAccount.account.nonce = operatorEVMAccount.account.nonce.add(new BN('1'))
+
+      operatorEVMAccount.operatorAccountInfo.stake = new BN(0)
+      operatorEVMAccount.operatorAccountInfo.nominee = null
+      operatorEVMAccount.operatorAccountInfo.certExp = null
+
+      let operatorEVMAddress: Address = Address.fromString(unstakeCoinsTX.nominator)
+      await shardeumState.checkpoint()
+      await shardeumState.putAccount(operatorEVMAddress, operatorEVMAccount.account)
+      await shardeumState.commit()
+
+      nodeAccount2.nominator = null
+      nodeAccount2.stakeLock = new BN(0)
+      nodeAccount2.timestamp = txTimestamp
+      nodeAccount2.penalty = new BN(0)
+      nodeAccount2.reward = new BN(0)
+      nodeAccount2.rewardStartTime = 0
+      nodeAccount2.rewardEndTime = 0
+
+      if (ShardeumFlags.useAccountWrites) {
+        // for operator evm account
+        let {
+          accounts: accountWrites,
+        } = shardeumState._transactionState.getWrittenAccounts()
+        console.log('\nAccount Writes: ', accountWrites)
+        for (let account of accountWrites.entries()) {
+          let addressStr = account[0]
+          if (ShardeumFlags.Virtual0Address && addressStr === zeroAddressStr) {
+            continue
+          }
+          let accountObj = Account.fromRlpSerializedAccount(account[1])
+          console.log('\nWritten Account Object: ', accountObj)
+
+          console.log('written account Obj', accountObj)
+
+          let wrappedEVMAccount: WrappedEVMAccount = {...operatorEVMAccount, account: accountObj}
+          updateEthAccountHash(wrappedEVMAccount)
+          const wrappedChangedAccount = WrappedEVMAccountFunctions._shardusWrappedAccount(wrappedEVMAccount)
+          shardus.applyResponseAddChangedAccount(
+            applyResponse,
+            wrappedChangedAccount.accountId,
+            wrappedChangedAccount,
+            txId,
+            wrappedChangedAccount.timestamp
+          )
+        }
+
+        // for nominee node account
+        shardus.applyResponseAddChangedAccount(
+          applyResponse,
+          nomineeNodeAccount2Address,
+          wrappedStates[nomineeNodeAccount2Address],
+          txId,
+          txTimestamp
+        )
+      }
+
+      // generate a proper receipt for stake tx
+      let readableReceipt: ReadableReceipt = {
+        status: 1,
+        transactionHash: ethTxId,
+        transactionIndex: '0x1',
+        blockNumber: '0x' + blocks[latestBlock].header.number.toString('hex'),
+        nonce: transaction.nonce.toString('hex'),
+        blockHash: readableBlocks[latestBlock].hash,
+        cumulativeGasUsed: '0x' + new BN(ShardeumFlags.constantTxFee).toString('hex'),
+        gasUsed: '0x' + new BN(ShardeumFlags.constantTxFee).toString('hex'),
+        logs: [],
+        logsBloom: '',
+        contractAddress: null,
+        from: transaction.getSenderAddress().toString(),
+        to: transaction.to ? transaction.to.toString() : null,
+        value: transaction.value.toString('hex'),
+        data: '0x' + transaction.data.toString('hex'),
+      }
+
+      let evmReceipt: any = {} // hack cos we don't run this tx with evm
+      let wrappedReceiptAccount = {
+        timestamp: txTimestamp,
+        ethAddress: ethTxId,
+        hash: '',
+        receipt: evmReceipt,
+        readableReceipt,
+        amountSpent: newBalance.toString(),
+        txId,
+        accountType: AccountType.Receipt,
+        txFrom: unstakeCoinsTX.nominator,
       }
       /* prettier-ignore */
       if (ShardeumFlags.VerboseLogs) console.log(`DBG Receipt Account for txId ${ethTxId}`, wrappedReceiptAccount)
@@ -3323,7 +3492,7 @@ shardus.setup({
           appData.internalTXType = appData.internalTx.internalTXType
           if (appData.internalTx.stake) appData.internalTx.stake = new BN(appData.internalTx.stake)
         } catch (e) {
-          console.log('Error: while doing preCrack for stake tx', e)
+          console.log('Error: while doing preCrack for stake related tx', e)
         }
       }
       if (ShardeumFlags.VerboseLogs)
@@ -3443,7 +3612,7 @@ shardus.setup({
       })
 
       // add nominee (NodeAcc) to targetKeys
-      if (appData.internalTx && appData.internalTXType === InternalTXType.Stake) {
+      if (appData.internalTx && (appData.internalTXType === InternalTXType.Stake || appData.internalTXType === InternalTXType.Unstake)) {
         let transformedTargetKey = appData.internalTx.nominee // no need to convert to shardus address
         result.targetKeys.push(transformedTargetKey)
       }
@@ -3678,7 +3847,7 @@ shardus.setup({
       let wrappedEVMAccount = await AccountsStorage.getAccount(accountId)
 
       if (internalTx.internalTXType === InternalTXType.SetGlobalCodeBytes) {
-        if (wrappedEVMAccount === null) {
+        if (wrappedEVMAccount == null) {
           accountCreated = true
         }
         if (internalTx.accountData) {
@@ -3823,17 +3992,14 @@ shardus.setup({
     if (isStakeRelatedTx) {
       let stakeTxBlob: StakeCoinsTX = appData.internalTx
 
-      // if it is nominee, create 'NodeAccount'
+      // if it is nominee and a stake tx, create 'NodeAccount' if it doesn't exist
       if (accountId === stakeTxBlob.nominee) {
         let accountCreated = false
-        //let wrappedEVMAccount = accounts[accountId]
         let nodeAccount2: any = await AccountsStorage.getAccount(accountId)
 
         if (appData.internalTXType === InternalTXType.Stake) {
-          if (nodeAccount2 === null) {
+          if (nodeAccount2 == null) {
             accountCreated = true
-          }
-          if (appData.internalTx && appData.internalTXType === InternalTXType.Stake) {
             nodeAccount2 = {
               id: accountId,
               hash: '',
@@ -3847,8 +4013,12 @@ shardus.setup({
               accountType: AccountType.NodeAccount2,
             }
             WrappedEVMAccountFunctions.updateEthAccountHash(nodeAccount2)
+            if (ShardeumFlags.VerboseLogs) console.log('Created new node account', nodeAccount2)
           }
+        } else if (appData.internalTXType === InternalTXType.Unstake) {
+          if (nodeAccount2 == null) throw new Error(`Node Account <nominee> is not found ${accountId}`)
         }
+        if (ShardeumFlags.VerboseLogs) console.log('getRelevantData result for nodeAccount', nodeAccount2)
         return shardus.createWrappedResponse(
           accountId,
           accountCreated,
@@ -3889,7 +4059,7 @@ shardus.setup({
     let shardeumState = getApplyTXState(txId)
 
     // Create the account if it doesn't exist
-    if (typeof wrappedEVMAccount === 'undefined' || wrappedEVMAccount === null) {
+    if (typeof wrappedEVMAccount === 'undefined' || wrappedEVMAccount == null) {
       // oops! this is a problem..  maybe we should not have a fromShardusAddress
       // when we support sharding I dont think we can assume this is an AccountType.Account
       // the TX is specified at least so it might require digging into that to check if something matches the from/to field,
@@ -3965,7 +4135,7 @@ shardus.setup({
       // accounts[accountId] = wrappedEVMAccount //getRelevantData must never modify accounts[]
       accountCreated = true
     }
-    if (ShardeumFlags.VerboseLogs) console.log('Running getRelevantData final result', wrappedEVMAccount)
+    if (ShardeumFlags.VerboseLogs) console.log('Running getRelevantData final result for EOA', wrappedEVMAccount)
     // Wrap it for Shardus
     return shardus.createWrappedResponse(
       accountId,
@@ -4307,59 +4477,41 @@ shardus.setup({
     nodesToSign: number,
     appData: any
   ): Promise<ShardusTypes.SignAppDataResult> {
-    let fail: ShardusTypes.SignAppDataResult = { success: false, signature: null }
+    let fail:ShardusTypes.SignAppDataResult = { success: false, signature: null }
+
+    // the hash passed in is actually the address used for selecting which node should be signed.
+    // if (hash != crypto.hashObj(appData)){
+    //   if (ShardeumFlags.VerboseLogs) console.log(`signAppData failed ${type} `)
+    //   return fail
+    // } 
 
     switch (type) {
       case 'sign-stake-cert':
         if (nodesToSign != 5) return fail
         const stakeCert = appData as StakeCert
-        if (!stakeCert.nominator || !stakeCert.nominee || !stakeCert.stake || !stakeCert.certExp) {
-          /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`signAppData format failed ${type} ${JSON.stringify(stakeCert)} `)
+        if (!stakeCert.nominator || !stakeCert.nominee || !stakeCert.stake || !stakeCert.certExp){
+          if (ShardeumFlags.VerboseLogs) console.log(`signAppData format failed ${type} ${JSON.stringify(stakeCert)} `)
           return fail
         }
 
         //validate that the cert has not expired
-        const serverConfig: any = config.server
         const currentTimestamp = Math.round(Date.now() / 1000)
-        const cycleDurationInSeconds = serverConfig.p2p.cycleDuration * 2
-        if (stakeCert.certExp > currentTimestamp - cycleDurationInSeconds) {
-          /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`signAppData cert expired ${type} ${JSON.stringify(stakeCert)} `)
+        if (stakeCert.certExp > currentTimestamp){
+          if (ShardeumFlags.VerboseLogs) console.log(`signAppData cert expired ${type} ${JSON.stringify(stakeCert)} `)
           return fail
         }
-
-        const minStakeRequired = AccountsStorage.cachedNetworkAccount.current.stakeRequired
-        if (stakeCert.stake < minStakeRequired) {
-          /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`signAppData stake amount lower than required ${type} ${JSON.stringify(stakeCert)} `)
-          return fail
-        }
-
-        const nominatorAddress = toShardusAddress(stakeCert.nominator, AccountType.Account)
-        const nominatorAccount = await shardus.getLocalOrRemoteAccount(nominatorAddress)
-        if (!nominatorAccount) {
-          /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`could not find nominator account ${type} ${JSON.stringify(stakeCert)} `)
-          return fail
-        }
-        let nominatorEVMAccount = nominatorAccount.data as WrappedEVMAccount
-        fixDeserializedWrappedEVMAccount(nominatorEVMAccount)
-        if (!nominatorEVMAccount.operatorAccountInfo) {
-          return fail
-        }
-        if (stakeCert.stake != nominatorEVMAccount.operatorAccountInfo.stake) {
-          /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`stake amount in cert and operator account does not match ${type} ${JSON.stringify(stakeCert)} ${JSON.stringify(nominatorEVMAccount)} `)
-          return fail
-        }
-        if (stakeCert.nominee != nominatorEVMAccount.operatorAccountInfo.nominee) {
-          /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`nominee in cert and operator account does not match ${type} ${JSON.stringify(stakeCert)} ${JSON.stringify(nominatorEVMAccount)} `)
-          return fail
-        }
+        //TODO validate that stake meets minimum requirments by checking the cached global network account settings
+        //TODO check the staking amount matches the operator account (nominator) info  (getLocalOrRemote)
+        //TOOO check that the operatorAccount .nominee matches our cert
 
         delete stakeCert.sign
         delete stakeCert.signs
-        const signedCert: StakeCert = shardus.signAsNode(stakeCert)
-        const result: ShardusTypes.SignAppDataResult = { success: true, signature: signedCert.sign }
+        const signedCert:StakeCert = shardus.signAsNode(stakeCert)
+        const result:ShardusTypes.SignAppDataResult = { success: true, signature: signedCert.sign }
         if (ShardeumFlags.VerboseLogs) console.log(`signAppData passed ${type} ${JSON.stringify(stakeCert)}`)
         nestedCountersInstance.countEvent('shardeum', 'sign-stake-cert - passed')
         return result
+        //break
     }
     return fail
   },
@@ -4426,30 +4578,31 @@ shardus.setup({
       }
     }
 
-    if (ShardeumFlags.StakingEnabled) {
-      const nodeAcc = data.sign.owner
+    if(ShardeumFlags.StakingEnabled){
+      const nodeAcc = data.sign.owner   
       const stake_cert: StakeCert = data.stakeCert
       const tx_time = data.joinRequestTimestamp as number
 
-      if (nodeAcc !== stake_cert.nominee) {
+      if(nodeAcc !== stake_cert.nominee){
         return {
           success: false,
           reason: `Nominated address and tx signature owner doesn't match, nominee: ${stake_cert.nominee}, sign owner: ${nodeAcc}`,
         }
       }
 
-      if (tx_time > stake_cert.certExp) {
+      if(tx_time > stake_cert.certExp){
         return {
           success: false,
           reason: `Certificate has expired at ${stake_cert.certExp}`,
         }
       }
 
+
       const serverConfig: any = config.server
       const two_cycle_ms = serverConfig.p2p.cycleDuration * 2 * 1000
 
       // stake certification should not expired for at least 2 cycle.
-      if (Date.now() + two_cycle_ms > stake_cert.certExp) {
+      if((Date.now() + two_cycle_ms) > stake_cert.certExp){
         return {
           success: false,
           reason: `Certificate will be expired really soon.`,
@@ -4458,7 +4611,7 @@ shardus.setup({
 
       const minStakeRequired = AccountsStorage.cachedNetworkAccount.current.stakeRequired
 
-      if (stake_cert.stake < minStakeRequired) {
+      if(stake_cert.stake < minStakeRequired) {
         return {
           success: false,
           reason: `Minimum stake amount requirement does not meet.`,
@@ -4467,40 +4620,42 @@ shardus.setup({
 
       const pickedNode: ShardusTypes.Sign[] = []
       const requiredSig = ShardeumFlags.MinStakeCertSig
-      for (let i = 0; i < stake_cert.signs.length; i++) {
+      for(let i = 0; i < stake_cert.signs.length; i++){
         const node = shardus.getNode(stake_cert.signs[i].owner)
 
-        if (node) {
-          pickedNode.push(node)
+        if(node){
+          pickedNode.push(node);
         }
 
         // early break loop
-        if (pickedNode.length >= requiredSig) {
+        if(pickedNode.length >= requiredSig){
           break
         }
+
       }
 
-      if (pickedNode.length < requiredSig) {
+      if(pickedNode.length < requiredSig){
         return {
           success: false,
-          reason: `Not enough stake certification signature owner in the node list anymore`,
+          reason: `Not enough stake certification signature owner in the node list anymore`
         }
       }
 
-      for (let i = 0; i < pickedNode.length; i++) {
+      for(let i = 0; i  < pickedNode.length; i++){
         const tmp_stakeCert = {
           nominator: stake_cert.nominator,
           nominee: stake_cert.nominee,
           certExp: stake_cert.certExp,
-          sign: pickedNode[i],
+          sign: pickedNode[i]
         }
-        if (!crypto.verifyObj(tmp_stakeCert)) {
+        if(!crypto.verifyObj(tmp_stakeCert)){
           return {
             success: false,
-            reason: `Stake certification signature is invalid: ${pickedNode[i]}`,
+            reason: `Stake certification signature is invalid: ${pickedNode[i]}`
           }
         }
       }
+
     }
 
     return {
@@ -4514,6 +4669,7 @@ shardus.setup({
     let latestCycles: ShardusTypes.Cycle[] = shardus.getLatestCycles(1)
     let currentCycle = latestCycles[0]
     if (!currentCycle) return false
+
 
     //TODO:  a future PR will add a cachedNetworkAccount that we can check here
     //If we dont have a cachedNetworkAccount yet we will call queryCertificate() to initiate a query_certificate transaction
@@ -4531,18 +4687,17 @@ shardus.setup({
       // return false and query/check again in next cycle
       return false
     }
-    if (lastCertTimeTxTimestamp > 0) {
-      // we have already submitted setCertTime
+    if (lastCertTimeTxTimestamp > 0) { // we have already submitted setCertTime
       // query the certificate from the network
       let certQueryData: any
-
+      
       //TODO we need a query certificate instead of getCertSignatures
       //query certificate will run the full process to propose a cert and then ask for signatures
       //getCertSignatures is lower level and expects a filled out cert to be passed in
       //We should add a funtion queryCertificate() that when called in the validator will
       //create and send a query_certificate transaction
       //note that query_certificate is an external enpoint rather than a full "transaction"
-      let { success, signedStakeCert } = await getCertSignatures(shardus, certQueryData)
+      let {success, signedStakeCert} = await getCertSignatures(shardus, certQueryData)
 
       if (success === false) return false
 
@@ -4570,7 +4725,7 @@ shardus.setup({
       }
     }
     // every 3 cycle, inject a new setCertTime tx
-    if (lastCertTimeTxTimestamp > 0 && currentCycle.counter >= lastCertTimeTxCycle + 3) {
+    if (lastCertTimeTxTimestamp > 0 &&  currentCycle.counter >= lastCertTimeTxCycle + 3) {
       await injectSetCertTimeTx(shardus)
 
       lastCertTimeTxTimestamp = Date.now()
