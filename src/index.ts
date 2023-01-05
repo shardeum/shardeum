@@ -4507,6 +4507,7 @@ shardus.setup({
     appData: any
   ): Promise<ShardusTypes.SignAppDataResult> {
     let fail: ShardusTypes.SignAppDataResult = { success: false, signature: null }
+    console.log('Running signAppData', type, hash, nodesToSign, appData)
 
     switch (type) {
       case 'sign-stake-cert':
@@ -4520,15 +4521,20 @@ shardus.setup({
         //validate that the cert has not expired
         const serverConfig: any = config.server
         const currentTimestamp = Date.now()
-        const expirationTimeLimit = serverConfig.p2p.cycleDuration * 1000 * certExpireSoonCycles
+        // const expirationTimeLimit = serverConfig.p2p.cycleDuration * 1000 * certExpireSoonCycles
 
-        if (stakeCert.certExp > currentTimestamp - expirationTimeLimit) {
+        // Changing it to certExp > currentTimestamp for now; need to review it again
+        // TODO: I think we need to add more certExp validation steps
+        // if (stakeCert.certExp > currentTimestamp - expirationTimeLimit) {
+        if (stakeCert.certExp < currentTimestamp) {
           /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`signAppData cert expired ${type} ${JSON.stringify(stakeCert)} `)
           return fail
         }
 
         const minStakeRequired = AccountsStorage.cachedNetworkAccount.current.stakeRequired
-        if (stakeCert.stake < minStakeRequired) {
+        let stakeAmount = new BN(Number('0x' + stakeCert.stake).toString())
+
+        if (stakeAmount < minStakeRequired) {
           /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`signAppData stake amount lower than required ${type} ${JSON.stringify(stakeCert)} `)
           return fail
         }

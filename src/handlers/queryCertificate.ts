@@ -234,7 +234,7 @@ export async function getCertSignatures(
   certData: StakeCert
 ): Promise<CertSignaturesResult> {
   const signedAppData = await shardus.getAppDataSignatures(
-    'sign-app-data',
+    'sign-stake-cert',
     crypto.hashObj(certData),
     5,
     certData
