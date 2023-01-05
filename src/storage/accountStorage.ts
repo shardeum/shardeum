@@ -1,9 +1,10 @@
 import { NetworkAccount, WrappedEVMAccount, WrappedEVMAccountMap } from '../shardeum/shardeumTypes'
 
-import {ShardeumFlags} from '../shardeum/shardeumFlags'
+import { ShardeumFlags } from '../shardeum/shardeumFlags'
 import Storage from '../storage/storage'
 import { DeSerializeFromJsonString } from '../utils'
 import { networkAccount } from '..'
+import { BN } from 'bn.js'
 
 const isString = x => {
   return Object.prototype.toString.call(x) === '[object String]'
@@ -79,8 +80,23 @@ export async function setAccount(address: string, account: WrappedEVMAccount): P
     }
     await storage.createOrReplaceAccountEntry(accountEntry)
 
-    if(address === networkAccount){
-      cachedNetworkAccount = account as any as NetworkAccount
+    if (address === networkAccount) {
+      cachedNetworkAccount = (account as any) as NetworkAccount
+      if (typeof cachedNetworkAccount.current.stakeRequired === 'string') {
+        cachedNetworkAccount.current.stakeRequired = new BN(
+          Number('0x' + cachedNetworkAccount.current.stakeRequired).toString()
+        )
+      }
+      if (typeof cachedNetworkAccount.current.nodePenalty === 'string') {
+        cachedNetworkAccount.current.nodePenalty = new BN(
+          Number('0x' + cachedNetworkAccount.current.nodePenalty).toString()
+        )
+      }
+      if (typeof cachedNetworkAccount.current.nodeRewardAmount === 'string') {
+        cachedNetworkAccount.current.nodeRewardAmount = new BN(
+          Number('0x' + cachedNetworkAccount.current.nodeRewardAmount).toString()
+        )
+      }
     }
   } else {
     accounts[address] = account

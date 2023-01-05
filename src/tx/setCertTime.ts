@@ -45,7 +45,7 @@ export async function injectSetCertTimeTx(shardus: Shardus, publicKey: string, a
     nominee: publicKey,
     nominator,
     duration: 20, //temp setting to 20 to make debugging easier
-    // timestamp: Date.now(),
+    timestamp: Date.now(),
   }
   tx = shardus.signAsNode(tx)
   const result = await InjectTxToConsensor(randomConsensusNode, tx)
@@ -90,6 +90,8 @@ export function validateSetCertTimeState(tx: SetCertTime, wrappedStates: Wrapped
       committedStake = new BN(Number('0x' + operatorEVMAccount.operatorAccountInfo.stake).toString())
     }
   }
+
+  AccountsStorage.cachedNetworkAccount.current.stakeRequired
 
   const minStakeRequired = AccountsStorage.cachedNetworkAccount.current.stakeRequired
 
