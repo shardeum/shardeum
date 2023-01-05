@@ -670,7 +670,7 @@ async function getReadableAccountInfo(account) {
       balance: account.account.balance.toString(),
       stateRoot: bufferToHex(account.account.stateRoot),
       codeHash: bufferToHex(account.account.codeHash),
-      operatorAccountInfo: account.operatorAccountInfo ? account.operatorAccountInfo : null
+      operatorAccountInfo: account.operatorAccountInfo ? account.operatorAccountInfo : null,
     }
   } catch (e) {
     if (ShardeumFlags.VerboseLogs) console.log('Unable to get readable account', e)
@@ -2492,8 +2492,16 @@ shardus.setup({
       if (appData && appData.internalTx && appData.internalTXType === InternalTXType.Unstake) {
         if (ShardeumFlags.VerboseLogs) console.log('Validating unstake coins tx fields', appData.internalTx)
         let unstakeCoinsTX = appData.internalTx as UnstakeCoinsTX
-        if (unstakeCoinsTX.nominator == null || unstakeCoinsTX.nominator.toLowerCase() !== txObj.getSenderAddress().toString()) {
-          if (ShardeumFlags.VerboseLogs) console.log(`nominator vs tx signer`, unstakeCoinsTX.nominator, txObj.getSenderAddress().toString())
+        if (
+          unstakeCoinsTX.nominator == null ||
+          unstakeCoinsTX.nominator.toLowerCase() !== txObj.getSenderAddress().toString()
+        ) {
+          if (ShardeumFlags.VerboseLogs)
+            console.log(
+              `nominator vs tx signer`,
+              unstakeCoinsTX.nominator,
+              txObj.getSenderAddress().toString()
+            )
           success = false
           reason = `Invalid nominator address in stake coins tx`
         } else if (unstakeCoinsTX.nominee == null) {
@@ -2618,9 +2626,7 @@ shardus.setup({
 
       if (ShardeumFlags.useAccountWrites) {
         // for operator evm account
-        let {
-          accounts: accountWrites,
-        } = shardeumState._transactionState.getWrittenAccounts()
+        let { accounts: accountWrites } = shardeumState._transactionState.getWrittenAccounts()
         console.log('\nAccount Writes: ', accountWrites)
         for (let account of accountWrites.entries()) {
           let addressStr = account[0]
@@ -2630,9 +2636,9 @@ shardus.setup({
           let accountObj = Account.fromRlpSerializedAccount(account[1])
           console.log('\nWritten Account Object: ', accountObj)
 
-         console.log('written account Obj', accountObj)
+          console.log('written account Obj', accountObj)
 
-          let wrappedEVMAccount: WrappedEVMAccount = {...operatorEVMAccount, account: accountObj}
+          let wrappedEVMAccount: WrappedEVMAccount = { ...operatorEVMAccount, account: accountObj }
 
           updateEthAccountHash(wrappedEVMAccount)
           const wrappedChangedAccount = WrappedEVMAccountFunctions._shardusWrappedAccount(wrappedEVMAccount)
@@ -2730,7 +2736,9 @@ shardus.setup({
       operatorEVMAccount.timestamp = txTimestamp
 
       if (operatorEVMAccount.operatorAccountInfo == null) {
-        throw new Error(`Unable to apply Unstake tx because operator account info does not exist for ${unstakeCoinsTX.nominator}`)
+        throw new Error(
+          `Unable to apply Unstake tx because operator account info does not exist for ${unstakeCoinsTX.nominator}`
+        )
       }
       fixDeserializedWrappedEVMAccount(operatorEVMAccount)
 
@@ -2741,8 +2749,13 @@ shardus.setup({
       let reward = new BN(nodeAccount2.reward)
       let penalty = new BN(nodeAccount2.penalty)
       let txFee = new BN(ShardeumFlags.constantTxFee)
-      if (ShardeumFlags.VerboseLogs) console.log('calculating new balance after unstake', currentBalance, stake, reward, penalty, txFee)
-      let newBalance = currentBalance.add(stake).add(reward).sub(penalty).sub(txFee)
+      if (ShardeumFlags.VerboseLogs)
+        console.log('calculating new balance after unstake', currentBalance, stake, reward, penalty, txFee)
+      let newBalance = currentBalance
+        .add(stake)
+        .add(reward)
+        .sub(penalty)
+        .sub(txFee)
       operatorEVMAccount.account.balance = newBalance
       operatorEVMAccount.account.nonce = operatorEVMAccount.account.nonce.add(new BN('1'))
 
@@ -2765,9 +2778,7 @@ shardus.setup({
 
       if (ShardeumFlags.useAccountWrites) {
         // for operator evm account
-        let {
-          accounts: accountWrites,
-        } = shardeumState._transactionState.getWrittenAccounts()
+        let { accounts: accountWrites } = shardeumState._transactionState.getWrittenAccounts()
         console.log('\nAccount Writes: ', accountWrites)
         for (let account of accountWrites.entries()) {
           let addressStr = account[0]
@@ -2779,7 +2790,7 @@ shardus.setup({
 
           console.log('written account Obj', accountObj)
 
-          let wrappedEVMAccount: WrappedEVMAccount = {...operatorEVMAccount, account: accountObj}
+          let wrappedEVMAccount: WrappedEVMAccount = { ...operatorEVMAccount, account: accountObj }
           updateEthAccountHash(wrappedEVMAccount)
           const wrappedChangedAccount = WrappedEVMAccountFunctions._shardusWrappedAccount(wrappedEVMAccount)
           shardus.applyResponseAddChangedAccount(
@@ -3615,7 +3626,10 @@ shardus.setup({
       })
 
       // add nominee (NodeAcc) to targetKeys
-      if (appData.internalTx && (appData.internalTXType === InternalTXType.Stake || appData.internalTXType === InternalTXType.Unstake)) {
+      if (
+        appData.internalTx &&
+        (appData.internalTXType === InternalTXType.Stake || appData.internalTXType === InternalTXType.Unstake)
+      ) {
         let transformedTargetKey = appData.internalTx.nominee // no need to convert to shardus address
         result.targetKeys.push(transformedTargetKey)
       }
@@ -3941,7 +3955,7 @@ shardus.setup({
         }
       }
       if (internalTx.internalTXType === InternalTXType.SetCertTime) {
-        if (!wrappedEVMAccount ) {
+        if (!wrappedEVMAccount) {
           // Node Account or EVM Account(Nominator) has to be already created at this point.
           if (accountId === internalTx.nominee) {
             throw Error(`Node Account <nominee> is not found ${accountId}`)
@@ -4148,7 +4162,8 @@ shardus.setup({
       // accounts[accountId] = wrappedEVMAccount //getRelevantData must never modify accounts[]
       accountCreated = true
     }
-    if (ShardeumFlags.VerboseLogs) console.log('Running getRelevantData final result for EOA', wrappedEVMAccount)
+    if (ShardeumFlags.VerboseLogs)
+      console.log('Running getRelevantData final result for EOA', wrappedEVMAccount)
     // Wrap it for Shardus
     return shardus.createWrappedResponse(
       accountId,
@@ -4517,7 +4532,7 @@ shardus.setup({
           return fail
         }
 
-        if(ShardeumFlags.FullCertChecksEnabled){
+        if (ShardeumFlags.FullCertChecksEnabled) {
           const nominatorAddress = toShardusAddress(stakeCert.nominator, AccountType.Account)
           const nominatorAccount = await shardus.getLocalOrRemoteAccount(nominatorAddress)
           if (!nominatorAccount) {
@@ -4537,13 +4552,13 @@ shardus.setup({
           if (stakeCert.nominee != nominatorEVMAccount.operatorAccountInfo.nominee) {
             /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`nominee in cert and operator account does not match ${type} ${JSON.stringify(stakeCert)} ${JSON.stringify(nominatorEVMAccount)} `)
             return fail
-          }          
+          }
         }
         delete stakeCert.sign
         delete stakeCert.signs
         const signedCert: StakeCert = shardus.signAsNode(stakeCert)
         const result: ShardusTypes.SignAppDataResult = { success: true, signature: signedCert.sign }
-        if (ShardeumFlags.VerboseLogs) console.log(`signAppData passed ${type} ${JSON.stringify(stakeCert)}`)
+        /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`signAppData passed ${type} ${JSON.stringify(stakeCert)}`)
         nestedCountersInstance.countEvent('shardeum', 'sign-stake-cert - passed')
         return result
     }
@@ -4602,48 +4617,47 @@ shardus.setup({
     return joinData
   },
   validateJoinRequest(data: any) {
-    try{
-      if (ShardeumFlags.VerboseLogs) console.log(`validateJoinRequest ${JSON.stringify(data)}`)
+    try {
+      /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`validateJoinRequest ${JSON.stringify(data)}`)
       if (!data.appJoinData) {
-        if (ShardeumFlags.VerboseLogs) console.log(`validateJoinRequest fail: !data.appJoinData`)
+        /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`validateJoinRequest fail: !data.appJoinData`)
         return { success: false, reason: `Join request node doesn't provide the app join data.` }
       }
       if (!isEqualOrNewerVersion(version, data.appJoinData.version)) {
-        if (ShardeumFlags.VerboseLogs) console.log(`validateJoinRequest fail: old version`)
+        /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`validateJoinRequest fail: old version`)
         return {
           success: false,
           reason: `version number is old. Our app version is ${version}. Join request node app version is ${data.appJoinData.version}`,
         }
       }
 
-      if(ShardeumFlags.StakingEnabled){
-        const nodeAcc = data.sign.owner   
+      if (ShardeumFlags.StakingEnabled) {
+        const nodeAcc = data.sign.owner
         const stake_cert: StakeCert = data.appJoinData.stakeCert
         const tx_time = data.joinRequestTimestamp as number
 
-        if(nodeAcc !== stake_cert.nominee){
-          if (ShardeumFlags.VerboseLogs) console.log(`validateJoinRequest fail: nodeAcc !== stake_cert.nominee`)
+        if (nodeAcc !== stake_cert.nominee) {
+          /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`validateJoinRequest fail: nodeAcc !== stake_cert.nominee`)
           return {
             success: false,
             reason: `Nominated address and tx signature owner doesn't match, nominee: ${stake_cert.nominee}, sign owner: ${nodeAcc}`,
           }
         }
 
-        if(tx_time > stake_cert.certExp){
-          if (ShardeumFlags.VerboseLogs) console.log(`validateJoinRequest fail: tx_time > stake_cert.certExp ${tx_time} > ${stake_cert.certExp}`  )
+        if (tx_time > stake_cert.certExp) {
+          /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`validateJoinRequest fail: tx_time > stake_cert.certExp ${tx_time} > ${stake_cert.certExp}`  )
           return {
             success: false,
             reason: `Certificate has expired at ${stake_cert.certExp}`,
           }
         }
 
-
         const serverConfig: any = config.server
         const two_cycle_ms = serverConfig.p2p.cycleDuration * 2 * 1000
 
         // stake certification should not expired for at least 2 cycle.
-        if((Date.now() + two_cycle_ms) > stake_cert.certExp){
-          if (ShardeumFlags.VerboseLogs) console.log(`validateJoinRequest fail: cert expires soon ${Date.now() + two_cycle_ms} > ${stake_cert.certExp}`  )
+        if (Date.now() + two_cycle_ms > stake_cert.certExp) {
+          /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`validateJoinRequest fail: cert expires soon ${Date.now() + two_cycle_ms} > ${stake_cert.certExp}`  )
           return {
             success: false,
             reason: `Certificate will be expired really soon.`,
@@ -4652,8 +4666,8 @@ shardus.setup({
 
         const minStakeRequired = AccountsStorage.cachedNetworkAccount.current.stakeRequired
 
-        if(stake_cert.stake < minStakeRequired) {
-          if (ShardeumFlags.VerboseLogs) console.log(`validateJoinRequest fail: stake_cert.stake < minStakeRequired ${stake_cert.stake} < ${minStakeRequired}`)
+        if (stake_cert.stake < minStakeRequired) {
+          /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`validateJoinRequest fail: stake_cert.stake < minStakeRequired ${stake_cert.stake} < ${minStakeRequired}`)
           return {
             success: false,
             reason: `Minimum stake amount requirement does not meet.`,
@@ -4663,64 +4677,62 @@ shardus.setup({
         const pickedNode: ShardusTypes.Sign[] = []
         //todo run this with min(numActive nodes)
         const requiredSig = ShardeumFlags.MinStakeCertSig
-        for(let i = 0; i < stake_cert.signs.length; i++){
+        for (let i = 0; i < stake_cert.signs.length; i++) {
           const node = shardus.getNode(stake_cert.signs[i].owner)
 
-          if(node){
-            pickedNode.push(node);
+          if (node) {
+            pickedNode.push(node)
           }
 
           // early break loop
-          if(pickedNode.length >= requiredSig){
+          if (pickedNode.length >= requiredSig) {
             break
           }
-
         }
 
-        if(pickedNode.length < requiredSig){
-          if (ShardeumFlags.VerboseLogs) console.log(`validateJoinRequest fail: pickedNode.length < requiredSig ${pickedNode.length} < ${requiredSig}`)
+        if (pickedNode.length < requiredSig) {
+          /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`validateJoinRequest fail: pickedNode.length < requiredSig ${pickedNode.length} < ${requiredSig}`)
           return {
             success: false,
-            reason: `Not enough stake certification signature owner in the node list anymore`
+            reason: `Not enough stake certification signature owner in the node list anymore`,
           }
         }
 
-        for(let i = 0; i  < pickedNode.length; i++){
+        for (let i = 0; i < pickedNode.length; i++) {
           const tmp_stakeCert = {
             nominator: stake_cert.nominator,
             nominee: stake_cert.nominee,
             certExp: stake_cert.certExp,
-            sign: pickedNode[i]
+            sign: pickedNode[i],
           }
-          if(!crypto.verifyObj(tmp_stakeCert)){
-            if (ShardeumFlags.VerboseLogs) console.log(`validateJoinRequest fail: invalid signature`)
+          if (!crypto.verifyObj(tmp_stakeCert)) {
+            /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`validateJoinRequest fail: invalid signature`)
             return {
               success: false,
-              reason: `Stake certification signature is invalid: ${pickedNode[i]}`
+              reason: `Stake certification signature is invalid: ${pickedNode[i]}`,
             }
           }
         }
-
       }
 
-      if (ShardeumFlags.VerboseLogs) console.log(`validateJoinRequest success!!!`)
+      /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`validateJoinRequest success!!!`)
       return {
         success: true,
       }
     } catch (e) {
-      if (ShardeumFlags.VerboseLogs) console.log(`validateJoinRequest exception: ${JSON.stringify(e)}`)
+      /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`validateJoinRequest exception: ${JSON.stringify(e)}`)
     }
   },
   // Update the activeNodes type here; We can import from P2P.P2PTypes.Node from '@shardus/type' lib but seems it's not installed yet
   async isReadyToJoin(latestCycle: ShardusTypes.Cycle, publicKey: string, activeNodes: any[]) {
     if (ShardeumFlags.StakingEnabled === false) return true
     //if (ShardeumFlags.VerboseLogs) console.log(`Running isReadyToJoin`, latestCycle, publicKey, activeNodes)
-    console.log(`Running isReadyToJoin cycle:${latestCycle.counter} publicKey: ${publicKey}`)
+    /* prettier-ignore */ console.log(`Running isReadyToJoin cycle:${latestCycle.counter} publicKey: ${publicKey}`)
 
     if (lastCertTimeTxTimestamp === 0) {
       // inject setCertTimeTx for the first time
       const res = await injectSetCertTimeTx(shardus, publicKey, activeNodes)
-      if(!res.success) return false
+      if (!res.success) return false
 
       // set lastCertTimeTxTimestamp and cycle
       lastCertTimeTxTimestamp = Date.now()
@@ -4731,15 +4743,15 @@ shardus.setup({
     }
 
     //if stake cert is not null check its time
-    if(stakeCert != null){
+    if (stakeCert != null) {
       let remainingValidTime = stakeCert.certExp - Date.now()
-      console.log('stakeCert != null. remainingValidTime / minimum time ', remainingValidTime, certExpireSoonCycles * ONE_SECOND * latestCycle.duration)
+      /* prettier-ignore */ console.log('stakeCert != null. remainingValidTime / minimum time ', remainingValidTime, certExpireSoonCycles * ONE_SECOND * latestCycle.duration)
       // let isExpiringSoon = remainingValidTime <= latestCycle.start + 3 * ONE_SECOND * latestCycle.duration
       let isExpiringSoon = remainingValidTime <= certExpireSoonCycles * ONE_SECOND * latestCycle.duration
-      if(isExpiringSoon){
+      if (isExpiringSoon) {
         stakeCert = null //clear stake cert, so we will know to query for it again
         const res = await injectSetCertTimeTx(shardus, publicKey, activeNodes)
-        if(!res.success) return false
+        if (!res.success) return false
         lastCertTimeTxTimestamp = Date.now()
         lastCertTimeTxCycle = latestCycle.counter
         // return false and check again in next cycle
@@ -4753,7 +4765,7 @@ shardus.setup({
       }
     }
     //if stake cert is null and we have set cert time before then query for the cert
-    if (lastCertTimeTxTimestamp > 0 && stakeCert == null ) {
+    if (lastCertTimeTxTimestamp > 0 && stakeCert == null) {
       // we have already submitted setCertTime
       // query the certificate from the network
       let res: any = await queryCertificate(shardus, publicKey, activeNodes)
@@ -4763,14 +4775,14 @@ shardus.setup({
       }
       const signedStakeCert: StakeCert = res.signedStakeCert
       let remainingValidTime = signedStakeCert.certExp - Date.now()
-      console.log('stakeCert received. remainingValidTime / minimum time ', remainingValidTime, certExpireSoonCycles * ONE_SECOND * latestCycle.duration)
+      /* prettier-ignore */ console.log('stakeCert received. remainingValidTime / minimum time ', remainingValidTime, certExpireSoonCycles * ONE_SECOND * latestCycle.duration)
       // let isExpiringSoon = remainingValidTime <= latestCycle.start + 3 * ONE_SECOND * latestCycle.duration
       let isExpiringSoon = remainingValidTime <= certExpireSoonCycles * ONE_SECOND * latestCycle.duration
       // if cert is going to expire soon, inject a new setCertTimeTx
       if (isExpiringSoon) {
         stakeCert = null //clear stake cert, so we will know to query for it again
         const res = await injectSetCertTimeTx(shardus, publicKey, activeNodes)
-        if(!res.success) return false
+        if (!res.success) return false
         lastCertTimeTxTimestamp = Date.now()
         lastCertTimeTxCycle = latestCycle.counter
         // return false and check again in next cycle
@@ -4781,7 +4793,7 @@ shardus.setup({
         if (!isValid) return false
         // cert if valid and not expiring soon
         stakeCert = signedStakeCert
-        console.log('valid cert, isReadyToJoin = true ', stakeCert)
+        /* prettier-ignore */ console.log('valid cert, isReadyToJoin = true ', stakeCert)
         return true
       }
     }

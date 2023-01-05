@@ -152,7 +152,7 @@ async function getNodeAccount(
     queryString += `?type=${AccountType.NodeAccount2}`
     const res = await shardusGetFromNode<any>(
       randomConsensusNode,
-      queryString//,
+      queryString //,
       //{ params: { type: AccountType.NodeAccount2 } }
     )
     if (!res.data.account) {
