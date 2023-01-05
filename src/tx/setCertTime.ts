@@ -146,7 +146,7 @@ export function applySetCertTimeTx(
     const wrappedChangedAccount = WrappedEVMAccountFunctions._shardusWrappedAccount(operatorEVMAccount)
     shardus.applyResponseAddChangedAccount(
       applyResponse,
-      operatorAccountAddress,
+      wrappedChangedAccount.accountId,
       wrappedChangedAccount,
       txId,
       txTimestamp
