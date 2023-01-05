@@ -2476,6 +2476,7 @@ shardus.setup({
           success = false
           reason = `Invalid nominee address in stake coins tx`
         } else if (!/^[A-Fa-f0-9]{64}$/.test(stakeCoinsTx.nominee)) {
+          //TODO: NEED to potentially write a custom faster test that avoids regex so we can avoid a regex-dos attack
           success = false
           reason = 'Invalid nominee address in stake coins tx'
         } else if (!stakeCoinsTx.stake.eq(txObj.value)) {
