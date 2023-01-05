@@ -2475,6 +2475,9 @@ shardus.setup({
         } else if (stakeCoinsTx.nominee == null) {
           success = false
           reason = `Invalid nominee address in stake coins tx`
+        } else if (!/^[A-Fa-f0-9]{64}$/.test(stakeCoinsTx.nominee)) {
+          success = false
+          reason = 'Invalid nominee address in stake coins tx'
         } else if (!stakeCoinsTx.stake.eq(txObj.value)) {
           if (ShardeumFlags.VerboseLogs)
             console.log(
