@@ -114,7 +114,9 @@ export function applySetCertTimeTx(
   txTimestamp: number,
   applyResponse: ShardusTypes.ApplyResponse
 ) {
-  console.log(`applySetCertTimeTx txTimestamp:${txTimestamp}   tx.timestamp:${tx.timestamp}`)
+  if (ShardeumFlags.VerboseLogs) {
+    console.log(`applySetCertTimeTx txTimestamp:${txTimestamp}   tx.timestamp:${tx.timestamp}`)
+  }
 
   //TODO this is failing with a warning like this:
   //Invalid SetCertTimeTx state, operator account 0x0950c3ecc7d1c4dd093c9652f335f9391d83ee99, reason: Operator has not staked the required amount
@@ -130,7 +132,9 @@ export function applySetCertTimeTx(
   operatorEVMAccount.timestamp = txTimestamp
   fixDeserializedWrappedEVMAccount(operatorEVMAccount)
 
-  console.log('operatorEVMAccount Before', operatorEVMAccount)
+  if (ShardeumFlags.VerboseLogs) {
+    console.log('operatorEVMAccount Before', operatorEVMAccount)
+  }
 
   // Update state
   const serverConfig: any = config.server
@@ -140,7 +144,9 @@ export function applySetCertTimeTx(
     new BN(ShardeumFlags.constantTxFee)
   )
 
-  console.log('operatorEVMAccount After', operatorEVMAccount)
+  if (ShardeumFlags.VerboseLogs) {
+    console.log('operatorEVMAccount After', operatorEVMAccount)
+  }
 
   // Apply state
   const txId = crypto.hashObj(tx)

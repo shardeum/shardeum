@@ -1,8 +1,9 @@
-import { Shardus, ShardusTypes } from '@shardus/core'
+import { Shardus, ShardusTypes, nestedCountersInstance } from '@shardus/core'
 import * as crypto from '@shardus/crypto-utils'
 import { BN, isValidAddress } from 'ethereumjs-util'
 import { Request } from 'express'
 import { toShardusAddress } from '../shardeum/evmAddress'
+import { ShardeumFlags } from '../shardeum/shardeumFlags'
 import {
   AccountType,
   InjectTxResponse,
@@ -74,9 +75,11 @@ function validateQueryCertRequest(req: QueryCertRequest, rawBody: any): Validato
  */
 export async function queryCertificate(
   shardus: Shardus,
-  publicKey,
-  activeNodes
+  publicKey: string,
+  activeNodes: ShardusTypes.Node
 ): Promise<CertSignaturesResult | ValidatorError> {
+  nestedCountersInstance.countEvent('shardeum-staking', 'calling queryCertificate')
+
   if (activeNodes.length === 0) {
     return {
       success: false,
@@ -119,18 +122,21 @@ export async function queryCertificate(
     nominator: nominator,
   }
   const signedCertRequest: QueryCertRequest = shardus.signAsNode(certRequest)
-  console.log('signedCertRequest', signedCertRequest)
+
+  if (ShardeumFlags.VerboseLogs) {
+    console.log('signedCertRequest', signedCertRequest)
+  }
 
   return await callQueryCertificate(signedCertRequest)
 }
 
 export async function getNodeAccountWithRetry(
   nodeAccountId: string,
-  activeNodes
+  activeNodes: ShardusTypes.Node[]
 ): Promise<NodeAccountQueryResponse | ValidatorError> {
   let i = 0
   while (i <= maxNodeAccountRetries) {
-    const randomConsensusNode: any = getRandom(activeNodes, 1)[0]
+    const randomConsensusNode = getRandom(activeNodes, 1)[0]
     const resp = await getNodeAccount(randomConsensusNode, nodeAccountId)
     if (resp.success) return resp
     else {
@@ -143,7 +149,7 @@ export async function getNodeAccountWithRetry(
 }
 
 async function getNodeAccount(
-  randomConsensusNode: any,
+  randomConsensusNode: ShardusTypes.Node,
   nodeAccountId: string
 ): Promise<NodeAccountQueryResponse | ValidatorError> {
   try {
@@ -187,28 +193,43 @@ export async function queryCertificateHandler(
   req: Request,
   shardus: Shardus
 ): Promise<CertSignaturesResult | ValidatorError> {
+  nestedCountersInstance.countEvent('shardeum-staking', 'calling queryCertificateHandler')
+
   const queryCertReq = req.body as QueryCertRequest
   const reqValidationResult = validateQueryCertRequest(queryCertReq, req.body)
-  if (!reqValidationResult.success) return reqValidationResult
+  if (!reqValidationResult.success) {
+    nestedCountersInstance.countEvent('shardeum-staking', 'failed validateQueryCertRequest')
+    return reqValidationResult
+  }
 
   const operatorAccount = await getEVMAccountDataForAddress(shardus, queryCertReq.nominator)
-  if (!operatorAccount) return { success: false, reason: 'Failed to fetch operator account state' }
+  if (!operatorAccount) {
+    nestedCountersInstance.countEvent('shardeum-staking', 'failed to fetch operator account state')
+    return { success: false, reason: 'Failed to fetch operator account state' }
+  }
   // TODO: look into why nodeAccount is queried here
   const nodeAccount = await shardus.getLocalOrRemoteAccount(queryCertReq.nominee)
-  if (!nodeAccount) return { success: false, reason: 'Failed to fetch node account state' }
+  if (!nodeAccount) {
+    nestedCountersInstance.countEvent('shardeum-staking', 'failed to fetch node account state')
+    return { success: false, reason: 'Failed to fetch node account state' }
+  }
 
   // const currentTimestamp = Math.round(Date.now() / 1000)
   const currentTimestamp = Date.now()
 
-  console.log('currentTimestamp', currentTimestamp, operatorAccount.operatorAccountInfo.certExp)
+  if (ShardeumFlags.VerboseLogs) {
+    console.log('currentTimestamp', currentTimestamp, operatorAccount.operatorAccountInfo.certExp)
+  }
 
   // check operator cert validity
-  if (operatorAccount.operatorAccountInfo.certExp < currentTimestamp)
+  if (operatorAccount.operatorAccountInfo.certExp < currentTimestamp) {
+    nestedCountersInstance.countEvent('shardeum-staking', 'operator certificate has expired')
+
     return {
       success: false,
       reason: 'Operator certificate has expired',
     }
-
+  }
   return await getCertSignatures(shardus, {
     nominator: queryCertReq.nominator,
     nominee: queryCertReq.nominee,

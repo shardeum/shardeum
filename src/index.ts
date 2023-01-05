@@ -77,6 +77,7 @@ import {
   queryCertificate,
   queryCertificateHandler,
   StakeCert,
+  ValidatorError,
 } from './handlers/queryCertificate'
 import * as InitRewardTimesTx from './tx/initRewardTimes'
 
@@ -1505,12 +1506,16 @@ shardus.registerExternalGet('genesis_accounts', async (req, res) => {
 })
 
 shardus.registerExternalPut('query-certificate', async (req: Request, res: Response) => {
+  nestedCountersInstance.countEvent('shardeum-staking', 'called query-certificate')
+
   const queryCertRes = await queryCertificateHandler(req, shardus)
   console.log('queryCertRes', queryCertRes)
   if (queryCertRes.success) {
     let successRes = queryCertRes as CertSignaturesResult
     stakeCert = successRes.signedStakeCert
   }
+
+  /* prettier-ignore */ nestedCountersInstance.countEvent('shardeum-staking', `queryCertificateHandler failed with reason: ${(queryCertRes as ValidatorError).reason}`)
   return res.json(queryCertRes)
 })
 
@@ -4022,6 +4027,7 @@ shardus.setup({
     let isStakeRelatedTx: boolean = isStakingEVMTx(transactionObj)
 
     if (isStakeRelatedTx) {
+      nestedCountersInstance.countEvent('shardeum-staking', 'getRelevantData: isStakeRelatedTx === true')
       let stakeTxBlob: StakeCoinsTX = appData.internalTx
 
       // if it is nominee and a stake tx, create 'NodeAccount' if it doesn't exist
@@ -4030,6 +4036,8 @@ shardus.setup({
         let nodeAccount2: any = await AccountsStorage.getAccount(accountId)
 
         if (appData.internalTXType === InternalTXType.Stake) {
+          nestedCountersInstance.countEvent('shardeum-staking', 'internalTXType === Stake')
+
           if (nodeAccount2 == null) {
             accountCreated = true
             nodeAccount2 = {
@@ -4045,9 +4053,12 @@ shardus.setup({
               accountType: AccountType.NodeAccount2,
             }
             WrappedEVMAccountFunctions.updateEthAccountHash(nodeAccount2)
+
+            nestedCountersInstance.countEvent('shardeum-staking', 'created new node account')
             if (ShardeumFlags.VerboseLogs) console.log('Created new node account', nodeAccount2)
           }
         } else if (appData.internalTXType === InternalTXType.Unstake) {
+          nestedCountersInstance.countEvent('shardeum-staking', 'node account nominee not found')
           if (nodeAccount2 == null) throw new Error(`Node Account <nominee> is not found ${accountId}`)
         }
         if (ShardeumFlags.VerboseLogs) console.log('getRelevantData result for nodeAccount', nodeAccount2)
@@ -4510,6 +4521,7 @@ shardus.setup({
     nodesToSign: number,
     appData: any
   ): Promise<ShardusTypes.SignAppDataResult> {
+    nestedCountersInstance.countEvent('shardeum-staking', 'calling signAppData')
     let fail: ShardusTypes.SignAppDataResult = { success: false, signature: null }
     console.log('Running signAppData', type, hash, nodesToSign, appData)
 
@@ -4518,6 +4530,7 @@ shardus.setup({
         if (nodesToSign != 5) return fail
         const stakeCert = appData as StakeCert
         if (!stakeCert.nominator || !stakeCert.nominee || !stakeCert.stake || !stakeCert.certExp) {
+          nestedCountersInstance.countEvent('shardeum-staking', 'signAppData format failed')
           /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`signAppData format failed ${type} ${JSON.stringify(stakeCert)} `)
           return fail
         }
@@ -4531,6 +4544,7 @@ shardus.setup({
         // TODO: I think we need to add more certExp validation steps
         // if (stakeCert.certExp > currentTimestamp - expirationTimeLimit) {
         if (stakeCert.certExp < currentTimestamp) {
+          /* prettier-ignore */ nestedCountersInstance.countEvent('shardeum-staking', 'signAppData cert expired')
           /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`signAppData cert expired ${type} ${JSON.stringify(stakeCert)} `)
           return fail
         }
@@ -4539,6 +4553,7 @@ shardus.setup({
         let stakeAmount = new BN(Number('0x' + stakeCert.stake).toString())
 
         if (stakeAmount < minStakeRequired) {
+          /* prettier-ignore */ nestedCountersInstance.countEvent('shardeum-staking', 'signAppData stake amount lower than required')
           /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`signAppData stake amount lower than required ${type} ${JSON.stringify(stakeCert)} `)
           return fail
         }
@@ -4547,20 +4562,24 @@ shardus.setup({
           const nominatorAddress = toShardusAddress(stakeCert.nominator, AccountType.Account)
           const nominatorAccount = await shardus.getLocalOrRemoteAccount(nominatorAddress)
           if (!nominatorAccount) {
+            /* prettier-ignore */ nestedCountersInstance.countEvent('shardeum-staking', 'could not find nominator account')
             /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`could not find nominator account ${type} ${JSON.stringify(stakeCert)} `)
             return fail
           }
           let nominatorEVMAccount = nominatorAccount.data as WrappedEVMAccount
           fixDeserializedWrappedEVMAccount(nominatorEVMAccount)
           if (!nominatorEVMAccount.operatorAccountInfo) {
+            /* prettier-ignore */ nestedCountersInstance.countEvent('shardeum-staking', 'operatorAccountInfo missing from nominator')
             /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`operatorAccountInfo missing from nominator ${type} ${JSON.stringify(stakeCert)} `)
             return fail
           }
           if (stakeCert.stake != nominatorEVMAccount.operatorAccountInfo.stake) {
+            /* prettier-ignore */ nestedCountersInstance.countEvent('shardeum-staking', 'operatorAccountInfo missing from nominator')
             /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`stake amount in cert and operator account does not match ${type} ${JSON.stringify(stakeCert)} ${JSON.stringify(nominatorEVMAccount)} `)
             return fail
           }
           if (stakeCert.nominee != nominatorEVMAccount.operatorAccountInfo.nominee) {
+            /* prettier-ignore */ nestedCountersInstance.countEvent('shardeum-staking', 'nominee in cert and operator account does not match')
             /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`nominee in cert and operator account does not match ${type} ${JSON.stringify(stakeCert)} ${JSON.stringify(nominatorEVMAccount)} `)
             return fail
           }
@@ -4569,8 +4588,8 @@ shardus.setup({
         delete stakeCert.signs
         const signedCert: StakeCert = shardus.signAsNode(stakeCert)
         const result: ShardusTypes.SignAppDataResult = { success: true, signature: signedCert.sign }
-        /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`signAppData passed ${type} ${JSON.stringify(stakeCert)}`)
-        nestedCountersInstance.countEvent('shardeum', 'sign-stake-cert - passed')
+        if (ShardeumFlags.VerboseLogs) console.log(`signAppData passed ${type} ${JSON.stringify(stakeCert)}`)
+        nestedCountersInstance.countEvent('shardeum-staking', 'sign-stake-cert - passed')
         return result
     }
     return fail
@@ -4621,6 +4640,7 @@ shardus.setup({
     }
   },
   getJoinData() {
+    nestedCountersInstance.countEvent('shardeum-staking', 'calling getJoinData')
     const joinData = {
       version,
       stakeCert,
@@ -4643,6 +4663,8 @@ shardus.setup({
       }
 
       if (ShardeumFlags.StakingEnabled) {
+        nestedCountersInstance.countEvent('shardeum-staking', 'validating join request with staking enabled')
+
         const nodeAcc = data.sign.owner
         const stake_cert: StakeCert = data.appJoinData.stakeCert
         if (ShardeumFlags.VerboseLogs) console.log(`validateJoinRequest ${stake_cert}`)
@@ -4650,6 +4672,7 @@ shardus.setup({
         const tx_time = data.joinRequestTimestamp as number
 
         if (nodeAcc !== stake_cert.nominee) {
+          /* prettier-ignore */ nestedCountersInstance.countEvent('shardeum-staking', 'validateJoinRequest fail: nodeAcc !== stake_cert.nominee')
           /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`validateJoinRequest fail: nodeAcc !== stake_cert.nominee`)
           return {
             success: false,
@@ -4658,6 +4681,7 @@ shardus.setup({
         }
 
         if (tx_time > stake_cert.certExp) {
+          /* prettier-ignore */ nestedCountersInstance.countEvent('shardeum-staking', 'validateJoinRequest fail: tx_time > stake_cert.certExp')
           /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`validateJoinRequest fail: tx_time > stake_cert.certExp ${tx_time} > ${stake_cert.certExp}`  )
           return {
             success: false,
@@ -4670,6 +4694,7 @@ shardus.setup({
 
         // stake certification should not expired for at least 2 cycle.
         if (Date.now() + two_cycle_ms > stake_cert.certExp) {
+          /* prettier-ignore */ nestedCountersInstance.countEvent('shardeum-staking', 'validateJoinRequest fail: cert expires soon')
           /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`validateJoinRequest fail: cert expires soon ${Date.now() + two_cycle_ms} > ${stake_cert.certExp}`  )
           return {
             success: false,
@@ -4682,6 +4707,7 @@ shardus.setup({
         const stakedAmount = new BN(Number('0x' + stake_cert.stake).toString())
 
         if (stakedAmount < minStakeRequired) {
+          /* prettier-ignore */ nestedCountersInstance.countEvent('shardeum-staking', 'validateJoinRequest fail: stake_cert.stake < minStakeRequired')
           /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`validateJoinRequest fail: stake_cert.stake < minStakeRequired ${stakedAmount} < ${minStakeRequired}`)
           return {
             success: false,
@@ -4735,6 +4761,7 @@ shardus.setup({
             sign: stake_cert.signs[i],
           }
           if (!crypto.verifyObj(tmp_stakeCert)) {
+            /* prettier-ignore */ nestedCountersInstance.countEvent('shardeum-staking', 'validateJoinRequest fail: invalid signature')
             /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`validateJoinRequest fail: invalid signature`)
             return {
               success: false,
@@ -4755,13 +4782,19 @@ shardus.setup({
   // Update the activeNodes type here; We can import from P2P.P2PTypes.Node from '@shardus/type' lib but seems it's not installed yet
   async isReadyToJoin(latestCycle: ShardusTypes.Cycle, publicKey: string, activeNodes: any[]) {
     if (ShardeumFlags.StakingEnabled === false) return true
-    //if (ShardeumFlags.VerboseLogs) console.log(`Running isReadyToJoin`, latestCycle, publicKey, activeNodes)
-    /* prettier-ignore */ console.log(`Running isReadyToJoin cycle:${latestCycle.counter} publicKey: ${publicKey}`)
+    if (ShardeumFlags.VerboseLogs) {
+      console.log(`Running isReadyToJoin cycle:${latestCycle.counter} publicKey: ${publicKey}`)
+    }
 
     if (lastCertTimeTxTimestamp === 0) {
       // inject setCertTimeTx for the first time
+      nestedCountersInstance.countEvent('shardeum-staking', 'lastCertTimeTxTimestamp === 0')
+
       const res = await injectSetCertTimeTx(shardus, publicKey, activeNodes)
-      if (!res.success) return false
+      if (!res.success) {
+        nestedCountersInstance.countEvent('shardeum-staking', 'failed call to injectSetCertTimeTx')
+        return false
+      }
 
       // set lastCertTimeTxTimestamp and cycle
       lastCertTimeTxTimestamp = Date.now()
@@ -4773,14 +4806,23 @@ shardus.setup({
 
     //if stake cert is not null check its time
     if (stakeCert != null) {
+      nestedCountersInstance.countEvent('shardeum-staking', 'stakeCert != null')
+
       let remainingValidTime = stakeCert.certExp - Date.now()
-      /* prettier-ignore */ console.log('stakeCert != null. remainingValidTime / minimum time ', remainingValidTime, certExpireSoonCycles * ONE_SECOND * latestCycle.duration)
+      if (ShardeumFlags.VerboseLogs) {
+        /* prettier-ignore */ console.log('stakeCert != null. remainingValidTime / minimum time ', remainingValidTime, certExpireSoonCycles * ONE_SECOND * latestCycle.duration)
+      }
       // let isExpiringSoon = remainingValidTime <= latestCycle.start + 3 * ONE_SECOND * latestCycle.duration
       let isExpiringSoon = remainingValidTime <= certExpireSoonCycles * ONE_SECOND * latestCycle.duration
       if (isExpiringSoon) {
+        nestedCountersInstance.countEvent('shardeum-staking', 'stakeCert is expiring soon')
+
         stakeCert = null //clear stake cert, so we will know to query for it again
         const res = await injectSetCertTimeTx(shardus, publicKey, activeNodes)
-        if (!res.success) return false
+        if (!res.success) {
+          nestedCountersInstance.countEvent('shardeum-staking', 'failed call to injectSetCertTimeTx')
+          return false
+        }
         lastCertTimeTxTimestamp = Date.now()
         lastCertTimeTxCycle = latestCycle.counter
         // return false and check again in next cycle
@@ -4788,8 +4830,16 @@ shardus.setup({
       } else {
         let isValid = true
         // todo: validate the cert here
-        if (!isValid) return false
-        console.log('valid cert, isReadyToJoin = true ', stakeCert)
+        if (!isValid) {
+          nestedCountersInstance.countEvent('shardeum-staking', 'invalid cert, isReadyToJoin = false')
+          return false
+        }
+
+        nestedCountersInstance.countEvent('shardeum-staking', 'valid cert, isReadyToJoin = true')
+        if (ShardeumFlags.VerboseLogs) {
+          console.log('valid cert, isReadyToJoin = true ', stakeCert)
+        }
+
         return true
       }
     }
@@ -4797,21 +4847,31 @@ shardus.setup({
     if (lastCertTimeTxTimestamp > 0 && stakeCert == null) {
       // we have already submitted setCertTime
       // query the certificate from the network
-      let res: any = await queryCertificate(shardus, publicKey, activeNodes)
+      let res = await queryCertificate(shardus, publicKey, activeNodes)
       if (ShardeumFlags.VerboseLogs) console.log('queryCertificate', res)
       if (!res.success) {
+        nestedCountersInstance.countEvent(
+          'shardeum-staking',
+          `call to queryCertificate failed with reason: ${(res as ValidatorError).reason}`
+        )
         return false
       }
-      const signedStakeCert: StakeCert = res.signedStakeCert
+      const signedStakeCert = (res as CertSignaturesResult).signedStakeCert
       let remainingValidTime = signedStakeCert.certExp - Date.now()
       /* prettier-ignore */ console.log('stakeCert received. remainingValidTime / minimum time ', remainingValidTime, certExpireSoonCycles * ONE_SECOND * latestCycle.duration)
       // let isExpiringSoon = remainingValidTime <= latestCycle.start + 3 * ONE_SECOND * latestCycle.duration
       let isExpiringSoon = remainingValidTime <= certExpireSoonCycles * ONE_SECOND * latestCycle.duration
       // if cert is going to expire soon, inject a new setCertTimeTx
       if (isExpiringSoon) {
+        nestedCountersInstance.countEvent('shardeum-staking', 'stakeCert is expiring soon')
+
         stakeCert = null //clear stake cert, so we will know to query for it again
         const res = await injectSetCertTimeTx(shardus, publicKey, activeNodes)
-        if (!res.success) return false
+        if (!res.success) {
+          nestedCountersInstance.countEvent('shardeum-staking', 'failed call to injectSetCertTimeTx')
+          return false
+        }
+
         lastCertTimeTxTimestamp = Date.now()
         lastCertTimeTxCycle = latestCycle.counter
         // return false and check again in next cycle
@@ -4819,10 +4879,17 @@ shardus.setup({
       } else {
         let isValid = true
         // todo: validate the cert here
-        if (!isValid) return false
+        if (!isValid) {
+          nestedCountersInstance.countEvent('shardeum-staking', 'invalid cert, isReadyToJoin = false')
+          return false
+        }
         // cert if valid and not expiring soon
         stakeCert = signedStakeCert
-        /* prettier-ignore */ console.log('valid cert, isReadyToJoin = true ', stakeCert)
+
+        nestedCountersInstance.countEvent('shardeum-staking', 'valid cert, isReadyToJoin = true')
+        if (ShardeumFlags.VerboseLogs) {
+          console.log('valid cert, isReadyToJoin = true ', stakeCert)
+        }
         return true
       }
     }
