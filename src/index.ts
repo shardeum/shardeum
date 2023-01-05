@@ -127,8 +127,8 @@ const profilerInstance = shardus.getShardusProfiler()
 // const pay_address = '0x50F6D9E5771361Ec8b95D6cfb8aC186342B70120' // testing account for node_reward
 const random_wallet = Wallet.generate()
 const pay_address = random_wallet.getAddressString()
-
-console.log('Pay Address', pay_address, isValidAddress(pay_address))
+//TODO need to put a task in to remove the old node rewards
+console.log('old Pay Address (not for new staking/rewards) ', pay_address, isValidAddress(pay_address))
 
 //console.log('Pk',random_wallet.getPublicKey())
 //console.log('pk',random_wallet.getPrivateKey())
@@ -140,7 +140,7 @@ let lastCertTimeTxCycle: number | null = null
 
 export const certExpireSoonCycles = 3
 
-export let stakeCert: StakeCert
+export let stakeCert: StakeCert = null
 
 function isDebugMode() {
   //@ts-ignore
@@ -4602,110 +4602,120 @@ shardus.setup({
     return joinData
   },
   validateJoinRequest(data: any) {
-    if (!data.appJoinData) {
-      return { success: false, reason: `Join request node doesn't provide the app join data.` }
-    }
-    if (!isEqualOrNewerVersion(version, data.appJoinData.version)) {
-      return {
-        success: false,
-        reason: `version number is old. Our app version is ${version}. Join request node app version is ${data.appJoinData.version}`,
+    try{
+      if (ShardeumFlags.VerboseLogs) console.log(`validateJoinRequest ${JSON.stringify(data)}`)
+      if (!data.appJoinData) {
+        if (ShardeumFlags.VerboseLogs) console.log(`validateJoinRequest fail: !data.appJoinData`)
+        return { success: false, reason: `Join request node doesn't provide the app join data.` }
       }
-    }
-
-    if(ShardeumFlags.StakingEnabled){
-      const nodeAcc = data.sign.owner   
-      const stake_cert: StakeCert = data.stakeCert
-      const tx_time = data.joinRequestTimestamp as number
-
-      if(nodeAcc !== stake_cert.nominee){
+      if (!isEqualOrNewerVersion(version, data.appJoinData.version)) {
+        if (ShardeumFlags.VerboseLogs) console.log(`validateJoinRequest fail: old version`)
         return {
           success: false,
-          reason: `Nominated address and tx signature owner doesn't match, nominee: ${stake_cert.nominee}, sign owner: ${nodeAcc}`,
+          reason: `version number is old. Our app version is ${version}. Join request node app version is ${data.appJoinData.version}`,
         }
       }
 
-      if(tx_time > stake_cert.certExp){
-        return {
-          success: false,
-          reason: `Certificate has expired at ${stake_cert.certExp}`,
-        }
-      }
+      if(ShardeumFlags.StakingEnabled){
+        const nodeAcc = data.sign.owner   
+        const stake_cert: StakeCert = data.appJoinData.stakeCert
+        const tx_time = data.joinRequestTimestamp as number
 
-
-      const serverConfig: any = config.server
-      const two_cycle_ms = serverConfig.p2p.cycleDuration * 2 * 1000
-
-      // stake certification should not expired for at least 2 cycle.
-      if((Date.now() + two_cycle_ms) > stake_cert.certExp){
-        return {
-          success: false,
-          reason: `Certificate will be expired really soon.`,
-        }
-      }
-
-      const minStakeRequired = AccountsStorage.cachedNetworkAccount.current.stakeRequired
-
-      if(stake_cert.stake < minStakeRequired) {
-        return {
-          success: false,
-          reason: `Minimum stake amount requirement does not meet.`,
-        }
-      }
-
-      const pickedNode: ShardusTypes.Sign[] = []
-      const requiredSig = ShardeumFlags.MinStakeCertSig
-      for(let i = 0; i < stake_cert.signs.length; i++){
-        const node = shardus.getNode(stake_cert.signs[i].owner)
-
-        if(node){
-          pickedNode.push(node);
-        }
-
-        // early break loop
-        if(pickedNode.length >= requiredSig){
-          break
-        }
-
-      }
-
-      if(pickedNode.length < requiredSig){
-        return {
-          success: false,
-          reason: `Not enough stake certification signature owner in the node list anymore`
-        }
-      }
-
-      for(let i = 0; i  < pickedNode.length; i++){
-        const tmp_stakeCert = {
-          nominator: stake_cert.nominator,
-          nominee: stake_cert.nominee,
-          certExp: stake_cert.certExp,
-          sign: pickedNode[i]
-        }
-        if(!crypto.verifyObj(tmp_stakeCert)){
+        if(nodeAcc !== stake_cert.nominee){
+          if (ShardeumFlags.VerboseLogs) console.log(`validateJoinRequest fail: nodeAcc !== stake_cert.nominee`)
           return {
             success: false,
-            reason: `Stake certification signature is invalid: ${pickedNode[i]}`
+            reason: `Nominated address and tx signature owner doesn't match, nominee: ${stake_cert.nominee}, sign owner: ${nodeAcc}`,
           }
         }
+
+        if(tx_time > stake_cert.certExp){
+          if (ShardeumFlags.VerboseLogs) console.log(`validateJoinRequest fail: tx_time > stake_cert.certExp ${tx_time} > ${stake_cert.certExp}`  )
+          return {
+            success: false,
+            reason: `Certificate has expired at ${stake_cert.certExp}`,
+          }
+        }
+
+
+        const serverConfig: any = config.server
+        const two_cycle_ms = serverConfig.p2p.cycleDuration * 2 * 1000
+
+        // stake certification should not expired for at least 2 cycle.
+        if((Date.now() + two_cycle_ms) > stake_cert.certExp){
+          if (ShardeumFlags.VerboseLogs) console.log(`validateJoinRequest fail: cert expires soon ${Date.now() + two_cycle_ms} > ${stake_cert.certExp}`  )
+          return {
+            success: false,
+            reason: `Certificate will be expired really soon.`,
+          }
+        }
+
+        const minStakeRequired = AccountsStorage.cachedNetworkAccount.current.stakeRequired
+
+        if(stake_cert.stake < minStakeRequired) {
+          if (ShardeumFlags.VerboseLogs) console.log(`validateJoinRequest fail: stake_cert.stake < minStakeRequired ${stake_cert.stake} < ${minStakeRequired}`)
+          return {
+            success: false,
+            reason: `Minimum stake amount requirement does not meet.`,
+          }
+        }
+
+        const pickedNode: ShardusTypes.Sign[] = []
+        //todo run this with min(numActive nodes)
+        const requiredSig = ShardeumFlags.MinStakeCertSig
+        for(let i = 0; i < stake_cert.signs.length; i++){
+          const node = shardus.getNode(stake_cert.signs[i].owner)
+
+          if(node){
+            pickedNode.push(node);
+          }
+
+          // early break loop
+          if(pickedNode.length >= requiredSig){
+            break
+          }
+
+        }
+
+        if(pickedNode.length < requiredSig){
+          if (ShardeumFlags.VerboseLogs) console.log(`validateJoinRequest fail: pickedNode.length < requiredSig ${pickedNode.length} < ${requiredSig}`)
+          return {
+            success: false,
+            reason: `Not enough stake certification signature owner in the node list anymore`
+          }
+        }
+
+        for(let i = 0; i  < pickedNode.length; i++){
+          const tmp_stakeCert = {
+            nominator: stake_cert.nominator,
+            nominee: stake_cert.nominee,
+            certExp: stake_cert.certExp,
+            sign: pickedNode[i]
+          }
+          if(!crypto.verifyObj(tmp_stakeCert)){
+            if (ShardeumFlags.VerboseLogs) console.log(`validateJoinRequest fail: invalid signature`)
+            return {
+              success: false,
+              reason: `Stake certification signature is invalid: ${pickedNode[i]}`
+            }
+          }
+        }
+
       }
 
-    }
-
-    return {
-      success: true,
+      if (ShardeumFlags.VerboseLogs) console.log(`validateJoinRequest success!!!`)
+      return {
+        success: true,
+      }
+    } catch (e) {
+      if (ShardeumFlags.VerboseLogs) console.log(`validateJoinRequest exception: ${JSON.stringify(e)}`)
     }
   },
   // Update the activeNodes type here; We can import from P2P.P2PTypes.Node from '@shardus/type' lib but seems it's not installed yet
   async isReadyToJoin(latestCycle: ShardusTypes.Cycle, publicKey: string, activeNodes: any[]) {
     if (ShardeumFlags.StakingEnabled === false) return true
-    if (ShardeumFlags.VerboseLogs) console.log(`Running isReadyToJoin`, latestCycle, publicKey, activeNodes)
-
-
-    //TODO:  a future PR will add a cachedNetworkAccount that we can check here
-    //If we dont have a cachedNetworkAccount yet we will call queryCertificate() to initiate a query_certificate transaction
-    //(some notes below on this too)
-    //Also if our cer is expired then we will also request a new one via queryCertificate()
+    //if (ShardeumFlags.VerboseLogs) console.log(`Running isReadyToJoin`, latestCycle, publicKey, activeNodes)
+    console.log(`Running isReadyToJoin cycle:${latestCycle.counter} publicKey: ${publicKey}`)
 
     if (lastCertTimeTxTimestamp === 0) {
       // inject setCertTimeTx for the first time
@@ -4719,7 +4729,31 @@ shardus.setup({
       // return false and query/check again in next cycle
       return false
     }
-    if (lastCertTimeTxTimestamp > 0) {
+
+    //if stake cert is not null check its time
+    if(stakeCert != null){
+      let remainingValidTime = stakeCert.certExp - Date.now()
+      console.log('stakeCert != null. remainingValidTime / minimum time ', remainingValidTime, certExpireSoonCycles * ONE_SECOND * latestCycle.duration)
+      // let isExpiringSoon = remainingValidTime <= latestCycle.start + 3 * ONE_SECOND * latestCycle.duration
+      let isExpiringSoon = remainingValidTime <= certExpireSoonCycles * ONE_SECOND * latestCycle.duration
+      if(isExpiringSoon){
+        stakeCert = null //clear stake cert, so we will know to query for it again
+        const res = await injectSetCertTimeTx(shardus, publicKey, activeNodes)
+        if(!res.success) return false
+        lastCertTimeTxTimestamp = Date.now()
+        lastCertTimeTxCycle = latestCycle.counter
+        // return false and check again in next cycle
+        return false
+      } else {
+        let isValid = true
+        // todo: validate the cert here
+        if (!isValid) return false
+        console.log('valid cert, isReadyToJoin = true ', stakeCert)
+        return true
+      }
+    }
+    //if stake cert is null and we have set cert time before then query for the cert
+    if (lastCertTimeTxTimestamp > 0 && stakeCert == null ) {
       // we have already submitted setCertTime
       // query the certificate from the network
       let res: any = await queryCertificate(shardus, publicKey, activeNodes)
@@ -4728,57 +4762,40 @@ shardus.setup({
         return false
       }
       const signedStakeCert: StakeCert = res.signedStakeCert
-
-      //TODO we need a query certificate instead of getCertSignatures
-      //query certificate will run the full process to propose a cert and then ask for signatures
-      //getCertSignatures is lower level and expects a filled out cert to be passed in
-      //We should add a funtion queryCertificate() that when called in the validator will
-      //create and send a query_certificate transaction
-      //note that query_certificate is an external enpoint rather than a full "transaction"
-
-      
-      // let { success, signedStakeCert } = await getCertSignatures(shardus, certQueryData)
-
-      // if (success === false) return false
-
       let remainingValidTime = signedStakeCert.certExp - Date.now()
-      console.log('remainingValidTime', remainingValidTime, certExpireSoonCycles * ONE_SECOND * latestCycle.duration)
+      console.log('stakeCert received. remainingValidTime / minimum time ', remainingValidTime, certExpireSoonCycles * ONE_SECOND * latestCycle.duration)
       // let isExpiringSoon = remainingValidTime <= latestCycle.start + 3 * ONE_SECOND * latestCycle.duration
       let isExpiringSoon = remainingValidTime <= certExpireSoonCycles * ONE_SECOND * latestCycle.duration
-
-
       // if cert is going to expire soon, inject a new setCertTimeTx
       if (isExpiringSoon) {
+        stakeCert = null //clear stake cert, so we will know to query for it again
         const res = await injectSetCertTimeTx(shardus, publicKey, activeNodes)
         if(!res.success) return false
-
         lastCertTimeTxTimestamp = Date.now()
         lastCertTimeTxCycle = latestCycle.counter
-
         // return false and check again in next cycle
         return false
       } else {
         let isValid = true
         // todo: validate the cert here
-
         if (!isValid) return false
-
         // cert if valid and not expiring soon
         stakeCert = signedStakeCert
+        console.log('valid cert, isReadyToJoin = true ', stakeCert)
         return true
       }
     }
-    // every 3 cycle, inject a new setCertTime tx
-    if (lastCertTimeTxTimestamp > 0 && latestCycle.counter >= lastCertTimeTxCycle + 3) {
-      const res = await injectSetCertTimeTx(shardus, publicKey, activeNodes)
-      if(!res.success) return false
+    // // every 3 cycle, inject a new setCertTime tx
+    // if (lastCertTimeTxTimestamp > 0 && latestCycle.counter >= lastCertTimeTxCycle + 3) {
+    //   const res = await injectSetCertTimeTx(shardus, publicKey, activeNodes)
+    //   if(!res.success) return false
 
-      lastCertTimeTxTimestamp = Date.now()
-      lastCertTimeTxCycle = latestCycle.counter
+    //   lastCertTimeTxTimestamp = Date.now()
+    //   lastCertTimeTxCycle = latestCycle.counter
 
-      // return false and check again in next cycle
-      return false
-    }
+    //   // return false and check again in next cycle
+    //   return false
+    // }
   },
   async eventNotify(data: ShardusTypes.ShardusEvent) {
     if (ShardeumFlags.StakingEnabled === false) return

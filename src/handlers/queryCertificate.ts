@@ -147,10 +147,13 @@ async function getNodeAccount(
   nodeAccountId: string
 ): Promise<NodeAccountQueryResponse | ValidatorError> {
   try {
+    let queryString = `/account/:address`.replace(':address', nodeAccountId)
+    //some reason params object is not working...
+    queryString += `?type=${AccountType.NodeAccount2}`
     const res = await shardusGetFromNode<any>(
       randomConsensusNode,
-      `/account/:address`.replace(':address', nodeAccountId),
-      { params: { type: AccountType.NodeAccount2 } }
+      queryString//,
+      //{ params: { type: AccountType.NodeAccount2 } }
     )
     if (!res.data.account) {
       return { success: false, reason: errNodeAccountNotFound }

@@ -60,7 +60,7 @@ const NodeRewardENV = process.env.NodeReward ? (process.env.NodeReward === 'true
 export let ShardeumFlags: ShardeumFlags = {
   contractStorageKeySilo: true,
   globalCodeBytes: false,
-  VerboseLogs: false,
+  VerboseLogs: true,
   Virtual0Address: true,
   GlobalNetworkAccount: true,
   NodeReward: false,
@@ -103,8 +103,8 @@ export let ShardeumFlags: ShardeumFlags = {
     ['tx/:hash']: 5,
   },
   generateMemoryPatternData: true,
-  StakingEnabled: false,
-  MinStakeCertSig: 5, // this is the minimum amount of signature required for stake certification. will move to network param in future.
+  StakingEnabled: true,
+  MinStakeCertSig: 1, // this is the minimum amount of signature required for stake certification. will move to network param in future.
   FullCertChecksEnabled: true,
 }
 

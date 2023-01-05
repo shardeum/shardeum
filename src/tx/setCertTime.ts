@@ -44,7 +44,7 @@ export async function injectSetCertTimeTx(shardus: Shardus, publicKey: string, a
     internalTXType: InternalTXType.SetCertTime,
     nominee: publicKey,
     nominator,
-    duration: 10,
+    duration: 20, //temp setting to 20 to make debugging easier
     // timestamp: Date.now(),
   }
   tx = shardus.signAsNode(tx)
@@ -110,6 +110,13 @@ export function applySetCertTimeTx(
   txTimestamp: number,
   applyResponse: ShardusTypes.ApplyResponse
 ) {
+
+  console.log(`applySetCertTimeTx txTimestamp:${txTimestamp}   tx.timestamp:${tx.timestamp}`)
+
+  //TODO this is failing with a warning like this:
+  //Invalid SetCertTimeTx state, operator account 0x0950c3ecc7d1c4dd093c9652f335f9391d83ee99, reason: Operator has not staked the required amount
+  //the stake time is still getting set correctly.  need to figure out if this is a false negative, and then hook it up so that 
+  //we can fail the TX if it has failed validation
   const isValidRequest = validateSetCertTimeState(tx, wrappedStates)
   if (isValidRequest.result === 'fail') {
     /* prettier-ignore */ console.log(`Invalid SetCertTimeTx state, operator account ${tx.nominator}, reason: ${isValidRequest.reason}`)
