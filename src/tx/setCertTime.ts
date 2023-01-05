@@ -58,6 +58,7 @@ export function validateSetCertTimeTx(tx: SetCertTime, appData: any): { isValid:
   // if (!isValidAddress(tx.nominee)) {
   //   return { isValid: false, reason: 'Invalid nominee address' }
   // }
+  if (!tx.nominee || tx.nominee.length !== 64) return { isValid: false, reason: 'Invalid nominee address' }
   if (!isValidAddress(tx.nominator)) {
     return { isValid: false, reason: 'Invalid nominator address' }
   }
@@ -78,7 +79,6 @@ export function validateSetCertTimeTx(tx: SetCertTime, appData: any): { isValid:
 
 export function validateSetCertTimeState(tx: SetCertTime, wrappedStates: WrappedStates) {
   let committedStake = new BN(0)
-  let stakeRequired = new BN(0)
 
   const operatorEVMAccount: WrappedEVMAccount =
     wrappedStates[toShardusAddress(tx.nominator, AccountType.Account)].data
@@ -87,11 +87,13 @@ export function validateSetCertTimeState(tx: SetCertTime, wrappedStates: Wrapped
     /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`setCertTime apply: found no wrapped state for operator account ${tx.nominator}`)
   } else {
     if (operatorEVMAccount && operatorEVMAccount.operatorAccountInfo) {
-      committedStake = operatorEVMAccount.operatorAccountInfo.stake
+      committedStake = new BN(Number('0x' + operatorEVMAccount.operatorAccountInfo.stake).toString())
     }
   }
 
   const minStakeRequired = AccountsStorage.cachedNetworkAccount.current.stakeRequired
+
+  console.log('validate operator stake', committedStake, minStakeRequired, committedStake < minStakeRequired)
 
   // validate operator stake
   if (committedStake < minStakeRequired) {

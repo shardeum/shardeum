@@ -1506,6 +1506,7 @@ shardus.registerExternalGet('genesis_accounts', async (req, res) => {
 
 shardus.registerExternalPut('query-certificate', async (req: Request, res: Response) => {
   const queryCertRes = await queryCertificateHandler(req, shardus)
+  console.log('queryCertRes', queryCertRes)
   if (queryCertRes.success) {
     let successRes = queryCertRes as CertSignaturesResult
     stakeCert = successRes.signedStakeCert
@@ -4666,8 +4667,10 @@ shardus.setup({
 
         const minStakeRequired = AccountsStorage.cachedNetworkAccount.current.stakeRequired
 
-        if (stake_cert.stake < minStakeRequired) {
-          /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`validateJoinRequest fail: stake_cert.stake < minStakeRequired ${stake_cert.stake} < ${minStakeRequired}`)
+        const stakedAmount = new BN(Number('0x' + stake_cert.stake).toString())
+
+        if (stakedAmount < minStakeRequired) {
+          /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`validateJoinRequest fail: stake_cert.stake < minStakeRequired ${stakedAmount} < ${minStakeRequired}`)
           return {
             success: false,
             reason: `Minimum stake amount requirement does not meet.`,
@@ -4678,7 +4681,15 @@ shardus.setup({
         //todo run this with min(numActive nodes)
         const requiredSig = ShardeumFlags.MinStakeCertSig
         for (let i = 0; i < stake_cert.signs.length; i++) {
-          const node = shardus.getNode(stake_cert.signs[i].owner)
+          const signedNode = stake_cert.signs[i]
+          if (signedNode === null || signedNode === undefined) {
+            /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`validateJoinRequest fail: stake_cert.signs has null or undefined value ${stake_cert.signs}`)
+            return {
+              success: false,
+              reason: `Not enough stake certification signature owner in the node list anymore`,
+            }
+          }
+          const node = shardus.getNode(signedNode.owner)
 
           if (node) {
             pickedNode.push(node)
