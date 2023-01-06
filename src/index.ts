@@ -35,7 +35,6 @@ import {
   WrappedAccount,
   WrappedEVMAccount,
   WrappedStates,
-  OperatorAccountInfo,
 } from './shardeum/shardeumTypes'
 import { getAccountShardusAddress, toShardusAddress, toShardusAddressWithKey } from './shardeum/evmAddress'
 import { ShardeumFlags, updateServicePoints, updateShardeumFlag } from './shardeum/shardeumFlags'
@@ -74,13 +73,13 @@ import { applyClaimRewardTx, injectClaimRewardTx, validateClaimRewardTx } from '
 import { Request, Response } from 'express'
 import {
   CertSignaturesResult,
-  getCertSignatures,
   queryCertificate,
   queryCertificateHandler,
   StakeCert,
   ValidatorError,
 } from './handlers/queryCertificate'
 import * as InitRewardTimesTx from './tx/initRewardTimes'
+import * as net from "net";
 
 const env = process.env
 
@@ -1536,7 +1535,7 @@ function isInternalTXGlobal(internalTx: InternalTx) {
   return (
     internalTx.internalTXType === InternalTXType.SetGlobalCodeBytes ||
     internalTx.internalTXType === InternalTXType.ApplyChangeConfig ||
-    internalTx.internalTXType === InternalTXType.InitNetwork
+    internalTx.internalTXType === InternalTXType.InitNetwork || internalTx.internalTXType === InternalTXType.ApplyNetworkParam
   )
 }
 
@@ -1748,6 +1747,7 @@ async function applyInternalTx(
       isInternalTx: true,
       internalTXType: InternalTXType.ApplyChangeConfig,
       timestamp: when,
+      from: internalTx.from,
       network: networkAccount,
       change: { cycle: changeOnCycle, change: JSON.parse(internalTx.config) },
     }
@@ -1756,7 +1756,7 @@ async function applyInternalTx(
 
     let ourAppDefinedData = applyResponse.appDefinedData as OurAppDefinedData
     // network will consens that this is the correct value
-    ourAppDefinedData.globalMsg = { address: networkAccount, value, when, source: networkAccount }
+    ourAppDefinedData.globalMsg = { address: networkAccount, value, when, source: value.from }
 
     if (ShardeumFlags.useAccountWrites) {
       let networkAccountCopy = wrappedStates[networkAccount]
@@ -1804,6 +1804,82 @@ async function applyInternalTx(
     }
     console.log(`Applied CHANGE_CONFIG GLOBAL transaction: ${stringify(network)}`)
     shardus.log('Applied CHANGE_CONFIG GLOBAL transaction', stringify(network))
+  }
+  if (internalTx.internalTXType === InternalTXType.ChangeNetworkParam) {
+    const network: NetworkAccount = wrappedStates[networkAccount].data
+    const devAccount: DevAccount = wrappedStates[internalTx.from].data
+
+    let changeOnCycle
+    let cycleData: ShardusTypes.Cycle
+
+    if (internalTx.cycle === -1) {
+      ;[cycleData] = shardus.getLatestCycles()
+      changeOnCycle = cycleData.counter + 1
+    } else {
+      changeOnCycle = internalTx.cycle
+    }
+
+    const when = txTimestamp + ONE_SECOND * 10
+    // value is the TX that will apply a change to the global network account 0000x0000
+    let value = {
+      isInternalTx: true,
+      internalTXType: InternalTXType.ApplyNetworkParam,
+      timestamp: when,
+      from: internalTx.from,
+      network: networkAccount,
+      change: { cycle: changeOnCycle, change: {}, appData: JSON.parse(internalTx.config) },
+    }
+
+    let ourAppDefinedData = applyResponse.appDefinedData as OurAppDefinedData
+    // network will consens that this is the correct value
+    ourAppDefinedData.globalMsg = { address: networkAccount, value, when, source: value.from }
+
+    if (ShardeumFlags.useAccountWrites) {
+      let networkAccountCopy = wrappedStates[networkAccount]
+      let devAccountCopy = wrappedStates[internalTx.from]
+      networkAccountCopy.data.timestamp = txTimestamp
+      devAccountCopy.data.timestamp = txTimestamp
+      shardus.applyResponseAddChangedAccount(
+        applyResponse,
+        networkAccount,
+        networkAccountCopy,
+        txId,
+        txTimestamp
+      )
+      shardus.applyResponseAddChangedAccount(
+        applyResponse,
+        internalTx.from,
+        devAccountCopy,
+        txId,
+        txTimestamp
+      )
+    } else {
+      network.timestamp = txTimestamp
+      devAccount.timestamp = txTimestamp
+    }
+    console.log('Applied change_network_param tx')
+    shardus.log('Applied change_network_param tx')
+  }
+  if (internalTx.internalTXType === InternalTXType.ApplyNetworkParam) {
+    const network: NetworkAccount = wrappedStates[networkAccount].data
+
+    if (ShardeumFlags.useAccountWrites) {
+      let networkAccountCopy = wrappedStates[networkAccount]
+      networkAccountCopy.data.timestamp = txTimestamp
+      networkAccountCopy.data.listOfChanges.push(internalTx.change)
+      shardus.applyResponseAddChangedAccount(
+        applyResponse,
+        networkAccount,
+        networkAccountCopy,
+        txId,
+        txTimestamp
+      )
+    } else {
+      network.timestamp = txTimestamp
+      network.listOfChanges.push(internalTx.change)
+    }
+    console.log(`Applied CHANGE_NETWORK_PARAM GLOBAL transaction: ${stringify(network)}`)
+    shardus.log('Applied CHANGE_NETWORK_PARAM GLOBAL transaction', stringify(network))
   }
   if (internalTx.internalTXType === InternalTXType.InitRewardTimes) {
     let rewardTimesTx = internalTx as InitRewardTimes
@@ -3567,6 +3643,11 @@ shardus.setup({
         keys.targetKeys = [networkAccount]
       } else if (internalTx.internalTXType === InternalTXType.ApplyChangeConfig) {
         keys.targetKeys = [networkAccount]
+      } else if (internalTx.internalTXType === InternalTXType.ChangeNetworkParam) {
+        keys.sourceKeys = [tx.from]
+        keys.targetKeys = [networkAccount]
+      } else if (internalTx.internalTXType === InternalTXType.ApplyNetworkParam) {
+        keys.targetKeys = [networkAccount]
       } else if (internalTx.internalTXType === InternalTXType.SetCertTime) {
         keys.sourceKeys = [tx.nominee]
         keys.targetKeys = [toShardusAddress(tx.nominator, AccountType.Account), networkAccount]
@@ -3811,6 +3892,7 @@ shardus.setup({
   },
 
   async setAccountData(accountRecords) {
+    console.log(`Running setAccountData`, accountRecords)
     // update our in memory accounts map
     for (const account of accountRecords) {
       let wrappedEVMAccount = account as WrappedEVMAccount
@@ -3944,7 +4026,7 @@ shardus.setup({
           accountCreated = true
         }
       }
-      if (internalTx.internalTXType === InternalTXType.ChangeConfig) {
+      if (internalTx.internalTXType === InternalTXType.ChangeConfig || internalTx.internalTXType === InternalTXType.ChangeNetworkParam) {
         // Not sure if this is even relevant.  I think the from account should be one of our dev accounts and
         // and should already exist (hit the faucet)
         // probably an array of dev public keys
@@ -3968,7 +4050,7 @@ shardus.setup({
           // }
         }
       }
-      if (internalTx.internalTXType === InternalTXType.ApplyChangeConfig) {
+      if (internalTx.internalTXType === InternalTXType.ApplyChangeConfig || internalTx.internalTXType === InternalTXType.ApplyNetworkParam) {
         if (!wrappedEVMAccount) {
           throw Error(`Network Account is not found ${accountId}`)
         }
@@ -4999,6 +5081,19 @@ shardus.setup({
       }
     }
   },
+  async updateNetworkChangeQueue(account: WrappedAccount, appData: any) {
+    if (account.accountId === networkAccount) {
+      let networkParam: NetworkAccount = account.data
+      for (let key in appData) {
+        networkParam.current[key] = appData[key]
+      }
+      account.timestamp = Date.now()
+      networkParam.hash = WrappedEVMAccountFunctions._calculateAccountHash(networkParam)
+      account.stateId = networkParam.hash
+      return [account]
+    }
+
+  }
 })
 
 shardus.registerExceptionHandler()

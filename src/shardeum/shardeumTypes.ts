@@ -81,6 +81,8 @@ export enum InternalTXType {
   Unstake,
   InitRewardTimes,
   ClaimReward,
+  ChangeNetworkParam,
+  ApplyNetworkParam
 }
 
 export enum DebugTXType {
@@ -273,6 +275,20 @@ export interface ChangeConfig {
 }
 
 export interface ApplyChangeConfig {
+  type: string
+  change: any
+  timestamp: number
+}
+
+export interface ChangeNetworkParam {
+  type: string
+  from: string
+  cycle: number
+  config: string
+  timestamp: number
+}
+
+export interface ApplyNetworkParam {
   type: string
   change: any
   timestamp: number
