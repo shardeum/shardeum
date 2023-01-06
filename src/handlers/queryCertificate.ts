@@ -76,7 +76,7 @@ function validateQueryCertRequest(req: QueryCertRequest, rawBody: any): Validato
 export async function queryCertificate(
   shardus: Shardus,
   publicKey: string,
-  activeNodes: ShardusTypes.Node
+  activeNodes: ShardusTypes.Node[]
 ): Promise<CertSignaturesResult | ValidatorError> {
   nestedCountersInstance.countEvent('shardeum-staking', 'calling queryCertificate')
 

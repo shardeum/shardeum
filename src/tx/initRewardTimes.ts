@@ -1,4 +1,4 @@
-import { Shardus, ShardusTypes } from '@shardus/core'
+import { nestedCountersInstance, Shardus, ShardusTypes } from '@shardus/core'
 import * as crypto from '@shardus/crypto-utils'
 import { ShardeumFlags } from '../shardeum/shardeumFlags'
 import {
@@ -23,40 +23,73 @@ export async function injectInitRewardTimesTx(shardus, eventData: ShardusTypes.S
 }
 
 export function validateFields(tx: InitRewardTimes, shardus: Shardus): { success: boolean; reason: string } {
-  if (ShardeumFlags.VerboseLogs) console.log('Validating InitRewardTimesTX fields', tx)
-  if (!tx.nominee || tx.nominee === '')
-    return { success: false, reason: 'nominee field is not found in setRewardTimes Tx' }
-  if (!tx.nodeActivatedTime)
-    return { success: false, reason: 'nodeActivatedTime field is not found in setRewardTimes Tx' }
-  if (tx.nodeActivatedTime < 0 || tx.nodeActivatedTime > Date.now())
-    return { success: false, reason: 'nodeActivatedTime is not correct in setRewardTimes Tx' }
+  /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log('Validating InitRewardTimesTX fields', tx)
+  if (!tx.nominee || tx.nominee === ''){
+    /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log('validateFields InitRewardTimes fail nominee missing', tx)
+    /* prettier-ignore */ nestedCountersInstance.countEvent('shardeum-staking', `validateFields InitRewardTimes fail nominee missing`)
+    return { success: false, reason: 'nominee field is not found in setRewardTimes Tx' }    
+  }
+  if (!tx.nodeActivatedTime){
+    /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log('validateFields InitRewardTimes fail nodeActivatedTime missing', tx)
+    /* prettier-ignore */ nestedCountersInstance.countEvent('shardeum-staking', `validateFields InitRewardTimes fail nodeActivatedTime missing`)
+    return { success: false, reason: 'nodeActivatedTime field is not found in setRewardTimes Tx' }    
+  }
+  if (tx.nodeActivatedTime < 0 || tx.nodeActivatedTime > Date.now()){
+    /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log('validateFields InitRewardTimes fail nodeActivatedTime is not correct ', tx)
+    /* prettier-ignore */ nestedCountersInstance.countEvent('shardeum-staking', `validateFields InitRewardTimes fail nodeActivatedTime is not correct `)
+    return { success: false, reason: 'nodeActivatedTime is not correct in setRewardTimes Tx' }    
+  }
   let isValid = crypto.verifyObj(tx)
-  if (!isValid) return { success: false, reason: 'Invalid signature' }
+  if (!isValid){
+    /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log('validateFields InitRewardTimes fail Invalid signature', tx)
+    /* prettier-ignore */ nestedCountersInstance.countEvent('shardeum-staking', `validateFields InitRewardTimes fail Invalid signature`)
+    return { success: false, reason: 'Invalid signature' }
+  } 
   const latestCycles = shardus.getLatestCycles(5)
   const nodeActivedCycle = latestCycles.find(cycle => cycle.activatedPublicKeys.includes(tx.nominee))
-  if (ShardeumFlags.VerboseLogs) console.log('nodeActivedCycle', nodeActivedCycle)
-  if (!nodeActivedCycle)
-    return { success: false, reason: 'The node publicKey is not found in the recently actived nodes!' }
-  if (nodeActivedCycle.start !== tx.nodeActivatedTime)
-    return { success: false, reason: 'The cycle start time and nodeActivatedTime does not match!' }
+  /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log('nodeActivedCycle', nodeActivedCycle)
+  if (!nodeActivedCycle){
+    /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log('validateFields InitRewardTimes fail !nodeActivedCycle', tx)
+    /* prettier-ignore */ nestedCountersInstance.countEvent('shardeum-staking', `validateFields InitRewardTimes fail !nodeActivedCycle`)
+    return { success: false, reason: 'The node publicKey is not found in the recently actived nodes!' }    
+  }
+  if (nodeActivedCycle.start !== tx.nodeActivatedTime){
+    /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log('validateFields InitRewardTimes fail start !== tx.nodeActivatedTime', tx)
+    /* prettier-ignore */ nestedCountersInstance.countEvent('shardeum-staking', `validateFields InitRewardTimes fail start !== tx.nodeActivatedTime`)
+    return { success: false, reason: 'The cycle start time and nodeActivatedTime does not match!' }    
+  }
+
+  /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log('validateFields InitRewardTimes success', tx)  
   return { success: true, reason: 'valid' }
 }
 
 export function validatePreCrackData(shardus, tx: InternalTx, appData) {
-  if (ShardeumFlags.VerboseLogs) console.log('Validating InitRewardTimesTX PreCrackData', tx)
+  /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log('Validating InitRewardTimesTX PreCrackData', tx)
 }
 
 export function validate(tx: InitRewardTimes, shardus: Shardus): { result: string; reason: string } {
-  if (ShardeumFlags.VerboseLogs) console.log('Validating InitRewardTimesTX', tx)
+  /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log('Validating InitRewardTimesTX', tx)
   let isValid = crypto.verifyObj(tx)
-  if (!isValid) return { result: 'fail', reason: 'Invalid signature' }
+  if (!isValid){
+    /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log('validate InitRewardTimes fail Invalid signature', tx)
+    /* prettier-ignore */ nestedCountersInstance.countEvent('shardeum-staking', `validate InitRewardTimes fail Invalid signature`)
+    return { result: 'fail', reason: 'Invalid signature' }    
+  } 
   const latestCycles = shardus.getLatestCycles(5)
   const nodeActivedCycle = latestCycles.find(cycle => cycle.activatedPublicKeys.includes(tx.nominee))
-  if (ShardeumFlags.VerboseLogs) console.log('nodeActivedCycle', nodeActivedCycle)
-  if (!nodeActivedCycle)
-    return { result: 'fail', reason: 'The node publicKey is not found in the recently actived nodes!' }
-  if (nodeActivedCycle.start !== tx.nodeActivatedTime)
-    return { result: 'fail', reason: 'The cycle start time and nodeActivatedTime does not match!' }
+  /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log('nodeActivedCycle', nodeActivedCycle)
+  if (!nodeActivedCycle){
+    /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log('validate InitRewardTimes fail !nodeActivedCycle', tx)
+    /* prettier-ignore */ nestedCountersInstance.countEvent('shardeum-staking', `validate InitRewardTimes fail !nodeActivedCycle`)
+    return { result: 'fail', reason: 'The node publicKey is not found in the recently actived nodes!' }    
+  }
+  if (nodeActivedCycle.start !== tx.nodeActivatedTime){
+    /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log('validate InitRewardTimes fail nodeActivedCycle.start !== tx.nodeActivatedTime', tx)
+    /* prettier-ignore */ nestedCountersInstance.countEvent('shardeum-staking', `validate InitRewardTimes fail nodeActivedCycle.start !== tx.nodeActivatedTime`)
+    return { result: 'fail', reason: 'The cycle start time and nodeActivatedTime does not match!' }    
+  }
+
+  /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log('validate InitRewardTimes success', tx)
   return { result: 'pass', reason: 'valid' }
 }
 
@@ -83,5 +116,6 @@ export function apply(
       txTimestamp
     )
   }
+  /* prettier-ignore */ nestedCountersInstance.countEvent('shardeum-staking', `Applied InitRewardTimesTX`)
   console.log('Applied InitRewardTimesTX for', tx.nominee)
 }

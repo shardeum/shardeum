@@ -1513,9 +1513,12 @@ shardus.registerExternalPut('query-certificate', async (req: Request, res: Respo
   if (queryCertRes.success) {
     let successRes = queryCertRes as CertSignaturesResult
     stakeCert = successRes.signedStakeCert
+    /* prettier-ignore */ nestedCountersInstance.countEvent('shardeum-staking', `queryCertificateHandler success`)
+
+  } else {
+    /* prettier-ignore */ nestedCountersInstance.countEvent('shardeum-staking', `queryCertificateHandler failed with reason: ${(queryCertRes as ValidatorError).reason}`)
   }
 
-  /* prettier-ignore */ nestedCountersInstance.countEvent('shardeum-staking', `queryCertificateHandler failed with reason: ${(queryCertRes as ValidatorError).reason}`)
   return res.json(queryCertRes)
 })
 
@@ -4792,7 +4795,7 @@ shardus.setup({
 
       const res = await injectSetCertTimeTx(shardus, publicKey, activeNodes)
       if (!res.success) {
-        nestedCountersInstance.countEvent('shardeum-staking', 'failed call to injectSetCertTimeTx')
+        nestedCountersInstance.countEvent('shardeum-staking', `failed call to injectSetCertTimeTx 1 reason: ${(res as ValidatorError).reason}`)
         return false
       }
 
@@ -4820,7 +4823,7 @@ shardus.setup({
         stakeCert = null //clear stake cert, so we will know to query for it again
         const res = await injectSetCertTimeTx(shardus, publicKey, activeNodes)
         if (!res.success) {
-          nestedCountersInstance.countEvent('shardeum-staking', 'failed call to injectSetCertTimeTx')
+          nestedCountersInstance.countEvent('shardeum-staking', `failed call to injectSetCertTimeTx 2 reason: ${(res as ValidatorError).reason}`)
           return false
         }
         lastCertTimeTxTimestamp = Date.now()
@@ -4868,7 +4871,7 @@ shardus.setup({
         stakeCert = null //clear stake cert, so we will know to query for it again
         const res = await injectSetCertTimeTx(shardus, publicKey, activeNodes)
         if (!res.success) {
-          nestedCountersInstance.countEvent('shardeum-staking', 'failed call to injectSetCertTimeTx')
+          nestedCountersInstance.countEvent('shardeum-staking', `failed call to injectSetCertTimeTx 3 reason: ${(res as ValidatorError).reason}`)
           return false
         }
 
@@ -4939,9 +4942,11 @@ shardus.setup({
 
     if (nodes.includes(nodeId)) {
       if (eventType === 'node-activated') {
+        nestedCountersInstance.countEvent('shardeum-staking', `node-activated: injectInitRewardTimesTx`)
         const result = await InitRewardTimesTx.injectInitRewardTimesTx(shardus, data)
         console.log('INJECTED_INIT_REWARD_TIMES_TX', result)
       } else if (eventType === 'node-deactivated') {
+        nestedCountersInstance.countEvent('shardeum-staking', `node-deactivated: injectClaimRewardTx`)
         const result = await injectClaimRewardTx(shardus, data)
         console.log('INJECTED_CLAIM_REWARD_TX', result)
       }
