@@ -4956,12 +4956,25 @@ shardus.setup({
     }
 
     const eventType = data.type
+
+    // Waiting a bit here to make sure that shardus.getLatestCycles gives the latest cycle
+    await sleep(1000)
     let latestCycles: ShardusTypes.Cycle[] = shardus.getLatestCycles()
     let currentCycle = latestCycles[0]
     if (!currentCycle) {
       console.log('No cycle records found', latestCycles)
       return
     }
+
+    // skip for own node
+    if (data.nodeId === nodeId) {
+      return
+    }
+
+    // TODO: see if it's fine; what if getClosestNodes gives only recently activatd nodes and 
+    // skip if this node is also activated in the same cycle
+    const currentlyActivatedNode = currentCycle.activated.includes(nodeId)
+    if (currentlyActivatedNode) return
     // Address as the hash of node public Key and current cycle
     const address = crypto.hashObj({
       nodePublicKey: data.publicKey,

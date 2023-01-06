@@ -16,7 +16,7 @@ export async function injectInitRewardTimesTx(shardus, eventData: ShardusTypes.S
     internalTXType: InternalTXType.InitRewardTimes,
     nominee: eventData.publicKey,
     nodeActivatedTime: eventData.time,
-    // timestamp: Date.now(),
+    timestamp: Date.now(),
   } as InitRewardTimes
   tx = shardus.signAsNode(tx)
   return await shardus.put(tx)
