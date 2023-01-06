@@ -2762,9 +2762,9 @@ shardus.setup({
 
       let currentBalance = operatorEVMAccount.account.balance
       let stake = new BN(operatorEVMAccount.operatorAccountInfo.stake, 16)
-      let reward = new BN(nodeAccount2.reward)
-      let penalty = new BN(nodeAccount2.penalty)
-      let txFee = new BN(ShardeumFlags.constantTxFee)
+      let reward = new BN(nodeAccount2.reward, 16)
+      let penalty = new BN(nodeAccount2.penalty, 16)
+      let txFee = new BN(ShardeumFlags.constantTxFee, 10)
       if (ShardeumFlags.VerboseLogs)
         console.log('calculating new balance after unstake', currentBalance, stake, reward, penalty, txFee)
       let newBalance = currentBalance
