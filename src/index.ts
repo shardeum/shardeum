@@ -3539,6 +3539,7 @@ shardus.setup({
 
     let shardusMemoryPatterns = {}
     if (isInternalTx(tx)) {
+      let customTXhash = null
       let internalTx = tx as InternalTx
       const keys = {
         sourceKeys: [],
@@ -3564,9 +3565,24 @@ shardus.setup({
         keys.targetKeys = [toShardusAddress(tx.nominator, AccountType.Account), networkAccount]
       } else if (internalTx.internalTXType === InternalTXType.InitRewardTimes) {
         keys.sourceKeys = [tx.nominee]
+
+        // //force all TXs for the same reward to have the same hash
+        // let tempTimestamp = tx.timestamp
+        // tx.timestamp = tx.nodeActivatedTime 
+        // customTXhash = crypto.hashObj(tx, true)
+        // //restore timestamp?
+        // tx.timestamp = tempTimestamp
+
       } else if (internalTx.internalTXType === InternalTXType.ClaimReward) {
         keys.sourceKeys = [tx.nominee]
         keys.targetKeys = [networkAccount]
+
+        // //force all TXs for the same reward to have the same hash
+        // let tempTimestamp = tx.timestamp
+        // tx.timestamp = tx.nodeActivatedTime 
+        // customTXhash = crypto.hashObj(tx, true)
+        // //restore timestamp?
+        // tx.timestamp = tempTimestamp
       }
       keys.allKeys = keys.allKeys.concat(keys.sourceKeys, keys.targetKeys, keys.storageKeys)
       // temporary hack for creating a receipt of node reward tx
@@ -3580,7 +3596,7 @@ shardus.setup({
       return {
         timestamp,
         keys,
-        id: crypto.hashObj(tx),
+        id: customTXhash ?? crypto.hashObj(tx),
       }
     }
     if (isDebugTx(tx)) {
@@ -4912,13 +4928,16 @@ shardus.setup({
     if (ShardeumFlags.StakingEnabled === false) return
     if (ShardeumFlags.VerboseLogs) console.log(`Running eventNotify`, data)
 
-    // We can skip staking related txs for the first node
-    if (shardus.p2p.isFirstSeed) {
-      return
-    }
-
     const nodeId = shardus.getNodeId()
     const node = shardus.getNode(nodeId)
+
+    // We can skip staking related txs for the first node
+    if (shardus.p2p.isFirstSeed) {
+      //only skip events for our node
+      if(data.nodeId === nodeId){
+        return
+      }
+    }
 
     if (node.status !== 'active') {
       console.log('This node is not active yet')
