@@ -11,6 +11,7 @@ import {
   WrappedStates,
   NodeAccount2,
 } from '../shardeum/shardeumTypes'
+import * as WrappedEVMAccountFunctions from '../shardeum/wrappedEVMAccountFunctions'
 
 export function isClaimRewardTx(tx: any): boolean {
   if (tx.isInternalTx && tx.internalTXType === InternalTXType.ClaimReward) {
@@ -34,12 +35,12 @@ export async function injectClaimRewardTx(shardus, eventData: ShardusTypes.Shard
 
 //TODO this is not called yet!  looks like it should be validateFields
 export function validateClaimRewardTx(tx: ClaimRewardTX, appData: any): { isValid: boolean; reason: string } {
-  if (!isValidAddress(tx.nominee)) {
+  if (!tx.nominee || tx.nominee === '' || tx.nominee.length !== 64) {
     /* prettier-ignore */ nestedCountersInstance.countEvent('shardeum-staking', `validateClaimRewardTx fail tx.nominee address invalid`)
     /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log('validateClaimRewardTx fail tx.nominee address invalid', tx)
     return { isValid: false, reason: 'Invalid nominee address' }
   }
-  if (!isValidAddress(tx.deactivatedNodeId)) {
+  if (!tx.deactivatedNodeId || tx.deactivatedNodeId === '' || tx.deactivatedNodeId.length !== 64) {
     /* prettier-ignore */ nestedCountersInstance.countEvent('shardeum-staking', `validateClaimRewardTx fail tx.deactivatedNodeId address invalid`)
     /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log('validateClaimRewardTx fail tx.deactivatedNodeId address invalid', tx)
     return { isValid: false, reason: 'Invalid deactivatedNodeId' }
@@ -55,38 +56,54 @@ export function validateClaimRewardTx(tx: ClaimRewardTX, appData: any): { isVali
     return { isValid: false, reason: 'Duration in tx must be > 0' }
   }
   try {
-    if (!crypto.verifyObj(tx)){
+    if (!crypto.verifyObj(tx)) {
       /* prettier-ignore */ nestedCountersInstance.countEvent('shardeum-staking', `validateClaimRewardTx fail Invalid signature`)
       /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log('validateClaimRewardTx fail Invalid signature', tx)
       return { isValid: false, reason: 'Invalid signature for ClaimReward tx' }
-    } 
+    }
   } catch (e) {
     /* prettier-ignore */ nestedCountersInstance.countEvent('shardeum-staking', `validateClaimRewardTx fail Invalid signature exception`)
     /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log('validateClaimRewardTx fail Invalid signature exception', tx)
     return { isValid: false, reason: 'Invalid signature for ClaimReward tx' }
   }
-  /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log('validateClaimRewardTx success', tx)  
+  /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log('validateClaimRewardTx success', tx)
   return { isValid: true, reason: '' }
 }
 
 export function validateClaimRewardState(tx: ClaimRewardTX, shardus) {
   /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log('validating claimRewardTX', tx)
   let isValid = crypto.verifyObj(tx)
-  if (!isValid){
+  if (!isValid) {
     /* prettier-ignore */ nestedCountersInstance.countEvent('shardeum-staking', `validateClaimRewardState fail Invalid signature`)
     /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log('validateClaimRewardState fail Invalid signature', tx)
     return { result: 'fail', reason: 'Invalid signature' }
-  } 
-  const latestCycles = shardus.getLatestCycles(5)
-  const isInRemovedList = latestCycles.some(cycle => cycle.removed.includes(tx.deactivatedNodeId))
-  /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log('isInRemovedList', isInRemovedList)
-  if (!isInRemovedList){
-    /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log('validateClaimRewardState fail !isInRemovedList', tx)
-    /* prettier-ignore */ nestedCountersInstance.countEvent('shardeum-staking', `validateClaimRewardState fail !isInRemovedList`)
-    return { result: 'fail', reason: 'The nodeId is not found in the recently removed nodes!' }
   }
-  
-  /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log('validateClaimRewardState success', tx)  
+  const latestCycles = shardus.getLatestCycles(5)
+
+  // This still needs to consider for lost cases, but we have to be careful for refuted back cases
+  let nodeRemovedCycle
+  let nodeApopedCycle
+  nodeRemovedCycle = latestCycles.find(cycle => cycle.removed.includes(tx.deactivatedNodeId))
+  /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log('nodeRemovedCycle', nodeRemovedCycle)
+  if (!nodeRemovedCycle) {
+    nodeApopedCycle = latestCycles.find(cycle => cycle.apoptosized.includes(tx.deactivatedNodeId))
+    /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log('nodeApopedCycle', nodeApopedCycle)
+    if (!nodeApopedCycle) {
+      /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log('validateClaimRewardState fail not found on both removed or apoped lists', tx)
+      /* prettier-ignore */ nestedCountersInstance.countEvent('shardeum-staking', `validateClaimRewardState fail not found on both removed or apoped lists`)
+      return { result: 'fail', reason: 'The nodeId is not found in the recently removed or apoped nodes!' }
+    }
+  }
+  if (
+    (nodeRemovedCycle && nodeRemovedCycle.start !== tx.nodeDeactivatedTime) ||
+    (nodeApopedCycle && nodeApopedCycle.start !== tx.nodeDeactivatedTime)
+  ) {
+    /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log('validate InitRewardTimes fail nodeActivedCycle.start !== tx.nodeActivatedTime', tx)
+    /* prettier-ignore */ nestedCountersInstance.countEvent('shardeum-staking', `validate InitRewardTimes fail nodeActivedCycle.start !== tx.nodeActivatedTime`)
+    return { result: 'fail', reason: 'The cycle start time and nodeActivatedTime does not match!' }
+  }
+
+  /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log('validateClaimRewardState success', tx)
   return { result: 'pass', reason: 'valid' }
 }
 
@@ -104,7 +121,9 @@ export function applyClaimRewardTx(
   }
   let nodeAccount: NodeAccount2 = wrappedStates[tx.nominee].data
   const network: NetworkAccount = wrappedStates[networkAccount].data
-  const rewardRatePerMilisecond = network.current.nodeRewardAmount.div(new BN(network.current.nodeRewardInterval)) // 1 SHM divided by 10 min
+  const nodeRewardAmount = new BN(Number('0x' + network.current.nodeRewardAmount).toString())
+  const rewardRatePerMilisecond = nodeRewardAmount.div(new BN(network.current.nodeRewardInterval)) // 1 SHM divided by 10 min
+  nodeAccount.rewardEndTime = tx.nodeDeactivatedTime
 
   let durationInNetwork = nodeAccount.rewardEndTime - nodeAccount.rewardStartTime
   if (durationInNetwork <= 0)
@@ -113,7 +132,18 @@ export function applyClaimRewardTx(
   nodeAccount.timestamp = txTimestamp
 
   const txId = crypto.hashObj(tx)
-  shardus.applyResponseAddChangedAccount(applyResponse, tx.nominee, nodeAccount, txId, txTimestamp)
+  if (ShardeumFlags.useAccountWrites) {
+    const wrappedChangedAccount = WrappedEVMAccountFunctions._shardusWrappedAccount(
+      wrappedStates[tx.nominee].data
+    )
+    shardus.applyResponseAddChangedAccount(
+      applyResponse,
+      tx.nominee,
+      wrappedChangedAccount,
+      txId,
+      txTimestamp
+    )
+  }
 
   /* prettier-ignore */ nestedCountersInstance.countEvent('shardeum-staking', `Applied ClaimRewardTX`)
   console.log('Applied ClaimRewardTX', tx.nominee)

@@ -24,10 +24,10 @@ export async function injectInitRewardTimesTx(shardus, eventData: ShardusTypes.S
 
 export function validateFields(tx: InitRewardTimes, shardus: Shardus): { success: boolean; reason: string } {
   /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log('Validating InitRewardTimesTX fields', tx)
-  if (!tx.nominee || tx.nominee === ''){
-    /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log('validateFields InitRewardTimes fail nominee missing', tx)
-    /* prettier-ignore */ nestedCountersInstance.countEvent('shardeum-staking', `validateFields InitRewardTimes fail nominee missing`)
-    return { success: false, reason: 'nominee field is not found in setRewardTimes Tx' }    
+  if (!tx.nominee || tx.nominee === '' || tx.nominee.length !== 64) {
+    /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log('validateFields InitRewardTimes fail invalid nominee field', tx)
+    /* prettier-ignore */ nestedCountersInstance.countEvent('shardeum-staking', `validateFields InitRewardTimes fail invalid nominee field`)
+    return { success: false, reason: 'invalid nominee field in setRewardTimes Tx' }    
   }
   if (!tx.nodeActivatedTime){
     /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log('validateFields InitRewardTimes fail nodeActivatedTime missing', tx)

@@ -69,7 +69,7 @@ import {
   isSetCertTimeTx,
   validateSetCertTimeTx,
 } from './tx/setCertTime'
-import { applyClaimRewardTx, injectClaimRewardTx } from './tx/claimReward'
+import { applyClaimRewardTx, injectClaimRewardTx, validateClaimRewardTx } from './tx/claimReward'
 import { Request, Response } from 'express'
 import {
   CertSignaturesResult,
@@ -1514,7 +1514,6 @@ shardus.registerExternalPut('query-certificate', async (req: Request, res: Respo
     let successRes = queryCertRes as CertSignaturesResult
     stakeCert = successRes.signedStakeCert
     /* prettier-ignore */ nestedCountersInstance.countEvent('shardeum-staking', `queryCertificateHandler success`)
-
   } else {
     /* prettier-ignore */ nestedCountersInstance.countEvent('shardeum-staking', `queryCertificateHandler failed with reason: ${(queryCertRes as ValidatorError).reason}`)
   }
@@ -2396,6 +2395,10 @@ shardus.setup({
       } else if (tx.internalTXType === InternalTXType.InitRewardTimes) {
         let result = InitRewardTimesTx.validateFields(tx, shardus)
         success = result.success
+        reason = result.reason
+      } else if (tx.internalTXType === InternalTXType.ClaimReward) {
+        let result = validateClaimRewardTx(tx, appData)
+        success = result.isValid
         reason = result.reason
       } else {
         try {
@@ -3568,18 +3571,17 @@ shardus.setup({
 
         // //force all TXs for the same reward to have the same hash
         // let tempTimestamp = tx.timestamp
-        // tx.timestamp = tx.nodeActivatedTime 
+        // tx.timestamp = tx.nodeActivatedTime
         // customTXhash = crypto.hashObj(tx, true)
         // //restore timestamp?
         // tx.timestamp = tempTimestamp
-
       } else if (internalTx.internalTXType === InternalTXType.ClaimReward) {
         keys.sourceKeys = [tx.nominee]
         keys.targetKeys = [networkAccount]
 
         // //force all TXs for the same reward to have the same hash
         // let tempTimestamp = tx.timestamp
-        // tx.timestamp = tx.nodeActivatedTime 
+        // tx.timestamp = tx.nodeActivatedTime
         // customTXhash = crypto.hashObj(tx, true)
         // //restore timestamp?
         // tx.timestamp = tempTimestamp
@@ -4811,7 +4813,10 @@ shardus.setup({
 
       const res = await injectSetCertTimeTx(shardus, publicKey, activeNodes)
       if (!res.success) {
-        nestedCountersInstance.countEvent('shardeum-staking', `failed call to injectSetCertTimeTx 1 reason: ${(res as ValidatorError).reason}`)
+        nestedCountersInstance.countEvent(
+          'shardeum-staking',
+          `failed call to injectSetCertTimeTx 1 reason: ${(res as ValidatorError).reason}`
+        )
         return false
       }
 
@@ -4839,7 +4844,10 @@ shardus.setup({
         stakeCert = null //clear stake cert, so we will know to query for it again
         const res = await injectSetCertTimeTx(shardus, publicKey, activeNodes)
         if (!res.success) {
-          nestedCountersInstance.countEvent('shardeum-staking', `failed call to injectSetCertTimeTx 2 reason: ${(res as ValidatorError).reason}`)
+          nestedCountersInstance.countEvent(
+            'shardeum-staking',
+            `failed call to injectSetCertTimeTx 2 reason: ${(res as ValidatorError).reason}`
+          )
           return false
         }
         lastCertTimeTxTimestamp = Date.now()
@@ -4887,7 +4895,10 @@ shardus.setup({
         stakeCert = null //clear stake cert, so we will know to query for it again
         const res = await injectSetCertTimeTx(shardus, publicKey, activeNodes)
         if (!res.success) {
-          nestedCountersInstance.countEvent('shardeum-staking', `failed call to injectSetCertTimeTx 3 reason: ${(res as ValidatorError).reason}`)
+          nestedCountersInstance.countEvent(
+            'shardeum-staking',
+            `failed call to injectSetCertTimeTx 3 reason: ${(res as ValidatorError).reason}`
+          )
           return false
         }
 
@@ -4934,7 +4945,7 @@ shardus.setup({
     // We can skip staking related txs for the first node
     if (shardus.p2p.isFirstSeed) {
       //only skip events for our node
-      if(data.nodeId === nodeId){
+      if (data.nodeId === nodeId) {
         return
       }
     }
