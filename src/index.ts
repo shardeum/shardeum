@@ -52,6 +52,7 @@ import {
   SerializeToJsonString,
   sleep,
   zeroAddressStr,
+  _base16BNParser,
 } from './utils'
 import config from './config'
 import { RunTxResult } from '@ethereumjs/vm/dist/runTx'
@@ -4573,10 +4574,10 @@ shardus.setup({
           return fail
         }
 
-        const minStakeRequired = AccountsStorage.cachedNetworkAccount.current.stakeRequired
-        let stakeAmount = new BN(Number('0x' + stakeCert.stake).toString())
+        const minStakeRequired = _base16BNParser(AccountsStorage.cachedNetworkAccount.current.stakeRequired)
+        let stakeAmount = _base16BNParser(stakeCert.stake)
 
-        if (stakeAmount < minStakeRequired) {
+        if (stakeAmount.lt(minStakeRequired)) {
           /* prettier-ignore */ nestedCountersInstance.countEvent('shardeum-staking', 'signAppData stake amount lower than required')
           /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`signAppData stake amount lower than required ${type} ${JSON.stringify(stakeCert)} `)
           return fail
@@ -4691,7 +4692,7 @@ shardus.setup({
 
         const nodeAcc = data.sign.owner
         const stake_cert: StakeCert = data.appJoinData.stakeCert
-        if (ShardeumFlags.VerboseLogs) console.log(`validateJoinRequest ${stake_cert}`)
+        if (ShardeumFlags.VerboseLogs) console.log(`validateJoinRequest ${JSON.stringify(stake_cert)}`)
 
         const tx_time = data.joinRequestTimestamp as number
 
@@ -4726,11 +4727,11 @@ shardus.setup({
           }
         }
 
-        const minStakeRequired = AccountsStorage.cachedNetworkAccount.current.stakeRequired
+        const minStakeRequired = _base16BNParser(AccountsStorage.cachedNetworkAccount.current.stakeRequired)
 
-        const stakedAmount = new BN(Number('0x' + stake_cert.stake).toString())
+        const stakedAmount = _base16BNParser(stake_cert.stake)
 
-        if (stakedAmount < minStakeRequired) {
+        if (stakedAmount.lt(minStakeRequired)) {
           /* prettier-ignore */ nestedCountersInstance.countEvent('shardeum-staking', 'validateJoinRequest fail: stake_cert.stake < minStakeRequired')
           /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`validateJoinRequest fail: stake_cert.stake < minStakeRequired ${stakedAmount} < ${minStakeRequired}`)
           return {

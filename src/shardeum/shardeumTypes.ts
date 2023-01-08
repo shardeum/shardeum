@@ -290,3 +290,6 @@ export interface NodeAccountQueryResponse {
 export interface InjectTxResponse {
   success: boolean
 }
+
+export type HexString = string;
+export type DecimalString = string;
