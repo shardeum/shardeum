@@ -2667,11 +2667,14 @@ shardus.setup({
           )
         }
 
+        const wrappedChangedAccount = WrappedEVMAccountFunctions._shardusWrappedAccount(
+          wrappedStates[nomineeNodeAccount2Address].data
+        )
         // for nominee node account
         shardus.applyResponseAddChangedAccount(
           applyResponse,
           nomineeNodeAccount2Address,
-          wrappedStates[nomineeNodeAccount2Address],
+          wrappedChangedAccount,
           txId,
           txTimestamp
         )
@@ -4971,7 +4974,7 @@ shardus.setup({
       return
     }
 
-    // TODO: see if it's fine; what if getClosestNodes gives only recently activatd nodes and 
+    // TODO: see if it's fine; what if getClosestNodes gives only recently activatd nodes
     // skip if this node is also activated in the same cycle
     const currentlyActivatedNode = currentCycle.activated.includes(nodeId)
     if (currentlyActivatedNode) return
