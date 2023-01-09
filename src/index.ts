@@ -52,6 +52,7 @@ import {
   sleep,
   zeroAddressStr,
   _base16BNParser,
+  _readableSHM,
 } from './utils'
 import config from './config'
 import { RunTxResult } from '@ethereumjs/vm/dist/runTx'
@@ -4815,7 +4816,7 @@ shardus.setup({
 
         if (stakedAmount.lt(minStakeRequired)) {
           /* prettier-ignore */ nestedCountersInstance.countEvent('shardeum-staking', 'validateJoinRequest fail: stake_cert.stake < minStakeRequired')
-          /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`validateJoinRequest fail: stake_cert.stake < minStakeRequired ${stakedAmount} < ${minStakeRequired}`)
+          /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`validateJoinRequest fail: stake_cert.stake < minStakeRequired ${_readableSHM(stakedAmount)} < ${_readableSHM(minStakeRequired)}`)
           return {
             success: false,
             reason: `Minimum stake amount requirement does not meet.`,

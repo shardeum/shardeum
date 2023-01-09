@@ -16,7 +16,7 @@ import * as AccountsStorage from '../storage/accountStorage'
 import { fixDeserializedWrappedEVMAccount } from '../shardeum/wrappedEVMAccountFunctions'
 import { Shardus } from '@shardus/core'
 import { getNodeAccountWithRetry, InjectTxToConsensor } from '../handlers/queryCertificate'
-import { getRandom } from '../utils'
+import { getRandom, _base16BNParser, _readableSHM } from '../utils'
 import { toShardusAddress } from '../shardeum/evmAddress'
 import * as WrappedEVMAccountFunctions from '../shardeum/wrappedEVMAccountFunctions'
 
@@ -87,7 +87,7 @@ export function validateSetCertTimeState(tx: SetCertTime, wrappedStates: Wrapped
     /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`setCertTime apply: found no wrapped state for operator account ${tx.nominator}`)
   } else {
     if (operatorEVMAccount && operatorEVMAccount.operatorAccountInfo) {
-      committedStake = new BN(Number('0x' + operatorEVMAccount.operatorAccountInfo.stake).toString())
+      committedStake = _base16BNParser(operatorEVMAccount.operatorAccountInfo.stake)
     }
   }
 
@@ -95,10 +95,10 @@ export function validateSetCertTimeState(tx: SetCertTime, wrappedStates: Wrapped
 
   const minStakeRequired = AccountsStorage.cachedNetworkAccount.current.stakeRequired
 
-  console.log('validate operator stake', committedStake, minStakeRequired, committedStake < minStakeRequired)
+  if (ShardeumFlags.VerboseLogs) console.log('validate operator stake', _readableSHM(committedStake), _readableSHM(minStakeRequired), ' committedStake < minStakeRequired : ', committedStake.lt(minStakeRequired))
 
   // validate operator stake
-  if (committedStake < minStakeRequired) {
+  if (committedStake.lt(minStakeRequired)) {
     return {
       result: 'fail',
       reason: 'Operator has not staked the required amount',

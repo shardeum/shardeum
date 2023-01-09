@@ -1,3 +1,5 @@
+import { DecimalString } from "./shardeumTypes"
+
 interface ShardeumFlags {
   contractStorageKeySilo: boolean
   globalCodeBytes: boolean
@@ -43,10 +45,10 @@ interface ShardeumFlags {
   useAccountWrites: boolean
   useShardeumVM: boolean
   chargeConstantTxFee: boolean
-  constantTxFee: string // '10000000000000'//0.00001 SHM   //'1000000000000000000' // 1 SHM
+  constantTxFee: DecimalString // '10000000000000'//0.00001 SHM   //'1000000000000000000' // 1 SHM
   devPublicKey: string
   stakeTargetAddress: string
-  stakeAmount: string // stake amount in wei
+  stakeAmount: DecimalString // stake amount in wei
   cacheMaxCycleAge: number
   cacheMaxItemPerTopic: number
   generateMemoryPatternData: boolean

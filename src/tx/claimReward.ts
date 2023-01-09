@@ -12,6 +12,7 @@ import {
   NodeAccount2,
 } from '../shardeum/shardeumTypes'
 import * as WrappedEVMAccountFunctions from '../shardeum/wrappedEVMAccountFunctions'
+import { _base16BNParser } from '../utils'
 
 export function isClaimRewardTx(tx: any): boolean {
   if (tx.isInternalTx && tx.internalTXType === InternalTXType.ClaimReward) {
@@ -121,7 +122,9 @@ export function applyClaimRewardTx(
   }
   let nodeAccount: NodeAccount2 = wrappedStates[tx.nominee].data
   const network: NetworkAccount = wrappedStates[networkAccount].data
-  const nodeRewardAmount = new BN(Number('0x' + network.current.nodeRewardAmount).toString())
+  const nodeRewardAmount = _base16BNParser(network.current.nodeRewardAmount) //new BN(Number('0x' + network.current.nodeRewardAmount).toString())
+  
+  //TODO I think these calculations could be lossy.  We should use a product before a divide
   const rewardRatePerMilisecond = nodeRewardAmount.div(new BN(network.current.nodeRewardInterval)) // 1 SHM divided by 10 min
   nodeAccount.rewardEndTime = tx.nodeDeactivatedTime
 
