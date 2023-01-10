@@ -27,6 +27,7 @@ import {
   NetworkParameters,
   NodeAccount,
   NodeAccount2,
+  OperatorAccountInfo,
   OurAppDefinedData,
   ReadableReceipt,
   SetCertTime,
@@ -81,6 +82,7 @@ import {
 } from './handlers/queryCertificate'
 import * as InitRewardTimesTx from './tx/initRewardTimes'
 import * as net from "net";
+import _ from 'lodash'
 
 const env = process.env
 
@@ -2967,6 +2969,8 @@ shardus.setup({
       return applyResponse
     }
 
+    let validatorStakedAccounts: Map<string, OperatorAccountInfo> = new Map()
+
     //ah shoot this binding will not be "thread safe" may need to make it part of the EEI for this tx? idk.
     //shardeumStateManager.setTransactionState(transactionState)
 
@@ -3000,6 +3004,7 @@ shardus.setup({
 
       if (wrappedEVMAccount.accountType === AccountType.Account) {
         shardeumState._transactionState.insertFirstAccountReads(address, wrappedEVMAccount.account)
+        validatorStakedAccounts.set(address,wrappedEVMAccount.operatorAccountInfo)
       } else if (wrappedEVMAccount.accountType === AccountType.ContractCode) {
         shardeumState._transactionState.insertFirstContractBytesReads(address, wrappedEVMAccount.codeByte)
       } else if (wrappedEVMAccount.accountType === AccountType.ContractStorage) {
@@ -3299,7 +3304,8 @@ shardus.setup({
         hash: '',
         accountType: AccountType.Account,
       }
-
+      if (validatorStakedAccounts.has(addressStr))
+        wrappedEVMAccount.operatorAccountInfo = validatorStakedAccounts.get(addressStr)
       //If this account has an entry in the map use it to set the codeHash.
       // the ContractCode "account" will get pushed later as a global TX
       if (accountToCodeHash.has(addressStr)) {
@@ -5048,7 +5054,7 @@ shardus.setup({
       account.stateId = networkParam.hash
       return [account]
     }
-
+  
   }
 })
 
