@@ -4826,56 +4826,11 @@ shardus.setup({
         const pickedNode: ShardusTypes.Sign[] = []
         //todo run this with min(numActive nodes)
         const requiredSig = ShardeumFlags.MinStakeCertSig
-        const { success, reason } = shardus.validateActiveNodeSignatures('', stake_cert, stake_cert.signs, requiredSig)
-        if (!success) return { success, reason }
-
-        // Seems we will not need this anymore
-        // for (let i = 0; i < stake_cert.signs.length; i++) {
-        //   const signedNode = stake_cert.signs[i]
-        //   if (signedNode === null || signedNode === undefined) {
-        //     /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`validateJoinRequest fail: stake_cert.signs has null or undefined value ${stake_cert.signs}`)
-        //     return {
-        //       success: false,
-        //       reason: `Not enough stake certification signature owner in the node list anymore`,
-        //     }
-        //   }
-        //   const node = shardus.getNode(signedNode.owner)
-
-        //   if (node) {
-        //     pickedNode.push(node)
-        //   }
-
-        //   // early break loop
-        //   if (pickedNode.length >= requiredSig) {
-        //     break
-        //   }
-        // }
-
-        // // if (pickedNode.length < requiredSig) {
-        // //   /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`validateJoinRequest fail: pickedNode.length < requiredSig ${pickedNode.length} < ${requiredSig}`)
-        // //   return {
-        // //     success: false,
-        // //     reason: `Not enough stake certification signature owner in the node list anymore`,
-        // //   }
-        // // }
-
-        // Not sure if we have to app this to validateActiveNodeSignatures and verify things
-        for (let i = 0; i < stake_cert.signs.length; i++) {
-          const tmp_stakeCert = {
-            nominator: stake_cert.nominator,
-            nominee: stake_cert.nominee,
-            certExp: stake_cert.certExp,
-            stake: stake_cert.stake,
-            sign: stake_cert.signs[i],
-          }
-          if (!crypto.verifyObj(tmp_stakeCert)) {
+        const { success, reason } = shardus.validateActiveNodeSignatures(stake_cert, stake_cert.signs, requiredSig)
+        if (!success) {
             /* prettier-ignore */ nestedCountersInstance.countEvent('shardeum-staking', 'validateJoinRequest fail: invalid signature')
-            /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`validateJoinRequest fail: invalid signature`)
-            return {
-              success: false,
-              reason: `Stake certification signature is invalid: ${stake_cert.signs[i]}`,
-            }
-          }
+            /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`validateJoinRequest fail: invalid signature`, reason)
+            return { success, reason }
         }
       }
 
