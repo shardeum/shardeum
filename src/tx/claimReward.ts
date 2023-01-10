@@ -12,7 +12,7 @@ import {
   NodeAccount2,
 } from '../shardeum/shardeumTypes'
 import * as WrappedEVMAccountFunctions from '../shardeum/wrappedEVMAccountFunctions'
-import { _base16BNParser } from '../utils'
+import { _base16BNParser, _readableSHM } from '../utils'
 
 export function isClaimRewardTx(tx: any): boolean {
   if (tx.isInternalTx && tx.internalTXType === InternalTXType.ClaimReward) {
@@ -123,16 +123,22 @@ export function applyClaimRewardTx(
   let nodeAccount: NodeAccount2 = wrappedStates[tx.nominee].data
   const network: NetworkAccount = wrappedStates[networkAccount].data
   const nodeRewardAmount = _base16BNParser(network.current.nodeRewardAmount) //new BN(Number('0x' + network.current.nodeRewardAmount).toString())
-  
-  //TODO I think these calculations could be lossy.  We should use a product before a divide
-  const rewardRatePerMilisecond = nodeRewardAmount.div(new BN(network.current.nodeRewardInterval)) // 1 SHM divided by 10 min
+  const nodeRewardInterval = new BN(network.current.nodeRewardInterval)
+
   nodeAccount.rewardEndTime = tx.nodeDeactivatedTime
 
   let durationInNetwork = nodeAccount.rewardEndTime - nodeAccount.rewardStartTime
-  if (durationInNetwork <= 0)
-    throw new Error(`applyClaimReward failed because durationInNetwork is less than or equal 0`)
-  nodeAccount.reward = rewardRatePerMilisecond.mul(new BN(durationInNetwork))
+  if (durationInNetwork <= 0) {
+      throw new Error(`applyClaimReward failed because durationInNetwork is less than or equal 0`)
+  }
+
+  let totalReward = nodeRewardAmount.mul(new BN(durationInNetwork))
+
+  nodeAccount.reward = totalReward.div(nodeRewardInterval)
   nodeAccount.timestamp = txTimestamp
+
+  if (ShardeumFlags.VerboseLogs) console.log(`Calculating node reward. nodeRewardAmount: ${_readableSHM(nodeRewardAmount)}, nodeRewardInterval: ${network.current.nodeRewardInterval} ms, uptime duration: ${durationInNetwork} ms, totalReward: ${_readableSHM(totalReward)}, finalReward: ${_readableSHM(nodeAccount.reward)}`)
+
 
   const txId = crypto.hashObj(tx)
   if (ShardeumFlags.useAccountWrites) {
