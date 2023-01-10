@@ -2336,6 +2336,15 @@ async function generateAccessList(callObj: any): Promise<{ accessList: any[]; sh
   }
 }
 
+function getNodeCountForCertSignatures(): number {
+  let latestCycle: ShardusTypes.Cycle
+  const latestCycles: ShardusTypes.Cycle[] = shardus.getLatestCycles()
+  if (latestCycles && latestCycles.length > 0) [latestCycle] = latestCycles
+  const activeNodeCount = latestCycle ? latestCycle.active : 1
+  if (ShardeumFlags.VerboseLogs) console.log(`Active node count computed for cert signs ${activeNodeCount}`)
+  return Math.min(ShardeumFlags.MinStakeCertSig, activeNodeCount)
+}
+
 /***
  *     ######  ##     ##    ###    ########  ########  ##     ##  ######      ######  ######## ######## ##     ## ########
  *    ##    ## ##     ##   ## ##   ##     ## ##     ## ##     ## ##    ##    ##    ## ##          ##    ##     ## ##     ##
@@ -4834,8 +4843,7 @@ shardus.setup({
         }
 
         const pickedNode: ShardusTypes.Sign[] = []
-        //todo run this with min(numActive nodes)
-        const requiredSig = ShardeumFlags.MinStakeCertSig
+        const requiredSig = getNodeCountForCertSignatures()
         const { success, reason } = shardus.validateActiveNodeSignatures(stake_cert, stake_cert.signs, requiredSig)
         if (!success) {
             /* prettier-ignore */ nestedCountersInstance.countEvent('shardeum-staking', 'validateJoinRequest fail: invalid signature')
