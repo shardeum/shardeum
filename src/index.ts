@@ -4826,7 +4826,7 @@ shardus.setup({
         const pickedNode: ShardusTypes.Sign[] = []
         //todo run this with min(numActive nodes)
         const requiredSig = ShardeumFlags.MinStakeCertSig
-        const { success, reason } = shardus.validateActiveNodeSignatures('', stake_cert.signs, requiredSig)
+        const { success, reason } = shardus.validateActiveNodeSignatures('', stake_cert, stake_cert.signs, requiredSig)
         if (!success) return { success, reason }
 
         // Seems we will not need this anymore
