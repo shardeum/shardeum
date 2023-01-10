@@ -3004,7 +3004,9 @@ shardus.setup({
 
       if (wrappedEVMAccount.accountType === AccountType.Account) {
         shardeumState._transactionState.insertFirstAccountReads(address, wrappedEVMAccount.account)
-        validatorStakedAccounts.set(address,wrappedEVMAccount.operatorAccountInfo)
+        if (wrappedEVMAccount.operatorAccountInfo) {
+          validatorStakedAccounts.set(wrappedEVMAccount.ethAddress, wrappedEVMAccount.operatorAccountInfo)
+        }
       } else if (wrappedEVMAccount.accountType === AccountType.ContractCode) {
         shardeumState._transactionState.insertFirstContractBytesReads(address, wrappedEVMAccount.codeByte)
       } else if (wrappedEVMAccount.accountType === AccountType.ContractStorage) {
