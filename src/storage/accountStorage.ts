@@ -1,8 +1,8 @@
-import { NetworkAccount, WrappedEVMAccount, WrappedEVMAccountMap } from '../shardeum/shardeumTypes'
+import { NetworkAccount, WrappedEVMAccount, WrappedEVMAccountMap, HexString, DecimalString } from '../shardeum/shardeumTypes'
 
 import { ShardeumFlags } from '../shardeum/shardeumFlags'
 import Storage from '../storage/storage'
-import { DeSerializeFromJsonString } from '../utils'
+import { DeSerializeFromJsonString, _base16BNParser } from '../utils'
 import { networkAccount } from '..'
 import { BN } from 'bn.js'
 
@@ -68,38 +68,36 @@ export async function accountExists(address: string): Promise<boolean> {
 
 export let cachedNetworkAccount: NetworkAccount // an actual obj
 export async function setAccount(address: string, account: WrappedEVMAccount): Promise<void> {
-  if (ShardeumFlags.UseDBForAccounts === true) {
-    let accountEntry = {
-      accountId: address,
-      timestamp: account.timestamp,
-      data: account,
-    }
+  try {
+    if (ShardeumFlags.UseDBForAccounts === true) {
+      let accountEntry = {
+        accountId: address,
+        timestamp: account.timestamp,
+        data: account,
+      }
 
-    if (account.timestamp === 0) {
-      throw new Error('setAccount timestamp should not be 0')
-    }
-    await storage.createOrReplaceAccountEntry(accountEntry)
+      if (account.timestamp === 0) {
+        throw new Error('setAccount timestamp should not be 0')
+      }
+      await storage.createOrReplaceAccountEntry(accountEntry)
 
-    if (address === networkAccount) {
-      cachedNetworkAccount = (account as any) as NetworkAccount
-      if (typeof cachedNetworkAccount.current.stakeRequired === 'string') {
-        cachedNetworkAccount.current.stakeRequired = new BN(
-          cachedNetworkAccount.current.stakeRequired, 16
-        )
+      if (address === networkAccount) {
+        cachedNetworkAccount = (account as any) as NetworkAccount
+        if (typeof cachedNetworkAccount.current.stakeRequired === 'string') {
+          cachedNetworkAccount.current.stakeRequired = _base16BNParser(cachedNetworkAccount.current.stakeRequired)
+        }
+        if (typeof cachedNetworkAccount.current.nodePenalty === 'string') {
+          cachedNetworkAccount.current.nodePenalty = _base16BNParser(cachedNetworkAccount.current.nodePenalty)
+        }
+        if (typeof cachedNetworkAccount.current.nodeRewardAmount === 'string') {
+          cachedNetworkAccount.current.nodeRewardAmount = _base16BNParser(cachedNetworkAccount.current.nodeRewardAmount)
+        }
       }
-      if (typeof cachedNetworkAccount.current.nodePenalty === 'string') {
-        cachedNetworkAccount.current.nodePenalty = new BN(
-          cachedNetworkAccount.current.nodePenalty, 16
-        )
-      }
-      if (typeof cachedNetworkAccount.current.nodeRewardAmount === 'string') {
-        cachedNetworkAccount.current.nodeRewardAmount = new BN(
-          cachedNetworkAccount.current.nodeRewardAmount, 16
-        )
-      }
+    } else {
+      accounts[address] = account
     }
-  } else {
-    accounts[address] = account
+  } catch (e) {
+    console.log(`Error: while trying to set account`, e.message)
   }
 }
 

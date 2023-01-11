@@ -2551,9 +2551,9 @@ shardus.setup({
       }
 
       if (appData && appData.internalTx && appData.internalTXType === InternalTXType.Stake) {
-        if (ShardeumFlags.VerboseLogs) console.log('Validating stake coins tx fields', appData.internalTx)
+        if (ShardeumFlags.VerboseLogs) console.log('Validating stake coins tx fields', appData)
         let stakeCoinsTx = appData.internalTx as StakeCoinsTX
-        let minStakeAmount = new BN(ShardeumFlags.stakeAmount)
+        let minStakeAmount = _base16BNParser(appData.networkAccount.current.stakeRequired)
         if (typeof stakeCoinsTx.stake === 'string') stakeCoinsTx.stake = new BN(stakeCoinsTx.stake, 16)
         if (
           stakeCoinsTx.nominator == null ||
@@ -3607,8 +3607,10 @@ shardus.setup({
       // crack stake related info and attach to appData
       if (isStakeRelatedTx === true) {
         try {
+          let networkAccountData: WrappedAccount  = await shardus.getLocalOrRemoteAccount(networkAccount)
           appData.internalTx = getStakeTxBlobFromEVMTx(transaction)
           appData.internalTXType = appData.internalTx.internalTXType
+          appData.networkAccount = networkAccountData.data
           if (appData.internalTx.stake) appData.internalTx.stake = new BN(appData.internalTx.stake)
         } catch (e) {
           console.log('Error: while doing preCrack for stake related tx', e)
