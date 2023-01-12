@@ -1,5 +1,4 @@
 import stringify from 'fast-json-stable-stringify'
-import * as crypto from '@shardus/crypto-utils'
 import { Account, Address, BN, bufferToHex, isValidAddress, toAscii, toBuffer } from 'ethereumjs-util'
 import { AccessListEIP2930Transaction, Transaction } from '@ethereumjs/tx'
 import Common, { Chain } from '@ethereumjs/common'
@@ -64,7 +63,7 @@ import { ShardeumBlock } from './block/blockchain'
 
 import * as AccountsStorage from './storage/accountStorage'
 import { StateManager } from '@ethereumjs/vm/dist/state'
-import { sync } from './setup/sync'
+import { sync, validateTransaction } from './setup'
 import {
   applySetCertTimeTx,
   injectSetCertTimeTx,
@@ -82,12 +81,11 @@ import {
 } from './handlers/queryCertificate'
 import * as InitRewardTimesTx from './tx/initRewardTimes'
 import _ from 'lodash'
+import { isDebugTx, isInternalTx, isInternalTXGlobal, verify, crypto } from './setup/helpers'
 
 const env = process.env
 
 let { shardusFactory } = require('@shardus/core')
-
-crypto.init('69fa4195670576c0160d660c3be36556ff8d504725be8a59b5a96509e0c994bc')
 
 export const networkAccount = '0'.repeat(64) //address
 
@@ -148,13 +146,6 @@ export let stakeCert: StakeCert = null
 function isDebugMode() {
   //@ts-ignore
   return config.server.mode === 'debug'
-}
-
-function verify(obj, expectedPk?) {
-  if (expectedPk) {
-    if (obj.sign.owner !== expectedPk) return false
-  }
-  return crypto.verifyObj(obj)
 }
 
 // grab this
@@ -630,17 +621,6 @@ async function createAccount(
   }
   WrappedEVMAccountFunctions.updateEthAccountHash(wrappedEVMAccount)
   return wrappedEVMAccount
-}
-
-function isInternalTx(tx: any): boolean {
-  if (tx.isInternalTx) {
-    return true
-  }
-  return false
-}
-
-function isDebugTx(tx: any): boolean {
-  return tx.isDebugTx != null
 }
 
 function getTransactionObj(tx: any): Transaction | AccessListEIP2930Transaction {
@@ -1533,15 +1513,6 @@ shardus.registerExternalPut('query-certificate', async (req: Request, res: Respo
  *    #### ##    ##    ##    ######## ##     ## ##    ## ##     ## ########       ##    ##     ##
  */
 
-function isInternalTXGlobal(internalTx: InternalTx) {
-  return (
-    internalTx.internalTXType === InternalTXType.SetGlobalCodeBytes ||
-    internalTx.internalTXType === InternalTXType.ApplyChangeConfig ||
-    internalTx.internalTXType === InternalTXType.InitNetwork ||
-    internalTx.internalTXType === InternalTXType.ApplyNetworkParam
-  )
-}
-
 async function applyInternalTx(
   tx: any,
   wrappedStates: WrappedStates,
@@ -2368,71 +2339,7 @@ shardus.setup({
   sync: sync(shardus, evmCommon),
   //validateTransaction is not a standard sharus function.  When we cleanup index.ts we need to move it out of here
   //also appdata and wrapped accounts should be passed in?
-  validateTransaction(tx) {
-    if (isInternalTx(tx)) {
-      let internalTX = tx as InternalTx
-      if (isInternalTXGlobal(internalTX) === true) {
-        return { result: 'pass', reason: 'valid' }
-      } else if (tx.internalTXType === InternalTXType.ChangeConfig) {
-        // const devPublicKey = shardus.getDevPublicKey()
-        const devPublicKey = ShardeumFlags.devPublicKey
-        if (devPublicKey) {
-          let isValid = verify(tx, devPublicKey)
-          console.log('isValid', isValid)
-          if (isValid) return { result: 'pass', reason: 'valid' }
-          else return { result: 'fail', reason: 'Invalid signature' }
-        } else {
-          return { result: 'fail', reason: 'Dev key is not defined on the server!' }
-        }
-      } else if (tx.internalTXType === InternalTXType.SetCertTime) {
-        return { result: 'pass', reason: 'valid' }
-      } else if (tx.internalTXType === InternalTXType.InitRewardTimes) {
-        return InitRewardTimesTx.validate(tx, shardus)
-      } else {
-        //todo validate internal TX
-        let isValid = crypto.verifyObj(internalTX)
-        if (isValid) return { result: 'pass', reason: 'valid' }
-        else return { result: 'fail', reason: 'Invalid signature' }
-      }
-    }
-
-    if (isDebugTx(tx)) {
-      //todo validate debug TX
-      return { result: 'pass', reason: 'all_allowed' }
-    }
-    let txObj = getTransactionObj(tx)
-    const response = {
-      result: 'fail',
-      reason: 'Transaction is not valid. Cannot get txObj.',
-    }
-    if (!txObj) return response
-
-    if (!txObj.isSigned() || !txObj.validate()) {
-      response.reason = 'Transaction is not signed or signature is not valid.'
-      return response
-    }
-
-    try {
-      let senderAddress = txObj.getSenderAddress()
-      if (!senderAddress) {
-        return {
-          result: 'fail',
-          reason: 'Cannot derive sender address from tx',
-        }
-      }
-    } catch (e) {
-      if (ShardeumFlags.VerboseLogs) console.log('Validation error', e)
-      response.result = 'fail'
-      response.reason = e
-      return response
-    }
-    // TODO: more validation here
-
-    response.result = 'pass'
-    response.reason = 'all_allowed'
-
-    return response
-  },
+  validateTransaction: validateTransaction(shardus),
   validateTxnFields(timestampedTx, appData: any) {
     let { tx } = timestampedTx
     let txnTimestamp: number = getInjectedOrGeneratedTimestamp(timestampedTx)
