@@ -2693,15 +2693,23 @@ shardus.setup({
 
       // get stake tx from appData.internalTx
       let stakeCoinsTx: StakeCoinsTX = appData.internalTx
+      let operatorShardusAddress = toShardusAddress(stakeCoinsTx.nominator, AccountType.Account)
+      const operatorEVMAccount: WrappedEVMAccount = wrappedStates[operatorShardusAddress].data
 
-      // todo: validate tx timestamp, compare timestamp against account's timestamp
+      // validate tx timestamp, compare timestamp against account's timestamp
+      if (stakeCoinsTx.timestamp < operatorEVMAccount.timestamp) {
+        throw new Error('Stake transaction timestamp is too old')
+      }
 
-      // todo: validate cert exp
+      // Validate tx timestamp against certExp
+      if (operatorEVMAccount.operatorAccountInfo && operatorEVMAccount.operatorAccountInfo.certExp > 0) {
+        if (stakeCoinsTx.timestamp > operatorEVMAccount.operatorAccountInfo.certExp) {
+          throw new Error('Operator certExp is already set and expired compared to stake transaction')
+        }
+      }
 
       // set stake value, nominee, cert in OperatorAcc (if not set yet)
-      let operatorShardusAddress = toShardusAddress(stakeCoinsTx.nominator, AccountType.Account)
       let nomineeNodeAccount2Address = stakeCoinsTx.nominee
-      const operatorEVMAccount: WrappedEVMAccount = wrappedStates[operatorShardusAddress].data
       operatorEVMAccount.timestamp = txTimestamp
 
       // todo: operatorAccountInfo field may not exist in the operatorEVMAccount yet
@@ -5066,7 +5074,7 @@ shardus.setup({
       account.stateId = networkParam.hash
       return [account]
     }
-  
+
   }
 })
 
