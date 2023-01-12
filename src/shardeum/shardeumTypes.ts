@@ -16,6 +16,8 @@ export enum AccountType {
   NodeRewardReceipt = 7,
   DevAccount = 8,
   NodeAccount2 = 9,
+  StakeReceipt = 10,
+  UnstakeReceipt = 11,
 }
 
 export interface BaseAccount {
@@ -82,7 +84,7 @@ export enum InternalTXType {
   InitRewardTimes,
   ClaimReward,
   ChangeNetworkParam,
-  ApplyNetworkParam
+  ApplyNetworkParam,
 }
 
 export enum DebugTXType {
@@ -209,6 +211,7 @@ export interface ReadableReceipt {
   value: string
   data: string
   reason?: string // Added this to add the evm error reason
+  stakeInfo?: any // Node Account; used this in stake/unstake tx
 }
 
 export interface NetworkAccount extends BaseAccount {
@@ -307,5 +310,5 @@ export interface InjectTxResponse {
   success: boolean
 }
 
-export type HexString = string;
-export type DecimalString = string;
+export type HexString = string
+export type DecimalString = string

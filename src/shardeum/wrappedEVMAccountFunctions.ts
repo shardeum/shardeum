@@ -19,6 +19,8 @@ export function accountSpecificHash(account: WrappedEVMAccount | InternalAccount
     account.accountType === AccountType.NodeAccount ||
     account.accountType === AccountType.NodeAccount2 ||
     account.accountType === AccountType.NodeRewardReceipt ||
+    account.accountType === AccountType.StakeReceipt ||
+    account.accountType === AccountType.UnstakeReceipt ||
     account.accountType === AccountType.DevAccount
   ) {
     account.hash = crypto.hashObj(account)

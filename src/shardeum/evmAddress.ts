@@ -32,7 +32,11 @@ export function getAccountShardusAddress(wrappedEVMAccount: WrappedEVMAccount): 
     )
     return shardusAddress
   }
-  if (wrappedEVMAccount.accountType === AccountType.Receipt) {
+  if (
+    wrappedEVMAccount.accountType === AccountType.Receipt ||
+    wrappedEVMAccount.accountType === AccountType.StakeReceipt ||
+    wrappedEVMAccount.accountType === AccountType.UnstakeReceipt
+  ) {
     //We use the whole eth address for the receipt (non siloed)
     let shardusAddress = toShardusAddress(addressSource, wrappedEVMAccount.accountType)
     return shardusAddress
@@ -71,7 +75,11 @@ export function toShardusAddressWithKey(
     return addressStr.slice(2).toLowerCase() + '0'.repeat(24)
   }
 
-  if (accountType === AccountType.Receipt) {
+  if (
+    accountType === AccountType.Receipt ||
+    accountType === AccountType.StakeReceipt ||
+    accountType === AccountType.UnstakeReceipt
+  ) {
     if (addressStr.length === 66) {
       return addressStr.slice(2).toLowerCase()
     } else {

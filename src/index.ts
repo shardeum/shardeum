@@ -1674,7 +1674,6 @@ async function applyInternalTx(
         timestamp: txTimestamp,
         ethAddress: txId, //.slice(0, 42),  I think the full 32byte TX should be fine now that toShardusAddress understands account type
         hash: '',
-        // receipt: runTxResult.receipt,
         readableReceipt,
         txId,
         accountType: AccountType.NodeRewardReceipt,
@@ -2477,20 +2476,21 @@ shardus.setup({
         contractAddress: null,
         from: transaction.getSenderAddress().toString(),
         to: transaction.to ? transaction.to.toString() : null,
+        stakeInfo: {
+          nominee: nomineeNodeAccount2Address,
+        },
         value: transaction.value.toString('hex'),
         data: '0x' + transaction.data.toString('hex'),
       }
 
-      let evmReceipt: any = {} // hack cos we don't run this tx with evm
-      let wrappedReceiptAccount = {
+      let wrappedReceiptAccount: WrappedEVMAccount = {
         timestamp: txTimestamp,
         ethAddress: ethTxId,
         hash: '',
-        receipt: evmReceipt,
         readableReceipt,
         amountSpent: totalAmountToDeduct.toString(),
         txId,
-        accountType: AccountType.Receipt,
+        accountType: AccountType.StakeReceipt,
         txFrom: stakeCoinsTx.nominator,
       }
       /* prettier-ignore */
@@ -2574,6 +2574,14 @@ shardus.setup({
       await shardeumState.putAccount(operatorEVMAddress, operatorEVMAccount.account)
       await shardeumState.commit()
 
+      const stakeInfo = {
+        nominee: nomineeNodeAccount2Address,
+        rewardStartTime: nodeAccount2.rewardStartTime,
+        rewardEndTime: nodeAccount2.rewardEndTime,
+        reward,
+        penalty
+      }
+
       nodeAccount2.nominator = null
       nodeAccount2.stakeLock = new BN(0)
       nodeAccount2.timestamp = txTimestamp
@@ -2618,7 +2626,7 @@ shardus.setup({
         )
       }
 
-      // generate a proper receipt for stake tx
+      // generate a proper receipt for unstake tx
       let readableReceipt: ReadableReceipt = {
         status: 1,
         transactionHash: ethTxId,
@@ -2633,20 +2641,19 @@ shardus.setup({
         contractAddress: null,
         from: transaction.getSenderAddress().toString(),
         to: transaction.to ? transaction.to.toString() : null,
+        stakeInfo,
         value: transaction.value.toString('hex'),
         data: '0x' + transaction.data.toString('hex'),
       }
 
-      let evmReceipt: any = {} // hack cos we don't run this tx with evm
       let wrappedReceiptAccount = {
         timestamp: txTimestamp,
         ethAddress: ethTxId,
         hash: '',
-        receipt: evmReceipt,
         readableReceipt,
         amountSpent: newBalance.toString(),
         txId,
-        accountType: AccountType.Receipt,
+        accountType: AccountType.UnstakeReceipt,
         txFrom: unstakeCoinsTX.nominator,
       }
       /* prettier-ignore */
@@ -3866,18 +3873,19 @@ shardus.setup({
     if (isStakeRelatedTx) {
       nestedCountersInstance.countEvent('shardeum-staking', 'getRelevantData: isStakeRelatedTx === true')
       let stakeTxBlob: StakeCoinsTX = appData.internalTx
+      const txHash = bufferToHex(transactionObj.hash())
 
-      // if it is nominee and a stake tx, create 'NodeAccount' if it doesn't exist
-      if (accountId === stakeTxBlob.nominee) {
-        let accountCreated = false
-        let nodeAccount2: any = await AccountsStorage.getAccount(accountId)
+      let accountCreated = false
+      let wrappedEVMAccount: any = await AccountsStorage.getAccount(accountId)
 
-        if (appData.internalTXType === InternalTXType.Stake) {
-          nestedCountersInstance.countEvent('shardeum-staking', 'internalTXType === Stake')
+      if (appData.internalTXType === InternalTXType.Stake) {
+        nestedCountersInstance.countEvent('shardeum-staking', 'internalTXType === Stake')
+        if (!wrappedEVMAccount) {
+          const stakeReceiptAddress = toShardusAddressWithKey(txHash, '', AccountType.StakeReceipt)
 
-          if (nodeAccount2 == null) {
-            accountCreated = true
-            nodeAccount2 = {
+          // if it is nominee and a stake tx, create 'NodeAccount' if it doesn't exist
+          if (accountId === stakeTxBlob.nominee) {
+            wrappedEVMAccount = {
               id: accountId,
               hash: '',
               timestamp: 0,
@@ -3889,25 +3897,65 @@ shardus.setup({
               penalty: new BN(0),
               accountType: AccountType.NodeAccount2,
             }
-            WrappedEVMAccountFunctions.updateEthAccountHash(nodeAccount2)
-
+            accountCreated = true
+            WrappedEVMAccountFunctions.updateEthAccountHash(wrappedEVMAccount)
             nestedCountersInstance.countEvent('shardeum-staking', 'created new node account')
-            if (ShardeumFlags.VerboseLogs) console.log('Created new node account', nodeAccount2)
+            if (ShardeumFlags.VerboseLogs) console.log('Created new node account', wrappedEVMAccount)
+            if (ShardeumFlags.VerboseLogs)
+              console.log('Running getRelevantData for stake/unstake tx', wrappedEVMAccount)
+            return shardus.createWrappedResponse(
+              accountId,
+              accountCreated,
+              wrappedEVMAccount.hash,
+              wrappedEVMAccount.timestamp,
+              wrappedEVMAccount
+            )
+          } else if (stakeReceiptAddress === accountId) {
+            wrappedEVMAccount = {
+              timestamp: 0,
+              ethAddress: stakeReceiptAddress,
+              hash: '',
+              accountType: AccountType.StakeReceipt,
+            }
+            accountCreated = true
+            WrappedEVMAccountFunctions.updateEthAccountHash(wrappedEVMAccount)
+            if (ShardeumFlags.VerboseLogs)
+              console.log('Running getRelevantData for stake/unstake tx', wrappedEVMAccount)
+            return shardus.createWrappedResponse(
+              accountId,
+              accountCreated,
+              wrappedEVMAccount.hash,
+              wrappedEVMAccount.timestamp,
+              wrappedEVMAccount
+            )
           }
-        } else if (appData.internalTXType === InternalTXType.Unstake) {
-          if (nodeAccount2 == null){
+        }
+      } else if (appData.internalTXType === InternalTXType.Unstake) {
+        if (!wrappedEVMAccount) {
+          const unStakeReceiptAddress = toShardusAddressWithKey(txHash, '', AccountType.UnstakeReceipt)
+          if (accountId === stakeTxBlob.nominee) {
             nestedCountersInstance.countEvent('shardeum-staking', 'node account nominee not found')
             throw new Error(`Node Account <nominee> is not found ${accountId}`)
-          } 
-        }
-        if (ShardeumFlags.VerboseLogs) console.log('getRelevantData result for nodeAccount', nodeAccount2)
-        return shardus.createWrappedResponse(
-          accountId,
-          accountCreated,
-          nodeAccount2.hash,
-          nodeAccount2.timestamp,
-          nodeAccount2
-        )
+          } else if (unStakeReceiptAddress === accountId) {
+            wrappedEVMAccount = {
+              timestamp: 0,
+              ethAddress: unStakeReceiptAddress,
+              hash: '',
+              accountType: AccountType.UnstakeReceipt,
+            }
+            accountCreated = true
+            WrappedEVMAccountFunctions.updateEthAccountHash(wrappedEVMAccount)
+            if (ShardeumFlags.VerboseLogs)
+              console.log('Running getRelevantData for stake/unstake tx', wrappedEVMAccount)
+            return shardus.createWrappedResponse(
+              accountId,
+              accountCreated,
+              wrappedEVMAccount.hash,
+              wrappedEVMAccount.timestamp,
+              wrappedEVMAccount
+            )
+          }
+        } 
       }
     }
 

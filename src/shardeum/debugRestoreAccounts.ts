@@ -188,7 +188,9 @@ export const processAccountsData = async (shardus, report: LoadReport, accountAr
     if (!ShardeumFlags.EVMReceiptsAsAccounts) {
       if (
         account.data.accountType === AccountType.Receipt ||
-        account.data.accountType === AccountType.NodeRewardReceipt
+        account.data.accountType === AccountType.NodeRewardReceipt ||
+        account.data.accountType === AccountType.StakeReceipt ||
+        account.data.accountType === AccountType.UnstakeReceipt
       )
         accountArrayClean.receipts.push(account)
       else accountArrayClean.accounts.push(account)
