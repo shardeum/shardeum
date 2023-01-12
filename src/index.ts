@@ -81,7 +81,6 @@ import {
   ValidatorError,
 } from './handlers/queryCertificate'
 import * as InitRewardTimesTx from './tx/initRewardTimes'
-import * as net from "net";
 import _ from 'lodash'
 
 const env = process.env
@@ -1538,7 +1537,8 @@ function isInternalTXGlobal(internalTx: InternalTx) {
   return (
     internalTx.internalTXType === InternalTXType.SetGlobalCodeBytes ||
     internalTx.internalTXType === InternalTXType.ApplyChangeConfig ||
-    internalTx.internalTXType === InternalTXType.InitNetwork || internalTx.internalTXType === InternalTXType.ApplyNetworkParam
+    internalTx.internalTXType === InternalTXType.InitNetwork ||
+    internalTx.internalTXType === InternalTXType.ApplyNetworkParam
   )
 }
 
@@ -2595,12 +2595,17 @@ shardus.setup({
       }
 
       if (appData && appData.internalTx && appData.internalTXType === InternalTXType.Unstake) {
+        nestedCountersInstance.countEvent('shardeum-unstaking', 'validating unstake coins tx fields')
         if (ShardeumFlags.VerboseLogs) console.log('Validating unstake coins tx fields', appData.internalTx)
         let unstakeCoinsTX = appData.internalTx as UnstakeCoinsTX
         if (
           unstakeCoinsTX.nominator == null ||
           unstakeCoinsTX.nominator.toLowerCase() !== txObj.getSenderAddress().toString()
         ) {
+          nestedCountersInstance.countEvent(
+            'shardeum-unstaking',
+            'invalid nominator address in stake coins tx'
+          )
           if (ShardeumFlags.VerboseLogs)
             console.log(
               `nominator vs tx signer`,
@@ -2610,6 +2615,7 @@ shardus.setup({
           success = false
           reason = `Invalid nominator address in stake coins tx`
         } else if (unstakeCoinsTX.nominee == null) {
+          nestedCountersInstance.countEvent('shardeum-unstaking', 'invalid nominee address in stake coins tx')
           success = false
           reason = `Invalid nominee address in stake coins tx`
         }
@@ -2617,11 +2623,12 @@ shardus.setup({
       }
     } catch (e) {
       if (ShardeumFlags.VerboseLogs) console.log('validate error', e)
-      nestedCountersInstance.countEvent('shardeum', 'validate - exception')
+      nestedCountersInstance.countEvent('shardeum-unstaking', 'validate - exception')
       success = false
       reason = e.message
     }
 
+    nestedCountersInstance.countEvent('shardeum-unstaking', 'tx validation successful')
     return {
       success,
       reason,
@@ -2635,10 +2642,6 @@ shardus.setup({
     const { result, reason } = this.validateTransaction(tx)
     if (result !== 'pass') {
       throw new Error(`invalid transaction, reason: ${reason}. tx: ${JSON.stringify(tx)}`)
-    }
-
-    if (appData.internalTx && appData.internalTXType === InternalTXType.Unstake) {
-      // todo: apply the unstake tx here
     }
 
     if (isInternalTx(tx)) {
@@ -2836,6 +2839,7 @@ shardus.setup({
     }
 
     if (appData.internalTx && appData.internalTXType === InternalTXType.Unstake) {
+      nestedCountersInstance.countEvent('shardeum-unstaking', 'applying unstake transaction')
       if (ShardeumFlags.VerboseLogs) console.log('applying unstake tx', wrappedStates, appData)
 
       // get unstake tx from appData.internalTx
@@ -2852,6 +2856,10 @@ shardus.setup({
       operatorEVMAccount.timestamp = txTimestamp
 
       if (operatorEVMAccount.operatorAccountInfo == null) {
+        nestedCountersInstance.countEvent(
+          'shardeum-unstaking',
+          'unable to apply unstake tx, operator account info does not exist'
+        )
         throw new Error(
           `Unable to apply Unstake tx because operator account info does not exist for ${unstakeCoinsTX.nominator}`
         )
@@ -3624,7 +3632,7 @@ shardus.setup({
       // crack stake related info and attach to appData
       if (isStakeRelatedTx === true) {
         try {
-          let networkAccountData: WrappedAccount  = await shardus.getLocalOrRemoteAccount(networkAccount)
+          let networkAccountData: WrappedAccount = await shardus.getLocalOrRemoteAccount(networkAccount)
           appData.internalTx = getStakeTxBlobFromEVMTx(transaction)
           appData.internalTXType = appData.internalTx.internalTXType
           appData.networkAccount = networkAccountData.data
@@ -4054,7 +4062,10 @@ shardus.setup({
           accountCreated = true
         }
       }
-      if (internalTx.internalTXType === InternalTXType.ChangeConfig || internalTx.internalTXType === InternalTXType.ChangeNetworkParam) {
+      if (
+        internalTx.internalTXType === InternalTXType.ChangeConfig ||
+        internalTx.internalTXType === InternalTXType.ChangeNetworkParam
+      ) {
         // Not sure if this is even relevant.  I think the from account should be one of our dev accounts and
         // and should already exist (hit the faucet)
         // probably an array of dev public keys
@@ -4078,7 +4089,10 @@ shardus.setup({
           // }
         }
       }
-      if (internalTx.internalTXType === InternalTXType.ApplyChangeConfig || internalTx.internalTXType === InternalTXType.ApplyNetworkParam) {
+      if (
+        internalTx.internalTXType === InternalTXType.ApplyChangeConfig ||
+        internalTx.internalTXType === InternalTXType.ApplyNetworkParam
+      ) {
         if (!wrappedEVMAccount) {
           throw Error(`Network Account is not found ${accountId}`)
         }
@@ -4852,11 +4866,15 @@ shardus.setup({
 
         const pickedNode: ShardusTypes.Sign[] = []
         const requiredSig = getNodeCountForCertSignatures()
-        const { success, reason } = shardus.validateActiveNodeSignatures(stake_cert, stake_cert.signs, requiredSig)
+        const { success, reason } = shardus.validateActiveNodeSignatures(
+          stake_cert,
+          stake_cert.signs,
+          requiredSig
+        )
         if (!success) {
-            /* prettier-ignore */ nestedCountersInstance.countEvent('shardeum-staking', 'validateJoinRequest fail: invalid signature')
-            /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`validateJoinRequest fail: invalid signature`, reason)
-            return { success, reason }
+          /* prettier-ignore */ nestedCountersInstance.countEvent('shardeum-staking', 'validateJoinRequest fail: invalid signature')
+          /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`validateJoinRequest fail: invalid signature`, reason)
+          return { success, reason }
         }
       }
 
@@ -5074,8 +5092,7 @@ shardus.setup({
       account.stateId = networkParam.hash
       return [account]
     }
-
-  }
+  },
 })
 
 shardus.registerExceptionHandler()
