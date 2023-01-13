@@ -132,9 +132,12 @@ export function applyClaimRewardTx(
       throw new Error(`applyClaimReward failed because durationInNetwork is less than or equal 0`)
   }
 
+  //we multiply fist then devide to preserve precision
   let totalReward = nodeRewardAmount.mul(new BN(durationInNetwork))
-
-  nodeAccount.reward = totalReward.div(nodeRewardInterval)
+  //update total reward var so it can be logged
+  totalReward = totalReward.div(nodeRewardInterval)
+  //add the reward because nodes can cycle without unstaking
+  nodeAccount.reward = nodeAccount.reward.add(totalReward)
   nodeAccount.timestamp = txTimestamp
 
   if (ShardeumFlags.VerboseLogs) console.log(`Calculating node reward. nodeRewardAmount: ${_readableSHM(nodeRewardAmount)}, nodeRewardInterval: ${network.current.nodeRewardInterval} ms, uptime duration: ${durationInNetwork} ms, totalReward: ${_readableSHM(totalReward)}, finalReward: ${_readableSHM(nodeAccount.reward)}`)

@@ -4160,8 +4160,10 @@ shardus.setup({
             if (ShardeumFlags.VerboseLogs) console.log('Created new node account', nodeAccount2)
           }
         } else if (appData.internalTXType === InternalTXType.Unstake) {
-          nestedCountersInstance.countEvent('shardeum-staking', 'node account nominee not found')
-          if (nodeAccount2 == null) throw new Error(`Node Account <nominee> is not found ${accountId}`)
+          if (nodeAccount2 == null){
+            nestedCountersInstance.countEvent('shardeum-staking', 'node account nominee not found')
+            throw new Error(`Node Account <nominee> is not found ${accountId}`)
+          } 
         }
         if (ShardeumFlags.VerboseLogs) console.log('getRelevantData result for nodeAccount', nodeAccount2)
         return shardus.createWrappedResponse(
@@ -4981,12 +4983,22 @@ shardus.setup({
     const nodeId = shardus.getNodeId()
     const node = shardus.getNode(nodeId)
 
+    // skip for own node
+    if (data.nodeId === nodeId) {
+      return
+    }
+
+    if(node == null){
+      if (ShardeumFlags.VerboseLogs) console.log(`node is null`, nodeId)
+      return 
+    }
+
     // We can skip staking related txs for the first node
     if (shardus.p2p.isFirstSeed) {
-      //only skip events for our node
-      if (data.nodeId === nodeId) {
-        return
-      }
+      //only skip events for our node, test redundant now
+      //if (data.nodeId === nodeId) {
+      return
+      //}
     }
 
     if (node.status !== 'active') {
@@ -5002,11 +5014,6 @@ shardus.setup({
     let currentCycle = latestCycles[0]
     if (!currentCycle) {
       console.log('No cycle records found', latestCycles)
-      return
-    }
-
-    // skip for own node
-    if (data.nodeId === nodeId) {
       return
     }
 
