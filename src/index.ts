@@ -3587,7 +3587,7 @@ shardus.setup({
           let nominee = appData.internalTX.nominee
           let nodeAccount: WrappedAccount = await shardus.getLocalOrRemoteAccount(nominee)
           if (nodeAccount) appData.nomineeAccount = nodeAccount.data
-          appData.nominatorAccount = remoteShardusAccount
+          appData.nominatorAccount = remoteShardusAccount.data
         } catch (e) {
           console.log('Error: while doing preCrack for stake related tx', e)
         }
