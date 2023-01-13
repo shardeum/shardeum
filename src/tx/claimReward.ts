@@ -133,7 +133,7 @@ export function applyClaimRewardTx(
   }
 
   //we multiply fist then devide to preserve precision
-  let totalReward = nodeRewardAmount.mul(new BN(durationInNetwork))
+  let totalReward = nodeRewardAmount.mul(new BN(durationInNetwork * 1000)) // Convert from seconds to milliseconds
   //update total reward var so it can be logged
   totalReward = totalReward.div(nodeRewardInterval)
   //re-parse reward since it was saved as hex
