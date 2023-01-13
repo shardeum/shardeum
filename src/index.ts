@@ -2499,6 +2499,23 @@ shardus.setup({
           success = false
           reason = `Stake amount is less than minimum required stake amount`
         }
+        if (appData.nomineeAccount) {
+          const nodeAccount = appData.nomineeAccount as NodeAccount2
+          if (nodeAccount.nominator && nodeAccount.nominator !== stakeCoinsTx.nominator) {
+            success = false
+            reason = `This nominee is staked already staked by another account`
+          }
+        }
+        if (appData.nominatorAccount) {
+          const wrappedEVMAccount = appData.nominatorAccount as WrappedEVMAccount
+          if (wrappedEVMAccount.operatorAccountInfo) {
+            if (wrappedEVMAccount.operatorAccountInfo.nominee) {
+              success = false
+              reason = `This account has already staked to a node which is still active or has claimed reward for it yet!`
+            }
+          }
+        }
+
       }
 
       if (appData && appData.internalTx && appData.internalTXType === InternalTXType.Unstake) {
@@ -2526,7 +2543,28 @@ shardus.setup({
           success = false
           reason = `Invalid nominee address in stake coins tx`
         }
-        // todo: check the nominator account timestamp against ? may be no needed cos it evm tx has a nonce check too
+        if (appData.nomineeAccount) {
+          const nodeAccount = appData.nomineeAcde as NodeAccount2
+          if (!nodeAccount.nominator) {
+            success = false
+            reason = `No one has staked to this account!`
+          }
+          if (!nodeAccount.stakeLock.eq(new BN(0))) {
+            success = false
+            reason = `There is no staked amount in this node!`
+          }
+          if (nodeAccount.nominator !== unstakeCoinsTX.nominator) {
+            success = false
+            reason = `This node is staked by another account`
+          }
+          if (nodeAccount.rewardEndTime === 0) {
+            success = false
+            reason = `This node is still active in the network!`
+          }
+        } else {
+          success = false
+          reason = `This nominee node is not found!`
+        }
       }
     } catch (e) {
       if (ShardeumFlags.VerboseLogs) console.log('validate error', e)
@@ -3385,6 +3423,8 @@ shardus.setup({
         transaction instanceof AccessListEIP2930Transaction && transaction.AccessListJSON != null
       let isSimpleTransfer = false
 
+      let remoteShardusAccount
+
       //if the TX is a contract deploy, predict the new contract address correctly (needs sender's nonce)
       //remote fetch of sender EOA also allows fast balance and nonce checking (assuming we get some queue hints as well from shardus core)
       if (
@@ -3406,7 +3446,7 @@ shardus.setup({
           //parallel fetch
           countPromise = shardus.getLocalOrRemoteAccountQueueCount(transformedSourceKey)
         }
-        let remoteShardusAccount = await shardus.getLocalOrRemoteAccount(transformedSourceKey)
+        remoteShardusAccount = await shardus.getLocalOrRemoteAccount(transformedSourceKey)
 
         let remoteTargetAccount = null
         if (transaction.to) {
@@ -3544,6 +3584,10 @@ shardus.setup({
           appData.internalTXType = appData.internalTx.internalTXType
           appData.networkAccount = networkAccountData.data
           if (appData.internalTx.stake) appData.internalTx.stake = new BN(appData.internalTx.stake)
+          let nominee = appData.internalTX.nominee
+          let nodeAccount: WrappedAccount = await shardus.getLocalOrRemoteAccount(nominee)
+          if (nodeAccount) appData.nomineeAccount = nodeAccount.data
+          appData.nominatorAccount = remoteShardusAccount
         } catch (e) {
           console.log('Error: while doing preCrack for stake related tx', e)
         }
