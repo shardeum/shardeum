@@ -136,6 +136,8 @@ export function applyClaimRewardTx(
   let totalReward = nodeRewardAmount.mul(new BN(durationInNetwork))
   //update total reward var so it can be logged
   totalReward = totalReward.div(nodeRewardInterval)
+  //re-parse reward since it was saved as hex
+  nodeAccount.reward = _base16BNParser(nodeAccount.reward)
   //add the reward because nodes can cycle without unstaking
   nodeAccount.reward = nodeAccount.reward.add(totalReward)
   nodeAccount.timestamp = txTimestamp
