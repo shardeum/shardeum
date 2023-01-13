@@ -142,7 +142,7 @@ export function applyClaimRewardTx(
   nodeAccount.reward = nodeAccount.reward.add(totalReward)
   nodeAccount.timestamp = txTimestamp
 
-  if (ShardeumFlags.VerboseLogs) console.log(`Calculating node reward. nodeRewardAmount: ${_readableSHM(nodeRewardAmount)}, nodeRewardInterval: ${network.current.nodeRewardInterval} ms, uptime duration: ${durationInNetwork} ms, totalReward: ${_readableSHM(totalReward)}, finalReward: ${_readableSHM(nodeAccount.reward)}`)
+  if (ShardeumFlags.VerboseLogs) console.log(`Calculating node reward. nodeRewardAmount: ${_readableSHM(nodeRewardAmount)}, nodeRewardInterval: ${network.current.nodeRewardInterval} ms, uptime duration: ${durationInNetwork} sec, totalReward: ${_readableSHM(totalReward)}, finalReward: ${_readableSHM(nodeAccount.reward)}   nodeAccount.rewardEndTime:${nodeAccount.rewardEndTime}  nodeAccount.rewardStartTime:${nodeAccount.rewardStartTime} `)
 
 
   const txId = crypto.hashObj(tx)

@@ -4996,9 +4996,9 @@ shardus.setup({
     // We can skip staking related txs for the first node
     if (shardus.p2p.isFirstSeed) {
       //only skip events for our node, test redundant now
-      //if (data.nodeId === nodeId) {
-      return
-      //}
+      if (data.nodeId === nodeId) {
+        return
+      }
     }
 
     if (node.status !== 'active') {
