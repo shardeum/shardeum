@@ -1,4 +1,4 @@
-import { DecimalString } from "./shardeumTypes"
+import { DecimalString } from './shardeumTypes'
 
 interface ShardeumFlags {
   contractStorageKeySilo: boolean
@@ -53,6 +53,7 @@ interface ShardeumFlags {
   cacheMaxItemPerTopic: number
   generateMemoryPatternData: boolean
   StakingEnabled: boolean
+  minActiveNodesForStaking: number
   MinStakeCertSig: number
   FullCertChecksEnabled: boolean // do we run all of the cert checks when signing.  This config may go away soon after testing.
 }
@@ -106,6 +107,7 @@ export let ShardeumFlags: ShardeumFlags = {
   },
   generateMemoryPatternData: true,
   StakingEnabled: true,
+  minActiveNodesForStaking: 5,
   MinStakeCertSig: 1, // this is the minimum amount of signature required for stake certification. will move to network param in future.
   FullCertChecksEnabled: true,
 }
