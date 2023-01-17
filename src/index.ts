@@ -2579,7 +2579,7 @@ shardus.setup({
         rewardStartTime: nodeAccount2.rewardStartTime,
         rewardEndTime: nodeAccount2.rewardEndTime,
         reward,
-        penalty
+        penalty,
       }
 
       nodeAccount2.nominator = null
@@ -3955,7 +3955,7 @@ shardus.setup({
               wrappedEVMAccount
             )
           }
-        } 
+        }
       }
     }
 
@@ -4716,9 +4716,9 @@ shardus.setup({
       let res = await queryCertificate(shardus, publicKey, activeNodes)
       if (ShardeumFlags.VerboseLogs) console.log('queryCertificate', res)
       if (!res.success) {
-        if((res as ValidatorError).reason === 'Operator certificate has expired'){
-          //force a set cert time next cycle, this should not be needed 
-          lastCertTimeTxTimestamp = 0 
+        if ((res as ValidatorError).reason === 'Operator certificate has expired') {
+          //force a set cert time next cycle, this should not be needed
+          lastCertTimeTxTimestamp = 0
         }
 
         nestedCountersInstance.countEvent(
@@ -4791,9 +4791,9 @@ shardus.setup({
       return
     }
 
-    if(node == null){
+    if (node == null) {
       if (ShardeumFlags.VerboseLogs) console.log(`node is null`, nodeId)
-      return 
+      return
     }
 
     // We can skip staking related txs for the first node
@@ -4817,6 +4817,13 @@ shardus.setup({
     let currentCycle = latestCycles[0]
     if (!currentCycle) {
       console.log('No cycle records found', latestCycles)
+      return
+    }
+
+    const activeNodesCount = currentCycle.active
+    const stakingEnabled = activeNodesCount >= ShardeumFlags.minActiveNodesForStaking
+    // Skip initRewardTimes if activeNodesCount is less than minActiveNodesForStaking
+    if (!stakingEnabled) {
       return
     }
 
