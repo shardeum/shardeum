@@ -258,7 +258,8 @@ export async function getCertSignatures(
     'sign-stake-cert',
     crypto.hashObj(certData),
     5,
-    certData
+    certData,
+    2
   )
   if (!signedAppData.success) {
     return {
