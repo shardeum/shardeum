@@ -44,7 +44,7 @@ export async function injectSetCertTimeTx(shardus: Shardus, publicKey: string, a
     internalTXType: InternalTXType.SetCertTime,
     nominee: publicKey,
     nominator,
-    duration: 20, //temp setting to 20 to make debugging easier
+    duration: ShardeumFlags.certCycleDuration, //temp setting to 20 to make debugging easier
     timestamp: Date.now(),
   }
   tx = shardus.signAsNode(tx)
@@ -64,6 +64,9 @@ export function validateSetCertTimeTx(tx: SetCertTime, appData: any): { isValid:
   }
   if (tx.duration <= 0) {
     return { isValid: false, reason: 'Duration in cert tx must be > 0' }
+  }
+  if (tx.duration > ShardeumFlags.certCycleDuration) {
+    return { isValid: false, reason: 'Duration in cert tx must be not greater than certCycleDuration' }
   }
   if (tx.timestamp <= 0) {
     return { isValid: false, reason: 'Duration in cert tx must be > 0' }

@@ -4612,6 +4612,13 @@ shardus.setup({
       return false
     }
 
+    //if our last set cert time was more than certCycleDuration cycles ago then we need to ask again
+    if (latestCycle.counter - lastCertTimeTxCycle > ShardeumFlags.certCycleDuration) {
+      //force us to re set the cert time next cycle
+      lastCertTimeTxTimestamp = 0
+      return false
+    }
+
     //if stake cert is not null check its time
     if (stakeCert != null) {
       nestedCountersInstance.countEvent('shardeum-staking', 'stakeCert != null')
@@ -4661,6 +4668,11 @@ shardus.setup({
       let res = await queryCertificate(shardus, publicKey, activeNodes)
       if (ShardeumFlags.VerboseLogs) console.log('queryCertificate', res)
       if (!res.success) {
+        if((res as ValidatorError).reason === 'Operator certificate has expired'){
+          //force a set cert time next cycle, this should not be needed 
+          lastCertTimeTxTimestamp = 0 
+        }
+
         nestedCountersInstance.countEvent(
           'shardeum-staking',
           `call to queryCertificate failed with reason: ${(res as ValidatorError).reason}`

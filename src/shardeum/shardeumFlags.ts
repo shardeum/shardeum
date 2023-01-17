@@ -49,6 +49,7 @@ interface ShardeumFlags {
   devPublicKey: string
   stakeTargetAddress: string
   stakeAmount: DecimalString // stake amount in wei
+  certCycleDuration: number
   cacheMaxCycleAge: number
   cacheMaxItemPerTopic: number
   generateMemoryPatternData: boolean
@@ -96,6 +97,7 @@ export let ShardeumFlags: ShardeumFlags = {
   devPublicKey: '774491f80f47fedb119bb861601490f42bc3ea3b57fc63906c0d08e6d777a592',
   stakeTargetAddress: '0x0000000000000000000000000000000000000001',
   stakeAmount: '5000000000000000000', // 5 SHM
+  certCycleDuration: 10,
   cacheMaxCycleAge: 5,
   cacheMaxItemPerTopic: 4500,
   ServicePoints: {
