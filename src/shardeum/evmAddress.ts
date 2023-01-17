@@ -173,7 +173,11 @@ export function toShardusAddress(addressStr: string, accountType: AccountType): 
     return addressStr.slice(2).toLowerCase() + '0'.repeat(24)
   }
 
-  if (accountType === AccountType.Receipt) {
+  if (
+    accountType === AccountType.Receipt ||
+    accountType === AccountType.StakeReceipt ||
+    accountType === AccountType.UnstakeReceipt
+  ) {
     if (addressStr.length === 66) {
       return addressStr.slice(2).toLowerCase()
     } else {
