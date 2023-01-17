@@ -4820,13 +4820,6 @@ shardus.setup({
       return
     }
 
-    const activeNodesCount = currentCycle.active
-    const stakingEnabled = activeNodesCount >= ShardeumFlags.minActiveNodesForStaking
-    // Skip initRewardTimes if activeNodesCount is less than minActiveNodesForStaking
-    if (!stakingEnabled) {
-      return
-    }
-
     // TODO: see if it's fine; what if getClosestNodes gives only recently activatd nodes
     // skip if this node is also activated in the same cycle
     const currentlyActivatedNode = currentCycle.activated.includes(nodeId)
@@ -4841,6 +4834,12 @@ shardus.setup({
 
     if (nodes.includes(nodeId)) {
       if (eventType === 'node-activated') {
+        const activeNodesCount = currentCycle.active
+        const stakingEnabled = activeNodesCount >= ShardeumFlags.minActiveNodesForStaking
+        // Skip initRewardTimes if activeNodesCount is less than minActiveNodesForStaking
+        if (!stakingEnabled) {
+          return
+        }
         nestedCountersInstance.countEvent('shardeum-staking', `node-activated: injectInitRewardTimesTx`)
         const result = await InitRewardTimesTx.injectInitRewardTimesTx(shardus, data)
         console.log('INJECTED_INIT_REWARD_TIMES_TX', result)
