@@ -2,9 +2,11 @@ import { ShardeumFlags } from '../shardeum/shardeumFlags'
 import {
   InternalTx,
   InternalTXType,
+  NodeAccount2,
   SetCertTime,
   StakeCoinsTX,
   UnstakeCoinsTX,
+  WrappedEVMAccount,
 } from '../shardeum/shardeumTypes'
 import { isSetCertTimeTx, validateSetCertTimeTx } from '../tx/setCertTime'
 import {
@@ -189,6 +191,24 @@ export const validateTxnFields = (shardus: Shardus, debugAppdata: Map<string, an
         success = false
         reason = `Stake amount is less than minimum required stake amount`
       }
+      if (appData.nomineeAccount) {
+        const nodeAccount = appData.nomineeAccount as NodeAccount2
+        if (nodeAccount.nominator && nodeAccount.nominator !== stakeCoinsTx.nominator) {
+          return { success: false, reason: `This node is already staked by another account!`, txnTimestamp }
+        }
+      }
+      if (appData.nominatorAccount) {
+        const wrappedEVMAccount = appData.nominatorAccount as WrappedEVMAccount
+        if (wrappedEVMAccount.operatorAccountInfo) {
+          if (wrappedEVMAccount.operatorAccountInfo.nominee) {
+            return {
+              success: false,
+              reason: `This account has already staked to a node which is still active or hasn't claimed reward for that node which has left the network yet!`,
+              txnTimestamp,
+            }
+          }
+        }
+      }
     }
 
     if (appData && appData.internalTx && appData.internalTXType === InternalTXType.Unstake) {
@@ -200,8 +220,7 @@ export const validateTxnFields = (shardus: Shardus, debugAppdata: Map<string, an
         unstakeCoinsTX.nominator.toLowerCase() !== txObj.getSenderAddress().toString()
       ) {
         nestedCountersInstance.countEvent('shardeum-unstaking', 'invalid nominator address in stake coins tx')
-        if (ShardeumFlags.VerboseLogs)
-          console.log(`nominator vs tx signer`, unstakeCoinsTX.nominator, txObj.getSenderAddress().toString())
+        /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log( `nominator vs tx signer`, unstakeCoinsTX.nominator, txObj.getSenderAddress().toString() )
         success = false
         reason = `Invalid nominator address in stake coins tx`
       } else if (unstakeCoinsTX.nominee == null) {
@@ -209,7 +228,29 @@ export const validateTxnFields = (shardus: Shardus, debugAppdata: Map<string, an
         success = false
         reason = `Invalid nominee address in stake coins tx`
       }
-      // todo: check the nominator account timestamp against ? may be no needed cos it evm tx has a nonce check too
+      // TODO - let unstake for a node that has never get active(rewardStartTime = 0); but this is a bit risky. need to think through again
+      if (!appData.nominatorAccount) {
+        success = false
+        reason = `This sender account is not found!`
+      } else if (appData.nomineeAccount) {
+        const nodeAccount = appData.nomineeAccount as NodeAccount2
+        if (!nodeAccount.nominator) {
+          success = false
+          reason = `No one has staked to this account!`
+        } else if (_base16BNParser(nodeAccount.stakeLock).eq(new BN(0))) {
+          success = false
+          reason = `There is no staked amount in this node!`
+        } else if (nodeAccount.nominator !== unstakeCoinsTX.nominator) {
+          success = false
+          reason = `This node is staked by another account. You can't unstake it!`
+        } else if (nodeAccount.rewardEndTime === 0) {
+          success = false
+          reason = `This node is still active in the network. You can unstake only after the node leaves the network!`
+        }
+      } else {
+        success = false
+        reason = `This nominee node is not found!`
+      }
     }
   } catch (e) {
     if (ShardeumFlags.VerboseLogs) console.log('validate error', e)
