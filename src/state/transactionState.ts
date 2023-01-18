@@ -537,7 +537,7 @@ export default class TransactionState {
       // not 100% if we should await this, may need some group discussion
       let isRemoteShard = await this.accountMissCB(this, addressString)
 
-      if (this.debugTrace) this.debugTraceLog(`getAccount: addr:${addressString} v:notFound`)
+      if (this.debugTrace) this.debugTraceLog(`getAccount: addr:${addressString} v:notFound isRemoteShard:${isRemoteShard}`)
 
       if (canThrow && isRemoteShard) throw new Error('account in remote shard, abort') //todo smarter throw?
 
@@ -547,6 +547,7 @@ export default class TransactionState {
       //this._update(address, account, false, false, true)
 
       //todo need to insert it into a map of new / virtual accounts?
+      if (this.debugTrace) this.debugTraceLog(`getAccount: initialized new account addr:${addressString} v:${JSON.stringify(account)}`)
 
       return account
     }
@@ -1108,7 +1109,7 @@ export default class TransactionState {
       }
       if (lastCodeBytesTryRemote != null) {
         this.monitorEventCB('shardeum', 'code bytes miss', 1, lastCodeBytesTryRemote)
-      }      
+      }
     }
   }
 

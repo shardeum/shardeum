@@ -34,7 +34,7 @@ import {
   UnstakeCoinsTX,
   WrappedAccount,
   WrappedEVMAccount,
-  WrappedStates,
+  WrappedStates
 } from './shardeum/shardeumTypes'
 import { getAccountShardusAddress, toShardusAddress, toShardusAddressWithKey } from './shardeum/evmAddress'
 import { ShardeumFlags, updateServicePoints, updateShardeumFlag } from './shardeum/shardeumFlags'
@@ -2197,12 +2197,14 @@ async function generateAccessList(callObj: any): Promise<{ accessList: any[]; sh
       //special case shardeum behavoir.  contract bytes can only be written once
       writeOnceSet.add(shardusKey)
     }
-    for (let [key, contractByteWrite] of writtenAccounts.accounts) {
+    for (let [key, value] of writtenAccounts.accounts) {
+      if (!allInvolvedContracts.includes(key)) allInvolvedContracts.push(key)
       let shardusKey = toShardusAddress(key, AccountType.Account)
       writeSet.add(shardusKey)
     }
-    for (let [codeHash, contractByteWrite] of readAccounts.accounts) {
-      let shardusKey = toShardusAddress(codeHash, AccountType.Account)
+    for (let [key, value] of readAccounts.accounts) {
+      if (!allInvolvedContracts.includes(key)) allInvolvedContracts.push(key)
+      let shardusKey = toShardusAddress(key, AccountType.Account)
       readSet.add(shardusKey)
     }
 
