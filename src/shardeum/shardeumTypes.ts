@@ -168,7 +168,8 @@ export interface WrappedAccount {
   stateId: string
   data: any
   timestamp: number
-  accountCreated?: boolean
+  accountCreated: boolean
+  isPartial: boolean
 }
 
 export interface WrappedStates {

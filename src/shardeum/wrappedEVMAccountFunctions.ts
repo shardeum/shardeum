@@ -53,12 +53,16 @@ export function _calculateAccountHash(account: WrappedEVMAccount | InternalAccou
   return accountSpecificHash(account)
 }
 
-export function _shardusWrappedAccount(wrappedEVMAccount: WrappedEVMAccount): ShardusTypes.WrappedData {
-  const wrappedChangedAccount = {
+export function _shardusWrappedAccount(wrappedEVMAccount: WrappedEVMAccount): ShardusTypes.WrappedResponse {
+  const wrappedChangedAccount: ShardusTypes.WrappedResponse = {
     accountId: getAccountShardusAddress(wrappedEVMAccount),
     stateId: _calculateAccountHash(wrappedEVMAccount),
     data: wrappedEVMAccount,
     timestamp: wrappedEVMAccount.timestamp,
+
+    // TODO: What are the correct values for these?
+    accountCreated: true,
+    isPartial: false,
   }
   return wrappedChangedAccount
 }

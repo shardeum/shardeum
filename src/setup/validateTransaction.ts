@@ -9,7 +9,7 @@ type Response = {
   reason: string
 }
 
-export const validateTransaction = (shardus: Shardus) => (tx: any): Response => {
+export const validateTransaction = (shardus: Shardus, tx: any): Response => {
   if (isInternalTx(tx)) {
     let internalTx = tx as InternalTx
 
