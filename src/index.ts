@@ -34,7 +34,7 @@ import {
   UnstakeCoinsTX,
   WrappedAccount,
   WrappedEVMAccount,
-  WrappedStates
+  WrappedStates,
 } from './shardeum/shardeumTypes'
 import { getAccountShardusAddress, toShardusAddress, toShardusAddressWithKey } from './shardeum/evmAddress'
 import { ShardeumFlags, updateServicePoints, updateShardeumFlag } from './shardeum/shardeumFlags'
@@ -2407,7 +2407,8 @@ shardus.setup({
       operatorEVMAccount.operatorAccountInfo.certExp = 0
       fixDeserializedWrappedEVMAccount(operatorEVMAccount)
 
-      let totalAmountToDeduct = stakeCoinsTx.stake.add(new BN(ShardeumFlags.constantTxFee))
+      let txFee = new BN(ShardeumFlags.constantTxFee, 10)
+      let totalAmountToDeduct = stakeCoinsTx.stake.add(txFee)
       operatorEVMAccount.account.balance = operatorEVMAccount.account.balance.sub(totalAmountToDeduct)
       operatorEVMAccount.account.nonce = operatorEVMAccount.account.nonce.add(new BN('1'))
 
@@ -2490,7 +2491,7 @@ shardus.setup({
         ethAddress: ethTxId,
         hash: '',
         readableReceipt,
-        amountSpent: totalAmountToDeduct.toString(),
+        amountSpent: txFee.toString(),
         txId,
         accountType: AccountType.StakeReceipt,
         txFrom: stakeCoinsTx.nominator,
@@ -2653,7 +2654,7 @@ shardus.setup({
         ethAddress: ethTxId,
         hash: '',
         readableReceipt,
-        amountSpent: newBalance.toString(),
+        amountSpent: txFee.toString(),
         txId,
         accountType: AccountType.UnstakeReceipt,
         txFrom: unstakeCoinsTX.nominator,
