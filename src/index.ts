@@ -2387,24 +2387,30 @@ shardus.setup({
         throw new Error('Stake transaction timestamp is too old')
       }
 
-      // Validate tx timestamp against certExp
-      if (operatorEVMAccount.operatorAccountInfo && operatorEVMAccount.operatorAccountInfo.certExp > 0) {
-        if (stakeCoinsTx.timestamp > operatorEVMAccount.operatorAccountInfo.certExp) {
-          throw new Error('Operator certExp is already set and expired compared to stake transaction')
-        }
-      }
+      // // Validate tx timestamp against certExp (I thin)
+      // if (operatorEVMAccount.operatorAccountInfo && operatorEVMAccount.operatorAccountInfo.certExp > 0) {
+      //   if (stakeCoinsTx.timestamp > operatorEVMAccount.operatorAccountInfo.certExp) {
+      //     throw new Error('Operator certExp is already set and expired compared to stake transaction')
+      //   }
+      // }
 
       // set stake value, nominee, cert in OperatorAcc (if not set yet)
       let nomineeNodeAccount2Address = stakeCoinsTx.nominee
       operatorEVMAccount.timestamp = txTimestamp
 
       // todo: operatorAccountInfo field may not exist in the operatorEVMAccount yet
-      if (operatorEVMAccount.operatorAccountInfo == null) {
+      if (!operatorEVMAccount.operatorAccountInfo) {
         operatorEVMAccount.operatorAccountInfo = { stake: new BN(0), nominee: '', certExp: null }
+      } else {
+        if (typeof operatorEVMAccount.operatorAccountInfo.stake === 'string')
+          operatorEVMAccount.operatorAccountInfo.stake = new BN(
+            operatorEVMAccount.operatorAccountInfo.stake,
+            16
+          )
       }
-      operatorEVMAccount.operatorAccountInfo.stake = stakeCoinsTx.stake
+      operatorEVMAccount.operatorAccountInfo.stake.iadd(stakeCoinsTx.stake)
       operatorEVMAccount.operatorAccountInfo.nominee = stakeCoinsTx.nominee
-      operatorEVMAccount.operatorAccountInfo.certExp = 0
+      if (!operatorEVMAccount.operatorAccountInfo.certExp) operatorEVMAccount.operatorAccountInfo.certExp = 0
       fixDeserializedWrappedEVMAccount(operatorEVMAccount)
 
       let txFee = new BN(ShardeumFlags.constantTxFee, 10)
@@ -2420,8 +2426,11 @@ shardus.setup({
       let updatedOperatorEVMAccount = await shardeumState.getAccount(operatorEVMAddress)
 
       const nodeAccount2: NodeAccount2 = wrappedStates[nomineeNodeAccount2Address].data
+      if (typeof nodeAccount2.stakeLock === 'string') {
+        nodeAccount2.stakeLock = new BN(nodeAccount2.stakeLock, 16)
+      }
       nodeAccount2.nominator = stakeCoinsTx.nominator
-      nodeAccount2.stakeLock = stakeCoinsTx.stake
+      nodeAccount2.stakeLock.iadd(stakeCoinsTx.stake)
       nodeAccount2.timestamp = txTimestamp
 
       if (ShardeumFlags.useAccountWrites) {
@@ -2481,6 +2490,8 @@ shardus.setup({
         to: transaction.to ? transaction.to.toString() : null,
         stakeInfo: {
           nominee: nomineeNodeAccount2Address,
+          stakeAmount: stakeCoinsTx.stake.toString(),
+          totalStakeAmount: operatorEVMAccount.operatorAccountInfo.stake.toString(),
         },
         value: transaction.value.toString('hex'),
         data: '0x' + transaction.data.toString('hex'),

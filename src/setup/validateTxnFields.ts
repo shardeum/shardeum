@@ -201,11 +201,12 @@ export const validateTxnFields = (shardus: Shardus, debugAppdata: Map<string, an
         const wrappedEVMAccount = appData.nominatorAccount as WrappedEVMAccount
         if (wrappedEVMAccount.operatorAccountInfo) {
           if (wrappedEVMAccount.operatorAccountInfo.nominee) {
-            return {
-              success: false,
-              reason: `This account has already staked to a node which is still active or hasn't claimed reward for that node which has left the network yet!`,
-              txnTimestamp,
-            }
+            if (wrappedEVMAccount.operatorAccountInfo.nominee !== stakeCoinsTx.nominee)
+              return {
+                success: false,
+                reason: `This account has already staked to a different node.`,
+                txnTimestamp,
+              }
           }
         }
       }
