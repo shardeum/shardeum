@@ -72,7 +72,6 @@ export let ShardeumFlags: ShardeumFlags = {
   blockProductionRate: 6,
   maxNumberOfOldBlocks: 256,
   SelfTest: false,
-  ServicePointsPerSecond: 200,
   SetupGenesisAccount: true,
   EVMReceiptsAsAccounts: false,
   DebugRestoreFile: 'account-export.json',
@@ -93,13 +92,18 @@ export let ShardeumFlags: ShardeumFlags = {
   useAccountWrites: true,
   useShardeumVM: true,
   chargeConstantTxFee: true,
-  constantTxFee: '10000000000000', // '10000000000000'//0.00001 SHM   //'1000000000000000000' // 1 SHM
+  // '10000000000000'//0.00001 SHM
+  // '1000000000000000'//0.001 SHM
+  // '10000000000000000'//0.01 SHM
+  // '1000000000000000000' // 1 SHM
+  constantTxFee: '10000000000000000', //0.01 SHM
   devPublicKey: '774491f80f47fedb119bb861601490f42bc3ea3b57fc63906c0d08e6d777a592',
   stakeTargetAddress: '0x0000000000000000000000000000000000000001',
   stakeAmount: '5000000000000000000', // 5 SHM
   certCycleDuration: 10,
   cacheMaxCycleAge: 5,
   cacheMaxItemPerTopic: 4500,
+  ServicePointsPerSecond: 200,
   ServicePoints: {
     ['debug-points']: 20,
     ['account/:address']: 5,

@@ -102,8 +102,8 @@ const oneEth = new BN(10).pow(new BN(18))
 export const INITIAL_PARAMETERS: NetworkParameters = {
   title: 'Initial parameters',
   description: 'These are the initial network parameters Shardeum started with',
-  nodeRewardInterval: ONE_MINUTE * 10, // 10 minutes for testing
-  nodeRewardAmount: oneEth, // 1 SHM
+  nodeRewardInterval: ONE_DAY * 10, // 10 minutes for testing
+  nodeRewardAmount: oneEth.mul(new BN(100)), //oneEth, // 1 SHM
   nodePenalty: oneEth.mul(new BN(10)), // 10 SHM
   stakeRequired: oneEth.mul(new BN(10)), // 10 SHM
   maintenanceInterval: ONE_DAY,
