@@ -108,7 +108,7 @@ export const INITIAL_PARAMETERS: NetworkParameters = {
   stakeRequiredUsd: new BN(6), // $6
   maintenanceInterval: ONE_DAY,
   maintenanceFee: 0,
-  stabilityScaleMul: 5,
+  stabilityScaleMul: 1,
   stabilityScaleDiv: 1
 }
 
