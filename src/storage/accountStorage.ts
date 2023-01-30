@@ -83,14 +83,14 @@ export async function setAccount(address: string, account: WrappedEVMAccount): P
 
       if (address === networkAccount) {
         cachedNetworkAccount = (account as any) as NetworkAccount
-        if (typeof cachedNetworkAccount.current.stakeRequired === 'string') {
-          cachedNetworkAccount.current.stakeRequired = _base16BNParser(cachedNetworkAccount.current.stakeRequired)
+        if (typeof cachedNetworkAccount.current.stakeRequiredUsd === 'string') {
+          cachedNetworkAccount.current.stakeRequiredUsd = _base16BNParser(cachedNetworkAccount.current.stakeRequiredUsd)
         }
-        if (typeof cachedNetworkAccount.current.nodePenalty === 'string') {
-          cachedNetworkAccount.current.nodePenalty = _base16BNParser(cachedNetworkAccount.current.nodePenalty)
+        if (typeof cachedNetworkAccount.current.nodePenaltyUsd === 'string') {
+          cachedNetworkAccount.current.nodePenaltyUsd = _base16BNParser(cachedNetworkAccount.current.nodePenaltyUsd)
         }
-        if (typeof cachedNetworkAccount.current.nodeRewardAmount === 'string') {
-          cachedNetworkAccount.current.nodeRewardAmount = _base16BNParser(cachedNetworkAccount.current.nodeRewardAmount)
+        if (typeof cachedNetworkAccount.current.nodeRewardAmountUsd === 'string') {
+          cachedNetworkAccount.current.nodeRewardAmountUsd = _base16BNParser(cachedNetworkAccount.current.nodeRewardAmountUsd)
         }
       }
     } else {

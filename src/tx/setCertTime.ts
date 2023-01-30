@@ -94,9 +94,9 @@ export function validateSetCertTimeState(tx: SetCertTime, wrappedStates: Wrapped
     }
   }
 
-  AccountsStorage.cachedNetworkAccount.current.stakeRequired
+  AccountsStorage.cachedNetworkAccount.current.stakeRequiredUsd
 
-  const minStakeRequired = AccountsStorage.cachedNetworkAccount.current.stakeRequired
+  const minStakeRequired = AccountsStorage.cachedNetworkAccount.current.stakeRequiredUsd
 
   if (ShardeumFlags.VerboseLogs) console.log('validate operator stake', _readableSHM(committedStake), _readableSHM(minStakeRequired), ' committedStake < minStakeRequired : ', committedStake.lt(minStakeRequired))
 
@@ -144,7 +144,7 @@ export function applySetCertTimeTx(
   operatorEVMAccount.operatorAccountInfo.certExp =
     txTimestamp + serverConfig.p2p.cycleDuration * ONE_SECOND * tx.duration
   operatorEVMAccount.account.balance = operatorEVMAccount.account.balance.sub(
-    new BN(ShardeumFlags.constantTxFee)
+    new BN(ShardeumFlags.constantTxFeeUsd)
   )
 
   if (ShardeumFlags.VerboseLogs) {

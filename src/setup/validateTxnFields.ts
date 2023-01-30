@@ -131,7 +131,7 @@ export const validateTxnFields = (shardus: Shardus, debugAppdata: Map<string, an
     }
 
     if (ShardeumFlags.txBalancePreCheck && appData != null) {
-      let minBalance = ShardeumFlags.constantTxFee ? new BN(ShardeumFlags.constantTxFee) : new BN(1)
+      let minBalance = ShardeumFlags.constantTxFeeUsd ? new BN(ShardeumFlags.constantTxFeeUsd) : new BN(1)
       //check with value added in
       minBalance = minBalance.add(txObj.value)
       let accountBalance = new BN(appData.balance)

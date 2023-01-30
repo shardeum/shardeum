@@ -122,7 +122,7 @@ export function applyClaimRewardTx(
   }
   let nodeAccount: NodeAccount2 = wrappedStates[tx.nominee].data
   const network: NetworkAccount = wrappedStates[networkAccount].data
-  const nodeRewardAmount = _base16BNParser(network.current.nodeRewardAmount) //new BN(Number('0x' + network.current.nodeRewardAmount).toString())
+  const nodeRewardAmount = _base16BNParser(network.current.nodeRewardAmountUsd) //new BN(Number('0x' + network.current.nodeRewardAmount).toString())
   const nodeRewardInterval = new BN(network.current.nodeRewardInterval)
 
   nodeAccount.rewardEndTime = tx.nodeDeactivatedTime

@@ -230,11 +230,13 @@ export interface NetworkParameters {
   title: string
   description: string
   nodeRewardInterval: number
-  nodeRewardAmount: BN
-  nodePenalty: BN
-  stakeRequired: BN
+  nodeRewardAmountUsd: BN
+  nodePenaltyUsd: BN
+  stakeRequiredUsd: BN
   maintenanceInterval: number
   maintenanceFee: number
+  stabilityScaleMul: number
+  stabilityScaleDiv: number
 }
 
 export interface NodeAccount extends BaseAccount {

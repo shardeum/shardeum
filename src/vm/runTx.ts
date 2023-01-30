@@ -26,10 +26,13 @@ import type {
   PostByzantiumTxReceipt,
 } from '@ethereumjs/vm/src/types'
 import {ShardeumFlags} from '../shardeum/shardeumFlags'
+import {NetworkAccount} from '../shardeum/shardeumTypes'
+import {scaleByStabilityFactor} from '../utils'
 
 const debug = createDebugLogger('vm:tx')
 const debugGas = createDebugLogger('vm:tx:gas')
-let {chargeConstantTxFee, constantTxFee} = ShardeumFlags
+let {chargeConstantTxFee, constantTxFeeUsd} = ShardeumFlags
+
 
 /**
  * Options for the `runTx` method.
@@ -52,6 +55,8 @@ export interface RunTxOpts {
    * If true, skips the balance check
    */
   skipBalance?: boolean
+
+  networkAccount?: NetworkAccount
 
   /**
    * If true, skips the validation of the tx's gas limit
@@ -371,8 +376,10 @@ async function _runTx(this: VM, opts: RunTxOpts): Promise<RunTxResult> {
   // Update from account's nonce and balance
   fromAccount.nonce.iaddn(1)
   let txCost
+  const oneEth = new BN(10).pow(new BN(18))
   if (chargeConstantTxFee) {
-    txCost = new BN(constantTxFee)
+    const baseTxCost = new BN(constantTxFeeUsd)
+    txCost = scaleByStabilityFactor(baseTxCost, opts.networkAccount)
   } else {
     txCost = tx.gasLimit.mul(gasPrice)
   }
@@ -451,7 +458,8 @@ async function _runTx(this: VM, opts: RunTxOpts): Promise<RunTxResult> {
   }
   let actualTxCost
   if (chargeConstantTxFee) {
-    actualTxCost = new BN(constantTxFee)
+    const baseTxCost = new BN(constantTxFeeUsd)
+    actualTxCost = scaleByStabilityFactor(baseTxCost, opts.networkAccount)
   } else {
     actualTxCost = results.gasUsed.mul(gasPrice)
   }

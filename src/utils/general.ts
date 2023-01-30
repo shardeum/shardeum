@@ -1,4 +1,5 @@
-import { bufferToHex } from 'ethereumjs-util'
+import { bufferToHex, BN } from 'ethereumjs-util'
+import {NetworkAccount} from '../shardeum/shardeumTypes'
 
 /**
  * After a Buffer goes through json stringify/parse it comes out broken
@@ -11,6 +12,12 @@ export function safeBufferToHex(buffer) {
     return bufferToHex(buffer.data)
   }
   return bufferToHex(buffer)
+}
+
+export function scaleByStabilityFactor(input: BN, networkAccount: NetworkAccount): BN {
+  const stabilityScaleMult = new BN(networkAccount.current.stabilityScaleMul)
+  const stabilityScaleDiv = new BN(networkAccount.current.stabilityScaleDiv)
+  return input.mul(stabilityScaleMult).div(stabilityScaleDiv)
 }
 
 export function sleep(ms) {

@@ -45,10 +45,9 @@ interface ShardeumFlags {
   useAccountWrites: boolean
   useShardeumVM: boolean
   chargeConstantTxFee: boolean
-  constantTxFee: DecimalString // '10000000000000'//0.00001 SHM   //'1000000000000000000' // 1 SHM
+  constantTxFeeUsd: DecimalString
   devPublicKey: string
   stakeTargetAddress: string
-  stakeAmount: DecimalString // stake amount in wei
   certCycleDuration: number
   cacheMaxCycleAge: number
   cacheMaxItemPerTopic: number
@@ -92,14 +91,13 @@ export let ShardeumFlags: ShardeumFlags = {
   useAccountWrites: true,
   useShardeumVM: true,
   chargeConstantTxFee: true,
-  // '10000000000000'//0.00001 SHM
-  // '1000000000000000'//0.001 SHM
-  // '10000000000000000'//0.01 SHM
-  // '1000000000000000000' // 1 SHM
-  constantTxFee: '10000000000000000', //0.01 SHM
+  // '10000000000000'// $0.00001 * 10 ^ 18
+  // '1000000000000000'// $0.001 * 10 ^ 18
+  // '10000000000000000'// $0.01 * 10 ^ 18
+  // '1000000000000000000' // $1 * 10 ^ 18
+  constantTxFeeUsd: '10000000000000000', // $0.01 * 10 ^ 18
   devPublicKey: '774491f80f47fedb119bb861601490f42bc3ea3b57fc63906c0d08e6d777a592',
   stakeTargetAddress: '0x0000000000000000000000000000000000000001',
-  stakeAmount: '5000000000000000000', // 5 SHM
   certCycleDuration: 10,
   cacheMaxCycleAge: 5,
   cacheMaxItemPerTopic: 4500,
@@ -112,7 +110,7 @@ export let ShardeumFlags: ShardeumFlags = {
     ['tx/:hash']: 5,
   },
   generateMemoryPatternData: true,
-  StakingEnabled: true,
+  StakingEnabled: false,
   minActiveNodesForStaking: 5,
   MinStakeCertSig: 1, // this is the minimum amount of signature required for stake certification. will move to network param in future.
   FullCertChecksEnabled: true,
