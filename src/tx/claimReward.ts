@@ -12,7 +12,7 @@ import {
   NodeAccount2,
 } from '../shardeum/shardeumTypes'
 import * as WrappedEVMAccountFunctions from '../shardeum/wrappedEVMAccountFunctions'
-import {_base16BNParser, _readableSHM, scaleByStabilityFactor} from '../utils'
+import { _base16BNParser, _readableSHM, scaleByStabilityFactor } from '../utils'
 import * as AccountsStorage from '../storage/accountStorage'
 
 export function isClaimRewardTx(tx: any): boolean {
@@ -131,7 +131,7 @@ export function applyClaimRewardTx(
 
   let durationInNetwork = nodeAccount.rewardEndTime - nodeAccount.rewardStartTime
   if (durationInNetwork <= 0) {
-      throw new Error(`applyClaimReward failed because durationInNetwork is less than or equal 0`)
+    throw new Error(`applyClaimReward failed because durationInNetwork is less than or equal 0`)
   }
 
   //we multiply fist then devide to preserve precision
@@ -144,8 +144,7 @@ export function applyClaimRewardTx(
   nodeAccount.reward = nodeAccount.reward.add(totalReward)
   nodeAccount.timestamp = txTimestamp
 
-  if (ShardeumFlags.VerboseLogs) console.log(`Calculating node reward. nodeRewardAmount: ${_readableSHM(nodeRewardAmount)}, nodeRewardInterval: ${network.current.nodeRewardInterval} ms, uptime duration: ${durationInNetwork} sec, totalReward: ${_readableSHM(totalReward)}, finalReward: ${_readableSHM(nodeAccount.reward)}   nodeAccount.rewardEndTime:${nodeAccount.rewardEndTime}  nodeAccount.rewardStartTime:${nodeAccount.rewardStartTime} `)
-
+  /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log( `Calculating node reward. nodeRewardAmount: ${_readableSHM(nodeRewardAmount)}, nodeRewardInterval: ${ network.current.nodeRewardInterval } ms, uptime duration: ${durationInNetwork} sec, totalReward: ${_readableSHM( totalReward )}, finalReward: ${_readableSHM(nodeAccount.reward)}   nodeAccount.rewardEndTime:${ nodeAccount.rewardEndTime }  nodeAccount.rewardStartTime:${nodeAccount.rewardStartTime} ` )
 
   const txId = crypto.hashObj(tx)
   if (ShardeumFlags.useAccountWrites) {

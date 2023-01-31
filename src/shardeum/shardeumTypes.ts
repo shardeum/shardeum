@@ -239,14 +239,6 @@ export interface NetworkParameters {
   stabilityScaleDiv: number
 }
 
-export interface NodeAccount extends BaseAccount {
-  id: string
-  balance: BN
-  nodeRewardTime: number
-  hash: string
-  timestamp: number
-}
-
 export interface NodeAccount2 extends BaseAccount {
   id: string
   hash: string
@@ -301,7 +293,7 @@ export interface ApplyNetworkParam {
 
 // export interface InternalAccount extends NodeAccount, NetworkAccount, DevAccount {}
 
-export type InternalAccount = NodeAccount | NetworkAccount | DevAccount
+export type InternalAccount = NodeAccount2 | NetworkAccount | DevAccount
 
 export interface NodeAccountQueryResponse {
   success: boolean

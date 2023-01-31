@@ -1,4 +1,10 @@
-import { NetworkAccount, WrappedEVMAccount, WrappedEVMAccountMap, HexString, DecimalString } from '../shardeum/shardeumTypes'
+import {
+  NetworkAccount,
+  WrappedEVMAccount,
+  WrappedEVMAccountMap,
+  HexString,
+  DecimalString,
+} from '../shardeum/shardeumTypes'
 
 import { ShardeumFlags } from '../shardeum/shardeumFlags'
 import Storage from '../storage/storage'
@@ -84,13 +90,19 @@ export async function setAccount(address: string, account: WrappedEVMAccount): P
       if (address === networkAccount) {
         cachedNetworkAccount = (account as any) as NetworkAccount
         if (typeof cachedNetworkAccount.current.stakeRequiredUsd === 'string') {
-          cachedNetworkAccount.current.stakeRequiredUsd = _base16BNParser(cachedNetworkAccount.current.stakeRequiredUsd)
+          cachedNetworkAccount.current.stakeRequiredUsd = _base16BNParser(
+            cachedNetworkAccount.current.stakeRequiredUsd
+          )
         }
         if (typeof cachedNetworkAccount.current.nodePenaltyUsd === 'string') {
-          cachedNetworkAccount.current.nodePenaltyUsd = _base16BNParser(cachedNetworkAccount.current.nodePenaltyUsd)
+          cachedNetworkAccount.current.nodePenaltyUsd = _base16BNParser(
+            cachedNetworkAccount.current.nodePenaltyUsd
+          )
         }
         if (typeof cachedNetworkAccount.current.nodeRewardAmountUsd === 'string') {
-          cachedNetworkAccount.current.nodeRewardAmountUsd = _base16BNParser(cachedNetworkAccount.current.nodeRewardAmountUsd)
+          cachedNetworkAccount.current.nodeRewardAmountUsd = _base16BNParser(
+            cachedNetworkAccount.current.nodeRewardAmountUsd
+          )
         }
       }
     } else {

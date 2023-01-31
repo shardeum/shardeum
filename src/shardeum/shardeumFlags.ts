@@ -6,7 +6,6 @@ interface ShardeumFlags {
   VerboseLogs: boolean
   Virtual0Address: boolean
   GlobalNetworkAccount: boolean
-  NodeReward: boolean
   FirstNodeRewardCycle: number
   blockProductionRate: number // generate new block every 6s
   maxNumberOfOldBlocks: number
@@ -58,15 +57,12 @@ interface ShardeumFlags {
   FullCertChecksEnabled: boolean // do we run all of the cert checks when signing.  This config may go away soon after testing.
 }
 
-const NodeRewardENV = process.env.NodeReward ? (process.env.NodeReward === 'true' ? true : false) : null
-
 export let ShardeumFlags: ShardeumFlags = {
   contractStorageKeySilo: true,
   globalCodeBytes: false,
   VerboseLogs: true,
   Virtual0Address: true,
   GlobalNetworkAccount: true,
-  NodeReward: false,
   FirstNodeRewardCycle: 100,
   blockProductionRate: 6,
   maxNumberOfOldBlocks: 256,
