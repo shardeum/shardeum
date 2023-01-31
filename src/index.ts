@@ -109,6 +109,8 @@ export const INITIAL_PARAMETERS: NetworkParameters = {
   stakeRequiredUsd: oneSHA.mul(new BN(10)), // $10 x 10 ^ 18
   maintenanceInterval: ONE_DAY,
   maintenanceFee: 0,
+  minVersion: '1.0.0',
+  activeVersion: '1.0.0',
   stabilityScaleMul: 1000,
   stabilityScaleDiv: 1000,
 }
@@ -4389,7 +4391,9 @@ shardus.setup({
         /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`validateJoinRequest fail: !data.appJoinData`)
         return { success: false, reason: `Join request node doesn't provide the app join data.` }
       }
-      if (!isEqualOrNewerVersion(version, data.appJoinData.version)) {
+
+      const minVersion = AccountsStorage.cachedNetworkAccount.current.minVersion
+      if (!isEqualOrNewerVersion(version, minVersion)) {
         /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`validateJoinRequest fail: old version`)
         return {
           success: false,
@@ -4706,13 +4710,13 @@ shardus.setup({
   },
   async updateNetworkChangeQueue(account: WrappedAccount, appData: any) {
     if (account.accountId === networkAccount) {
-      let networkParam: NetworkAccount = account.data
+      let networkAccount: NetworkAccount = account.data
       for (let key in appData) {
-        networkParam.current[key] = appData[key]
+        networkAccount.current[key] = appData[key]
       }
       account.timestamp = Date.now()
-      networkParam.hash = WrappedEVMAccountFunctions._calculateAccountHash(networkParam)
-      account.stateId = networkParam.hash
+      networkAccount.hash = WrappedEVMAccountFunctions._calculateAccountHash(networkAccount)
+      account.stateId = networkAccount.hash
       return [account]
     }
   },

@@ -237,6 +237,8 @@ export interface NetworkParameters {
   maintenanceFee: number
   stabilityScaleMul: number
   stabilityScaleDiv: number
+  minVersion: string
+  activeVersion: string
 }
 
 export interface NodeAccount2 extends BaseAccount {
