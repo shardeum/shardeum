@@ -913,10 +913,15 @@ shardus.registerExternalGet('eth_getBlockByHash', async (req, res) => {
 })
 
 shardus.registerExternalGet('stake', async (req, res) => {
-  let stakeRequiredUsd = AccountsStorage.cachedNetworkAccount.current.stakeRequiredUsd
-  let stakeRequired = scaleByStabilityFactor(stakeRequiredUsd, AccountsStorage.cachedNetworkAccount)
-  if (ShardeumFlags.VerboseLogs) console.log('Req: stake requirement', stakeRequired)
-  return res.json({stakeRequired, stakeRequiredUsd})
+  try {
+    let stakeRequiredUsd = AccountsStorage.cachedNetworkAccount.current.stakeRequiredUsd
+    let stakeRequired = scaleByStabilityFactor(stakeRequiredUsd, AccountsStorage.cachedNetworkAccount)
+    if (ShardeumFlags.VerboseLogs) console.log('Req: stake requirement', stakeRequired)
+    return res.json({stakeRequired, stakeRequiredUsd})
+  } catch (e) {
+    if (ShardeumFlags.VerboseLogs) console.log(`Error /stake`, e)
+    return res.status(500).send(e.message)
+  }
 })
 
 shardus.registerExternalGet('dumpStorage', debugMiddleware, async (req, res) => {
