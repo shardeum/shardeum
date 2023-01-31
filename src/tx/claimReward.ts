@@ -12,7 +12,8 @@ import {
   NodeAccount2,
 } from '../shardeum/shardeumTypes'
 import * as WrappedEVMAccountFunctions from '../shardeum/wrappedEVMAccountFunctions'
-import { _base16BNParser, _readableSHM } from '../utils'
+import {_base16BNParser, _readableSHM, scaleByStabilityFactor} from '../utils'
+import * as AccountsStorage from '../storage/accountStorage'
 
 export function isClaimRewardTx(tx: any): boolean {
   if (tx.isInternalTx && tx.internalTXType === InternalTXType.ClaimReward) {
@@ -122,7 +123,8 @@ export function applyClaimRewardTx(
   }
   let nodeAccount: NodeAccount2 = wrappedStates[tx.nominee].data
   const network: NetworkAccount = wrappedStates[networkAccount].data
-  const nodeRewardAmount = _base16BNParser(network.current.nodeRewardAmountUsd) //new BN(Number('0x' + network.current.nodeRewardAmount).toString())
+  const nodeRewardAmountUsd = _base16BNParser(network.current.nodeRewardAmountUsd) //new BN(Number('0x' +
+  const nodeRewardAmount = scaleByStabilityFactor(nodeRewardAmountUsd, AccountsStorage.cachedNetworkAccount)
   const nodeRewardInterval = new BN(network.current.nodeRewardInterval)
 
   nodeAccount.rewardEndTime = tx.nodeDeactivatedTime

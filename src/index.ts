@@ -52,7 +52,7 @@ import {
   sleep,
   zeroAddressStr,
   _base16BNParser,
-  _readableSHM,
+  _readableSHM, scaleByStabilityFactor,
 } from './utils'
 import config from './config'
 import { RunTxResult } from '@ethereumjs/vm/dist/runTx'
@@ -102,10 +102,10 @@ const oneEth = new BN(10).pow(new BN(18))
 export const INITIAL_PARAMETERS: NetworkParameters = {
   title: 'Initial parameters',
   description: 'These are the initial network parameters Shardeum started with',
-  nodeRewardInterval: ONE_HOUR, // 10 minutes for testing
-  nodeRewardAmountUsd: new BN(1), // $1
-  nodePenaltyUsd: new BN(10), // $10
-  stakeRequiredUsd: new BN(6), // $6
+  nodeRewardInterval: 5 * ONE_MINUTE, // 10 minutes for testing
+  nodeRewardAmountUsd: oneEth.mul(new BN(1)), // $1 x 10 ^ 18
+  nodePenaltyUsd: oneEth.mul(new BN(10)), // $10 x 10 ^ 18
+  stakeRequiredUsd: oneEth.mul(new BN(6)), // $6 x 10 ^ 18
   maintenanceInterval: ONE_DAY,
   maintenanceFee: 0,
   stabilityScaleMul: 1,
@@ -2415,7 +2415,8 @@ shardus.setup({
       if (!operatorEVMAccount.operatorAccountInfo.certExp) operatorEVMAccount.operatorAccountInfo.certExp = 0
       fixDeserializedWrappedEVMAccount(operatorEVMAccount)
 
-      let txFee = new BN(ShardeumFlags.constantTxFeeUsd, 10)
+      let txFeeUsd = new BN(ShardeumFlags.constantTxFeeUsd, 10)
+      let txFee = scaleByStabilityFactor(txFeeUsd, AccountsStorage.cachedNetworkAccount)
       let totalAmountToDeduct = stakeCoinsTx.stake.add(txFee)
       operatorEVMAccount.account.balance = operatorEVMAccount.account.balance.sub(totalAmountToDeduct)
       operatorEVMAccount.account.nonce = operatorEVMAccount.account.nonce.add(new BN('1'))
@@ -2483,8 +2484,8 @@ shardus.setup({
         blockNumber: '0x' + blocks[latestBlock].header.number.toString('hex'),
         nonce: transaction.nonce.toString('hex'),
         blockHash: readableBlocks[latestBlock].hash,
-        cumulativeGasUsed: '0x' + new BN(ShardeumFlags.constantTxFeeUsd).toString('hex'),
-        gasUsed: '0x' + new BN(ShardeumFlags.constantTxFeeUsd).toString('hex'),
+        cumulativeGasUsed: '0x' + scaleByStabilityFactor(new BN(ShardeumFlags.constantTxFeeUsd), AccountsStorage.cachedNetworkAccount).toString('hex'),
+        gasUsed: '0x' + scaleByStabilityFactor(new BN(ShardeumFlags.constantTxFeeUsd), AccountsStorage.cachedNetworkAccount).toString('hex'),
         logs: [],
         logsBloom: '',
         contractAddress: null,
@@ -2570,7 +2571,8 @@ shardus.setup({
       let stake = new BN(operatorEVMAccount.operatorAccountInfo.stake, 16)
       let reward = new BN(nodeAccount2.reward, 16)
       let penalty = new BN(nodeAccount2.penalty, 16)
-      let txFee = new BN(ShardeumFlags.constantTxFeeUsd, 10)
+      let txFeeUsd = new BN(ShardeumFlags.constantTxFeeUsd, 10)
+      let txFee = scaleByStabilityFactor(txFeeUsd, AccountsStorage.cachedNetworkAccount)
       if (ShardeumFlags.VerboseLogs)
         console.log('calculating new balance after unstake', currentBalance, stake, reward, penalty, txFee)
       let newBalance = currentBalance
@@ -2650,8 +2652,8 @@ shardus.setup({
         blockNumber: '0x' + blocks[latestBlock].header.number.toString('hex'),
         nonce: transaction.nonce.toString('hex'),
         blockHash: readableBlocks[latestBlock].hash,
-        cumulativeGasUsed: '0x' + new BN(ShardeumFlags.constantTxFeeUsd).toString('hex'),
-        gasUsed: '0x' + new BN(ShardeumFlags.constantTxFeeUsd).toString('hex'),
+        cumulativeGasUsed: '0x' + scaleByStabilityFactor(new BN(ShardeumFlags.constantTxFeeUsd), AccountsStorage.cachedNetworkAccount).toString('hex'),
+        gasUsed: '0x' + scaleByStabilityFactor(new BN(ShardeumFlags.constantTxFeeUsd), AccountsStorage.cachedNetworkAccount).toString('hex'),
         logs: [],
         logsBloom: '',
         contractAddress: null,
@@ -3290,7 +3292,8 @@ shardus.setup({
         let reason = ''
         //early pass on balance check to avoid expensive access list generation.
         if (ShardeumFlags.txBalancePreCheck && appData != null) {
-          let minBalance = ShardeumFlags.constantTxFeeUsd ? new BN(ShardeumFlags.constantTxFeeUsd) : new BN(1)
+          let minBalanceUsd = ShardeumFlags.constantTxFeeUsd ? new BN(ShardeumFlags.constantTxFeeUsd) : new BN(1)
+          let minBalance = scaleByStabilityFactor(minBalanceUsd, AccountsStorage.cachedNetworkAccount)
           //check with value added in
           minBalance = minBalance.add(transaction.value)
           let accountBalance = new BN(appData.balance)
@@ -4454,7 +4457,8 @@ shardus.setup({
           return fail
         }
 
-        const minStakeRequired = _base16BNParser(AccountsStorage.cachedNetworkAccount.current.stakeRequiredUsd)
+        const minStakeRequiredUsd = _base16BNParser(AccountsStorage.cachedNetworkAccount.current.stakeRequiredUsd)
+        const minStakeRequired = scaleByStabilityFactor(minStakeRequiredUsd, AccountsStorage.cachedNetworkAccount)
         let stakeAmount = _base16BNParser(stakeCert.stake)
 
         if (stakeAmount.lt(minStakeRequired)) {
@@ -4613,7 +4617,8 @@ shardus.setup({
           }
         }
 
-        const minStakeRequired = _base16BNParser(AccountsStorage.cachedNetworkAccount.current.stakeRequiredUsd)
+        const minStakeRequiredUsd = _base16BNParser(AccountsStorage.cachedNetworkAccount.current.stakeRequiredUsd)
+        const minStakeRequired = scaleByStabilityFactor(minStakeRequiredUsd, AccountsStorage.cachedNetworkAccount)
 
         const stakedAmount = _base16BNParser(stake_cert.stake)
 

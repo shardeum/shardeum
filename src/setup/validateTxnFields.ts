@@ -21,7 +21,8 @@ import * as InitRewardTimesTx from '../tx/initRewardTimes'
 import { validateClaimRewardTx } from '../tx/claimReward'
 import { bufferToHex, BN } from 'ethereumjs-util'
 import { __ShardFunctions, nestedCountersInstance, Shardus } from '@shardus/core'
-import { _base16BNParser } from '../utils'
+import {_base16BNParser, scaleByStabilityFactor} from '../utils'
+import * as AccountsStorage from '../storage/accountStorage'
 
 /**
  * Checks that Transaction fields are valid
@@ -131,7 +132,8 @@ export const validateTxnFields = (shardus: Shardus, debugAppdata: Map<string, an
     }
 
     if (ShardeumFlags.txBalancePreCheck && appData != null) {
-      let minBalance = ShardeumFlags.constantTxFeeUsd ? new BN(ShardeumFlags.constantTxFeeUsd) : new BN(1)
+      let minBalanceUsd = ShardeumFlags.chargeConstantTxFee ? new BN(ShardeumFlags.constantTxFeeUsd) : new BN(1)
+      let minBalance = scaleByStabilityFactor(minBalanceUsd, AccountsStorage.cachedNetworkAccount)
       //check with value added in
       minBalance = minBalance.add(txObj.value)
       let accountBalance = new BN(appData.balance)
@@ -161,7 +163,8 @@ export const validateTxnFields = (shardus: Shardus, debugAppdata: Map<string, an
     if (appData && appData.internalTx && appData.internalTXType === InternalTXType.Stake) {
       if (ShardeumFlags.VerboseLogs) console.log('Validating stake coins tx fields', appData)
       let stakeCoinsTx = appData.internalTx as StakeCoinsTX
-      let minStakeAmount = _base16BNParser(appData.networkAccount.current.stakeRequired)
+      let minStakeAmountUsd = _base16BNParser(appData.networkAccount.current.stakeRequiredUsd)
+      let minStakeAmount = scaleByStabilityFactor(minStakeAmountUsd, AccountsStorage.cachedNetworkAccount)
       if (typeof stakeCoinsTx.stake === 'string') stakeCoinsTx.stake = new BN(stakeCoinsTx.stake, 16)
       if (
         stakeCoinsTx.nominator == null ||
