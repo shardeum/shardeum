@@ -102,7 +102,7 @@ const oneEth = new BN(10).pow(new BN(18))
 export const INITIAL_PARAMETERS: NetworkParameters = {
   title: 'Initial parameters',
   description: 'These are the initial network parameters Shardeum started with',
-  nodeRewardInterval: 5 * ONE_MINUTE, // 10 minutes for testing
+  nodeRewardInterval: 10 * ONE_MINUTE, // 10 minutes for testing
   nodeRewardAmountUsd: oneEth.mul(new BN(1)), // $1 x 10 ^ 18
   nodePenaltyUsd: oneEth.mul(new BN(10)), // $10 x 10 ^ 18
   stakeRequiredUsd: oneEth.mul(new BN(6)), // $6 x 10 ^ 18
@@ -910,6 +910,13 @@ shardus.registerExternalGet('eth_getBlockByHash', async (req, res) => {
   if (ShardeumFlags.VerboseLogs) console.log('Req: eth_getBlockByHash', blockHash)
   let blockNumber = blocksByHash[blockHash]
   return res.json({ block: readableBlocks[blockNumber] })
+})
+
+shardus.registerExternalGet('stake', async (req, res) => {
+  let stakeRequiredUsd = AccountsStorage.cachedNetworkAccount.current.stakeRequiredUsd
+  let stakeRequired = scaleByStabilityFactor(stakeRequiredUsd, AccountsStorage.cachedNetworkAccount)
+  if (ShardeumFlags.VerboseLogs) console.log('Req: stake requirement', stakeRequired)
+  return res.json({stakeRequired, stakeRequiredUsd})
 })
 
 shardus.registerExternalGet('dumpStorage', debugMiddleware, async (req, res) => {
