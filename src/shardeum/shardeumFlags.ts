@@ -60,7 +60,7 @@ interface ShardeumFlags {
 export let ShardeumFlags: ShardeumFlags = {
   contractStorageKeySilo: true,
   globalCodeBytes: false,
-  VerboseLogs: true,
+  VerboseLogs: false,
   Virtual0Address: true,
   GlobalNetworkAccount: true,
   FirstNodeRewardCycle: 100,
