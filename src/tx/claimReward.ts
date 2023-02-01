@@ -1,6 +1,6 @@
 import { nestedCountersInstance, ShardusTypes } from '@shardus/core'
 import * as crypto from '@shardus/crypto-utils'
-import { BN, isValidAddress } from 'ethereumjs-util'
+import { BN, isValidAddress, Address } from 'ethereumjs-util'
 import { networkAccount, ONE_SECOND } from '..'
 import config from '../config'
 import { ShardeumFlags } from '../shardeum/shardeumFlags'
@@ -10,10 +10,14 @@ import {
   NetworkAccount,
   WrappedStates,
   NodeAccount2,
+  WrappedEVMAccount,
+  AccountType
 } from '../shardeum/shardeumTypes'
 import * as WrappedEVMAccountFunctions from '../shardeum/wrappedEVMAccountFunctions'
 import { _base16BNParser, _readableSHM, scaleByStabilityFactor } from '../utils'
 import * as AccountsStorage from '../storage/accountStorage'
+import { getAccountShardusAddress, toShardusAddress, toShardusAddressWithKey } from '../shardeum/evmAddress'
+import {getApplyTXState} from '../index'
 
 export function isClaimRewardTx(tx: any): boolean {
   if (tx.isInternalTx && tx.internalTXType === InternalTXType.ClaimReward) {
@@ -23,8 +27,10 @@ export function isClaimRewardTx(tx: any): boolean {
 }
 
 export async function injectClaimRewardTx(shardus, eventData: ShardusTypes.ShardusEvent) {
+  const nodeAccount = await shardus.getLocalOrRemoteAccount(eventData.publicKey)
   let tx = {
     nominee: eventData.publicKey,
+    nominator: nodeAccount.data.nominator,
     timestamp: Date.now(),
     deactivatedNodeId: eventData.nodeId,
     nodeDeactivatedTime: eventData.time,
@@ -109,20 +115,24 @@ export function validateClaimRewardState(tx: ClaimRewardTX, shardus) {
   return { result: 'pass', reason: 'valid' }
 }
 
-export function applyClaimRewardTx(
+export async function applyClaimRewardTx(
   shardus,
   tx: ClaimRewardTX,
   wrappedStates: WrappedStates,
   txTimestamp: number,
   applyResponse: ShardusTypes.ApplyResponse
 ) {
+  if (ShardeumFlags.VerboseLogs) console.log(`Running applyClaimRewardTx`, tx, wrappedStates)
   const isValidRequest = validateClaimRewardState(tx, shardus)
   if (isValidRequest.result === 'fail') {
     /* prettier-ignore */
     console.log(`Invalid claimRewardTx, nominee ${tx.nominee}, reason: ${isValidRequest.reason}`)
   }
+  let operatorShardusAddress = toShardusAddress(tx.nominator, AccountType.Account)
   let nodeAccount: NodeAccount2 = wrappedStates[tx.nominee].data
   const network: NetworkAccount = wrappedStates[networkAccount].data
+  const operatorAccount: WrappedEVMAccount = wrappedStates[operatorShardusAddress].data
+
   const nodeRewardAmountUsd = _base16BNParser(network.current.nodeRewardAmountUsd) //new BN(Number('0x' +
   const nodeRewardAmount = scaleByStabilityFactor(nodeRewardAmountUsd, AccountsStorage.cachedNetworkAccount)
   const nodeRewardInterval = new BN(network.current.nodeRewardInterval)
@@ -144,9 +154,27 @@ export function applyClaimRewardTx(
   nodeAccount.reward = nodeAccount.reward.add(totalReward)
   nodeAccount.timestamp = txTimestamp
 
+  // update the node account historical stats
+  nodeAccount.nodeAccountStats.totalReward = _base16BNParser(nodeAccount.nodeAccountStats.totalReward).add(nodeAccount.reward)
+  nodeAccount.nodeAccountStats.history.push({b: nodeAccount.rewardStartTime, e: nodeAccount.rewardEndTime})
+
+  let txId = crypto.hashObj(tx)
+  let shardeumState = getApplyTXState(txId)
+  shardeumState._transactionState.appData = {}
+
+  // update the operator historical stats
+  operatorAccount.operatorAccountInfo.operatorStats.history.push({b: nodeAccount.rewardStartTime, e: nodeAccount.rewardEndTime})
+  operatorAccount.operatorAccountInfo.operatorStats.totalNodeReward = _base16BNParser(operatorAccount.operatorAccountInfo.operatorStats.totalNodeReward).add(nodeAccount.reward)
+  operatorAccount.operatorAccountInfo.operatorStats.totalNodeTime += durationInNetwork
+
+  // hmm may be we don't need this as we are not updating nonce and balance
+  let operatorEVMAddress: Address = Address.fromString(tx.nominator)
+  await shardeumState.checkpoint()
+  await shardeumState.putAccount(operatorEVMAddress, operatorAccount.account)
+  await shardeumState.commit()
+
   /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log( `Calculating node reward. nodeRewardAmount: ${_readableSHM(nodeRewardAmount)}, nodeRewardInterval: ${ network.current.nodeRewardInterval } ms, uptime duration: ${durationInNetwork} sec, totalReward: ${_readableSHM( totalReward )}, finalReward: ${_readableSHM(nodeAccount.reward)}   nodeAccount.rewardEndTime:${ nodeAccount.rewardEndTime }  nodeAccount.rewardStartTime:${nodeAccount.rewardStartTime} ` )
 
-  const txId = crypto.hashObj(tx)
   if (ShardeumFlags.useAccountWrites) {
     const wrappedChangedAccount = WrappedEVMAccountFunctions._shardusWrappedAccount(
       wrappedStates[tx.nominee].data
@@ -155,6 +183,17 @@ export function applyClaimRewardTx(
       applyResponse,
       tx.nominee,
       wrappedChangedAccount,
+      txId,
+      txTimestamp
+    )
+
+    const wrappedChangedOperatorAccount = WrappedEVMAccountFunctions._shardusWrappedAccount(
+      wrappedStates[operatorShardusAddress].data
+    )
+    shardus.applyResponseAddChangedAccount(
+      applyResponse,
+      operatorShardusAddress,
+      wrappedChangedOperatorAccount,
       txId,
       txTimestamp
     )

@@ -758,7 +758,7 @@ function getPreRunTXState(txId: string): ShardeumState {
   return shardeumState
 }
 
-function getApplyTXState(txId: string): ShardeumState {
+export function getApplyTXState(txId: string): ShardeumState {
   let shardeumState = shardeumStateTXMap.get(txId)
   if (shardeumState == null) {
     shardeumState = new ShardeumState({ common: evmCommon })
@@ -2232,7 +2232,21 @@ shardus.setup({
 
       // todo: operatorAccountInfo field may not exist in the operatorEVMAccount yet
       if (!operatorEVMAccount.operatorAccountInfo) {
-        operatorEVMAccount.operatorAccountInfo = { stake: new BN(0), nominee: '', certExp: null }
+          operatorEVMAccount.operatorAccountInfo = {
+            stake: new BN(0),
+            nominee: '',
+            certExp: null,
+            operatorStats: {
+                totalNodeReward: new BN(0),
+                totalNodePenalty: new BN(0),
+                totalNodeTime: 0,
+                history: [],
+                totalUnstakeReward: new BN(0),
+                unstakeCount: 0,
+                isShardeumRun: false,
+                lastStakedNodeKey: ''
+            },
+          }
       } else {
         if (typeof operatorEVMAccount.operatorAccountInfo.stake === 'string')
           operatorEVMAccount.operatorAccountInfo.stake = new BN(
@@ -2426,6 +2440,11 @@ shardus.setup({
       operatorEVMAccount.operatorAccountInfo.stake = new BN(0)
       operatorEVMAccount.operatorAccountInfo.nominee = null
       operatorEVMAccount.operatorAccountInfo.certExp = null
+
+      // update the operator historical stats
+      operatorEVMAccount.operatorAccountInfo.operatorStats.totalUnstakeReward = _base16BNParser(operatorEVMAccount.operatorAccountInfo.operatorStats.totalUnstakeReward).add(reward)
+      operatorEVMAccount.operatorAccountInfo.operatorStats.unstakeCount += 1
+      operatorEVMAccount.operatorAccountInfo.operatorStats.lastStakedNodeKey = nomineeNodeAccount2Address
 
       let operatorEVMAddress: Address = Address.fromString(unstakeCoinsTX.nominator)
       await shardeumState.checkpoint()
@@ -3265,7 +3284,7 @@ shardus.setup({
         // tx.timestamp = tempTimestamp
       } else if (internalTx.internalTXType === InternalTXType.ClaimReward) {
         keys.sourceKeys = [tx.nominee]
-        keys.targetKeys = [networkAccount]
+        keys.targetKeys = [toShardusAddress(tx.nominator, AccountType.Account), networkAccount]
 
         // //force all TXs for the same reward to have the same hash
         // let tempTimestamp = tx.timestamp
@@ -3740,6 +3759,12 @@ shardus.setup({
               rewardEndTime: 0,
               penalty: new BN(0),
               accountType: AccountType.NodeAccount2,
+              nodeAccountStats: {
+                totalReward: new BN(0),
+                totalPenalty: new BN(0),
+                history: [],
+                isShardeumRun: false,
+              }
             }
             accountCreated = true
             WrappedEVMAccountFunctions.updateEthAccountHash(wrappedEVMAccount)
@@ -3889,6 +3914,16 @@ shardus.setup({
               stake: new BN(0),
               nominee: '',
               certExp: 0,
+              operatorStats: {
+                totalNodeReward: new BN(0),
+                totalNodePenalty: new BN(0),
+                totalNodeTime: 0,
+                history: [],
+                totalUnstakeReward: new BN(0),
+                unstakeCount: 0,
+                isShardeumRun: false,
+                lastStakedNodeKey: ''
+              }
             }
           }
         }

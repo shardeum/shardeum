@@ -148,6 +148,7 @@ export interface InitRewardTimes extends InternalTxBase {
 
 export interface ClaimRewardTX extends InternalTxBase {
   nominee: string
+  nominator: string
   timestamp: number
   deactivatedNodeId: string
   nodeDeactivatedTime: number
@@ -251,6 +252,18 @@ export interface NodeAccount2 extends BaseAccount {
   rewardStartTime: number
   rewardEndTime: number
   penalty: BN
+  nodeAccountStats: NodeAccountStats
+}
+
+export interface NodeAccountStats {
+  //update when node is rewarded (exits)
+  totalReward: BN
+  totalPenalty: BN
+  //push begin and end times when rewarded
+  history: { b: number; e: number }[]
+
+  //set when first staked
+  isShardeumRun: boolean
 }
 
 export interface DevAccount extends BaseAccount {
@@ -263,6 +276,24 @@ export interface OperatorAccountInfo {
   stake: BN
   nominee: string
   certExp: number
+  operatorStats: OperatorStats
+}
+
+export interface OperatorStats {
+  //update when node is rewarded (exits)
+  totalNodeReward: BN
+  totalNodePenalty: BN
+  totalNodeTime: number
+  //push begin and end times when rewarded
+  history: { b: number; e: number }[]
+
+  //update then unstaked
+  totalUnstakeReward: BN
+  unstakeCount: number
+
+  //set when first staked
+  isShardeumRun: boolean
+  lastStakedNodeKey: string
 }
 
 export interface ChangeConfig {
