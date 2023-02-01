@@ -21,7 +21,7 @@ import * as InitRewardTimesTx from '../tx/initRewardTimes'
 import { validateClaimRewardTx } from '../tx/claimReward'
 import { bufferToHex, BN } from 'ethereumjs-util'
 import { __ShardFunctions, nestedCountersInstance, Shardus } from '@shardus/core'
-import {_base16BNParser, scaleByStabilityFactor} from '../utils'
+import { _base16BNParser, scaleByStabilityFactor } from '../utils'
 import * as AccountsStorage from '../storage/accountStorage'
 
 /**
@@ -132,7 +132,9 @@ export const validateTxnFields = (shardus: Shardus, debugAppdata: Map<string, an
     }
 
     if (ShardeumFlags.txBalancePreCheck && appData != null) {
-      let minBalanceUsd = ShardeumFlags.chargeConstantTxFee ? new BN(ShardeumFlags.constantTxFeeUsd) : new BN(1)
+      let minBalanceUsd = ShardeumFlags.chargeConstantTxFee
+        ? new BN(ShardeumFlags.constantTxFeeUsd)
+        : new BN(1)
       let minBalance = scaleByStabilityFactor(minBalanceUsd, AccountsStorage.cachedNetworkAccount)
       //check with value added in
       minBalance = minBalance.add(txObj.value)
@@ -247,9 +249,13 @@ export const validateTxnFields = (shardus: Shardus, debugAppdata: Map<string, an
         } else if (nodeAccount.nominator !== unstakeCoinsTX.nominator) {
           success = false
           reason = `This node is staked by another account. You can't unstake it!`
-        } else if (nodeAccount.rewardEndTime === 0) {
+        } else if (shardus.isNodeActiveByPubKey(appData.nomineeAccount) === true) {
           success = false
           reason = `This node is still active in the network. You can unstake only after the node leaves the network!`
+        } else if (nodeAccount.rewardEndTime === 0 && nodeAccount.rewardStartTime > 0) {
+          //note that if both end time and start time are 0 it is ok to unstake
+          success = false
+          reason = `No reward endTime set, can't unstake node yet`
         }
       } else {
         success = false
