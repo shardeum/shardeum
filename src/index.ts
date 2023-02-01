@@ -2232,21 +2232,21 @@ shardus.setup({
 
       // todo: operatorAccountInfo field may not exist in the operatorEVMAccount yet
       if (!operatorEVMAccount.operatorAccountInfo) {
-          operatorEVMAccount.operatorAccountInfo = {
-            stake: new BN(0),
-            nominee: '',
-            certExp: null,
-            operatorStats: {
-                totalNodeReward: new BN(0),
-                totalNodePenalty: new BN(0),
-                totalNodeTime: 0,
-                history: [],
-                totalUnstakeReward: new BN(0),
-                unstakeCount: 0,
-                isShardeumRun: false,
-                lastStakedNodeKey: ''
-            },
-          }
+        operatorEVMAccount.operatorAccountInfo = {
+          stake: new BN(0),
+          nominee: '',
+          certExp: null,
+          operatorStats: {
+            totalNodeReward: new BN(0),
+            totalNodePenalty: new BN(0),
+            totalNodeTime: 0,
+            history: [],
+            totalUnstakeReward: new BN(0),
+            unstakeCount: 0,
+            isShardeumRun: false,
+            lastStakedNodeKey: '',
+          },
+        }
       } else {
         if (typeof operatorEVMAccount.operatorAccountInfo.stake === 'string')
           operatorEVMAccount.operatorAccountInfo.stake = new BN(
@@ -2442,7 +2442,9 @@ shardus.setup({
       operatorEVMAccount.operatorAccountInfo.certExp = null
 
       // update the operator historical stats
-      operatorEVMAccount.operatorAccountInfo.operatorStats.totalUnstakeReward = _base16BNParser(operatorEVMAccount.operatorAccountInfo.operatorStats.totalUnstakeReward).add(reward)
+      operatorEVMAccount.operatorAccountInfo.operatorStats.totalUnstakeReward = _base16BNParser(
+        operatorEVMAccount.operatorAccountInfo.operatorStats.totalUnstakeReward
+      ).add(reward)
       operatorEVMAccount.operatorAccountInfo.operatorStats.unstakeCount += 1
       operatorEVMAccount.operatorAccountInfo.operatorStats.lastStakedNodeKey = nomineeNodeAccount2Address
 
@@ -2466,6 +2468,7 @@ shardus.setup({
       nodeAccount2.reward = new BN(0)
       nodeAccount2.rewardStartTime = 0
       nodeAccount2.rewardEndTime = 0
+      nodeAccount2.rewarded = false
 
       if (ShardeumFlags.useAccountWrites) {
         // for operator evm account
@@ -3764,7 +3767,7 @@ shardus.setup({
                 totalPenalty: new BN(0),
                 history: [],
                 isShardeumRun: false,
-              }
+              },
             }
             accountCreated = true
             WrappedEVMAccountFunctions.updateEthAccountHash(wrappedEVMAccount)
@@ -3922,8 +3925,8 @@ shardus.setup({
                 totalUnstakeReward: new BN(0),
                 unstakeCount: 0,
                 isShardeumRun: false,
-                lastStakedNodeKey: ''
-              }
+                lastStakedNodeKey: '',
+              },
             }
           }
         }

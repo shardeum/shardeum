@@ -11,13 +11,13 @@ import {
   WrappedStates,
   NodeAccount2,
   WrappedEVMAccount,
-  AccountType
+  AccountType,
 } from '../shardeum/shardeumTypes'
 import * as WrappedEVMAccountFunctions from '../shardeum/wrappedEVMAccountFunctions'
 import { _base16BNParser, _readableSHM, scaleByStabilityFactor } from '../utils'
 import * as AccountsStorage from '../storage/accountStorage'
 import { getAccountShardusAddress, toShardusAddress, toShardusAddressWithKey } from '../shardeum/evmAddress'
-import {getApplyTXState} from '../index'
+import { getApplyTXState } from '../index'
 
 export function isClaimRewardTx(tx: any): boolean {
   if (tx.isInternalTx && tx.internalTXType === InternalTXType.ClaimReward) {
@@ -86,6 +86,7 @@ export function validateClaimRewardState(tx: ClaimRewardTX, shardus) {
     /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log('validateClaimRewardState fail Invalid signature', tx)
     return { result: 'fail', reason: 'Invalid signature' }
   }
+
   const latestCycles = shardus.getLatestCycles(5)
 
   // This still needs to consider for lost cases, but we have to be careful for refuted back cases
@@ -127,6 +128,10 @@ export async function applyClaimRewardTx(
   if (isValidRequest.result === 'fail') {
     /* prettier-ignore */
     console.log(`Invalid claimRewardTx, nominee ${tx.nominee}, reason: ${isValidRequest.reason}`)
+    nestedCountersInstance.countEvent('shardeum-staking', `applyClaimRewardTx fail `)
+    throw new Error(
+      `applyClaimReward failed validateClaimRewardState nominee ${tx.nominee} ${isValidRequest.reason}`
+    )
   }
   let operatorShardusAddress = toShardusAddress(tx.nominator, AccountType.Account)
   let nodeAccount: NodeAccount2 = wrappedStates[tx.nominee].data
@@ -141,7 +146,13 @@ export async function applyClaimRewardTx(
 
   let durationInNetwork = nodeAccount.rewardEndTime - nodeAccount.rewardStartTime
   if (durationInNetwork <= 0) {
+    nestedCountersInstance.countEvent('shardeum-staking', `applyClaimRewardTx fail durationInNetwork <= 0`)
     throw new Error(`applyClaimReward failed because durationInNetwork is less than or equal 0`)
+  }
+
+  if (nodeAccount.rewarded === true) {
+    nestedCountersInstance.countEvent('shardeum-staking', `applyClaimRewardTx fail already rewarded`)
+    throw new Error(`applyClaimReward failed already rewarded`)
   }
 
   //we multiply fist then devide to preserve precision
@@ -154,17 +165,26 @@ export async function applyClaimRewardTx(
   nodeAccount.reward = nodeAccount.reward.add(totalReward)
   nodeAccount.timestamp = txTimestamp
 
+  nodeAccount.rewarded = true
+
   // update the node account historical stats
-  nodeAccount.nodeAccountStats.totalReward = _base16BNParser(nodeAccount.nodeAccountStats.totalReward).add(nodeAccount.reward)
-  nodeAccount.nodeAccountStats.history.push({b: nodeAccount.rewardStartTime, e: nodeAccount.rewardEndTime})
+  nodeAccount.nodeAccountStats.totalReward = _base16BNParser(nodeAccount.nodeAccountStats.totalReward).add(
+    nodeAccount.reward
+  )
+  nodeAccount.nodeAccountStats.history.push({ b: nodeAccount.rewardStartTime, e: nodeAccount.rewardEndTime })
 
   let txId = crypto.hashObj(tx)
   let shardeumState = getApplyTXState(txId)
   shardeumState._transactionState.appData = {}
 
   // update the operator historical stats
-  operatorAccount.operatorAccountInfo.operatorStats.history.push({b: nodeAccount.rewardStartTime, e: nodeAccount.rewardEndTime})
-  operatorAccount.operatorAccountInfo.operatorStats.totalNodeReward = _base16BNParser(operatorAccount.operatorAccountInfo.operatorStats.totalNodeReward).add(nodeAccount.reward)
+  operatorAccount.operatorAccountInfo.operatorStats.history.push({
+    b: nodeAccount.rewardStartTime,
+    e: nodeAccount.rewardEndTime,
+  })
+  operatorAccount.operatorAccountInfo.operatorStats.totalNodeReward = _base16BNParser(
+    operatorAccount.operatorAccountInfo.operatorStats.totalNodeReward
+  ).add(nodeAccount.reward)
   operatorAccount.operatorAccountInfo.operatorStats.totalNodeTime += durationInNetwork
 
   // hmm may be we don't need this as we are not updating nonce and balance

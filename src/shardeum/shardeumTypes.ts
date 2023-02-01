@@ -253,6 +253,7 @@ export interface NodeAccount2 extends BaseAccount {
   rewardEndTime: number
   penalty: BN
   nodeAccountStats: NodeAccountStats
+  rewarded: boolean
 }
 
 export interface NodeAccountStats {
