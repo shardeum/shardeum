@@ -97,16 +97,16 @@ export let blocks: BlockMap = {}
 export let blocksByHash = {}
 export let readableBlocks = {}
 
-const oneSHA = new BN(10).pow(new BN(18))
+const oneSHM = new BN(10).pow(new BN(18))
 
 // INITIAL NETWORK PARAMETERS FOR Shardeum
 export const INITIAL_PARAMETERS: NetworkParameters = {
   title: 'Initial parameters',
   description: 'These are the initial network parameters Shardeum started with',
   nodeRewardInterval: 1 * ONE_HOUR, // 1 hour reward interval
-  nodeRewardAmountUsd: oneSHA.mul(new BN(1)), // $1 x 10 ^ 18
-  nodePenaltyUsd: oneSHA.mul(new BN(10)), // $10 x 10 ^ 18
-  stakeRequiredUsd: oneSHA.mul(new BN(10)), // $10 x 10 ^ 18
+  nodeRewardAmountUsd: oneSHM.mul(new BN(1)), // $1 x 10 ^ 18
+  nodePenaltyUsd: oneSHM.mul(new BN(10)), // $10 x 10 ^ 18
+  stakeRequiredUsd: oneSHM.mul(new BN(10)), // $10 x 10 ^ 18
   maintenanceInterval: ONE_DAY,
   maintenanceFee: 0,
   minVersion: '1.0.0',
@@ -288,7 +288,7 @@ let shardusTxIdToEthTxId = {} //this appears to only support appliedTxs
 let EVMReceiptsToKeep = 1000
 
 //In debug mode the default value is 100 SHM.  This is needed for certain load test operations
-const defaultBalance = isDebugMode() ? oneSHA.mul(new BN(100)) : new BN(0)
+const defaultBalance = isDebugMode() ? oneSHM.mul(new BN(100)) : new BN(0)
 
 // TODO move this to a db table
 let transactionFailHashMap: any = {}
@@ -605,7 +605,7 @@ async function createAccount(
 
   const acctData = {
     nonce: 0,
-    balance: balance, // 100 eth in debug mode.  0 ETH in release mode
+    balance: balance, // 100 SHM in debug mode.  0 SHM in release mode
   }
 
   //I think this will have to change in the future!
@@ -1258,7 +1258,7 @@ shardus.registerExternalPost('contract/call', async (req, res) => {
     } else {
       const acctData = {
         nonce: 0,
-        balance: oneSHA.mul(new BN(100)), // 100 eth.  This is a temporary account that will never exist.
+        balance: oneSHM.mul(new BN(100)), // 100 SHM.  This is a temporary account that will never exist.
       }
       const fakeAccount = Account.fromAccountData(acctData)
       callTxState._transactionState.insertFirstAccountReads(opt.caller, fakeAccount)
@@ -1952,7 +1952,7 @@ async function generateAccessList(callObj: any): Promise<{ accessList: any[]; sh
     } else {
       const acctData = {
         nonce: 0,
-        balance: oneSHA.mul(new BN(100)), // 100 eth.  This is a temporary account that will never exist.
+        balance: oneSHM.mul(new BN(100)), // 100 SHM.  This is a temporary account that will never exist.
       }
       const fakeAccount = Account.fromAccountData(acctData)
       preRunTxState._transactionState.insertFirstAccountReads(opt.caller, fakeAccount)
