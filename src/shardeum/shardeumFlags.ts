@@ -55,6 +55,7 @@ interface ShardeumFlags {
   minActiveNodesForStaking: number
   MinStakeCertSig: number
   FullCertChecksEnabled: boolean // do we run all of the cert checks when signing.  This config may go away soon after testing.
+  extraTxTime: number
 }
 
 export let ShardeumFlags: ShardeumFlags = {
@@ -110,6 +111,7 @@ export let ShardeumFlags: ShardeumFlags = {
   minActiveNodesForStaking: 5,
   MinStakeCertSig: 1, // this is the minimum amount of signature required for stake certification. will move to network param in future.
   FullCertChecksEnabled: true,
+  extraTxTime: 8, // This is to predict the cycleNumber from the tx timestamp + 8s
 }
 
 export function updateShardeumFlag(key: string, value: any) {

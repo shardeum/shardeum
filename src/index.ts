@@ -1823,7 +1823,7 @@ const createNetworkAccount = (accountId: string) => {
   return account
 }
 
-const getOrCreateBlockFromTimestamp = (timestamp: number, scheduleNextBlock = false): Block => {
+const getOrCreateBlockFromTimestamp = (timestamp: number, scheduleNextBlock = false, boom = false): Block => {
   if (ShardeumFlags.VerboseLogs) console.log('Getting block from timestamp', timestamp)
   if (ShardeumFlags.VerboseLogs && blocks[latestBlock]) {
     /* prettier-ignore */ console.log('Latest block timestamp', blocks[latestBlock].header.timestamp, blocks[latestBlock].header.timestamp.toNumber() + 6000)
@@ -1837,13 +1837,17 @@ const getOrCreateBlockFromTimestamp = (timestamp: number, scheduleNextBlock = fa
   if (latestCycles == null || latestCycles.length === 0) return
   const cycle = latestCycles[0]
 
+  if (ShardeumFlags.extraTxTime) timestamp = timestamp + ShardeumFlags.extraTxTime * 1000
+
   let cycleStart = (cycle.start + cycle.duration) * 1000
   let timeElapsed = timestamp - cycleStart
   let decimal = timeElapsed / (cycle.duration * 1000)
   let numBlocksPerCycle = cycle.duration / ShardeumFlags.blockProductionRate
-  let blockNumber = Math.floor((cycle.counter + decimal) * numBlocksPerCycle)
+  let blockNumber = Math.floor((cycle.counter + 1 + decimal) * numBlocksPerCycle)
   let newBlockTimestampInSecond =
-    cycle.start + cycle.duration + (blockNumber - cycle.counter * 10) * ShardeumFlags.blockProductionRate
+    cycle.start +
+    cycle.duration +
+    (blockNumber - (cycle.counter + 1) * 10) * ShardeumFlags.blockProductionRate
   let newBlockTimestamp = newBlockTimestampInSecond * 1000
   if (ShardeumFlags.VerboseLogs) {
     console.log('Cycle counter vs derived blockNumber', cycle.counter, blockNumber)
@@ -2676,9 +2680,9 @@ shardus.setup({
         status: 0,
         transactionHash: ethTxId,
         transactionIndex: '0x1',
-        blockNumber: '0x' + blocks[latestBlock].header.number.toString('hex'),
+        blockNumber: readableBlocks[blockForTx.header.number.toNumber()].number,
         nonce: transaction.nonce.toString('hex'),
-        blockHash: readableBlocks[latestBlock].hash,
+        blockHash: readableBlocks[blockForTx.header.number.toNumber()].hash,
         cumulativeGasUsed: '0x',
         logs: null,
         logsBloom: null,
@@ -2952,8 +2956,8 @@ shardus.setup({
         logs = runState.logs.map((l: any[]) => {
           return {
             logIndex: '0x1',
-            blockNumber: readableBlocks[latestBlock].number,
-            blockHash: readableBlocks[latestBlock].hash,
+            blockNumber: readableBlocks[blockForTx.header.number.toNumber()].number,
+            blockHash: readableBlocks[blockForTx.header.number.toNumber()].hash,
             transactionHash: ethTxId,
             transactionIndex: '0x1',
             address: bufferToHex(l[0]),
@@ -2967,9 +2971,9 @@ shardus.setup({
         status: runTxResult.receipt['status'],
         transactionHash: ethTxId,
         transactionIndex: '0x1',
-        blockNumber: '0x' + blocks[latestBlock].header.number.toString('hex'),
+        blockNumber: readableBlocks[blockForTx.header.number.toNumber()].number,
         nonce: transaction.nonce.toString('hex'),
-        blockHash: readableBlocks[latestBlock].hash,
+        blockHash: readableBlocks[blockForTx.header.number.toNumber()].hash,
         cumulativeGasUsed: '0x' + runTxResult.gasUsed.toString('hex'),
         gasUsed: '0x' + runTxResult.gasUsed.toString('hex'),
         logs: logs,
