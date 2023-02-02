@@ -157,7 +157,12 @@ export async function applyClaimRewardTx(
   const nodeRewardInterval = new BN(network.current.nodeRewardInterval)
 
   if (nodeAccount.rewardStartTime <= 0) {
-    throw new Error(`applyClaimReward failed because rewardStartTime is less than or equal 0`)
+    nestedCountersInstance.countEvent('shardeum-staking', `applyClaimRewardTx fail rewardStartTime <= 0`)
+    shardus.applyResponseSetFailed(
+      applyResponse,
+      `applyClaimReward failed because rewardStartTime is less than or equal 0`
+    )
+    return
   }
 
   let durationInNetwork = tx.nodeDeactivatedTime - nodeAccount.rewardStartTime
