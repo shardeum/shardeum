@@ -156,6 +156,10 @@ export async function applyClaimRewardTx(
   const nodeRewardAmount = scaleByStabilityFactor(nodeRewardAmountUsd, AccountsStorage.cachedNetworkAccount)
   const nodeRewardInterval = new BN(network.current.nodeRewardInterval)
 
+  if (nodeAccount.rewardStartTime <= 0) {
+    throw new Error(`applyClaimReward failed because rewardStartTime is less than or equal 0`)
+  }
+
   let durationInNetwork = tx.nodeDeactivatedTime - nodeAccount.rewardStartTime
   if (durationInNetwork <= 0) {
     nestedCountersInstance.countEvent('shardeum-staking', `applyClaimRewardTx fail durationInNetwork <= 0`)
