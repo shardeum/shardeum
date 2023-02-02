@@ -74,7 +74,7 @@ export let ShardeumFlags: ShardeumFlags = {
   DebugRestoreArchiveBatch: 2000,
   CheckNonce: true,
   txNoncePreCheck: true,
-  txBalancePreCheck: false,
+  txBalancePreCheck: true,
   autoGenerateAccessList: true,
   forwardGenesisAccounts: true,
   UseDBForAccounts: true,
