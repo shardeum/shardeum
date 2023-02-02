@@ -79,7 +79,7 @@ export let ShardeumFlags: ShardeumFlags = {
   UseDBForAccounts: true,
   AppliedTxsMaps: false,
   SaveEVMTries: false,
-  ChainID: process.env.CHAIN_ID ? parseInt(process.env.CHAIN_ID) : 8081,
+  ChainID: process.env.CHAIN_ID ? parseInt(process.env.CHAIN_ID) : 8082,
   CheckpointRevertSupport: true,
   UseTXPreCrack: true,
   NewStorageIndex: true,
