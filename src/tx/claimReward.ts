@@ -142,6 +142,7 @@ export async function applyClaimRewardTx(
     //   `applyClaimReward failed validateClaimRewardState nominee ${tx.nominee} ${isValidRequest.reason}`
     // )
     shardus.applyResponseSetFailed(
+      applyResponse,
       `applyClaimReward failed validateClaimRewardState nominee ${tx.nominee} ${isValidRequest.reason}`
     )
     return
@@ -160,6 +161,7 @@ export async function applyClaimRewardTx(
     nestedCountersInstance.countEvent('shardeum-staking', `applyClaimRewardTx fail durationInNetwork <= 0`)
     //throw new Error(`applyClaimReward failed because durationInNetwork is less than or equal 0`)
     shardus.applyResponseSetFailed(
+      applyResponse,
       `applyClaimReward failed because durationInNetwork is less than or equal 0`
     )
     return
@@ -168,7 +170,7 @@ export async function applyClaimRewardTx(
   if (nodeAccount.rewarded === true) {
     nestedCountersInstance.countEvent('shardeum-staking', `applyClaimRewardTx fail already rewarded`)
     //throw new Error(`applyClaimReward failed already rewarded`)
-    shardus.applyResponseSetFailed(`applyClaimReward failed already rewarded`)
+    shardus.applyResponseSetFailed(applyResponse, `applyClaimReward failed already rewarded`)
     return
   }
 

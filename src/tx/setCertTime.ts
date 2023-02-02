@@ -128,6 +128,7 @@ export function applySetCertTimeTx(
   if (isValidRequest.result === 'fail') {
     /* prettier-ignore */ console.log(`Invalid SetCertTimeTx state, operator account ${tx.nominator}, reason: ${isValidRequest.reason}`)
     shardus.applyResponseSetFailed(
+      applyResponse,
       `Invalid SetCertTimeTx state, operator account ${tx.nominator}, reason: ${isValidRequest.reason}`
     )
     return
