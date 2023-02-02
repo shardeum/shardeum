@@ -27,7 +27,16 @@ export function isClaimRewardTx(tx: any): boolean {
 }
 
 export async function injectClaimRewardTx(shardus, eventData: ShardusTypes.ShardusEvent) {
-  const nodeAccount = await shardus.getLocalOrRemoteAccount(eventData.publicKey)
+  let nodeAccount = await shardus.getLocalOrRemoteAccount(eventData.publicKey)
+  if (nodeAccount === null) {
+    //try one more time
+    nodeAccount = await shardus.getLocalOrRemoteAccount(eventData.publicKey)
+    if (nodeAccount === null) {
+      /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`injectClaimRewardTx failed cant find : ${eventData.publicKey}`)
+      /* prettier-ignore */ nestedCountersInstance.countEvent('shardeum-staking', `injectClaimRewardTx failed cant find node`)
+      return
+    }
+  }
   let tx = {
     nominee: eventData.publicKey,
     nominator: nodeAccount.data.nominator,
@@ -129,9 +138,13 @@ export async function applyClaimRewardTx(
     /* prettier-ignore */
     console.log(`Invalid claimRewardTx, nominee ${tx.nominee}, reason: ${isValidRequest.reason}`)
     nestedCountersInstance.countEvent('shardeum-staking', `applyClaimRewardTx fail `)
-    throw new Error(
+    // throw new Error(
+    //   `applyClaimReward failed validateClaimRewardState nominee ${tx.nominee} ${isValidRequest.reason}`
+    // )
+    shardus.applyResponseSetFailed(
       `applyClaimReward failed validateClaimRewardState nominee ${tx.nominee} ${isValidRequest.reason}`
     )
+    return
   }
   let operatorShardusAddress = toShardusAddress(tx.nominator, AccountType.Account)
   let nodeAccount: NodeAccount2 = wrappedStates[tx.nominee].data
@@ -142,18 +155,24 @@ export async function applyClaimRewardTx(
   const nodeRewardAmount = scaleByStabilityFactor(nodeRewardAmountUsd, AccountsStorage.cachedNetworkAccount)
   const nodeRewardInterval = new BN(network.current.nodeRewardInterval)
 
-  nodeAccount.rewardEndTime = tx.nodeDeactivatedTime
-
-  let durationInNetwork = nodeAccount.rewardEndTime - nodeAccount.rewardStartTime
+  let durationInNetwork = tx.nodeDeactivatedTime - nodeAccount.rewardStartTime
   if (durationInNetwork <= 0) {
     nestedCountersInstance.countEvent('shardeum-staking', `applyClaimRewardTx fail durationInNetwork <= 0`)
-    throw new Error(`applyClaimReward failed because durationInNetwork is less than or equal 0`)
+    //throw new Error(`applyClaimReward failed because durationInNetwork is less than or equal 0`)
+    shardus.applyResponseSetFailed(
+      `applyClaimReward failed because durationInNetwork is less than or equal 0`
+    )
+    return
   }
 
   if (nodeAccount.rewarded === true) {
     nestedCountersInstance.countEvent('shardeum-staking', `applyClaimRewardTx fail already rewarded`)
-    throw new Error(`applyClaimReward failed already rewarded`)
+    //throw new Error(`applyClaimReward failed already rewarded`)
+    shardus.applyResponseSetFailed(`applyClaimReward failed already rewarded`)
+    return
   }
+
+  nodeAccount.rewardEndTime = tx.nodeDeactivatedTime
 
   //we multiply fist then devide to preserve precision
   let totalReward = nodeRewardAmount.mul(new BN(durationInNetwork * 1000)) // Convert from seconds to milliseconds
@@ -186,6 +205,9 @@ export async function applyClaimRewardTx(
     operatorAccount.operatorAccountInfo.operatorStats.totalNodeReward
   ).add(nodeAccount.reward)
   operatorAccount.operatorAccountInfo.operatorStats.totalNodeTime += durationInNetwork
+
+  operatorAccount.operatorAccountInfo.operatorStats.lastStakedNodeKey =
+    operatorAccount.operatorAccountInfo.nominee
 
   // hmm may be we don't need this as we are not updating nonce and balance
   let operatorEVMAddress: Address = Address.fromString(tx.nominator)

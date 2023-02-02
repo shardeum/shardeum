@@ -16,7 +16,7 @@ import * as AccountsStorage from '../storage/accountStorage'
 import { fixDeserializedWrappedEVMAccount } from '../shardeum/wrappedEVMAccountFunctions'
 import { Shardus } from '@shardus/core'
 import { getNodeAccountWithRetry, InjectTxToConsensor } from '../handlers/queryCertificate'
-import {getRandom, _base16BNParser, _readableSHM, scaleByStabilityFactor} from '../utils'
+import { getRandom, _base16BNParser, _readableSHM, scaleByStabilityFactor } from '../utils'
 import { toShardusAddress } from '../shardeum/evmAddress'
 import * as WrappedEVMAccountFunctions from '../shardeum/wrappedEVMAccountFunctions'
 
@@ -97,7 +97,7 @@ export function validateSetCertTimeState(tx: SetCertTime, wrappedStates: Wrapped
   const minStakeRequiredUsd = AccountsStorage.cachedNetworkAccount.current.stakeRequiredUsd
   const minStakeRequired = scaleByStabilityFactor(minStakeRequiredUsd, AccountsStorage.cachedNetworkAccount)
 
-  if (ShardeumFlags.VerboseLogs) console.log('validate operator stake', _readableSHM(committedStake), _readableSHM(minStakeRequired), ' committedStake < minStakeRequired : ', committedStake.lt(minStakeRequired))
+  /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log( 'validate operator stake', _readableSHM(committedStake), _readableSHM(minStakeRequired), ' committedStake < minStakeRequired : ', committedStake.lt(minStakeRequired) )
 
   // validate operator stake
   if (committedStake.lt(minStakeRequired)) {
@@ -127,6 +127,10 @@ export function applySetCertTimeTx(
   const isValidRequest = validateSetCertTimeState(tx, wrappedStates)
   if (isValidRequest.result === 'fail') {
     /* prettier-ignore */ console.log(`Invalid SetCertTimeTx state, operator account ${tx.nominator}, reason: ${isValidRequest.reason}`)
+    shardus.applyResponseSetFailed(
+      `Invalid SetCertTimeTx state, operator account ${tx.nominator}, reason: ${isValidRequest.reason}`
+    )
+    return
   }
   const operatorAccountAddress = tx.nominator
   const operatorEVMAccount: WrappedEVMAccount =
@@ -142,7 +146,10 @@ export function applySetCertTimeTx(
   const serverConfig: any = config.server
   operatorEVMAccount.operatorAccountInfo.certExp =
     txTimestamp + serverConfig.p2p.cycleDuration * ONE_SECOND * tx.duration
-  let constTxFee = scaleByStabilityFactor(new BN(ShardeumFlags.constantTxFeeUsd), AccountsStorage.cachedNetworkAccount)
+  let constTxFee = scaleByStabilityFactor(
+    new BN(ShardeumFlags.constantTxFeeUsd),
+    AccountsStorage.cachedNetworkAccount
+  )
   operatorEVMAccount.account.balance = operatorEVMAccount.account.balance.sub(constTxFee)
 
   if (ShardeumFlags.VerboseLogs) {
