@@ -3140,17 +3140,22 @@ shardus.setup({
 
         // Attach nonce, queueCount and txNonce to appData
         if (ShardeumFlags.txNoncePreCheck) {
-          appData.queueCount = queueCountResult.count
-          appData.nonce = parseInt(nonce.toString())
-          if (queueCountResult.committingAppData.length > 0) {
-            let highestCommittingNonce = queueCountResult.committingAppData
-              .map(appData => appData.txNonce)
-              .sort()[0]
-            let expectedAccountNonce = highestCommittingNonce + 1
-            if (appData.nonce < expectedAccountNonce) appData.nonce = expectedAccountNonce
+          if (queueCountResult == null) {
+            /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`txPreCrackData uanble to get queueCountResult for ${txSenderEvmAddr} queueCountResult:${queueCountResult}`)
+            throw new Error(`txPreCrackData uanble to get queueCountResult for ${txSenderEvmAddr} queueCountResult:${queueCountResult}`)
+          } else {
+            appData.queueCount = queueCountResult.count
+            appData.nonce = parseInt(nonce.toString())
+            if (queueCountResult.committingAppData.length > 0) {
+              let highestCommittingNonce = queueCountResult.committingAppData
+                .map(appData => appData.txNonce)
+                .sort()[0]
+              let expectedAccountNonce = highestCommittingNonce + 1
+              if (appData.nonce < expectedAccountNonce) appData.nonce = expectedAccountNonce
+            }
+            appData.txNonce = transaction.nonce.toNumber()
+            /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`txPreCrackData found nonce:${foundNonce} found sender:${foundSender} for ${txSenderEvmAddr} nonce:${nonce.toString()} queueCount:${queueCountResult.count.toString()}`)
           }
-          appData.txNonce = transaction.nonce.toNumber()
-          /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`txPreCrackData found nonce:${foundNonce} found sender:${foundSender} for ${txSenderEvmAddr} nonce:${nonce.toString()} queueCount:${queueCountResult.count.toString()}`)
         }
 
         // Attach balance to appData
