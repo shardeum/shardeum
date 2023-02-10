@@ -4328,14 +4328,41 @@ shardus.setup({
             return fail
           }
 
-          const minStakeRequiredUsd = _base16BNParser(
-            AccountsStorage.cachedNetworkAccount.current.stakeRequiredUsd
-          )
-          const minStakeRequired = scaleByStabilityFactor(
-            minStakeRequiredUsd,
-            AccountsStorage.cachedNetworkAccount
-          )
-          let stakeAmount = _base16BNParser(stakeCert.stake)
+          let minStakeRequiredUsd: BN
+          let minStakeRequired: BN
+          let stakeAmount: BN
+
+          try {
+            minStakeRequiredUsd = _base16BNParser(
+              AccountsStorage.cachedNetworkAccount.current.stakeRequiredUsd
+            )
+          } catch (e) {
+            /* prettier-ignore */ nestedCountersInstance.countEvent('shardeum-staking', 'signAppData' +
+              ' stakeRequiredUsd parse error')
+            /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`signAppData minStakeRequiredUsd parse error ${type} ${JSON.stringify(stakeCert)}, cachedNetworkAccount: ${JSON.stringify(AccountsStorage.cachedNetworkAccount)} `)
+            return fail
+          }
+
+          try {
+            minStakeRequired = scaleByStabilityFactor(
+              minStakeRequiredUsd,
+              AccountsStorage.cachedNetworkAccount
+            )
+          } catch (e) {
+            /* prettier-ignore */ nestedCountersInstance.countEvent('shardeum-staking', 'signAppData' +
+              ' minStakeRequired parse error')
+            /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`signAppData minStakeRequired parse error ${type} ${JSON.stringify(stakeCert)}, cachedNetworkAccount: ${JSON.stringify(AccountsStorage.cachedNetworkAccount)} `)
+            return fail
+          }
+
+          try {
+            stakeAmount = _base16BNParser(stakeCert.stake)
+          } catch (e) {
+            /* prettier-ignore */ nestedCountersInstance.countEvent('shardeum-staking', 'signAppData' +
+              ' stakeAmount parse error')
+            /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`signAppData stakeAmount parse error ${type} ${JSON.stringify(stakeCert)}`)
+            return fail
+          }
 
           if (stakeAmount.lt(minStakeRequired)) {
             /* prettier-ignore */ nestedCountersInstance.countEvent('shardeum-staking', 'signAppData stake amount lower than required')
