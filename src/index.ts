@@ -3142,7 +3142,9 @@ shardus.setup({
         if (ShardeumFlags.txNoncePreCheck) {
           if (queueCountResult == null) {
             /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`txPreCrackData uanble to get queueCountResult for ${txSenderEvmAddr} queueCountResult:${queueCountResult}`)
-            throw new Error(`txPreCrackData uanble to get queueCountResult for ${txSenderEvmAddr} queueCountResult:${queueCountResult}`)
+            throw new Error(
+              `txPreCrackData uanble to get queueCountResult for ${txSenderEvmAddr} queueCountResult:${queueCountResult}`
+            )
           } else {
             appData.queueCount = queueCountResult.count
             appData.nonce = parseInt(nonce.toString())
@@ -4400,12 +4402,12 @@ shardus.setup({
           delete stakeCert.signs
           const signedCert: StakeCert = shardus.signAsNode(stakeCert)
           const result: ShardusTypes.SignAppDataResult = { success: true, signature: signedCert.sign }
-          if (ShardeumFlags.VerboseLogs) console.log(`signAppData passed ${type} ${JSON.stringify(stakeCert)}`)
+          /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`signAppData passed ${type} ${JSON.stringify(stakeCert)}`)
           nestedCountersInstance.countEvent('shardeum-staking', 'sign-stake-cert - passed')
           return result
       }
     } catch (e) {
-      if (ShardeumFlags.VerboseLogs) console.log(`signAppData failed: ${type} ${JSON.stringify(stakeCert)}, error: ${JSON.stringify(e)}`)
+      /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`signAppData failed: ${type} ${JSON.stringify(stakeCert)}, error: ${JSON.stringify(e)}`)
       nestedCountersInstance.countEvent('shardeum-staking', 'sign-stake-cert - fail uncaught')
     }
     return fail
@@ -4565,6 +4567,11 @@ shardus.setup({
       }
     } catch (e) {
       /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`validateJoinRequest exception: ${e}`)
+      /* prettier-ignore */ nestedCountersInstance.countEvent('shardeum-staking', `validateJoinRequest fail: exception: ${e} `)
+      return {
+        success: false,
+        reason: `validateJoinRequest fail: exception: ${e}`,
+      }
     }
   },
   // Update the activeNodes type here; We can import from P2P.P2PTypes.Node from '@shardus/type' lib but seems it's not installed yet
