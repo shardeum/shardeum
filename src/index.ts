@@ -109,8 +109,8 @@ export const INITIAL_PARAMETERS: NetworkParameters = {
   stakeRequiredUsd: oneSHM.mul(new BN(10)), // $10 x 10 ^ 18
   maintenanceInterval: ONE_DAY,
   maintenanceFee: 0,
-  minVersion: '1.0.0',
-  activeVersion: '1.0.0',
+  minVersion: '1.1.0',
+  activeVersion: '1.1.0',
   stabilityScaleMul: 1000,
   stabilityScaleDiv: 1000,
 }
