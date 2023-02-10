@@ -4301,80 +4301,85 @@ shardus.setup({
   ): Promise<ShardusTypes.SignAppDataResult> {
     nestedCountersInstance.countEvent('shardeum-staking', 'calling signAppData')
     let fail: ShardusTypes.SignAppDataResult = { success: false, signature: null }
-    console.log('Running signAppData', type, hash, nodesToSign, appData)
+    try {
+      console.log('Running signAppData', type, hash, nodesToSign, appData)
 
-    switch (type) {
-      case 'sign-stake-cert':
-        if (nodesToSign != 5) return fail
-        const stakeCert = appData as StakeCert
-        if (!stakeCert.nominator || !stakeCert.nominee || !stakeCert.stake || !stakeCert.certExp) {
-          nestedCountersInstance.countEvent('shardeum-staking', 'signAppData format failed')
-          /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`signAppData format failed ${type} ${JSON.stringify(stakeCert)} `)
-          return fail
-        }
-
-        //validate that the cert has not expired
-        const serverConfig: any = config.server
-        const currentTimestamp = Date.now()
-        // const expirationTimeLimit = serverConfig.p2p.cycleDuration * 1000 * certExpireSoonCycles
-
-        // Changing it to certExp > currentTimestamp for now; need to review it again
-        // TODO: I think we need to add more certExp validation steps
-        // if (stakeCert.certExp > currentTimestamp - expirationTimeLimit) {
-        if (stakeCert.certExp < currentTimestamp) {
-          /* prettier-ignore */ nestedCountersInstance.countEvent('shardeum-staking', 'signAppData cert expired')
-          /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`signAppData cert expired ${type} ${JSON.stringify(stakeCert)} `)
-          return fail
-        }
-
-        const minStakeRequiredUsd = _base16BNParser(
-          AccountsStorage.cachedNetworkAccount.current.stakeRequiredUsd
-        )
-        const minStakeRequired = scaleByStabilityFactor(
-          minStakeRequiredUsd,
-          AccountsStorage.cachedNetworkAccount
-        )
-        let stakeAmount = _base16BNParser(stakeCert.stake)
-
-        if (stakeAmount.lt(minStakeRequired)) {
-          /* prettier-ignore */ nestedCountersInstance.countEvent('shardeum-staking', 'signAppData stake amount lower than required')
-          /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`signAppData stake amount lower than required ${type} ${JSON.stringify(stakeCert)} `)
-          return fail
-        }
-
-        if (ShardeumFlags.FullCertChecksEnabled) {
-          const nominatorAddress = toShardusAddress(stakeCert.nominator, AccountType.Account)
-          const nominatorAccount = await shardus.getLocalOrRemoteAccount(nominatorAddress)
-          if (!nominatorAccount) {
-            /* prettier-ignore */ nestedCountersInstance.countEvent('shardeum-staking', 'could not find nominator account')
-            /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`could not find nominator account ${type} ${JSON.stringify(stakeCert)} `)
+      switch (type) {
+        case 'sign-stake-cert':
+          if (nodesToSign != 5) return fail
+          const stakeCert = appData as StakeCert
+          if (!stakeCert.nominator || !stakeCert.nominee || !stakeCert.stake || !stakeCert.certExp) {
+            nestedCountersInstance.countEvent('shardeum-staking', 'signAppData format failed')
+            /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`signAppData format failed ${type} ${JSON.stringify(stakeCert)} `)
             return fail
           }
-          let nominatorEVMAccount = nominatorAccount.data as WrappedEVMAccount
-          fixDeserializedWrappedEVMAccount(nominatorEVMAccount)
-          if (!nominatorEVMAccount.operatorAccountInfo) {
-            /* prettier-ignore */ nestedCountersInstance.countEvent('shardeum-staking', 'operatorAccountInfo missing from nominator')
-            /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`operatorAccountInfo missing from nominator ${type} ${JSON.stringify(stakeCert)} `)
+
+          //validate that the cert has not expired
+          const serverConfig: any = config.server
+          const currentTimestamp = Date.now()
+          // const expirationTimeLimit = serverConfig.p2p.cycleDuration * 1000 * certExpireSoonCycles
+
+          // Changing it to certExp > currentTimestamp for now; need to review it again
+          // TODO: I think we need to add more certExp validation steps
+          // if (stakeCert.certExp > currentTimestamp - expirationTimeLimit) {
+          if (stakeCert.certExp < currentTimestamp) {
+            /* prettier-ignore */ nestedCountersInstance.countEvent('shardeum-staking', 'signAppData cert expired')
+            /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`signAppData cert expired ${type} ${JSON.stringify(stakeCert)} `)
             return fail
           }
-          if (stakeCert.stake != nominatorEVMAccount.operatorAccountInfo.stake) {
-            /* prettier-ignore */ nestedCountersInstance.countEvent('shardeum-staking', 'operatorAccountInfo missing from nominator')
-            /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`stake amount in cert and operator account does not match ${type} ${JSON.stringify(stakeCert)} ${JSON.stringify(nominatorEVMAccount)} `)
+
+          const minStakeRequiredUsd = _base16BNParser(
+            AccountsStorage.cachedNetworkAccount.current.stakeRequiredUsd
+          )
+          const minStakeRequired = scaleByStabilityFactor(
+            minStakeRequiredUsd,
+            AccountsStorage.cachedNetworkAccount
+          )
+          let stakeAmount = _base16BNParser(stakeCert.stake)
+
+          if (stakeAmount.lt(minStakeRequired)) {
+            /* prettier-ignore */ nestedCountersInstance.countEvent('shardeum-staking', 'signAppData stake amount lower than required')
+            /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`signAppData stake amount lower than required ${type} ${JSON.stringify(stakeCert)} `)
             return fail
           }
-          if (stakeCert.nominee != nominatorEVMAccount.operatorAccountInfo.nominee) {
-            /* prettier-ignore */ nestedCountersInstance.countEvent('shardeum-staking', 'nominee in cert and operator account does not match')
-            /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`nominee in cert and operator account does not match ${type} ${JSON.stringify(stakeCert)} ${JSON.stringify(nominatorEVMAccount)} `)
-            return fail
+
+          if (ShardeumFlags.FullCertChecksEnabled) {
+            const nominatorAddress = toShardusAddress(stakeCert.nominator, AccountType.Account)
+            const nominatorAccount = await shardus.getLocalOrRemoteAccount(nominatorAddress)
+            if (!nominatorAccount) {
+              /* prettier-ignore */ nestedCountersInstance.countEvent('shardeum-staking', 'could not find nominator account')
+              /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`could not find nominator account ${type} ${JSON.stringify(stakeCert)} `)
+              return fail
+            }
+            let nominatorEVMAccount = nominatorAccount.data as WrappedEVMAccount
+            fixDeserializedWrappedEVMAccount(nominatorEVMAccount)
+            if (!nominatorEVMAccount.operatorAccountInfo) {
+              /* prettier-ignore */ nestedCountersInstance.countEvent('shardeum-staking', 'operatorAccountInfo missing from nominator')
+              /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`operatorAccountInfo missing from nominator ${type} ${JSON.stringify(stakeCert)} `)
+              return fail
+            }
+            if (stakeCert.stake != nominatorEVMAccount.operatorAccountInfo.stake) {
+              /* prettier-ignore */ nestedCountersInstance.countEvent('shardeum-staking', 'operatorAccountInfo missing from nominator')
+              /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`stake amount in cert and operator account does not match ${type} ${JSON.stringify(stakeCert)} ${JSON.stringify(nominatorEVMAccount)} `)
+              return fail
+            }
+            if (stakeCert.nominee != nominatorEVMAccount.operatorAccountInfo.nominee) {
+              /* prettier-ignore */ nestedCountersInstance.countEvent('shardeum-staking', 'nominee in cert and operator account does not match')
+              /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`nominee in cert and operator account does not match ${type} ${JSON.stringify(stakeCert)} ${JSON.stringify(nominatorEVMAccount)} `)
+              return fail
+            }
           }
-        }
-        delete stakeCert.sign
-        delete stakeCert.signs
-        const signedCert: StakeCert = shardus.signAsNode(stakeCert)
-        const result: ShardusTypes.SignAppDataResult = { success: true, signature: signedCert.sign }
-        if (ShardeumFlags.VerboseLogs) console.log(`signAppData passed ${type} ${JSON.stringify(stakeCert)}`)
-        nestedCountersInstance.countEvent('shardeum-staking', 'sign-stake-cert - passed')
-        return result
+          delete stakeCert.sign
+          delete stakeCert.signs
+          const signedCert: StakeCert = shardus.signAsNode(stakeCert)
+          const result: ShardusTypes.SignAppDataResult = { success: true, signature: signedCert.sign }
+          if (ShardeumFlags.VerboseLogs) console.log(`signAppData passed ${type} ${JSON.stringify(stakeCert)}`)
+          nestedCountersInstance.countEvent('shardeum-staking', 'sign-stake-cert - passed')
+          return result
+      }
+    } catch (e) {
+      if (ShardeumFlags.VerboseLogs) console.log(`signAppData failed: ${type} ${JSON.stringify(stakeCert)}, error: ${JSON.stringify(e)}`)
+      nestedCountersInstance.countEvent('shardeum-staking', 'sign-stake-cert - fail uncaught')
     }
     return fail
   },
