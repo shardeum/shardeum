@@ -1,4 +1,4 @@
-import { ShardusTypes } from '@shardus/core'
+import { nestedCountersInstance, ShardusTypes } from '@shardus/core'
 import * as crypto from '@shardus/crypto-utils'
 import { BN, isValidAddress } from 'ethereumjs-util'
 import { networkAccount, ONE_SECOND } from '..'
@@ -90,7 +90,17 @@ export function validateSetCertTimeState(tx: SetCertTime, wrappedStates: Wrapped
     /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`setCertTime apply: found no wrapped state for operator account ${tx.nominator}`)
   } else {
     if (operatorEVMAccount && operatorEVMAccount.operatorAccountInfo) {
-      committedStake = _base16BNParser(operatorEVMAccount.operatorAccountInfo.stake)
+      try {
+        committedStake = _base16BNParser(operatorEVMAccount.operatorAccountInfo.stake)
+      } catch (er) {
+        /* prettier-ignore */ nestedCountersInstance.countEvent('shardeum-staking', 'validateSetCertTimeState' + ' stake failed to parse')
+        return {
+          result: 'fail',
+          reason: `stake failed to parse: ${JSON.stringify(
+            operatorEVMAccount.operatorAccountInfo.stake
+          )} er:${er.message}`,
+        }
+      }
     }
   }
 
@@ -101,6 +111,7 @@ export function validateSetCertTimeState(tx: SetCertTime, wrappedStates: Wrapped
 
   // validate operator stake
   if (committedStake.lt(minStakeRequired)) {
+    /* prettier-ignore */ nestedCountersInstance.countEvent('shardeum-staking', 'validateSetCertTimeState' + ' Operator has not staked the required amount')
     return {
       result: 'fail',
       reason: 'Operator has not staked the required amount',
@@ -131,6 +142,7 @@ export function applySetCertTimeTx(
       applyResponse,
       `Invalid SetCertTimeTx state, operator account ${tx.nominator}, reason: ${isValidRequest.reason}`
     )
+    /* prettier-ignore */ nestedCountersInstance.countEvent('shardeum-staking', 'applySetCertTimeTx' + ' applyResponseSetFailed failed')
     return
   }
   const operatorAccountAddress = tx.nominator
