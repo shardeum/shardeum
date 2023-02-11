@@ -1,5 +1,5 @@
 import { bufferToHex, BN } from 'ethereumjs-util'
-import {NetworkAccount} from '../shardeum/shardeumTypes'
+import { NetworkAccount } from '../shardeum/shardeumTypes'
 
 /**
  * After a Buffer goes through json stringify/parse it comes out broken
@@ -38,18 +38,23 @@ export const replacer = (key, value) => {
   }
 }
 
-// version checker
-export function isEqualOrNewerVersion(oldVer: string, newVer: string) {
-  if (oldVer === newVer) {
+/**
+ * Check if the test version is equal or newer than the min version
+ * @param minimumVersion
+ * @param testVersion
+ * @returns
+ */
+export function isEqualOrNewerVersion(minimumVersion: string, testVersion: string) {
+  if (minimumVersion === testVersion) {
     return true
   }
-  const oldParts = oldVer.split('.')
-  const newParts = newVer.split('.')
-  for (var i = 0; i < newParts.length; i++) {
-    const a = ~~newParts[i] // parse int
-    const b = ~~oldParts[i] // parse int
-    if (a > b) return true
-    if (a < b) return false
+  const minVerParts = minimumVersion.split('.')
+  const testVerParts = testVersion.split('.')
+  for (var i = 0; i < testVerParts.length; i++) {
+    const testV = ~~testVerParts[i] // parse int
+    const minV = ~~minVerParts[i] // parse int
+    if (testV > minV) return true
+    if (testV < minV) return false
   }
   return false
 }
