@@ -4471,7 +4471,11 @@ shardus.setup({
       /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`validateJoinRequest ${JSON.stringify(data)}`)
       if (!data.appJoinData) {
         /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`validateJoinRequest fail: !data.appJoinData`)
-        return { success: false, reason: `Join request node doesn't provide the app join data.` }
+        return { 
+          success: false, 
+          reason: `Join request node doesn't provide the app join data.`,
+          fatal: true
+        }
       }
 
       const minVersion = AccountsStorage.cachedNetworkAccount.current.minVersion
@@ -4480,6 +4484,7 @@ shardus.setup({
         return {
           success: false,
           reason: `version number is old. Our app version is ${version}. Join request node app version is ${data.appJoinData.version}`,
+          fatal: true,
         }
       }
 
@@ -4504,6 +4509,7 @@ shardus.setup({
           return {
             success: false,
             reason: `Nominated address and tx signature owner doesn't match, nominee: ${stake_cert.nominee}, sign owner: ${nodeAcc}`,
+            fatal: true,
           }
         }
 
@@ -4513,6 +4519,7 @@ shardus.setup({
           return {
             success: false,
             reason: `Certificate has expired at ${stake_cert.certExp}`,
+            fatal: true,
           }
         }
 
@@ -4526,6 +4533,7 @@ shardus.setup({
           return {
             success: false,
             reason: `Certificate will be expired really soon.`,
+            fatal: false
           }
         }
 
@@ -4545,6 +4553,7 @@ shardus.setup({
           return {
             success: false,
             reason: `Minimum stake amount requirement does not meet.`,
+            fatal: false
           }
         }
 
@@ -4558,13 +4567,15 @@ shardus.setup({
         if (!success) {
           /* prettier-ignore */ nestedCountersInstance.countEvent('shardeum-staking', 'validateJoinRequest fail: invalid signature')
           /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`validateJoinRequest fail: invalid signature`, reason)
-          return { success, reason }
+          return { success, reason, fatal: true }
         }
       }
 
       /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`validateJoinRequest success!!!`)
       return {
         success: true,
+        reason: "Join Request validated",
+        fatal: false
       }
     } catch (e) {
       /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`validateJoinRequest exception: ${e}`)
@@ -4572,6 +4583,7 @@ shardus.setup({
       return {
         success: false,
         reason: `validateJoinRequest fail: exception: ${e}`,
+        fatal: true
       }
     }
   },
