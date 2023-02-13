@@ -25,7 +25,7 @@ import {
   NetworkAccount,
   NetworkParameters,
   //NodeAccount,
-  NodeAccount2,
+  NodeAccount2, NodeInfoAppData,
   OperatorAccountInfo,
   OurAppDefinedData,
   ReadableReceipt,
@@ -4723,6 +4723,21 @@ shardus.setup({
     //   // return false and check again in next cycle
     //   return false
     // }
+  },
+  getNodeInfoAppData() {
+    let minVersion = ''
+    let activeVersion = ''
+    let cachedNetworkAccount = AccountsStorage.cachedNetworkAccount
+    if (cachedNetworkAccount) {
+      minVersion = cachedNetworkAccount.current.minVersion
+      activeVersion = cachedNetworkAccount.current.minVersion
+    }
+    let shardeumNodeInfo: NodeInfoAppData = {
+      shardeumVersion: version,
+      minVersion,
+      activeVersion
+    }
+    return shardeumNodeInfo
   },
   async eventNotify(data: ShardusTypes.ShardusEvent) {
     if (ShardeumFlags.StakingEnabled === false) return

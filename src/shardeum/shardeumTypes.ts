@@ -338,5 +338,11 @@ export interface InjectTxResponse {
   success: boolean
 }
 
+export interface NodeInfoAppData {
+  shardeumVersion: string
+  minVersion: string
+  activeVersion: string
+}
+
 export type HexString = string
 export type DecimalString = string
