@@ -4633,11 +4633,13 @@ shardus.setup({
       nestedCountersInstance.countEvent('shardeum-staking', 'stakeCert != null')
 
       let remainingValidTime = stakeCert.certExp - Date.now()
+      const certStartTimestamp = stakeCert.certExp - ShardeumFlags.certCycleDuration * ONE_SECOND * latestCycle.duration
+      const certEndTimestamp = stakeCert.certExp
+      const expiredPercentage = (Date.now() - certStartTimestamp) / (certEndTimestamp - certStartTimestamp)
+      let isExpiringSoon = expiredPercentage >= 0.9
       if (ShardeumFlags.VerboseLogs) {
-        /* prettier-ignore */ console.log('stakeCert != null. remainingValidTime / minimum time ', remainingValidTime, certExpireSoonCycles * ONE_SECOND * latestCycle.duration)
+        /* prettier-ignore */ console.log('stakeCert != null. remainingValidTime / minimum time ', remainingValidTime, certExpireSoonCycles * ONE_SECOND * latestCycle.duration, `expiredPercentage: ${expiredPercentage}, isExpiringSoon: ${isExpiringSoon}`)
       }
-      // let isExpiringSoon = remainingValidTime <= latestCycle.start + 3 * ONE_SECOND * latestCycle.duration
-      let isExpiringSoon = remainingValidTime <= certExpireSoonCycles * ONE_SECOND * latestCycle.duration
       if (isExpiringSoon) {
         nestedCountersInstance.countEvent('shardeum-staking', 'stakeCert is expiring soon')
 
@@ -4690,9 +4692,13 @@ shardus.setup({
       }
       const signedStakeCert = (res as CertSignaturesResult).signedStakeCert
       let remainingValidTime = signedStakeCert.certExp - Date.now()
-      /* prettier-ignore */ console.log('stakeCert received. remainingValidTime / minimum time ', remainingValidTime, certExpireSoonCycles * ONE_SECOND * latestCycle.duration)
-      // let isExpiringSoon = remainingValidTime <= latestCycle.start + 3 * ONE_SECOND * latestCycle.duration
-      let isExpiringSoon = remainingValidTime <= certExpireSoonCycles * ONE_SECOND * latestCycle.duration
+
+      const certStartTimestamp = signedStakeCert.certExp - ShardeumFlags.certCycleDuration * ONE_SECOND * latestCycle.duration
+      const certEndTimestamp = signedStakeCert.certExp
+      const expiredPercentage = (Date.now() - certStartTimestamp) / (certEndTimestamp - certStartTimestamp)
+      let isExpiringSoon = expiredPercentage >= 0.9
+      /* prettier-ignore */ console.log('stakeCert received. remainingValidTime / minimum time ', remainingValidTime, certExpireSoonCycles * ONE_SECOND * latestCycle.duration, `expiredPercent: ${expiredPercentage}, isExpiringSoon: ${isExpiringSoon}`)
+
       // if cert is going to expire soon, inject a new setCertTimeTx
       if (isExpiringSoon) {
         nestedCountersInstance.countEvent('shardeum-staking', 'stakeCert is expiring soon')

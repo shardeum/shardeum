@@ -1,7 +1,7 @@
-import { nestedCountersInstance, ShardusTypes } from '@shardus/core'
+import { nestedCountersInstance, Shardus, ShardusTypes } from '@shardus/core'
 import * as crypto from '@shardus/crypto-utils'
 import { BN, isValidAddress } from 'ethereumjs-util'
-import { networkAccount, ONE_SECOND } from '..'
+import { ONE_SECOND } from '..'
 import config from '../config'
 import { ShardeumFlags } from '../shardeum/shardeumFlags'
 import {
@@ -13,12 +13,11 @@ import {
   WrappedStates,
 } from '../shardeum/shardeumTypes'
 import * as AccountsStorage from '../storage/accountStorage'
-import { fixDeserializedWrappedEVMAccount } from '../shardeum/wrappedEVMAccountFunctions'
-import { Shardus } from '@shardus/core'
-import { getNodeAccountWithRetry, InjectTxToConsensor } from '../handlers/queryCertificate'
-import { getRandom, _base16BNParser, _readableSHM, scaleByStabilityFactor } from '../utils'
-import { toShardusAddress } from '../shardeum/evmAddress'
 import * as WrappedEVMAccountFunctions from '../shardeum/wrappedEVMAccountFunctions'
+import { fixDeserializedWrappedEVMAccount } from '../shardeum/wrappedEVMAccountFunctions'
+import { getNodeAccountWithRetry, InjectTxToConsensor } from '../handlers/queryCertificate'
+import { _base16BNParser, _readableSHM, getRandom, scaleByStabilityFactor } from '../utils'
+import { toShardusAddress } from '../shardeum/evmAddress'
 
 export function isSetCertTimeTx(tx: any): boolean {
   if (tx.isInternalTx && tx.internalTXType === InternalTXType.SetCertTime) {
@@ -69,7 +68,7 @@ export function validateSetCertTimeTx(tx: SetCertTime, appData: any): { isValid:
     return { isValid: false, reason: 'Duration in cert tx must be not greater than certCycleDuration' }
   }
   if (tx.timestamp <= 0) {
-    return { isValid: false, reason: 'Duration in cert tx must be > 0' }
+    return { isValid: false, reason: 'Timestamp in cert tx must be > 0' }
   }
   try {
     if (!crypto.verifyObj(tx)) return { isValid: false, reason: 'Invalid signature for SetCertTime tx' }
@@ -87,7 +86,7 @@ export function validateSetCertTimeState(tx: SetCertTime, wrappedStates: Wrapped
     wrappedStates[toShardusAddress(tx.nominator, AccountType.Account)].data
   fixDeserializedWrappedEVMAccount(operatorEVMAccount)
   if (operatorEVMAccount == undefined) {
-    /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`setCertTime apply: found no wrapped state for operator account ${tx.nominator}`)
+    /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`setCertTime validate state: found no wrapped state for operator account ${tx.nominator}`)
   } else {
     if (operatorEVMAccount && operatorEVMAccount.operatorAccountInfo) {
       try {
@@ -157,13 +156,39 @@ export function applySetCertTimeTx(
 
   // Update state
   const serverConfig: any = config.server
+  let shouldChargeTxFee = true
+  let certExp = operatorEVMAccount.operatorAccountInfo.certExp
+
+  if (certExp > 0) {
+    const certStartTimestamp = certExp - ShardeumFlags.certCycleDuration * ONE_SECOND * serverConfig.p2p.cycleDuration
+    const expiredPercentage = (Date.now() - certStartTimestamp) / (certExp - certStartTimestamp)
+
+    if (ShardeumFlags.VerboseLogs) {
+      console.log(`applySetCertTimeTx expiredPercentage: ${expiredPercentage}`)
+    }
+
+    if (expiredPercentage >= 0.8) {
+      shouldChargeTxFee = false
+      /* prettier-ignore */ nestedCountersInstance.countEvent('shardeum-staking', 'applySetCertTimeTx' + ' renew' +
+        ' certExp chargeTxFee: false')
+    }
+  }
+
+  // update operator cert expiration
   operatorEVMAccount.operatorAccountInfo.certExp =
     txTimestamp + serverConfig.p2p.cycleDuration * ONE_SECOND * tx.duration
-  let constTxFee = scaleByStabilityFactor(
-    new BN(ShardeumFlags.constantTxFeeUsd),
-    AccountsStorage.cachedNetworkAccount
-  )
-  operatorEVMAccount.account.balance = operatorEVMAccount.account.balance.sub(constTxFee)
+
+  // deduct tx fee if certExp is not set yet or far from expiration
+  if (ShardeumFlags.VerboseLogs) {
+    console.log(`applySetCertTimeTx shouldChargeTxFee: ${shouldChargeTxFee}`)
+  }
+  if (shouldChargeTxFee) {
+    let constTxFee = scaleByStabilityFactor(
+      new BN(ShardeumFlags.constantTxFeeUsd),
+      AccountsStorage.cachedNetworkAccount
+    )
+    operatorEVMAccount.account.balance = operatorEVMAccount.account.balance.sub(constTxFee)
+  }
 
   if (ShardeumFlags.VerboseLogs) {
     console.log('operatorEVMAccount After', operatorEVMAccount)
