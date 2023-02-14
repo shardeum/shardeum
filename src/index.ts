@@ -25,7 +25,8 @@ import {
   NetworkAccount,
   NetworkParameters,
   //NodeAccount,
-  NodeAccount2, NodeInfoAppData,
+  NodeAccount2,
+  NodeInfoAppData,
   OperatorAccountInfo,
   OurAppDefinedData,
   ReadableReceipt,
@@ -4471,10 +4472,10 @@ shardus.setup({
       /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`validateJoinRequest ${JSON.stringify(data)}`)
       if (!data.appJoinData) {
         /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`validateJoinRequest fail: !data.appJoinData`)
-        return { 
-          success: false, 
+        return {
+          success: false,
           reason: `Join request node doesn't provide the app join data.`,
-          fatal: true
+          fatal: true,
         }
       }
 
@@ -4519,7 +4520,7 @@ shardus.setup({
           return {
             success: false,
             reason: `Certificate has expired at ${stake_cert.certExp}`,
-            fatal: true,
+            fatal: false,
           }
         }
 
@@ -4533,7 +4534,7 @@ shardus.setup({
           return {
             success: false,
             reason: `Certificate will be expired really soon.`,
-            fatal: false
+            fatal: false,
           }
         }
 
@@ -4553,7 +4554,7 @@ shardus.setup({
           return {
             success: false,
             reason: `Minimum stake amount requirement does not meet.`,
-            fatal: false
+            fatal: false,
           }
         }
 
@@ -4567,15 +4568,15 @@ shardus.setup({
         if (!success) {
           /* prettier-ignore */ nestedCountersInstance.countEvent('shardeum-staking', 'validateJoinRequest fail: invalid signature')
           /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`validateJoinRequest fail: invalid signature`, reason)
-          return { success, reason, fatal: true }
+          return { success, reason, fatal: false }
         }
       }
 
       /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`validateJoinRequest success!!!`)
       return {
         success: true,
-        reason: "Join Request validated",
-        fatal: false
+        reason: 'Join Request validated',
+        fatal: false,
       }
     } catch (e) {
       /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`validateJoinRequest exception: ${e}`)
@@ -4583,7 +4584,7 @@ shardus.setup({
       return {
         success: false,
         reason: `validateJoinRequest fail: exception: ${e}`,
-        fatal: true
+        fatal: true,
       }
     }
   },
@@ -4747,7 +4748,7 @@ shardus.setup({
     let shardeumNodeInfo: NodeInfoAppData = {
       shardeumVersion: version,
       minVersion,
-      activeVersion
+      activeVersion,
     }
     return shardeumNodeInfo
   },
