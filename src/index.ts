@@ -4591,7 +4591,7 @@ shardus.setup({
   // Update the activeNodes type here; We can import from P2P.P2PTypes.Node from '@shardus/type' lib but seems it's not installed yet
   async isReadyToJoin(latestCycle: ShardusTypes.Cycle, publicKey: string, activeNodes: any[]) {
     if (ShardeumFlags.StakingEnabled === false) return true
-    if (activeNodes.length < ShardeumFlags.minActiveNodesForStaking) return true
+    if (activeNodes.length + latestCycle.syncing < ShardeumFlags.minActiveNodesForStaking) return true
 
     if (ShardeumFlags.VerboseLogs) {
       console.log(`Running isReadyToJoin cycle:${latestCycle.counter} publicKey: ${publicKey}`)
