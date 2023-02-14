@@ -13,6 +13,7 @@ import { ContractByteWrite } from './state/transactionState'
 import { version } from '../package.json'
 import {
   AccountType,
+  AppJoinData,
   BlockMap,
   ClaimRewardTX,
   DebugTx,
@@ -4461,7 +4462,7 @@ shardus.setup({
   },
   getJoinData() {
     nestedCountersInstance.countEvent('shardeum-staking', 'calling getJoinData')
-    const joinData = {
+    const joinData: AppJoinData = {
       version,
       stakeCert,
     }
@@ -4479,12 +4480,14 @@ shardus.setup({
         }
       }
 
+      const appJoinData = data.appJoinData as AppJoinData
+
       const minVersion = AccountsStorage.cachedNetworkAccount.current.minVersion
-      if (!isEqualOrNewerVersion(minVersion, data.appJoinData.version)) {
+      if (!isEqualOrNewerVersion(minVersion, appJoinData.version)) {
         /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`validateJoinRequest fail: old version`)
         return {
           success: false,
-          reason: `version number is old. Our app version is ${version}. Join request node app version is ${data.appJoinData.version}`,
+          reason: `version number is old. Our app version is ${version}. Join request node app version is ${appJoinData.version}`,
           fatal: true,
         }
       }
@@ -4499,7 +4502,7 @@ shardus.setup({
         nestedCountersInstance.countEvent('shardeum-staking', 'validating join request with staking enabled')
 
         const nodeAcc = data.sign.owner
-        const stake_cert: StakeCert = data.appJoinData.stakeCert
+        const stake_cert: StakeCert = appJoinData.stakeCert
         if (ShardeumFlags.VerboseLogs) console.log(`validateJoinRequest ${JSON.stringify(stake_cert)}`)
 
         const tx_time = data.joinRequestTimestamp as number

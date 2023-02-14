@@ -4,6 +4,7 @@ import { Transaction, AccessListEIP2930Transaction } from '@ethereumjs/tx'
 import { TxReceipt } from '@ethereumjs/vm/dist/types'
 import { ShardusTypes } from '@shardus/core'
 import { Block } from '@ethereumjs/block'
+import { StakeCert } from '../handlers/queryCertificate'
 
 export enum AccountType {
   Account = 0, //  EOA or CA
@@ -346,3 +347,8 @@ export interface NodeInfoAppData {
 
 export type HexString = string
 export type DecimalString = string
+
+export interface AppJoinData {
+  version: string
+  stakeCert: StakeCert
+}
