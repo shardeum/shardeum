@@ -44,10 +44,11 @@ export const replacer = (key, value) => {
  * @param testVersion
  * @returns
  */
-export function isEqualOrNewerVersion(minimumVersion: string, testVersion: string) {
+export function isEqualOrNewerVersion(minimumVersion: string, testVersion: string): boolean {
   if (minimumVersion === testVersion) {
     return true
   }
+
   const minVerParts = minimumVersion.split('.')
   const testVerParts = testVersion.split('.')
   for (var i = 0; i < testVerParts.length; i++) {

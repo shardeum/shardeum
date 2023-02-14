@@ -77,6 +77,7 @@ import {
 import * as InitRewardTimesTx from './tx/initRewardTimes'
 import _ from 'lodash'
 import { isDebugTx, isInternalTx, crypto, getInjectedOrGeneratedTimestamp } from './setup/helpers'
+import { onActiveVersionChange } from './versioning'
 
 const env = process.env
 
@@ -4798,6 +4799,10 @@ shardus.setup({
     if (account.accountId === networkAccount) {
       let networkAccount: NetworkAccount = account.data
       for (let key in appData) {
+        if (key === 'activeVersion') {
+          await onActiveVersionChange(appData[key])
+        }
+
         networkAccount.current[key] = appData[key]
       }
       account.timestamp = Date.now()
