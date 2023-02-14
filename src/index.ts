@@ -4480,7 +4480,7 @@ shardus.setup({
       }
 
       const minVersion = AccountsStorage.cachedNetworkAccount.current.minVersion
-      if (!isEqualOrNewerVersion(minVersion, version)) {
+      if (!isEqualOrNewerVersion(minVersion, data.appJoinData.version)) {
         /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`validateJoinRequest fail: old version`)
         return {
           success: false,
