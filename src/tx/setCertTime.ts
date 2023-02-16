@@ -171,6 +171,9 @@ export function applySetCertTimeTx(
       shouldChargeTxFee = false
       /* prettier-ignore */ nestedCountersInstance.countEvent('shardeum-staking', 'applySetCertTimeTx' + ' renew' +
         ' certExp chargeTxFee: false')
+    } else {
+      /* prettier-ignore */ nestedCountersInstance.countEvent('shardeum-staking', 'applySetCertTimeTx' + ' renew' +
+        ' certExp chargeTxFee: true')
     }
   }
 
