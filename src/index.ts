@@ -2433,8 +2433,6 @@ shardus.setup({
 
       // todo: validate tx timestamp, compare timestamp against account's timestamp
 
-      // todo: validate cert exp
-
       // set stake value, nominee, cert in OperatorAcc (if not set yet)
       let operatorShardusAddress = toShardusAddress(unstakeCoinsTX.nominator, AccountType.Account)
       let nomineeNodeAccount2Address = unstakeCoinsTX.nominee
@@ -2451,6 +2449,12 @@ shardus.setup({
         )
       }
       fixDeserializedWrappedEVMAccount(operatorEVMAccount)
+
+      if (operatorEVMAccount.operatorAccountInfo.certExp > txTimestamp) {
+        throw new Error(
+          `Unable to apply Unstake tx because stake cert has not yet expired. Expiry timestamp ${operatorEVMAccount.operatorAccountInfo.certExp}`
+        )
+      }
 
       let nodeAccount2: NodeAccount2 = wrappedStates[nomineeNodeAccount2Address].data
 
@@ -4668,7 +4672,8 @@ shardus.setup({
       nestedCountersInstance.countEvent('shardeum-staking', 'stakeCert != null')
 
       let remainingValidTime = stakeCert.certExp - Date.now()
-      const certStartTimestamp = stakeCert.certExp - ShardeumFlags.certCycleDuration * ONE_SECOND * latestCycle.duration
+      const certStartTimestamp =
+        stakeCert.certExp - ShardeumFlags.certCycleDuration * ONE_SECOND * latestCycle.duration
       const certEndTimestamp = stakeCert.certExp
       const expiredPercentage = (Date.now() - certStartTimestamp) / (certEndTimestamp - certStartTimestamp)
       let isExpiringSoon = expiredPercentage >= 0.9
@@ -4732,7 +4737,8 @@ shardus.setup({
       }
       let remainingValidTime = signedStakeCert.certExp - Date.now()
 
-      const certStartTimestamp = signedStakeCert.certExp - ShardeumFlags.certCycleDuration * ONE_SECOND * latestCycle.duration
+      const certStartTimestamp =
+        signedStakeCert.certExp - ShardeumFlags.certCycleDuration * ONE_SECOND * latestCycle.duration
       const certEndTimestamp = signedStakeCert.certExp
       const expiredPercentage = (Date.now() - certStartTimestamp) / (certEndTimestamp - certStartTimestamp)
       let isExpiringSoon = expiredPercentage >= 0.9
