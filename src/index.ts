@@ -896,6 +896,14 @@ shardus.registerExternalPost('inject', async (req, res) => {
   let tx = req.body
   if (ShardeumFlags.VerboseLogs) console.log('Transaction injected:', new Date(), tx)
   try {
+    const txObj = getTransactionObj(tx);
+    const CONDITION_IS_NOT_STAKING_TX = txObj.to.toString() !== '0x0000000000000000000000000000000000000001'
+    if(shardus.getNumActiveNodes() < ShardeumFlags.minNodesEVMtx && CONDITION_IS_NOT_STAKING_TX){
+      if (ShardeumFlags.VerboseLogs) console.log('Transaction reject due to min active requirement does not meet')
+      return res.json({
+        message: `Network will not accept EVM tx until it has at least ${ShardeumFlags.minNodesEVMtx} active node in the network`
+      })
+    }
     const response = await shardus.put(tx)
     res.json(response)
   } catch (err) {

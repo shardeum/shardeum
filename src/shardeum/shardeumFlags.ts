@@ -56,6 +56,7 @@ interface ShardeumFlags {
   MinStakeCertSig: number
   FullCertChecksEnabled: boolean // do we run all of the cert checks when signing.  This config may go away soon after testing.
   extraTxTime: number
+  minNodesEVMtx: number
   ClaimRewardRetryCount: number
 }
 
@@ -113,6 +114,7 @@ export let ShardeumFlags: ShardeumFlags = {
   MinStakeCertSig: 1, // this is the minimum amount of signature required for stake certification. will move to network param in future.
   FullCertChecksEnabled: true,
   extraTxTime: 8, // This is to predict the cycleNumber from the tx timestamp + 8s
+  minNodesEVMtx: 5,
   ClaimRewardRetryCount: 2,
 }
 
