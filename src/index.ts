@@ -1,3 +1,5 @@
+import { exec } from 'child_process'
+import { arch, cpus, freemem, totalmem, platform } from 'os'
 import stringify from 'fast-json-stable-stringify'
 import { Account, Address, BN, bufferToHex, isValidAddress, toAscii, toBuffer } from 'ethereumjs-util'
 import { AccessListEIP2930Transaction, Transaction } from '@ethereumjs/tx'
@@ -1473,6 +1475,28 @@ shardus.registerExternalGet('genesis_accounts', async (req, res) => {
     accounts = genesisAccounts.slice(skip, limit)
   }
   res.json({ success: true, accounts })
+})
+
+// Returns the hardware-spec of the server running the validator
+shardus.registerExternalGet('system-info', async (req, res) => {
+  let result = {
+    platform: platform(),
+    arch: arch(),
+    cpu: {
+      total_cores: cpus().length,
+      cores: cpus(),
+    },
+    free_memory: `${freemem() / Math.pow(1024, 3)} GB`,
+    total_memory: `${totalmem() / Math.pow(1024, 3)} GB`,
+    disk: null,
+  }
+  exec('df -h --total|grep ^total', (err, diskData) => {
+    if (!err) {
+      const [_, total, used, available, percent_used] = diskData.split(' ').filter(s => s)
+      result = { ...result, disk: { total, used, available, percent_used } }
+    }
+    res.json(result)
+  })
 })
 
 shardus.registerExternalPut('query-certificate', async (req: Request, res: Response) => {
