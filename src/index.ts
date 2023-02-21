@@ -182,6 +182,7 @@ function trySpendServicePoints(points: number): boolean {
   debugLastTotalServicePoints = totalPoints
   //is the new operation too expensive?
   if (totalPoints + points > maxAllowedPoints) {
+    nestedCountersInstance.countEvent('shardeum-service-points', 'fail: not enough points available to spend')
     return false
   }
 
@@ -189,6 +190,7 @@ function trySpendServicePoints(points: number): boolean {
   let newEntry = { points, ts: nowTs }
   servicePointSpendHistory.unshift(newEntry)
 
+  nestedCountersInstance.countEvent('shardeum-service-points', 'pass: points available to spend')
   return true
 }
 
