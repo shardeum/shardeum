@@ -50,6 +50,16 @@ export async function injectClaimRewardTx(shardus, eventData: ShardusTypes.Shard
   return await shardus.put(tx)
 }
 
+export async function injectClaimRewardTxWithRetry(shardus, eventData: ShardusTypes.ShardusEvent) {
+  for (let i = 0; i < ShardeumFlags.ClaimRewardRetryCount + 1; i++) {
+    let response = await injectClaimRewardTx(shardus, eventData)
+    if (response.success || response.status === 400) {
+      return response
+    }
+    /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`failed to inject claim reward tx, retrying! reason: ${response.reason}, status: ${response.status}`)
+  }
+}
+
 //TODO this is not called yet!  looks like it should be validateFields
 export function validateClaimRewardTx(tx: ClaimRewardTX, appData: any): { isValid: boolean; reason: string } {
   if (!tx.nominee || tx.nominee === '' || tx.nominee.length !== 64) {

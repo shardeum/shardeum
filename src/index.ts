@@ -67,7 +67,7 @@ import * as AccountsStorage from './storage/accountStorage'
 import { StateManager } from '@ethereumjs/vm/dist/state'
 import { sync, validateTransaction, validateTxnFields } from './setup'
 import { applySetCertTimeTx, injectSetCertTimeTx, isSetCertTimeTx } from './tx/setCertTime'
-import { applyClaimRewardTx, injectClaimRewardTx } from './tx/claimReward'
+import { applyClaimRewardTx, injectClaimRewardTxWithRetry } from './tx/claimReward'
 import { Request, Response } from 'express'
 import {
   CertSignaturesResult,
@@ -4831,7 +4831,7 @@ shardus.setup({
         console.log('INJECTED_INIT_REWARD_TIMES_TX', result)
       } else if (eventType === 'node-deactivated') {
         nestedCountersInstance.countEvent('shardeum-staking', `node-deactivated: injectClaimRewardTx`)
-        const result = await injectClaimRewardTx(shardus, data)
+        const result = await injectClaimRewardTxWithRetry(shardus, data)
         console.log('INJECTED_CLAIM_REWARD_TX', result)
       }
     }
