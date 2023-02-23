@@ -2240,7 +2240,7 @@ shardus.setup({
       operatorEVMAccount.timestamp = txTimestamp
 
       // todo: operatorAccountInfo field may not exist in the operatorEVMAccount yet
-      if (!operatorEVMAccount.operatorAccountInfo) {
+      if (operatorEVMAccount.operatorAccountInfo == null) {
         operatorEVMAccount.operatorAccountInfo = {
           stake: new BN(0),
           nominee: '',
@@ -2265,7 +2265,7 @@ shardus.setup({
       }
       operatorEVMAccount.operatorAccountInfo.stake.iadd(stakeCoinsTx.stake)
       operatorEVMAccount.operatorAccountInfo.nominee = stakeCoinsTx.nominee
-      if (!operatorEVMAccount.operatorAccountInfo.certExp) operatorEVMAccount.operatorAccountInfo.certExp = 0
+      if (operatorEVMAccount.operatorAccountInfo.certExp == null) operatorEVMAccount.operatorAccountInfo.certExp = 0
       fixDeserializedWrappedEVMAccount(operatorEVMAccount)
 
       let txFeeUsd = new BN(ShardeumFlags.constantTxFeeUsd, 10)
@@ -4509,6 +4509,16 @@ shardus.setup({
 
         const tx_time = data.joinRequestTimestamp as number
 
+        if (stake_cert == null) {
+          /* prettier-ignore */ nestedCountersInstance.countEvent('shardeum-staking', 'validateJoinRequest fail: stake_cert == null')
+          /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`validateJoinRequest fail: stake_cert == null`)
+          return {
+            success: false,
+            reason: `Join request node doesn't provide the stake certificate.`,
+            fatal: true,
+          }
+        }
+
         if (nodeAcc !== stake_cert.nominee) {
           /* prettier-ignore */ nestedCountersInstance.countEvent('shardeum-staking', 'validateJoinRequest fail: nodeAcc !== stake_cert.nominee')
           /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`validateJoinRequest fail: nodeAcc !== stake_cert.nominee`)
@@ -4692,6 +4702,10 @@ shardus.setup({
         return false
       }
       const signedStakeCert = (res as CertSignaturesResult).signedStakeCert
+      if (signedStakeCert == null) {
+        nestedCountersInstance.countEvent('shardeum-staking', `signedStakeCert is null`)
+        return false
+      }
       let remainingValidTime = signedStakeCert.certExp - Date.now()
 
       const certStartTimestamp = signedStakeCert.certExp - ShardeumFlags.certCycleDuration * ONE_SECOND * latestCycle.duration

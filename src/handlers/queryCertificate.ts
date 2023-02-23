@@ -198,32 +198,37 @@ export async function queryCertificateHandler(
   const queryCertReq = req.body as QueryCertRequest
   const reqValidationResult = validateQueryCertRequest(queryCertReq, req.body)
   if (!reqValidationResult.success) {
-    nestedCountersInstance.countEvent('shardeum-staking', 'failed validateQueryCertRequest')
+    nestedCountersInstance.countEvent('shardeum-staking', 'queryCertificateHandler: failed validateQueryCertRequest')
     return reqValidationResult
   }
 
   const operatorAccount = await getEVMAccountDataForAddress(shardus, queryCertReq.nominator)
   if (!operatorAccount) {
-    nestedCountersInstance.countEvent('shardeum-staking', 'failed to fetch operator account state')
+    nestedCountersInstance.countEvent('shardeum-staking', 'queryCertificateHandler: failed to fetch operator account' +
+      ' state')
     return { success: false, reason: 'Failed to fetch operator account state' }
   }
   // TODO: look into why nodeAccount is queried here
   const nodeAccount = await shardus.getLocalOrRemoteAccount(queryCertReq.nominee)
   if (!nodeAccount) {
-    nestedCountersInstance.countEvent('shardeum-staking', 'failed to fetch node account state')
+    nestedCountersInstance.countEvent('shardeum-staking', 'queryCertificateHandler: failed to fetch node account state')
     return { success: false, reason: 'Failed to fetch node account state' }
   }
 
   // const currentTimestamp = Math.round(Date.now() / 1000)
   const currentTimestamp = Date.now()
 
-  if (ShardeumFlags.VerboseLogs) {
-    console.log('currentTimestamp', currentTimestamp, operatorAccount.operatorAccountInfo.certExp)
+  if (operatorAccount.operatorAccountInfo == null) {
+    nestedCountersInstance.countEvent('shardeum-staking', 'queryCertificateHandler: operator account info is null')
+    return {
+      success: false,
+      reason: 'Operator account info is null',
+    }
   }
 
   // check operator cert validity
   if (operatorAccount.operatorAccountInfo.certExp < currentTimestamp) {
-    nestedCountersInstance.countEvent('shardeum-staking', 'operator certificate has expired')
+    nestedCountersInstance.countEvent('shardeum-staking', 'queryCertificateHandler: operator certificate has expired')
 
     return {
       success: false,

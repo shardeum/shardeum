@@ -100,6 +100,14 @@ export function validateSetCertTimeState(tx: SetCertTime, wrappedStates: Wrapped
           )} er:${er.message}`,
         }
       }
+    } else if (operatorEVMAccount && operatorEVMAccount.operatorAccountInfo == null) {
+      /* prettier-ignore */ nestedCountersInstance.countEvent('shardeum-staking', 'validateSetCertTimeState' + ' Operator account info is null')
+      return {
+        result: 'fail',
+        reason: `Operator account info is null: ${JSON.stringify(
+          operatorEVMAccount
+        )}`,
+      }
     }
   }
 
