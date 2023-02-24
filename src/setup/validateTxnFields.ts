@@ -195,6 +195,21 @@ export const validateTxnFields = (shardus: Shardus, debugAppdata: Map<string, an
       } else if (stakeCoinsTx.stake.lt(minStakeAmount)) {
         success = false
         reason = `Stake amount is less than minimum required stake amount`
+
+        if (appData.nominatorAccount) {
+          const wrappedEVMAccount = appData.nominatorAccount as WrappedEVMAccount
+          if (wrappedEVMAccount.operatorAccountInfo) {
+            const existingStake =
+              typeof wrappedEVMAccount.operatorAccountInfo.stake === 'string'
+                ? new BN(wrappedEVMAccount.operatorAccountInfo.stake, 16)
+                : wrappedEVMAccount.operatorAccountInfo.stake
+
+            if (!existingStake.isZero() && stakeCoinsTx.stake.gtn(0)) {
+              success = true
+              reason = ''
+            }
+          }
+        }
       }
       if (appData.nomineeAccount) {
         const nodeAccount = appData.nomineeAccount as NodeAccount2
