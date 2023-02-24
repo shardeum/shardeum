@@ -895,6 +895,7 @@ shardus.registerExternalGet('debug-points', debugMiddleware, async (req, res) =>
 shardus.registerExternalPost('inject', async (req, res) => {
   let tx = req.body
   if (ShardeumFlags.VerboseLogs) console.log('Transaction injected:', new Date(), tx)
+  let numActiveNodes = 0
   try {
     const isInternal = isInternalTx(tx)
     let isStaking = false
@@ -907,19 +908,31 @@ shardus.registerExternalPost('inject', async (req, res) => {
       isStaking = txObj.to.toString() !== '0x0000000000000000000000000000000000000001'
     }
     const txRequiresMinNodes = (isStaking || isAllowedInternal) === false
-
-    if (shardus.getNumActiveNodes() < ShardeumFlags.minNodesEVMtx && txRequiresMinNodes) {
-      /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log('Transaction reject due to min active requirement does not meet')
-      return res.json({
+    numActiveNodes = shardus.getNumActiveNodes()
+    if (numActiveNodes < ShardeumFlags.minNodesEVMtx && txRequiresMinNodes) {
+      /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`Transaction reject due to min active requirement does not meet , numActiveNodes ${numActiveNodes} < ${ShardeumFlags.minNodesEVMtx} `)
+      /* prettier-ignore */ nestedCountersInstance.countEvent('shardeum', `txRejectedDueToMinActiveNodes :${numActiveNodes}`)
+      res.json({
         success: false,
         reason: `Network will not accept EVM tx until it has at least ${ShardeumFlags.minNodesEVMtx} active node in the network`,
         status: 500,
       })
+    } else {
+      //normal case, we will put this transaction into the shardus queue
+      const response = await shardus.put(tx)
+      res.json(response)
     }
-    const response = await shardus.put(tx)
-    res.json(response)
   } catch (err) {
     if (ShardeumFlags.VerboseLogs) console.log('Failed to inject tx: ', err)
+    try {
+      res.json({
+        success: false,
+        reason: `Failed to inject tx:  ${JSON.stringify(err)}`,
+        status: 500,
+      })
+    } catch (e) {
+      console.log('Failed to respond to inject tx: ', e)
+    }
   }
 })
 
@@ -4665,12 +4678,13 @@ shardus.setup({
       // inject setCertTimeTx for the first time
       nestedCountersInstance.countEvent('shardeum-staking', 'lastCertTimeTxTimestamp === 0')
 
-      const res = await injectSetCertTimeTx(shardus, publicKey, activeNodes)
-      if (!res.success) {
-        nestedCountersInstance.countEvent(
-          'shardeum-staking',
-          `failed call to injectSetCertTimeTx 1 reason: ${(res as ValidatorError).reason}`
-        )
+      const response = await injectSetCertTimeTx(shardus, publicKey, activeNodes)
+      if (response == null) {
+        /* prettier-ignore */ nestedCountersInstance.countEvent('shardeum-staking', `failed call to injectSetCertTimeTx 1 reason: response is null`)
+        return false
+      }
+      if (!response.success) {
+        /* prettier-ignore */ nestedCountersInstance.countEvent( 'shardeum-staking', `failed call to injectSetCertTimeTx 1 reason: ${(response as ValidatorError).reason}` )
         return false
       }
 
@@ -4706,12 +4720,13 @@ shardus.setup({
         nestedCountersInstance.countEvent('shardeum-staking', 'stakeCert is expired or expiring soon')
 
         stakeCert = null //clear stake cert, so we will know to query for it again
-        const res = await injectSetCertTimeTx(shardus, publicKey, activeNodes)
-        if (!res.success) {
-          nestedCountersInstance.countEvent(
-            'shardeum-staking',
-            `failed call to injectSetCertTimeTx 2 reason: ${(res as ValidatorError).reason}`
-          )
+        const response = await injectSetCertTimeTx(shardus, publicKey, activeNodes)
+        if (response == null) {
+          /* prettier-ignore */ nestedCountersInstance.countEvent('shardeum-staking', `failed call to injectSetCertTimeTx 2 reason: response is null`)
+          return false
+        }
+        if (!response.success) {
+          /* prettier-ignore */ nestedCountersInstance.countEvent( 'shardeum-staking', `failed call to injectSetCertTimeTx 2 reason: ${(response as ValidatorError).reason}` )
           return false
         }
         lastCertTimeTxTimestamp = Date.now()
@@ -4771,12 +4786,13 @@ shardus.setup({
         nestedCountersInstance.countEvent('shardeum-staking', 'stakeCert is expiring soon')
 
         stakeCert = null //clear stake cert, so we will know to query for it again
-        const res = await injectSetCertTimeTx(shardus, publicKey, activeNodes)
-        if (!res.success) {
-          nestedCountersInstance.countEvent(
-            'shardeum-staking',
-            `failed call to injectSetCertTimeTx 3 reason: ${(res as ValidatorError).reason}`
-          )
+        const response = await injectSetCertTimeTx(shardus, publicKey, activeNodes)
+        if (response == null) {
+          /* prettier-ignore */ nestedCountersInstance.countEvent('shardeum-staking', `failed call to injectSetCertTimeTx 3 reason: response is null`)
+          return false
+        }
+        if (!response.success) {
+          /* prettier-ignore */ nestedCountersInstance.countEvent( 'shardeum-staking', `failed call to injectSetCertTimeTx 3 reason: ${(response as ValidatorError).reason}` )
           return false
         }
 
@@ -4879,6 +4895,7 @@ shardus.setup({
           return
         }
         nestedCountersInstance.countEvent('shardeum-staking', `node-activated: injectInitRewardTimesTx`)
+        //TODO need retry on this also
         const result = await InitRewardTimesTx.injectInitRewardTimesTx(shardus, data)
         console.log('INJECTED_INIT_REWARD_TIMES_TX', result)
       } else if (eventType === 'node-deactivated') {

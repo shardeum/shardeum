@@ -54,7 +54,11 @@ export async function injectClaimRewardTxWithRetry(shardus, eventData: ShardusTy
   for (let i = 0; i < ShardeumFlags.ClaimRewardRetryCount + 1; i++) {
     let response = await injectClaimRewardTx(shardus, eventData)
     //had an all nodes crash situation when response was null
-    if ((response != null && response.success) || response.status === 400) {
+    if (response == null) {
+      /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`injectClaimRewardTxWithRetry failed response was null`)
+      continue
+    }
+    if (response != null && (response.success || response.status === 400)) {
       return response
     }
     /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`failed to inject claim reward tx, retrying! reason: ${response.reason}, status: ${response.status}`)
