@@ -16,7 +16,7 @@ const appliedMigrations = new Set<string>()
  */
 export const onActiveVersionChange = async (newActiveVersion: string) => {
   // For future migrations, add a file under ./migrations and add the version here
-  const migrations = ['1.1.1', '1.1.2']
+  const migrations = ['1.1.1', '1.1.2', '1.1.3']
 
   for (let index = 0; index < migrations.length; index++) {
     const migrationVersion = migrations[index]
