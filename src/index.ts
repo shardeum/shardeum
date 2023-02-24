@@ -896,12 +896,24 @@ shardus.registerExternalPost('inject', async (req, res) => {
   let tx = req.body
   if (ShardeumFlags.VerboseLogs) console.log('Transaction injected:', new Date(), tx)
   try {
-    const txObj = getTransactionObj(tx);
-    const CONDITION_IS_NOT_STAKING_TX = txObj.to.toString() !== '0x0000000000000000000000000000000000000001'
-    if(shardus.getNumActiveNodes() < ShardeumFlags.minNodesEVMtx && CONDITION_IS_NOT_STAKING_TX){
-      if (ShardeumFlags.VerboseLogs) console.log('Transaction reject due to min active requirement does not meet')
+    const isInternal = isInternalTx(tx)
+    let isStaking = false
+    let isAllowedInternal = false
+    if (isInternal) {
+      //todo possibly later limit what internal TXs are allowed
+      isAllowedInternal = true
+    } else {
+      const txObj = getTransactionObj(tx)
+      isStaking = txObj.to.toString() !== '0x0000000000000000000000000000000000000001'
+    }
+    const txRequiresMinNodes = (isStaking || isAllowedInternal) === false
+
+    if (shardus.getNumActiveNodes() < ShardeumFlags.minNodesEVMtx && txRequiresMinNodes) {
+      /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log('Transaction reject due to min active requirement does not meet')
       return res.json({
-        message: `Network will not accept EVM tx until it has at least ${ShardeumFlags.minNodesEVMtx} active node in the network`
+        success: false,
+        reason: `Network will not accept EVM tx until it has at least ${ShardeumFlags.minNodesEVMtx} active node in the network`,
+        status: 500,
       })
     }
     const response = await shardus.put(tx)
@@ -2297,7 +2309,8 @@ shardus.setup({
       }
       operatorEVMAccount.operatorAccountInfo.stake.iadd(stakeCoinsTx.stake)
       operatorEVMAccount.operatorAccountInfo.nominee = stakeCoinsTx.nominee
-      if (operatorEVMAccount.operatorAccountInfo.certExp == null) operatorEVMAccount.operatorAccountInfo.certExp = 0
+      if (operatorEVMAccount.operatorAccountInfo.certExp == null)
+        operatorEVMAccount.operatorAccountInfo.certExp = 0
       fixDeserializedWrappedEVMAccount(operatorEVMAccount)
 
       let txFeeUsd = new BN(ShardeumFlags.constantTxFeeUsd, 10)
@@ -4670,7 +4683,8 @@ shardus.setup({
     }
 
     //if our last set cert time was more than certCycleDuration cycles ago then we need to ask again
-    const isCertTimeExpired = lastCertTimeTxCycle > 0 && latestCycle.counter - lastCertTimeTxCycle > ShardeumFlags.certCycleDuration
+    const isCertTimeExpired =
+      lastCertTimeTxCycle > 0 && latestCycle.counter - lastCertTimeTxCycle > ShardeumFlags.certCycleDuration
     if (isCertTimeExpired) {
       nestedCountersInstance.countEvent('shardeum-staking', 'stakeCert expired and need to be renewed')
     }
