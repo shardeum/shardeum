@@ -74,23 +74,23 @@ export interface EVMAccountInfo {
 }
 
 export enum InternalTXType {
-  SetGlobalCodeBytes,
-  InitNetwork,
-  NodeReward,
-  ChangeConfig,
-  ApplyChangeConfig,
-  SetCertTime,
-  Stake,
-  Unstake,
-  InitRewardTimes,
-  ClaimReward,
-  ChangeNetworkParam,
-  ApplyNetworkParam,
+  SetGlobalCodeBytes = 0,
+  InitNetwork = 1,
+  NodeReward = 2,
+  ChangeConfig = 3,
+  ApplyChangeConfig = 4,
+  SetCertTime = 5,
+  Stake = 6,
+  Unstake = 7,
+  InitRewardTimes = 8,
+  ClaimReward = 9,
+  ChangeNetworkParam = 10,
+  ApplyNetworkParam = 11,
 }
 
 export enum DebugTXType {
-  Create,
-  Transfer,
+  Create = 0,
+  Transfer = 1,
 }
 
 /**

@@ -897,19 +897,28 @@ shardus.registerExternalPost('inject', async (req, res) => {
   if (ShardeumFlags.VerboseLogs) console.log('Transaction injected:', new Date(), tx)
   let numActiveNodes = 0
   try {
-    const isInternal = isInternalTx(tx)
-    let isStaking = false
-    let isAllowedInternal = false
-    if (isInternal) {
-      //todo possibly later limit what internal TXs are allowed
-      isAllowedInternal = true
-    } else {
-      const txObj: Transaction | AccessListEIP2930Transaction = getTransactionObj(tx)
-      isStaking = isStakingEVMTx(txObj)
-    }
-    const txRequiresMinNodes = (isStaking || isAllowedInternal) === false
     numActiveNodes = shardus.getNumActiveNodes()
-    if (numActiveNodes < ShardeumFlags.minNodesEVMtx && txRequiresMinNodes) {
+    const belowEVMtxMinNodes = numActiveNodes < ShardeumFlags.minNodesEVMtx
+    let txRequiresMinNodes = false
+
+    //only run these checks if we are below the limit
+    if (belowEVMtxMinNodes) {
+      const isInternal = isInternalTx(tx)
+      let isStaking = false
+      let isAllowedInternal = false
+      if (isInternal) {
+        //todo possibly later limit what internal TXs are allowed
+        isAllowedInternal = true
+      } else {
+        const txObj: Transaction | AccessListEIP2930Transaction = getTransactionObj(tx)
+        if (txObj != null) {
+          isStaking = isStakingEVMTx(txObj)
+        }
+      }
+      txRequiresMinNodes = (isStaking || isAllowedInternal) === false
+    }
+
+    if (belowEVMtxMinNodes && txRequiresMinNodes) {
       /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`Transaction reject due to min active requirement does not meet , numActiveNodes ${numActiveNodes} < ${ShardeumFlags.minNodesEVMtx} `)
       /* prettier-ignore */ nestedCountersInstance.countEvent('shardeum', `txRejectedDueToMinActiveNodes :${numActiveNodes}`)
       res.json({
@@ -3363,6 +3372,11 @@ shardus.setup({
         // customTXhash = crypto.hashObj(tx, true)
         // //restore timestamp?
         // tx.timestamp = tempTimestamp
+
+        // let tempTimestamp = tx.timestamp
+        // delete tx.timestamp
+        // customTXhash = crypto.hashObj(tx, true)
+        // tx.timestamp = tempTimestamp
       } else if (internalTx.internalTXType === InternalTXType.ClaimReward) {
         keys.sourceKeys = [tx.nominee]
         keys.targetKeys = [toShardusAddress(tx.nominator, AccountType.Account), networkAccount]
@@ -3373,6 +3387,13 @@ shardus.setup({
         // customTXhash = crypto.hashObj(tx, true)
         // //restore timestamp?
         // tx.timestamp = tempTimestamp
+
+        // let tempTimestamp = tx.timestamp
+        // delete tx.timestamp
+        // customTXhash = crypto.hashObj(tx, true)
+        // tx.timestamp = tempTimestamp
+
+        //walk the timestamp close to our window for injecting??
       }
       keys.allKeys = keys.allKeys.concat(keys.sourceKeys, keys.targetKeys, keys.storageKeys)
       // temporary hack for creating a receipt of node reward tx
@@ -4481,6 +4502,23 @@ shardus.setup({
   },
   getAccountDebugValue(wrappedAccount) {
     return `${stringify(wrappedAccount)}`
+  },
+  getSimpleTxDebugValue(tx) {
+    if (isInternalTx(tx)) {
+      let internalTx = tx as InternalTx
+      return `internalTX: ${InternalTXType[internalTx.internalTXType]} `
+    }
+    if (isDebugTx(tx)) {
+      let debugTx = tx as DebugTx
+      return `debugTX: ${DebugTXType[debugTx.debugTXType]}`
+    }
+    const txObj: Transaction | AccessListEIP2930Transaction = getTransactionObj(tx)
+    if (txObj && isStakingEVMTx(txObj)) {
+      return `stakingEVMtx`
+    }
+    if (txObj) {
+      return `EVMtx`
+    }
   },
   close() {
     if (ShardeumFlags.VerboseLogs) console.log('Shutting down...')
