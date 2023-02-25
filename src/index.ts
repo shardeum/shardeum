@@ -904,8 +904,8 @@ shardus.registerExternalPost('inject', async (req, res) => {
       //todo possibly later limit what internal TXs are allowed
       isAllowedInternal = true
     } else {
-      const txObj = getTransactionObj(tx)
-      isStaking = txObj.to.toString() !== '0x0000000000000000000000000000000000000001'
+      const txObj: Transaction | AccessListEIP2930Transaction = getTransactionObj(tx)
+      isStaking = txObj.to.toString() === '0x0000000000000000000000000000000000000001'
     }
     const txRequiresMinNodes = (isStaking || isAllowedInternal) === false
     numActiveNodes = shardus.getNumActiveNodes()
