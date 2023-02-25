@@ -4503,21 +4503,29 @@ shardus.setup({
   getAccountDebugValue(wrappedAccount) {
     return `${stringify(wrappedAccount)}`
   },
-  getSimpleTxDebugValue(tx) {
-    if (isInternalTx(tx)) {
-      let internalTx = tx as InternalTx
-      return `internalTX: ${InternalTXType[internalTx.internalTXType]} `
-    }
-    if (isDebugTx(tx)) {
-      let debugTx = tx as DebugTx
-      return `debugTX: ${DebugTXType[debugTx.debugTXType]}`
-    }
-    const txObj: Transaction | AccessListEIP2930Transaction = getTransactionObj(tx)
-    if (txObj && isStakingEVMTx(txObj)) {
-      return `stakingEVMtx`
-    }
-    if (txObj) {
-      return `EVMtx`
+  getSimpleTxDebugValue(timestampedTx) {
+    //console.log(`getSimpleTxDebugValue: ${JSON.stringify(tx)}`)
+
+    try {
+      let { tx } = timestampedTx
+      if (isInternalTx(tx)) {
+        let internalTx = tx as InternalTx
+        return `internalTX: ${InternalTXType[internalTx.internalTXType]} `
+      }
+      if (isDebugTx(tx)) {
+        let debugTx = tx as DebugTx
+        return `debugTX: ${DebugTXType[debugTx.debugTXType]}`
+      }
+      const txObj: Transaction | AccessListEIP2930Transaction = getTransactionObj(tx)
+      if (txObj && isStakingEVMTx(txObj)) {
+        return `stakingEVMtx`
+      }
+      if (txObj) {
+        return `EVMtx`
+      }
+    } catch (e) {
+      let { tx } = timestampedTx
+      console.log(`getSimpleTxDebugValue failed: ${JSON.stringify(e)}  tx:${JSON.stringify(tx)}`)
     }
   },
   close() {
