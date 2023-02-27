@@ -1,23 +1,21 @@
 import { nestedCountersInstance, ShardusTypes } from '@shardus/core'
 import * as crypto from '@shardus/crypto-utils'
-import { BN, isValidAddress, Address } from 'ethereumjs-util'
-import { networkAccount, ONE_SECOND } from '..'
-import config from '../config'
+import { Address, BN } from 'ethereumjs-util'
+import { networkAccount } from '..'
+import { getApplyTXState } from '../index'
+import { toShardusAddress } from '../shardeum/evmAddress'
 import { ShardeumFlags } from '../shardeum/shardeumFlags'
 import {
-  ClaimRewardTX,
+  AccountType, ClaimRewardTX,
   InternalTXType,
-  NetworkAccount,
-  WrappedStates,
-  NodeAccount2,
-  WrappedEVMAccount,
-  AccountType,
+  NetworkAccount, NodeAccount2,
+  WrappedEVMAccount, WrappedStates
 } from '../shardeum/shardeumTypes'
 import * as WrappedEVMAccountFunctions from '../shardeum/wrappedEVMAccountFunctions'
 import { _base16BNParser, _readableSHM, scaleByStabilityFactor, sleep } from '../utils'
 import * as AccountsStorage from '../storage/accountStorage'
-import { getAccountShardusAddress, toShardusAddress, toShardusAddressWithKey } from '../shardeum/evmAddress'
-import { getApplyTXState } from '../index'
+import { scaleByStabilityFactor, _base16BNParser, _readableSHM } from '../utils'
+import { retry } from '../utils/retry'
 
 export function isClaimRewardTx(tx: any): boolean {
   if (tx.isInternalTx && tx.internalTXType === InternalTXType.ClaimReward) {
@@ -26,17 +24,7 @@ export function isClaimRewardTx(tx: any): boolean {
   return false
 }
 
-export async function injectClaimRewardTx(shardus, eventData: ShardusTypes.ShardusEvent) {
-  let nodeAccount = await shardus.getLocalOrRemoteAccount(eventData.publicKey)
-  if (nodeAccount === null) {
-    //try one more time
-    nodeAccount = await shardus.getLocalOrRemoteAccount(eventData.publicKey)
-    if (nodeAccount === null) {
-      /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`injectClaimRewardTx failed cant find : ${eventData.publicKey}`)
-      /* prettier-ignore */ nestedCountersInstance.countEvent('shardeum-staking', `injectClaimRewardTx failed cant find node`)
-      return
-    }
-  }
+export async function injectClaimRewardTx(shardus, eventData: ShardusTypes.ShardusEvent, nodeAccount) {
   let tx = {
     nominee: eventData.publicKey,
     nominator: nodeAccount.data.nominator,
@@ -65,22 +53,66 @@ export async function injectClaimRewardTx(shardus, eventData: ShardusTypes.Shard
     console.log(`injectClaimRewardTx: tx.timestamp: ${tx.timestamp} customTXhash: ${customTXhash}`, tx)
   }
 
-  return await shardus.put(tx)
+  return await shardus.put(tx) // response of this { success: boolean; reason: string; status: number }
 }
 
 export async function injectClaimRewardTxWithRetry(shardus, eventData: ShardusTypes.ShardusEvent) {
-  for (let i = 0; i < ShardeumFlags.ClaimRewardRetryCount + 1; i++) {
-    let response = await injectClaimRewardTx(shardus, eventData)
-    //had an all nodes crash situation when response was null
-    if (response == null) {
-      /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`injectClaimRewardTxWithRetry failed response was null`)
-      continue
+  let nodeAccount = await shardus.getLocalOrRemoteAccount(eventData.publicKey)
+  if (nodeAccount === null) {
+    //try one more time
+    nodeAccount = await shardus.getLocalOrRemoteAccount(eventData.publicKey)
+    if (nodeAccount === null) {
+      /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`injectClaimRewardTx failed cant find : ${eventData.publicKey}`)
+      /* prettier-ignore */ nestedCountersInstance.countEvent('shardeum-staking', `injectClaimRewardTx failed cant find node`)
+      return
     }
-    if (response != null && (response.success || response.status === 400)) {
-      return response
-    }
-    /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`failed to inject claim reward tx, retrying! reason: ${response.reason}, status: ${response.status}`)
   }
+
+  let rewardEndTime = nodeAccount.rewardEndTime
+  if (!rewardEndTime) {
+    rewardEndTime = 0
+  }
+
+  const retryFunc = async () => {
+    return await injectClaimRewardTx(shardus, eventData, nodeAccount)
+  }
+
+  const shouldRetryFunc = async (result): Promise<boolean> => {
+  
+    //TODO, mrege conflict.  how do we fit this back in, or do we even need to?
+    ////had an all nodes crash situation when response was null
+    //if (response == null) {
+    //  /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`injectClaimRewardTxWithRetry failed response was null`)
+    //  continue
+    //}
+    //if (response != null && (response.success || response.status === 400)) { 
+  
+    if (result.success) {
+      let nodeAccount = await shardus.getLocalOrRemoteAccount(eventData.publicKey)
+      if (!nodeAccount) {
+        return true
+      }
+      let data = nodeAccount.data
+      // Reward end time is updated do not retry
+      if (data.rewardEndTime > rewardEndTime) {
+        return false
+      }
+      return true
+    }
+    return true
+  }
+
+  const res = await retry(
+    retryFunc,
+    shouldRetryFunc,
+    ShardeumFlags.ClaimRewardRetryCount,
+    ShardeumFlags.FailedTxLinearBackOffConstantInSecs
+  )
+  if (!res) {
+    /* prettier-ignore */ nestedCountersInstance.countRareEvent('linear-back-off-retry', 'fail: retries exhausted without success in injectClaimRewardTxWithRetry')
+    return null
+  }
+  return res
 }
 
 //TODO this is not called yet!  looks like it should be validateFields

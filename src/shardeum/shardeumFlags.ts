@@ -58,6 +58,7 @@ interface ShardeumFlags {
   extraTxTime: number
   minNodesEVMtx: number
   ClaimRewardRetryCount: number
+  FailedTxLinearBackOffConstantInSecs: number
 }
 
 export let ShardeumFlags: ShardeumFlags = {
@@ -115,7 +116,8 @@ export let ShardeumFlags: ShardeumFlags = {
   FullCertChecksEnabled: true,
   extraTxTime: 8, // This is to predict the cycleNumber from the tx timestamp + 8s
   minNodesEVMtx: 5,
-  ClaimRewardRetryCount: 2,
+  ClaimRewardRetryCount: 20,
+  FailedTxLinearBackOffConstantInSecs: 30,
 }
 
 export function updateShardeumFlag(key: string, value: any) {
