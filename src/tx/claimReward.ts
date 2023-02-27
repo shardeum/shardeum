@@ -6,15 +6,17 @@ import { getApplyTXState } from '../index'
 import { toShardusAddress } from '../shardeum/evmAddress'
 import { ShardeumFlags } from '../shardeum/shardeumFlags'
 import {
-  AccountType, ClaimRewardTX,
+  AccountType,
+  ClaimRewardTX,
   InternalTXType,
-  NetworkAccount, NodeAccount2,
-  WrappedEVMAccount, WrappedStates
+  NetworkAccount,
+  NodeAccount2,
+  WrappedEVMAccount,
+  WrappedStates,
 } from '../shardeum/shardeumTypes'
 import * as WrappedEVMAccountFunctions from '../shardeum/wrappedEVMAccountFunctions'
-import { _base16BNParser, _readableSHM, scaleByStabilityFactor, sleep } from '../utils'
 import * as AccountsStorage from '../storage/accountStorage'
-import { scaleByStabilityFactor, _base16BNParser, _readableSHM } from '../utils'
+import { scaleByStabilityFactor, _base16BNParser, _readableSHM, sleep } from '../utils'
 import { retry } from '../utils/retry'
 
 export function isClaimRewardTx(tx: any): boolean {
@@ -78,15 +80,18 @@ export async function injectClaimRewardTxWithRetry(shardus, eventData: ShardusTy
   }
 
   const shouldRetryFunc = async (result): Promise<boolean> => {
-  
-    //TODO, mrege conflict.  how do we fit this back in, or do we even need to?
-    ////had an all nodes crash situation when response was null
-    //if (response == null) {
-    //  /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`injectClaimRewardTxWithRetry failed response was null`)
-    //  continue
-    //}
-    //if (response != null && (response.success || response.status === 400)) { 
-  
+    if (result == null) {
+      /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`injectClaimRewardTxWithRetry failed response was null`)
+      /* prettier-ignore */ nestedCountersInstance.countEvent('shardeum-staking', `injectClaimRewardTxWithRetry failed response was null`)
+      return true
+    }
+    if (result.status === 400) {
+      /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`injectClaimRewardTxWithRetry 400 error: ${result.reason}`)
+      /* prettier-ignore */ nestedCountersInstance.countEvent('shardeum-staking', `injectClaimRewardTxWithRetry 400 error: ${result.reason}`)
+      //note we want to go ahead and not retry, because 400 == bad request
+      return false
+    }
+
     if (result.success) {
       let nodeAccount = await shardus.getLocalOrRemoteAccount(eventData.publicKey)
       if (!nodeAccount) {
