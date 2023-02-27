@@ -86,7 +86,7 @@ export const _base10BNParser = (value: BN | DecimalString): BN => {
     throw new Error('Unacceptable parameter value');
 }
 
-export const _readableSHM = (bnum: BN, autoDecimal: boolean = true): string => {
+export const _readableSHM = (bnum: BN, autoDecimal = true): string => {
 
     if(!BN.isBN(bnum)){
         throw new Error('Parameter value is not a valid BN instance');
@@ -103,7 +103,7 @@ export const _readableSHM = (bnum: BN, autoDecimal: boolean = true): string => {
     // if wei value gets too big let's convert to SHM in a floating point precision.
     // 14 is where we set this threshold. hardcoded for now.
     if(numString.length > 14){
-        let floating_index = numString.length - 18;
+        const floating_index = numString.length - 18;
 
         if(floating_index <= 0){
             const mantissa = '0'.repeat(Math.abs(floating_index)) + numString 

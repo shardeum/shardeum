@@ -11,11 +11,11 @@ import { Account } from 'ethereumjs-util'
  * @returns
  */
 export function getAccountShardusAddress(wrappedEVMAccount: WrappedEVMAccount): string {
-  let addressSource = wrappedEVMAccount.ethAddress
+  const addressSource = wrappedEVMAccount.ethAddress
 
   if (wrappedEVMAccount.accountType === AccountType.ContractStorage) {
     //addressSource = wrappedEVMAccount.key
-    let shardusAddress = toShardusAddressWithKey(
+    const shardusAddress = toShardusAddressWithKey(
       wrappedEVMAccount.ethAddress,
       wrappedEVMAccount.key,
       wrappedEVMAccount.accountType
@@ -25,7 +25,7 @@ export function getAccountShardusAddress(wrappedEVMAccount: WrappedEVMAccount): 
   if (wrappedEVMAccount.accountType === AccountType.ContractCode) {
     //in this case ethAddress is the code hash which is what we want for the key
     //wrappedEVMAccount.codeHash.toString('hex')
-    let shardusAddress = toShardusAddressWithKey(
+    const shardusAddress = toShardusAddressWithKey(
       wrappedEVMAccount.contractAddress,
       wrappedEVMAccount.ethAddress,
       wrappedEVMAccount.accountType
@@ -38,11 +38,11 @@ export function getAccountShardusAddress(wrappedEVMAccount: WrappedEVMAccount): 
     wrappedEVMAccount.accountType === AccountType.UnstakeReceipt
   ) {
     //We use the whole eth address for the receipt (non siloed)
-    let shardusAddress = toShardusAddress(addressSource, wrappedEVMAccount.accountType)
+    const shardusAddress = toShardusAddress(addressSource, wrappedEVMAccount.accountType)
     return shardusAddress
   }
 
-  let otherAccount: any = wrappedEVMAccount
+  const otherAccount: any = wrappedEVMAccount
   if (
     otherAccount.accountType === AccountType.NetworkAccount ||
     otherAccount.accountType === AccountType.NodeAccount ||
@@ -56,7 +56,7 @@ export function getAccountShardusAddress(wrappedEVMAccount: WrappedEVMAccount): 
     return otherAccount.ethAddress
   }
 
-  let shardusAddress = toShardusAddress(addressSource, wrappedEVMAccount.accountType)
+  const shardusAddress = toShardusAddress(addressSource, wrappedEVMAccount.accountType)
   return shardusAddress
 }
 
@@ -91,9 +91,9 @@ export function toShardusAddressWithKey(
     ShardeumFlags.contractStorageKeySilo &&
     (accountType === AccountType.ContractStorage || accountType === AccountType.ContractCode)
   ) {
-    let numPrefixChars = 8
+    const numPrefixChars = 8
     // remove the 0x and get the first 8 hex characters of the address
-    let prefix = addressStr.slice(2, numPrefixChars + 2)
+    const prefix = addressStr.slice(2, numPrefixChars + 2)
     let suffix
 
     if (addressStr.length != 42) {

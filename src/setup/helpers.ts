@@ -59,7 +59,7 @@ export function getTransactionObj(tx: any): Transaction | AccessListEIP2930Trans
 }
 
 export function getInjectedOrGeneratedTimestamp(timestampedTx) {
-  let { tx, timestampReceipt } = timestampedTx
+  const { tx, timestampReceipt } = timestampedTx
   let txnTimestamp: number
 
   if (timestampReceipt && timestampReceipt.timestamp) {

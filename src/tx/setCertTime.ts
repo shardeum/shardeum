@@ -165,7 +165,7 @@ export function applySetCertTimeTx(
   // Update state
   const serverConfig: any = config.server
   let shouldChargeTxFee = true
-  let certExp = operatorEVMAccount.operatorAccountInfo.certExp
+  const certExp = operatorEVMAccount.operatorAccountInfo.certExp
 
   if (certExp > 0) {
     const certStartTimestamp = certExp - ShardeumFlags.certCycleDuration * ONE_SECOND * serverConfig.p2p.cycleDuration
@@ -194,7 +194,7 @@ export function applySetCertTimeTx(
     console.log(`applySetCertTimeTx shouldChargeTxFee: ${shouldChargeTxFee}`)
   }
   if (shouldChargeTxFee) {
-    let constTxFee = scaleByStabilityFactor(
+    const constTxFee = scaleByStabilityFactor(
       new BN(ShardeumFlags.constantTxFeeUsd),
       AccountsStorage.cachedNetworkAccount
     )

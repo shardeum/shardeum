@@ -31,7 +31,7 @@ import {scaleByStabilityFactor} from '../utils'
 
 const debug = createDebugLogger('vm:tx')
 const debugGas = createDebugLogger('vm:tx:gas')
-let {chargeConstantTxFee, constantTxFeeUsd} = ShardeumFlags
+const {chargeConstantTxFee, constantTxFeeUsd} = ShardeumFlags
 
 
 /**

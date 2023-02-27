@@ -25,7 +25,7 @@ export const networkAccount = '0'.repeat(64)
 //In debug mode the default value is 100 SHM.  This is needed for certain load test operations
 const defaultBalance = isDebugMode() ? oneEth.mul(new BN(100)) : new BN(0)
 
-let debugShardeumState: ShardeumState = null
+const debugShardeumState: ShardeumState = null
 
 export const ONE_SECOND = 1000
 
@@ -38,10 +38,10 @@ export const sync = (shardus: Shardus, evmCommon: Common) => async (): Promise<v
       const nodeId = shardus.getNodeId()
 
       if (ShardeumFlags.DebugRestoreFile != null && ShardeumFlags.DebugRestoreFile != '') {
-        let loadOptions = {
+        const loadOptions = {
           file: ShardeumFlags.DebugRestoreFile,
         }
-        let report = await loadAccountDataFromDB(shardus, loadOptions)
+        const report = await loadAccountDataFromDB(shardus, loadOptions)
         console.log('loadAccountDataFromDB:' + JSON.stringify(report))
       }
 
@@ -49,24 +49,24 @@ export const sync = (shardus: Shardus, evmCommon: Common) => async (): Promise<v
       shardus.log(`node ${nodeId} GENERATED_A_NEW_NETWORK_ACCOUNT: `)
       if (ShardeumFlags.SetupGenesisAccount) {
         let skippedAccountCount = 0
-        let accountCopies = []
-        for (let address in genesis) {
-          let amount = new BN(genesis[address].wei)
+        const accountCopies = []
+        for (const address in genesis) {
+          const amount = new BN(genesis[address].wei)
 
-          let shardusAccountID = toShardusAddress(address, AccountType.Account)
+          const shardusAccountID = toShardusAddress(address, AccountType.Account)
           const existingAccount = await shardus.getLocalOrRemoteAccount(shardusAccountID)
           if (existingAccount) {
             skippedAccountCount += 1
             continue
           }
 
-          let { wrappedEVMAccount, accountId, cycle } = await manuallyCreateAccount(
+          const { wrappedEVMAccount, accountId, cycle } = await manuallyCreateAccount(
             address,
             amount,
             evmCommon,
             shardus.getLatestCycles()
           )
-          let accountCopy: ShardusTypes.AccountsCopy = {
+          const accountCopy: ShardusTypes.AccountsCopy = {
             cycleNumber: cycle.counter,
             accountId,
             data: wrappedEVMAccount,
@@ -82,7 +82,7 @@ export const sync = (shardus: Shardus, evmCommon: Common) => async (): Promise<v
           const { account, cycle } = createDevAccount(ShardeumFlags.devPublicKey, shardus.getLatestCycles())
           const devAccount: any = account
           await AccountsStorage.setAccount(devAccount.id, devAccount)
-          let accountCopy: ShardusTypes.AccountsCopy = {
+          const accountCopy: ShardusTypes.AccountsCopy = {
             cycleNumber: cycle.counter,
             accountId: devAccount.id,
             data: devAccount,
@@ -105,7 +105,7 @@ export const sync = (shardus: Shardus, evmCommon: Common) => async (): Promise<v
         shardus.log('NETWORK_ACCOUNT ALREADY EXISTED: ', existingNetworkAccount)
         await sleep(ONE_SECOND * 5)
       } else {
-        let value = {
+        const value = {
           isInternalTx: true,
           internalTXType: InternalTXType.InitNetwork,
           timestamp: when,
@@ -133,28 +133,28 @@ async function manuallyCreateAccount(
   evmCommon: Common,
   latestCycles: any
 ) {
-  let shardusAccountID = toShardusAddress(ethAccountID, AccountType.Account)
+  const shardusAccountID = toShardusAddress(ethAccountID, AccountType.Account)
 
-  let debugTXState = getDebugTXState(evmCommon) //this isn't so great..
+  const debugTXState = getDebugTXState(evmCommon) //this isn't so great..
   debugTXState.checkpoint()
-  let newAccount = await createAccount(ethAccountID, debugTXState, balance)
+  const newAccount = await createAccount(ethAccountID, debugTXState, balance)
   debugTXState.commit()
 
-  let { accounts: accountWrites } = debugTXState._transactionState.getWrittenAccounts()
+  const { accounts: accountWrites } = debugTXState._transactionState.getWrittenAccounts()
 
   //need to commit the account now... this is such a hack!!
-  for (let account of accountWrites.entries()) {
+  for (const account of accountWrites.entries()) {
     //1. wrap and save/update this to shardeum accounts[] map
-    let addressStr = account[0]
-    let accountObj = Account.fromRlpSerializedAccount(account[1])
+    const addressStr = account[0]
+    const accountObj = Account.fromRlpSerializedAccount(account[1])
 
-    let ethAccount = accountObj
+    const ethAccount = accountObj
     debugTXState._transactionState.commitAccount(addressStr, ethAccount) //yikes this wants an await.
   }
 
   if (ShardeumFlags.VerboseLogs) console.log('Tester account created', newAccount)
   const address = Address.fromString(ethAccountID)
-  let account = await debugTXState.getAccount(address)
+  const account = await debugTXState.getAccount(address)
 
   let cycleStart = 0
   if (latestCycles != null && latestCycles.length > 0) {
@@ -162,7 +162,7 @@ async function manuallyCreateAccount(
     console.log('Tester account created time: ', cycleStart)
   }
 
-  let wrappedEVMAccount = {
+  const wrappedEVMAccount = {
     timestamp: cycleStart,
     account,
     ethAddress: ethAccountID,
@@ -194,13 +194,13 @@ const createDevAccount = (accountId: string, latestCycles: any) => {
  * @returns
  */
 function getDebugTXState(evmCommon: Common): ShardeumState {
-  let txId = '7'.repeat(64)
+  const txId = '7'.repeat(64)
   if (ShardeumFlags.VerboseLogs) console.log('Creating a debug tx ShardeumState for ')
 
   let shardeumState = debugShardeumState
   if (shardeumState == null) {
     shardeumState = new ShardeumState({ common: evmCommon })
-    let transactionState = new TransactionState()
+    const transactionState = new TransactionState()
     transactionState.initData(
       shardeumState,
       {
@@ -247,7 +247,7 @@ async function createAccount(
   await stateManager.putAccount(accountAddress, account)
   const updatedAccount = await stateManager.getAccount(accountAddress)
 
-  let wrappedEVMAccount = {
+  const wrappedEVMAccount = {
     timestamp: 0,
     account: updatedAccount,
     ethAddress: addressStr,
@@ -263,7 +263,7 @@ async function createAccount(
  * Probably not a good thing to have long term.
  */
 async function accountMissNoOp(transactionState: TransactionState, address: string): Promise<boolean> {
-  let isRemoteShard = false
+  const isRemoteShard = false
   return isRemoteShard
 }
 
@@ -272,7 +272,7 @@ async function contractStorageMissNoOp(
   _address: string,
   _key: string
 ): Promise<boolean> {
-  let isRemoteShard = false
+  const isRemoteShard = false
   return isRemoteShard
 }
 

@@ -61,7 +61,7 @@ interface ShardeumFlags {
   FailedTxLinearBackOffConstantInSecs: number
 }
 
-export let ShardeumFlags: ShardeumFlags = {
+export const ShardeumFlags: ShardeumFlags = {
   contractStorageKeySilo: true,
   globalCodeBytes: false,
   VerboseLogs: false,

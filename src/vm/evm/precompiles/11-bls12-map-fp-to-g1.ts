@@ -2,10 +2,10 @@ import { BN } from 'ethereumjs-util'
 import { PrecompileInput } from './types'
 import { VmErrorResult, ExecResult, OOGResult } from '../evm'
 import { ERROR, VmError } from '../../exceptions'
-const assert = require('assert')
-const { BLS12_381_ToFpPoint, BLS12_381_FromG1Point } = require('./util/bls12_381')
+import assert from 'assert'
+import { BLS12_381_ToFpPoint, BLS12_381_FromG1Point } from './util/bls12_381'
 
-export default async function (opts: PrecompileInput): Promise<ExecResult> {
+export default async function(opts: PrecompileInput): Promise<ExecResult> {
   assert(opts.data)
 
   const mcl = opts._VM._mcl
@@ -34,7 +34,7 @@ export default async function (opts: PrecompileInput): Promise<ExecResult> {
   let Fp1Point
   try {
     Fp1Point = BLS12_381_ToFpPoint(opts.data.slice(0, 64), mcl)
-  } catch (e: any) {
+  } catch (e) {
     return VmErrorResult(e, opts.gasLimit)
   }
 

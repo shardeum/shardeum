@@ -17,18 +17,18 @@ export interface LoadReport {
   fatal: boolean
 }
 
-let oneJsonAccountPerLine = true
-let loadInitialDataPerBatch = true
+const oneJsonAccountPerLine = true
+const loadInitialDataPerBatch = true
 
 export async function loadAccountDataFromDB(shardus: any, options: LoadOptions): Promise<LoadReport> {
-  let report: LoadReport = {
+  const report: LoadReport = {
     passed: false,
     loadCount: 0,
     loadFailed: 0,
     fatal: false,
   }
 
-  let logVerbose = ShardeumFlags.VerboseLogs //shardus.getLogFlags().verbose
+  const logVerbose = ShardeumFlags.VerboseLogs //shardus.getLogFlags().verbose
 
   if (logVerbose) shardus.log(`loadAccountDataFromDB`)
   try {
@@ -130,13 +130,13 @@ export async function loadAccountDataFromDB(shardus: any, options: LoadOptions):
 }
 
 export const processAccountsData = async (shardus, report: LoadReport, accountArray) => {
-  let logVerbose = ShardeumFlags.VerboseLogs
+  const logVerbose = ShardeumFlags.VerboseLogs
   let lastTS = -1
-  let accountArrayClean = {
+  const accountArrayClean = {
     accounts: [],
     receipts: [],
   }
-  for (let account of accountArray) {
+  for (const account of accountArray) {
     //account.isGlobal = (account.isGlobal === 1)? true : false
     try {
       account.data = JSON.parse(account.data)
@@ -203,7 +203,7 @@ export const processAccountsData = async (shardus, report: LoadReport, accountAr
   // accountArray = accountArrayClean
 
   if (report.loadCount === 0) {
-    let firstAccount = accountArrayClean.accounts[0]
+    const firstAccount = accountArrayClean.accounts[0]
     if (logVerbose) shardus.log(`loadAccountDataFromDB ${JSON.stringify(firstAccount)}`)
   }
 

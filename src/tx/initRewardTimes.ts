@@ -58,8 +58,8 @@ export function validateFields(tx: InitRewardTimes, shardus: Shardus): { success
     /* prettier-ignore */ nestedCountersInstance.countEvent('shardeum-staking', `validateFields InitRewardTimes fail nodeActivatedTime is not correct `)
     return { success: false, reason: 'nodeActivatedTime is not correct in setRewardTimes Tx' }
   }
-  let isValid = crypto.verifyObj(tx)
-  if (!isValid) {
+  const isValid = crypto.verifyObj(tx)
+  if (!isValid){
     /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log('validateFields InitRewardTimes fail Invalid signature', tx)
     /* prettier-ignore */ nestedCountersInstance.countEvent('shardeum-staking', `validateFields InitRewardTimes fail Invalid signature`)
     return { success: false, reason: 'Invalid signature' }
@@ -88,8 +88,8 @@ export function validatePreCrackData(shardus, tx: InternalTx, appData) {
 
 export function validate(tx: InitRewardTimes, shardus: Shardus): { result: string; reason: string } {
   /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log('Validating InitRewardTimesTX', tx)
-  let isValid = crypto.verifyObj(tx)
-  if (!isValid) {
+  const isValid = crypto.verifyObj(tx)
+  if (!isValid){
     /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log('validate InitRewardTimes fail Invalid signature', tx)
     /* prettier-ignore */ nestedCountersInstance.countEvent('shardeum-staking', `validate InitRewardTimes fail Invalid signature`)
     return { result: 'fail', reason: 'Invalid signature' }
@@ -120,7 +120,7 @@ export function apply(
   wrappedStates: WrappedStates,
   applyResponse: ShardusTypes.ApplyResponse
 ) {
-  let nodeAccount: NodeAccount2 = wrappedStates[tx.nominee].data
+  const nodeAccount: NodeAccount2 = wrappedStates[tx.nominee].data
   nodeAccount.rewardStartTime = tx.nodeActivatedTime
   nodeAccount.rewardEndTime = 0
   nodeAccount.timestamp = txTimestamp

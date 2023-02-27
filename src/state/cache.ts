@@ -29,7 +29,7 @@ export default class Cache {
    * @param key - Address of account
    * @param val - Account
    */
-  put(key: Address, val: Account, fromTrie: boolean = false): void {
+  put(key: Address, val: Account, fromTrie = false): void {
     const modified = !fromTrie
     this._update(key, val, modified, false)
   }

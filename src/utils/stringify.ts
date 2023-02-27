@@ -2,7 +2,7 @@ const objToString = Object.prototype.toString
 const objKeys =
   Object.keys ||
   function(obj) {
-    let keys = []
+    const keys = []
     for (const name in obj) {
       keys.push(name)
     }
@@ -14,7 +14,7 @@ export interface stringifierOptions {
 }
 
 export function stringify(val: any, options: stringifierOptions): string {
-  let returnVal = stringifier(val, false, options)
+  const returnVal = stringifier(val, false, options)
   if (returnVal !== undefined) {
     return '' + returnVal
   }
@@ -92,7 +92,7 @@ function stringifier(val: any, isArrayProp: boolean, options: stringifierOptions
   }
 }
 
-function isBufferValue(toStr, val: Object) {
+function isBufferValue(toStr, val: Record<string, any>) {
   return (
     toStr === '[object Object]' &&
     objKeys(val).length == 2 &&

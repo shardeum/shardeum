@@ -1,0 +1,44 @@
+{
+  "root": true,
+  "parser": "@typescript-eslint/parser",
+  "env": {
+    //"browser": true,
+    "node": true
+  },
+  "plugins": ["@typescript-eslint", "security", "xss"],
+  "extends": [
+    "eslint:recommended",
+    "plugin:@typescript-eslint/eslint-recommended",
+    "plugin:@typescript-eslint/recommended",
+    "plugin:security/recommended",
+    "plugin:no-unsanitized/DOM",
+    "prettier"
+  ],
+  "ignorePatterns": [
+    "**/storage/*",
+    "**/vm/state/*",
+    "**/utils/*",
+    "**/vm/evm/*",
+    "**/vm/*",
+    "**/tx/*",
+    "**/versioning/*",
+    "runTXperf.ts",
+    "**/state/*",
+    "**/shardeum/*",
+    "**/src/setup/*",
+    "queryCertificate.ts",
+    "**/src/config/index.ts",
+    "**/src/index.ts",
+    "blockchain.ts"
+  ],
+  "rules": {
+    "no-empty": [
+      1,
+      {
+        "allowEmptyCatch": true
+      }
+    ],
+    "@typescript-eslint/camelcase": "off",
+    "@typescript-eslint/member-delimiter-style": "off"
+  }
+}
