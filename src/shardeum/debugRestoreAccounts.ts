@@ -43,16 +43,7 @@ export async function loadAccountDataFromDB(shardus: any, options: LoadOptions):
 
     let accountArray = []
     let totalAccounts = 0
-    if (oneJsonAccountPerLine === false) {
-      const accountFileText = fs.readFileSync(path, 'utf8')
-      if (accountFileText == null) {
-        return report
-      }
-      accountArray = JSON.parse(accountFileText)
-      if (accountArray == null) {
-        return report
-      }
-    } else if (loadInitialDataPerBatch === true) {
+    if (loadInitialDataPerBatch === true) {
       const rl = readline.createInterface({
         input: fs.createReadStream(path),
         output: process.stdout,
