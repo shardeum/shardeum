@@ -245,7 +245,7 @@ async function getEVMAccountDataForAddress(
   const shardusAddress = toShardusAddress(evmAddress, AccountType.Account)
   const account = await shardus.getLocalOrRemoteAccount(shardusAddress)
   if (!account) return undefined
-  let data: any = account.data
+  const data: any = account.data
   fixDeserializedWrappedEVMAccount(data)
   return data
 }

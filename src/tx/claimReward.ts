@@ -89,7 +89,7 @@ export function validateClaimRewardTx(tx: ClaimRewardTX, appData: any): { isVali
 
 export function validateClaimRewardState(tx: ClaimRewardTX, shardus) {
   /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log('validating claimRewardTX', tx)
-  let isValid = crypto.verifyObj(tx)
+  const isValid = crypto.verifyObj(tx)
   if (!isValid) {
     /* prettier-ignore */ nestedCountersInstance.countEvent('shardeum-staking', `validateClaimRewardState fail Invalid signature`)
     /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log('validateClaimRewardState fail Invalid signature', tx)
@@ -147,8 +147,8 @@ export async function applyClaimRewardTx(
     )
     return
   }
-  let operatorShardusAddress = toShardusAddress(tx.nominator, AccountType.Account)
-  let nodeAccount: NodeAccount2 = wrappedStates[tx.nominee].data
+  const operatorShardusAddress = toShardusAddress(tx.nominator, AccountType.Account)
+  const nodeAccount: NodeAccount2 = wrappedStates[tx.nominee].data
   const network: NetworkAccount = wrappedStates[networkAccount].data
   const operatorAccount: WrappedEVMAccount = wrappedStates[operatorShardusAddress].data
 
@@ -165,7 +165,7 @@ export async function applyClaimRewardTx(
     return
   }
 
-  let durationInNetwork = tx.nodeDeactivatedTime - nodeAccount.rewardStartTime
+  const durationInNetwork = tx.nodeDeactivatedTime - nodeAccount.rewardStartTime
   if (durationInNetwork <= 0) {
     nestedCountersInstance.countEvent('shardeum-staking', `applyClaimRewardTx fail durationInNetwork <= 0`)
     //throw new Error(`applyClaimReward failed because durationInNetwork is less than or equal 0`)
@@ -203,8 +203,8 @@ export async function applyClaimRewardTx(
   )
   nodeAccount.nodeAccountStats.history.push({ b: nodeAccount.rewardStartTime, e: nodeAccount.rewardEndTime })
 
-  let txId = crypto.hashObj(tx)
-  let shardeumState = getApplyTXState(txId)
+  const txId = crypto.hashObj(tx)
+  const shardeumState = getApplyTXState(txId)
   shardeumState._transactionState.appData = {}
 
   // update the operator historical stats
@@ -221,7 +221,7 @@ export async function applyClaimRewardTx(
     operatorAccount.operatorAccountInfo.nominee
 
   // hmm may be we don't need this as we are not updating nonce and balance
-  let operatorEVMAddress: Address = Address.fromString(tx.nominator)
+  const operatorEVMAddress: Address = Address.fromString(tx.nominator)
   await shardeumState.checkpoint()
   await shardeumState.putAccount(operatorEVMAddress, operatorAccount.account)
   await shardeumState.commit()

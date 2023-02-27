@@ -11,7 +11,7 @@ type Response = {
 
 export const validateTransaction = (shardus: Shardus) => (tx: any): Response => {
   if (isInternalTx(tx)) {
-    let internalTx = tx as InternalTx
+    const internalTx = tx as InternalTx
 
     if (isInternalTXGlobal(internalTx) === true) {
       return { result: 'pass', reason: 'valid' }
@@ -19,7 +19,7 @@ export const validateTransaction = (shardus: Shardus) => (tx: any): Response => 
       const devPublicKey = ShardeumFlags.devPublicKey
 
       if (devPublicKey) {
-        let isValid = verify(tx, devPublicKey)
+        const isValid = verify(tx, devPublicKey)
         console.log('isValid', isValid)
 
         if (isValid) {
@@ -36,7 +36,7 @@ export const validateTransaction = (shardus: Shardus) => (tx: any): Response => 
       return InitRewardTimesTx.validate(tx, shardus)
     } else {
       //todo validate internal TX
-      let isValid = crypto.verifyObj(internalTx)
+      const isValid = crypto.verifyObj(internalTx)
       if (isValid) return { result: 'pass', reason: 'valid' }
       else return { result: 'fail', reason: 'Invalid signature' }
     }
@@ -47,7 +47,7 @@ export const validateTransaction = (shardus: Shardus) => (tx: any): Response => 
     return { result: 'pass', reason: 'all_allowed' }
   }
 
-  let txObj = getTransactionObj(tx)
+  const txObj = getTransactionObj(tx)
 
   const response = {
     result: 'fail',
@@ -61,7 +61,7 @@ export const validateTransaction = (shardus: Shardus) => (tx: any): Response => 
   }
 
   try {
-    let senderAddress = txObj.getSenderAddress()
+    const senderAddress = txObj.getSenderAddress()
     if (!senderAddress) {
       return {
         result: 'fail',

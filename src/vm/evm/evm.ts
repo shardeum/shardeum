@@ -243,8 +243,8 @@ export default class EVM {
     // Reduce tx value from sender
     if (!message.delegatecall) {
       if (ShardeumFlags.VerboseLogs) {
-        let to = message.to ? message.to.toString() : ''
-        let value = message.value ? message.value.toString() : 0
+        const to = message.to ? message.to.toString() : ''
+        const value = message.value ? message.value.toString() : 0
         console.log(`reduce balance: ${to} ${value} skip: ${message.value.lte(ZERO)}`)
       }
       if(message.value.gt(ZERO)){
@@ -264,8 +264,8 @@ export default class EVM {
         //TODO: need to review if this breaks functionality of createing an EOA via 0 balance transfer...
         //if it did break that would it matter?
         if (ShardeumFlags.VerboseLogs) {
-            let to = message.to ? message.to.toString() : ''
-            let value = message.value ? message.value.toString() : 0
+            const to = message.to ? message.to.toString() : ''
+            const value = message.value ? message.value.toString() : 0
             console.log(`add balance: ${to} ${value} skip: ${message.value.lte(ZERO)}`)
         }
         if(message.value.gt(ZERO)){

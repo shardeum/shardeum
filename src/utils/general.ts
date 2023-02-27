@@ -51,7 +51,7 @@ export function isEqualOrNewerVersion(minimumVersion: string, testVersion: strin
 
   const minVerParts = minimumVersion.split('.')
   const testVerParts = testVersion.split('.')
-  for (var i = 0; i < testVerParts.length; i++) {
+  for (let i = 0; i < testVerParts.length; i++) {
     const testV = ~~testVerParts[i] // parse int
     const minV = ~~minVerParts[i] // parse int
     if (testV > minV) return true

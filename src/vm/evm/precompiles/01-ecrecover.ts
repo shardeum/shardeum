@@ -1,9 +1,9 @@
 import { setLengthLeft, setLengthRight, ecrecover, publicToAddress, BN } from 'ethereumjs-util'
 import { PrecompileInput } from './types'
 import { OOGResult, ExecResult } from '../evm'
-const assert = require('assert')
+import assert from 'assert'
 
-export default function (opts: PrecompileInput): ExecResult {
+export default function(opts: PrecompileInput): ExecResult {
   assert(opts.data)
 
   const gasUsed = new BN(opts._common.param('gasPrices', 'ecRecover'))
@@ -22,7 +22,7 @@ export default function (opts: PrecompileInput): ExecResult {
   let publicKey
   try {
     publicKey = ecrecover(msgHash, new BN(v), r, s)
-  } catch (e: any) {
+  } catch (e) {
     return {
       gasUsed,
       returnValue: Buffer.alloc(0),

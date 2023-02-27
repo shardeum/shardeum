@@ -47,7 +47,7 @@ export default class Stack {
    * in returned array.
    * @param num - Number of items to pop
    */
-  popN(num: number = 1): BN[] {
+  popN(num = 1): BN[] {
     if (this._store.length < num) {
       throw new VmError(ERROR.STACK_UNDERFLOW)
     }
@@ -64,7 +64,7 @@ export default class Stack {
    * @param num Number of items to return
    * @throws {@link ERROR.STACK_UNDERFLOW}
    */
-  peek(num: number = 1): BN[] {
+  peek(num = 1): BN[] {
     const peekArray: BN[] = []
 
     for (let peek = 1; peek <= num; peek++) {

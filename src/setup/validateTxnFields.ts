@@ -34,8 +34,8 @@ export const validateTxnFields = (shardus: Shardus, debugAppdata: Map<string, an
   timestampedTx: any,
   appData: any
 ) => {
-  let { tx } = timestampedTx
-  let txnTimestamp: number = getInjectedOrGeneratedTimestamp(timestampedTx)
+  const { tx } = timestampedTx
+  const txnTimestamp: number = getInjectedOrGeneratedTimestamp(timestampedTx)
 
   if (!txnTimestamp) {
     return {
@@ -46,7 +46,7 @@ export const validateTxnFields = (shardus: Shardus, debugAppdata: Map<string, an
   }
 
   if (isSetCertTimeTx(tx)) {
-    let setCertTimeTx = tx as SetCertTime
+    const setCertTimeTx = tx as SetCertTime
     const result = validateSetCertTimeTx(setCertTimeTx, appData)
     return {
       success: result.isValid,
@@ -56,7 +56,7 @@ export const validateTxnFields = (shardus: Shardus, debugAppdata: Map<string, an
   }
 
   if (isInternalTx(tx)) {
-    let internalTX = tx as InternalTx
+    const internalTX = tx as InternalTx
     let success = false
     let reason = ''
 
@@ -82,11 +82,11 @@ export const validateTxnFields = (shardus: Shardus, debugAppdata: Map<string, an
         reason = 'Invalid signature for internal tx'
       }
     } else if (tx.internalTXType === InternalTXType.InitRewardTimes) {
-      let result = InitRewardTimesTx.validateFields(tx, shardus)
+      const result = InitRewardTimesTx.validateFields(tx, shardus)
       success = result.success
       reason = result.reason
     } else if (tx.internalTXType === InternalTXType.ClaimReward) {
-      let result = validateClaimRewardTx(tx, appData)
+      const result = validateClaimRewardTx(tx, appData)
       success = result.isValid
       reason = result.reason
     } else {
@@ -109,9 +109,9 @@ export const validateTxnFields = (shardus: Shardus, debugAppdata: Map<string, an
   let reason = 'Invalid EVM transaction fields'
 
   try {
-    let txObj = getTransactionObj(tx)
-    let isSigned = txObj.isSigned()
-    let isSignatureValid = txObj.validate()
+    const txObj = getTransactionObj(tx)
+    const isSigned = txObj.isSigned()
+    const isSignatureValid = txObj.validate()
     if (ShardeumFlags.VerboseLogs) console.log('validate evm tx', isSigned, isSignatureValid)
 
     //const txId = '0x' + crypto.hashObj(timestampedTx.tx)
@@ -132,13 +132,13 @@ export const validateTxnFields = (shardus: Shardus, debugAppdata: Map<string, an
     }
 
     if (ShardeumFlags.txBalancePreCheck && appData != null) {
-      let minBalanceUsd = ShardeumFlags.chargeConstantTxFee
+      const minBalanceUsd = ShardeumFlags.chargeConstantTxFee
         ? new BN(ShardeumFlags.constantTxFeeUsd)
         : new BN(1)
       let minBalance = scaleByStabilityFactor(minBalanceUsd, AccountsStorage.cachedNetworkAccount)
       //check with value added in
       minBalance = minBalance.add(txObj.value)
-      let accountBalance = new BN(appData.balance)
+      const accountBalance = new BN(appData.balance)
       if (accountBalance.lt(minBalance)) {
         success = false
         reason = `Sender does not have enough balance.`
@@ -150,8 +150,8 @@ export const validateTxnFields = (shardus: Shardus, debugAppdata: Map<string, an
     }
 
     if (ShardeumFlags.txNoncePreCheck && appData != null) {
-      let txNonce = txObj.nonce.toNumber()
-      let perfectCount = appData.nonce + appData.queueCount
+      const txNonce = txObj.nonce.toNumber()
+      const perfectCount = appData.nonce + appData.queueCount
       if (txNonce != perfectCount) {
         success = false
         reason = `Transaction nonce != ${txNonce} ${perfectCount}`
@@ -164,9 +164,9 @@ export const validateTxnFields = (shardus: Shardus, debugAppdata: Map<string, an
 
     if (appData && appData.internalTx && appData.internalTXType === InternalTXType.Stake) {
       if (ShardeumFlags.VerboseLogs) console.log('Validating stake coins tx fields', appData)
-      let stakeCoinsTx = appData.internalTx as StakeCoinsTX
-      let minStakeAmountUsd = _base16BNParser(appData.networkAccount.current.stakeRequiredUsd)
-      let minStakeAmount = scaleByStabilityFactor(minStakeAmountUsd, AccountsStorage.cachedNetworkAccount)
+      const stakeCoinsTx = appData.internalTx as StakeCoinsTX
+      const minStakeAmountUsd = _base16BNParser(appData.networkAccount.current.stakeRequiredUsd)
+      const minStakeAmount = scaleByStabilityFactor(minStakeAmountUsd, AccountsStorage.cachedNetworkAccount)
       if (typeof stakeCoinsTx.stake === 'string') stakeCoinsTx.stake = new BN(stakeCoinsTx.stake, 16)
       if (
         stakeCoinsTx.nominator == null ||
@@ -220,7 +220,7 @@ export const validateTxnFields = (shardus: Shardus, debugAppdata: Map<string, an
     if (appData && appData.internalTx && appData.internalTXType === InternalTXType.Unstake) {
       nestedCountersInstance.countEvent('shardeum-unstaking', 'validating unstake coins tx fields')
       if (ShardeumFlags.VerboseLogs) console.log('Validating unstake coins tx fields', appData.internalTx)
-      let unstakeCoinsTX = appData.internalTx as UnstakeCoinsTX
+      const unstakeCoinsTX = appData.internalTx as UnstakeCoinsTX
       if (
         unstakeCoinsTX.nominator == null ||
         unstakeCoinsTX.nominator.toLowerCase() !== txObj.getSenderAddress().toString()

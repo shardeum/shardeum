@@ -38,7 +38,7 @@ export async function lazyInit() {
 
 export async function getAccount(address: string): Promise<WrappedEVMAccount> {
   if (ShardeumFlags.UseDBForAccounts === true) {
-    let account = await storage.getAccountsEntry(address)
+    const account = await storage.getAccountsEntry(address)
     if (!account) return
 
     if (isString(account.data)) {
@@ -55,7 +55,7 @@ export async function getAccount(address: string): Promise<WrappedEVMAccount> {
 export async function getAccountTimestamp(address: string): Promise<number> {
   if (ShardeumFlags.UseDBForAccounts === true) {
     //todo replace with specific sql query
-    let account = await storage.getAccountsEntry(address)
+    const account = await storage.getAccountsEntry(address)
     return account.timestamp
   } else {
     return accounts[address]?.timestamp
@@ -65,7 +65,7 @@ export async function getAccountTimestamp(address: string): Promise<number> {
 export async function accountExists(address: string): Promise<boolean> {
   if (ShardeumFlags.UseDBForAccounts === true) {
     //todo replace with specific sql query, or even a shardus cache check
-    let account = await storage.getAccountsEntry(address)
+    const account = await storage.getAccountsEntry(address)
     return account != null
   } else {
     return accounts[address] != null
@@ -76,7 +76,7 @@ export let cachedNetworkAccount: NetworkAccount // an actual obj
 export async function setAccount(address: string, account: WrappedEVMAccount): Promise<void> {
   try {
     if (ShardeumFlags.UseDBForAccounts === true) {
-      let accountEntry = {
+      const accountEntry = {
         accountId: address,
         timestamp: account.timestamp,
         data: account,
@@ -139,9 +139,9 @@ export async function queryAccountsEntryByRanges(
   maxRecords
 ): Promise<WrappedEVMAccount[]> {
   if (ShardeumFlags.UseDBForAccounts === true) {
-    let processedResults = []
-    let results = await storage.queryAccountsEntryByRanges(accountStart, accountEnd, maxRecords)
-    for (let result of results) {
+    const processedResults = []
+    const results = await storage.queryAccountsEntryByRanges(accountStart, accountEnd, maxRecords)
+    for (const result of results) {
       if (isString(result.data)) {
         result.data = DeSerializeFromJsonString(result.data as string)
       }
@@ -163,7 +163,7 @@ export async function queryAccountsEntryByRanges2(
   accountOffset
 ): Promise<WrappedEVMAccount[]> {
   if (ShardeumFlags.UseDBForAccounts === true) {
-    let processedResults = []
+    const processedResults = []
     let results
 
     if (accountOffset != null && accountOffset.length > 0) {
@@ -186,7 +186,7 @@ export async function queryAccountsEntryByRanges2(
       )
     }
 
-    for (let result of results) {
+    for (const result of results) {
       if (isString(result.data)) {
         result.data = DeSerializeFromJsonString(result.data as string)
       }

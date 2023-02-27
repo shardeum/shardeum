@@ -1,7 +1,7 @@
 import { setLengthRight, BN } from 'ethereumjs-util'
 import { PrecompileInput } from './types'
 import { OOGResult, ExecResult } from '../evm'
-const assert = require('assert')
+import assert from 'assert'
 
 function multComplexity(x: BN): BN {
   let fac1
@@ -31,7 +31,7 @@ function getAdjustedExponentLength(data: Buffer): BN {
   try {
     const baseLen = new BN(data.slice(0, 32)).toNumber()
     expBytesStart = 96 + baseLen // 96 for base length, then exponent length, and modulus length, then baseLen for the base data, then exponent bytes start
-  } catch (e: any) {
+  } catch (e) {
     expBytesStart = Number.MAX_SAFE_INTEGER - 32
   }
   const expLen = new BN(data.slice(32, 64))
@@ -71,7 +71,7 @@ function expmod(B: BN, E: BN, M: BN): BN {
   return res.fromRed()
 }
 
-export default function (opts: PrecompileInput): ExecResult {
+export default function(opts: PrecompileInput): ExecResult {
   assert(opts.data)
 
   const data = opts.data

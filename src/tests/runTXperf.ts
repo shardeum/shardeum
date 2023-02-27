@@ -15,7 +15,7 @@ crypto.init('69fa4195670576c0160d660c3be36556ff8d504725be8a59b5a96509e0c994bc')
 
 const common = new Common({ chain: Chain.Mainnet, hardfork: Hardfork.Merge })
 
-let shardeumStateManager = new ShardeumState() //as StateManager
+const shardeumStateManager = new ShardeumState() //as StateManager
 const vm = new VM({ common, stateManager: shardeumStateManager })
 
 //const vm = new VM({common});
@@ -49,40 +49,40 @@ function getTransactionObj(tx: any): Transaction {
   }
 }
 
-let signedTxs: Transaction[] = []
-let accounts = new Map()
+const signedTxs: Transaction[] = []
+const accounts = new Map()
 
 function initGenesis() {
-  let fileName = 'genesis_block.json'
-  var localDir = path.resolve('./')
+  const fileName = 'genesis_block.json'
+  const localDir = path.resolve('./')
 
-  var genesis = fs.readFileSync(path.join(localDir, fileName), 'utf8')
-  let genData: { [address: string]: { wei: number } } = JSON.parse(genesis)
-  let transformedGenData: { [address: string]: string } = {}
+  const genesis = fs.readFileSync(path.join(localDir, fileName), 'utf8')
+  const genData: { [address: string]: { wei: number } } = JSON.parse(genesis)
+  const transformedGenData: { [address: string]: string } = {}
   for (const [key, value] of Object.entries(genData)) {
-    let newKey = '0x' + key
+    const newKey = '0x' + key
     transformedGenData[newKey] = '0x' + value.wei
   }
   vm.stateManager.generateGenesis(transformedGenData)
 }
 
 async function loadTXAndAccounts() {
-  let fileName = 'raw_txs.json'
-  var localDir = path.resolve('./')
+  const fileName = 'raw_txs.json'
+  const localDir = path.resolve('./')
 
-  var rawTxs = fs.readFileSync(path.join(localDir, fileName), 'utf8')
+  let rawTxs = fs.readFileSync(path.join(localDir, fileName), 'utf8')
   rawTxs = JSON.parse(rawTxs)
 
   //let rawTxs = JSON.parse(FS.readFileSync('../../raw_txs.json', 'utf8').toString())
   for (const [key, value] of Object.entries(rawTxs)) {
     try {
-      let txRaw = { raw: value }
-      let txObj = getTransactionObj(txRaw)
-      let sendAddr = txObj.getSenderAddress().toString()
+      const txRaw = { raw: value }
+      const txObj = getTransactionObj(txRaw)
+      const sendAddr = txObj.getSenderAddress().toString()
 
       await getOrCreateAccount(sendAddr)
       if (txObj.to) {
-        let toAddr = txObj.to.toString()
+        const toAddr = txObj.to.toString()
         await getOrCreateAccount(toAddr)
       }
       signedTxs.push(txObj)
@@ -136,20 +136,20 @@ function roundTo2decimals(num: number) {
 }
 async function runTXs(signedTxs: Transaction[]) {
   let index = 0
-  let batchSize = 100
-  let batches = 100
+  const batchSize = 100
+  const batches = 100
 
   let totalPass = 0
   let totalFail = 0
 
-  let txRunTimes = []
+  const txRunTimes = []
 
   //filter to only run some tx types with this:
-  let allowedTXTypes: any = { transfer: true, execute: true, create: true }
+  const allowedTXTypes: any = { transfer: true, execute: true, create: true }
 
   for (let k = 0; k < batches; k++) {
-    let start = Date.now()
-    let stats: any = {
+    const start = Date.now()
+    const stats: any = {
       tps: 0,
       fail: 0,
       pass: 0,
@@ -170,15 +170,15 @@ async function runTXs(signedTxs: Transaction[]) {
         return
       }
 
-      let tx = signedTxs[index]
+      const tx = signedTxs[index]
       index++
-      let txType = getTxType(tx)
+      const txType = getTxType(tx)
       if (allowedTXTypes[txType] != true) {
         i-- //terrible hack
         continue //temp hack to throw out xfer
       }
 
-      let txStart = Date.now()
+      const txStart = Date.now()
       try {
         await vm.runTx({ tx, skipNonce: false, skipBlockGasLimitValidation: true })
         stats.pass++
@@ -195,13 +195,13 @@ async function runTXs(signedTxs: Transaction[]) {
 
         // }
       }
-      let txElapsed = Date.now() - txStart
+      const txElapsed = Date.now() - txStart
       //if(txType != 'transfer'){
       txRunTimes.push({ time: txElapsed, t: txType, index })
       //}
     }
 
-    let elapsed = Date.now() - start
+    const elapsed = Date.now() - start
     stats.tps = roundTo2decimals((1000 * batchSize) / elapsed)
     stats.passTPS = roundTo2decimals((1000 * stats.pass) / elapsed)
     stats.failTPS = roundTo2decimals((1000 * stats.fail) / elapsed)
@@ -216,6 +216,6 @@ async function test() {
 }
 
 //test()
-let txStr =
+const txStr =
   '0xf8728207b18501dfd14000832dc6c094c125bde1fdcc2ca1a0dd2583872dcc037aeed87289056bc75e2d6310000080823f61a0f56ebbe107068b9bf0a63a0c15023e75a34bd4d2807ce7dd21d62ed13cc68968a019c537ddbd95c21667433e284c32580dbce4b1f508dd41cbca7b21befd0d1024'
 debugTX(txStr)

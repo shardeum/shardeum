@@ -47,11 +47,11 @@ export interface PostByzantiumTxReceipt extends BaseTxReceipt {
  *
  * @deprecated Please use PostByzantiumTxReceipt instead
  */
-export interface EIP2930Receipt extends PostByzantiumTxReceipt {}
+export type EIP2930Receipt = PostByzantiumTxReceipt
 
 /**
  * EIP1559Receipt, which has the same fields as PostByzantiumTxReceipt
  *
  * @deprecated Please use PostByzantiumTxReceipt instead
  */
-export interface EIP1559Receipt extends PostByzantiumTxReceipt {}
+export type EIP1559Receipt = PostByzantiumTxReceipt

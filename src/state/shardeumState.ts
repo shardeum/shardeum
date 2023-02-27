@@ -252,7 +252,7 @@ export default class ShardeumState implements StateManager {
       if (ShardeumFlags.SaveEVMTries) {
         throw new Error('getContractCode SaveEVMTries=true not supported')
       } else {
-        let testAccount = await this._transactionState.getContractCode(null, address, false, false)
+        const testAccount = await this._transactionState.getContractCode(null, address, false, false)
         if (this.temporaryParallelOldMode === false) {
           return testAccount
         }
@@ -297,7 +297,7 @@ export default class ShardeumState implements StateManager {
     let testAccount
     if (this._transactionState != null) {
       if (ShardeumFlags.SaveEVMTries) {
-        let storageTrie = await this._getStorageTrie(address)
+        const storageTrie = await this._getStorageTrie(address)
         testAccount = await this._transactionState.getContractStorage(storageTrie, address, key, false, false)
         if (this.temporaryParallelOldMode === false) {
           return testAccount
@@ -327,8 +327,8 @@ export default class ShardeumState implements StateManager {
   async getOriginalContractStorage(address: Address, key: Buffer): Promise<Buffer> {
     if (this._transactionState != null) {
       if (ShardeumFlags.SaveEVMTries) {
-        let storageTrie = await this._getStorageTrie(address)
-        let testAccount = await this._transactionState.getContractStorage(
+        const storageTrie = await this._getStorageTrie(address)
+        const testAccount = await this._transactionState.getContractStorage(
           storageTrie,
           address,
           key,
@@ -339,7 +339,7 @@ export default class ShardeumState implements StateManager {
           return testAccount
         }
       } else {
-        let testAccount = await this._transactionState.getContractStorage(null, address, key, true, false)
+        const testAccount = await this._transactionState.getContractStorage(null, address, key, true, false)
         if (this.temporaryParallelOldMode === false) {
           return testAccount
         }

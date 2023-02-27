@@ -58,7 +58,7 @@ interface ShardeumFlags {
   extraTxTime: number
 }
 
-export let ShardeumFlags: ShardeumFlags = {
+export const ShardeumFlags: ShardeumFlags = {
   contractStorageKeySilo: true,
   globalCodeBytes: false,
   VerboseLogs: false,

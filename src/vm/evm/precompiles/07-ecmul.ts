@@ -1,10 +1,10 @@
 import { BN } from 'ethereumjs-util'
 import { PrecompileInput } from './types'
 import { OOGResult, ExecResult } from '../evm'
-const assert = require('assert')
-const bn128 = require('rustbn.js')
+import assert from 'assert'
+import bn128 from 'rustbn.js'
 
-export default function (opts: PrecompileInput): ExecResult {
+export default function(opts: PrecompileInput): ExecResult {
   assert(opts.data)
 
   const inputData = opts.data

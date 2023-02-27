@@ -90,9 +90,9 @@ export function predictContractAddress(wrappedEVMAccount: WrappedEVMAccount): Bu
   if (wrappedEVMAccount.accountType != AccountType.Account) {
     throw new Error('predictContractAddress requires AccountType.Account')
   }
-  let fromStr = wrappedEVMAccount.ethAddress
-  let nonce = wrappedEVMAccount.account.nonce
-  let addressBuffer = predictContractAddressDirect(fromStr, nonce)
+  const fromStr = wrappedEVMAccount.ethAddress
+  const nonce = wrappedEVMAccount.account.nonce
+  const addressBuffer = predictContractAddressDirect(fromStr, nonce)
   return addressBuffer
 }
 
@@ -101,9 +101,9 @@ export function predictContractAddressDirect(ethAddress: string, nonce: BN): Buf
   if (fromStr.length === 42) {
     fromStr = fromStr.slice(2) //trim 0x
   }
-  let fromBuffer = Buffer.from(fromStr, 'hex')
+  const fromBuffer = Buffer.from(fromStr, 'hex')
 
-  let nonceBuffer: Buffer = Buffer.from(nonce.toArray())
-  let addressBuffer = generateAddress(fromBuffer, nonceBuffer)
+  const nonceBuffer: Buffer = Buffer.from(nonce.toArray())
+  const addressBuffer = generateAddress(fromBuffer, nonceBuffer)
   return addressBuffer
 }

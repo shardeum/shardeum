@@ -281,7 +281,7 @@ export default class TransactionState {
    */
   async commitAccount(addressString: string, account: Account) {
     //store all writes to the persistant trie.
-    let address = Address.fromString(addressString)
+    const address = Address.fromString(addressString)
 
     if (ShardeumFlags.Virtual0Address && addressString === zeroAddressStr) {
       if (this.debugTrace) this.debugTraceLog(`commitAccount: addr:${addressString} } is neglected`)
@@ -293,16 +293,16 @@ export default class TransactionState {
 
       //IFF this is a contract account we need to update any pending contract storage values!!
       if (this.pendingContractStorageCommits.has(addressString)) {
-        let contractStorageCommits = this.pendingContractStorageCommits.get(addressString)
+        const contractStorageCommits = this.pendingContractStorageCommits.get(addressString)
 
-        let storageTrie = await this.shardeumState._getStorageTrie(address)
+        const storageTrie = await this.shardeumState._getStorageTrie(address)
         //what if storage trie was just created?
         storageTrie.checkpoint()
         //walk through all of these
-        for (let entry of contractStorageCommits.entries()) {
-          let keyString = entry[0]
-          let value = entry[1] // need to check wrapping.  Does this need one more layer of toBuffer?/rlp?
-          let keyBuffer = Buffer.from(keyString, 'hex')
+        for (const entry of contractStorageCommits.entries()) {
+          const keyString = entry[0]
+          const value = entry[1] // need to check wrapping.  Does this need one more layer of toBuffer?/rlp?
+          const keyBuffer = Buffer.from(keyString, 'hex')
           await storageTrie.put(keyBuffer, value)
 
           if (this.debugTrace)
@@ -319,11 +319,11 @@ export default class TransactionState {
         //TODO:  handle key deletion
       }
       if (this.pendingContractBytesCommits.has(addressString)) {
-        let contractBytesCommits = this.pendingContractBytesCommits.get(addressString)
+        const contractBytesCommits = this.pendingContractBytesCommits.get(addressString)
 
-        for (let [key, contractByteWrite] of contractBytesCommits) {
-          let codeHash = contractByteWrite.codeHash
-          let codeByte = contractByteWrite.codeByte
+        for (const [key, contractByteWrite] of contractBytesCommits) {
+          const codeHash = contractByteWrite.codeHash
+          const codeByte = contractByteWrite.codeByte
           if (ShardeumFlags.VerboseLogs)
             console.log(`Storing contract code for ${address.toString()}`, codeHash, codeByte)
 
@@ -374,12 +374,12 @@ export default class TransactionState {
     if (ShardeumFlags.SaveEVMTries) {
       //only put this in the pending commit structure. we will do the real commit when updating the account
       if (this.pendingContractBytesCommits.has(contractAddress)) {
-        let contractBytesCommit = this.pendingContractBytesCommits.get(contractAddress)
+        const contractBytesCommit = this.pendingContractBytesCommits.get(contractAddress)
         if (contractBytesCommit.has(codeHash.toString('hex'))) {
           contractBytesCommit.set(codeHash.toString('hex'), { codeHash, codeByte: contractByte })
         }
       } else {
-        let contractBytesCommit = new Map()
+        const contractBytesCommit = new Map()
         contractBytesCommit.set(codeHash.toString('hex'), { codeHash, codeByte: contractByte })
         this.pendingContractBytesCommits.set(contractAddress, contractBytesCommit)
       }
@@ -404,12 +404,12 @@ export default class TransactionState {
     if (ShardeumFlags.SaveEVMTries) {
       //only put this in the pending commit structure. we will do the real commit when updating the account
       if (this.pendingContractStorageCommits.has(contractAddress)) {
-        let contractStorageCommits = this.pendingContractStorageCommits.get(contractAddress)
+        const contractStorageCommits = this.pendingContractStorageCommits.get(contractAddress)
         if (!contractStorageCommits.has(keyString)) {
           contractStorageCommits.set(keyString, value)
         }
       } else {
-        let contractStorageCommits = new Map()
+        const contractStorageCommits = new Map()
         contractStorageCommits.set(keyString, value)
         this.pendingContractStorageCommits.set(contractAddress, contractStorageCommits)
       }
@@ -431,7 +431,7 @@ export default class TransactionState {
     if (originalOnly === false) {
       //first check our map as these are the most current account values
       if (this.allAccountWrites.has(addressString)) {
-        let storedRlp = this.allAccountWrites.get(addressString)
+        const storedRlp = this.allAccountWrites.get(addressString)
         account = storedRlp ? Account.fromRlpSerializedAccount(storedRlp) : undefined
         if (this.debugTrace)
           this.debugTraceLog(
@@ -443,9 +443,9 @@ export default class TransactionState {
       //check stack for changes next.  from newest to oldest
       //new changes are pushed to the end of the array
       for (let i = this.allAccountWritesStack.length - 1; i >= 0; i--) {
-        let accountWrites = this.allAccountWritesStack[i]
+        const accountWrites = this.allAccountWritesStack[i]
         if (accountWrites.has(addressString)) {
-          let storedRlp = accountWrites.get(addressString)
+          const storedRlp = accountWrites.get(addressString)
           account = storedRlp ? Account.fromRlpSerializedAccount(storedRlp) : undefined
           if (this.debugTrace)
             this.debugTraceLog(
@@ -463,7 +463,7 @@ export default class TransactionState {
     //when checkpoints === 0 in ethereumJS it clears original storage
     //maybe this is moot for accounts, but this can be an example for contract storage.
     if (this.committedAccountWrites.has(addressString)) {
-      let storedRlp = this.committedAccountWrites.get(addressString)
+      const storedRlp = this.committedAccountWrites.get(addressString)
       account = storedRlp ? Account.fromRlpSerializedAccount(storedRlp) : undefined
       if (this.debugTrace)
         this.debugTraceLog(
@@ -473,7 +473,7 @@ export default class TransactionState {
     }
 
     if (this.firstAccountReads.has(addressString)) {
-      let storedRlp = this.firstAccountReads.get(addressString)
+      const storedRlp = this.firstAccountReads.get(addressString)
       account = storedRlp ? Account.fromRlpSerializedAccount(storedRlp) : undefined
       if (this.debugTrace)
         this.debugTraceLog(
@@ -498,8 +498,8 @@ export default class TransactionState {
 
       //figure out if addres to string is ok...
       //also what about RLP format... need to do the extra conversions now, but plan on the best conversion.
-      let accountShardusAddress = toShardusAddress(address.toString(), AccountType.Account)
-      let wrappedAccount = await AccountsStorage.getAccount(accountShardusAddress)
+      const accountShardusAddress = toShardusAddress(address.toString(), AccountType.Account)
+      const wrappedAccount = await AccountsStorage.getAccount(accountShardusAddress)
       if (wrappedAccount != null) {
         fixDeserializedWrappedEVMAccount(wrappedAccount)
         account = wrappedAccount.account
@@ -518,7 +518,7 @@ export default class TransactionState {
     //attempt to get data from tryGetRemoteAccountCB
     //this can be a long wait only suitable in some cases
     if (account == undefined) {
-      let wrappedEVMAccount = await this.tryGetRemoteAccountCB(this, AccountType.Account, addressString, null)
+      const wrappedEVMAccount = await this.tryGetRemoteAccountCB(this, AccountType.Account, addressString, null)
       if (wrappedEVMAccount != undefined) {
         //get account aout of the wrapped evm account
         account = wrappedEVMAccount.account
@@ -535,7 +535,7 @@ export default class TransactionState {
     if (account == undefined) {
       //event callback to inidicate we do not have the account in this shard
       // not 100% if we should await this, may need some group discussion
-      let isRemoteShard = await this.accountMissCB(this, addressString)
+      const isRemoteShard = await this.accountMissCB(this, addressString)
 
       if (this.debugTrace) this.debugTraceLog(`getAccount: addr:${addressString} v:notFound isRemoteShard:${isRemoteShard}`)
 
@@ -574,7 +574,7 @@ export default class TransactionState {
 
     if (/*this.debugTrace &&*/ ShardeumFlags.VerboseLogs) {
       //print the calls stack that is calling put account
-      let er = new Error()
+      const er = new Error()
       console.log(`put account: ${addressString} tx:${this.linkedTX} stack: ${er.stack} `)
     }
 
@@ -584,7 +584,7 @@ export default class TransactionState {
     TransactionState.fixAccountFields(account)
 
     const accountObj = Account.fromAccountData(account)
-    let storedRlp = accountObj.serialize()
+    const storedRlp = accountObj.serialize()
 
     if (this.debugTrace)
       this.debugTraceLog(`putAccount: addr:${addressString} v:${JSON.stringify(accountObj)}`)
@@ -593,7 +593,7 @@ export default class TransactionState {
 
     //this.checkpoints[this.checkpoints.length - 1]
     if (this.allAccountWritesStack.length > 0) {
-      let accountWrites = this.allAccountWritesStack[this.allAccountWritesStack.length - 1]
+      const accountWrites = this.allAccountWritesStack[this.allAccountWritesStack.length - 1]
       accountWrites.set(addressString, storedRlp)
     } else {
       //if we are not using checkpoints then use this data to set first account reads
@@ -611,7 +611,7 @@ export default class TransactionState {
     TransactionState.fixAccountFields(account)
 
     const accountObj = Account.fromAccountData(account)
-    let storedRlp = accountObj.serialize()
+    const storedRlp = accountObj.serialize()
     this.firstAccountReads.set(addressString, storedRlp)
   }
 
@@ -624,18 +624,18 @@ export default class TransactionState {
     const addressString = contractAddress.toString()
 
     //first get the account so we can have the correct code hash to look at
-    let contractAccount = await this.getAccount(worldStateTrie, contractAddress, originalOnly, canThrow)
+    const contractAccount = await this.getAccount(worldStateTrie, contractAddress, originalOnly, canThrow)
     if (contractAccount == undefined) {
       if (this.debugTrace)
         this.debugTraceLog(`getContractCode: addr:${addressString} Found no contract account`)
       return
     }
-    let codeHash = contractAccount.codeHash
-    let codeHashStr = codeHash.toString('hex')
+    const codeHash = contractAccount.codeHash
+    const codeHashStr = codeHash.toString('hex')
 
     if (originalOnly === false) {
       if (this.allContractBytesWrites.has(codeHashStr)) {
-        let codeBytes = this.allContractBytesWrites.get(codeHashStr).contractByte
+        const codeBytes = this.allContractBytesWrites.get(codeHashStr).contractByte
         if (this.debugTrace)
           this.debugTraceLog(
             `getContractCode: (allContractBytesWrites) addr:${addressString} codeHashStr:${codeHashStr} v:${codeBytes.length}`
@@ -643,7 +643,7 @@ export default class TransactionState {
         return codeBytes
       }
       if (this.allContractBytesWritesByAddress.has(addressString)) {
-        let codeBytes = this.allContractBytesWritesByAddress.get(addressString).contractByte
+        const codeBytes = this.allContractBytesWritesByAddress.get(addressString).contractByte
         if (this.debugTrace)
           this.debugTraceLog(
             `getContractCode: (allContractBytesWritesByAddress) addr:${addressString} v:${codeBytes.length}`
@@ -652,7 +652,7 @@ export default class TransactionState {
       }
     }
     if (this.firstContractBytesReads.has(codeHashStr)) {
-      let codeBytes = this.firstContractBytesReads.get(codeHashStr).contractByte
+      const codeBytes = this.firstContractBytesReads.get(codeHashStr).contractByte
       if (this.debugTrace)
         this.debugTraceLog(
           `getContractCode: (firstContractBytesReads) addr:${addressString} codeHashStr:${codeHashStr} v:${codeBytes.length}`
@@ -675,8 +675,8 @@ export default class TransactionState {
       //throw new Error('get from accounts db')
 
       //need: contract address,  code hash  for toShardusAddressWithKey
-      let bytesShardusAddress = toShardusAddressWithKey(addressString, codeHashStr, AccountType.ContractCode)
-      let wrappedAccount = await AccountsStorage.getAccount(bytesShardusAddress)
+      const bytesShardusAddress = toShardusAddressWithKey(addressString, codeHashStr, AccountType.ContractCode)
+      const wrappedAccount = await AccountsStorage.getAccount(bytesShardusAddress)
       if (wrappedAccount != null) {
         fixDeserializedWrappedEVMAccount(wrappedAccount)
         storedCodeByte = wrappedAccount.codeByte
@@ -687,7 +687,7 @@ export default class TransactionState {
     //attempt to get data from tryGetRemoteAccountCB
     //this can be a long wait only suitable in some cases
     if (codeBytes == undefined) {
-      let wrappedEVMAccount = await this.tryGetRemoteAccountCB(
+      const wrappedEVMAccount = await this.tryGetRemoteAccountCB(
         this,
         AccountType.ContractCode,
         addressString,
@@ -703,7 +703,7 @@ export default class TransactionState {
     if (codeBytes == undefined) {
       //event callback to inidicate we do not have the account in this shard
       // not 100% if we should await this, may need some group discussion
-      let isRemoteShard = await this.accountMissCB(this, codeHashStr)
+      const isRemoteShard = await this.accountMissCB(this, codeHashStr)
 
       if (this.debugTrace)
         this.debugTraceLog(
@@ -744,7 +744,7 @@ export default class TransactionState {
       return
     }
 
-    let contractByteWrite: ContractByteWrite = {
+    const contractByteWrite: ContractByteWrite = {
       contractByte: codeByte,
       codeHash,
       contractAddress,
@@ -791,10 +791,10 @@ export default class TransactionState {
 
     if (originalOnly === false) {
       if (this.allContractStorageWrites.has(addressString)) {
-        let contractStorageWrites = this.allContractStorageWrites.get(addressString)
+        const contractStorageWrites = this.allContractStorageWrites.get(addressString)
         if (contractStorageWrites.has(keyString)) {
-          let storedRlp = contractStorageWrites.get(keyString)
-          let returnValue = storedRlp ? rlp.decode(storedRlp) : undefined
+          const storedRlp = contractStorageWrites.get(keyString)
+          const returnValue = storedRlp ? rlp.decode(storedRlp) : undefined
           if (this.debugTrace)
             this.debugTraceLog(
               `getContractStorage: (contractStorageWrites) addr:${addressString} key:${keyString} v:${returnValue?.toString(
@@ -806,10 +806,10 @@ export default class TransactionState {
       }
     }
     if (this.firstContractStorageReads.has(addressString)) {
-      let contractStorageReads = this.firstContractStorageReads.get(addressString)
+      const contractStorageReads = this.firstContractStorageReads.get(addressString)
       if (contractStorageReads.has(keyString)) {
-        let storedRlp = contractStorageReads.get(keyString)
-        let returnValue = storedRlp ? rlp.decode(storedRlp) : undefined
+        const storedRlp = contractStorageReads.get(keyString)
+        const returnValue = storedRlp ? rlp.decode(storedRlp) : undefined
         if (this.debugTrace)
           this.debugTraceLog(
             `getContractStorage: (contractStorageReads) addr:${addressString} key:${keyString} v:${returnValue?.toString(
@@ -835,12 +835,12 @@ export default class TransactionState {
       //get from accounts db
       //throw new Error('get from accounts db')
       // toShardusAddressWithKey.. use contract address followed by key
-      let storageShardusAddress = toShardusAddressWithKey(
+      const storageShardusAddress = toShardusAddressWithKey(
         addressString,
         keyString,
         AccountType.ContractStorage
       )
-      let wrappedAccount = await AccountsStorage.getAccount(storageShardusAddress)
+      const wrappedAccount = await AccountsStorage.getAccount(storageShardusAddress)
       if (wrappedAccount != null) {
         fixDeserializedWrappedEVMAccount(wrappedAccount)
         storedRlp = wrappedAccount.value
@@ -851,7 +851,7 @@ export default class TransactionState {
     //attempt to get data from tryGetRemoteAccountCB
     //this can be a long wait only suitable in some cases
     if (storedValue == undefined) {
-      let wrappedEVMAccount = await this.tryGetRemoteAccountCB(
+      const wrappedEVMAccount = await this.tryGetRemoteAccountCB(
         this,
         AccountType.ContractStorage,
         addressString,
@@ -867,7 +867,7 @@ export default class TransactionState {
     //Storage miss!!!, account not on this shard
     if (storedValue == undefined) {
       //event callback to inidicate we do not have the account in this shard
-      let isRemoteShard = await this.contractStorageMissCB(this, addressString, keyString)
+      const isRemoteShard = await this.contractStorageMissCB(this, addressString, keyString)
 
       if (this.debugTrace)
         this.debugTraceLog(`getContractStorage: addr:${addressString} key:${keyString} v:notFound`)
@@ -906,7 +906,7 @@ export default class TransactionState {
     value = unpadBuffer(value) // Trims leading zeros from a Buffer.
 
     // Step 1 update the account storage
-    let storedRlp = rlp.encode(value)
+    const storedRlp = rlp.encode(value)
     let contractStorageWrites = this.allContractStorageWrites.get(addressString)
     if (contractStorageWrites == null) {
       contractStorageWrites = new Map()
@@ -947,7 +947,7 @@ export default class TransactionState {
 
     // Step 1 update the account storage
     // let storedRlp = rlp.encode(value)
-    let storedRlp = value
+    const storedRlp = value
     let contractStorageReads = this.firstContractStorageReads.get(addressString)
     if (contractStorageReads == null) {
       contractStorageReads = new Map()
@@ -1050,10 +1050,10 @@ export default class TransactionState {
 
     if (this.checkpointCount > 0) {
       //pop the top checkpoint
-      let accountWrites = this.allAccountWritesStack.pop()
-      let newTop = this.allAccountWritesStack[this.allAccountWritesStack.length - 1]
+      const accountWrites = this.allAccountWritesStack.pop()
+      const newTop = this.allAccountWritesStack[this.allAccountWritesStack.length - 1]
       //flatten these values to the new top
-      for (let [key, value] of accountWrites.entries()) {
+      for (const [key, value] of accountWrites.entries()) {
         newTop.set(key, value)
       }
       // if (this.debugTrace) console.log('commit: updated allAccountWritesStack', this.logAccountWritesStack(this.allAccountWritesStack))
@@ -1096,9 +1096,9 @@ export default class TransactionState {
 
     if(ShardeumFlags.VerboseLogs){
       // monitor counts the last tried remote accounts
-      let lastAccountTryRemote = this.tryRemoteHistory.account.length > 0 ? this.tryRemoteHistory.account[this.tryRemoteHistory.account.length - 1] : null
-      let lastStorageTryRemote = this.tryRemoteHistory.storage.length > 0 ? this.tryRemoteHistory.storage[this.tryRemoteHistory.storage.length - 1] : null
-      let lastCodeBytesTryRemote = this.tryRemoteHistory.codeBytes.length > 0 ? this.tryRemoteHistory.codeBytes[this.tryRemoteHistory.codeBytes.length - 1] : null
+      const lastAccountTryRemote = this.tryRemoteHistory.account.length > 0 ? this.tryRemoteHistory.account[this.tryRemoteHistory.account.length - 1] : null
+      const lastStorageTryRemote = this.tryRemoteHistory.storage.length > 0 ? this.tryRemoteHistory.storage[this.tryRemoteHistory.storage.length - 1] : null
+      const lastCodeBytesTryRemote = this.tryRemoteHistory.codeBytes.length > 0 ? this.tryRemoteHistory.codeBytes[this.tryRemoteHistory.codeBytes.length - 1] : null
 
 
       if (lastAccountTryRemote != null) {
@@ -1115,13 +1115,13 @@ export default class TransactionState {
 
   flushToCommittedValues() {
     if (this.debugTrace) this.debugTraceLog(`Flushing the allAccountWritesStack to committedAccountWrites`)
-    let allAtOnce = false
+    const allAtOnce = false
     if (allAtOnce) {
       this.committedAccountWrites.clear()
       for (let i = this.allAccountWritesStack.length - 1; i >= 0; i--) {
-        let accountWrites = this.allAccountWritesStack[i]
+        const accountWrites = this.allAccountWritesStack[i]
         //process all the values in the stack
-        for (let [key, value] of accountWrites.entries()) {
+        for (const [key, value] of accountWrites.entries()) {
           //if our flattened list does not have the value yet
           if (this.committedAccountWrites.has(key) === false) {
             //then flatten the value from the stack into it
@@ -1131,8 +1131,8 @@ export default class TransactionState {
       }
     } else {
       // this version commits one layer at a time /////
-      let accountWrites = this.allAccountWritesStack.pop()
-      for (let [key, value] of accountWrites.entries()) {
+      const accountWrites = this.allAccountWritesStack.pop()
+      for (const [key, value] of accountWrites.entries()) {
         //if our flattened list does not have the value yet
         if (this.committedAccountWrites.has(key) === false) {
           //then flatten the value from the stack into it
@@ -1143,10 +1143,10 @@ export default class TransactionState {
   }
 
   logAccountWrites(accountWrites: Map<string, Buffer>) {
-    let resultMap = new Map()
+    const resultMap = new Map()
     for (const [key, value] of accountWrites.entries()) {
-      let readableAccount: Account = Account.fromRlpSerializedAccount(value)
-      let account: any = {}
+      const readableAccount: Account = Account.fromRlpSerializedAccount(value)
+      const account: any = {}
       account.nonce = readableAccount.nonce.toString()
       account.balance = readableAccount.balance.toString()
       resultMap.set(key, account)
@@ -1155,9 +1155,9 @@ export default class TransactionState {
   }
 
   logAccountWritesStack(accountWritesStack: Map<string, Buffer>[]) {
-    let resultStack = []
-    for (let accountWrites of accountWritesStack) {
-      let readableAccountWrites = this.logAccountWrites(accountWrites)
+    const resultStack = []
+    for (const accountWrites of accountWritesStack) {
+      const readableAccountWrites = this.logAccountWrites(accountWrites)
       resultStack.push(readableAccountWrites)
     }
     return resultStack
