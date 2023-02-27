@@ -923,7 +923,7 @@ shardus.registerExternalPost('inject', async (req, res) => {
       /* prettier-ignore */ nestedCountersInstance.countEvent('shardeum', `txRejectedDueToMinActiveNodes :${numActiveNodes}`)
       res.json({
         success: false,
-        reason: `Network will not accept EVM tx until it has at least ${ShardeumFlags.minNodesEVMtx} active node in the network`,
+        reason: `Network will not accept EVM tx until it has at least ${ShardeumFlags.minNodesEVMtx} active node in the network. numActiveNodes: ${numActiveNodes}`,
         status: 500,
       })
     } else {
@@ -3377,6 +3377,13 @@ shardus.setup({
         // delete tx.timestamp
         // customTXhash = crypto.hashObj(tx, true)
         // tx.timestamp = tempTimestamp
+
+        //this was the best one so far
+        // let now = Date.now()
+        // //calculate a time closes to now but rounded to 3 seconds
+        // let roundedNow = Math.round(now / 3000) * 3000
+        // tx.timestamp = roundedNow
+        customTXhash = crypto.hashObj(tx, true)
       } else if (internalTx.internalTXType === InternalTXType.ClaimReward) {
         keys.sourceKeys = [tx.nominee]
         keys.targetKeys = [toShardusAddress(tx.nominator, AccountType.Account), networkAccount]
@@ -3394,6 +3401,13 @@ shardus.setup({
         // tx.timestamp = tempTimestamp
 
         //walk the timestamp close to our window for injecting??
+
+        //this was the best one so far
+        // let now = Date.now()
+        // //calculate a time closes to now but rounded to 3 seconds
+        // let roundedNow = Math.round(now / 3000) * 3000
+        // tx.timestamp = roundedNow
+        customTXhash = crypto.hashObj(tx, true)
       }
       keys.allKeys = keys.allKeys.concat(keys.sourceKeys, keys.targetKeys, keys.storageKeys)
       // temporary hack for creating a receipt of node reward tx

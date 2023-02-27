@@ -14,7 +14,7 @@ import {
   AccountType,
 } from '../shardeum/shardeumTypes'
 import * as WrappedEVMAccountFunctions from '../shardeum/wrappedEVMAccountFunctions'
-import { _base16BNParser, _readableSHM, scaleByStabilityFactor } from '../utils'
+import { _base16BNParser, _readableSHM, scaleByStabilityFactor, sleep } from '../utils'
 import * as AccountsStorage from '../storage/accountStorage'
 import { getAccountShardusAddress, toShardusAddress, toShardusAddressWithKey } from '../shardeum/evmAddress'
 import { getApplyTXState } from '../index'
@@ -46,7 +46,25 @@ export async function injectClaimRewardTx(shardus, eventData: ShardusTypes.Shard
     isInternalTx: true,
     internalTXType: InternalTXType.ClaimReward,
   }
+
+  // to make sure that differnt nodes all submit an equivalent tx that is counted as the same tx,
+  // we need to make sure that we have a determinstic timestamp
+  const cycleEndTime = eventData.time
+  let futureTimestamp = cycleEndTime * 1000
+  while (futureTimestamp < Date.now()) {
+    futureTimestamp += 30 * 1000
+  }
+  let waitTime = futureTimestamp - Date.now()
+  tx.timestamp = futureTimestamp
+  // since we have to pick a future timestamp, we need to wait until it is time to submit the tx
+  await sleep(waitTime)
+
   tx = shardus.signAsNode(tx)
+  if (ShardeumFlags.VerboseLogs) {
+    let customTXhash = crypto.hashObj(tx, true)
+    console.log(`injectClaimRewardTx: tx.timestamp: ${tx.timestamp} customTXhash: ${customTXhash}`, tx)
+  }
+
   return await shardus.put(tx)
 }
 

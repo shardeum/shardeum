@@ -264,12 +264,12 @@ export const validateTxnFields = (shardus: Shardus, debugAppdata: Map<string, an
     }
   } catch (e) {
     if (ShardeumFlags.VerboseLogs) console.log('validate error', e)
-    nestedCountersInstance.countEvent('shardeum-unstaking', 'validate - exception')
+    nestedCountersInstance.countEvent('shardeum', 'validate - exception')
     success = false
     reason = e.message
   }
 
-  nestedCountersInstance.countEvent('shardeum-unstaking', 'tx validation successful')
+  nestedCountersInstance.countEvent('shardeum', 'tx validation successful')
   return {
     success,
     reason,
