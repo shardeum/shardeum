@@ -96,7 +96,7 @@ export class BlockBuilder {
   /**
    * Throws if the block has already been built or reverted.
    */
-  private checkStatus() {
+  private checkStatus(): void {
     if (this.built) {
       throw new Error('Block has already been built')
     }
@@ -108,7 +108,7 @@ export class BlockBuilder {
   /**
    * Calculates and returns the transactionsTrie for the block.
    */
-  private async transactionsTrie() {
+  private async transactionsTrie(): Promise<Buffer> {
     const trie = new Trie()
     for (const [i, tx] of this.transactions.entries()) {
       await trie.put(rlp.encode(i), tx.serialize())
@@ -119,7 +119,7 @@ export class BlockBuilder {
   /**
    * Calculates and returns the logs bloom for the block.
    */
-  private logsBloom() {
+  private logsBloom(): Buffer {
     const bloom = new Bloom()
     for (const txResult of this.transactionResults) {
       // Combine blooms via bitwise OR
@@ -131,10 +131,11 @@ export class BlockBuilder {
   /**
    * Calculates and returns the receiptTrie for the block.
    */
-  private async receiptTrie() {
+  private async receiptTrie(): Promise<Buffer> {
     const gasUsed = new BN(0)
     const receiptTrie = new Trie()
     for (const [i, txResult] of this.transactionResults.entries()) {
+      // eslint-disable-next-line security/detect-object-injection
       const tx = this.transactions[i]
       gasUsed.iadd(txResult.gasUsed)
       const encodedReceipt = encodeReceipt(tx, txResult.receipt)
@@ -146,7 +147,7 @@ export class BlockBuilder {
   /**
    * Adds the block miner reward to the coinbase account.
    */
-  private async rewardMiner() {
+  private async rewardMiner(): Promise<void> {
     const minerReward = new BN(this.vm._common.param('pow', 'minerReward'))
     const reward = calculateMinerReward(minerReward, 0)
     const coinbase = this.headerData.coinbase
@@ -161,7 +162,7 @@ export class BlockBuilder {
    * Throws if the transaction's gasLimit is greater than
    * the remaining gas in the block.
    */
-  async addTransaction(tx: TypedTransaction) {
+  async addTransaction(tx: TypedTransaction): Promise<RunTxResult> {
     this.checkStatus()
 
     if (!this.checkpointed) {
@@ -196,7 +197,7 @@ export class BlockBuilder {
   /**
    * Reverts the checkpoint on the StateManager to reset the state from any transactions that have been run.
    */
-  async revert() {
+  async revert(): Promise<void> {
     this.checkStatus()
     if (this.checkpointed) {
       await this.vm.stateManager.revert()
@@ -215,7 +216,7 @@ export class BlockBuilder {
    * For PoA, please pass `blockOption.cliqueSigner` into the buildBlock constructor,
    * as the signer will be awarded the txs amount spent on gas as they are added.
    */
-  async build(sealOpts?: SealBlockOpts) {
+  async build(sealOpts?: SealBlockOpts): Promise<Block> {
     this.checkStatus()
     const blockOpts = this.blockOpts
     const consensusType = this.vm._common.consensusType()

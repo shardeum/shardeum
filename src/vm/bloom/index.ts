@@ -22,7 +22,7 @@ export default class Bloom {
    * Adds an element to a bit vector of a 64 byte bloom filter.
    * @param e - The element to add
    */
-  add(e: Buffer) {
+  add(e: Buffer): void {
     assert(Buffer.isBuffer(e), 'Element should be buffer')
     e = keccak256(e)
     const mask = 2047 // binary 11111111111
@@ -68,9 +68,10 @@ export default class Bloom {
   /**
    * Bitwise or blooms together.
    */
-  or(bloom: Bloom) {
+  or(bloom: Bloom): void {
     if (bloom) {
       for (let i = 0; i <= BYTE_SIZE; i++) {
+        // eslint-disable-next-line security/detect-object-injection
         this.bitvector[i] = this.bitvector[i] | bloom.bitvector[i]
       }
     }
