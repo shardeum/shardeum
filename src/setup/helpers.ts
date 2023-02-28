@@ -75,3 +75,16 @@ export function getInjectedOrGeneratedTimestamp(timestampedTx) {
   }
   return txnTimestamp
 }
+
+/**
+ * This will request the sign field to be removed if one is present
+ * All transactions should be hashed this way to avoid consistency issues
+ * @param obj
+ * @returns
+ */
+export function hashSignedObj(obj) {
+  if (!obj.sign) {
+    return crypto.hashObj(obj)
+  }
+  return crypto.hashObj(obj, true)
+}

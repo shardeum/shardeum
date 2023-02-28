@@ -1,5 +1,6 @@
 import { nestedCountersInstance, Shardus, ShardusTypes } from '@shardus/core'
 import * as crypto from '@shardus/crypto-utils'
+import { hashSignedObj } from '../setup/helpers'
 import { ShardeumFlags } from '../shardeum/shardeumFlags'
 import {
   NodeAccount2,
@@ -34,8 +35,8 @@ export async function injectInitRewardTimesTx(shardus, eventData: ShardusTypes.S
 
   tx = shardus.signAsNode(tx)
   if (ShardeumFlags.VerboseLogs) {
-    let customTXhash = crypto.hashObj(tx, true)
-    console.log(`injectInitRewardTimesTx: tx.timestamp: ${tx.timestamp} customTXhash: ${customTXhash}`, tx)
+    let txid = hashSignedObj(tx)
+    console.log(`injectInitRewardTimesTx: tx.timestamp: ${tx.timestamp} txid: ${txid}`, tx)
   }
 
   return await shardus.put(tx)
@@ -59,7 +60,7 @@ export function validateFields(tx: InitRewardTimes, shardus: Shardus): { success
     return { success: false, reason: 'nodeActivatedTime is not correct in setRewardTimes Tx' }
   }
   const isValid = crypto.verifyObj(tx)
-  if (!isValid){
+  if (!isValid) {
     /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log('validateFields InitRewardTimes fail Invalid signature', tx)
     /* prettier-ignore */ nestedCountersInstance.countEvent('shardeum-staking', `validateFields InitRewardTimes fail Invalid signature`)
     return { success: false, reason: 'Invalid signature' }
@@ -89,7 +90,7 @@ export function validatePreCrackData(shardus, tx: InternalTx, appData) {
 export function validate(tx: InitRewardTimes, shardus: Shardus): { result: string; reason: string } {
   /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log('Validating InitRewardTimesTX', tx)
   const isValid = crypto.verifyObj(tx)
-  if (!isValid){
+  if (!isValid) {
     /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log('validate InitRewardTimes fail Invalid signature', tx)
     /* prettier-ignore */ nestedCountersInstance.countEvent('shardeum-staking', `validate InitRewardTimes fail Invalid signature`)
     return { result: 'fail', reason: 'Invalid signature' }

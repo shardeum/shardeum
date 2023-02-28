@@ -3,6 +3,7 @@ import * as crypto from '@shardus/crypto-utils'
 import { Address, BN } from 'ethereumjs-util'
 import { networkAccount } from '..'
 import { getApplyTXState } from '../index'
+import { hashSignedObj } from '../setup/helpers'
 import { toShardusAddress } from '../shardeum/evmAddress'
 import { ShardeumFlags } from '../shardeum/shardeumFlags'
 import {
@@ -51,8 +52,8 @@ export async function injectClaimRewardTx(shardus, eventData: ShardusTypes.Shard
 
   tx = shardus.signAsNode(tx)
   if (ShardeumFlags.VerboseLogs) {
-    let customTXhash = crypto.hashObj(tx, true)
-    console.log(`injectClaimRewardTx: tx.timestamp: ${tx.timestamp} customTXhash: ${customTXhash}`, tx)
+    let txid = hashSignedObj(tx)
+    console.log(`injectClaimRewardTx: tx.timestamp: ${tx.timestamp} txid: ${txid}`, tx)
   }
 
   return await shardus.put(tx) // response of this { success: boolean; reason: string; status: number }
@@ -273,7 +274,7 @@ export async function applyClaimRewardTx(
   )
   nodeAccount.nodeAccountStats.history.push({ b: nodeAccount.rewardStartTime, e: nodeAccount.rewardEndTime })
 
-  const txId = crypto.hashObj(tx)
+  const txId = hashSignedObj(tx)
   const shardeumState = getApplyTXState(txId)
   shardeumState._transactionState.appData = {}
 

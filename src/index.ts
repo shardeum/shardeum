@@ -80,7 +80,13 @@ import {
 } from './handlers/queryCertificate'
 import * as InitRewardTimesTx from './tx/initRewardTimes'
 import _ from 'lodash'
-import { isDebugTx, isInternalTx, crypto, getInjectedOrGeneratedTimestamp } from './setup/helpers'
+import {
+  isDebugTx,
+  isInternalTx,
+  crypto,
+  getInjectedOrGeneratedTimestamp,
+  hashSignedObj,
+} from './setup/helpers'
 import { onActiveVersionChange } from './versioning'
 
 const env = process.env
@@ -1572,7 +1578,7 @@ async function applyInternalTx(
   wrappedStates: WrappedStates,
   txTimestamp: number
 ): Promise<ShardusTypes.ApplyResponse> {
-  let txId = crypto.hashObj(tx)
+  let txId = hashSignedObj(tx)
   const applyResponse: ShardusTypes.ApplyResponse = shardus.createApplyResponse(txId, txTimestamp)
   if (isSetCertTimeTx(tx)) {
     let setCertTimeTx = tx as SetCertTime
@@ -1862,7 +1868,7 @@ async function _transactionReceiptPass(
     shardus.setGlobal(address, value, when, source)
     if (ShardeumFlags.VerboseLogs) {
       const tx = { address, value, when, source }
-      const txHash = crypto.hashObj(tx)
+      const txHash = hashSignedObj(tx)
       console.log(`transactionReceiptPass setglobal: ${txHash} ${JSON.stringify(tx)}  `)
     }
   }
@@ -2246,7 +2252,7 @@ shardus.setup({
     const transaction: Transaction | AccessListEIP2930Transaction = getTransactionObj(tx)
     const ethTxId = bufferToHex(transaction.hash())
     const shardusReceiptAddress = toShardusAddressWithKey(ethTxId, '', AccountType.Receipt)
-    let txId = crypto.hashObj(tx)
+    let txId = hashSignedObj(tx)
     // Create an applyResponse which will be used to tell Shardus that the tx has been applied
     if (ShardeumFlags.VerboseLogs)
       console.log('DBG', new Date(), 'attempting to apply tx', txId, ethTxId, tx, wrappedStates, appData)
@@ -3128,7 +3134,7 @@ shardus.setup({
 
     if (isInternalTx(tx) === false && isDebugTx(tx) === false) {
       const transaction = getTransactionObj(tx)
-      const shardusTxId = crypto.hashObj(tx)
+      const shardusTxId = hashSignedObj(tx)
       const ethTxId = bufferToHex(transaction.hash())
       if (ShardeumFlags.VerboseLogs) {
         console.log(`EVM tx ${ethTxId} is mapped to shardus tx ${shardusTxId}`)
@@ -3383,7 +3389,7 @@ shardus.setup({
         // //calculate a time closes to now but rounded to 3 seconds
         // let roundedNow = Math.round(now / 3000) * 3000
         // tx.timestamp = roundedNow
-        customTXhash = crypto.hashObj(tx, true)
+        // customTXhash = hashSignedObj(tx)
       } else if (internalTx.internalTXType === InternalTXType.ClaimReward) {
         keys.sourceKeys = [tx.nominee]
         keys.targetKeys = [toShardusAddress(tx.nominator, AccountType.Account), networkAccount]
@@ -3407,7 +3413,7 @@ shardus.setup({
         // //calculate a time closes to now but rounded to 3 seconds
         // let roundedNow = Math.round(now / 3000) * 3000
         // tx.timestamp = roundedNow
-        customTXhash = crypto.hashObj(tx, true)
+        // customTXhash = crypto.hashObj(tx, true)
       }
       keys.allKeys = keys.allKeys.concat(keys.sourceKeys, keys.targetKeys, keys.storageKeys)
       // temporary hack for creating a receipt of node reward tx
@@ -3417,15 +3423,18 @@ shardus.setup({
       //     keys.allKeys = keys.allKeys.concat([txId]) // For Node Reward Receipt
       //   }
       // }
-      if (ShardeumFlags.VerboseLogs) console.log('crack', { timestamp, keys, id: crypto.hashObj(tx) })
+
+      const txid = hashSignedObj(tx)
+      if (ShardeumFlags.VerboseLogs) console.log('crack', { timestamp, keys, id: txid })
       return {
         timestamp,
         keys,
-        id: customTXhash ?? crypto.hashObj(tx),
+        id: customTXhash ?? txid,
       }
     }
     if (isDebugTx(tx)) {
       let debugTx = tx as DebugTx
+      const txid = hashSignedObj(tx)
       const keys = {
         sourceKeys: [],
         targetKeys: [],
@@ -3453,7 +3462,7 @@ shardus.setup({
       return {
         timestamp,
         keys,
-        id: crypto.hashObj(tx),
+        id: txid,
       }
     }
 
@@ -3465,7 +3474,7 @@ shardus.setup({
       allKeys: [],
       timestamp: timestamp,
     }
-    const txId = crypto.hashObj(tx)
+    const txId = hashSignedObj(tx)
     try {
       let otherAccountKeys = []
       let txSenderEvmAddr = transaction.getSenderAddress().toString()
@@ -4568,12 +4577,8 @@ shardus.setup({
     wrappedStates: { [id: string]: WrappedAccount },
     applyResponse: ShardusTypes.ApplyResponse
   ) {
-    let txId: string
-    if (!tx.sign) {
-      txId = crypto.hashObj(tx)
-    } else {
-      txId = crypto.hashObj(tx, true) // compute from tx
-    }
+    const txId = hashSignedObj(tx)
+
     //This next log is usefull but very heavy on the output lines:
     //Updating to be on only with verbose logs
     /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log('running transactionReceiptPass', txId, tx, wrappedStates, applyResponse)
