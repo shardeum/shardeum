@@ -28,6 +28,7 @@ import type {
 import {ShardeumFlags} from '../shardeum/shardeumFlags'
 import {NetworkAccount} from '../shardeum/shardeumTypes'
 import {scaleByStabilityFactor} from '../utils'
+import { Log } from './evm/types'
 
 const debug = createDebugLogger('vm:tx')
 const debugGas = createDebugLogger('vm:tx:gas')
@@ -120,120 +121,97 @@ export interface AfterTxEvent extends RunTxResult {
 }
 
 /**
- * @ignore
+ * Internal helper function to create an annotated error message
+ *
+ * @param msg Base error message
+ * @hidden
  */
-export default async function runTx(this: VM, opts: RunTxOpts): Promise<RunTxResult> {
-  // tx is required
-  if (!opts.tx) {
-    throw new Error('invalid input, tx is required')
+function _errorMsg(msg: string, vm: VM, block: Block, tx: TypedTransaction): string {
+  const blockErrorStr = 'errorStr' in block ? block.errorStr() : 'block'
+  const txErrorStr = 'errorStr' in tx ? tx.errorStr() : 'tx'
+
+  const errorMsg = `${msg} (${vm.errorStr()} -> ${blockErrorStr} -> ${txErrorStr})`
+  return errorMsg
+}
+
+/**
+ * @method txLogsBloom
+ * @private
+ */
+function txLogsBloom(logs?: Log[]): Bloom {
+  const bloom = new Bloom()
+  if (logs) {
+    for (let i = 0; i < logs.length; i++) {
+      /* eslint-disable security/detect-object-injection */
+      const log = logs[i]
+      // add the address
+      bloom.add(log[0])
+      // add the topics
+      const topics = log[1]
+      for (let q = 0; q < topics.length; q++) {
+        bloom.add(topics[q])
+      }
+      /* eslint-enable security/detect-object-injection */
+    }
+  }
+  return bloom
+}
+
+/**
+ * Returns the tx receipt.
+ * @param this The vm instance
+ * @param tx The transaction
+ * @param txResult The tx result
+ * @param cumulativeGasUsed The gas used in the block including this tx
+ */
+export async function generateTxReceipt(
+  this: VM,
+  tx: TypedTransaction,
+  txResult: RunTxResult,
+  cumulativeGasUsed: BN
+): Promise<TxReceipt> {
+  const baseReceipt: BaseTxReceipt = {
+    gasUsed: cumulativeGasUsed.toArrayLike(Buffer),
+    bitvector: txResult.bloom.bitvector,
+    logs: txResult.execResult.logs ?? [],
   }
 
-  // create a reasonable default if no block is given
-  opts.block = opts.block ?? Block.fromBlockData({}, {common: opts.tx.common})
-
-  if (
-    opts.skipBlockGasLimitValidation !== true &&
-    opts.block.header.gasLimit.lt(opts.tx.gasLimit)
-  ) {
-    const msg = _errorMsg('tx has a higher gas limit than the block', this, opts.block, opts.tx)
-    throw new Error(msg)
-  }
-
-  // Have to cast as `EIP2929StateManager` to access clearWarmedAccounts
-  const state = this.stateManager as EIP2929StateManager
-
-  if (opts.reportAccessList && !('generateAccessList' in state)) {
-    const msg = _errorMsg(
-      'reportAccessList needs a StateManager implementing the generateAccessList() method',
-      this,
-      opts.block,
-      opts.tx
-    )
-    throw new Error(msg)
-  }
-
-  // Ensure we start with a clear warmed accounts Map
-  if (this._common.isActivatedEIP(2929)) {
-    state.clearWarmedAccounts()
-  }
-
-  await state.checkpoint()
+  let receipt
   if (this.DEBUG) {
-    debug('-'.repeat(100))
-    debug(`tx checkpoint`)
+    debug(
+      `Generate tx receipt transactionType=${
+        tx.type
+      } gasUsed=${cumulativeGasUsed} bitvector=${short(baseReceipt.bitvector)} (${
+        baseReceipt.bitvector.length
+      } bytes) logs=${baseReceipt.logs.length}`
+    )
   }
 
-  // Typed transaction specific setup tasks
-  if (opts.tx.supports(Capability.EIP2718TypedTransaction) && this._common.isActivatedEIP(2718)) {
-    // Is it an Access List transaction?
-    if (!this._common.isActivatedEIP(2930)) {
-      await state.revert()
-      const msg = _errorMsg(
-        'Cannot run transaction: EIP 2930 is not activated.',
-        this,
-        opts.block,
-        opts.tx
-      )
-      throw new Error(msg)
+  if (!tx.supports(Capability.EIP2718TypedTransaction)) {
+    // Legacy transaction
+    if (this._common.gteHardfork('byzantium')) {
+      // Post-Byzantium
+      receipt = {
+        status: txResult.execResult.exceptionError ? 0 : 1, // Receipts have a 0 as status on error
+        ...baseReceipt,
+      } as PostByzantiumTxReceipt
+    } else {
+      // Pre-Byzantium
+      const stateRoot = await this.stateManager.getStateRoot(true)
+      receipt = {
+        stateRoot: stateRoot,
+        ...baseReceipt,
+      } as PreByzantiumTxReceipt
     }
-    if (opts.reportAccessList && !('generateAccessList' in state)) {
-      await state.revert()
-      const msg = _errorMsg(
-        'StateManager needs to implement generateAccessList() when running with reportAccessList option',
-        this,
-        opts.block,
-        opts.tx
-      )
-      throw new Error(msg)
-    }
-    if (opts.tx.supports(Capability.EIP1559FeeMarket) && !this._common.isActivatedEIP(1559)) {
-      await state.revert()
-      const msg = _errorMsg(
-        'Cannot run transaction: EIP 1559 is not activated.',
-        this,
-        opts.block,
-        opts.tx
-      )
-      throw new Error(msg)
-    }
-
-    const castedTx = <AccessListEIP2930Transaction>opts.tx
-
-    castedTx.AccessListJSON.forEach((accessListItem: AccessListItem) => {
-      const address = toBuffer(accessListItem.address)
-      state.addWarmedAddress(address)
-      accessListItem.storageKeys.forEach((storageKey: string) => {
-        state.addWarmedStorage(address, toBuffer(storageKey))
-      })
-    })
+  } else {
+    // Typed EIP-2718 Transaction
+    receipt = {
+      status: txResult.execResult.exceptionError ? 0 : 1,
+      ...baseReceipt,
+    } as PostByzantiumTxReceipt
   }
 
-  try {
-    const result = await _runTx.bind(this)(opts)
-    await state.commit()
-    if (this.DEBUG) {
-      debug(`tx checkpoint committed`)
-    }
-    if (this._common.isActivatedEIP(2929) && opts.reportAccessList) {
-      const {tx} = opts
-      // Do not include sender address in access list
-      const removed = [tx.getSenderAddress()]
-      // Only include to address on present storage slot accesses
-      const onlyStorage = tx.to ? [tx.to] : []
-      result.accessList = state.generateAccessList!(removed, onlyStorage)
-    }
-    return result
-  } catch (e: any) {
-    await state.revert()
-    if (this.DEBUG) {
-      debug(`tx checkpoint reverted`)
-    }
-    throw e
-  } finally {
-    if (this._common.isActivatedEIP(2929)) {
-      state.clearWarmedAccounts()
-    }
-  }
+  return receipt
 }
 
 async function _runTx(this: VM, opts: RunTxOpts): Promise<RunTxResult> {
@@ -366,17 +344,16 @@ async function _runTx(this: VM, opts: RunTxOpts): Promise<RunTxResult> {
     gasPrice = inclusionFeePerGas.add(baseFee)
   } else {
     // Have to cast as legacy tx since EIP1559 tx does not have gas price
-    gasPrice = (<Transaction>tx).gasPrice
+    gasPrice = (tx as Transaction).gasPrice
     if (this._common.isActivatedEIP(1559)) {
       const baseFee = block.header.baseFeePerGas!
-      inclusionFeePerGas = (<Transaction>tx).gasPrice.sub(baseFee)
+      inclusionFeePerGas = (tx as Transaction).gasPrice.sub(baseFee)
     }
   }
 
   // Update from account's nonce and balance
   fromAccount.nonce.iaddn(1)
   let txCost
-  const oneEth = new BN(10).pow(new BN(18))
   if (chargeConstantTxFee) {
     const baseTxCost = new BN(constantTxFeeUsd)
     txCost = scaleByStabilityFactor(baseTxCost, opts.networkAccount)
@@ -494,7 +471,7 @@ async function _runTx(this: VM, opts: RunTxOpts): Promise<RunTxResult> {
   const minerAccount = await state.getAccount(miner)
   // add the amount spent on gas to the miner's account
   if (this._common.isActivatedEIP(1559)) {
-    minerAccount.balance.iadd(results.gasUsed.mul(<BN>inclusionFeePerGas))
+    minerAccount.balance.iadd(results.gasUsed.mul(inclusionFeePerGas as BN))
   } else {
     minerAccount.balance.iadd(results.amountSpent)
   }
@@ -548,93 +525,118 @@ async function _runTx(this: VM, opts: RunTxOpts): Promise<RunTxResult> {
 }
 
 /**
- * @method txLogsBloom
- * @private
+ * @ignore
  */
-function txLogsBloom(logs?: any[]): Bloom {
-  const bloom = new Bloom()
-  if (logs) {
-    for (let i = 0; i < logs.length; i++) {
-      const log = logs[i]
-      // add the address
-      bloom.add(log[0])
-      // add the topics
-      const topics = log[1]
-      for (let q = 0; q < topics.length; q++) {
-        bloom.add(topics[q])
-      }
-    }
-  }
-  return bloom
-}
-
-/**
- * Returns the tx receipt.
- * @param this The vm instance
- * @param tx The transaction
- * @param txResult The tx result
- * @param cumulativeGasUsed The gas used in the block including this tx
- */
-export async function generateTxReceipt(
-  this: VM,
-  tx: TypedTransaction,
-  txResult: RunTxResult,
-  cumulativeGasUsed: BN
-): Promise<TxReceipt> {
-  const baseReceipt: BaseTxReceipt = {
-    gasUsed: cumulativeGasUsed.toArrayLike(Buffer),
-    bitvector: txResult.bloom.bitvector,
-    logs: txResult.execResult.logs ?? [],
+export default async function runTx(this: VM, opts: RunTxOpts): Promise<RunTxResult> {
+  // tx is required
+  if (!opts.tx) {
+    throw new Error('invalid input, tx is required')
   }
 
-  let receipt
-  if (this.DEBUG) {
-    debug(
-      `Generate tx receipt transactionType=${
-        tx.type
-      } gasUsed=${cumulativeGasUsed} bitvector=${short(baseReceipt.bitvector)} (${
-        baseReceipt.bitvector.length
-      } bytes) logs=${baseReceipt.logs.length}`
+  // create a reasonable default if no block is given
+  opts.block = opts.block ?? Block.fromBlockData({}, {common: opts.tx.common})
+
+  if (
+    opts.skipBlockGasLimitValidation !== true &&
+    opts.block.header.gasLimit.lt(opts.tx.gasLimit)
+  ) {
+    const msg = _errorMsg('tx has a higher gas limit than the block', this, opts.block, opts.tx)
+    throw new Error(msg)
+  }
+
+  // Have to cast as `EIP2929StateManager` to access clearWarmedAccounts
+  const state = this.stateManager as EIP2929StateManager
+
+  if (opts.reportAccessList && !('generateAccessList' in state)) {
+    const msg = _errorMsg(
+      'reportAccessList needs a StateManager implementing the generateAccessList() method',
+      this,
+      opts.block,
+      opts.tx
     )
+    throw new Error(msg)
   }
 
-  if (!tx.supports(Capability.EIP2718TypedTransaction)) {
-    // Legacy transaction
-    if (this._common.gteHardfork('byzantium')) {
-      // Post-Byzantium
-      receipt = {
-        status: txResult.execResult.exceptionError ? 0 : 1, // Receipts have a 0 as status on error
-        ...baseReceipt,
-      } as PostByzantiumTxReceipt
-    } else {
-      // Pre-Byzantium
-      const stateRoot = await this.stateManager.getStateRoot(true)
-      receipt = {
-        stateRoot: stateRoot,
-        ...baseReceipt,
-      } as PreByzantiumTxReceipt
+  // Ensure we start with a clear warmed accounts Map
+  if (this._common.isActivatedEIP(2929)) {
+    state.clearWarmedAccounts()
+  }
+
+  await state.checkpoint()
+  if (this.DEBUG) {
+    debug('-'.repeat(100))
+    debug(`tx checkpoint`)
+  }
+
+  // Typed transaction specific setup tasks
+  if (opts.tx.supports(Capability.EIP2718TypedTransaction) && this._common.isActivatedEIP(2718)) {
+    // Is it an Access List transaction?
+    if (!this._common.isActivatedEIP(2930)) {
+      await state.revert()
+      const msg = _errorMsg(
+        'Cannot run transaction: EIP 2930 is not activated.',
+        this,
+        opts.block,
+        opts.tx
+      )
+      throw new Error(msg)
     }
-  } else {
-    // Typed EIP-2718 Transaction
-    receipt = {
-      status: txResult.execResult.exceptionError ? 0 : 1,
-      ...baseReceipt,
-    } as PostByzantiumTxReceipt
+    if (opts.reportAccessList && !('generateAccessList' in state)) {
+      await state.revert()
+      const msg = _errorMsg(
+        'StateManager needs to implement generateAccessList() when running with reportAccessList option',
+        this,
+        opts.block,
+        opts.tx
+      )
+      throw new Error(msg)
+    }
+    if (opts.tx.supports(Capability.EIP1559FeeMarket) && !this._common.isActivatedEIP(1559)) {
+      await state.revert()
+      const msg = _errorMsg(
+        'Cannot run transaction: EIP 1559 is not activated.',
+        this,
+        opts.block,
+        opts.tx
+      )
+      throw new Error(msg)
+    }
+
+    const castedTx = opts.tx as AccessListEIP2930Transaction
+
+    castedTx.AccessListJSON.forEach((accessListItem: AccessListItem) => {
+      const address = toBuffer(accessListItem.address)
+      state.addWarmedAddress(address)
+      accessListItem.storageKeys.forEach((storageKey: string) => {
+        state.addWarmedStorage(address, toBuffer(storageKey))
+      })
+    })
   }
 
-  return receipt
-}
-
-/**
- * Internal helper function to create an annotated error message
- *
- * @param msg Base error message
- * @hidden
- */
-function _errorMsg(msg: string, vm: VM, block: Block, tx: TypedTransaction) {
-  const blockErrorStr = 'errorStr' in block ? block.errorStr() : 'block'
-  const txErrorStr = 'errorStr' in tx ? tx.errorStr() : 'tx'
-
-  const errorMsg = `${msg} (${vm.errorStr()} -> ${blockErrorStr} -> ${txErrorStr})`
-  return errorMsg
+  try {
+    const result = await _runTx.bind(this)(opts)
+    await state.commit()
+    if (this.DEBUG) {
+      debug(`tx checkpoint committed`)
+    }
+    if (this._common.isActivatedEIP(2929) && opts.reportAccessList) {
+      const {tx} = opts
+      // Do not include sender address in access list
+      const removed = [tx.getSenderAddress()]
+      // Only include to address on present storage slot accesses
+      const onlyStorage = tx.to ? [tx.to] : []
+      result.accessList = state.generateAccessList!(removed, onlyStorage)
+    }
+    return result
+  } catch (e: any) {
+    await state.revert()
+    if (this.DEBUG) {
+      debug(`tx checkpoint reverted`)
+    }
+    throw e
+  } finally {
+    if (this._common.isActivatedEIP(2929)) {
+      state.clearWarmedAccounts()
+    }
+  }
 }

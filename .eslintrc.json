@@ -19,7 +19,6 @@
     "**/vm/state/*",
     "**/utils/*",
     "**/vm/evm/*",
-    "**/vm/*",
     "**/tx/*",
     "**/versioning/*",
     "runTXperf.ts",
@@ -38,6 +37,7 @@
       }
     ],
     "@typescript-eslint/camelcase": "off",
-    "@typescript-eslint/member-delimiter-style": "off"
+    "@typescript-eslint/member-delimiter-style": "off",
+    "@typescript-eslint/no-non-null-assertion": "off"
   }
 }
