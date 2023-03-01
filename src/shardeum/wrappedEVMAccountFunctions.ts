@@ -44,7 +44,7 @@ export function accountSpecificHash(account: WrappedEVMAccount | InternalAccount
   return hash
 }
 
-export function updateEthAccountHash(wrappedEVMAccount: WrappedEVMAccount) {
+export function updateEthAccountHash(wrappedEVMAccount: WrappedEVMAccount | InternalAccount) {
   wrappedEVMAccount.hash = _calculateAccountHash(wrappedEVMAccount)
 }
 

@@ -17,8 +17,7 @@
   "ignorePatterns": [
     "**/storage/*",
     "**/shardeum/*",
-    "**/src/setup/*",
-    "**/src/index.ts"
+    "**/src/setup/*"
   ],
   "rules": {
     "no-empty": [

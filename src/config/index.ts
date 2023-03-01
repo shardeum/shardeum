@@ -4,7 +4,9 @@ import merge from 'deepmerge'
 
 const overwriteMerge = (target: any[], source: any[]): any[] => source // eslint-disable-line @typescript-eslint/no-explicit-any
 
-let config = { server: { baseDir: './' } }
+let config: {server: {
+        p2p?: {cycleDuration: number};
+        baseDir: string, mode?: 'debug' | 'release'}} = { server: { baseDir: './'} }
 
 if (fs.existsSync(path.join(process.cwd(), 'config.json'))) {
   const fileConfig = JSON.parse(fs.readFileSync(path.join(process.cwd(), 'config.json')).toString())

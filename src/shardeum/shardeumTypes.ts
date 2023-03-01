@@ -71,8 +71,10 @@ export interface WrappedEVMAccountMap {
 }
 
 export interface BlockMap {
-  [counter: number | string]: Block
+  [counter: number | string]: ShardeumBlockOverride | Block
 }
+
+export type ShardeumBlockOverride = Block & {number?: string, hash?: string}
 
 export interface EVMAccountInfo {
   type: AccountType
