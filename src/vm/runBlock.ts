@@ -397,7 +397,7 @@ export default async function runBlock(this: VM, opts: RunBlockOpts): Promise<Ru
     debug(`block checkpoint`)
   }
 
-  let result: { gasUsed: BN, bloom: Bloom, receiptRoot: Buffer, equals: Buffer, receipts: string, results: string }
+  let result: { gasUsed: BN, bloom: Bloom, receiptRoot: Buffer, equals: Buffer, receipts: TxReceipt[], results: RunTxResult[] }
   try {
     result = await applyBlock.bind(this)(block, opts)
     if (this.DEBUG) {

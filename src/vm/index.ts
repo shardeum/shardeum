@@ -1,24 +1,30 @@
-import VM, {VMOpts} from '@ethereumjs/vm'
-import { default as runTx, RunTxOpts, RunTxResult } from './runTx'
+import VM, { VMOpts } from '@ethereumjs/vm'
+import { default as runTx, RunTxOpts } from './runTx'
 import { default as runCall, RunCallOpts } from './runCall'
-import {ShardeumFlags} from '../shardeum/shardeumFlags'
-import { EVMResult } from './evm/evm'
+import { ShardeumFlags } from '../shardeum/shardeumFlags'
 
 export default class ShardeumVM extends VM {
   constructor(opts: VMOpts = {}) {
     super(opts)
   }
 
-  async runTx(opts): Promise<any> {
-    /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log('shardeum custom runTx')
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  // Resolving this any seems to be a bit of a pain
+  // I think it will require touching files outside of the scope of this task
+  // TODO: Figure out how to resolve this any
+  async runTx(opts: RunTxOpts): Promise<any> {
+    if (ShardeumFlags.VerboseLogs) console.log('shardeum custom runTx')
     await this.init()
     return runTx.bind(this)(opts)
   }
 
-  async runCall(opts: RunCallOpts): Promise<any> { //Promise<EVMResult> 
-    /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log('shardeum custom runCall')
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  // Resolving this any seems to be a bit of a pain
+  // I think it will require touching files outside of the scope of this task
+  // TODO: Figure out how to resolve this any
+  async runCall(opts: RunCallOpts): Promise<any> {
+    if (ShardeumFlags.VerboseLogs) console.log('shardeum custom runCall')
     await this.init()
-    return runCall.bind(this)(opts) //as Promise<EVMResult> 
-
+    return runCall.bind(this)(opts) //as Promise<EVMResult>
   }
 }
