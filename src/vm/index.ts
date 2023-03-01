@@ -8,20 +8,20 @@ export default class ShardeumVM extends VM {
     super(opts)
   }
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   // Resolving this any seems to be a bit of a pain
   // I think it will require touching files outside of the scope of this task
   // TODO: Figure out how to resolve this any
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   async runTx(opts: RunTxOpts): Promise<any> {
     if (ShardeumFlags.VerboseLogs) console.log('shardeum custom runTx')
     await this.init()
     return runTx.bind(this)(opts)
   }
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   // Resolving this any seems to be a bit of a pain
   // I think it will require touching files outside of the scope of this task
   // TODO: Figure out how to resolve this any
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   async runCall(opts: RunCallOpts): Promise<any> {
     if (ShardeumFlags.VerboseLogs) console.log('shardeum custom runCall')
     await this.init()
