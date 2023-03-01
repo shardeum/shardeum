@@ -26,7 +26,20 @@ export function isSetCertTimeTx(tx: any): boolean {
   return false
 }
 
-export async function injectSetCertTimeTx(shardus: Shardus, publicKey: string, activeNodes: any) {
+export type setCertTimeTx = {
+  isInternalTx: true
+  internalTXType: InternalTXType.SetCertTime
+  nominee: string
+  nominator: string
+  duration: number
+  timestamp: number
+}
+
+export async function injectSetCertTimeTx(
+  shardus: Shardus,
+  publicKey: string,
+  activeNodes: ShardusTypes.Node[]
+) {
   // Query the nodeAccount and see if it is ready before injecting setCertTime
   const accountQueryResponse = await getNodeAccountWithRetry(publicKey, activeNodes)
   if (!accountQueryResponse.success) return accountQueryResponse
@@ -38,7 +51,7 @@ export async function injectSetCertTimeTx(shardus: Shardus, publicKey: string, a
 
   // Inject the setCertTime Tx
   const randomConsensusNode: any = getRandom(activeNodes, 1)[0]
-  let tx = {
+  let tx: setCertTimeTx = {
     isInternalTx: true,
     internalTXType: InternalTXType.SetCertTime,
     nominee: publicKey,
@@ -104,9 +117,7 @@ export function validateSetCertTimeState(tx: SetCertTime, wrappedStates: Wrapped
       /* prettier-ignore */ nestedCountersInstance.countEvent('shardeum-staking', 'validateSetCertTimeState' + ' Operator account info is null')
       return {
         result: 'fail',
-        reason: `Operator account info is null: ${JSON.stringify(
-          operatorEVMAccount
-        )}`,
+        reason: `Operator account info is null: ${JSON.stringify(operatorEVMAccount)}`,
       }
     }
   }
@@ -168,7 +179,8 @@ export function applySetCertTimeTx(
   const certExp = operatorEVMAccount.operatorAccountInfo.certExp
 
   if (certExp > 0) {
-    const certStartTimestamp = certExp - ShardeumFlags.certCycleDuration * ONE_SECOND * serverConfig.p2p.cycleDuration
+    const certStartTimestamp =
+      certExp - ShardeumFlags.certCycleDuration * ONE_SECOND * serverConfig.p2p.cycleDuration
     const expiredPercentage = (Date.now() - certStartTimestamp) / (certExp - certStartTimestamp)
 
     if (ShardeumFlags.VerboseLogs) {

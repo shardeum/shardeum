@@ -26,7 +26,6 @@
     "**/state/*",
     "**/shardeum/*",
     "**/src/setup/*",
-    "queryCertificate.ts",
     "**/src/config/index.ts",
     "**/src/index.ts",
     "blockchain.ts"

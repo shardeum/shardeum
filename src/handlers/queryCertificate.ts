@@ -1,4 +1,4 @@
-import { Shardus, ShardusTypes, nestedCountersInstance } from '@shardus/core'
+import { nestedCountersInstance, Shardus, ShardusTypes } from '@shardus/core'
 import * as crypto from '@shardus/crypto-utils'
 import { BN, isValidAddress } from 'ethereumjs-util'
 import { Request } from 'express'
@@ -8,9 +8,10 @@ import {
   AccountType,
   InjectTxResponse,
   NodeAccountQueryResponse,
-  WrappedEVMAccount,
+  WrappedEVMAccount
 } from '../shardeum/shardeumTypes'
 import { fixDeserializedWrappedEVMAccount } from '../shardeum/wrappedEVMAccountFunctions'
+import { setCertTimeTx } from '../tx/setCertTime'
 import { getRandom } from '../utils'
 import { shardusGetFromNode, shardusPostToNode, shardusPutToNode } from '../utils/requests'
 
@@ -48,21 +49,88 @@ export interface ValidatorError {
   reason: string
 }
 
-function validateQueryCertRequest(req: QueryCertRequest, rawBody: any): ValidatorError {
-  // nominee is NodeAccount2, will need here to verify address with other methods
-  // if (!isValidAddress(req.nominee)) {
-  //   return { success: false, reason: 'Invalid nominee address' }
-  // }
+function validateQueryCertRequest(req: QueryCertRequest, rawRequest: Request): ValidatorError {
   if (!isValidAddress(req.nominator)) {
     return { success: false, reason: 'Invalid nominator address' }
   }
   try {
-    if (!crypto.verifyObj(rawBody)) return { success: false, reason: 'Invalid signature for QueryCert tx' }
+    if (!crypto.verifyObj(rawRequest.body))
+      return { success: false, reason: 'Invalid signature for QueryCert tx' }
   } catch (e) {
     return { success: false, reason: 'Invalid signature for QueryCert tx' }
   }
 
   return { success: true, reason: '' }
+}
+
+async function getNodeAccount(
+  randomConsensusNode: ShardusTypes.Node,
+  nodeAccountId: string
+): Promise<NodeAccountQueryResponse | ValidatorError> {
+  try {
+    let queryString = `/account/:address`.replace(':address', nodeAccountId)
+    queryString += `?type=${AccountType.NodeAccount2}`
+    const res = await shardusGetFromNode<any>(randomConsensusNode, queryString) // eslint-disable-line @typescript-eslint/no-explicit-any
+    if (!res.data.account) {
+      return { success: false, reason: errNodeAccountNotFound }
+    }
+    if (res.data.error == errNodeBusy) {
+      return { success: false, reason: errNodeBusy }
+    }
+    return { success: true, nodeAccount: res.data.account.data } as NodeAccountQueryResponse
+  } catch (error) {
+    return { success: false, reason: (error as Error).message }
+  }
+}
+
+export async function getNodeAccountWithRetry(
+  nodeAccountId: string,
+  activeNodes: ShardusTypes.Node[]
+): Promise<NodeAccountQueryResponse | ValidatorError> {
+  let i = 0
+  while (i <= maxNodeAccountRetries) {
+    const randomConsensusNode = getRandom(activeNodes, 1)[0]
+    const resp = await getNodeAccount(randomConsensusNode, nodeAccountId)
+    if (resp.success) return resp
+    else {
+      const err = resp as ValidatorError
+      if (err.reason == errNodeAccountNotFound) return err
+      else i++
+    }
+  }
+  return { success: false, reason: errNodeBusy }
+}
+
+async function getEVMAccountDataForAddress(
+  shardus: Shardus,
+  evmAddress: string
+): Promise<WrappedEVMAccount | undefined> {
+  const shardusAddress = toShardusAddress(evmAddress, AccountType.Account)
+  const account = await shardus.getLocalOrRemoteAccount(shardusAddress)
+  if (!account) return undefined
+  const data = account.data
+  fixDeserializedWrappedEVMAccount(data)
+  return data
+}
+
+export async function getCertSignatures(
+  shardus: Shardus,
+  certData: StakeCert
+): Promise<CertSignaturesResult> {
+  const signedAppData = await shardus.getAppDataSignatures(
+    'sign-stake-cert',
+    crypto.hashObj(certData),
+    5,
+    certData,
+    2
+  )
+  if (!signedAppData.success) {
+    return {
+      success: false,
+    }
+  }
+  certData.signs = signedAppData.signatures
+  return { success: true, signedStakeCert: certData }
 }
 
 /**
@@ -87,7 +155,7 @@ export async function queryCertificate(
     }
   }
 
-  const randomConsensusNode: any = getRandom(activeNodes, 1)[0]
+  const randomConsensusNode: ShardusTypes.Node = getRandom(activeNodes, 1)[0]
 
   const callQueryCertificate = async (
     signedCertRequest: QueryCertRequest
@@ -130,56 +198,13 @@ export async function queryCertificate(
   return await callQueryCertificate(signedCertRequest)
 }
 
-export async function getNodeAccountWithRetry(
-  nodeAccountId: string,
-  activeNodes: ShardusTypes.Node[]
-): Promise<NodeAccountQueryResponse | ValidatorError> {
-  let i = 0
-  while (i <= maxNodeAccountRetries) {
-    const randomConsensusNode = getRandom(activeNodes, 1)[0]
-    const resp = await getNodeAccount(randomConsensusNode, nodeAccountId)
-    if (resp.success) return resp
-    else {
-      const err = resp as ValidatorError
-      if (err.reason == errNodeAccountNotFound) return err
-      else i++
-    }
-  }
-  return { success: false, reason: errNodeBusy }
-}
-
-async function getNodeAccount(
-  randomConsensusNode: ShardusTypes.Node,
-  nodeAccountId: string
-): Promise<NodeAccountQueryResponse | ValidatorError> {
-  try {
-    let queryString = `/account/:address`.replace(':address', nodeAccountId)
-    //some reason params object is not working...
-    queryString += `?type=${AccountType.NodeAccount2}`
-    const res = await shardusGetFromNode<any>(
-      randomConsensusNode,
-      queryString //,
-      //{ params: { type: AccountType.NodeAccount2 } }
-    )
-    if (!res.data.account) {
-      return { success: false, reason: errNodeAccountNotFound }
-    }
-    if (res.data.error == errNodeBusy) {
-      return { success: false, reason: errNodeBusy }
-    }
-    return { success: true, nodeAccount: res.data.account.data } as NodeAccountQueryResponse
-  } catch (error) {
-    return { success: false, reason: (error as Error).message }
-  }
-}
-
 // Move this helper function to utils or somewhere
 export async function InjectTxToConsensor(
-  randomConsensusNode: any,
-  tx: any // Sign Object
+  randomConsensusNode: ShardusTypes.Node,
+  tx: setCertTimeTx // Sign Object
 ): Promise<InjectTxResponse | ValidatorError> {
   try {
-    const res = await shardusPostToNode<any>(randomConsensusNode, `/inject`, tx)
+    const res = await shardusPostToNode<any>(randomConsensusNode, `/inject`, tx) // eslint-disable-line @typescript-eslint/no-explicit-any
     if (!res.data.success) {
       return { success: false, reason: res.data.reason }
     }
@@ -196,22 +221,30 @@ export async function queryCertificateHandler(
   nestedCountersInstance.countEvent('shardeum-staking', 'calling queryCertificateHandler')
 
   const queryCertReq = req.body as QueryCertRequest
-  const reqValidationResult = validateQueryCertRequest(queryCertReq, req.body)
+  const reqValidationResult = validateQueryCertRequest(queryCertReq, req)
   if (!reqValidationResult.success) {
-    nestedCountersInstance.countEvent('shardeum-staking', 'queryCertificateHandler: failed validateQueryCertRequest')
+    nestedCountersInstance.countEvent(
+      'shardeum-staking',
+      'queryCertificateHandler: failed validateQueryCertRequest'
+    )
     return reqValidationResult
   }
 
   const operatorAccount = await getEVMAccountDataForAddress(shardus, queryCertReq.nominator)
   if (!operatorAccount) {
-    nestedCountersInstance.countEvent('shardeum-staking', 'queryCertificateHandler: failed to fetch operator account' +
-      ' state')
+    nestedCountersInstance.countEvent(
+      'shardeum-staking',
+      'queryCertificateHandler: failed to fetch operator account' + ' state'
+    )
     return { success: false, reason: 'Failed to fetch operator account state' }
   }
   // TODO: look into why nodeAccount is queried here
   const nodeAccount = await shardus.getLocalOrRemoteAccount(queryCertReq.nominee)
   if (!nodeAccount) {
-    nestedCountersInstance.countEvent('shardeum-staking', 'queryCertificateHandler: failed to fetch node account state')
+    nestedCountersInstance.countEvent(
+      'shardeum-staking',
+      'queryCertificateHandler: failed to fetch node account state'
+    )
     return { success: false, reason: 'Failed to fetch node account state' }
   }
 
@@ -219,7 +252,10 @@ export async function queryCertificateHandler(
   const currentTimestamp = Date.now()
 
   if (operatorAccount.operatorAccountInfo == null) {
-    nestedCountersInstance.countEvent('shardeum-staking', 'queryCertificateHandler: operator account info is null')
+    nestedCountersInstance.countEvent(
+      'shardeum-staking',
+      'queryCertificateHandler: operator account info is null'
+    )
     return {
       success: false,
       reason: 'Operator account info is null',
@@ -228,7 +264,10 @@ export async function queryCertificateHandler(
 
   // check operator cert validity
   if (operatorAccount.operatorAccountInfo.certExp < currentTimestamp) {
-    nestedCountersInstance.countEvent('shardeum-staking', 'queryCertificateHandler: operator certificate has expired')
+    nestedCountersInstance.countEvent(
+      'shardeum-staking',
+      'queryCertificateHandler: operator certificate has expired'
+    )
 
     return {
       success: false,
@@ -241,36 +280,4 @@ export async function queryCertificateHandler(
     stake: operatorAccount.operatorAccountInfo.stake,
     certExp: operatorAccount.operatorAccountInfo.certExp,
   })
-}
-
-async function getEVMAccountDataForAddress(
-  shardus: Shardus,
-  evmAddress: string
-): Promise<WrappedEVMAccount | undefined> {
-  const shardusAddress = toShardusAddress(evmAddress, AccountType.Account)
-  const account = await shardus.getLocalOrRemoteAccount(shardusAddress)
-  if (!account) return undefined
-  const data: any = account.data
-  fixDeserializedWrappedEVMAccount(data)
-  return data
-}
-
-export async function getCertSignatures(
-  shardus: Shardus,
-  certData: StakeCert
-): Promise<CertSignaturesResult> {
-  const signedAppData = await shardus.getAppDataSignatures(
-    'sign-stake-cert',
-    crypto.hashObj(certData),
-    5,
-    certData,
-    2
-  )
-  if (!signedAppData.success) {
-    return {
-      success: false,
-    }
-  }
-  certData.signs = signedAppData.signatures
-  return { success: true, signedStakeCert: certData }
 }
