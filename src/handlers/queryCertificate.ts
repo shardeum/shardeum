@@ -238,7 +238,6 @@ export async function queryCertificateHandler(
     )
     return { success: false, reason: 'Failed to fetch operator account state' }
   }
-  // TODO: look into why nodeAccount is queried here
   const nodeAccount = await shardus.getLocalOrRemoteAccount(queryCertReq.nominee)
   if (!nodeAccount) {
     nestedCountersInstance.countEvent(
@@ -248,8 +247,7 @@ export async function queryCertificateHandler(
     return { success: false, reason: 'Failed to fetch node account state' }
   }
 
-  // const currentTimestamp = Math.round(Date.now() / 1000)
-  const currentTimestamp = Date.now()
+  const currentTimestampInMillis = Date.now()
 
   if (operatorAccount.operatorAccountInfo == null) {
     nestedCountersInstance.countEvent(
@@ -263,7 +261,7 @@ export async function queryCertificateHandler(
   }
 
   // check operator cert validity
-  if (operatorAccount.operatorAccountInfo.certExp < currentTimestamp) {
+  if (operatorAccount.operatorAccountInfo.certExp < currentTimestampInMillis) {
     nestedCountersInstance.countEvent(
       'shardeum-staking',
       'queryCertificateHandler: operator certificate has expired'
