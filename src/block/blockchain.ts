@@ -19,10 +19,8 @@ export class ShardeumBlock extends Blockchain {
     // know it is OK if we call it from the iterator... (runBlock)
     await this.initPromise
     const blockNumber = parseInt(blockId.toString())
-    console.log('getBlock', blockId, blockNumber)
-    if (blocks[blockNumber]) {
-      console.log('Found Block', blockNumber)
-      return blocks[blockNumber]
+    if (blocks[`${blockNumber}`]) {
+      return blocks[`${blockNumber}`]
     }
     return this.createBlock(blockId)
   }
@@ -33,7 +31,6 @@ export class ShardeumBlock extends Blockchain {
       transactions: [],
       uncleHeaders: [],
     }
-    const block = Block.fromBlockData(blockData)
-    return block
+    return Block.fromBlockData(blockData)
   }
 }
