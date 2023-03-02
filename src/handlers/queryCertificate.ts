@@ -7,10 +7,11 @@ import { ShardeumFlags } from '../shardeum/shardeumFlags'
 import {
   AccountType,
   InjectTxResponse,
+  NodeAccountAxiosResponse,
   NodeAccountQueryResponse,
-  WrappedEVMAccount
+  WrappedEVMAccount,
 } from '../shardeum/shardeumTypes'
-import { fixDeserializedWrappedEVMAccount } from '../shardeum/wrappedEVMAccountFunctions'
+import { fixDeserializedWrappedEVMAccount, isWrappedEVMAccount } from '../shardeum/wrappedEVMAccountFunctions'
 import { setCertTimeTx } from '../tx/setCertTime'
 import { getRandom } from '../utils'
 import { shardusGetFromNode, shardusPostToNode, shardusPutToNode } from '../utils/requests'
@@ -70,7 +71,7 @@ async function getNodeAccount(
   try {
     let queryString = `/account/:address`.replace(':address', nodeAccountId)
     queryString += `?type=${AccountType.NodeAccount2}`
-    const res = await shardusGetFromNode<any>(randomConsensusNode, queryString) // eslint-disable-line @typescript-eslint/no-explicit-any
+    const res = await shardusGetFromNode<NodeAccountAxiosResponse>(randomConsensusNode, queryString)
     if (!res.data.account) {
       return { success: false, reason: errNodeAccountNotFound }
     }
@@ -109,8 +110,11 @@ async function getEVMAccountDataForAddress(
   const account = await shardus.getLocalOrRemoteAccount(shardusAddress)
   if (!account) return undefined
   const data = account.data
-  fixDeserializedWrappedEVMAccount(data)
-  return data
+  if (isWrappedEVMAccount(data)) {
+    fixDeserializedWrappedEVMAccount(data)
+    return data
+  }
+  return undefined
 }
 
 export async function getCertSignatures(
