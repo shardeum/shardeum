@@ -38,7 +38,7 @@ function normalizeUrl(url: string): string {
   return normalized
 }
 
-const urlFromNode = (node: ShardusTypes.Node, path: string): string => {
+const urlFromNode = (node: ShardusTypes.ValidatorNodeDetails, path: string): string => {
   const host = normalizeUrl(`${node.ip}:${node.port}`)
   const url = `${host}${path}`
   return url
@@ -52,7 +52,7 @@ const urlFromNode = (node: ShardusTypes.Node, path: string): string => {
  * @returns
  */
 export const shardusGetFromNode = async <ResponseType>(
-  node: ShardusTypes.Node,
+  node: ShardusTypes.ValidatorNodeDetails,
   path: string,
   config?: AxiosRequestConfig
 ): Promise<AxiosResponse<ResponseType>> => {
@@ -68,7 +68,7 @@ export const shardusGetFromNode = async <ResponseType>(
  * @returns
  */
 export const shardusPostToNode = async <ResponseType>(
-  node: ShardusTypes.Node,
+  node: ShardusTypes.ValidatorNodeDetails,
   path: string,
   data?: unknown,
   config?: AxiosRequestConfig
@@ -85,7 +85,7 @@ export const shardusPostToNode = async <ResponseType>(
  * @returns
  */
 export const shardusPutToNode = async <ResponseType>(
-  node: ShardusTypes.Node,
+  node: ShardusTypes.ValidatorNodeDetails,
   path: string,
   data?: unknown,
   config?: AxiosRequestConfig

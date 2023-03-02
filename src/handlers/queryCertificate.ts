@@ -14,7 +14,11 @@ import {
 import { fixDeserializedWrappedEVMAccount, isWrappedEVMAccount } from '../shardeum/wrappedEVMAccountFunctions'
 import { setCertTimeTx } from '../tx/setCertTime'
 import { getRandom } from '../utils'
-import { shardusGetFromNode, shardusPostToNode, shardusPutToNode } from '../utils/requests'
+import {
+  shardusGetFromNode,
+  shardusPostToNode,
+  shardusPutToNode,
+} from '../utils/requests'
 
 // constants
 
@@ -65,7 +69,7 @@ function validateQueryCertRequest(req: QueryCertRequest, rawRequest: Request): V
 }
 
 async function getNodeAccount(
-  randomConsensusNode: ShardusTypes.Node,
+  randomConsensusNode: ShardusTypes.ValidatorNodeDetails,
   nodeAccountId: string
 ): Promise<NodeAccountQueryResponse | ValidatorError> {
   try {
@@ -86,7 +90,7 @@ async function getNodeAccount(
 
 export async function getNodeAccountWithRetry(
   nodeAccountId: string,
-  activeNodes: ShardusTypes.Node[]
+  activeNodes: ShardusTypes.ValidatorNodeDetails[]
 ): Promise<NodeAccountQueryResponse | ValidatorError> {
   let i = 0
   while (i <= maxNodeAccountRetries) {
@@ -148,7 +152,7 @@ export async function getCertSignatures(
 export async function queryCertificate(
   shardus: Shardus,
   publicKey: string,
-  activeNodes: ShardusTypes.Node[]
+  activeNodes: ShardusTypes.ValidatorNodeDetails[]
 ): Promise<CertSignaturesResult | ValidatorError> {
   nestedCountersInstance.countEvent('shardeum-staking', 'calling queryCertificate')
 
@@ -159,7 +163,7 @@ export async function queryCertificate(
     }
   }
 
-  const randomConsensusNode: ShardusTypes.Node = getRandom(activeNodes, 1)[0]
+  const randomConsensusNode: ShardusTypes.ValidatorNodeDetails = getRandom(activeNodes, 1)[0]
 
   const callQueryCertificate = async (
     signedCertRequest: QueryCertRequest
@@ -204,7 +208,7 @@ export async function queryCertificate(
 
 // Move this helper function to utils or somewhere
 export async function InjectTxToConsensor(
-  randomConsensusNode: ShardusTypes.Node,
+  randomConsensusNode: ShardusTypes.ValidatorNodeDetails,
   tx: setCertTimeTx // Sign Object
 ): Promise<InjectTxResponse | ValidatorError> {
   try {

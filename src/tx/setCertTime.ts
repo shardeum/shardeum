@@ -38,7 +38,7 @@ export type setCertTimeTx = {
 export async function injectSetCertTimeTx(
   shardus: Shardus,
   publicKey: string,
-  activeNodes: ShardusTypes.Node[]
+  activeNodes: ShardusTypes.ValidatorNodeDetails[]
 ) {
   // Query the nodeAccount and see if it is ready before injecting setCertTime
   const accountQueryResponse = await getNodeAccountWithRetry(publicKey, activeNodes)
