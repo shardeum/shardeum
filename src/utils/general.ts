@@ -1,3 +1,4 @@
+/* eslint-disable security/detect-object-injection */
 import { BN, bufferToHex } from 'ethereumjs-util'
 import { NetworkAccount } from '../shardeum/shardeumTypes'
 
@@ -53,9 +54,7 @@ export function isEqualOrNewerVersion(minimumVersion: string, testVersion: strin
   const minVerParts = minimumVersion.split('.')
   const testVerParts = testVersion.split('.')
   for (let i = 0; i < testVerParts.length; i++) {
-    // eslint-disable-next-line security/detect-object-injection
     const testV = ~~testVerParts[i] // parse int
-    // eslint-disable-next-line security/detect-object-injection
     const minV = ~~minVerParts[i] // parse int
     if (testV > minV) return true
     if (testV < minV) return false
@@ -73,9 +72,7 @@ export function getRandom<T>(arr: T[], n: number): T[] {
   const result = new Array(n)
   while (n--) {
     const x = Math.floor(Math.random() * len)
-    // eslint-disable-next-line security/detect-object-injection
     result[n] = arr[x in taken ? taken[x] : x]
-    // eslint-disable-next-line security/detect-object-injection
     taken[x] = --len in taken ? taken[len] : len
   }
   return result

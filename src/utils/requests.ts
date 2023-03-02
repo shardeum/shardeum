@@ -38,7 +38,6 @@ function normalizeUrl(url: string): string {
   return normalized
 }
 
-// Update the node type here; We can import from P2P.P2PTypes.Node from '@shardus/type' lib but seems it's not installed yet
 const urlFromNode = (node: ShardusTypes.Node, path: string): string => {
   const host = normalizeUrl(`${node.ip}:${node.port}`)
   const url = `${host}${path}`
