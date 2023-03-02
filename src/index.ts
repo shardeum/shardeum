@@ -2540,6 +2540,10 @@ shardus.setup({
       const txFee = scaleByStabilityFactor(txFeeUsd, AccountsStorage.cachedNetworkAccount)
       if (ShardeumFlags.VerboseLogs)
         console.log('calculating new balance after unstake', currentBalance, stake, reward, penalty, txFee)
+      if (nodeAccount2.rewardEndTime === 0 && nodeAccount2.rewardStartTime > 0) {
+        // This block will only be reached if the node is inactive and the force unstake flag has been set
+        reward = new BN(0)
+      }
       const newBalance = currentBalance.add(stake).add(reward).sub(penalty).sub(txFee)
       operatorEVMAccount.account.balance = newBalance
       operatorEVMAccount.account.nonce = operatorEVMAccount.account.nonce.add(new BN('1'))

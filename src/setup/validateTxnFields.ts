@@ -271,7 +271,11 @@ export const validateTxnFields =
           } else if (shardus.isNodeActiveByPubKey(appData.nomineeAccount) === true) {
             success = false
             reason = `This node is still active in the network. You can unstake only after the node leaves the network!`
-          } else if (nodeAccount.rewardEndTime === 0 && nodeAccount.rewardStartTime > 0) {
+          } else if (
+            nodeAccount.rewardEndTime === 0 &&
+            nodeAccount.rewardStartTime > 0 &&
+            !unstakeCoinsTX.force
+          ) {
             //note that if both end time and start time are 0 it is ok to unstake
             success = false
             reason = `No reward endTime set, can't unstake node yet`

@@ -149,6 +149,7 @@ export interface UnstakeCoinsTX extends InternalTxBase {
   nominator: string
   timestamp: number
   sign: ShardusTypes.Sign
+  force: boolean
 }
 
 export interface InitRewardTimes extends InternalTxBase {
