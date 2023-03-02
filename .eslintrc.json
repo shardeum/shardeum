@@ -17,7 +17,6 @@
   "ignorePatterns": [
     "**/storage/*",
     "**/vm/state/*",
-    "**/utils/*",
     "**/vm/evm/*",
     "**/tx/*",
     "runTXperf.ts",

@@ -10,7 +10,7 @@ export async function retry<T>(
   shouldRetryFunc: ShouldRetry<T>,
   retries: number,
   waitTimeSeconds: number,
-  execCounter: number = 1
+  execCounter = 1
 ): Promise<T> {
   try {
     if (retries < 0) {

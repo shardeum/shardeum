@@ -1,4 +1,4 @@
-import { Account, Address, BN, zeroAddress, isZeroAddress } from 'ethereumjs-util'
+import { Account, BN } from 'ethereumjs-util'
 
 export const zeroAddressStr = '0x0000000000000000000000000000000000000000'
 export const emptyCodeHash = 'c5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470'

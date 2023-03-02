@@ -1,7 +1,8 @@
+/* eslint-disable security/detect-object-injection */
 const objToString = Object.prototype.toString
 const objKeys =
   Object.keys ||
-  function(obj) {
+  function(obj): unknown[] {
     const keys = []
     for (const name in obj) {
       keys.push(name)
@@ -9,19 +10,21 @@ const objKeys =
     return keys
   }
 
-export interface stringifierOptions {
+export interface StringifierOptions {
   bufferEncoding: 'base64' | 'hex' | 'none'
 }
 
-export function stringify(val: any, options: stringifierOptions): string {
-  const returnVal = stringifier(val, false, options)
-  if (returnVal !== undefined) {
-    return '' + returnVal
-  }
-  return ''
+function isBufferValue(toStr, val: Record<string, unknown>): boolean {
+  return (
+    toStr === '[object Object]' &&
+    objKeys(val).length == 2 &&
+    objKeys(val).includes('type') &&
+    val['type'] == 'Buffer'
+  )
 }
 
-function stringifier(val: any, isArrayProp: boolean, options: stringifierOptions): string | null | undefined {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function stringifier(val: any, isArrayProp: boolean, options: StringifierOptions): string | null | undefined {
   let i, max, str, keys, key, propVal, toStr
   if (val === true) {
     return 'true'
@@ -82,6 +85,7 @@ function stringifier(val: any, isArrayProp: boolean, options: stringifierOptions
           return JSON.stringify(val)
         }
       }
+    // eslint-disable-next-line no-fallthrough
     case 'function':
     case 'undefined':
       return isArrayProp ? null : undefined
@@ -92,11 +96,10 @@ function stringifier(val: any, isArrayProp: boolean, options: stringifierOptions
   }
 }
 
-function isBufferValue(toStr, val: Record<string, any>) {
-  return (
-    toStr === '[object Object]' &&
-    objKeys(val).length == 2 &&
-    objKeys(val).includes('type') &&
-    val['type'] == 'Buffer'
-  )
+export function stringify(val: unknown, options: StringifierOptions): string {
+  const returnVal = stringifier(val, false, options)
+  if (returnVal !== undefined) {
+    return '' + returnVal
+  }
+  return ''
 }

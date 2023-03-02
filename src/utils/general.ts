@@ -1,4 +1,4 @@
-import { bufferToHex, BN } from 'ethereumjs-util'
+import { BN, bufferToHex } from 'ethereumjs-util'
 import { NetworkAccount } from '../shardeum/shardeumTypes'
 
 /**
@@ -7,7 +7,7 @@ import { NetworkAccount } from '../shardeum/shardeumTypes'
  * @param buffer
  * @returns
  */
-export function safeBufferToHex(buffer) {
+export function safeBufferToHex(buffer): string {
   if (buffer.data != null) {
     return bufferToHex(buffer.data)
   }
@@ -20,12 +20,13 @@ export function scaleByStabilityFactor(input: BN, networkAccount: NetworkAccount
   return input.mul(stabilityScaleMult).div(stabilityScaleDiv)
 }
 
-export function sleep(ms) {
+export function sleep(ms): Promise<NodeJS.Timeout> {
   return new Promise(resolve => {
     setTimeout(resolve, ms)
   })
 }
 
+// eslint-disable-next-line @typescript-eslint/explicit-function-return-type
 export const replacer = (key, value) => {
   const originalObject = value // this[key]
   if (originalObject instanceof Map) {
@@ -52,7 +53,9 @@ export function isEqualOrNewerVersion(minimumVersion: string, testVersion: strin
   const minVerParts = minimumVersion.split('.')
   const testVerParts = testVersion.split('.')
   for (let i = 0; i < testVerParts.length; i++) {
+    // eslint-disable-next-line security/detect-object-injection
     const testV = ~~testVerParts[i] // parse int
+    // eslint-disable-next-line security/detect-object-injection
     const minV = ~~minVerParts[i] // parse int
     if (testV > minV) return true
     if (testV < minV) return false
@@ -70,7 +73,9 @@ export function getRandom<T>(arr: T[], n: number): T[] {
   const result = new Array(n)
   while (n--) {
     const x = Math.floor(Math.random() * len)
+    // eslint-disable-next-line security/detect-object-injection
     result[n] = arr[x in taken ? taken[x] : x]
+    // eslint-disable-next-line security/detect-object-injection
     taken[x] = --len in taken ? taken[len] : len
   }
   return result
