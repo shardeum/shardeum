@@ -5,7 +5,6 @@ import { TxReceipt } from '@ethereumjs/vm/dist/types'
 import { ShardusTypes } from '@shardus/core'
 import { Block } from '@ethereumjs/block'
 import { StakeCert } from '../handlers/queryCertificate'
-import { WrappedData } from '@shardus/core/dist/shardus/shardus-types'
 
 export enum AccountType {
   Account = 0, //  EOA or CA
@@ -337,7 +336,7 @@ export interface NodeAccountQueryResponse {
 }
 
 export interface NodeAccountAxiosResponse {
-  account: WrappedData
+  account: ShardusTypes.WrappedData
   error: string
 }
 
