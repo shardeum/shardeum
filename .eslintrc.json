@@ -25,7 +25,6 @@
     "**/state/*",
     "**/shardeum/*",
     "**/src/setup/*",
-    "**/src/config/index.ts",
     "**/src/index.ts",
     "blockchain.ts"
   ],
