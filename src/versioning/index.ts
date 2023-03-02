@@ -14,14 +14,15 @@ const appliedMigrations = new Set<string>()
  *
  * @param newActiveVersion
  */
+// eslint-disable-next-line @typescript-eslint/explicit-function-return-type
 export const onActiveVersionChange = async (newActiveVersion: string) => {
   // For future migrations, add a file under ./migrations and add the version here
   const migrations = ['1.1.1', '1.1.2', '1.1.3']
 
   for (let index = 0; index < migrations.length; index++) {
-    const migrationVersion = migrations[index]
+    const migrationVersion = migrations[index] // eslint-disable-line security/detect-object-injection
 
-    const { migrate } = (await import(`./migrations/${migrationVersion}`)) as { migrate: Migrate }
+    const { migrate } = (await import(`./migrations/${migrationVersion}`)) as { migrate: Migrate } // eslint-disable-line no-unsanitized/method
 
     const needsMigration =
       !appliedMigrations.has(migrationVersion) && isEqualOrNewerVersion(migrationVersion, newActiveVersion)
