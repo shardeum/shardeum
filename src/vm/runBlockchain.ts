@@ -37,7 +37,7 @@ export default async function runBlockchain(
         await this.runBlock({ block, root: parentState })
         // set as new head block
         headBlock = block
-      } catch (error: any) {
+      } catch (error) {
         // remove invalid block
         await blockchain!.delBlock(block.header.hash())
         throw error

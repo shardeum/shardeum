@@ -409,7 +409,7 @@ export default async function runBlock(this: VM, opts: RunBlockOpts): Promise<Ru
         } txResults=${result.results.length}`
       )
     }
-  } catch (err: any) {
+  } catch (err: unknown) {
     await state.revert()
     if (this.DEBUG) {
       debug(`block checkpoint reverted`)
