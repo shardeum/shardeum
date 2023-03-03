@@ -1,4 +1,4 @@
-image: node:16.11.1
+image: "registry.gitlab.com/shardus/dev-container"
 
 before_script:
   - node -v
