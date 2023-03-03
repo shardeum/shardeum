@@ -1,4 +1,4 @@
-image: "registry.gitlab.com/shardus/dev-container"
+image: 'registry.gitlab.com/shardus/dev-container'
 
 before_script:
   - node -v
@@ -7,6 +7,9 @@ stages:
   - build
 
 build-job:
+  cache:
+    paths:
+      - node_modules/
   stage: build
   script:
     - echo "Compiling the code..."
@@ -15,6 +18,9 @@ build-job:
     - echo "Compile complete."
 
 lint-job:
+  cache:
+    paths:
+      - node_modules/
   stage: build
   script:
     - echo "Running ESlint..."
