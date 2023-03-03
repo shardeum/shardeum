@@ -72,6 +72,7 @@ export default class Stack {
       if (index < 0) {
         throw new VmError(ERROR.STACK_UNDERFLOW)
       }
+      // eslint-disable-next-line security/detect-object-injection
       peekArray.push(this._store[index])
     }
     return peekArray
@@ -89,9 +90,11 @@ export default class Stack {
     const head = this._store.length - 1
     const i = this._store.length - position - 1
 
+    /* eslint-disable security/detect-object-injection */
     const tmp = this._store[head]
     this._store[head] = this._store[i]
     this._store[i] = tmp
+    /* eslint-enable security/detect-object-injection */
   }
 
   /**
@@ -104,6 +107,7 @@ export default class Stack {
     }
 
     const i = this._store.length - position
+    // eslint-disable-next-line security/detect-object-injection
     this.push(this._store[i].clone())
   }
 }
