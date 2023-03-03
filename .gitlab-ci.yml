@@ -18,6 +18,6 @@ lint-job:
   stage: build
   script:
     - echo "Running ESlint..."
-    - npm install -g eslint
+    - npm install @typescript-eslint/eslint-plugin@5.48.0 --save-dev
     - npm run lint
     - echo "Running ESlint complete."
