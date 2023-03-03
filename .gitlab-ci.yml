@@ -1,0 +1,12 @@
+image: node:latest
+
+stages:
+  - build
+
+build-job:
+  stage: build
+  script:
+    - echo "Compiling the code..."
+    - npm install
+    - npm run compile
+    - echo "Compile complete."
