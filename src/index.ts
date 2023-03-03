@@ -1500,7 +1500,7 @@ shardus.registerExternalPut('query-certificate', async (req: Request, res: Respo
  */
 
 async function applyInternalTx(
-  tx: any,
+  tx: InternalTx,
   wrappedStates: WrappedStates,
   txTimestamp: number
 ): Promise<ShardusTypes.ApplyResponse> {
@@ -1649,29 +1649,6 @@ async function applyInternalTx(
     // network will consens that this is the correct value
     ourAppDefinedData.globalMsg = { address: networkAccount, value, when, source: value.from }
 
-    if (ShardeumFlags.useAccountWrites) {
-      let networkAccountCopy = wrappedStates[networkAccount]
-      let devAccountCopy = wrappedStates[internalTx.from]
-      networkAccountCopy.data.timestamp = txTimestamp
-      devAccountCopy.data.timestamp = txTimestamp
-      shardus.applyResponseAddChangedAccount(
-        applyResponse,
-        networkAccount,
-        networkAccountCopy,
-        txId,
-        txTimestamp
-      )
-      shardus.applyResponseAddChangedAccount(
-        applyResponse,
-        internalTx.from,
-        devAccountCopy,
-        txId,
-        txTimestamp
-      )
-    } else {
-      network.timestamp = txTimestamp
-      devAccount.timestamp = txTimestamp
-    }
     console.log('Applied change_network_param tx')
     shardus.log('Applied change_network_param tx')
   }
@@ -3265,7 +3242,7 @@ shardus.setup({
     let shardusMemoryPatterns = {}
     if (isInternalTx(tx)) {
       let customTXhash = null
-      let internalTx = tx as InternalTx
+      const internalTx = tx as InternalTx
       const keys = {
         sourceKeys: [],
         targetKeys: [],
@@ -4633,7 +4610,8 @@ shardus.setup({
       nestedCountersInstance.countEvent('shardeum-staking', 'stakeCert != null')
 
       let remainingValidTime = stakeCert.certExp - Date.now()
-      const certStartTimestamp = stakeCert.certExp - ShardeumFlags.certCycleDuration * ONE_SECOND * latestCycle.duration
+      const certStartTimestamp =
+        stakeCert.certExp - ShardeumFlags.certCycleDuration * ONE_SECOND * latestCycle.duration
       const certEndTimestamp = stakeCert.certExp
       const expiredPercentage = (Date.now() - certStartTimestamp) / (certEndTimestamp - certStartTimestamp)
       let isExpiringSoon = expiredPercentage >= 0.9
@@ -4693,7 +4671,8 @@ shardus.setup({
       const signedStakeCert = (res as CertSignaturesResult).signedStakeCert
       let remainingValidTime = signedStakeCert.certExp - Date.now()
 
-      const certStartTimestamp = signedStakeCert.certExp - ShardeumFlags.certCycleDuration * ONE_SECOND * latestCycle.duration
+      const certStartTimestamp =
+        signedStakeCert.certExp - ShardeumFlags.certCycleDuration * ONE_SECOND * latestCycle.duration
       const certEndTimestamp = signedStakeCert.certExp
       const expiredPercentage = (Date.now() - certStartTimestamp) / (certEndTimestamp - certStartTimestamp)
       let isExpiringSoon = expiredPercentage >= 0.9
@@ -4752,7 +4731,7 @@ shardus.setup({
     let cachedNetworkAccount = AccountsStorage.cachedNetworkAccount
     if (cachedNetworkAccount) {
       minVersion = cachedNetworkAccount.current.minVersion
-      activeVersion = cachedNetworkAccount.current.minVersion
+      activeVersion = cachedNetworkAccount.current.activeVersion
     }
     let shardeumNodeInfo: NodeInfoAppData = {
       shardeumVersion: version,
@@ -4836,6 +4815,9 @@ shardus.setup({
     if (account.accountId === networkAccount) {
       let networkAccount: NetworkAccount = account.data
       for (let key in appData) {
+        // TODO: This is not checking the type of the value, we are assuming the load tester sends up valid values.
+        // It can be improved by checking the typeof each appData[key] and making sure it is a valid value
+
         if (key === 'activeVersion') {
           await onActiveVersionChange(appData[key])
         }
