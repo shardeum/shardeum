@@ -86,7 +86,6 @@ function stringifier(val: any, isArrayProp: boolean, options: StringifierOptions
         }
       }
     // eslint-disable-next-line no-fallthrough
-    case 'function':
     case 'undefined':
       return isArrayProp ? null : undefined
     case 'string':
