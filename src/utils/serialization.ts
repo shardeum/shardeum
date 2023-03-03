@@ -31,13 +31,12 @@ export function GetBufferFromField(input: any, encoding?: 'base64' | 'hex'): Buf
   }
 }
 
-// eslint-disable-next-line @typescript-eslint/explicit-function-return-type, @typescript-eslint/no-explicit-any
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 function base64BufferReviver(key: string, value: any) {
   const originalObject = value
   if (
     isObject(originalObject) &&
-    // eslint-disable-next-line no-prototype-builtins
-    originalObject.hasOwnProperty('dataType') &&
+    Object.prototype.hasOwnProperty.call(originalObject, 'dataType') &&
     originalObject.dataType &&
     originalObject.dataType == 'bh'
   ) {
@@ -79,7 +78,7 @@ export const _base10BNParser = (value: BN | DecimalString): BN => {
   if (typeof value == 'string' && value.slice(0, 2) == '0x') {
     throw new Error('Parameter value does not seem to be a valid base 10 (decimal)')
   }
-  if (typeof value === 'string' && isNaN((value as unknown) as number)) {
+  if (typeof value === 'string' && isNaN(value as unknown as number)) {
     throw new Error('Parameter value does not seem to be a valid base 10 (decimal)')
   }
   if (BN.isBN(value)) {

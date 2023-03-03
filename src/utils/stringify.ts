@@ -1,8 +1,7 @@
-/* eslint-disable security/detect-object-injection */
 const objToString = Object.prototype.toString
 const objKeys =
   Object.keys ||
-  function(obj): unknown[] {
+  function (obj): unknown[] {
     const keys = []
     for (const name in obj) {
       keys.push(name)
@@ -32,6 +31,7 @@ function stringifier(val: any, isArrayProp: boolean, options: StringifierOptions
   if (val === false) {
     return 'false'
   }
+  /* eslint-disable security/detect-object-injection */
   switch (typeof val) {
     case 'object':
       if (val === null) {
@@ -94,6 +94,7 @@ function stringifier(val: any, isArrayProp: boolean, options: StringifierOptions
     default:
       return isFinite(val) ? val : null
   }
+  /* eslint-enable security/detect-object-injection */
 }
 
 export function stringify(val: unknown, options: StringifierOptions): string {

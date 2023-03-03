@@ -1,4 +1,3 @@
-/* eslint-disable security/detect-object-injection */
 import { BN, bufferToHex } from 'ethereumjs-util'
 import { NetworkAccount } from '../shardeum/shardeumTypes'
 
@@ -22,12 +21,11 @@ export function scaleByStabilityFactor(input: BN, networkAccount: NetworkAccount
 }
 
 export function sleep(ms): Promise<NodeJS.Timeout> {
-  return new Promise(resolve => {
+  return new Promise((resolve) => {
     setTimeout(resolve, ms)
   })
 }
 
-// eslint-disable-next-line @typescript-eslint/explicit-function-return-type
 export const replacer = (key, value) => {
   const originalObject = value // this[key]
   if (originalObject instanceof Map) {
@@ -53,12 +51,14 @@ export function isEqualOrNewerVersion(minimumVersion: string, testVersion: strin
 
   const minVerParts = minimumVersion.split('.')
   const testVerParts = testVersion.split('.')
+  /* eslint-disable security/detect-object-injection */
   for (let i = 0; i < testVerParts.length; i++) {
     const testV = ~~testVerParts[i] // parse int
     const minV = ~~minVerParts[i] // parse int
     if (testV > minV) return true
     if (testV < minV) return false
   }
+  /* eslint-enable security/detect-object-injection */
   return false
 }
 
@@ -70,10 +70,12 @@ export function getRandom<T>(arr: T[], n: number): T[] {
     n = len
   }
   const result = new Array(n)
+  /* eslint-disable security/detect-object-injection */
   while (n--) {
     const x = Math.floor(Math.random() * len)
     result[n] = arr[x in taken ? taken[x] : x]
     taken[x] = --len in taken ? taken[len] : len
   }
+  /* eslint-enable security/detect-object-injection */
   return result
 }
