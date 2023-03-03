@@ -771,7 +771,12 @@ export const handlers: Map<number, OpHandler> = new Map([
     },
   ],
   // 0x5b: JUMPDEST
-  [0x5b, function () {}],
+  [
+    0x5b,
+    function () {
+      /* empty */
+    },
+  ],
   // 0x5c: BEGINSUB
   [
     0x5c,
@@ -829,9 +834,7 @@ export const handlers: Map<number, OpHandler> = new Map([
       ) {
         trap(ERROR.OUT_OF_RANGE)
       }
-      const loaded = new BN(
-        runState.code.slice(runState.programCounter, runState.programCounter + numToPush)
-      )
+      const loaded = new BN(runState.code.slice(runState.programCounter, runState.programCounter + numToPush))
       runState.programCounter += numToPush
       runState.stack.push(loaded)
     },
@@ -911,12 +914,7 @@ export const handlers: Map<number, OpHandler> = new Map([
         data = runState.memory.read(offset.toNumber(), length.toNumber())
       }
 
-      const ret = await runState.eei.create2(
-        gasLimit,
-        value,
-        data,
-        salt.toArrayLike(Buffer, 'be', 32)
-      )
+      const ret = await runState.eei.create2(gasLimit, value, data, salt.toArrayLike(Buffer, 'be', 32))
       runState.stack.push(ret)
     },
   ],
@@ -924,8 +922,7 @@ export const handlers: Map<number, OpHandler> = new Map([
   [
     0xf1,
     async function (runState: RunState) {
-      const [_currentGasLimit, toAddr, value, inOffset, inLength, outOffset, outLength] =
-        runState.stack.popN(7)
+      const [, toAddr, value, inOffset, inLength, outOffset, outLength] = runState.stack.popN(7)
       const toAddress = new Address(addressToBuffer(toAddr))
 
       let data = Buffer.alloc(0)
@@ -946,8 +943,7 @@ export const handlers: Map<number, OpHandler> = new Map([
   [
     0xf2,
     async function (runState: RunState) {
-      const [_currentGasLimit, toAddr, value, inOffset, inLength, outOffset, outLength] =
-        runState.stack.popN(7)
+      const [, toAddr, value, inOffset, inLength, outOffset, outLength] = runState.stack.popN(7)
       const toAddress = new Address(addressToBuffer(toAddr))
 
       const gasLimit = runState.messageGasLimit!
@@ -969,8 +965,7 @@ export const handlers: Map<number, OpHandler> = new Map([
     0xf4,
     async function (runState) {
       const value = runState.eei.getCallValue()
-      const [_currentGasLimit, toAddr, inOffset, inLength, outOffset, outLength] =
-        runState.stack.popN(6)
+      const [, toAddr, inOffset, inLength, outOffset, outLength] = runState.stack.popN(6)
       const toAddress = new Address(addressToBuffer(toAddr))
 
       let data = Buffer.alloc(0)
@@ -992,8 +987,7 @@ export const handlers: Map<number, OpHandler> = new Map([
     0xfa,
     async function (runState) {
       const value = new BN(0)
-      const [_currentGasLimit, toAddr, inOffset, inLength, outOffset, outLength] =
-        runState.stack.popN(6)
+      const [, toAddr, inOffset, inLength, outOffset, outLength] = runState.stack.popN(6)
       const toAddress = new Address(addressToBuffer(toAddr))
 
       const gasLimit = runState.messageGasLimit!

@@ -69,6 +69,7 @@ export const validOpcodes = (code: Buffer) => {
 
   let x = 0
   while (x < code.length) {
+    // eslint-disable-next-line security/detect-object-injection
     const opcode = code[x]
     x++
     if (!opcodes.has(opcode)) {

@@ -134,10 +134,7 @@ export default class Interpreter {
     // Iterate through the given ops until something breaks or we hit STOP
     while (this._runState.programCounter < this._runState.code.length) {
       const opCode = this._runState.code[this._runState.programCounter]
-      if (
-        this._runState.shouldDoJumpAnalysis &&
-        (opCode === 0x56 || opCode === 0x57 || opCode === 0x5e)
-      ) {
+      if (this._runState.shouldDoJumpAnalysis && (opCode === 0x56 || opCode === 0x57 || opCode === 0x5e)) {
         // Only run the jump destination analysis if `code` actually contains a JUMP/JUMPI/JUMPSUB opcode
         this._runState.validJumps = this._getValidJumpDests(this._runState.code)
         this._runState.shouldDoJumpAnalysis = false
@@ -146,7 +143,7 @@ export default class Interpreter {
 
       try {
         await this.runStep()
-      } catch (e: any) {
+      } catch (e) {
         // re-throw on non-VM errors
         if (!('errorType' in e && e.errorType === 'VmError')) {
           throw e
@@ -302,6 +299,7 @@ export default class Interpreter {
     const jumps = new Uint8Array(code.length).fill(0)
 
     for (let i = 0; i < code.length; i++) {
+      /* eslint-disable security/detect-object-injection */
       const opcode = code[i]
       // skip over PUSH0-32 since no jump destinations in the middle of a push block
       if (opcode <= 0x7f) {
@@ -315,6 +313,7 @@ export default class Interpreter {
           jumps[i] = 2
         }
       }
+      /* eslint-enable security/detect-object-injection */
     }
     return jumps
   }

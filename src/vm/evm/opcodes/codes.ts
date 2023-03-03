@@ -316,9 +316,11 @@ export function getOpcodesForHF(common: Common, customOpcodes?: CustomOpcode[]):
   const dynamicGasHandlersCopy = new Map(dynamicGasHandlers)
 
   for (let fork = 0; fork < hardforkOpcodes.length; fork++) {
+    /* eslint-disable security/detect-object-injection */
     if (common.gteHardfork(hardforkOpcodes[fork].hardforkName)) {
       opcodeBuilder = { ...opcodeBuilder, ...hardforkOpcodes[fork].opcodes }
     }
+    /* eslint-enable security/detect-object-injection */
   }
   for (const eipOps of eipOpcodes) {
     if (common.isActivatedEIP(eipOps.eip)) {
@@ -326,13 +328,13 @@ export function getOpcodesForHF(common: Common, customOpcodes?: CustomOpcode[]):
     }
   }
 
-  for (const key in opcodeBuilder) {
-    const baseFee = common.param('gasPrices', opcodeBuilder[key].name.toLowerCase())
+  for (const key of opcodeBuilder) {
+    const baseFee = common.param('gasPrices', key.name.toLowerCase())
     // explicitly verify that we have defined a base fee
     if (baseFee === undefined) {
-      throw new Error(`base fee not defined for: ${opcodeBuilder[key].name}`)
+      throw new Error(`base fee not defined for: ${key.name}`)
     }
-    opcodeBuilder[key].fee = common.param('gasPrices', opcodeBuilder[key].name.toLowerCase())
+    key.fee = common.param('gasPrices', key.name.toLowerCase())
   }
 
   if (customOpcodes) {

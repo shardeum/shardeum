@@ -268,7 +268,7 @@ export default class EVM {
         if (message.value.gt(ZERO)) {
           await this._addToBalance(toAccount, message)
         }
-      } catch (e: any) {
+      } catch (e) {
         errorMessage = e
       }
     }
@@ -375,7 +375,7 @@ export default class EVM {
       //Need to keep this.  Even though it may not change the balance
       //it is the only thing that will cause the new contract account to be created
       await this._addToBalance(toAccount, message)
-    } catch (e: any) {
+    } catch (e) {
       errorMessage = e
     }
 

@@ -52,6 +52,7 @@ export default class Memory {
     assert(Buffer.isBuffer(value), 'Invalid value type')
 
     for (let i = 0; i < size; i++) {
+      // eslint-disable-next-line security/detect-object-injection
       this._store[offset + i] = value[i]
     }
   }
