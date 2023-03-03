@@ -19,7 +19,6 @@
     "**/vm/state/*",
     "**/vm/evm/*",
     "**/tx/*",
-    "runTXperf.ts",
     "**/state/*",
     "**/shardeum/*",
     "**/src/setup/*",

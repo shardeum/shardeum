@@ -1,5 +1,4 @@
 import Common, { Chain, Hardfork } from '@ethereumjs/common'
-// eslint-disable-next-line node/no-extraneous-import
 import { Transaction } from '@ethereumjs/tx'
 import VM from '@ethereumjs/vm'
 import fs from 'fs'
@@ -18,8 +17,6 @@ const common = new Common({ chain: Chain.Mainnet, hardfork: Hardfork.Merge })
 const shardeumStateManager = new ShardeumState() //as StateManager
 const vm = new VM({ common, stateManager: shardeumStateManager })
 
-//const vm = new VM({common});
-
 function debugTX(txStr) {
   const serializedInput = toBuffer(txStr)
   const transaction = Transaction.fromRlpSerializedTx(serializedInput)
@@ -37,7 +34,7 @@ function debugTX(txStr) {
   console.log('sender json.. ' + JSON.stringify(transaction.toJSON()))
 }
 
-function getTransactionObj(tx: any): Transaction {
+function getTransactionObj(tx): Transaction {
   if (!tx.raw) throw Error('fail')
   try {
     const serializedInput = toBuffer(tx.raw)
@@ -61,7 +58,7 @@ function initGenesis() {
   const transformedGenData: { [address: string]: string } = {}
   for (const [key, value] of Object.entries(genData)) {
     const newKey = '0x' + key
-    transformedGenData[newKey] = '0x' + value.wei
+    transformedGenData[newKey] = '0x' + value.wei // eslint-disable-line security/detect-object-injection
   }
   vm.stateManager.generateGenesis(transformedGenData)
 }
@@ -74,7 +71,7 @@ async function loadTXAndAccounts() {
   rawTxs = JSON.parse(rawTxs)
 
   //let rawTxs = JSON.parse(FS.readFileSync('../../raw_txs.json', 'utf8').toString())
-  for (const [key, value] of Object.entries(rawTxs)) {
+  for (const [, value] of Object.entries(rawTxs)) {
     try {
       const txRaw = { raw: value }
       const txObj = getTransactionObj(txRaw)
@@ -138,18 +135,14 @@ async function runTXs(signedTxs: Transaction[]) {
   let index = 0
   const batchSize = 100
   const batches = 100
-
-  let totalPass = 0
-  let totalFail = 0
-
   const txRunTimes = []
 
   //filter to only run some tx types with this:
-  const allowedTXTypes: any = { transfer: true, execute: true, create: true }
+  const allowedTXTypes = { transfer: true, execute: true, create: true }
 
   for (let k = 0; k < batches; k++) {
     const start = Date.now()
-    const stats: any = {
+    const stats = {
       tps: 0,
       fail: 0,
       pass: 0,
@@ -159,6 +152,7 @@ async function runTXs(signedTxs: Transaction[]) {
       execute: { p: 0, f: 0 },
       create: { p: 0, f: 0 },
     }
+    /* eslint-disable security/detect-object-injection */
     for (let i = 0; i < batchSize; i++) {
       if (index >= signedTxs.length) {
         console.log('no more txs') //will miss the last round of stats but that prob does not matter much
@@ -182,24 +176,16 @@ async function runTXs(signedTxs: Transaction[]) {
       try {
         await vm.runTx({ tx, skipNonce: false, skipBlockGasLimitValidation: true })
         stats.pass++
-        totalPass++
         stats[txType].p++
       } catch (e) {
         stats.fail++
-        totalFail++
         stats[txType].f++
         console.log(e.message)
-        // try{
-        //   await vm.runTx({tx})
-        // } catch(e2){
-
-        // }
       }
       const txElapsed = Date.now() - txStart
-      //if(txType != 'transfer'){
       txRunTimes.push({ time: txElapsed, t: txType, index })
-      //}
     }
+    /* eslint-enable security/detect-object-injection */
 
     const elapsed = Date.now() - start
     stats.tps = roundTo2decimals((1000 * batchSize) / elapsed)
@@ -209,6 +195,7 @@ async function runTXs(signedTxs: Transaction[]) {
   }
 }
 
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 async function test() {
   initGenesis()
   await loadTXAndAccounts()
