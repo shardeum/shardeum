@@ -18,5 +18,6 @@ lint-job:
   stage: build
   script:
     - echo "Running ESlint..."
+    - npm install -g eslint
     - npm run lint
     - echo "Running ESlint complete."
