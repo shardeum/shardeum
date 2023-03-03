@@ -1,4 +1,7 @@
-image: node:latest
+image: node:16.11.1
+
+before_script:
+  - node -v
 
 stages:
   - build
@@ -10,3 +13,10 @@ build-job:
     - npm install
     - npm run compile
     - echo "Compile complete."
+
+lint-job:
+  stage: build
+  script:
+    - echo "Running ESlint..."
+    - npm run lint
+    - echo "Running ESlint complete."

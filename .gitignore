@@ -14,7 +14,6 @@ account-export.json
 .sqlite-shm
 .sqlite-wal
 
-
 #allow for some data to sit in scripts folder and be ignored
 scripts/*.zip
 scripts/*.sqlite
