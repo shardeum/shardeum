@@ -3,6 +3,8 @@ import * as crypto from '@shardus/crypto-utils'
 import { BN, isValidAddress } from 'ethereumjs-util'
 import { ONE_SECOND } from '..'
 import config from '../config'
+import { getNodeAccountWithRetry, InjectTxToConsensor } from '../handlers/queryCertificate'
+import { toShardusAddress } from '../shardeum/evmAddress'
 import { ShardeumFlags } from '../shardeum/shardeumFlags'
 import {
   AccountType,
@@ -10,16 +12,14 @@ import {
   NodeAccountQueryResponse,
   SetCertTime,
   WrappedEVMAccount,
-  WrappedStates,
+  WrappedStates
 } from '../shardeum/shardeumTypes'
-import * as AccountsStorage from '../storage/accountStorage'
 import * as WrappedEVMAccountFunctions from '../shardeum/wrappedEVMAccountFunctions'
 import { fixDeserializedWrappedEVMAccount } from '../shardeum/wrappedEVMAccountFunctions'
-import { getNodeAccountWithRetry, InjectTxToConsensor } from '../handlers/queryCertificate'
-import { _base16BNParser, _readableSHM, getRandom, scaleByStabilityFactor } from '../utils'
-import { toShardusAddress } from '../shardeum/evmAddress'
+import * as AccountsStorage from '../storage/accountStorage'
+import { getRandom, scaleByStabilityFactor, _base16BNParser, _readableSHM } from '../utils'
 
-export function isSetCertTimeTx(tx: any): boolean {
+export function isSetCertTimeTx(tx): boolean {
   if (tx.isInternalTx && tx.internalTXType === InternalTXType.SetCertTime) {
     return true
   }
@@ -50,7 +50,7 @@ export async function injectSetCertTimeTx(
   // TODO: Validate the nodeAccount
 
   // Inject the setCertTime Tx
-  const randomConsensusNode: any = getRandom(activeNodes, 1)[0]
+  const randomConsensusNode: ShardusTypes.ValidatorNodeDetails = getRandom(activeNodes, 1)[0]
   let tx: setCertTimeTx = {
     isInternalTx: true,
     internalTXType: InternalTXType.SetCertTime,
@@ -65,7 +65,7 @@ export async function injectSetCertTimeTx(
   return result
 }
 
-export function validateSetCertTimeTx(tx: SetCertTime, appData: any): { isValid: boolean; reason: string } {
+export function validateSetCertTimeTx(tx: SetCertTime): { isValid: boolean; reason: string } {
   // nominee is NodeAccount2, will need here to verify address with other methods
   // if (!isValidAddress(tx.nominee)) {
   //   return { isValid: false, reason: 'Invalid nominee address' }
@@ -163,7 +163,6 @@ export function applySetCertTimeTx(
     /* prettier-ignore */ nestedCountersInstance.countEvent('shardeum-staking', 'applySetCertTimeTx' + ' applyResponseSetFailed failed')
     return
   }
-  const operatorAccountAddress = tx.nominator
   const operatorEVMAccount: WrappedEVMAccount =
     wrappedStates[toShardusAddress(tx.nominator, AccountType.Account)].data
   operatorEVMAccount.timestamp = txTimestamp
@@ -174,7 +173,7 @@ export function applySetCertTimeTx(
   }
 
   // Update state
-  const serverConfig: any = config.server
+  const serverConfig: any = config.server // eslint-disable-line @typescript-eslint/no-explicit-any
   let shouldChargeTxFee = true
   const certExp = operatorEVMAccount.operatorAccountInfo.certExp
 

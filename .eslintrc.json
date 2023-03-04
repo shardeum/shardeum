@@ -17,7 +17,6 @@
   "ignorePatterns": [
     "**/storage/*",
     "**/vm/state/*",
-    "**/tx/*",
     "**/state/*",
     "**/shardeum/*",
     "**/src/setup/*",

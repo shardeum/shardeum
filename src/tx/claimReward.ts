@@ -13,19 +13,12 @@ import {
   NetworkAccount,
   NodeAccount2,
   WrappedEVMAccount,
-  WrappedStates,
+  WrappedStates
 } from '../shardeum/shardeumTypes'
 import * as WrappedEVMAccountFunctions from '../shardeum/wrappedEVMAccountFunctions'
 import * as AccountsStorage from '../storage/accountStorage'
-import { scaleByStabilityFactor, _base16BNParser, _readableSHM, sleep } from '../utils'
+import { scaleByStabilityFactor, sleep, _base16BNParser, _readableSHM } from '../utils'
 import { retry } from '../utils/retry'
-
-export function isClaimRewardTx(tx: any): boolean {
-  if (tx.isInternalTx && tx.internalTXType === InternalTXType.ClaimReward) {
-    return true
-  }
-  return false
-}
 
 export async function injectClaimRewardTx(shardus, eventData: ShardusTypes.ShardusEvent, nodeAccount) {
   let tx = {
@@ -45,14 +38,14 @@ export async function injectClaimRewardTx(shardus, eventData: ShardusTypes.Shard
   while (futureTimestamp < Date.now()) {
     futureTimestamp += 30 * 1000
   }
-  let waitTime = futureTimestamp - Date.now()
+  const waitTime = futureTimestamp - Date.now()
   tx.timestamp = futureTimestamp
   // since we have to pick a future timestamp, we need to wait until it is time to submit the tx
   await sleep(waitTime)
 
   tx = shardus.signAsNode(tx)
   if (ShardeumFlags.VerboseLogs) {
-    let txid = hashSignedObj(tx)
+    const txid = hashSignedObj(tx)
     console.log(`injectClaimRewardTx: tx.timestamp: ${tx.timestamp} txid: ${txid}`, tx)
   }
 
@@ -94,11 +87,11 @@ export async function injectClaimRewardTxWithRetry(shardus, eventData: ShardusTy
     }
 
     if (result.success) {
-      let nodeAccount = await shardus.getLocalOrRemoteAccount(eventData.publicKey)
+      const nodeAccount = await shardus.getLocalOrRemoteAccount(eventData.publicKey)
       if (!nodeAccount) {
         return true
       }
-      let data = nodeAccount.data
+      const data = nodeAccount.data
       // Reward end time is updated do not retry
       if (data.rewardEndTime > rewardEndTime) {
         return false
@@ -121,8 +114,8 @@ export async function injectClaimRewardTxWithRetry(shardus, eventData: ShardusTy
   return res
 }
 
-//TODO this is not called yet!  looks like it should be validateFields
-export function validateClaimRewardTx(tx: ClaimRewardTX, appData: any): { isValid: boolean; reason: string } {
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+export function validateClaimRewardTx(tx: ClaimRewardTX): { isValid: boolean; reason: string } {
   if (!tx.nominee || tx.nominee === '' || tx.nominee.length !== 64) {
     /* prettier-ignore */ nestedCountersInstance.countEvent('shardeum-staking', `validateClaimRewardTx fail tx.nominee address invalid`)
     /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log('validateClaimRewardTx fail tx.nominee address invalid', tx)
@@ -170,12 +163,11 @@ export function validateClaimRewardState(tx: ClaimRewardTX, shardus) {
   const latestCycles = shardus.getLatestCycles(5)
 
   // This still needs to consider for lost cases, but we have to be careful for refuted back cases
-  let nodeRemovedCycle
   let nodeApopedCycle
-  nodeRemovedCycle = latestCycles.find(cycle => cycle.removed.includes(tx.deactivatedNodeId))
+  const nodeRemovedCycle = latestCycles.find((cycle) => cycle.removed.includes(tx.deactivatedNodeId))
   /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log('nodeRemovedCycle', nodeRemovedCycle)
   if (!nodeRemovedCycle) {
-    nodeApopedCycle = latestCycles.find(cycle => cycle.apoptosized.includes(tx.deactivatedNodeId))
+    nodeApopedCycle = latestCycles.find((cycle) => cycle.apoptosized.includes(tx.deactivatedNodeId))
     /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log('nodeApopedCycle', nodeApopedCycle)
     if (!nodeApopedCycle) {
       /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log('validateClaimRewardState fail not found on both removed or apoped lists', tx)
@@ -220,8 +212,8 @@ export async function applyClaimRewardTx(
   }
   const operatorShardusAddress = toShardusAddress(tx.nominator, AccountType.Account)
   const nodeAccount: NodeAccount2 = wrappedStates[tx.nominee].data
-  const network: NetworkAccount = wrappedStates[networkAccount].data
-  const operatorAccount: WrappedEVMAccount = wrappedStates[operatorShardusAddress].data
+  const network: NetworkAccount = wrappedStates[networkAccount].data // eslint-disable-line security/detect-object-injection
+  const operatorAccount: WrappedEVMAccount = wrappedStates[operatorShardusAddress].data // eslint-disable-line security/detect-object-injection
 
   const nodeRewardAmountUsd = _base16BNParser(network.current.nodeRewardAmountUsd) //new BN(Number('0x' +
   const nodeRewardAmount = scaleByStabilityFactor(nodeRewardAmountUsd, AccountsStorage.cachedNetworkAccount)
@@ -312,7 +304,7 @@ export async function applyClaimRewardTx(
     )
 
     const wrappedChangedOperatorAccount = WrappedEVMAccountFunctions._shardusWrappedAccount(
-      wrappedStates[operatorShardusAddress].data
+      wrappedStates[operatorShardusAddress].data // eslint-disable-line security/detect-object-injection
     )
     shardus.applyResponseAddChangedAccount(
       applyResponse,

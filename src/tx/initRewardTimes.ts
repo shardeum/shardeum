@@ -3,11 +3,11 @@ import * as crypto from '@shardus/crypto-utils'
 import { hashSignedObj } from '../setup/helpers'
 import { ShardeumFlags } from '../shardeum/shardeumFlags'
 import {
-  NodeAccount2,
   InitRewardTimes,
-  WrappedStates,
   InternalTx,
   InternalTXType,
+  NodeAccount2,
+  WrappedStates
 } from '../shardeum/shardeumTypes'
 import * as WrappedEVMAccountFunctions from '../shardeum/wrappedEVMAccountFunctions'
 import { sleep } from '../utils'
@@ -21,21 +21,21 @@ export async function injectInitRewardTimesTx(shardus, eventData: ShardusTypes.S
     timestamp: Date.now(),
   } as InitRewardTimes
 
-  // to make sure that differnt nodes all submit an equivalent tx that is counted as the same tx,
-  // we need to make sure that we have a determinstic timestamp
+  // to make sure that different nodes all submit an equivalent tx that is counted as the same tx,
+  // we need to make sure that we have a deterministic timestamp
   const cycleEndTime = eventData.time
   let futureTimestamp = cycleEndTime * 1000
   while (futureTimestamp < Date.now()) {
     futureTimestamp += 30 * 1000
   }
-  let waitTime = futureTimestamp - Date.now()
+  const waitTime = futureTimestamp - Date.now()
   tx.timestamp = futureTimestamp
   // since we have to pick a future timestamp, we need to wait until it is time to submit the tx
   await sleep(waitTime)
 
   tx = shardus.signAsNode(tx)
   if (ShardeumFlags.VerboseLogs) {
-    let txid = hashSignedObj(tx)
+    const txid = hashSignedObj(tx)
     console.log(`injectInitRewardTimesTx: tx.timestamp: ${tx.timestamp} txid: ${txid}`, tx)
   }
 
@@ -66,7 +66,7 @@ export function validateFields(tx: InitRewardTimes, shardus: Shardus): { success
     return { success: false, reason: 'Invalid signature' }
   }
   const latestCycles = shardus.getLatestCycles(5)
-  const nodeActivedCycle = latestCycles.find(cycle => cycle.activatedPublicKeys.includes(tx.nominee))
+  const nodeActivedCycle = latestCycles.find((cycle) => cycle.activatedPublicKeys.includes(tx.nominee))
   /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log('nodeActivedCycle', nodeActivedCycle)
   if (!nodeActivedCycle) {
     /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log('validateFields InitRewardTimes fail !nodeActivedCycle', tx)
@@ -83,6 +83,7 @@ export function validateFields(tx: InitRewardTimes, shardus: Shardus): { success
   return { success: true, reason: 'valid' }
 }
 
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 export function validatePreCrackData(shardus, tx: InternalTx, appData) {
   /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log('Validating InitRewardTimesTX PreCrackData', tx)
 }
@@ -96,7 +97,7 @@ export function validate(tx: InitRewardTimes, shardus: Shardus): { result: strin
     return { result: 'fail', reason: 'Invalid signature' }
   }
   const latestCycles = shardus.getLatestCycles(5)
-  const nodeActivedCycle = latestCycles.find(cycle => cycle.activatedPublicKeys.includes(tx.nominee))
+  const nodeActivedCycle = latestCycles.find((cycle) => cycle.activatedPublicKeys.includes(tx.nominee))
   /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log('nodeActivedCycle', nodeActivedCycle)
   if (!nodeActivedCycle) {
     /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log('validate InitRewardTimes fail !nodeActivedCycle', tx)
@@ -126,7 +127,7 @@ export function apply(
   nodeAccount.rewardEndTime = 0
   nodeAccount.timestamp = txTimestamp
   if (ShardeumFlags.useAccountWrites) {
-    const wrappedAccount: any = nodeAccount
+    const wrappedAccount: any = nodeAccount // eslint-disable-line @typescript-eslint/no-explicit-any
     const wrappedChangedAccount = WrappedEVMAccountFunctions._shardusWrappedAccount(wrappedAccount)
     shardus.applyResponseAddChangedAccount(
       applyResponse,
