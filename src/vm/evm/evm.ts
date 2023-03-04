@@ -11,7 +11,6 @@ import {
 import { Block } from '@ethereumjs/block'
 import { ERROR, VmError } from '../exceptions'
 import { StateManager } from '../state/index'
-import { getPrecompile, PrecompileFunc } from './precompiles'
 import TxContext from './txContext'
 import Message from './message'
 import EEI from './eei'
@@ -237,7 +236,6 @@ export default class EVM {
     return result
   }
 
-
   async _executeCall(message: Message): Promise<EVMResult> {
     const account = await this._state.getAccount(message.caller)
     // Reduce tx value from sender
@@ -247,7 +245,7 @@ export default class EVM {
         const value = message.value ? message.value.toString() : 0
         console.log(`reduce balance: ${to} ${value} skip: ${message.value.lte(ZERO)}`)
       }
-      if(message.value.gt(ZERO)){
+      if (message.value.gt(ZERO)) {
         await this._reduceSenderBalance(account, message)
       }
     }
@@ -257,18 +255,17 @@ export default class EVM {
     let errorMessage
     if (!message.delegatecall) {
       try {
-
         //SHARDEUM FORK:
         //APF: only add to balance it there will be a change in balance.
         //it does not appear that this could mess up a payable endpoint
         //TODO: need to review if this breaks functionality of createing an EOA via 0 balance transfer...
         //if it did break that would it matter?
         if (ShardeumFlags.VerboseLogs) {
-            const to = message.to ? message.to.toString() : ''
-            const value = message.value ? message.value.toString() : 0
-            console.log(`add balance: ${to} ${value} skip: ${message.value.lte(ZERO)}`)
+          const to = message.to ? message.to.toString() : ''
+          const value = message.value ? message.value.toString() : 0
+          console.log(`add balance: ${to} ${value} skip: ${message.value.lte(ZERO)}`)
         }
-        if(message.value.gt(ZERO)){
+        if (message.value.gt(ZERO)) {
           await this._addToBalance(toAccount, message)
         }
       } catch (e: any) {
@@ -303,21 +300,10 @@ export default class EVM {
     }
 
     let result: ExecResult
-    if (message.isCompiled) {
-      if (this._vm.DEBUG) {
-        debug(`Run precompile`)
-      }
-      result = await this.runPrecompile(
-        message.code as PrecompileFunc,
-        message.data,
-        message.gasLimit
-      )
-    } else {
-      if (this._vm.DEBUG) {
-        debug(`Start bytecode processing...`)
-      }
-      result = await this.runInterpreter(message)
+    if (this._vm.DEBUG) {
+      debug(`Start bytecode processing...`)
     }
+    result = await this.runInterpreter(message)
 
     return {
       gasUsed: result.gasUsed,
@@ -427,9 +413,7 @@ export default class EVM {
     let totalGas = result.gasUsed
     let returnFee = new BN(0)
     if (!result.exceptionError) {
-      returnFee = new BN(result.returnValue.length).imuln(
-        this._vm._common.param('gasPrices', 'createData')
-      )
+      returnFee = new BN(result.returnValue.length).imuln(this._vm._common.param('gasPrices', 'createData'))
       totalGas = totalGas.add(returnFee)
       if (this._vm.DEBUG) {
         debugGas(`Add return value size fee (${returnFee} to gas used (-> ${totalGas}))`)
@@ -448,10 +432,7 @@ export default class EVM {
 
     // If enough gas and allowed code size
     let CodestoreOOG = false
-    if (
-      totalGas.lte(message.gasLimit) &&
-      (this._vm._allowUnlimitedContractSize || allowedCodeSize)
-    ) {
+    if (totalGas.lte(message.gasLimit) && (this._vm._allowUnlimitedContractSize || allowedCodeSize)) {
       if (this._vm._common.isActivatedEIP(3541) && result.returnValue[0] === eof.FORMAT) {
         if (!this._vm._common.isActivatedEIP(3540)) {
           result = { ...result, ...INVALID_BYTECODE_RESULT(message.gasLimit) }
@@ -471,9 +452,7 @@ export default class EVM {
           // index 7 (if no data section is present) or index 10 (if a data section is present)
           // in the bytecode of the contract
           if (
-            !eof.validOpcodes(
-              result.returnValue.slice(codeStart, codeStart + eof1CodeAnalysisResults.code)
-            )
+            !eof.validOpcodes(result.returnValue.slice(codeStart, codeStart + eof1CodeAnalysisResults.code))
           ) {
             result = {
               ...result,
@@ -593,46 +572,10 @@ export default class EVM {
     }
   }
 
-  /**
-   * Returns code for precompile at the given address, or undefined
-   * if no such precompile exists.
-   */
-  getPrecompile(address: Address): PrecompileFunc {
-    return getPrecompile(address, this._vm._common)
-  }
-
-  /**
-   * Executes a precompiled contract with given data and gas limit.
-   */
-  runPrecompile(
-    code: PrecompileFunc,
-    data: Buffer,
-    gasLimit: BN
-  ): Promise<ExecResult> | ExecResult {
-    if (typeof code !== 'function') {
-      throw new Error('Invalid precompile')
-    }
-
-    const opts = {
-      data,
-      gasLimit,
-      _common: this._vm._common,
-      _VM: this._vm,
-    }
-
-    return code(opts)
-  }
-
   async _loadCode(message: Message): Promise<void> {
     if (!message.code) {
-      const precompile = this.getPrecompile(message.codeAddress)
-      if (precompile) {
-        message.code = precompile
-        message.isCompiled = true
-      } else {
-        message.code = await this._state.getContractCode(message.codeAddress)
-        message.isCompiled = false
-      }
+      message.code = await this._state.getContractCode(message.codeAddress)
+      message.isCompiled = false
     }
   }
 

@@ -3,7 +3,6 @@ import Common, { Chain, Hardfork } from '@ethereumjs/common'
 import { AccessList, AccessListItem } from '@ethereumjs/tx'
 import { debug as createDebugLogger, Debugger } from 'debug'
 import { Account, Address, toBuffer } from 'ethereumjs-util'
-import { getActivePrecompiles, ripemdPrecompileAddress } from '../evm/precompiles'
 import Cache from './cache'
 import { DefaultStateManagerOpts } from './stateManager'
 
@@ -265,13 +264,7 @@ export abstract class BaseStateManager {
     if (!touched) {
       throw new Error('Reverting to invalid state checkpoint failed')
     }
-    // Exceptional case due to consensus issue in Geth and Parity.
-    // See [EIP issue #716](https://github.com/ethereum/EIPs/issues/716) for context.
-    // The RIPEMD precompile has to remain *touched* even when the call reverts,
-    // and be considered for deletion.
-    if (this._touched.has(ripemdPrecompileAddress)) {
-      touched.add(ripemdPrecompileAddress)
-    }
+
     this._touched = touched
     this._checkpointCount--
 
@@ -477,13 +470,12 @@ export abstract class BaseStateManager {
     const accessList: AccessList = []
     folded.forEach((slots, addressStr) => {
       const address = Address.fromString(`0x${addressStr}`)
-      const check1 = getActivePrecompiles(this._common).find(a => a.equals(address))
-      const check2 = addressesRemoved.find(a => a.equals(address))
-      const check3 = addressesOnlyStorage.find(a => a.equals(address)) !== undefined && slots.size === 0
+      const check2 = addressesRemoved.find((a) => a.equals(address))
+      const check3 = addressesOnlyStorage.find((a) => a.equals(address)) !== undefined && slots.size === 0
 
-      if (!check1 && !check2 && !check3) {
+      if (!check2 && !check3) {
         const storageSlots = Array.from(slots)
-          .map(s => `0x${s}`)
+          .map((s) => `0x${s}`)
           .sort()
         const accessListItem: AccessListItem = {
           address: `0x${addressStr}`,

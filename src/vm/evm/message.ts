@@ -1,5 +1,4 @@
 import { Address, BN } from 'ethereumjs-util'
-import { PrecompileFunc } from './precompiles'
 
 export default class Message {
   to: Address
@@ -8,7 +7,7 @@ export default class Message {
   gasLimit: BN
   data: Buffer
   depth: number
-  code: Buffer | PrecompileFunc
+  code: Buffer
   _codeAddress: Address
   isStatic: boolean
   isCompiled: boolean
