@@ -25,7 +25,7 @@ export interface RunCallOpts {
   compiled?: boolean
   static?: boolean
   salt?: Buffer
-  selfdestruct?: { [k: string]: boolean }
+  selfdestruct?: { [k: string]: Buffer } | { [k: string]: boolean }
   delegatecall?: boolean
 }
 
@@ -35,10 +35,7 @@ export interface RunCallOpts {
 export default function runCall(this: VM, opts: RunCallOpts): Promise<EVMResult> {
   const block = opts.block ?? Block.fromBlockData({}, { common: this._common })
 
-  const txContext = new TxContext(
-    opts.gasPrice ?? new BN(0),
-    opts.origin ?? opts.caller ?? Address.zero()
-  )
+  const txContext = new TxContext(opts.gasPrice ?? new BN(0), opts.origin ?? opts.caller ?? Address.zero())
 
   const message = new Message({
     caller: opts.caller,

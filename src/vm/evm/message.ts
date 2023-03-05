@@ -12,10 +12,28 @@ export default class Message {
   isStatic: boolean
   isCompiled: boolean
   salt: Buffer
+  // This is part of the confusion between ShardeumVM and VM
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   selfdestruct: any
   delegatecall: boolean
 
-  constructor(opts: any) {
+  constructor(opts: {
+    caller: Address
+    gasLimit: BN
+    to?: Address
+    value: BN
+    data: Buffer
+    isStatic?: boolean
+    depth?: number
+    codeAddress?: Address
+    delegatecall?: boolean
+    salt?: Buffer
+    // This is part of the confusion between ShardeumVM and VM
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    selfdestruct?: any
+    code?: Buffer
+    isCompiled?: boolean
+  }) {
     this.to = opts.to
     this.value = opts.value ? opts.value : new BN(0)
     this.caller = opts.caller

@@ -58,6 +58,9 @@ export interface InterpreterStep {
  * Parses and executes EVM bytecode.
  */
 export default class Interpreter {
+  // TODO remove this any
+  // _vm seems to jump between VM and ShardeumVM? I don't know what's going on here.
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   _vm: any
   _state: StateManager
   _runState: RunState
@@ -66,6 +69,9 @@ export default class Interpreter {
   // Opcode debuggers (e.g. { 'push': [debug Object], 'sstore': [debug Object], ...})
   private opDebuggers: { [key: string]: (debug: string) => void } = {}
 
+  // TODO remove this any
+  // same as above. This is smelly
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   constructor(vm: any, eei: EEI) {
     this._vm = vm
     this._state = vm.stateManager
@@ -247,7 +253,7 @@ export default class Interpreter {
     if (this._vm.DEBUG) {
       // Create opTrace for debug functionality
       let hexStack = []
-      hexStack = eventObj.stack.map((item: any) => {
+      hexStack = eventObj.stack.map((item) => {
         return '0x' + new BN(item).toString(16, 0)
       })
 
@@ -263,8 +269,10 @@ export default class Interpreter {
       }
 
       if (!(name in this.opDebuggers)) {
+        // eslint-disable-next-line security/detect-object-injection
         this.opDebuggers[name] = createDebugLogger(`vm:ops:${name}`)
       }
+      // eslint-disable-next-line security/detect-object-injection
       this.opDebuggers[name](JSON.stringify(opTrace))
     }
 

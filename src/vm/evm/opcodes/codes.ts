@@ -310,6 +310,8 @@ type OpcodeContext = {
  * @returns {OpcodeList} Opcodes dictionary object.
  */
 export function getOpcodesForHF(common: Common, customOpcodes?: CustomOpcode[]): OpcodeContext {
+  // TODO: fix this. This smells bad. Punting for now
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   let opcodeBuilder: any = { ...opcodes }
 
   const handlersCopy = new Map(handlers)
@@ -338,17 +340,16 @@ export function getOpcodesForHF(common: Common, customOpcodes?: CustomOpcode[]):
   }
 
   if (customOpcodes) {
-    for (const _code of customOpcodes) {
-      const code = <any>_code
-      if (code.logicFunction === undefined) {
+    for (const code of customOpcodes) {
+      if (!('logicFunction' in code)) {
         delete opcodeBuilder[code.opcode]
         continue
       }
 
       // Sanity checks
-      if (code.opcodeName === undefined || code.baseFee === undefined) {
+      if (!('opcodeName' in code) || !('baseFee' in code)) {
         throw new Error(
-          `Custom opcode ${code.opcode} does not have the required values: opcodeName and baseFee are required`
+          `Custom opcode ${code} does not have the required values: opcodeName and baseFee are required`
         )
       }
       const entry = {

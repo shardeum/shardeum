@@ -131,6 +131,9 @@ export function VmErrorResult(error: VmError, gasUsed: BN): ExecResult {
  * @ignore
  */
 export default class EVM {
+  // TODO remove this any
+  // _vm seems to jump between VM and ShardeumVM? I don't know what's going on here.
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   _vm: any
   _state: StateManager
   _tx: TxContext
@@ -140,6 +143,9 @@ export default class EVM {
    */
   _refund: BN
 
+  // TODO remove this any
+  // same as above. This is smelly
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   constructor(vm: any, txContext: TxContext, block: Block) {
     this._vm = vm
     this._state = this._vm.stateManager
@@ -155,11 +161,6 @@ export default class EVM {
    */
   async executeMessage(message: Message): Promise<EVMResult> {
     await this._vm._emit('beforeMessage', message)
-
-    if (!message.to && this._vm._common.isActivatedEIP(2929)) {
-      message.code = message.data
-      ;(<any>this._state).addWarmedAddress((await this._generateAddress(message)).buf)
-    }
 
     const oldRefund = this._refund.clone()
 
@@ -299,11 +300,10 @@ export default class EVM {
       }
     }
 
-    let result: ExecResult
     if (this._vm.DEBUG) {
       debug(`Start bytecode processing...`)
     }
-    result = await this.runInterpreter(message)
+    const result: ExecResult = await this.runInterpreter(message)
 
     return {
       gasUsed: result.gasUsed,

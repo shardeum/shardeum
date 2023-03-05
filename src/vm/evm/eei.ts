@@ -554,8 +554,7 @@ export default class EEI {
     // Set return value
     if (
       results.execResult.returnValue &&
-      (!results.execResult.exceptionError ||
-        results.execResult.exceptionError.error === ERROR.REVERT)
+      (!results.execResult.exceptionError || results.execResult.exceptionError.error === ERROR.REVERT)
     ) {
       this._lastReturned = results.execResult.returnValue
     }
@@ -620,10 +619,7 @@ export default class EEI {
     this.useGas(results.gasUsed, 'CREATE')
 
     // Set return buffer in case revert happened
-    if (
-      results.execResult.exceptionError &&
-      results.execResult.exceptionError.error === ERROR.REVERT
-    ) {
+    if (results.execResult.exceptionError && results.execResult.exceptionError.error === ERROR.REVERT) {
       this._lastReturned = results.execResult.returnValue
     }
 

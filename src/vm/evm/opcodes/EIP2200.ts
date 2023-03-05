@@ -2,7 +2,6 @@ import Common from '@ethereumjs/common'
 import { BN } from 'ethereumjs-util'
 import { RunState } from './../interpreter'
 import { ERROR } from '../../exceptions'
-import { adjustSstoreGasEIP2929 } from './EIP2929'
 import { trap } from './util'
 
 /**
@@ -27,11 +26,6 @@ export function updateSstoreGasEIP2200(
     trap(ERROR.OUT_OF_GAS)
   }
 
-  // Noop
-  if (currentStorage.equals(value)) {
-    const sstoreNoopCost = new BN(common.param('gasPrices', 'sstoreNoopGasEIP2200'))
-    return adjustSstoreGasEIP2929(runState, key, sstoreNoopCost, 'noop', common)
-  }
   if (originalStorage.equals(currentStorage)) {
     // Create slot
     if (originalStorage.length === 0) {
@@ -59,23 +53,6 @@ export function updateSstoreGasEIP2200(
       runState.eei.refundGas(
         new BN(common.param('gasPrices', 'sstoreClearRefundEIP2200')),
         'EIP-2200 -> sstoreClearRefundEIP2200'
-      )
-    }
-  }
-  if (originalStorage.equals(value)) {
-    if (originalStorage.length === 0) {
-      // Reset to original non-existent slot
-      const sstoreInitRefund = new BN(common.param('gasPrices', 'sstoreInitRefundEIP2200'))
-      runState.eei.refundGas(
-        adjustSstoreGasEIP2929(runState, key, sstoreInitRefund, 'initRefund', common),
-        'EIP-2200 -> initRefund'
-      )
-    } else {
-      // Reset to original existing slot
-      const sstoreCleanRefund = new BN(common.param('gasPrices', 'sstoreCleanRefundEIP2200'))
-      runState.eei.refundGas(
-        adjustSstoreGasEIP2929(runState, key, sstoreCleanRefund, 'cleanRefund', common),
-        'EIP-2200 -> cleanRefund'
       )
     }
   }

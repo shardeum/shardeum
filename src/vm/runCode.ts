@@ -56,7 +56,7 @@ export interface RunCodeOpts {
   value?: BN
   depth?: number
   isStatic?: boolean
-  selfdestruct?: { [k: string]: boolean }
+  selfdestruct?: { [k: string]: Buffer }
   /**
    * The address of the account that is executing this code (`address(this)`). Defaults to the zero address.
    */
@@ -75,8 +75,7 @@ export default function runCode(this: VM, opts: RunCodeOpts): Promise<ExecResult
 
   // Backwards compatibility
   const txContext =
-    opts.txContext ??
-    new TxContext(opts.gasPrice ?? new BN(0), opts.origin ?? opts.caller ?? Address.zero())
+    opts.txContext ?? new TxContext(opts.gasPrice ?? new BN(0), opts.origin ?? opts.caller ?? Address.zero())
 
   const message =
     opts.message ??
