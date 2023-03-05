@@ -1,4 +1,4 @@
-import { Account, Address, bufferToHex, keccak256, KECCAK256_NULL, rlp, unpadBuffer } from 'ethereumjs-util'
+import { Account, Address, keccak256, KECCAK256_NULL, rlp, unpadBuffer } from 'ethereumjs-util'
 import { SecureTrie as Trie } from 'merkle-patricia-tree'
 import { ShardeumState } from '.'
 import { ShardeumFlags } from '../shardeum/shardeumFlags'
@@ -95,7 +95,7 @@ export default class TransactionState {
 
   checkpointCount: number
 
-  appData: any
+  appData: unknown
 
   // callbacks
   accountMissCB: accountEvent
