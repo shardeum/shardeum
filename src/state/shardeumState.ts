@@ -361,21 +361,6 @@ export default class ShardeumState implements StateManager {
   }
 
   /**
-   * Modifies the storage trie of an account.
-   * @private
-   * @param address -  Address of the account whose storage is to be modified
-   * @param modifyTrie - Function to modify the storage trie of the account
-   */
-  async _modifyContractStorage(
-    address: Address,
-    modifyTrie: (storageTrie: Trie, done: Function) => void
-  ): Promise<void> {
-    if (ShardeumFlags.SaveEVMTries === false) {
-      throw new Error('_modifyContractStorage depricated')
-    }
-  }
-
-  /**
    * Adds value to the state trie for the `account`
    * corresponding to `address` at the provided `key`.
    * @param address -  Address to set a storage value for
@@ -407,17 +392,8 @@ export default class ShardeumState implements StateManager {
    * Clears all storage entries for the account corresponding to `address`.
    * @param address -  Address to clear the storage of
    */
-  async clearContractStorage(address: Address): Promise<void> {
-    if (ShardeumFlags.SaveEVMTries === false) {
-      //throw new Error('todo implement update to clearContractStorage ')
-      return
-    } else {
-      //I am not convinced this was safe to do before.  I think it was an oversight/unfinished
-      await this._modifyContractStorage(address, (storageTrie, done) => {
-        storageTrie.root = storageTrie.EMPTY_TRIE_ROOT
-        done()
-      })
-    }
+  async clearContractStorage(): Promise<void> {
+    /* empty */
   }
 
   /**
@@ -523,7 +499,7 @@ export default class ShardeumState implements StateManager {
    * the state trie.
    * @param stateRoot - The state-root to reset the instance to
    */
-  async setStateRoot(stateRoot: Buffer): Promise<void> {
+  async setStateRoot(): Promise<void> {
     if (ShardeumFlags.SaveEVMTries === false) {
       //should not need this when we use runTX and no blocks
       return
@@ -537,27 +513,12 @@ export default class ShardeumState implements StateManager {
    * Keys are are the storage keys, values are the storage values as strings.
    * Both are represented as hex strings without the `0x` prefix.
    */
-  async dumpStorage(address: Address): Promise<StorageDump> {
+  async dumpStorage(): Promise<StorageDump> {
     if (ShardeumFlags.SaveEVMTries === false) {
       // this was kinda nice. looks like we are loosing a way to find all of the storage for a single contract.
       //    ...would that be crazy to add to a relational DB.  After all this is just debugging stuff here
       return { result: 'no storage when SaveEVMTries === false' }
     }
-  }
-
-  /**
-   * Get the key value pairs for a contract account, use this when syncing once we eventually flush the in memory account wrappers
-   *
-   * @param address
-   * @returns
-   */
-  async getContractAccountKVPs(address: Address): Promise<StorageDump> {
-    if (ShardeumFlags.SaveEVMTries === false) {
-      // this was our function, and looks like we dont need it.
-      // the idea was to sync all of the contract storage for a certain contract account
-      throw new Error('getContractAccountKVPs not valid when SaveEVMTries === false')
-    }
-    return undefined
   }
 
   /**
@@ -589,7 +550,7 @@ export default class ShardeumState implements StateManager {
    * Initializes the provided genesis state into the state trie
    * @param initState address -> balance | [balance, code, storage]
    */
-  async generateGenesis(initState: any): Promise<void> {
+  async generateGenesis(): Promise<void> {
     //only matters if running a blockchain
     throw new Error('generateGenesis not valid because we dont run an ethjs blockchain')
   }
