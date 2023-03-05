@@ -166,6 +166,7 @@ export default class DefaultStateManager extends BaseStateManager implements Sta
   async _getStorageTrie(address: Address): Promise<Trie> {
     // from storage cache
     const addressHex = address.buf.toString('hex')
+    // eslint-disable-next-line security/detect-object-injection
     let storageTrie = this._storageTries[addressHex]
     if (!storageTrie) {
       // lookup from state
@@ -202,7 +203,7 @@ export default class DefaultStateManager extends BaseStateManager implements Sta
    */
   async _modifyContractStorage(
     address: Address,
-    modifyTrie: (storageTrie: Trie, done: Function) => void
+    modifyTrie: (storageTrie: Trie, done: () => void) => void
   ): Promise<void> {
     // eslint-disable-next-line no-async-promise-executor
     return new Promise(async (resolve) => {
@@ -211,6 +212,7 @@ export default class DefaultStateManager extends BaseStateManager implements Sta
       modifyTrie(storageTrie, async () => {
         // update storage cache
         const addressHex = address.buf.toString('hex')
+        // eslint-disable-next-line security/detect-object-injection
         this._storageTries[addressHex] = storageTrie
 
         // update contract stateRoot
@@ -310,8 +312,8 @@ export default class DefaultStateManager extends BaseStateManager implements Sta
    */
   async getProof(address: Address, storageSlots: Buffer[] = []): Promise<Proof> {
     const account = await this.getAccount(address)
-    const accountProof: PrefixedHexString[] = (await Trie.createProof(this._trie, address.buf)).map(
-      (p) => bufferToHex(p)
+    const accountProof: PrefixedHexString[] = (await Trie.createProof(this._trie, address.buf)).map((p) =>
+      bufferToHex(p)
     )
     const storageProof: StorageProof[] = []
     const storageTrie = await this._getStorageTrie(address)
@@ -349,9 +351,7 @@ export default class DefaultStateManager extends BaseStateManager implements Sta
   async verifyProof(proof: Proof): Promise<boolean> {
     const rootHash = keccak256(toBuffer(proof.accountProof[0]))
     const key = toBuffer(proof.address)
-    const accountProof = proof.accountProof.map((rlpString: PrefixedHexString) =>
-      toBuffer(rlpString)
-    )
+    const accountProof = proof.accountProof.map((rlpString: PrefixedHexString) => toBuffer(rlpString))
 
     // This returns the account if the proof is valid.
     // Verify that it matches the reported account.
@@ -462,7 +462,7 @@ export default class DefaultStateManager extends BaseStateManager implements Sta
           const storage: StorageDump = {}
           const stream = trie.createReadStream()
 
-          stream.on('data', (val: any) => {
+          stream.on('data', (val: { key: Buffer; value: Buffer }) => {
             storage[val.key.toString('hex')] = val.value.toString('hex')
           })
           stream.on('end', () => {
@@ -493,7 +493,7 @@ export default class DefaultStateManager extends BaseStateManager implements Sta
    */
   async accountExists(address: Address): Promise<boolean> {
     const account = this._cache.lookup(address)
-    if (account && !(account as any).virtual && !this._cache.keyIsDeleted(address)) {
+    if (account && !account.virtual && !this._cache.keyIsDeleted(address)) {
       return true
     }
     if (await this._trie.get(address.buf)) {

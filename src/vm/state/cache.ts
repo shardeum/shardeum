@@ -1,5 +1,5 @@
 import { Account, Address } from 'ethereumjs-util'
-const Tree = require('functional-red-black-tree')
+import Tree from 'functional-red-black-tree'
 
 export type getCb = (address: Address) => Promise<Account | undefined>
 export type putCb = (keyBuf: Buffer, accountRlp: Buffer) => Promise<void>
@@ -15,8 +15,8 @@ export interface CacheOpts {
  * @ignore
  */
 export default class Cache {
-  _cache: any
-  _checkpoints: any[]
+  _cache: Tree
+  _checkpoints: Tree[]
 
   _getCb: getCb
   _putCb: putCb
@@ -60,7 +60,7 @@ export default class Cache {
     if (it.node) {
       const rlp = it.value.val
       const account = Account.fromRlpSerializedAccount(rlp)
-      ;(account as any).virtual = it.value.virtual
+      account.virtual = it.value.virtual
       return account
     }
   }
@@ -92,7 +92,7 @@ export default class Cache {
         this._update(address, account, false, false, false)
       } else {
         account = new Account()
-        ;(account as any).virtual = true
+        account.virtual = true
         this._update(address, account, false, false, true)
       }
     }
@@ -177,13 +177,7 @@ export default class Cache {
    * @param deleted - Delete operation on an account
    * @param virtual - Account doesn't exist in the underlying trie
    */
-  _update(
-    key: Address,
-    value: Account,
-    modified: boolean,
-    deleted: boolean,
-    virtual = false
-  ): void {
+  _update(key: Address, value: Account, modified: boolean, deleted: boolean, virtual = false): void {
     const keyHex = key.buf.toString('hex')
     const it = this._cache.find(keyHex)
     const val = value.serialize()

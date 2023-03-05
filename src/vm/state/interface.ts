@@ -1,6 +1,7 @@
 import { Account, Address } from 'ethereumjs-util'
 import { AccessList } from '@ethereumjs/tx'
 import { Proof } from './stateManager'
+import { GenesisState } from '@ethereumjs/common/dist/types'
 
 /**
  * Storage values of an account
@@ -29,7 +30,7 @@ export interface StateManager {
   dumpStorage(address: Address): Promise<StorageDump>
   hasGenesisState(): Promise<boolean>
   generateCanonicalGenesis(): Promise<void>
-  generateGenesis(initState: any): Promise<void>
+  generateGenesis(initState: GenesisState): Promise<void>
   accountIsEmpty(address: Address): Promise<boolean>
   accountExists(address: Address): Promise<boolean>
   cleanupTouchedAccounts(): Promise<void>

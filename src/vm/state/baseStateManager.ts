@@ -1,10 +1,11 @@
-const Set = require('core-js-pure/es/set')
+import Set from 'core-js-pure/es/set'
 import Common, { Chain, Hardfork } from '@ethereumjs/common'
 import { AccessList, AccessListItem } from '@ethereumjs/tx'
 import { debug as createDebugLogger, Debugger } from 'debug'
 import { Account, Address, toBuffer } from 'ethereumjs-util'
 import Cache from './cache'
 import { DefaultStateManagerOpts } from './stateManager'
+import { GenesisState } from '@ethereumjs/common/dist/types'
 
 type AddressHex = string
 
@@ -296,7 +297,7 @@ export abstract class BaseStateManager {
    * Initializes the provided genesis state into the state trie
    * @param initState address -> balance | [balance, code, storage]
    */
-  async generateGenesis(initState: any): Promise<void> {
+  async generateGenesis(initState: GenesisState): Promise<void> {
     if (this._checkpointCount !== 0) {
       throw new Error('Cannot create genesis state with uncommitted checkpoints')
     }
@@ -307,6 +308,7 @@ export abstract class BaseStateManager {
     const addresses = Object.keys(initState)
     for (const address of addresses) {
       const addr = Address.fromString(address)
+      // eslint-disable-next-line security/detect-object-injection
       const state = initState[address]
       if (!Array.isArray(state)) {
         // Prior format: address -> balance
@@ -347,7 +349,7 @@ export abstract class BaseStateManager {
    */
   async cleanupTouchedAccounts(): Promise<void> {
     if (this._common.gteHardfork('spuriousDragon')) {
-      const touchedArray = Array.from(this._touched)
+      const touchedArray = Array.from<string>(this._touched)
       for (const addressHex of touchedArray) {
         const address = new Address(Buffer.from(addressHex, 'hex'))
         const empty = await this.accountIsEmpty(address)
@@ -372,6 +374,7 @@ export abstract class BaseStateManager {
    */
   isWarmedAddress(address: Buffer): boolean {
     for (let i = this._accessedStorage.length - 1; i >= 0; i--) {
+      // eslint-disable-next-line security/detect-object-injection
       const currentMap = this._accessedStorage[i]
       if (currentMap.has(address.toString('hex'))) {
         return true
@@ -403,6 +406,7 @@ export abstract class BaseStateManager {
     const storageKey = slot.toString('hex')
 
     for (let i = this._accessedStorage.length - 1; i >= 0; i--) {
+      // eslint-disable-next-line security/detect-object-injection
       const currentMap = this._accessedStorage[i]
       if (currentMap.has(addressKey) && currentMap.get(addressKey)!.has(storageKey)) {
         return true
