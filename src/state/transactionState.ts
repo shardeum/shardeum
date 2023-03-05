@@ -1,7 +1,7 @@
 import { Account, Address, bufferToHex, keccak256, KECCAK256_NULL, rlp, unpadBuffer } from 'ethereumjs-util'
 import { SecureTrie as Trie } from 'merkle-patricia-tree'
 import { ShardeumState } from '.'
-import {ShardeumFlags} from '../shardeum/shardeumFlags'
+import { ShardeumFlags } from '../shardeum/shardeumFlags'
 import { zeroAddressAccount, zeroAddressStr } from '../utils'
 import * as AccountsStorage from '../storage/accountStorage'
 import { AccountType, WrappedEVMAccount } from '../shardeum/shardeumTypes'
@@ -28,12 +28,7 @@ export type getAccountEvent = (
   key: string
 ) => Promise<WrappedEVMAccount>
 
-export type monitorEvent = (
-  category: string,
-  name: string,
-  count: number,
-  message: string
-) => void
+export type monitorEvent = (category: string, name: string, count: number, message: string) => void
 
 export interface ShardeumStorageCallbacks {
   storageMiss: accountEvent
@@ -87,7 +82,7 @@ export default class TransactionState {
 
   // pending contract storage commits
   pendingContractStorageCommits: Map<string, Map<string, Buffer>>
-  pendingContractBytesCommits: Map<string, Map<string, any>>
+  pendingContractBytesCommits: Map<string, Map<string, WrappedEVMAccount>>
 
   tryRemoteHistory: TryRemoteAccountHistory
 
@@ -129,7 +124,7 @@ export default class TransactionState {
     this.tryRemoteHistory = {
       account: [],
       storage: [],
-      codeBytes: []
+      codeBytes: [],
     }
 
     this.touchedCAs = new Set()
@@ -142,7 +137,7 @@ export default class TransactionState {
     callbacks: ShardeumStorageCallbacks,
     linkedTX,
     firstReads: Map<string, Buffer>,
-    firstContractStorageReads: Map<string, Map<string, Buffer>>,
+    firstContractStorageReads: Map<string, Map<string, Buffer>>
   ) {
     this.createdTimestamp = Date.now()
 
@@ -176,7 +171,7 @@ export default class TransactionState {
     this.tryRemoteHistory = {
       account: [],
       storage: [],
-      codeBytes: []
+      codeBytes: [],
     }
 
     this.touchedCAs = new Set()
@@ -244,10 +239,7 @@ export default class TransactionState {
     //hmm some hacks to fix data after getting copied around..
     if (typeof account.nonce === 'string') {
       //account.nonce = new BN(account.nonce)
-
-      //@ts-ignore
       if (account.nonce.startsWith('0x') === false) {
-        //@ts-ignore
         account.nonce = '0x' + account.nonce
       }
     }
@@ -256,9 +248,7 @@ export default class TransactionState {
     // }
     if (typeof account.balance === 'string') {
       //account.balance = new BN( account.balance, 'hex')
-      //@ts-ignore
       if (account.balance.startsWith('0x') === false) {
-        //@ts-ignore
         account.balance = '0x' + account.balance
       }
       this.fixAccountBuffers(account)
@@ -321,7 +311,7 @@ export default class TransactionState {
       if (this.pendingContractBytesCommits.has(addressString)) {
         const contractBytesCommits = this.pendingContractBytesCommits.get(addressString)
 
-        for (const [key, contractByteWrite] of contractBytesCommits) {
+        for (const [, contractByteWrite] of contractBytesCommits) {
           const codeHash = contractByteWrite.codeHash
           const codeByte = contractByteWrite.codeByte
           if (ShardeumFlags.VerboseLogs)
@@ -376,7 +366,14 @@ export default class TransactionState {
       if (this.pendingContractBytesCommits.has(contractAddress)) {
         const contractBytesCommit = this.pendingContractBytesCommits.get(contractAddress)
         if (contractBytesCommit.has(codeHash.toString('hex'))) {
-          contractBytesCommit.set(codeHash.toString('hex'), { codeHash, codeByte: contractByte })
+          contractBytesCommit.set(codeHash.toString('hex'), {
+            codeHash,
+            codeByte: contractByte,
+            ethAddress: '',
+            hash: '',
+            timestamp: 0,
+            accountType: AccountType.Account,
+          })
         }
       } else {
         const contractBytesCommit = new Map()
@@ -443,6 +440,7 @@ export default class TransactionState {
       //check stack for changes next.  from newest to oldest
       //new changes are pushed to the end of the array
       for (let i = this.allAccountWritesStack.length - 1; i >= 0; i--) {
+        // eslint-disable-next-line security/detect-object-injection
         const accountWrites = this.allAccountWritesStack[i]
         if (accountWrites.has(addressString)) {
           const storedRlp = accountWrites.get(addressString)
@@ -518,7 +516,12 @@ export default class TransactionState {
     //attempt to get data from tryGetRemoteAccountCB
     //this can be a long wait only suitable in some cases
     if (account == undefined) {
-      const wrappedEVMAccount = await this.tryGetRemoteAccountCB(this, AccountType.Account, addressString, null)
+      const wrappedEVMAccount = await this.tryGetRemoteAccountCB(
+        this,
+        AccountType.Account,
+        addressString,
+        null
+      )
       if (wrappedEVMAccount != undefined) {
         //get account aout of the wrapped evm account
         account = wrappedEVMAccount.account
@@ -537,7 +540,8 @@ export default class TransactionState {
       // not 100% if we should await this, may need some group discussion
       const isRemoteShard = await this.accountMissCB(this, addressString)
 
-      if (this.debugTrace) this.debugTraceLog(`getAccount: addr:${addressString} v:notFound isRemoteShard:${isRemoteShard}`)
+      if (this.debugTrace)
+        this.debugTraceLog(`getAccount: addr:${addressString} v:notFound isRemoteShard:${isRemoteShard}`)
 
       if (canThrow && isRemoteShard) throw new Error('account in remote shard, abort') //todo smarter throw?
 
@@ -547,7 +551,10 @@ export default class TransactionState {
       //this._update(address, account, false, false, true)
 
       //todo need to insert it into a map of new / virtual accounts?
-      if (this.debugTrace) this.debugTraceLog(`getAccount: initialized new account addr:${addressString} v:${JSON.stringify(account)}`)
+      if (this.debugTrace)
+        this.debugTraceLog(
+          `getAccount: initialized new account addr:${addressString} v:${JSON.stringify(account)}`
+        )
 
       return account
     }
@@ -675,7 +682,11 @@ export default class TransactionState {
       //throw new Error('get from accounts db')
 
       //need: contract address,  code hash  for toShardusAddressWithKey
-      const bytesShardusAddress = toShardusAddressWithKey(addressString, codeHashStr, AccountType.ContractCode)
+      const bytesShardusAddress = toShardusAddressWithKey(
+        addressString,
+        codeHashStr,
+        AccountType.ContractCode
+      )
       const wrappedAccount = await AccountsStorage.getAccount(bytesShardusAddress)
       if (wrappedAccount != null) {
         fixDeserializedWrappedEVMAccount(wrappedAccount)
@@ -981,14 +992,14 @@ export default class TransactionState {
     //This gathered set of paths to the updated trie leafs could then be used by remote code to recalculate the CA final root even as
   }
 
-  async deleteAccount(address: Address) {
-    //TODO have a decent amount of investigation to figure out the right way to handle account deletion
-    // if (this.DEBUG) {
-    //   debug(`Delete account ${address}`)
-    // }
-    // this._cache.del(address)
-    // this.touchAccount(address)
-  }
+  //async deleteAccount(address: Address) {
+  //TODO have a decent amount of investigation to figure out the right way to handle account deletion
+  // if (this.DEBUG) {
+  //   debug(`Delete account ${address}`)
+  // }
+  // this._cache.del(address)
+  // this.touchAccount(address)
+  //}
 
   debugTraceLog(message: string) {
     if (ShardeumFlags.VerboseLogs) console.log(`DBG:${this.linkedTX} msg:${message}`)
@@ -1094,12 +1105,20 @@ export default class TransactionState {
       //this.flushToCommittedValues()
     }
 
-    if(ShardeumFlags.VerboseLogs){
+    if (ShardeumFlags.VerboseLogs) {
       // monitor counts the last tried remote accounts
-      const lastAccountTryRemote = this.tryRemoteHistory.account.length > 0 ? this.tryRemoteHistory.account[this.tryRemoteHistory.account.length - 1] : null
-      const lastStorageTryRemote = this.tryRemoteHistory.storage.length > 0 ? this.tryRemoteHistory.storage[this.tryRemoteHistory.storage.length - 1] : null
-      const lastCodeBytesTryRemote = this.tryRemoteHistory.codeBytes.length > 0 ? this.tryRemoteHistory.codeBytes[this.tryRemoteHistory.codeBytes.length - 1] : null
-
+      const lastAccountTryRemote =
+        this.tryRemoteHistory.account.length > 0
+          ? this.tryRemoteHistory.account[this.tryRemoteHistory.account.length - 1]
+          : null
+      const lastStorageTryRemote =
+        this.tryRemoteHistory.storage.length > 0
+          ? this.tryRemoteHistory.storage[this.tryRemoteHistory.storage.length - 1]
+          : null
+      const lastCodeBytesTryRemote =
+        this.tryRemoteHistory.codeBytes.length > 0
+          ? this.tryRemoteHistory.codeBytes[this.tryRemoteHistory.codeBytes.length - 1]
+          : null
 
       if (lastAccountTryRemote != null) {
         this.monitorEventCB('shardeum', 'eoa_ca inject miss', 1, lastAccountTryRemote)
@@ -1119,6 +1138,7 @@ export default class TransactionState {
     if (allAtOnce) {
       this.committedAccountWrites.clear()
       for (let i = this.allAccountWritesStack.length - 1; i >= 0; i--) {
+        // eslint-disable-next-line security/detect-object-injection
         const accountWrites = this.allAccountWritesStack[i]
         //process all the values in the stack
         for (const [key, value] of accountWrites.entries()) {
@@ -1146,9 +1166,9 @@ export default class TransactionState {
     const resultMap = new Map()
     for (const [key, value] of accountWrites.entries()) {
       const readableAccount: Account = Account.fromRlpSerializedAccount(value)
-      const account: any = {}
-      account.nonce = readableAccount.nonce.toString()
-      account.balance = readableAccount.balance.toString()
+      const account: Account = new Account()
+      account.nonce = readableAccount.nonce
+      account.balance = readableAccount.balance
       resultMap.set(key, account)
     }
     return resultMap
@@ -1162,6 +1182,4 @@ export default class TransactionState {
     }
     return resultStack
   }
-
-
 }
