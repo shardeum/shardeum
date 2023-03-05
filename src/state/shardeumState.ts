@@ -1,25 +1,15 @@
-const Set = require('core-js-pure/es/set')
+import Set from 'core-js-pure/es/set'
 import { debug as createDebugLogger } from 'debug'
 import { SecureTrie as Trie } from 'merkle-patricia-tree'
 import { Account, Address } from 'ethereumjs-util'
 import Common, { Chain, Hardfork } from '@ethereumjs/common'
 import { StateManager, StorageDump } from '@ethereumjs/vm/src/state/interface'
 import TransactionState from './transactionState'
-import {ShardeumFlags} from '../shardeum/shardeumFlags'
+import { ShardeumFlags } from '../shardeum/shardeumFlags'
 
 const debug = createDebugLogger('vm:state')
 
 type AddressHex = string
-
-//SHARDIUM hack.  pulled from '@ethereumjs/vm/src/evm/opcodes' to make things run
-function short(buffer: Buffer): string {
-  const MAX_LENGTH = 50
-  const bufferStr = buffer.toString('hex')
-  if (bufferStr.length <= MAX_LENGTH) {
-    return bufferStr
-  }
-  return bufferStr.slice(0, MAX_LENGTH) + '...'
-}
 
 /**
  * Options for constructing a {@link StateManager}.
@@ -224,7 +214,6 @@ export default class ShardeumState implements StateManager {
    * @param value - The value of the `code`
    */
   async putContractCode(address: Address, value: Buffer): Promise<void> {
-    const account = await this.getAccount(address) //TODO figure out if we need this when ShardeumFlags.SaveEVMTries === false
     //It could be triggering some marking/including of accounts, but that
     //may be moot now.
 
@@ -653,6 +642,7 @@ export default class ShardeumState implements StateManager {
    */
   isWarmedAddress(address: Buffer): boolean {
     for (let i = this._accessedStorage.length - 1; i >= 0; i--) {
+      // eslint-disable-next-line security/detect-object-injection
       const currentMap = this._accessedStorage[i]
       if (currentMap.has(address.toString('hex'))) {
         return true
@@ -684,6 +674,7 @@ export default class ShardeumState implements StateManager {
     const storageKey = slot.toString('hex')
 
     for (let i = this._accessedStorage.length - 1; i >= 0; i--) {
+      // eslint-disable-next-line security/detect-object-injection
       const currentMap = this._accessedStorage[i]
       if (currentMap.has(addressKey) && currentMap.get(addressKey)!.has(storageKey)) {
         return true
@@ -802,40 +793,5 @@ export default class ShardeumState implements StateManager {
     //     }
     //   }
     // }
-  }
-
-  /**
-   * For use by the shardeum Dapp to set account data from syncing
-   */
-  async setAccountExternal(addressString: string, account: Account) {
-    if (ShardeumFlags.SaveEVMTries === false) {
-      // do not need to do this work!
-      return
-    }
-  }
-
-  /**
-   * For use by the shardeum Dapp to set account data from syncing
-   */
-  async setContractAccountKeyValueExternal(
-    stateRoot: Buffer,
-    addressString: string,
-    key: Buffer,
-    value: Buffer
-  ) {
-    if (ShardeumFlags.SaveEVMTries === false) {
-      // do not need to do this work!
-      return
-    }
-  }
-
-  /**
-   * For use by the shardeum Dapp to set account data from syncing
-   */
-  async setContractBytesExternal(codeHash: Buffer, codeByte: Buffer) {
-    if (ShardeumFlags.SaveEVMTries === false) {
-      // do not need to do this work!
-      return
-    }
   }
 }

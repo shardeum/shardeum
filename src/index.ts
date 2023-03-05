@@ -1246,7 +1246,7 @@ shardus.registerExternalPost('contract/call', async (req, res) => {
         //to do convert to timestamp query getAccountTimestamp!!
         caAccount = await AccountsStorage.getAccount(caShardusAddress)
         if (caAccount) {
-          const index = ERC20TokenBalanceMap.findIndex(x => x.to === callObj.to && x.data === callObj.data)
+          const index = ERC20TokenBalanceMap.findIndex((x) => x.to === callObj.to && x.data === callObj.data)
           if (index > -1) {
             const tokenBalanceResult = ERC20TokenBalanceMap[index]
             /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log('Found in the ERC20TokenBalanceMap; index:', index, callObj.to)
@@ -1540,7 +1540,7 @@ shardus.registerExternalGet('system-info', async (req, res) => {
   }
   exec('df -h --total|grep ^total', (err, diskData) => {
     if (!err) {
-      const [_, total, used, available, percent_used] = diskData.split(' ').filter(s => s)
+      const [_, total, used, available, percent_used] = diskData.split(' ').filter((s) => s)
       result = { ...result, disk: { total, used, available, percent_used } }
     }
     res.json(result)
@@ -2180,7 +2180,7 @@ async function generateAccessList(callObj: any): Promise<{ accessList: any[]; sh
         if (contractAddress !== address) continue
         if (!allKeys.has(codeHash)) allKeys.add(codeHash)
       }
-      let accessListItem = [address, Array.from(allKeys).map(key => '0x' + key)]
+      let accessListItem = [address, Array.from(allKeys).map((key) => '0x' + key)]
       accessList.push(accessListItem)
     }
 
@@ -2515,11 +2515,7 @@ shardus.setup({
       let txFee = scaleByStabilityFactor(txFeeUsd, AccountsStorage.cachedNetworkAccount)
       if (ShardeumFlags.VerboseLogs)
         console.log('calculating new balance after unstake', currentBalance, stake, reward, penalty, txFee)
-      let newBalance = currentBalance
-        .add(stake)
-        .add(reward)
-        .sub(penalty)
-        .sub(txFee)
+      let newBalance = currentBalance.add(stake).add(reward).sub(penalty).sub(txFee)
       operatorEVMAccount.account.balance = newBalance
       operatorEVMAccount.account.nonce = operatorEVMAccount.account.nonce.add(new BN('1'))
 
@@ -3043,7 +3039,7 @@ shardus.setup({
             transactionHash: ethTxId,
             transactionIndex: '0x1',
             address: bufferToHex(l[0]),
-            topics: l[1].map(i => bufferToHex(i)),
+            topics: l[1].map((i) => bufferToHex(i)),
             data: bufferToHex(l[2]),
           }
         })
@@ -3232,7 +3228,7 @@ shardus.setup({
             appData.nonce = parseInt(nonce.toString())
             if (queueCountResult.committingAppData.length > 0) {
               let highestCommittingNonce = queueCountResult.committingAppData
-                .map(appData => appData.txNonce)
+                .map((appData) => appData.txNonce)
                 .sort()[0]
               let expectedAccountNonce = highestCommittingNonce + 1
               if (appData.nonce < expectedAccountNonce) appData.nonce = expectedAccountNonce
@@ -3674,8 +3670,6 @@ shardus.setup({
       if (wrappedEVMAccount.accountType === AccountType.Account) {
         let addressString = wrappedEVMAccount.ethAddress
         let evmAccount = wrappedEVMAccount.account
-
-        await shardeumState.setAccountExternal(addressString, evmAccount)
       } else if (wrappedEVMAccount.accountType === AccountType.ContractStorage) {
         let addressString = wrappedEVMAccount.ethAddress
         let key = Buffer.from(wrappedEVMAccount.key, 'hex')
@@ -3704,15 +3698,6 @@ shardus.setup({
         if (contractAccount && contractAccount.account) {
           stateRoot = contractAccount.account.stateRoot
         }
-        //looks like we dont even need state root here
-        await shardeumState.setContractAccountKeyValueExternal(stateRoot, addressString, key, value)
-      } else if (wrappedEVMAccount.accountType === AccountType.ContractCode) {
-        let keyString = wrappedEVMAccount.codeHash
-        let bufferStr = wrappedEVMAccount.codeByte
-
-        shardeumState.setContractBytesExternal(keyString, bufferStr)
-      } else if (wrappedEVMAccount.accountType === AccountType.Receipt) {
-        // looks like we dont need to inject anything into evm stae
       }
     }
   },
@@ -5063,47 +5048,44 @@ if (ShardeumFlags.GlobalNetworkAccount) {
       return setTimeout(networkMaintenance, Math.max(100, cycleInterval - drift))
     }
 
-    shardus.on(
-      'active',
-      async (): Promise<NodeJS.Timeout> => {
-        let latestCycles = shardus.getLatestCycles()
-        if (latestCycles != null && latestCycles.length > 0) {
-          const latestCycle = latestCycles[0]
-          const now = Date.now()
-          const currentCycleStart = (latestCycle.start + latestCycle.duration) * 1000
-          const timeElapsed = now - currentCycleStart
-          const blockProductionRateInSeconds = ShardeumFlags.blockProductionRate * 1000
-          const nextUpdateQuarter = Math.floor(timeElapsed / blockProductionRateInSeconds) + 1
-          const nextUpdateTimestamp = currentCycleStart + nextUpdateQuarter * blockProductionRateInSeconds
-          const waitTime = nextUpdateTimestamp - now
+    shardus.on('active', async (): Promise<NodeJS.Timeout> => {
+      let latestCycles = shardus.getLatestCycles()
+      if (latestCycles != null && latestCycles.length > 0) {
+        const latestCycle = latestCycles[0]
+        const now = Date.now()
+        const currentCycleStart = (latestCycle.start + latestCycle.duration) * 1000
+        const timeElapsed = now - currentCycleStart
+        const blockProductionRateInSeconds = ShardeumFlags.blockProductionRate * 1000
+        const nextUpdateQuarter = Math.floor(timeElapsed / blockProductionRateInSeconds) + 1
+        const nextUpdateTimestamp = currentCycleStart + nextUpdateQuarter * blockProductionRateInSeconds
+        const waitTime = nextUpdateTimestamp - now
 
-          if (ShardeumFlags.VerboseLogs) {
-            console.log('Active timestamp', now)
-            console.log('timeElapsed from cycle start', timeElapsed)
-            console.log('nextUpdateQuarter', nextUpdateQuarter)
-            console.log('nextUpdateTimestamp', nextUpdateTimestamp)
-            console.log('waitTime', waitTime)
-          }
-
-          setTimeout(() => {
-            getOrCreateBlockFromTimestamp(nextUpdateTimestamp, true)
-          }, waitTime)
+        if (ShardeumFlags.VerboseLogs) {
+          console.log('Active timestamp', now)
+          console.log('timeElapsed from cycle start', timeElapsed)
+          console.log('nextUpdateQuarter', nextUpdateQuarter)
+          console.log('nextUpdateTimestamp', nextUpdateTimestamp)
+          console.log('waitTime', waitTime)
         }
 
-        if (shardus.p2p.isFirstSeed) {
-          await sleep(cycleInterval * 2)
-        }
-        lastReward = Date.now()
-
-        shardus.registerCacheTopic(
-          'receipt',
-          ShardeumFlags.cacheMaxCycleAge,
-          ShardeumFlags.cacheMaxItemPerTopic
-        )
-
-        return setTimeout(networkMaintenance, cycleInterval)
+        setTimeout(() => {
+          getOrCreateBlockFromTimestamp(nextUpdateTimestamp, true)
+        }, waitTime)
       }
-    )
+
+      if (shardus.p2p.isFirstSeed) {
+        await sleep(cycleInterval * 2)
+      }
+      lastReward = Date.now()
+
+      shardus.registerCacheTopic(
+        'receipt',
+        ShardeumFlags.cacheMaxCycleAge,
+        ShardeumFlags.cacheMaxItemPerTopic
+      )
+
+      return setTimeout(networkMaintenance, cycleInterval)
+    })
   })()
 } else {
   shardus.start()
