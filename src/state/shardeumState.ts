@@ -260,6 +260,7 @@ export default class ShardeumState implements StateManager {
    * for an account and saves this in the storage cache.
    * @private
    */
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   async _lookupStorageTrie(address: Address): Promise<Trie> {
     throw new Error('_lookupStorageTrie not impl')
   }
@@ -269,6 +270,7 @@ export default class ShardeumState implements StateManager {
    * cache or does a lookup.
    * @private
    */
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   async _getStorageTrie(address: Address): Promise<Trie> {
     throw new Error('_getStorageTrie not impl')
   }
