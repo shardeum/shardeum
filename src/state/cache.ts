@@ -1,5 +1,5 @@
 import { Account, Address } from 'ethereumjs-util'
-const Tree = require('functional-red-black-tree')
+import Tree from 'functional-red-black-tree'
 
 /**
  * Rework needed:
@@ -14,11 +14,11 @@ const Tree = require('functional-red-black-tree')
  * @ignore
  */
 export default class Cache {
-  _cache: any
-  _checkpoints: any[]
-  _trie: any
+  _cache: Tree
+  _checkpoints: Tree[]
+  _trie: Tree
 
-  constructor(trie: any) {
+  constructor(trie: Tree) {
     this._cache = Tree()
     this._checkpoints = []
     this._trie = trie
@@ -54,7 +54,7 @@ export default class Cache {
     if (it.node) {
       const rlp = it.value.val
       const account = Account.fromRlpSerializedAccount(rlp)
-      ;(account as any).virtual = it.value.virtual
+      account.virtual = it.value.virtual
       return account
     }
     return undefined
@@ -96,7 +96,7 @@ export default class Cache {
         this._update(address, account, false, false, false)
       } else {
         account = new Account()
-        ;(account as any).virtual = true
+        account.virtual = true
         this._update(address, account, false, false, true)
       }
     }
