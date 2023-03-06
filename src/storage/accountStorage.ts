@@ -1,20 +1,9 @@
-import {
-  NetworkAccount,
-  WrappedEVMAccount,
-  WrappedEVMAccountMap,
-  HexString,
-  DecimalString,
-} from '../shardeum/shardeumTypes'
+import { NetworkAccount, WrappedEVMAccount, WrappedEVMAccountMap } from '../shardeum/shardeumTypes'
 
 import { ShardeumFlags } from '../shardeum/shardeumFlags'
 import Storage from '../storage/storage'
 import { DeSerializeFromJsonString, _base16BNParser } from '../utils'
 import { networkAccount } from '..'
-import { BN } from 'bn.js'
-
-const isString = x => {
-  return Object.prototype.toString.call(x) === '[object String]'
-}
 
 //WrappedEVMAccount
 export let accounts: WrappedEVMAccountMap = {}
@@ -41,12 +30,13 @@ export async function getAccount(address: string): Promise<WrappedEVMAccount> {
     const account = await storage.getAccountsEntry(address)
     if (!account) return
 
-    if (isString(account.data)) {
+    if (typeof account.data === 'string') {
       account.data = DeSerializeFromJsonString<WrappedEVMAccount>(account.data)
     }
 
     return account.data
   } else {
+    // eslint-disable-next-line security/detect-object-injection
     return accounts[address]
   }
   //return null
@@ -58,6 +48,7 @@ export async function getAccountTimestamp(address: string): Promise<number> {
     const account = await storage.getAccountsEntry(address)
     return account.timestamp
   } else {
+    // eslint-disable-next-line security/detect-object-injection
     return accounts[address]?.timestamp
   }
 }
@@ -68,6 +59,7 @@ export async function accountExists(address: string): Promise<boolean> {
     const account = await storage.getAccountsEntry(address)
     return account != null
   } else {
+    // eslint-disable-next-line security/detect-object-injection
     return accounts[address] != null
   }
 }
@@ -88,7 +80,7 @@ export async function setAccount(address: string, account: WrappedEVMAccount): P
       await storage.createOrReplaceAccountEntry(accountEntry)
 
       if (address === networkAccount) {
-        cachedNetworkAccount = (account as any) as NetworkAccount
+        cachedNetworkAccount = account as unknown as NetworkAccount
         if (typeof cachedNetworkAccount.current.stakeRequiredUsd === 'string') {
           cachedNetworkAccount.current.stakeRequiredUsd = _base16BNParser(
             cachedNetworkAccount.current.stakeRequiredUsd
@@ -106,6 +98,7 @@ export async function setAccount(address: string, account: WrappedEVMAccount): P
         }
       }
     } else {
+      // eslint-disable-next-line security/detect-object-injection
       accounts[address] = account
     }
   } catch (e) {
@@ -142,8 +135,8 @@ export async function queryAccountsEntryByRanges(
     const processedResults = []
     const results = await storage.queryAccountsEntryByRanges(accountStart, accountEnd, maxRecords)
     for (const result of results) {
-      if (isString(result.data)) {
-        result.data = DeSerializeFromJsonString(result.data as string)
+      if (typeof result.data === 'string') {
+        result.data = DeSerializeFromJsonString(result.data)
       }
       processedResults.push(result.data)
     }
@@ -187,8 +180,8 @@ export async function queryAccountsEntryByRanges2(
     }
 
     for (const result of results) {
-      if (isString(result.data)) {
-        result.data = DeSerializeFromJsonString(result.data as string)
+      if (typeof result.data === 'string') {
+        result.data = DeSerializeFromJsonString(result.data)
       }
       processedResults.push(result.data)
     }
