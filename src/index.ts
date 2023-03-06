@@ -2543,6 +2543,9 @@ shardus.setup({
       if (nodeAccount2.rewardEndTime === 0 && nodeAccount2.rewardStartTime > 0) {
         // This block will only be reached if the node is inactive and the force unstake flag has been set
         reward = new BN(0)
+
+        if (ShardeumFlags.VerboseLogs)
+          console.log('discarding staking rewards due to zero rewardEndTime')
       }
       const newBalance = currentBalance.add(stake).add(reward).sub(penalty).sub(txFee)
       operatorEVMAccount.account.balance = newBalance
