@@ -19,6 +19,7 @@ import { StateManager, StorageDump } from './interface'
 import Cache, { getCb, putCb } from './cache'
 import { BaseStateManager } from './'
 import { short } from '../evm/opcodes'
+import { ShardeumAccount } from '../../shardeum/shardeumTypes'
 
 type StorageProof = {
   key: PrefixedHexString
@@ -492,7 +493,7 @@ export default class DefaultStateManager extends BaseStateManager implements Sta
    * @param address - Address of the `account` to check
    */
   async accountExists(address: Address): Promise<boolean> {
-    const account = this._cache.lookup(address)
+    const account = this._cache.lookup(address) as ShardeumAccount
     if (account && !account.virtual && !this._cache.keyIsDeleted(address)) {
       return true
     }

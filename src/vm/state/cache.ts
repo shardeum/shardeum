@@ -1,5 +1,6 @@
 import { Account, Address } from 'ethereumjs-util'
 import Tree from 'functional-red-black-tree'
+import { ShardeumAccount } from '../../shardeum/shardeumTypes'
 
 export type getCb = (address: Address) => Promise<Account | undefined>
 export type putCb = (keyBuf: Buffer, accountRlp: Buffer) => Promise<void>
@@ -59,7 +60,7 @@ export default class Cache {
     const it = this._cache.find(keyStr)
     if (it.node) {
       const rlp = it.value.val
-      const account = Account.fromRlpSerializedAccount(rlp)
+      const account = Account.fromRlpSerializedAccount(rlp) as ShardeumAccount
       account.virtual = it.value.virtual
       return account
     }
@@ -84,14 +85,14 @@ export default class Cache {
    * @param key - Address of account
    */
   async getOrLoad(address: Address): Promise<Account> {
-    let account = this.lookup(address)
+    let account = this.lookup(address) as ShardeumAccount
 
     if (!account) {
       account = await this._getCb(address)
       if (account) {
         this._update(address, account, false, false, false)
       } else {
-        account = new Account()
+        account = new ShardeumAccount()
         account.virtual = true
         this._update(address, account, false, false, true)
       }
