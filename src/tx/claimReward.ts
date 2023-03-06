@@ -114,7 +114,6 @@ export async function injectClaimRewardTxWithRetry(shardus, eventData: ShardusTy
   return res
 }
 
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
 export function validateClaimRewardTx(tx: ClaimRewardTX): { isValid: boolean; reason: string } {
   if (!tx.nominee || tx.nominee === '' || tx.nominee.length !== 64) {
     /* prettier-ignore */ nestedCountersInstance.countEvent('shardeum-staking', `validateClaimRewardTx fail tx.nominee address invalid`)

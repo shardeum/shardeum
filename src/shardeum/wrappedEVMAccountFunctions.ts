@@ -1,11 +1,10 @@
 import { Account, BN, generateAddress } from 'ethereumjs-util'
 
-import { AccountType, WrappedEVMAccount, InternalAccount } from './shardeumTypes'
+import { ShardusTypes } from '@shardus/core'
 import * as crypto from '@shardus/crypto-utils'
 import { TransactionState } from '../state'
 import { getAccountShardusAddress } from './evmAddress'
-import { ShardusTypes } from '@shardus/core'
-import { ShardeumFlags } from './shardeumFlags'
+import { AccountType, InternalAccount, WrappedEVMAccount } from './shardeumTypes'
 
 export function isWrappedEVMAccount(obj: any): obj is WrappedEVMAccount {
   return 'ethAddress' in obj

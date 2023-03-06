@@ -6,8 +6,7 @@ import {
   InitRewardTimes,
   InternalTx,
   InternalTXType,
-  NodeAccount2,
-  WrappedStates
+  NodeAccount2, WrappedStates
 } from '../shardeum/shardeumTypes'
 import * as WrappedEVMAccountFunctions from '../shardeum/wrappedEVMAccountFunctions'
 import { sleep } from '../utils'
@@ -83,8 +82,7 @@ export function validateFields(tx: InitRewardTimes, shardus: Shardus): { success
   return { success: true, reason: 'valid' }
 }
 
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-export function validatePreCrackData(shardus, tx: InternalTx, appData) {
+export function validatePreCrackData(tx: InternalTx) {
   /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log('Validating InitRewardTimesTX PreCrackData', tx)
 }
 

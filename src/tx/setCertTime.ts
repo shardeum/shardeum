@@ -12,7 +12,7 @@ import {
   NodeAccountQueryResponse,
   SetCertTime,
   WrappedEVMAccount,
-  WrappedStates
+  WrappedStates,
 } from '../shardeum/shardeumTypes'
 import * as WrappedEVMAccountFunctions from '../shardeum/wrappedEVMAccountFunctions'
 import { fixDeserializedWrappedEVMAccount } from '../shardeum/wrappedEVMAccountFunctions'
@@ -173,7 +173,7 @@ export function applySetCertTimeTx(
   }
 
   // Update state
-  const serverConfig: any = config.server // eslint-disable-line @typescript-eslint/no-explicit-any
+  const serverConfig: ShardusTypes.ServerConfiguration = config.server
   let shouldChargeTxFee = true
   const certExp = operatorEVMAccount.operatorAccountInfo.certExp
 
