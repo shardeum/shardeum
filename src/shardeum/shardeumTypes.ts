@@ -25,6 +25,13 @@ export interface BaseAccount {
   accountType: AccountType
 }
 
+export class ShardeumAccount extends Account {
+  constructor() {
+    super()
+  }
+  virtual?: boolean
+}
+
 /**
  * Still working out the details here.
  * This has become a variant data type now that can hold an EVM account or a key value pair from CA storage
