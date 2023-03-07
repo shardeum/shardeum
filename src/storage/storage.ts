@@ -20,7 +20,7 @@ interface Storage {
   _create: any
   _read: any
   _readOld: any
-  _update: any
+  _update: (table, values, where, opts) => Promise<unknown>
   _delete: any
   _query: any
   _queryOld: any

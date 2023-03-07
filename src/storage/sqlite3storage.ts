@@ -4,7 +4,6 @@ import fs from 'fs'
 import path from 'path'
 import * as Sequelize from 'sequelize'
 
-import config from '../config'
 import { isObject, SerializeToJsonString } from '../utils'
 
 const Op = Sequelize.Op
@@ -20,6 +19,15 @@ interface Sqlite3Storage {
   storageModels: any
   db: Database
   oldDb: Database
+}
+
+interface ParamEntry {
+  name: string
+  type?: string
+  v1?: string
+  v2?: string
+  sql?: string
+  vals?: string[]
 }
 
 class Sqlite3Storage {
@@ -49,8 +57,7 @@ class Sqlite3Storage {
     let key
     for (const attr in modelAttributes) {
       key = attr
-      // eslint-disable-next-line no-prototype-builtins
-      if (modelAttributes.hasOwnProperty(key)) {
+      if (Object.prototype.hasOwnProperty.call(modelAttributes, key)) {
         modelData.columns.push(key)
         // eslint-disable-next-line security/detect-object-injection
         const value = modelAttributes[key]
@@ -66,6 +73,7 @@ class Sqlite3Storage {
           modelData.JSONkeys.push(key)
           // if (logFlags.console) console.log(`JSON column: ${key}`)
         } else {
+          // eslint-disable-next-line security/detect-object-injection
           modelData.isColumnJSON[key] = false
         }
       }
@@ -142,7 +150,7 @@ class Sqlite3Storage {
 
       await this.run('PRAGMA synchronous = OFF')
       console.log('PRAGMA synchronous = OFF')
-      //@ts-ignore
+      /*
       if (config?.storage?.options?.walMode === true) {
         await this.run('PRAGMA journal_mode = WAL')
         console.log('PRAGMA journal_mode = WAL')
@@ -150,11 +158,10 @@ class Sqlite3Storage {
         await this.run('PRAGMA journal_mode = MEMORY')
         console.log('PRAGMA journal_mode = MEMORY')
       }
-      //@ts-ignore
       if (config?.storage?.options?.exclusiveLockMode === true) {
         await this.run('PRAGMA locking_mode = EXCLUSIVE')
         console.log('PRAGMA locking_mode = EXCLUSIVE')
-      }
+      }*/
     } catch (e) {
       throw new Error('shardeum storage init error ' + e.name + ': ' + e.message + ' at ' + e.stack)
     }
@@ -365,9 +372,8 @@ class Sqlite3Storage {
     }
     const paramsArray = []
     for (const key in paramsObj) {
-      // eslint-disable-next-line no-prototype-builtins
-      if (paramsObj.hasOwnProperty(key)) {
-        const paramEntry: any = { name: key }
+      if (Object.prototype.hasOwnProperty.call(paramsObj, key)) {
+        const paramEntry: ParamEntry = { name: key }
 
         // eslint-disable-next-line security/detect-object-injection
         const value = paramsObj[key]
