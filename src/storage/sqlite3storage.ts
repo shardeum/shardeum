@@ -30,6 +30,20 @@ interface ParamEntry {
   vals?: string[]
 }
 
+interface ModelData {
+  tableName: string
+  columns: string[]
+  columnsString: string
+  substitutionString: string
+  isColumnJSON: { [key: string]: boolean }
+  JSONkeys: string[]
+  insertOrReplaceString?: string
+  insertString?: string
+  selectString?: string
+  updateString?: string
+  deleteString?: string
+}
+
 class Sqlite3Storage {
   // note that old storage passed in logger, now we pass in the specific log for it to use.  This works for application use, but may need to rethink if we apply this to shardus core
   constructor(models, baseDir: string, dbPath: string) {
@@ -48,12 +62,14 @@ class Sqlite3Storage {
   sqlite3Define(modelName, modelAttributes) {
     const tableName = modelName
 
-    const modelData: any = { tableName }
-    modelData.columns = []
-    modelData.columnsString = ''
-    modelData.substitutionString = ''
-    modelData.isColumnJSON = {}
-    modelData.JSONkeys = []
+    const modelData: ModelData = {
+      tableName: tableName,
+      columns: [],
+      columnsString: '',
+      substitutionString: '',
+      isColumnJSON: {},
+      JSONkeys: [],
+    }
     let key
     for (const attr in modelAttributes) {
       key = attr
