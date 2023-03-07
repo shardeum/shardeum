@@ -1,6 +1,10 @@
-This software is currently distributed under the CC-BY-NC-ND license.
-The full text of this license can be found here:
-    https://creativecommons.org/licenses/by-nc-nd/4.0/legalcode
+While the Shardeum mainnet has not been launched this software will use the CC-BY-NC-SA license.
+The full CC-BY-NC-SA license can be found here:
+https://creativecommons.org/licenses/by-nc-sa/4.0/legalcode
 
-In the future this software may be distributed under a less 
-restrictive license.
+When the Shardeum mainnet is launched this software will use the LGPL license.
+https://www.gnu.org/licenses/lgpl-3.0.en.html
+
+The Shardeum software includes the Shardus software which has its own license.
+The Shardeum license does not apply to the Shardus software.
+https://shardus.com/license

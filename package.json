@@ -31,7 +31,6 @@
     "tsc": "tsc"
   },
   "author": "",
-  "license": "ISC",
   "dependencies": {
     "@ethereumjs/vm": "^5.6.0",
     "@shardus/core": "^2.8.4",
