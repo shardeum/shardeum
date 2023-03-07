@@ -8,7 +8,8 @@ import config from '../config'
 import { isObject, SerializeToJsonString } from '../utils'
 
 const Op = Sequelize.Op
-const sqlite3 = require('sqlite3').verbose()
+//const sqlite3 = require('sqlite3').verbose()
+import { Database } from 'sqlite3'
 
 interface Sqlite3Storage {
   baseDir: string
@@ -17,8 +18,8 @@ interface Sqlite3Storage {
   //mainLogger: Log4js.Logger
   initialized: boolean
   storageModels: any
-  db: any
-  oldDb: any
+  db: Database
+  oldDb: Database
 }
 
 class Sqlite3Storage {
@@ -51,6 +52,7 @@ class Sqlite3Storage {
       // eslint-disable-next-line no-prototype-builtins
       if (modelAttributes.hasOwnProperty(key)) {
         modelData.columns.push(key)
+        // eslint-disable-next-line security/detect-object-injection
         const value = modelAttributes[key]
 
         let type = value.type
@@ -59,6 +61,7 @@ class Sqlite3Storage {
           // if (logFlags.console) console.log(' TYPE MISSING!!!! ' + key)
         }
         if (type.toString() === Sequelize.JSON.toString()) {
+          // eslint-disable-next-line security/detect-object-injection
           modelData.isColumnJSON[key] = true
           modelData.JSONkeys.push(key)
           // if (logFlags.console) console.log(`JSON column: ${key}`)
@@ -68,6 +71,7 @@ class Sqlite3Storage {
       }
     }
     for (let i = 0; i < modelData.columns.length; i++) {
+      // eslint-disable-next-line security/detect-object-injection
       key = modelData.columns[i]
       modelData.columnsString += key
       modelData.substitutionString += '?'
@@ -84,6 +88,7 @@ class Sqlite3Storage {
 
     // if (logFlags.console) console.log(`Create model data for table: ${tableName} => ${stringify(modelData)}`)
     // if (logFlags.console) console.log()
+    // eslint-disable-next-line security/detect-object-injection
     this.storageModels[tableName] = modelData
 
     // todo base this off of models
@@ -93,7 +98,6 @@ class Sqlite3Storage {
     const dbDir = path.parse(this.dbPath).dir
 
     // Rename dbDir if it exists
-    let oldDirPath
     try {
       // oldDirPath = dbDir + '-old-' + Date.now()
       // fs.renameSync(dbDir, oldDirPath)
@@ -103,7 +107,7 @@ class Sqlite3Storage {
       //   this.oldDb = new sqlite3.Database(`${oldDirPath}/db.sqlite`)
       // }
       // shardus can take care of moving the database!!
-      //@ts-ignore
+      //
       // if(config.storage.options.saveOldDBFiles){
       //   fs.renameSync(dbDir, oldDirPath)
       //   if (oldDirPath) {
@@ -131,9 +135,9 @@ class Sqlite3Storage {
       //this.mainLogger.info('Created Database directory.')
 
       if (this.memoryFile) {
-        this.db = new sqlite3.Database(':memory:')
+        this.db = new Database(':memory:')
       } else {
-        this.db = new sqlite3.Database(this.dbPath)
+        this.db = new Database(this.dbPath)
       }
 
       await this.run('PRAGMA synchronous = OFF')
@@ -169,7 +173,7 @@ class Sqlite3Storage {
     await this.run(createStatement)
   }
 
-  async dropAndCreateModel(model) {
+  async dropAndCreateModel() {
     // await model.sync({ force: true })
   }
 
@@ -198,8 +202,10 @@ class Sqlite3Storage {
       const inputs = []
       // if (logFlags.console) console.log('columns: ' + stringify(table.columns))
       for (const column of table.columns) {
+        // eslint-disable-next-line security/detect-object-injection
         let value = object[column]
 
+        // eslint-disable-next-line security/detect-object-injection
         if (table.isColumnJSON[column]) {
           value = SerializeToJsonString(value)
         }
@@ -363,6 +369,7 @@ class Sqlite3Storage {
       if (paramsObj.hasOwnProperty(key)) {
         const paramEntry: any = { name: key }
 
+        // eslint-disable-next-line security/detect-object-injection
         const value = paramsObj[key]
         if (isObject(value) && table.isColumnJSON[paramEntry.name] === false) {
           // WHERE column_name BETWEEN value1 AND value2;
@@ -431,6 +438,7 @@ class Sqlite3Storage {
       if (i === 0) {
         whereString += ' WHERE '
       }
+      // eslint-disable-next-line security/detect-object-injection
       const paramEntry = paramsArray[i]
       whereString += '(' + paramEntry.sql + ')'
       if (i < paramsArray.length - 1) {
@@ -445,6 +453,7 @@ class Sqlite3Storage {
     let valueArray = []
     let resultString = ''
     for (let i = 0; i < paramsArray.length; i++) {
+      // eslint-disable-next-line security/detect-object-injection
       const paramEntry = paramsArray[i]
       resultString += paramEntry.sql
       if (i < paramsArray.length - 1) {
@@ -463,6 +472,7 @@ class Sqlite3Storage {
     if (optionsObj.order) {
       optionsString += ' ORDER BY '
       for (let i = 0; i < optionsObj.order.length; i++) {
+        // eslint-disable-next-line security/detect-object-injection
         const orderEntry = optionsObj.order[i]
         optionsString += ` ${orderEntry[0]} ${orderEntry[1]} `
         if (i < optionsObj.order.length - 1) {
@@ -484,7 +494,7 @@ class Sqlite3Storage {
   // run/get/all promise wraps from this tutorial: https://stackabuse.com/a-sqlite-tutorial-with-node-js/
   run(sql, params = []) {
     return new Promise((resolve, reject) => {
-      this.db.run(sql, params, function(err) {
+      this.db.run(sql, params, function (err) {
         if (err) {
           // if (logFlags.console) console.log('Error running sql ' + sql)
           // if (logFlags.console) console.log(err)
@@ -541,7 +551,9 @@ class Sqlite3Storage {
 
 async function _ensureExists(dir) {
   return new Promise<void>((resolve, reject) => {
-    fs.mkdir(dir, { recursive: true }, err => {
+    // dir is 'db/shardeum.sqlite'
+    // eslint-disable-next-line security/detect-non-literal-fs-filename
+    fs.mkdir(dir, { recursive: true }, (err) => {
       if (err) {
         // Ignore err if folder exists
         if (err.code === 'EEXIST') resolve()
