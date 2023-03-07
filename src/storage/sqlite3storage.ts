@@ -16,6 +16,8 @@ interface Sqlite3Storage {
   dbPath: string
   //mainLogger: Log4js.Logger
   initialized: boolean
+  // punting on storageModels for now
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   storageModels: any
   db: Database
   oldDb: Database

@@ -108,7 +108,7 @@ export async function setAccount(address: string, account: WrappedEVMAccount): P
 
 export async function debugGetAllAccounts(): Promise<WrappedEVMAccount[]> {
   if (ShardeumFlags.UseDBForAccounts === true) {
-    return await storage.debugSelectAllAccountsEntry()
+    return (await storage.debugSelectAllAccountsEntry()) as unknown as WrappedEVMAccount[]
   } else {
     return Object.values(accounts)
   }

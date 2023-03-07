@@ -1,8 +1,8 @@
 //import Log4js from 'log4js'
 
 import models from './models'
-
-import {ShardeumFlags} from '../shardeum/shardeumFlags'
+import { WrappedEVMAccount } from '../shardeum/shardeumTypes'
+import { ShardeumFlags } from '../shardeum/shardeumFlags'
 import Sqlite3Storage from './sqlite3storage'
 import * as Sequelize from 'sequelize'
 const Op = Sequelize.Op
@@ -10,20 +10,25 @@ const Op = Sequelize.Op
 interface AccountsEntry {
   accountId: string
   timestamp: number
-  data: any //could be a string or a WrappedEVMAccount ...
+  data: string | WrappedEVMAccount
 }
 
 interface Storage {
   storage: Sqlite3Storage
+  // punting on storageModels for now
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   storageModels: any
   initialized: boolean
-  _create: any
-  _read: any
-  _readOld: any
-  _update: (table, values, where, opts) => Promise<unknown>
-  _delete: any
-  _query: any
-  _queryOld: any
+  // punting on these for now
+  /* eslint-disable @typescript-eslint/no-explicit-any */
+  _create: any //(table, values, opts) => Promise<unknown>
+  _read: any //(table, where, opts) => Promise<unknown>
+  _readOld: any //(table, where, opts) => Promise<unknown>
+  _update: any //(table, values, where, opts) => Promise<unknown>
+  _delete: any //(table, where, opts) => Promise<unknown>
+  _query: any //(query, tableModel) => Promise<unknown>
+  _queryOld: any //(query, tableModel) => Promise<unknown>
+  /* eslint-enable @typescript-eslint/no-explicit-any */
 }
 
 class Storage {
@@ -91,7 +96,9 @@ class Storage {
           raw: true,
         }
       )
-      if (result.length > 0) return result[0]
+      if (result.length > 0) {
+        return result[0]
+      }
     } catch (e) {
       throw new Error(e)
     }
@@ -176,6 +183,11 @@ class Storage {
         }
       )
       return result
+      /*if (Array.isArray(result)) {
+        if (isAccountsEntry(result[0])) {
+          return result
+        }
+      }*/
     } catch (e) {
       throw new Error(e)
     }
@@ -184,7 +196,7 @@ class Storage {
   async deleteAccountsEntry() {
     this._checkInit()
     try {
-      await this._delete(this.storageModels.accountsEntry, null)
+      await this._delete(this.storageModels.accountsEntry, null, null)
     } catch (e) {
       throw new Error(e)
     }
@@ -193,7 +205,7 @@ class Storage {
   async debugSelectAllAccountsEntry() {
     this._checkInit()
     try {
-      return await this._read(this.storageModels.accountsEntry, null)
+      return await this._read(this.storageModels.accountsEntry, null, null)
     } catch (e) {
       throw new Error(e)
     }
