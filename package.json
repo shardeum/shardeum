@@ -35,6 +35,7 @@
     "@ethereumjs/vm": "^5.6.0",
     "@shardus/core": "^2.8.4",
     "@shardus/crypto-utils": "^4.0.4",
+    "@types/sqlite3": "^3.1.8",
     "cliffy": "^2.5.1",
     "deepmerge": "^4.2.2",
     "dotenv": "^16.0.0",
@@ -58,8 +59,6 @@
     "@types/node": "^12.20.4",
     "@typescript-eslint/eslint-plugin": "^5.48.0",
     "@typescript-eslint/parser": "^5.48.0",
-    "typescript-estree": "^18.1.0",
-    "typescript": "^4.9.4",
     "axios": "^0.21.1",
     "cross-env": "^5.2.0",
     "eslint": "^8.31.0",
@@ -83,6 +82,8 @@
     "shelljs": "^0.8.4",
     "standard": "^12.0.1",
     "ts-jest": "^26.5.2",
+    "typescript": "^4.9.4",
+    "typescript-estree": "^18.1.0",
     "yarpm": "^0.2.1"
   }
 }

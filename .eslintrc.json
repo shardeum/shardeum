@@ -15,6 +15,12 @@
     "prettier"
   ],
   "ignorePatterns": [
+    "**/state/*",
+    "**/shardeum/*",
+    "**/src/setup/*",
+    "**/src/index.ts"
+  ],
+  "ignorePatterns": [
     "**/storage/*",
     "**/shardeum/*",
     "**/src/setup/*"
