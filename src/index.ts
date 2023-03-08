@@ -27,7 +27,6 @@ import {
   InternalTXType,
   NetworkAccount,
   NetworkParameters,
-  //NodeAccount,
   NodeAccount2,
   NodeInfoAppData,
   OperatorAccountInfo,
@@ -90,8 +89,6 @@ import {
 } from './setup/helpers'
 import { onActiveVersionChange } from './versioning'
 import { shardusFactory } from '@shardus/core'
-import { QueueCountsResult } from '@shardus/core/dist/state-manager/state-manager-types'
-import { WrappedResponse } from '@shardus/core/dist/shardus/shardus-types'
 
 export const networkAccount = '0'.repeat(64) //address
 
@@ -1608,7 +1605,7 @@ async function applyInternalTx(
       shardus.applyResponseAddChangedAccount(
         applyResponse,
         networkAccount,
-        wrappedChangedAccount as WrappedResponse,
+        wrappedChangedAccount as ShardusTypes.WrappedResponse,
         txId,
         txTimestamp
       )
@@ -1663,14 +1660,14 @@ async function applyInternalTx(
       shardus.applyResponseAddChangedAccount(
         applyResponse,
         networkAccount,
-        networkAccountCopy as WrappedResponse,
+        networkAccountCopy as ShardusTypes.WrappedResponse,
         txId,
         txTimestamp
       )
       shardus.applyResponseAddChangedAccount(
         applyResponse,
         internalTx.from,
-        devAccountCopy as WrappedResponse,
+        devAccountCopy as ShardusTypes.WrappedResponse,
         txId,
         txTimestamp
       )
@@ -1693,7 +1690,7 @@ async function applyInternalTx(
       shardus.applyResponseAddChangedAccount(
         applyResponse,
         networkAccount,
-        networkAccountCopy as WrappedResponse,
+        networkAccountCopy as ShardusTypes.WrappedResponse,
         txId,
         txTimestamp
       )
@@ -1745,14 +1742,14 @@ async function applyInternalTx(
       shardus.applyResponseAddChangedAccount(
         applyResponse,
         networkAccount,
-        networkAccountCopy as WrappedResponse,
+        networkAccountCopy as ShardusTypes.WrappedResponse,
         txId,
         txTimestamp
       )
       shardus.applyResponseAddChangedAccount(
         applyResponse,
         internalTx.from,
-        devAccountCopy as WrappedResponse,
+        devAccountCopy as ShardusTypes.WrappedResponse,
         txId,
         txTimestamp
       )
@@ -1775,7 +1772,7 @@ async function applyInternalTx(
       shardus.applyResponseAddChangedAccount(
         applyResponse,
         networkAccount,
-        networkAccountCopy as WrappedResponse,
+        networkAccountCopy as ShardusTypes.WrappedResponse,
         txId,
         txTimestamp
       )
@@ -2404,7 +2401,7 @@ shardus.setup({
           shardus.applyResponseAddChangedAccount(
             applyResponse,
             wrappedChangedAccount.accountId,
-            wrappedChangedAccount as WrappedResponse,
+            wrappedChangedAccount as ShardusTypes.WrappedResponse,
             txId,
             wrappedChangedAccount.timestamp
           )
@@ -2417,7 +2414,7 @@ shardus.setup({
         shardus.applyResponseAddChangedAccount(
           applyResponse,
           nomineeNodeAccount2Address,
-          wrappedChangedAccount as WrappedResponse,
+          wrappedChangedAccount as ShardusTypes.WrappedResponse,
           txId,
           txTimestamp
         )
@@ -2479,7 +2476,7 @@ shardus.setup({
           shardus.applyResponseAddChangedAccount(
             applyResponse,
             wrappedChangedAccount.accountId,
-            wrappedChangedAccount as WrappedResponse,
+            wrappedChangedAccount as ShardusTypes.WrappedResponse,
             txId,
             wrappedChangedAccount.timestamp
           )
@@ -2597,7 +2594,7 @@ shardus.setup({
           shardus.applyResponseAddChangedAccount(
             applyResponse,
             wrappedChangedAccount.accountId,
-            wrappedChangedAccount as WrappedResponse,
+            wrappedChangedAccount as ShardusTypes.WrappedResponse,
             txId,
             wrappedChangedAccount.timestamp
           )
@@ -2608,7 +2605,7 @@ shardus.setup({
           applyResponse,
           nomineeNodeAccount2Address,
           // eslint-disable-next-line security/detect-object-injection
-          wrappedStates[nomineeNodeAccount2Address] as WrappedResponse,
+          wrappedStates[nomineeNodeAccount2Address] as ShardusTypes.WrappedResponse,
           txId,
           txTimestamp
         )
@@ -2667,7 +2664,7 @@ shardus.setup({
           shardus.applyResponseAddChangedAccount(
             applyResponse,
             wrappedChangedAccount.accountId,
-            wrappedChangedAccount as WrappedResponse,
+            wrappedChangedAccount as ShardusTypes.WrappedResponse,
             txId,
             wrappedChangedAccount.timestamp
           )
@@ -2957,7 +2954,7 @@ shardus.setup({
           shardus.applyResponseAddChangedAccount(
             applyResponse,
             wrappedChangedAccount.accountId,
-            wrappedChangedAccount as WrappedResponse,
+            wrappedChangedAccount as ShardusTypes.WrappedResponse,
             txId,
             wrappedChangedAccount.timestamp
           )
@@ -2997,7 +2994,7 @@ shardus.setup({
           shardus.applyResponseAddChangedAccount(
             applyResponse,
             wrappedChangedAccount.accountId,
-            wrappedChangedAccount as WrappedResponse,
+            wrappedChangedAccount as ShardusTypes.WrappedResponse,
             txId,
             wrappedChangedAccount.timestamp
           )
@@ -3044,7 +3041,7 @@ shardus.setup({
         shardus.applyResponseAddChangedAccount(
           applyResponse,
           wrappedChangedAccount.accountId,
-          wrappedChangedAccount as WrappedResponse,
+          wrappedChangedAccount as ShardusTypes.WrappedResponse,
           txId,
           wrappedChangedAccount.timestamp
         )
@@ -3114,7 +3111,7 @@ shardus.setup({
         shardus.applyResponseAddChangedAccount(
           applyResponse,
           wrappedChangedAccount.accountId,
-          wrappedChangedAccount as WrappedResponse,
+          wrappedChangedAccount as ShardusTypes.WrappedResponse,
           txId,
           wrappedChangedAccount.timestamp
         )
@@ -3146,9 +3143,11 @@ shardus.setup({
   },
   getTimestampFromTransaction(tx, appData) {
     if (ShardeumFlags.VerboseLogs) console.log('Running getTimestampFromTransaction', tx, appData)
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     if (ShardeumFlags.autoGenerateAccessList && appData && (appData as any).requestNewTimestamp) {
       if (ShardeumFlags.VerboseLogs) console.log('Requesting new timestamp', appData)
       return -1
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } else return Object.prototype.hasOwnProperty.call(tx, 'timestamp') ? (tx as any).timestamp : 0
   },
   async txPreCrackData(tx, appData) {
@@ -3189,7 +3188,9 @@ shardus.setup({
         const transformedSourceKey = toShardusAddress(txSenderEvmAddr, AccountType.Account)
 
         let queueCountResult = { count: 0, committingAppData: [] }
-        let countPromise: Promise<QueueCountsResult> = undefined
+        //this is likely QueueCountsResult but it is not exported from shardus
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        let countPromise: Promise<any> = undefined
         if (ShardeumFlags.txNoncePreCheck) {
           //parallel fetch
           countPromise = shardus.getLocalOrRemoteAccountQueueCount(transformedSourceKey)
@@ -3356,6 +3357,7 @@ shardus.setup({
     }
   },
 
+  // eslint-disable-next-line @typescript-eslint/ban-ts-comment
   //@ts-ignore
   crack(timestampedTx, appData) {
     if (ShardeumFlags.VerboseLogs) console.log('Running getKeyFromTransaction', timestampedTx)
@@ -3367,7 +3369,7 @@ shardus.setup({
     if (isInternalTx(tx)) {
       const customTXhash = null
       const internalTx = tx as InternalTx
-      const keys: TransactionKeys = {
+      const keys = {
         sourceKeys: [],
         targetKeys: [],
         storageKeys: [],
@@ -3491,7 +3493,7 @@ shardus.setup({
     }
 
     const transaction = getTransactionObj(tx)
-    const result: TransactionKeys = {
+    const result = {
       sourceKeys: [],
       targetKeys: [],
       storageKeys: [],
@@ -3616,6 +3618,7 @@ shardus.setup({
       if (ShardeumFlags.EVMReceiptsAsAccounts) {
         const txHash = bufferToHex(transaction.hash())
         const shardusReceiptAddress = toShardusAddressWithKey(txHash, '', AccountType.Receipt)
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`getKeyFromTransaction: adding tx receipt key: ${shardusReceiptAddress} ts:${(tx as any).timestamp}`)
         additionalAccounts.push(shardusReceiptAddress)
       }
