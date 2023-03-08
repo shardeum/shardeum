@@ -74,7 +74,7 @@ export interface BlockMap {
   [counter: number | string]: ShardeumBlockOverride | Block
 }
 
-export type ShardeumBlockOverride = Block & {number?: string, hash?: string}
+export type ShardeumBlockOverride = Block & { number?: string; hash?: string }
 
 export interface EVMAccountInfo {
   type: AccountType
@@ -154,6 +154,10 @@ export interface InitRewardTimes extends InternalTxBase {
   timestamp: number
   nodeActivatedTime: number
   sign: ShardusTypes.Sign
+}
+
+export interface TransactionKeys extends ShardusTypes.TransactionKeys {
+  storageKeys?: string[]
 }
 
 export interface ClaimRewardTX extends InternalTxBase {

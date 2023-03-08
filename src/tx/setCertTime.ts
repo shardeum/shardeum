@@ -173,7 +173,7 @@ export function applySetCertTimeTx(
   }
 
   // Update state
-  const serverConfig: ShardusTypes.ServerConfiguration = config.server
+  const serverConfig = config.server
   let shouldChargeTxFee = true
   const certExp = operatorEVMAccount.operatorAccountInfo.certExp
 

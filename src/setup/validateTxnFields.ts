@@ -1,5 +1,7 @@
 import { ShardeumFlags } from '../shardeum/shardeumFlags'
 import {
+  ClaimRewardTX,
+  InitRewardTimes,
   InternalTx,
   InternalTXType,
   NodeAccount2,
@@ -80,11 +82,11 @@ export const validateTxnFields =
           reason = 'Invalid signature for internal tx'
         }
       } else if (tx.internalTXType === InternalTXType.InitRewardTimes) {
-        const result = InitRewardTimesTx.validateFields(tx, shardus)
+        const result = InitRewardTimesTx.validateFields(tx as InitRewardTimes, shardus)
         success = result.success
         reason = result.reason
       } else if (tx.internalTXType === InternalTXType.ClaimReward) {
-        const result = validateClaimRewardTx(tx)
+        const result = validateClaimRewardTx(tx as ClaimRewardTX)
         success = result.isValid
         reason = result.reason
       } else {

@@ -23,11 +23,8 @@ export function isInternalTXGlobal(internalTx: InternalTx) {
   )
 }
 
-export function isInternalTx(tx: any): boolean {
-  if (tx.isInternalTx) {
-    return true
-  }
-  return false
+export function isInternalTx(tx: any): tx is InternalTx {
+  return tx.isInternalTx
 }
 
 export function isDebugTx(tx: any): boolean {

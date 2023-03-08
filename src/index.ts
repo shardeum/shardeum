@@ -36,6 +36,7 @@ import {
   SetCertTime,
   ShardeumBlockOverride,
   StakeCoinsTX,
+  TransactionKeys,
   UnstakeCoinsTX,
   WrappedAccount,
   WrappedEVMAccount,
@@ -89,6 +90,8 @@ import {
 } from './setup/helpers'
 import { onActiveVersionChange } from './versioning'
 import { shardusFactory } from '@shardus/core'
+import { QueueCountsResult } from '@shardus/core/dist/state-manager/state-manager-types'
+import { WrappedResponse } from '@shardus/core/dist/shardus/shardus-types'
 
 export const networkAccount = '0'.repeat(64) //address
 
@@ -103,7 +106,7 @@ export const ONE_DAY = 24 * ONE_HOUR
 let latestBlock = 0
 export const blocks: BlockMap = {}
 export const blocksByHash: { [hash: string]: number } = {}
-export const readableBlocks: {[blockNumber: number | string]: ShardeumBlockOverride} = {}
+export const readableBlocks: { [blockNumber: number | string]: ShardeumBlockOverride } = {}
 
 const oneSHM = new BN(10).pow(new BN(18))
 
@@ -305,11 +308,11 @@ const defaultBalance = isDebugMode() ? oneSHM.mul(new BN(100)) : new BN(0)
 // const transactionFailHashMap: any = {}
 
 const ERC20TokenBalanceMap: {
-        to: string,
-        data: unknown,
-        timestamp: number
-        result: unknown
-      }[] = []
+  to: string
+  data: unknown
+  timestamp: number
+  result: unknown
+}[] = []
 const ERC20TokenCacheSize = 1000
 
 interface RunStateWithLogs extends RunState {
@@ -559,7 +562,7 @@ function tryGetRemoteAccountCBNoOp(
 }
 
 function monitorEventCBNoOp() {
-    // no op
+  // no op
 }
 
 async function tryGetRemoteAccountCB(
@@ -575,7 +578,7 @@ async function tryGetRemoteAccountCB(
     /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`Found no remote account for address: ${address}, type: ${type}, key: ${key}`)
     return
   }
-  const fixedEVMAccount = remoteShardusAccount.data
+  const fixedEVMAccount = remoteShardusAccount.data as WrappedEVMAccount
   fixDeserializedWrappedEVMAccount(fixedEVMAccount)
   /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`Successfully found remote account for address: ${address}, type: ${type}, key: ${key}`, fixedEVMAccount)
   return fixedEVMAccount
@@ -947,7 +950,10 @@ shardus.registerExternalGet('eth_blockNumber', async (req, res) => {
 })
 
 shardus.registerExternalGet('eth_getBlockByNumber', async (req, res) => {
-  let blockNumber: number | string = req.query.blockNumber
+  let blockNumber: number | string
+  if (typeof req.query.blockNumber === 'string' || typeof req.query.blockNumber === 'number') {
+    blockNumber = req.query.blockNumber
+  }
   if (blockNumber === 'latest') blockNumber = latestBlock
   if (ShardeumFlags.VerboseLogs) console.log('Req: eth_getBlockByNumber', blockNumber)
   if (blockNumber == null) {
@@ -961,7 +967,8 @@ shardus.registerExternalGet('eth_getBlockByHash', async (req, res) => {
   let blockHash = req.query.blockHash
   if (blockHash === 'latest') blockHash = readableBlocks[latestBlock].hash
   if (ShardeumFlags.VerboseLogs) console.log('Req: eth_getBlockByHash', blockHash)
-  const blockNumber = blocksByHash[blockHash]
+  let blockNumber: number
+  if (typeof blockHash === 'string') blockNumber = blocksByHash[blockHash]
   return res.json({ block: readableBlocks[blockNumber] })
   /* eslint-enable security/detect-object-injection */
 })
@@ -1112,12 +1119,13 @@ shardus.registerExternalGet('account/:address', async (req, res) => {
         return res.json({ account: null })
       }
       const data = account.data
-      fixDeserializedWrappedEVMAccount(data)
+      fixDeserializedWrappedEVMAccount(data as WrappedEVMAccount)
       const readableAccount = await getReadableAccountInfo(data)
       if (readableAccount) return res.json({ account: readableAccount })
       else res.json({ account: data })
     } else {
-      const accountType = parseInt(req.query.type)
+      let accountType: number
+      if (typeof req.query.type === 'string') accountType = parseInt(req.query.type)
       const id = req.params['address']
       const shardusAddress = toShardusAddressWithKey(id, '', accountType)
       const account = await shardus.getLocalOrRemoteAccount(shardusAddress)
@@ -1381,7 +1389,7 @@ shardus.registerExternalGet('tx/:hash', async (req, res) => {
       let cachedAppData = await shardus.getLocalOrRemoteCachedAppData('receipt', dataId)
       if (ShardeumFlags.VerboseLogs) console.log(`cachedAppData for tx hash ${txHash}`, cachedAppData)
       if (cachedAppData && cachedAppData.appData) cachedAppData = cachedAppData.appData
-      return res.json({ account: cachedAppData?.data ? cachedAppData.data : cachedAppData })
+      return res.json({ account: cachedAppData })
     } catch (e) {
       console.log('Unable to get tx receipt', e)
       return res.json({ account: null })
@@ -1400,7 +1408,7 @@ shardus.registerExternalGet('tx/:hash', async (req, res) => {
         return res.json({ account: null })
       }
       const data = account.data
-      fixDeserializedWrappedEVMAccount(data)
+      fixDeserializedWrappedEVMAccount(data as WrappedEVMAccount)
       res.json({ account: data })
     } catch (error) {
       console.log(error)
@@ -1506,7 +1514,10 @@ shardus.registerExternalGet('genesis_accounts', async (req, res) => {
   if (!start) {
     return res.json({ success: false, reason: 'start value is not defined!' })
   }
-  const skip = parseInt(start)
+  let skip: number
+  if (typeof start === 'string') {
+    skip = parseInt(start)
+  }
   const limit = skip + 1000
   let accounts = []
   if (genesisAccounts.length > 0) {
@@ -1597,7 +1608,7 @@ async function applyInternalTx(
       shardus.applyResponseAddChangedAccount(
         applyResponse,
         networkAccount,
-        wrappedChangedAccount,
+        wrappedChangedAccount as WrappedResponse,
         txId,
         txTimestamp
       )
@@ -1619,7 +1630,7 @@ async function applyInternalTx(
     //NEED to sign with dev key (probably check this in validate() )
 
     if (internalTx.cycle === -1) {
-      [cycleData] = shardus.getLatestCycles()
+      ;[cycleData] = shardus.getLatestCycles()
       changeOnCycle = cycleData.counter + 3
     } else {
       changeOnCycle = internalTx.cycle
@@ -1652,14 +1663,14 @@ async function applyInternalTx(
       shardus.applyResponseAddChangedAccount(
         applyResponse,
         networkAccount,
-        networkAccountCopy,
+        networkAccountCopy as WrappedResponse,
         txId,
         txTimestamp
       )
       shardus.applyResponseAddChangedAccount(
         applyResponse,
         internalTx.from,
-        devAccountCopy,
+        devAccountCopy as WrappedResponse,
         txId,
         txTimestamp
       )
@@ -1682,7 +1693,7 @@ async function applyInternalTx(
       shardus.applyResponseAddChangedAccount(
         applyResponse,
         networkAccount,
-        networkAccountCopy,
+        networkAccountCopy as WrappedResponse,
         txId,
         txTimestamp
       )
@@ -1703,7 +1714,7 @@ async function applyInternalTx(
     let cycleData: ShardusTypes.Cycle
 
     if (internalTx.cycle === -1) {
-      [cycleData] = shardus.getLatestCycles()
+      ;[cycleData] = shardus.getLatestCycles()
       changeOnCycle = cycleData.counter + 1
     } else {
       changeOnCycle = internalTx.cycle
@@ -1734,14 +1745,14 @@ async function applyInternalTx(
       shardus.applyResponseAddChangedAccount(
         applyResponse,
         networkAccount,
-        networkAccountCopy,
+        networkAccountCopy as WrappedResponse,
         txId,
         txTimestamp
       )
       shardus.applyResponseAddChangedAccount(
         applyResponse,
         internalTx.from,
-        devAccountCopy,
+        devAccountCopy as WrappedResponse,
         txId,
         txTimestamp
       )
@@ -1764,7 +1775,7 @@ async function applyInternalTx(
       shardus.applyResponseAddChangedAccount(
         applyResponse,
         networkAccount,
-        networkAccountCopy,
+        networkAccountCopy as WrappedResponse,
         txId,
         txTimestamp
       )
@@ -1951,7 +1962,9 @@ const getOrCreateBlockFromTimestamp = (timestamp: number, scheduleNextBlock = fa
   return block
 }
 
-async function generateAccessList(callObj): Promise<{ accessList: unknown[]; shardusMemoryPatterns: unknown }> {
+async function generateAccessList(
+  callObj
+): Promise<{ accessList: unknown[]; shardusMemoryPatterns: unknown }> {
   try {
     let valueInHexString: string
     if (!callObj.value) {
@@ -2239,7 +2252,7 @@ shardus.setup({
   validateTransaction: validateTransaction(shardus),
   validateTxnFields: validateTxnFields(shardus, debugAppdata),
   async apply(timestampedTx, wrappedStates, appData) {
-    const { tx } = timestampedTx
+    const tx = timestampedTx
     const txTimestamp = getInjectedOrGeneratedTimestamp(timestampedTx)
     // Validate the tx
     const { result, reason } = this.validateTransaction(tx)
@@ -2301,7 +2314,8 @@ shardus.setup({
       const stakeCoinsTx: StakeCoinsTX = appData.internalTx
       const operatorShardusAddress = toShardusAddress(stakeCoinsTx.nominator, AccountType.Account)
       // eslint-disable-next-line security/detect-object-injection
-      const operatorEVMAccount: WrappedEVMAccount = wrappedStates[operatorShardusAddress].data
+      const operatorEVMAccount: WrappedEVMAccount = wrappedStates[operatorShardusAddress]
+        .data as WrappedEVMAccount
 
       // validate tx timestamp, compare timestamp against account's timestamp
       if (stakeCoinsTx.timestamp < operatorEVMAccount.timestamp) {
@@ -2361,7 +2375,7 @@ shardus.setup({
       await shardeumState.commit()
 
       // eslint-disable-next-line security/detect-object-injection
-      const nodeAccount2: NodeAccount2 = wrappedStates[nomineeNodeAccount2Address].data
+      const nodeAccount2: NodeAccount2 = wrappedStates[nomineeNodeAccount2Address].data as NodeAccount2
       if (typeof nodeAccount2.stakeLock === 'string') {
         nodeAccount2.stakeLock = new BN(nodeAccount2.stakeLock, 16)
       }
@@ -2390,20 +2404,20 @@ shardus.setup({
           shardus.applyResponseAddChangedAccount(
             applyResponse,
             wrappedChangedAccount.accountId,
-            wrappedChangedAccount,
+            wrappedChangedAccount as WrappedResponse,
             txId,
             wrappedChangedAccount.timestamp
           )
         }
 
         const wrappedChangedAccount = WrappedEVMAccountFunctions._shardusWrappedAccount(
-          wrappedStates[nomineeNodeAccount2Address].data // eslint-disable-line security/detect-object-injection
+          wrappedStates[nomineeNodeAccount2Address].data as WrappedEVMAccount // eslint-disable-line security/detect-object-injection
         )
         // for nominee node account
         shardus.applyResponseAddChangedAccount(
           applyResponse,
           nomineeNodeAccount2Address,
-          wrappedChangedAccount,
+          wrappedChangedAccount as WrappedResponse,
           txId,
           txTimestamp
         )
@@ -2414,7 +2428,7 @@ shardus.setup({
         status: 1,
         transactionHash: ethTxId,
         transactionIndex: '0x1',
-          // eslint-disable-next-line security/detect-object-injection
+        // eslint-disable-next-line security/detect-object-injection
         blockNumber: '0x' + blocks[latestBlock].header.number.toString('hex'),
         nonce: transaction.nonce.toString('hex'),
         blockHash: readableBlocks[latestBlock].hash, // eslint-disable-line security/detect-object-injection
@@ -2465,7 +2479,7 @@ shardus.setup({
           shardus.applyResponseAddChangedAccount(
             applyResponse,
             wrappedChangedAccount.accountId,
-            wrappedChangedAccount,
+            wrappedChangedAccount as WrappedResponse,
             txId,
             wrappedChangedAccount.timestamp
           )
@@ -2494,7 +2508,8 @@ shardus.setup({
       const operatorShardusAddress = toShardusAddress(unstakeCoinsTX.nominator, AccountType.Account)
       const nomineeNodeAccount2Address = unstakeCoinsTX.nominee
       // eslint-disable-next-line security/detect-object-injection
-      const operatorEVMAccount: WrappedEVMAccount = wrappedStates[operatorShardusAddress].data
+      const operatorEVMAccount: WrappedEVMAccount = wrappedStates[operatorShardusAddress]
+        .data as WrappedEVMAccount
       operatorEVMAccount.timestamp = txTimestamp
 
       if (operatorEVMAccount.operatorAccountInfo == null) {
@@ -2515,7 +2530,7 @@ shardus.setup({
       }
 
       // eslint-disable-next-line security/detect-object-injection
-      const nodeAccount2: NodeAccount2 = wrappedStates[nomineeNodeAccount2Address].data
+      const nodeAccount2: NodeAccount2 = wrappedStates[nomineeNodeAccount2Address].data as NodeAccount2
 
       const currentBalance = operatorEVMAccount.account.balance
       const stake = new BN(operatorEVMAccount.operatorAccountInfo.stake, 16)
@@ -2582,7 +2597,7 @@ shardus.setup({
           shardus.applyResponseAddChangedAccount(
             applyResponse,
             wrappedChangedAccount.accountId,
-            wrappedChangedAccount,
+            wrappedChangedAccount as WrappedResponse,
             txId,
             wrappedChangedAccount.timestamp
           )
@@ -2593,7 +2608,7 @@ shardus.setup({
           applyResponse,
           nomineeNodeAccount2Address,
           // eslint-disable-next-line security/detect-object-injection
-          wrappedStates[nomineeNodeAccount2Address],
+          wrappedStates[nomineeNodeAccount2Address] as WrappedResponse,
           txId,
           txTimestamp
         )
@@ -2652,7 +2667,7 @@ shardus.setup({
           shardus.applyResponseAddChangedAccount(
             applyResponse,
             wrappedChangedAccount.accountId,
-            wrappedChangedAccount,
+            wrappedChangedAccount as WrappedResponse,
             txId,
             wrappedChangedAccount.timestamp
           )
@@ -2681,7 +2696,7 @@ shardus.setup({
       }
 
       // eslint-disable-next-line security/detect-object-injection
-      const wrappedEVMAccount: WrappedEVMAccount = wrappedStates[accountId].data
+      const wrappedEVMAccount: WrappedEVMAccount = wrappedStates[accountId].data as WrappedEVMAccount
       fixDeserializedWrappedEVMAccount(wrappedEVMAccount)
       let address
       if (wrappedEVMAccount.accountType === AccountType.ContractCode)
@@ -2942,7 +2957,7 @@ shardus.setup({
           shardus.applyResponseAddChangedAccount(
             applyResponse,
             wrappedChangedAccount.accountId,
-            wrappedChangedAccount,
+            wrappedChangedAccount as WrappedResponse,
             txId,
             wrappedChangedAccount.timestamp
           )
@@ -2982,7 +2997,7 @@ shardus.setup({
           shardus.applyResponseAddChangedAccount(
             applyResponse,
             wrappedChangedAccount.accountId,
-            wrappedChangedAccount,
+            wrappedChangedAccount as WrappedResponse,
             txId,
             wrappedChangedAccount.timestamp
           )
@@ -3029,7 +3044,7 @@ shardus.setup({
         shardus.applyResponseAddChangedAccount(
           applyResponse,
           wrappedChangedAccount.accountId,
-          wrappedChangedAccount,
+          wrappedChangedAccount as WrappedResponse,
           txId,
           wrappedChangedAccount.timestamp
         )
@@ -3099,7 +3114,7 @@ shardus.setup({
         shardus.applyResponseAddChangedAccount(
           applyResponse,
           wrappedChangedAccount.accountId,
-          wrappedChangedAccount,
+          wrappedChangedAccount as WrappedResponse,
           txId,
           wrappedChangedAccount.timestamp
         )
@@ -3131,10 +3146,10 @@ shardus.setup({
   },
   getTimestampFromTransaction(tx, appData) {
     if (ShardeumFlags.VerboseLogs) console.log('Running getTimestampFromTransaction', tx, appData)
-    if (ShardeumFlags.autoGenerateAccessList && appData && appData.requestNewTimestamp) {
+    if (ShardeumFlags.autoGenerateAccessList && appData && (appData as any).requestNewTimestamp) {
       if (ShardeumFlags.VerboseLogs) console.log('Requesting new timestamp', appData)
       return -1
-    } else return tx.timestamp ? tx.timestamp : 0
+    } else return Object.prototype.hasOwnProperty.call(tx, 'timestamp') ? (tx as any).timestamp : 0
   },
   async txPreCrackData(tx, appData) {
     if (ShardeumFlags.VerboseLogs) console.log('Running txPreCrackData', tx, appData)
@@ -3174,7 +3189,7 @@ shardus.setup({
         const transformedSourceKey = toShardusAddress(txSenderEvmAddr, AccountType.Account)
 
         let queueCountResult = { count: 0, committingAppData: [] }
-        let countPromise: Promise<{ count: 0, committingAppData: [] }> = undefined
+        let countPromise: Promise<QueueCountsResult> = undefined
         if (ShardeumFlags.txNoncePreCheck) {
           //parallel fetch
           countPromise = shardus.getLocalOrRemoteAccountQueueCount(transformedSourceKey)
@@ -3343,7 +3358,7 @@ shardus.setup({
 
   crack(timestampedTx, appData) {
     if (ShardeumFlags.VerboseLogs) console.log('Running getKeyFromTransaction', timestampedTx)
-    const { tx } = timestampedTx
+    const tx = timestampedTx
 
     const timestamp: number = getInjectedOrGeneratedTimestamp(timestampedTx)
 
@@ -3351,7 +3366,7 @@ shardus.setup({
     if (isInternalTx(tx)) {
       const customTXhash = null
       const internalTx = tx as InternalTx
-      const keys = {
+      const keys: TransactionKeys = {
         sourceKeys: [],
         targetKeys: [],
         storageKeys: [],
@@ -3436,6 +3451,7 @@ shardus.setup({
         timestamp,
         keys,
         id: customTXhash ?? txid,
+        shardusMemoryPatterns: null,
       }
     }
     if (isDebugTx(tx)) {
@@ -3469,11 +3485,12 @@ shardus.setup({
         timestamp,
         keys,
         id: txid,
+        shardusMemoryPatterns: null,
       }
     }
 
     const transaction = getTransactionObj(tx)
-    const result = {
+    const result: TransactionKeys = {
       sourceKeys: [],
       targetKeys: [],
       storageKeys: [],
@@ -3598,7 +3615,7 @@ shardus.setup({
       if (ShardeumFlags.EVMReceiptsAsAccounts) {
         const txHash = bufferToHex(transaction.hash())
         const shardusReceiptAddress = toShardusAddressWithKey(txHash, '', AccountType.Receipt)
-        /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`getKeyFromTransaction: adding tx receipt key: ${shardusReceiptAddress} ts:${tx.timestamp}`)
+        /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`getKeyFromTransaction: adding tx receipt key: ${shardusReceiptAddress} ts:${(tx as any).timestamp}`)
         additionalAccounts.push(shardusReceiptAddress)
       }
 
@@ -3664,45 +3681,10 @@ shardus.setup({
       //accounts[shardusAddress] = wrappedEVMAccount
       await AccountsStorage.setAccount(shardusAddress, wrappedEVMAccount)
     }
-
-    //Is this ok
-    getCallTXState()
-
-    // update shardeum state. put this in a separate loop, but maybe that is overkill
-    // I was thinking we could checkpoint and commit the changes on the outer loop,
-    // but now I am not so sure that is safe, and best case may need a mutex
-    // I am not even 100% that we can go without a mutex even one account at time, here or in other spots
-    // where we commit data to tries.  I wouldn't want the awaited code to interleave in a bad way
-    for (const account of accountRecords) {
-      const wrappedEVMAccount = account as WrappedEVMAccount
-
-      // hmm this is not awaited yet! needs changes to shardus global server.
-      if (wrappedEVMAccount.accountType === AccountType.ContractStorage) {
-        //get the contract account so we can pass in the state root
-        const shardusAddress = toShardusAddress(wrappedEVMAccount.ethAddress, AccountType.Account)
-        //let contractAccount = accounts[shardusAddress]
-        const contractAccount = await AccountsStorage.getAccount(shardusAddress)
-
-        if (contractAccount == null) {
-          //todo queue this somehow
-          // repairing also breaks from this.. hmm
-          //throw Error(`contractAccount not found for ${wrappedEVMAccount.ethAddress} / ${shardusAddress} `)
-          /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`contractAccount not found for ${wrappedEVMAccount.ethAddress} / ${shardusAddress} `)
-          //continue
-        }
-        if (contractAccount && contractAccount.account == null) {
-          //todo queue this somehow
-          //throw Error(`contractAccount.account not found for ${wrappedEVMAccount.ethAddress} / ${shardusAddress} ${JSON.stringify(contractAccount)} `)
-          /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`contractAccount.account not found for ${wrappedEVMAccount.ethAddress} / ${shardusAddress} ${JSON.stringify(contractAccount)} `)
-          //continue
-        }
-
-      }
-    }
   },
   async getRelevantData(accountId, timestampedTx, appData) {
     if (ShardeumFlags.VerboseLogs) console.log('Running getRelevantData', accountId, timestampedTx, appData)
-    const { tx } = timestampedTx
+    const tx = timestampedTx
 
     if (isInternalTx(tx)) {
       const internalTx = tx as InternalTx
@@ -3832,7 +3814,7 @@ shardus.setup({
       )
     }
 
-    if (!tx.raw) throw new Error('getRelevantData: No raw tx')
+    if (!Object.prototype.hasOwnProperty.call(tx, 'raw')) throw new Error('getRelevantData: No raw tx')
 
     // todo: create new accounts for staking
 
@@ -4100,7 +4082,7 @@ shardus.setup({
   async updateAccountFull(wrappedData, localCache, applyResponse: ShardusTypes.ApplyResponse) {
     const accountId = wrappedData.accountId
     const accountCreated = wrappedData.accountCreated
-    const updatedEVMAccount: WrappedEVMAccount = wrappedData.data
+    const updatedEVMAccount: WrappedEVMAccount = wrappedData.data as WrappedEVMAccount
     const prevStateId = wrappedData.prevStateId
 
     if (ShardeumFlags.VerboseLogs) console.log('updatedEVMAccount before hashUpdate', updatedEVMAccount)
@@ -4399,89 +4381,84 @@ shardus.setup({
       console.log('Running signAppData', type, hash, nodesToSign, appData)
 
       if (type === 'sign-stake-cert') {
-          if (nodesToSign != 5) return fail
-          const stakeCert = appData as StakeCert
-          if (!stakeCert.nominator || !stakeCert.nominee || !stakeCert.stake || !stakeCert.certExp) {
-            nestedCountersInstance.countEvent('shardeum-staking', 'signAppData format failed')
-            /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`signAppData format failed ${type} ${JSON.stringify(stakeCert)} `)
-            return fail
-          }
-          const currentTimestamp = Date.now()
-          if (stakeCert.certExp < currentTimestamp) {
-            /* prettier-ignore */ nestedCountersInstance.countEvent('shardeum-staking', 'signAppData cert expired')
-            /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`signAppData cert expired ${type} ${JSON.stringify(stakeCert)} `)
-            return fail
-          }
-          let minStakeRequiredUsd: BN
-          let minStakeRequired: BN
-          let stakeAmount: BN
-          try {
-            minStakeRequiredUsd = _base16BNParser(
-              AccountsStorage.cachedNetworkAccount.current.stakeRequiredUsd
-            )
-          } catch (e) {
-            /* prettier-ignore */ nestedCountersInstance.countEvent('shardeum-staking', 'signAppData' +
+        if (nodesToSign != 5) return fail
+        const stakeCert = appData as StakeCert
+        if (!stakeCert.nominator || !stakeCert.nominee || !stakeCert.stake || !stakeCert.certExp) {
+          nestedCountersInstance.countEvent('shardeum-staking', 'signAppData format failed')
+          /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`signAppData format failed ${type} ${JSON.stringify(stakeCert)} `)
+          return fail
+        }
+        const currentTimestamp = Date.now()
+        if (stakeCert.certExp < currentTimestamp) {
+          /* prettier-ignore */ nestedCountersInstance.countEvent('shardeum-staking', 'signAppData cert expired')
+          /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`signAppData cert expired ${type} ${JSON.stringify(stakeCert)} `)
+          return fail
+        }
+        let minStakeRequiredUsd: BN
+        let minStakeRequired: BN
+        let stakeAmount: BN
+        try {
+          minStakeRequiredUsd = _base16BNParser(AccountsStorage.cachedNetworkAccount.current.stakeRequiredUsd)
+        } catch (e) {
+          /* prettier-ignore */ nestedCountersInstance.countEvent('shardeum-staking', 'signAppData' +
               ' stakeRequiredUsd parse error')
-            /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`signAppData minStakeRequiredUsd parse error ${type} ${JSON.stringify(stakeCert)}, cachedNetworkAccount: ${JSON.stringify(AccountsStorage.cachedNetworkAccount)} `)
-            return fail
-          }
-          try {
-            minStakeRequired = scaleByStabilityFactor(
-              minStakeRequiredUsd,
-              AccountsStorage.cachedNetworkAccount
-            )
-          } catch (e) {
-            /* prettier-ignore */ nestedCountersInstance.countEvent('shardeum-staking', 'signAppData' +
+          /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`signAppData minStakeRequiredUsd parse error ${type} ${JSON.stringify(stakeCert)}, cachedNetworkAccount: ${JSON.stringify(AccountsStorage.cachedNetworkAccount)} `)
+          return fail
+        }
+        try {
+          minStakeRequired = scaleByStabilityFactor(minStakeRequiredUsd, AccountsStorage.cachedNetworkAccount)
+        } catch (e) {
+          /* prettier-ignore */ nestedCountersInstance.countEvent('shardeum-staking', 'signAppData' +
               ' minStakeRequired parse error')
-            /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`signAppData minStakeRequired parse error ${type} ${JSON.stringify(stakeCert)}, cachedNetworkAccount: ${JSON.stringify(AccountsStorage.cachedNetworkAccount)} `)
-            return fail
-          }
-          try {
-            stakeAmount = _base16BNParser(stakeCert.stake)
-          } catch (e) {
-            /* prettier-ignore */ nestedCountersInstance.countEvent('shardeum-staking', 'signAppData' +
+          /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`signAppData minStakeRequired parse error ${type} ${JSON.stringify(stakeCert)}, cachedNetworkAccount: ${JSON.stringify(AccountsStorage.cachedNetworkAccount)} `)
+          return fail
+        }
+        try {
+          stakeAmount = _base16BNParser(stakeCert.stake)
+        } catch (e) {
+          /* prettier-ignore */ nestedCountersInstance.countEvent('shardeum-staking', 'signAppData' +
               ' stakeAmount parse error')
-            /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`signAppData stakeAmount parse error ${type} ${JSON.stringify(stakeCert)}`)
+          /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`signAppData stakeAmount parse error ${type} ${JSON.stringify(stakeCert)}`)
+          return fail
+        }
+        if (stakeAmount.lt(minStakeRequired)) {
+          /* prettier-ignore */ nestedCountersInstance.countEvent('shardeum-staking', 'signAppData stake amount lower than required')
+          /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`signAppData stake amount lower than required ${type} ${JSON.stringify(stakeCert)} `)
+          return fail
+        }
+        if (ShardeumFlags.FullCertChecksEnabled) {
+          const nominatorAddress = toShardusAddress(stakeCert.nominator, AccountType.Account)
+          const nominatorAccount = await shardus.getLocalOrRemoteAccount(nominatorAddress)
+          if (!nominatorAccount) {
+            /* prettier-ignore */ nestedCountersInstance.countEvent('shardeum-staking', 'could not find nominator account')
+            /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`could not find nominator account ${type} ${JSON.stringify(stakeCert)} `)
             return fail
           }
-          if (stakeAmount.lt(minStakeRequired)) {
-            /* prettier-ignore */ nestedCountersInstance.countEvent('shardeum-staking', 'signAppData stake amount lower than required')
-            /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`signAppData stake amount lower than required ${type} ${JSON.stringify(stakeCert)} `)
+          const nominatorEVMAccount = nominatorAccount.data as WrappedEVMAccount
+          fixDeserializedWrappedEVMAccount(nominatorEVMAccount)
+          if (!nominatorEVMAccount.operatorAccountInfo) {
+            /* prettier-ignore */ nestedCountersInstance.countEvent('shardeum-staking', 'operatorAccountInfo missing from nominator')
+            /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`operatorAccountInfo missing from nominator ${type} ${JSON.stringify(stakeCert)} `)
             return fail
           }
-          if (ShardeumFlags.FullCertChecksEnabled) {
-            const nominatorAddress = toShardusAddress(stakeCert.nominator, AccountType.Account)
-            const nominatorAccount = await shardus.getLocalOrRemoteAccount(nominatorAddress)
-            if (!nominatorAccount) {
-              /* prettier-ignore */ nestedCountersInstance.countEvent('shardeum-staking', 'could not find nominator account')
-              /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`could not find nominator account ${type} ${JSON.stringify(stakeCert)} `)
-              return fail
-            }
-            const nominatorEVMAccount = nominatorAccount.data as WrappedEVMAccount
-            fixDeserializedWrappedEVMAccount(nominatorEVMAccount)
-            if (!nominatorEVMAccount.operatorAccountInfo) {
-              /* prettier-ignore */ nestedCountersInstance.countEvent('shardeum-staking', 'operatorAccountInfo missing from nominator')
-              /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`operatorAccountInfo missing from nominator ${type} ${JSON.stringify(stakeCert)} `)
-              return fail
-            }
-            if (stakeCert.stake != nominatorEVMAccount.operatorAccountInfo.stake) {
-              /* prettier-ignore */ nestedCountersInstance.countEvent('shardeum-staking', 'operatorAccountInfo missing from nominator')
-              /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`stake amount in cert and operator account does not match ${type} ${JSON.stringify(stakeCert)} ${JSON.stringify(nominatorEVMAccount)} `)
-              return fail
-            }
-            if (stakeCert.nominee != nominatorEVMAccount.operatorAccountInfo.nominee) {
-              /* prettier-ignore */ nestedCountersInstance.countEvent('shardeum-staking', 'nominee in cert and operator account does not match')
-              /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`nominee in cert and operator account does not match ${type} ${JSON.stringify(stakeCert)} ${JSON.stringify(nominatorEVMAccount)} `)
-              return fail
-            }
+          if (stakeCert.stake != nominatorEVMAccount.operatorAccountInfo.stake) {
+            /* prettier-ignore */ nestedCountersInstance.countEvent('shardeum-staking', 'operatorAccountInfo missing from nominator')
+            /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`stake amount in cert and operator account does not match ${type} ${JSON.stringify(stakeCert)} ${JSON.stringify(nominatorEVMAccount)} `)
+            return fail
           }
-          delete stakeCert.sign
-          delete stakeCert.signs
-          const signedCert: StakeCert = shardus.signAsNode(stakeCert)
-          const result: ShardusTypes.SignAppDataResult = { success: true, signature: signedCert.sign }
-          if (ShardeumFlags.VerboseLogs) console.log(`signAppData passed ${type} ${JSON.stringify(stakeCert)}`)
-          nestedCountersInstance.countEvent('shardeum-staking', 'sign-stake-cert - passed')
-          return result
+          if (stakeCert.nominee != nominatorEVMAccount.operatorAccountInfo.nominee) {
+            /* prettier-ignore */ nestedCountersInstance.countEvent('shardeum-staking', 'nominee in cert and operator account does not match')
+            /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`nominee in cert and operator account does not match ${type} ${JSON.stringify(stakeCert)} ${JSON.stringify(nominatorEVMAccount)} `)
+            return fail
+          }
+        }
+        delete stakeCert.sign
+        delete stakeCert.signs
+        const signedCert: StakeCert = shardus.signAsNode(stakeCert)
+        const result: ShardusTypes.SignAppDataResult = { success: true, signature: signedCert.sign }
+        if (ShardeumFlags.VerboseLogs) console.log(`signAppData passed ${type} ${JSON.stringify(stakeCert)}`)
+        nestedCountersInstance.countEvent('shardeum-staking', 'sign-stake-cert - passed')
+        return result
       }
     } catch (e) {
       /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`signAppData failed: ${type} ${JSON.stringify(stakeCert)}, error: ${JSON.stringify(e)}`)
@@ -4496,7 +4473,7 @@ shardus.setup({
     //console.log(`getSimpleTxDebugValue: ${JSON.stringify(tx)}`)
 
     try {
-      const { tx } = timestampedTx
+      const tx = timestampedTx
       if (isInternalTx(tx)) {
         const internalTx = tx as InternalTx
         return `internalTX: ${InternalTXType[internalTx.internalTXType]} `
@@ -4513,7 +4490,7 @@ shardus.setup({
         return `EVMtx`
       }
     } catch (e) {
-      const { tx } = timestampedTx
+      const tx = timestampedTx
       console.log(`getSimpleTxDebugValue failed: ${JSON.stringify(e)}  tx:${JSON.stringify(tx)}`)
     }
   },
@@ -4587,7 +4564,7 @@ shardus.setup({
         }
       }
 
-      const activeNodes: [] = shardus.stateManager.currentCycleShardData.activeNodes
+      const activeNodes = shardus.stateManager.currentCycleShardData.activeNodes
 
       // Staking is only enabled when flag is on and
       const stakingEnabled =
@@ -4974,7 +4951,7 @@ setTimeout(periodicMemoryCleanup, 60000)
 
 if (ShardeumFlags.GlobalNetworkAccount) {
   // CODE THAT GETS EXECUTED WHEN NODES START
-  (async (): Promise<void> => {
+  ;(async (): Promise<void> => {
     const serverConfig = config.server
     const cycleInterval = serverConfig.p2p.cycleDuration * ONE_SECOND
 
@@ -5048,9 +5025,9 @@ if (ShardeumFlags.GlobalNetworkAccount) {
         }, waitTime)
       }
 
-        if (shardus.p2p.isFirstSeed) {
-          await sleep(cycleInterval * 2)
-        }
+      if (shardus.p2p.isFirstSeed) {
+        await sleep(cycleInterval * 2)
+      }
 
       shardus.registerCacheTopic(
         'receipt',
