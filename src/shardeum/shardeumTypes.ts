@@ -246,7 +246,7 @@ export interface NetworkAccount extends BaseAccount {
     cycle: number
     change: Change
   }>
-  next: NetworkParameters
+  next: NetworkParameters | object //todo potentially improve this, but will need functional changes
   hash: string
   timestamp: number
 }
