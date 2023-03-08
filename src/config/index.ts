@@ -4,9 +4,13 @@ import merge from 'deepmerge'
 
 const overwriteMerge = (target: any[], source: any[]): any[] => source // eslint-disable-line @typescript-eslint/no-explicit-any
 
-let config: {server: {
-        p2p?: {cycleDuration: number};
-        baseDir: string, mode?: 'debug' | 'release'}} = { server: { baseDir: './'} }
+let config: {
+  server: {
+    p2p?: { cycleDuration: number }
+    baseDir: string
+    mode?: 'debug' | 'release'
+  }
+} = { server: { baseDir: './' } }
 
 if (fs.existsSync(path.join(process.cwd(), 'config.json'))) {
   const fileConfig = JSON.parse(fs.readFileSync(path.join(process.cwd(), 'config.json')).toString())
@@ -36,11 +40,11 @@ if (process.env.APP_SEEDLIST) {
             {
               ip: process.env.APP_SEEDLIST,
               port: 4000,
-              publicKey: '758b1c119412298802cd28dbfa394cdfeecc4074492d60844cc192d632d84de3'
-            }
-          ]
-        }
-      }
+              publicKey: '758b1c119412298802cd28dbfa394cdfeecc4074492d60844cc192d632d84de3',
+            },
+          ],
+        },
+      },
     },
     { arrayMerge: overwriteMerge }
   )
@@ -55,9 +59,9 @@ if (process.env.EXISTING_ARCHIVERS) {
       {
         server: {
           p2p: {
-            existingArchivers
-          }
-        }
+            existingArchivers,
+          },
+        },
       },
       { arrayMerge: overwriteMerge }
     )
@@ -70,9 +74,9 @@ if (process.env.APP_MONITOR) {
     {
       server: {
         reporting: {
-          recipient: `http://${process.env.APP_MONITOR}:3000/api`
-        }
-      }
+          recipient: `http://${process.env.APP_MONITOR}:3000/api`,
+        },
+      },
     },
     { arrayMerge: overwriteMerge }
   )
@@ -85,9 +89,9 @@ if (process.env.APP_IP) {
       server: {
         ip: {
           externalIp: process.env.APP_IP,
-          internalIp: process.env.APP_IP
-        }
-      }
+          internalIp: process.env.APP_IP,
+        },
+      },
     },
     { arrayMerge: overwriteMerge }
   )
@@ -110,9 +114,9 @@ config = merge(config, {
       amountToShrink: 5,
       maxDesiredMultiplier: 1.2,
       maxScaleReqs: 250, // todo: this will become a variable config but this should work for a 500 node demo
-      forceBogonFilteringOn: true
-    }
-  }
+      forceBogonFilteringOn: true,
+    },
+  },
 })
 
 // rateLimiting and loadDetection settings
@@ -125,17 +129,17 @@ config = merge(config, {
         external: 0.8,
         txTimeInQueue: 0.7,
         queueLength: 0.8,
-        executeQueueLength: 0.8
-      }
+        executeQueueLength: 0.8,
+      },
     },
     loadDetection: {
       queueLimit: 400, // EXSS does the main limiting now queue limit is a secondary limit
       executeQueueLimit: 100,
       desiredTxTime: 15, // 15
       highThreshold: 0.5,
-      lowThreshold: 0.2
-    }
-  }
+      lowThreshold: 0.2,
+    },
+  },
 })
 
 // Sharding and state manager settings
@@ -146,12 +150,12 @@ config = merge(config, {
         ? parseInt(process.env.nodesPerConsensusGroup)
         : 10,
       nodesPerEdge: process.env.nodesPerEdge ? parseInt(process.env.nodesPerEdge) : 5,
-      executeInOneShard: true
+      executeInOneShard: true,
     },
     stateManager: {
-      accountBucketSize: 200 // todo: we need to re-test with higher numbers after some recent improvements
-    }
-  }
+      accountBucketSize: 200, // todo: we need to re-test with higher numbers after some recent improvements
+    },
+  },
 })
 
 // Debug settings
@@ -169,9 +173,9 @@ config = merge(
         disableSnapshots: true, // do not check in if set to false
         countEndpointStart: -1,
         hashedDevAuth: '',
-        devPublicKey: '774491f80f47fedb119bb861601490f42bc3ea3b57fc63906c0d08e6d777a592'
-      }
-    }
+        devPublicKey: '774491f80f47fedb119bb861601490f42bc3ea3b57fc63906c0d08e6d777a592',
+      },
+    },
   },
   { arrayMerge: overwriteMerge }
 )
