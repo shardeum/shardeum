@@ -3356,6 +3356,7 @@ shardus.setup({
     }
   },
 
+  //@ts-ignore
   crack(timestampedTx, appData) {
     if (ShardeumFlags.VerboseLogs) console.log('Running getKeyFromTransaction', timestampedTx)
     const tx = timestampedTx
