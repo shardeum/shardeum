@@ -14,10 +14,7 @@
     "plugin:no-unsanitized/DOM",
     "prettier"
   ],
-  "ignorePatterns": [
-    "**/src/setup/*",
-    "**/src/index.ts"
-  ],
+  "ignorePatterns": [],
   "rules": {
     "no-empty": [
       1,

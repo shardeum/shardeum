@@ -1,19 +1,20 @@
-import { Shardus, ShardusTypes } from '@shardus/core'
 import Common from '@ethereumjs/common'
+import { Shardus, ShardusTypes } from '@shardus/core'
 import { Account, Address, BN } from 'ethereumjs-util'
-import { loadAccountDataFromDB } from '../shardeum/debugRestoreAccounts'
-import { ShardeumFlags } from '../shardeum/shardeumFlags'
-import { sleep } from '../utils'
-import genesis from '../config/genesis.json'
-import * as AccountsStorage from '../storage/accountStorage'
-import { toShardusAddress } from '../shardeum/evmAddress'
-import { AccountType, InternalTXType, WrappedEVMAccount, DevAccount } from '../shardeum/shardeumTypes'
-import { ShardeumState, TransactionState } from '../state'
-import { StateManager } from '../vm/state'
-import * as WrappedEVMAccountFunctions from '../shardeum/wrappedEVMAccountFunctions'
 import config from '../config'
+import genesis from '../config/genesis.json'
+import { loadAccountDataFromDB } from '../shardeum/debugRestoreAccounts'
+import { toShardusAddress } from '../shardeum/evmAddress'
+import { ShardeumFlags } from '../shardeum/shardeumFlags'
+import { AccountType, DevAccount, InternalTXType, WrappedEVMAccount } from '../shardeum/shardeumTypes'
+import * as WrappedEVMAccountFunctions from '../shardeum/wrappedEVMAccountFunctions'
+import { ShardeumState, TransactionState } from '../state'
+import * as AccountsStorage from '../storage/accountStorage'
+import { sleep } from '../utils'
+import { StateManager } from '../vm/state'
 
 function isDebugMode() {
+  // eslint-disable-next-line @typescript-eslint/ban-ts-comment
   //@ts-ignore
   return config.server.mode === 'debug'
 }
@@ -51,7 +52,7 @@ export const sync = (shardus: Shardus, evmCommon: Common) => async (): Promise<v
         let skippedAccountCount = 0
         const accountCopies = []
         for (const address in genesis) {
-          const amount = new BN(genesis[address].wei)
+          const amount = new BN(genesis[address].wei) // eslint-disable-line security/detect-object-injection
 
           const shardusAccountID = toShardusAddress(address, AccountType.Account)
           const existingAccount = await shardus.getLocalOrRemoteAccount(shardusAccountID)
@@ -80,7 +81,7 @@ export const sync = (shardus: Shardus, evmCommon: Common) => async (): Promise<v
         console.log(`Skipped ${skippedAccountCount} genesis accounts`)
         if (ShardeumFlags.devPublicKey) {
           const { account, cycle } = createDevAccount(ShardeumFlags.devPublicKey, shardus.getLatestCycles())
-          const devAccount: any = account
+          const devAccount: any = account // eslint-disable-line @typescript-eslint/no-explicit-any
           await AccountsStorage.setAccount(devAccount.id, devAccount)
           const accountCopy: ShardusTypes.AccountsCopy = {
             cycleNumber: cycle.counter,
@@ -131,7 +132,7 @@ async function manuallyCreateAccount(
   ethAccountID: string,
   balance = defaultBalance,
   evmCommon: Common,
-  latestCycles: any
+  latestCycles: any // eslint-disable-line @typescript-eslint/no-explicit-any
 ) {
   const shardusAccountID = toShardusAddress(ethAccountID, AccountType.Account)
 
@@ -173,6 +174,7 @@ async function manuallyCreateAccount(
   return { accountId: shardusAccountID, wrappedEVMAccount, cycle: latestCycles[0] }
 }
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 const createDevAccount = (accountId: string, latestCycles: any) => {
   let cycleStart = 0
   if (latestCycles != null && latestCycles.length > 0) {
@@ -204,13 +206,13 @@ function getDebugTXState(evmCommon: Common): ShardeumState {
     transactionState.initData(
       shardeumState,
       {
-        //dont define callbacks for db TX state!
+        //don't define callbacks for db TX state!
         storageMiss: accountMissNoOp,
         contractStorageMiss: contractStorageMissNoOp,
         accountInvolved: accountInvolvedNoOp,
         contractStorageInvolved: contractStorageInvolvedNoOp,
         tryGetRemoteAccountCB: tryGetRemoteAccountCBNoOp,
-        monitorEventCB: () => {}
+        monitorEventCB: () => {}, // eslint-disable-line @typescript-eslint/no-empty-function
       },
       txId,
       undefined,
@@ -258,11 +260,12 @@ async function createAccount(
   return wrappedEVMAccount
 }
 
+/* eslint-disable @typescript-eslint/no-unused-vars */
 /**
  * fake callbacks so that the debug transactionState object can work with creating test accounts
  * Probably not a good thing to have long term.
  */
-async function accountMissNoOp(transactionState: TransactionState, address: string): Promise<boolean> {
+async function accountMissNoOp(_transactionState: TransactionState, _address: string): Promise<boolean> {
   const isRemoteShard = false
   return isRemoteShard
 }
@@ -276,7 +279,11 @@ async function contractStorageMissNoOp(
   return isRemoteShard
 }
 
-function accountInvolvedNoOp(transactionState: TransactionState, address: string, isRead: boolean): boolean {
+function accountInvolvedNoOp(
+  _transactionState: TransactionState,
+  _address: string,
+  _isRead: boolean
+): boolean {
   return true
 }
 
@@ -297,3 +304,4 @@ function tryGetRemoteAccountCBNoOp(
 ): Promise<WrappedEVMAccount> {
   return undefined
 }
+/* eslint-enable @typescript-eslint/no-unused-vars */

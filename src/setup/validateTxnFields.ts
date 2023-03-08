@@ -1,3 +1,5 @@
+import { nestedCountersInstance, Shardus } from '@shardus/core'
+import { BN, bufferToHex } from 'ethereumjs-util'
 import { ShardeumFlags } from '../shardeum/shardeumFlags'
 import {
   ClaimRewardTX,
@@ -10,21 +12,19 @@ import {
   UnstakeCoinsTX,
   WrappedEVMAccount,
 } from '../shardeum/shardeumTypes'
+import * as AccountsStorage from '../storage/accountStorage'
+import { validateClaimRewardTx } from '../tx/claimReward'
+import * as InitRewardTimesTx from '../tx/initRewardTimes'
 import { isSetCertTimeTx, validateSetCertTimeTx } from '../tx/setCertTime'
+import { scaleByStabilityFactor, _base16BNParser } from '../utils'
 import {
+  crypto,
   getInjectedOrGeneratedTimestamp,
+  getTransactionObj,
   isInternalTx,
   isInternalTXGlobal,
   verify,
-  crypto,
-  getTransactionObj,
 } from './helpers'
-import * as InitRewardTimesTx from '../tx/initRewardTimes'
-import { validateClaimRewardTx } from '../tx/claimReward'
-import { bufferToHex, BN } from 'ethereumjs-util'
-import { __ShardFunctions, nestedCountersInstance, Shardus } from '@shardus/core'
-import { _base16BNParser, scaleByStabilityFactor } from '../utils'
-import * as AccountsStorage from '../storage/accountStorage'
 
 /**
  * Checks that Transaction fields are valid
@@ -33,7 +33,8 @@ import * as AccountsStorage from '../storage/accountStorage'
  * @returns
  */
 export const validateTxnFields =
-  (shardus: Shardus, debugAppdata: Map<string, any>) => (timestampedTx: any, appData: any) => {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  (shardus: Shardus, debugAppdata: Map<string, unknown>) => (timestampedTx: any, appData: any) => {
     const { tx } = timestampedTx
     const txnTimestamp: number = getInjectedOrGeneratedTimestamp(timestampedTx)
 

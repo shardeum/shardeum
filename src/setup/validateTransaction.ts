@@ -2,7 +2,6 @@ import { Shardus } from '@shardus/core'
 import { ShardeumFlags } from '../shardeum/shardeumFlags'
 import { InitRewardTimes, InternalTx, InternalTXType } from '../shardeum/shardeumTypes'
 import { crypto, getTransactionObj, isDebugTx, isInternalTx, isInternalTXGlobal, verify } from './helpers'
-import * as InitRewardTimesTx from '../tx/initRewardTimes'
 
 type Response = {
   result: string
@@ -11,6 +10,7 @@ type Response = {
 
 export const validateTransaction =
   (shardus: Shardus) =>
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   (tx: any): Response => {
     if (isInternalTx(tx)) {
       const internalTx = tx as InternalTx
