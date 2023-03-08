@@ -1,5 +1,7 @@
-Important notice:  
+# Important notice:
+
 -Do not try to connect to the beta network from source yet.
+
 -Visit https://gitlab.com/shardeum/validator/dashboard and use this instead
 
 -local testing may not run great yet. We will update with information on this later
