@@ -5,7 +5,8 @@
 -Visit https://gitlab.com/shardeum/validator/dashboard and use this instead
 
 -local testing may not run great yet. We will update with information on this later
-for now the best use of this repo is to be able to see the code
+
+-for now the best use of this repo is to be able to see the code
 
 # Getting Familiar with Shardus
 
