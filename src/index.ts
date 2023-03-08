@@ -2249,7 +2249,8 @@ shardus.setup({
   validateTransaction: validateTransaction(shardus),
   validateTxnFields: validateTxnFields(shardus, debugAppdata),
   async apply(timestampedTx, wrappedStates, appData) {
-    const tx = timestampedTx
+    //@ts-ignore
+    const { tx } = timestampedTx
     const txTimestamp = getInjectedOrGeneratedTimestamp(timestampedTx)
     // Validate the tx
     const { result, reason } = this.validateTransaction(tx)
@@ -3361,7 +3362,8 @@ shardus.setup({
   //@ts-ignore
   crack(timestampedTx, appData) {
     if (ShardeumFlags.VerboseLogs) console.log('Running getKeyFromTransaction', timestampedTx)
-    const tx = timestampedTx
+    //@ts-ignore
+    const { tx } = timestampedTx
 
     const timestamp: number = getInjectedOrGeneratedTimestamp(timestampedTx)
 
@@ -3688,7 +3690,8 @@ shardus.setup({
   },
   async getRelevantData(accountId, timestampedTx, appData) {
     if (ShardeumFlags.VerboseLogs) console.log('Running getRelevantData', accountId, timestampedTx, appData)
-    const tx = timestampedTx
+    //@ts-ignore
+    const { tx } = timestampedTx
 
     if (isInternalTx(tx)) {
       const internalTx = tx as InternalTx
@@ -4477,7 +4480,8 @@ shardus.setup({
     //console.log(`getSimpleTxDebugValue: ${JSON.stringify(tx)}`)
 
     try {
-      const tx = timestampedTx
+      //@ts-ignore
+      const { tx } = timestampedTx
       if (isInternalTx(tx)) {
         const internalTx = tx as InternalTx
         return `internalTX: ${InternalTXType[internalTx.internalTXType]} `
@@ -4494,7 +4498,8 @@ shardus.setup({
         return `EVMtx`
       }
     } catch (e) {
-      const tx = timestampedTx
+      //@ts-ignore
+      const { tx } = timestampedTx
       console.log(`getSimpleTxDebugValue failed: ${JSON.stringify(e)}  tx:${JSON.stringify(tx)}`)
     }
   },
