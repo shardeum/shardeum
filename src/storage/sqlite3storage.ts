@@ -170,7 +170,6 @@ class Sqlite3Storage {
       await this.run('PRAGMA synchronous = OFF')
       console.log('PRAGMA synchronous = OFF')
 
-      // eslint-disable-next-line @typescript-eslint/ban-ts-comment
       //@ts-ignore
       if (config?.storage?.options?.walMode === true) {
         await this.run('PRAGMA journal_mode = WAL')
@@ -179,7 +178,6 @@ class Sqlite3Storage {
         await this.run('PRAGMA journal_mode = MEMORY')
         console.log('PRAGMA journal_mode = MEMORY')
       }
-      // eslint-disable-next-line @typescript-eslint/ban-ts-comment
       //@ts-ignore
       if (config?.storage?.options?.exclusiveLockMode === true) {
         await this.run('PRAGMA locking_mode = EXCLUSIVE')
