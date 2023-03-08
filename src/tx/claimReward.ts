@@ -10,10 +10,12 @@ import {
   AccountType,
   ClaimRewardTX,
   InternalTXType,
+  isNetworkAccount,
+  isNodeAccount2,
   NetworkAccount,
   NodeAccount2,
   WrappedEVMAccount,
-  WrappedStates
+  WrappedStates,
 } from '../shardeum/shardeumTypes'
 import * as WrappedEVMAccountFunctions from '../shardeum/wrappedEVMAccountFunctions'
 import * as AccountsStorage from '../storage/accountStorage'
@@ -210,9 +212,21 @@ export async function applyClaimRewardTx(
     return
   }
   const operatorShardusAddress = toShardusAddress(tx.nominator, AccountType.Account)
-  const nodeAccount: NodeAccount2 = wrappedStates[tx.nominee].data
-  const network: NetworkAccount = wrappedStates[networkAccount].data // eslint-disable-line security/detect-object-injection
-  const operatorAccount: WrappedEVMAccount = wrappedStates[operatorShardusAddress].data // eslint-disable-line security/detect-object-injection
+  /* eslint-disable security/detect-object-injection */
+  let nodeAccount: NodeAccount2
+  if (isNodeAccount2(wrappedStates[tx.nominee].data)) {
+    nodeAccount = wrappedStates[tx.nominee].data as NodeAccount2
+  }
+  let network: NetworkAccount
+  if (isNetworkAccount(wrappedStates[networkAccount].data)) {
+    network = wrappedStates[networkAccount].data as NetworkAccount
+  }
+  let operatorAccount: WrappedEVMAccount
+  if (WrappedEVMAccountFunctions.isWrappedEVMAccount(wrappedStates[operatorShardusAddress].data)) {
+    operatorAccount = wrappedStates[operatorShardusAddress].data as WrappedEVMAccount
+  }
+
+  /* eslint-enable security/detect-object-injection */
 
   const nodeRewardAmountUsd = _base16BNParser(network.current.nodeRewardAmountUsd) //new BN(Number('0x' +
   const nodeRewardAmount = scaleByStabilityFactor(nodeRewardAmountUsd, AccountsStorage.cachedNetworkAccount)
@@ -291,9 +305,11 @@ export async function applyClaimRewardTx(
   /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log( `Calculating node reward. nodeRewardAmount: ${_readableSHM(nodeRewardAmount)}, nodeRewardInterval: ${ network.current.nodeRewardInterval } ms, uptime duration: ${durationInNetwork} sec, totalReward: ${_readableSHM( totalReward )}, finalReward: ${_readableSHM(nodeAccount.reward)}   nodeAccount.rewardEndTime:${ nodeAccount.rewardEndTime }  nodeAccount.rewardStartTime:${nodeAccount.rewardStartTime} ` )
 
   if (ShardeumFlags.useAccountWrites) {
-    const wrappedChangedAccount = WrappedEVMAccountFunctions._shardusWrappedAccount(
-      wrappedStates[tx.nominee].data
-    )
+    const acct1 = wrappedStates[operatorShardusAddress].data // eslint-disable-line security/detect-object-injection
+    let wrappedChangedAccount: ShardusTypes.WrappedData
+    if (WrappedEVMAccountFunctions.isWrappedEVMAccount(acct1)) {
+      wrappedChangedAccount = WrappedEVMAccountFunctions._shardusWrappedAccount(acct1)
+    }
     shardus.applyResponseAddChangedAccount(
       applyResponse,
       tx.nominee,
@@ -302,9 +318,14 @@ export async function applyClaimRewardTx(
       txTimestamp
     )
 
-    const wrappedChangedOperatorAccount = WrappedEVMAccountFunctions._shardusWrappedAccount(
-      wrappedStates[operatorShardusAddress].data // eslint-disable-line security/detect-object-injection
-    )
+    let wrappedChangedOperatorAccount: ShardusTypes.WrappedData
+    /* eslint-disable security/detect-object-injection */
+    if (WrappedEVMAccountFunctions.isWrappedEVMAccount(wrappedStates[operatorShardusAddress].data)) {
+      wrappedChangedOperatorAccount = WrappedEVMAccountFunctions._shardusWrappedAccount(
+        wrappedStates[operatorShardusAddress].data as WrappedEVMAccount
+      )
+    }
+    /* eslint-enable security/detect-object-injection */
     shardus.applyResponseAddChangedAccount(
       applyResponse,
       operatorShardusAddress,

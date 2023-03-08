@@ -77,7 +77,7 @@ export const ShardeumFlags: ShardeumFlags = {
   DebugRestoreArchiveBatch: 2000,
   CheckNonce: true,
   txNoncePreCheck: true,
-  txBalancePreCheck: true,
+  txBalancePreCheck: false,
   autoGenerateAccessList: true,
   forwardGenesisAccounts: true,
   UseDBForAccounts: true,
@@ -120,7 +120,8 @@ export const ShardeumFlags: ShardeumFlags = {
   FailedTxLinearBackOffConstantInSecs: 30,
 }
 
-export function updateShardeumFlag(key: string, value: any) {
+export function updateShardeumFlag(key: string, value: string | number | boolean) {
+  /* eslint-disable security/detect-object-injection */
   try {
     if (ShardeumFlags[key] == null) {
       console.log(`There is no shardeum flag for ${key}`)
@@ -136,10 +137,12 @@ export function updateShardeumFlag(key: string, value: any) {
   } catch (e) {
     console.log(`Error: updateShardeumFlag`, e)
   }
+  /* eslint-enable security/detect-object-injection */
 }
 
 export function updateServicePoints(key1: string, key2: string, value: number) {
   try {
+    /* eslint-disable security/detect-object-injection */
     if (!ShardeumFlags['ServicePoints'][key1]) return
     if (typeof value !== 'number') {
       console.log(`Type of new service point value is not a number`)
@@ -161,4 +164,5 @@ export function updateServicePoints(key1: string, key2: string, value: number) {
   } catch (e) {
     console.log(`Error: updateServicePoints`, e)
   }
+  /* eslint-enable security/detect-object-injection */
 }

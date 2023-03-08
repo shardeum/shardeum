@@ -6,7 +6,9 @@ import {
   InitRewardTimes,
   InternalTx,
   InternalTXType,
-  NodeAccount2, WrappedStates
+  isNodeAccount2,
+  NodeAccount2,
+  WrappedStates,
 } from '../shardeum/shardeumTypes'
 import * as WrappedEVMAccountFunctions from '../shardeum/wrappedEVMAccountFunctions'
 import { sleep } from '../utils'
@@ -120,7 +122,11 @@ export function apply(
   wrappedStates: WrappedStates,
   applyResponse: ShardusTypes.ApplyResponse
 ) {
-  const nodeAccount: NodeAccount2 = wrappedStates[tx.nominee].data
+  let nodeAccount: NodeAccount2
+  const acct = wrappedStates[tx.nominee].data
+  if (isNodeAccount2(acct)) {
+    nodeAccount = acct
+  }
   nodeAccount.rewardStartTime = tx.nodeActivatedTime
   nodeAccount.rewardEndTime = 0
   nodeAccount.timestamp = txTimestamp

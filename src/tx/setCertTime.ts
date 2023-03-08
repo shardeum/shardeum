@@ -95,8 +95,11 @@ export function validateSetCertTimeTx(tx: SetCertTime): { isValid: boolean; reas
 export function validateSetCertTimeState(tx: SetCertTime, wrappedStates: WrappedStates) {
   let committedStake = new BN(0)
 
-  const operatorEVMAccount: WrappedEVMAccount =
-    wrappedStates[toShardusAddress(tx.nominator, AccountType.Account)].data
+  let operatorEVMAccount: WrappedEVMAccount
+  const acct = wrappedStates[toShardusAddress(tx.nominator, AccountType.Account)].data
+  if (WrappedEVMAccountFunctions.isWrappedEVMAccount(acct)) {
+    operatorEVMAccount = acct
+  }
   fixDeserializedWrappedEVMAccount(operatorEVMAccount)
   if (operatorEVMAccount == undefined) {
     /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`setCertTime validate state: found no wrapped state for operator account ${tx.nominator}`)
@@ -163,8 +166,13 @@ export function applySetCertTimeTx(
     /* prettier-ignore */ nestedCountersInstance.countEvent('shardeum-staking', 'applySetCertTimeTx' + ' applyResponseSetFailed failed')
     return
   }
-  const operatorEVMAccount: WrappedEVMAccount =
-    wrappedStates[toShardusAddress(tx.nominator, AccountType.Account)].data
+
+  let operatorEVMAccount: WrappedEVMAccount
+  const acct = wrappedStates[toShardusAddress(tx.nominator, AccountType.Account)].data
+  if (WrappedEVMAccountFunctions.isWrappedEVMAccount(acct)) {
+    operatorEVMAccount = acct
+  }
+
   operatorEVMAccount.timestamp = txTimestamp
   fixDeserializedWrappedEVMAccount(operatorEVMAccount)
 

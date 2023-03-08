@@ -6,6 +6,8 @@ import { TransactionState } from '../state'
 import { getAccountShardusAddress } from './evmAddress'
 import { AccountType, InternalAccount, WrappedEVMAccount } from './shardeumTypes'
 
+// type guard
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function isWrappedEVMAccount(obj: any): obj is WrappedEVMAccount {
   return 'ethAddress' in obj
 }

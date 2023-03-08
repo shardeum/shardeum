@@ -1,7 +1,6 @@
-import { AccountType, WrappedEVMAccount } from './shardeumTypes'
+import { AccountType, NetworkAccount, WrappedEVMAccount } from './shardeumTypes'
 
 import { ShardeumFlags } from './shardeumFlags'
-import { Account } from 'ethereumjs-util'
 
 /**
  * This will correctly get a shardus address from a WrappedEVMAccount account no matter what type it is.
@@ -42,14 +41,14 @@ export function getAccountShardusAddress(wrappedEVMAccount: WrappedEVMAccount): 
     return shardusAddress
   }
 
-  const otherAccount: any = wrappedEVMAccount
+  const otherAccount = wrappedEVMAccount
   if (
     otherAccount.accountType === AccountType.NetworkAccount ||
     otherAccount.accountType === AccountType.NodeAccount ||
     otherAccount.accountType === AccountType.NodeAccount2 ||
     otherAccount.accountType === AccountType.DevAccount
   ) {
-    return otherAccount.id
+    return (otherAccount as unknown as NetworkAccount).id
   }
 
   if (otherAccount.accountType === AccountType.NodeRewardReceipt) {
@@ -94,7 +93,6 @@ export function toShardusAddressWithKey(
     const numPrefixChars = 8
     // remove the 0x and get the first 8 hex characters of the address
     const prefix = addressStr.slice(2, numPrefixChars + 2)
-    let suffix
 
     if (addressStr.length != 42) {
       throw new Error('must pass in a 42 character hex address for Account type.')
@@ -103,7 +101,7 @@ export function toShardusAddressWithKey(
       secondaryAddressStr = secondaryAddressStr.slice(2)
     }
     //create a suffix with by discarding numPrefixChars from the start of our keyStr
-    suffix = secondaryAddressStr.slice(numPrefixChars)
+    const suffix = secondaryAddressStr.slice(numPrefixChars)
 
     //force the address to lower case
     let shardusAddress = prefix + suffix
