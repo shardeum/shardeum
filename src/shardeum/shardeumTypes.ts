@@ -1,6 +1,4 @@
-import { Account, Address, BN, bufferToHex, toBuffer } from 'ethereumjs-util'
-
-import { Transaction, AccessListEIP2930Transaction } from '@ethereumjs/tx'
+import { Account, BN } from 'ethereumjs-util'
 import { TxReceipt } from '@ethereumjs/vm/dist/types'
 import { ShardusTypes } from '@shardus/core'
 import { Block } from '@ethereumjs/block'
@@ -31,6 +29,10 @@ export class ShardeumAccount extends Account {
   }
   virtual?: boolean
 }
+
+//There are a lot of change variables. Maybe I can collapse them here and update this later
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type Change = any
 
 /**
  * Still working out the details here.
@@ -118,9 +120,9 @@ export interface InternalTx extends InternalTxBase {
   accountData?: WrappedEVMAccount
   network?: string // Network Account
   nodeId?: string // Node Account
-  change?: any // change config
+  change?: Change // change config
   cycle?: number // change config
-  config?: any // change config
+  config?: string // change config
   nominee?: string // Node Account2
   nominator?: string // EVM Account (OperAcc)
   sign: ShardusTypes.Sign
@@ -181,7 +183,10 @@ export interface DebugTx {
 export interface WrappedAccount {
   accountId: string
   stateId: string
-  data: any
+  // this affects src/index.ts which is being worked on in another branch
+  // I don't want to merge this branch until that one is merged
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  data: any //NetworkAccount | NodeAccount2 | WrappedEVMAccount
   timestamp: number
   accountCreated?: boolean
 }
@@ -201,7 +206,7 @@ export interface OurAppDefinedData {
       from?: string
       change?: {
         cycle: ShardusTypes.Cycle
-        change: any
+        change: Change
       }
     }
     when: number
@@ -218,7 +223,7 @@ export interface ReadableReceipt {
   blockHash: string
   cumulativeGasUsed: string
   gasUsed: string
-  logs: any[]
+  logs: string[]
   logsBloom: string
   contractAddress: string | null
   from: string
@@ -226,7 +231,12 @@ export interface ReadableReceipt {
   value: string
   data: string
   reason?: string // Added this to add the evm error reason
-  stakeInfo?: any // Node Account; used this in stake/unstake tx
+  stakeInfo?: {
+    // Node Account; used this in stake/unstake tx
+    nominee?: string
+    stakeAmount?: string
+    totalStakeAmount?: string
+  }
 }
 
 export interface NetworkAccount extends BaseAccount {
@@ -234,11 +244,17 @@ export interface NetworkAccount extends BaseAccount {
   current: NetworkParameters
   listOfChanges: Array<{
     cycle: number
-    change: any
+    change: Change
   }>
-  next: NetworkParameters | {}
+  next: NetworkParameters
   hash: string
   timestamp: number
+}
+
+//type guard
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export function isNetworkAccount(obj: any): obj is NetworkAccount {
+  return 'current' in obj && 'listOfChanges' in obj && 'next' in obj
 }
 
 export interface NetworkParameters {
@@ -268,6 +284,12 @@ export interface NodeAccount2 extends BaseAccount {
   penalty: BN
   nodeAccountStats: NodeAccountStats
   rewarded: boolean
+}
+
+//type guard
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export function isNodeAccount2(obj: any): obj is NodeAccount2 {
+  return 'nodeAccountStats' in obj && 'rewarded' in obj && 'rewardStartTime' in obj && 'rewardEndTime' in obj
 }
 
 export interface NodeAccountStats {
@@ -314,28 +336,28 @@ export interface OperatorStats {
 export interface ChangeConfig {
   type: string
   from: string
-  cycle: number
+  cycle: ShardusTypes.Cycle
   config: string
   timestamp: number
 }
 
 export interface ApplyChangeConfig {
   type: string
-  change: any
+  change: Change
   timestamp: number
 }
 
 export interface ChangeNetworkParam {
   type: string
   from: string
-  cycle: number
+  cycle: ShardusTypes.Cycle
   config: string
   timestamp: number
 }
 
 export interface ApplyNetworkParam {
   type: string
-  change: any
+  change: Change
   timestamp: number
 }
 

@@ -1,1 +1,3 @@
-export const loadAccountDataFromDB = jest.fn(async () => {})
+export const loadAccountDataFromDB = jest.fn(async () => {
+  /* empty */
+})

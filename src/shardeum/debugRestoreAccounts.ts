@@ -2,10 +2,10 @@ import * as fs from 'fs'
 import { setGenesisAccounts, networkAccount } from '..'
 import { ShardeumFlags } from '../shardeum/shardeumFlags'
 import * as Path from 'path'
-import { sleep } from '../utils'
 import * as readline from 'readline'
 import { once } from 'events'
 import { AccountType } from './shardeumTypes'
+import { Shardus } from '@shardus/core'
 export interface LoadOptions {
   file: string
 }
@@ -17,10 +17,9 @@ export interface LoadReport {
   fatal: boolean
 }
 
-const oneJsonAccountPerLine = true
 const loadInitialDataPerBatch = true
 
-export async function loadAccountDataFromDB(shardus: any, options: LoadOptions): Promise<LoadReport> {
+export async function loadAccountDataFromDB(shardus: Shardus, options: LoadOptions): Promise<LoadReport> {
   const report: LoadReport = {
     passed: false,
     loadCount: 0,
@@ -36,6 +35,8 @@ export async function loadAccountDataFromDB(shardus: any, options: LoadOptions):
 
     path = Path.resolve('./', path)
 
+    // ./account-export.json from ShardeumFlags.ts
+    // eslint-disable-next-line security/detect-non-literal-fs-filename
     if (fs.existsSync(path) === false) {
       console.log(`loadAccountDataFromDB: ${path}  does not exist`)
       return report
@@ -45,12 +46,14 @@ export async function loadAccountDataFromDB(shardus: any, options: LoadOptions):
     let totalAccounts = 0
     if (loadInitialDataPerBatch === true) {
       const rl = readline.createInterface({
+        // ./account-export.json from ShardeumFlags.ts
+        // eslint-disable-next-line security/detect-non-literal-fs-filename
         input: fs.createReadStream(path),
         output: process.stdout,
         terminal: false,
         crlfDelay: Infinity,
       })
-      rl.on('line', async line => {
+      rl.on('line', async (line) => {
         if (line != '') {
           try {
             const account = JSON.parse(line)
@@ -81,12 +84,14 @@ export async function loadAccountDataFromDB(shardus: any, options: LoadOptions):
       return report
     } else {
       const rl = readline.createInterface({
+        // ./account-export.json from ShardeumFlags.ts
+        // eslint-disable-next-line security/detect-non-literal-fs-filename
         input: fs.createReadStream(path),
         output: process.stdout,
         terminal: false,
         crlfDelay: Infinity,
       })
-      rl.on('line', line => {
+      rl.on('line', (line) => {
         if (line != '') {
           try {
             const account = JSON.parse(line)
