@@ -2,6 +2,7 @@ import { Shardus } from '@shardus/core'
 import { ShardeumFlags } from '../shardeum/shardeumFlags'
 import { InitRewardTimes, InternalTx, InternalTXType } from '../shardeum/shardeumTypes'
 import { crypto, getTransactionObj, isDebugTx, isInternalTx, isInternalTXGlobal, verify } from './helpers'
+import * as InitRewardTimesTx from '../tx/initRewardTimes'
 
 type Response = {
   result: string
