@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/ban-ts-comment */
 import { exec } from 'child_process'
 import { arch, cpus, freemem, totalmem, platform } from 'os'
 import stringify from 'fast-json-stable-stringify'
@@ -248,7 +249,7 @@ function convertToReadableBlock(block: Block): ShardeumBlockOverride {
   const previousBlockNumber = String(block.header.number.toNumber() - 1)
   const previousBlock = readableBlocks[previousBlockNumber] // eslint-disable-line security/detect-object-injection
   if (previousBlock) defaultBlock.parentHash = previousBlock.hash
-  // Todo: The Block type is being effectively overriddden here. Ideally this should be a type of it's own in the
+  // Todo: The Block type is being effectively overridden here. Ideally this should be a type of it's own in the
   //  future.
   return defaultBlock as unknown as ShardeumBlockOverride
 }
@@ -3358,7 +3359,6 @@ shardus.setup({
     }
   },
 
-  // eslint-disable-next-line @typescript-eslint/ban-ts-comment
   //@ts-ignore
   crack(timestampedTx, appData) {
     if (ShardeumFlags.VerboseLogs) console.log('Running getKeyFromTransaction', timestampedTx)
