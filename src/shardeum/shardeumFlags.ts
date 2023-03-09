@@ -57,6 +57,7 @@ interface ShardeumFlags {
   FullCertChecksEnabled: boolean // do we run all of the cert checks when signing.  This config may go away soon after testing.
   extraTxTime: number
   minNodesEVMtx: number
+  checkNodesEVMtx: boolean
   ClaimRewardRetryCount: number
   FailedTxLinearBackOffConstantInSecs: number
 }
@@ -116,6 +117,7 @@ export const ShardeumFlags: ShardeumFlags = {
   FullCertChecksEnabled: true,
   extraTxTime: 8, // This is to predict the cycleNumber from the tx timestamp + 8s
   minNodesEVMtx: 5,
+  checkNodesEVMtx: false,
   ClaimRewardRetryCount: 20,
   FailedTxLinearBackOffConstantInSecs: 30,
 }

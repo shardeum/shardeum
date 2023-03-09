@@ -915,7 +915,7 @@ shardus.registerExternalPost('inject', async (req, res) => {
       txRequiresMinNodes = (isStaking || isAllowedInternal) === false
     }
 
-    if (belowEVMtxMinNodes && txRequiresMinNodes) {
+    if (ShardeumFlags.checkNodesEVMtx === false || (belowEVMtxMinNodes && txRequiresMinNodes)) {
       /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`Transaction reject due to min active requirement does not meet , numActiveNodes ${numActiveNodes} < ${ShardeumFlags.minNodesEVMtx} `)
       /* prettier-ignore */ nestedCountersInstance.countEvent('shardeum', `txRejectedDueToMinActiveNodes :${numActiveNodes}`)
       res.json({
