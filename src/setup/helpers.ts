@@ -25,8 +25,11 @@ export function isInternalTXGlobal(internalTx: InternalTx) {
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-export function isInternalTx(tx: any): tx is InternalTx {
-  return tx.isInternalTx
+export function isInternalTx(tx: any): boolean {
+  if (tx.isInternalTx) {
+    return true
+  }
+  return false
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
