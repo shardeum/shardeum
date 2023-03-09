@@ -1387,7 +1387,8 @@ shardus.registerExternalGet('tx/:hash', async (req, res) => {
       let cachedAppData = await shardus.getLocalOrRemoteCachedAppData('receipt', dataId)
       if (ShardeumFlags.VerboseLogs) console.log(`cachedAppData for tx hash ${txHash}`, cachedAppData)
       if (cachedAppData && cachedAppData.appData) cachedAppData = cachedAppData.appData
-      return res.json({ account: cachedAppData })
+      // @ts-ignore
+      return res.json({ account: cachedAppData?.data ? cachedAppData.data : cachedAppData })
     } catch (e) {
       console.log('Unable to get tx receipt', e)
       return res.json({ account: null })
