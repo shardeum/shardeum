@@ -197,7 +197,7 @@ export const validateTxnFields =
           success = false
           reason = `Stake amount is less than minimum required stake amount`
 
-          if (appData.nominatorAccount) {
+          if (appData.nominatorAccount && ShardeumFlags.fixExtraStakeLessThanMin) {
             const wrappedEVMAccount = appData.nominatorAccount as WrappedEVMAccount
             if (wrappedEVMAccount.operatorAccountInfo) {
               const existingStake =
