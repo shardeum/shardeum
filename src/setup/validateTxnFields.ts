@@ -272,9 +272,11 @@ export const validateTxnFields =
             success = false
             reason = `This node is still active in the network. You can unstake only after the node leaves the network!`
           } else if (
-            nodeAccount.rewardEndTime === 0 &&
+            (nodeAccount.rewardEndTime === 0 &&
             nodeAccount.rewardStartTime > 0 &&
-            !unstakeCoinsTX.force
+            !unstakeCoinsTX.force) ||
+            !ShardeumFlags.allowForceUnstake
+  
           ) {
             //note that if both end time and start time are 0 it is ok to unstake
             success = false

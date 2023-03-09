@@ -58,6 +58,7 @@ interface ShardeumFlags {
   extraTxTime: number
   minNodesEVMtx: number
   checkNodesEVMtx: boolean
+  allowForceUnstake: boolean
   ClaimRewardRetryCount: number
   FailedTxLinearBackOffConstantInSecs: number
 }
@@ -118,6 +119,7 @@ export const ShardeumFlags: ShardeumFlags = {
   extraTxTime: 8, // This is to predict the cycleNumber from the tx timestamp + 8s
   minNodesEVMtx: 5,
   checkNodesEVMtx: false,
+  allowForceUnstake: false, // Set to be enabled in 1.1.3
   ClaimRewardRetryCount: 20,
   FailedTxLinearBackOffConstantInSecs: 30,
 }

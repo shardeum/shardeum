@@ -7,4 +7,5 @@ export const migrate: Migration = async () => {
   nestedCountersInstance.countEvent('migrate-1.1.3', 'calling migrate 1.1.3')
 
   ShardeumFlags.checkNodesEVMtx = true
+  ShardeumFlags.allowForceUnstake = true
 }
