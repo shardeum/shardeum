@@ -2,7 +2,6 @@ import { nestedCountersInstance } from '@shardus/core'
 import { ShardeumFlags } from '../../shardeum/shardeumFlags'
 import { Migration } from '../types'
 import { shardusConfig } from '../..'
-import { ShardeumFlags } from '../../shardeum/shardeumFlags'
 
 export const migrate: Migration = async () => {
   console.log('migrate 1.1.3')
