@@ -9,6 +9,7 @@ export const migrate: Migration = async () => {
 
   ShardeumFlags.fixExtraStakeLessThanMin = true
   shardusConfig.features.fixHomeNodeCheckForTXGroupChanges = true
+  shardusConfig.features.archiverDataSubscriptionsUpdate = true
 
   ShardeumFlags.checkNodesEVMtx = true
   ShardeumFlags.allowForceUnstake = true
