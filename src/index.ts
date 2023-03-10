@@ -897,8 +897,13 @@ shardus.registerExternalPost('inject', async (req, res) => {
   let numActiveNodes = 0
   try {
     numActiveNodes = shardus.getNumActiveNodes()
-    const belowEVMtxMinNodes = numActiveNodes < ShardeumFlags.minNodesEVMtx
+    let belowEVMtxMinNodes = numActiveNodes < ShardeumFlags.minNodesEVMtx
     let txRequiresMinNodes = false
+
+    if (ShardeumFlags.checkNodesEVMtx === false) {
+      //if this feature is not enabled, then we will short circuit the below checks
+      belowEVMtxMinNodes = false
+    }
 
     //only run these checks if we are below the limit
     if (belowEVMtxMinNodes) {
@@ -917,7 +922,7 @@ shardus.registerExternalPost('inject', async (req, res) => {
       txRequiresMinNodes = (isStaking || isAllowedInternal) === false
     }
 
-    if (ShardeumFlags.checkNodesEVMtx === false || (belowEVMtxMinNodes && txRequiresMinNodes)) {
+    if (belowEVMtxMinNodes && txRequiresMinNodes) {
       /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`Transaction reject due to min active requirement does not meet , numActiveNodes ${numActiveNodes} < ${ShardeumFlags.minNodesEVMtx} `)
       /* prettier-ignore */ nestedCountersInstance.countEvent('shardeum', `txRejectedDueToMinActiveNodes :${numActiveNodes}`)
       res.json({
@@ -2542,17 +2547,15 @@ shardus.setup({
       const txFee = scaleByStabilityFactor(txFeeUsd, AccountsStorage.cachedNetworkAccount)
       if (ShardeumFlags.VerboseLogs)
         console.log('calculating new balance after unstake', currentBalance, stake, reward, penalty, txFee)
-        if (
-          nodeAccount2.rewardEndTime === 0 &&
-          nodeAccount2.rewardStartTime > 0 &&
-          ShardeumFlags.allowForceUnstake
-        ) {
-
+      if (
+        nodeAccount2.rewardEndTime === 0 &&
+        nodeAccount2.rewardStartTime > 0 &&
+        ShardeumFlags.allowForceUnstake
+      ) {
         // This block will only be reached if the node is inactive and the force unstake flag has been set
         reward = new BN(0)
 
-        if (ShardeumFlags.VerboseLogs)
-          console.log('discarding staking rewards due to zero rewardEndTime')
+        if (ShardeumFlags.VerboseLogs) console.log('discarding staking rewards due to zero rewardEndTime')
       }
       const newBalance = currentBalance.add(stake).add(reward).sub(penalty).sub(txFee)
       operatorEVMAccount.account.balance = newBalance
