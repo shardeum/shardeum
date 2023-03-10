@@ -4,7 +4,9 @@ import merge from 'deepmerge'
 
 const overwriteMerge = (target: any[], source: any[]): any[] => source // eslint-disable-line @typescript-eslint/no-explicit-any
 
+//TODO: improve typing here
 let config: {
+  storage?: any // eslint-disable-line @typescript-eslint/no-explicit-any
   server: {
     p2p?: { cycleDuration: number }
     baseDir: string
