@@ -2530,7 +2530,7 @@ shardus.setup({
       }
       fixDeserializedWrappedEVMAccount(operatorEVMAccount)
 
-      if (operatorEVMAccount.operatorAccountInfo.certExp > txTimestamp) {
+      if (operatorEVMAccount.operatorAccountInfo.certExp > txTimestamp && ShardeumFlags.unstakeCertCheckFix) {
         throw new Error(
           `Unable to apply Unstake tx because stake cert has not yet expired. Expiry timestamp ${operatorEVMAccount.operatorAccountInfo.certExp}`
         )
