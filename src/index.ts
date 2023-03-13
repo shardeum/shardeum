@@ -1581,7 +1581,7 @@ shardus.registerExternalPut('query-certificate', async (req: Request, res: Respo
  */
 
 async function applyInternalTx(
-  tx,
+  tx: InternalTx,
   wrappedStates: WrappedStates,
   txTimestamp: number
 ): Promise<ShardusTypes.ApplyResponse> {
@@ -1741,31 +1741,6 @@ async function applyInternalTx(
     // network will consens that this is the correct value
     ourAppDefinedData.globalMsg = { address: networkAccount, value, when, source: value.from }
 
-    if (ShardeumFlags.useAccountWrites) {
-      /* eslint-disable security/detect-object-injection */
-      const networkAccountCopy = wrappedStates[networkAccount]
-      const devAccountCopy = wrappedStates[internalTx.from]
-      /* eslint-enable security/detect-object-injection */
-      networkAccountCopy.data.timestamp = txTimestamp
-      devAccountCopy.data.timestamp = txTimestamp
-      shardus.applyResponseAddChangedAccount(
-        applyResponse,
-        networkAccount,
-        networkAccountCopy as ShardusTypes.WrappedResponse,
-        txId,
-        txTimestamp
-      )
-      shardus.applyResponseAddChangedAccount(
-        applyResponse,
-        internalTx.from,
-        devAccountCopy as ShardusTypes.WrappedResponse,
-        txId,
-        txTimestamp
-      )
-    } else {
-      network.timestamp = txTimestamp
-      devAccount.timestamp = txTimestamp
-    }
     console.log('Applied change_network_param tx')
     shardus.log('Applied change_network_param tx')
   }
@@ -4854,7 +4829,7 @@ shardus.setup({
     const cachedNetworkAccount = AccountsStorage.cachedNetworkAccount
     if (cachedNetworkAccount) {
       minVersion = cachedNetworkAccount.current.minVersion
-      activeVersion = cachedNetworkAccount.current.minVersion
+      activeVersion = cachedNetworkAccount.current.activeVersion
     }
     const shardeumNodeInfo: NodeInfoAppData = {
       shardeumVersion: version,
