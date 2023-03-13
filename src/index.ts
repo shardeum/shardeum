@@ -1937,6 +1937,30 @@ const createNetworkAccount = (accountId: string) => {
   return account
 }
 
+const createNodeAccount2 = (accountId: string) => {
+  const nodeAccount: NodeAccount2 = {
+    id: accountId,
+    hash: '',
+    timestamp: 0,
+    nominator: '',
+    stakeLock: new BN(0),
+    reward: new BN(0),
+    rewardStartTime: 0,
+    rewardEndTime: 0,
+    penalty: new BN(0),
+    accountType: AccountType.NodeAccount2,
+    nodeAccountStats: {
+      totalReward: new BN(0),
+      totalPenalty: new BN(0),
+      history: [],
+      isShardeumRun: false,
+    },
+    rewarded: false
+  }
+  WrappedEVMAccountFunctions.updateEthAccountHash(nodeAccount)
+  return nodeAccount
+}
+
 const getOrCreateBlockFromTimestamp = (timestamp: number, scheduleNextBlock = false): Block => {
   /* eslint-disable security/detect-object-injection */
   if (ShardeumFlags.VerboseLogs) console.log('Getting block from timestamp', timestamp)
@@ -3871,26 +3895,8 @@ shardus.setup({
 
           // if it is nominee and a stake tx, create 'NodeAccount' if it doesn't exist
           if (accountId === stakeTxBlob.nominee) {
-            const nodeAccount = {
-              id: accountId,
-              hash: '',
-              timestamp: 0,
-              nominator: '',
-              stakeLock: new BN(0),
-              reward: new BN(0),
-              rewardStartTime: 0,
-              rewardEndTime: 0,
-              penalty: new BN(0),
-              accountType: AccountType.NodeAccount2,
-              nodeAccountStats: {
-                totalReward: new BN(0),
-                totalPenalty: new BN(0),
-                history: [],
-                isShardeumRun: false,
-              },
-            }
+            const nodeAccount: NodeAccount2 = createNodeAccount2(accountId)
             accountCreated = true
-            WrappedEVMAccountFunctions.updateEthAccountHash(nodeAccount)
             nestedCountersInstance.countEvent('shardeum-staking', 'created new node account')
             if (ShardeumFlags.VerboseLogs) console.log('Created new node account', nodeAccount)
             if (ShardeumFlags.VerboseLogs)

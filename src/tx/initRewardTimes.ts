@@ -126,7 +126,7 @@ export function apply(
   const acct = wrappedStates[tx.nominee].data
   if (isNodeAccount2(acct)) {
     nodeAccount = acct
-  }
+  } else throw new Error('tx.nominee is not a NodeAccount2')
   nodeAccount.rewardStartTime = tx.nodeActivatedTime
   nodeAccount.rewardEndTime = 0
   nodeAccount.timestamp = txTimestamp
