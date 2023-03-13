@@ -1775,6 +1775,44 @@ async function applyInternalTx(
     const claimRewardTx = internalTx as ClaimRewardTX
     applyClaimRewardTx(shardus, claimRewardTx, wrappedStates, txTimestamp, applyResponse)
   }
+  const readableReceipt: ReadableReceipt = {
+    status: 1,
+    transactionHash: '0x' + txId,
+    transactionIndex: '0x1',
+    // eslint-disable-next-line security/detect-object-injection
+    blockNumber: readableBlocks[latestBlock].number,
+    nonce: '0x0',
+    blockHash: readableBlocks[latestBlock].hash, // eslint-disable-line security/detect-object-injection
+    cumulativeGasUsed: '0x0',
+    gasUsed: '0x0',
+    logs: [],
+    logsBloom: '',
+    contractAddress: null,
+    from: internalTx.from ? internalTx.from : networkAccount,
+    to: internalTx.to ? internalTx.to : networkAccount,
+    stakeInfo: null,
+    value: '0x0',
+    data: '0x0',
+    isInternalTx: true,
+    internalTx: internalTx,
+  }
+  const wrappedReceiptAccount = {
+    timestamp: internalTx.timestamp,
+    ethAddress: '0x' + txId,
+    hash: '',
+    receipt: null,
+    readableReceipt,
+    amountSpent: '0',
+    txId: txId,
+    accountType: AccountType.Receipt,
+    txFrom: readableReceipt.from,
+  }
+  const receiptShardusAccount = WrappedEVMAccountFunctions._shardusWrappedAccount(wrappedReceiptAccount)
+  shardus.applyResponseAddReceiptData(
+    applyResponse,
+    receiptShardusAccount,
+    crypto.hashObj(receiptShardusAccount)
+  )
   return applyResponse
 }
 

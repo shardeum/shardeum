@@ -238,6 +238,8 @@ export interface ReadableReceipt {
     stakeAmount?: string
     totalStakeAmount?: string
   }
+  isInternalTx?: boolean
+  internalTx?: InternalTx
 }
 
 export interface NetworkAccount extends BaseAccount {
