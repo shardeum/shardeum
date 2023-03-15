@@ -4702,6 +4702,13 @@ shardus.setup({
     }
 
     //if our last set cert time was more than certCycleDuration cycles ago then we need to ask again
+    if (ShardeumFlags.fixCertExpRenew === false) {
+      if (latestCycle.counter - lastCertTimeTxCycle > ShardeumFlags.certCycleDuration) {
+        //force us to re set the cert time next cycle
+        lastCertTimeTxTimestamp = 0
+        return false
+      }
+    }
     const isCertTimeExpired =
       lastCertTimeTxCycle > 0 && latestCycle.counter - lastCertTimeTxCycle > ShardeumFlags.certCycleDuration
     if (isCertTimeExpired) {
@@ -4721,7 +4728,7 @@ shardus.setup({
       if (ShardeumFlags.VerboseLogs) {
         /* prettier-ignore */ console.log('stakeCert != null. remainingValidTime / minimum time ', remainingValidTime, certExpireSoonCycles * ONE_SECOND * latestCycle.duration, `expiredPercentage: ${expiredPercentage}, isExpiringSoon: ${isExpiringSoon}`)
       }
-      if (isExpiringSoon || isCertTimeExpired) {
+      if (isExpiringSoon || (isCertTimeExpired && ShardeumFlags.fixCertExpRenew)) {
         nestedCountersInstance.countEvent('shardeum-staking', 'stakeCert is expired or expiring soon')
 
         stakeCert = null //clear stake cert, so we will know to query for it again

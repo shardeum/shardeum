@@ -63,6 +63,7 @@ interface ShardeumFlags {
   FailedTxLinearBackOffConstantInSecs: number
   fixExtraStakeLessThanMin: boolean
   unstakeCertCheckFix: boolean
+  fixCertExpRenew: boolean
 }
 
 export const ShardeumFlags: ShardeumFlags = {
@@ -126,6 +127,7 @@ export const ShardeumFlags: ShardeumFlags = {
   FailedTxLinearBackOffConstantInSecs: 30,
   fixExtraStakeLessThanMin: false,
   unstakeCertCheckFix: false, // Set to be enabled in 1.1.3
+  fixCertExpRenew: false
 }
 
 export function updateShardeumFlag(key: string, value: string | number | boolean) {
