@@ -15,4 +15,5 @@ export const migrate: Migration = async () => {
   ShardeumFlags.allowForceUnstake = true
   ShardeumFlags.unstakeCertCheckFix = true
   ShardeumFlags.rewardedFalseInInitRewardTx = true
+  ShardeumFlags.fixCertExpRenew = true
 }
