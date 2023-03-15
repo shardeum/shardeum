@@ -1938,7 +1938,7 @@ const createNetworkAccount = (accountId: string) => {
 }
 
 const createNodeAccount2 = (accountId: string) => {
-  const nodeAccount: NodeAccount2 = {
+  const nodeAccount = {
     id: accountId,
     hash: '',
     timestamp: 0,
@@ -1955,8 +1955,9 @@ const createNodeAccount2 = (accountId: string) => {
       history: [],
       isShardeumRun: false,
     },
-    rewarded: false
-  }
+    // rewarded: false // To be compatible with v1.1.2 nodes, commented out for now.
+  } as NodeAccount2
+  if (ShardeumFlags.rewardedFalseInInitRewardTx) nodeAccount.rewarded = false
   WrappedEVMAccountFunctions.updateEthAccountHash(nodeAccount)
   return nodeAccount
 }

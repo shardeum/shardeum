@@ -130,7 +130,7 @@ export function apply(
   nodeAccount.rewardStartTime = tx.nodeActivatedTime
   nodeAccount.rewardEndTime = 0
   nodeAccount.timestamp = txTimestamp
-  nodeAccount.rewarded = false
+  if (ShardeumFlags.rewardedFalseInInitRewardTx) nodeAccount.rewarded = false
   if (ShardeumFlags.useAccountWrites) {
     const wrappedAccount: any = nodeAccount // eslint-disable-line @typescript-eslint/no-explicit-any
     const wrappedChangedAccount = WrappedEVMAccountFunctions._shardusWrappedAccount(wrappedAccount)

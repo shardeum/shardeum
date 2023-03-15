@@ -13,4 +13,5 @@ export const migrate: Migration = async () => {
   ShardeumFlags.checkNodesEVMtx = true
   ShardeumFlags.allowForceUnstake = true
   ShardeumFlags.unstakeCertCheckFix = true
+  ShardeumFlags.rewardedFalseInInitRewardTx = true
 }
