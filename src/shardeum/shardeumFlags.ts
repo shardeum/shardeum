@@ -66,6 +66,7 @@ interface ShardeumFlags {
   fixCertExpRenew: boolean
   rewardedFalseInInitRewardTx: boolean
   supportInternalTxReceipt: boolean
+  totalUnstakeAmount: boolean
 }
 
 export const ShardeumFlags: ShardeumFlags = {
@@ -132,6 +133,7 @@ export const ShardeumFlags: ShardeumFlags = {
   fixCertExpRenew: false,
   rewardedFalseInInitRewardTx: false,
   supportInternalTxReceipt: false
+  totalUnstakeAmount: false,
 }
 
 export function updateShardeumFlag(key: string, value: string | number | boolean) {

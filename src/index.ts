@@ -2626,12 +2626,26 @@ shardus.setup({
       await shardeumState.putAccount(operatorEVMAddress, operatorEVMAccount.account)
       await shardeumState.commit()
 
-      const stakeInfo = {
-        nominee: nomineeNodeAccount2Address,
-        rewardStartTime: nodeAccount2.rewardStartTime,
-        rewardEndTime: nodeAccount2.rewardEndTime,
-        reward,
-        penalty,
+      let stakeInfo: any
+      if (ShardeumFlags.totalUnstakeAmount) {
+        // I think rewardStartTime and rewardEndTime can be omitted now, since it's only for the last time the node was participated
+        stakeInfo = {
+          nominee: nomineeNodeAccount2Address,
+          // rewardStartTime: nodeAccount2.rewardStartTime,
+          // rewardEndTime: nodeAccount2.rewardEndTime,
+          stake,
+          reward,
+          penalty,
+          totalUnstakeAmount: stake.add(reward).sub(penalty),
+        }
+      } else {
+        stakeInfo = {
+          nominee: nomineeNodeAccount2Address,
+          rewardStartTime: nodeAccount2.rewardStartTime,
+          rewardEndTime: nodeAccount2.rewardEndTime,
+          reward,
+          penalty,
+        }
       }
 
       nodeAccount2.nominator = null
