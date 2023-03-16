@@ -132,7 +132,7 @@ export const ShardeumFlags: ShardeumFlags = {
   unstakeCertCheckFix: false, // Set to be enabled in 1.1.3
   fixCertExpRenew: false,
   rewardedFalseInInitRewardTx: false,
-  supportInternalTxReceipt: false
+  supportInternalTxReceipt: false,
   totalUnstakeAmount: false,
 }
 
