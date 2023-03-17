@@ -273,6 +273,7 @@ export interface NetworkParameters {
   stabilityScaleDiv: number
   minVersion: string
   activeVersion: string
+  latestVersion: string
 }
 
 export interface NodeAccount2 extends BaseAccount {

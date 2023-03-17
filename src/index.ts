@@ -36,7 +36,6 @@ import {
   SetCertTime,
   ShardeumBlockOverride,
   StakeCoinsTX,
-  TransactionKeys,
   UnstakeCoinsTX,
   WrappedAccount,
   WrappedEVMAccount,
@@ -60,6 +59,7 @@ import {
   _base16BNParser,
   _readableSHM,
   scaleByStabilityFactor,
+  isEqualOrOlderVersion,
 } from './utils'
 import config from './config'
 import { RunTxResult } from '@ethereumjs/vm/dist/runTx'
@@ -120,6 +120,7 @@ export const INITIAL_PARAMETERS: NetworkParameters = {
   maintenanceFee: 0,
   minVersion: '1.1.0',
   activeVersion: '1.1.0',
+  latestVersion: '1.0.0',
   stabilityScaleMul: 1000,
   stabilityScaleDiv: 1000,
 }
@@ -1711,11 +1712,6 @@ async function applyInternalTx(
     shardus.log('Applied CHANGE_CONFIG GLOBAL transaction', stringify(network))
   }
   if (internalTx.internalTXType === InternalTXType.ChangeNetworkParam) {
-    /* eslint-disable security/detect-object-injection */
-    const network: NetworkAccount = wrappedStates[networkAccount].data
-    const devAccount: DevAccount = wrappedStates[internalTx.from].data
-    /* eslint-enable security/detect-object-injection */
-
     let changeOnCycle
     let cycleData: ShardusTypes.Cycle
 
@@ -2626,7 +2622,7 @@ shardus.setup({
       await shardeumState.putAccount(operatorEVMAddress, operatorEVMAccount.account)
       await shardeumState.commit()
 
-      let stakeInfo: any
+      let stakeInfo: unknown
       if (ShardeumFlags.totalUnstakeAmount) {
         // I think rewardStartTime and rewardEndTime can be omitted now, since it's only for the last time the node was participated
         stakeInfo = {
@@ -4639,6 +4635,16 @@ shardus.setup({
         return {
           success: false,
           reason: `version number is old. Our app version is ${version}. Join request node app version is ${appJoinData.version}`,
+          fatal: true,
+        }
+      }
+
+      const latestVersion = AccountsStorage.cachedNetworkAccount.current.latestVersion
+      if (!isEqualOrOlderVersion(latestVersion, appJoinData.version)) {
+        /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`validateJoinRequest fail: version number is newer than latest`)
+        return {
+          success: false,
+          reason: `version number is newer than latest. Our app version is ${version}. Join request node app version is ${appJoinData.version}`,
           fatal: true,
         }
       }

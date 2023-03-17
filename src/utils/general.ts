@@ -62,6 +62,16 @@ export function isEqualOrNewerVersion(minimumVersion: string, testVersion: strin
   return false
 }
 
+/**
+ * Check if the test version is equal or older than the max version
+ * @param maximumVersion
+ * @param testVersion
+ * @returns
+ */
+export function isEqualOrOlderVersion(maximumVersion: string, testVersion: string): boolean {
+  return isEqualOrNewerVersion(testVersion, maximumVersion)
+}
+
 // From: https://stackoverflow.com/a/19270021
 export function getRandom<T>(arr: T[], n: number): T[] {
   let len = arr.length
