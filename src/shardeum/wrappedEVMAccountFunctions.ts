@@ -12,6 +12,12 @@ export function isWrappedEVMAccount(obj: any): obj is WrappedEVMAccount {
   return 'ethAddress' in obj
 }
 
+// type guard
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export function isInternalAccount(obj: any): obj is InternalAccount {
+    return 'id' in obj
+}
+
 export function accountSpecificHash(account: WrappedEVMAccount | InternalAccount): string {
   let hash
   delete account.hash
@@ -54,7 +60,7 @@ export function _calculateAccountHash(account: WrappedEVMAccount | InternalAccou
   return accountSpecificHash(account)
 }
 
-export function _shardusWrappedAccount(wrappedEVMAccount: WrappedEVMAccount): ShardusTypes.WrappedData {
+export function _shardusWrappedAccount(wrappedEVMAccount: WrappedEVMAccount | InternalAccount): ShardusTypes.WrappedData {
   const wrappedChangedAccount = {
     accountId: getAccountShardusAddress(wrappedEVMAccount),
     stateId: _calculateAccountHash(wrappedEVMAccount),

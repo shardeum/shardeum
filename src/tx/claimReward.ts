@@ -305,15 +305,14 @@ export async function applyClaimRewardTx(
   /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log( `Calculating node reward. nodeRewardAmount: ${_readableSHM(nodeRewardAmount)}, nodeRewardInterval: ${ network.current.nodeRewardInterval } ms, uptime duration: ${durationInNetwork} sec, totalReward: ${_readableSHM( totalReward )}, finalReward: ${_readableSHM(nodeAccount.reward)}   nodeAccount.rewardEndTime:${ nodeAccount.rewardEndTime }  nodeAccount.rewardStartTime:${nodeAccount.rewardStartTime} ` )
 
   if (ShardeumFlags.useAccountWrites) {
-    const acct1 = wrappedStates[operatorShardusAddress].data // eslint-disable-line security/detect-object-injection
-    let wrappedChangedAccount: ShardusTypes.WrappedData
-    if (WrappedEVMAccountFunctions.isWrappedEVMAccount(acct1)) {
-      wrappedChangedAccount = WrappedEVMAccountFunctions._shardusWrappedAccount(acct1)
+    let wrappedChangedNodeAccount: ShardusTypes.WrappedData
+    if (WrappedEVMAccountFunctions.isInternalAccount(nodeAccount)) {
+      wrappedChangedNodeAccount = WrappedEVMAccountFunctions._shardusWrappedAccount(nodeAccount)
     }
     shardus.applyResponseAddChangedAccount(
       applyResponse,
       tx.nominee,
-      wrappedChangedAccount,
+      wrappedChangedNodeAccount,
       txId,
       txTimestamp
     )

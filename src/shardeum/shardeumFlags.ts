@@ -65,6 +65,7 @@ interface ShardeumFlags {
   unstakeCertCheckFix: boolean
   fixCertExpRenew: boolean
   rewardedFalseInInitRewardTx: boolean
+  supportInternalTxReceipt: boolean
 }
 
 export const ShardeumFlags: ShardeumFlags = {
@@ -130,6 +131,7 @@ export const ShardeumFlags: ShardeumFlags = {
   unstakeCertCheckFix: false, // Set to be enabled in 1.1.3
   fixCertExpRenew: false,
   rewardedFalseInInitRewardTx: false,
+  supportInternalTxReceipt: false
 }
 
 export function updateShardeumFlag(key: string, value: string | number | boolean) {

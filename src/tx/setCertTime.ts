@@ -18,6 +18,7 @@ import * as WrappedEVMAccountFunctions from '../shardeum/wrappedEVMAccountFuncti
 import { fixDeserializedWrappedEVMAccount } from '../shardeum/wrappedEVMAccountFunctions'
 import * as AccountsStorage from '../storage/accountStorage'
 import { getRandom, scaleByStabilityFactor, _base16BNParser, _readableSHM } from '../utils'
+import { hashSignedObj } from '../setup/helpers'
 
 export function isSetCertTimeTx(tx): boolean {
   if (tx.isInternalTx && tx.internalTXType === InternalTXType.SetCertTime) {
@@ -61,7 +62,7 @@ export async function injectSetCertTimeTx(
   }
   tx = shardus.signAsNode(tx)
   const result = await InjectTxToConsensor(randomConsensusNode, tx)
-  console.log('INJECTED_SET_CERT_TIME_TX', result)
+  console.log('INJECTED_SET_CERT_TIME_TX', result, tx)
   return result
 }
 
@@ -225,7 +226,7 @@ export function applySetCertTimeTx(
   }
 
   // Apply state
-  const txId = crypto.hashObj(tx)
+  const txId = hashSignedObj(tx)
   if (ShardeumFlags.useAccountWrites) {
     const wrappedChangedAccount = WrappedEVMAccountFunctions._shardusWrappedAccount(operatorEVMAccount)
     shardus.applyResponseAddChangedAccount(

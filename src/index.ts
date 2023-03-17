@@ -1775,44 +1775,49 @@ async function applyInternalTx(
     const claimRewardTx = internalTx as ClaimRewardTX
     applyClaimRewardTx(shardus, claimRewardTx, wrappedStates, txTimestamp, applyResponse)
   }
-  const readableReceipt: ReadableReceipt = {
-    status: 1,
-    transactionHash: '0x' + txId,
-    transactionIndex: '0x1',
-    // eslint-disable-next-line security/detect-object-injection
-    blockNumber: readableBlocks[latestBlock].number,
-    nonce: '0x0',
-    blockHash: readableBlocks[latestBlock].hash, // eslint-disable-line security/detect-object-injection
-    cumulativeGasUsed: '0x0',
-    gasUsed: '0x0',
-    logs: [],
-    logsBloom: '',
-    contractAddress: null,
-    from: internalTx.from ? internalTx.from : networkAccount,
-    to: internalTx.to ? internalTx.to : networkAccount,
-    stakeInfo: null,
-    value: '0x0',
-    data: '0x0',
-    isInternalTx: true,
-    internalTx: internalTx,
+
+  if (ShardeumFlags.supportInternalTxReceipt) {
+    const blockForReceipt = getOrCreateBlockFromTimestamp(internalTx.timestamp)
+    const blockNumberForTx = blockForReceipt.header.number.toString()
+    const readableReceipt: ReadableReceipt = {
+      status: 1,
+      transactionHash: '0x' + txId,
+      transactionIndex: '0x1',
+      // eslint-disable-next-line security/detect-object-injection
+      blockNumber: readableBlocks[blockNumberForTx]?.number,
+      nonce: '0x0',
+      blockHash: readableBlocks[blockNumberForTx]?.hash, // eslint-disable-line security/detect-object-injection
+      cumulativeGasUsed: '0x0',
+      gasUsed: '0x0',
+      logs: [],
+      logsBloom: '',
+      contractAddress: null,
+      from: internalTx.from ? internalTx.from : networkAccount,
+      to: internalTx.to ? internalTx.to : networkAccount,
+      stakeInfo: null,
+      value: '0x0',
+      data: '0x0',
+      isInternalTx: true,
+      internalTx: { ...internalTx, sign: null },
+    }
+    const wrappedReceiptAccount = {
+      timestamp: internalTx.timestamp,
+      ethAddress: '0x' + txId,
+      hash: '',
+      receipt: null,
+      readableReceipt,
+      amountSpent: '0',
+      txId: txId,
+      accountType: AccountType.Receipt,
+      txFrom: readableReceipt.from,
+    }
+    const receiptShardusAccount = WrappedEVMAccountFunctions._shardusWrappedAccount(wrappedReceiptAccount)
+    shardus.applyResponseAddReceiptData(
+      applyResponse,
+      receiptShardusAccount,
+      crypto.hashObj(receiptShardusAccount)
+    )
   }
-  const wrappedReceiptAccount = {
-    timestamp: internalTx.timestamp,
-    ethAddress: '0x' + txId,
-    hash: '',
-    receipt: null,
-    readableReceipt,
-    amountSpent: '0',
-    txId: txId,
-    accountType: AccountType.Receipt,
-    txFrom: readableReceipt.from,
-  }
-  const receiptShardusAccount = WrappedEVMAccountFunctions._shardusWrappedAccount(wrappedReceiptAccount)
-  shardus.applyResponseAddReceiptData(
-    applyResponse,
-    receiptShardusAccount,
-    crypto.hashObj(receiptShardusAccount)
-  )
   return applyResponse
 }
 
@@ -1880,7 +1885,10 @@ async function _transactionReceiptPass(
   const ourAppDefinedData = applyResponse.appDefinedData as OurAppDefinedData
   const appReceiptData = applyResponse.appReceiptData
 
-  console.log('_transactionReceiptPass appReceiptData', appReceiptData)
+  if (ShardeumFlags.VerboseLogs) {
+    console.log('_transactionReceiptPass appReceiptData for tx', txId, appReceiptData)
+    console.log('_transactionReceiptPass appReceiptDataHash for tx', txId, crypto.hashObj(appReceiptData))
+  }
 
   if (appReceiptData) {
     const dataId = toShardusAddressWithKey(
@@ -2468,15 +2476,22 @@ shardus.setup({
         )
       }
 
+      const blockForReceipt = getOrCreateBlockFromTimestamp(txTimestamp)
+      let blockNumberForTx = blockForReceipt.header.number.toString()
+
+      if (ShardeumFlags.supportInternalTxReceipt === false) {
+        blockNumberForTx = `${latestBlock}`
+      }
+
       // generate a proper receipt for stake tx
       const readableReceipt: ReadableReceipt = {
         status: 1,
         transactionHash: ethTxId,
         transactionIndex: '0x1',
         // eslint-disable-next-line security/detect-object-injection
-        blockNumber: '0x' + blocks[latestBlock].header.number.toString('hex'),
+        blockNumber: '0x' + blocks[blockNumberForTx].header.number.toString('hex'),
         nonce: transaction.nonce.toString('hex'),
-        blockHash: readableBlocks[latestBlock].hash, // eslint-disable-line security/detect-object-injection
+        blockHash: readableBlocks[blockNumberForTx].hash, // eslint-disable-line security/detect-object-injection
         cumulativeGasUsed:
           '0x' +
           scaleByStabilityFactor(
@@ -2665,16 +2680,23 @@ shardus.setup({
         )
       }
 
+      const blockForReceipt = getOrCreateBlockFromTimestamp(txTimestamp)
+      let blockNumberForTx = blockForReceipt.header.number.toString()
+
+      if (ShardeumFlags.supportInternalTxReceipt === false) {
+        blockNumberForTx = `${latestBlock}`
+      }
+
       // generate a proper receipt for unstake tx
       const readableReceipt: ReadableReceipt = {
         status: 1,
         transactionHash: ethTxId,
         transactionIndex: '0x1',
         // eslint-disable-next-line security/detect-object-injection
-        blockNumber: '0x' + blocks[latestBlock].header.number.toString('hex'),
+        blockNumber: '0x' + blocks[blockNumberForTx].header.number.toString('hex'),
         nonce: transaction.nonce.toString('hex'),
         // eslint-disable-next-line security/detect-object-injection
-        blockHash: readableBlocks[latestBlock].hash,
+        blockHash: readableBlocks[blockNumberForTx].hash,
         cumulativeGasUsed:
           '0x' +
           scaleByStabilityFactor(
@@ -3962,7 +3984,7 @@ shardus.setup({
     let wrappedEVMAccount = await AccountsStorage.getAccount(accountId)
     let accountCreated = false
 
-    const txId = crypto.hashObj(tx)
+    const txId = hashSignedObj(tx)
     // let transactionState = transactionStateMap.get(txId)
     // if (transactionState == null) {
     //   transactionState = new TransactionState()

@@ -1,4 +1,5 @@
-import { AccountType, NetworkAccount, WrappedEVMAccount } from './shardeumTypes'
+import { AccountType, NetworkAccount, WrappedEVMAccount, InternalAccount } from './shardeumTypes'
+import { isWrappedEVMAccount, isInternalAccount } from './wrappedEVMAccountFunctions'
 
 import { ShardeumFlags } from './shardeumFlags'
 
@@ -6,57 +7,55 @@ import { ShardeumFlags } from './shardeumFlags'
  * This will correctly get a shardus address from a WrappedEVMAccount account no matter what type it is.
  * This is preferred over toShardusAddress in any case where we have an WrappedEVMAccount
  * maybe this should live in wrappedEVMAccountFunctions?
- * @param wrappedEVMAccount
+ * @param account
  * @returns
  */
-export function getAccountShardusAddress(wrappedEVMAccount: WrappedEVMAccount): string {
-  const addressSource = wrappedEVMAccount.ethAddress
-
-  if (wrappedEVMAccount.accountType === AccountType.ContractStorage) {
-    //addressSource = wrappedEVMAccount.key
-    const shardusAddress = toShardusAddressWithKey(
-      wrappedEVMAccount.ethAddress,
-      wrappedEVMAccount.key,
-      wrappedEVMAccount.accountType
-    )
-    return shardusAddress
-  }
-  if (wrappedEVMAccount.accountType === AccountType.ContractCode) {
-    //in this case ethAddress is the code hash which is what we want for the key
-    //wrappedEVMAccount.codeHash.toString('hex')
-    const shardusAddress = toShardusAddressWithKey(
-      wrappedEVMAccount.contractAddress,
-      wrappedEVMAccount.ethAddress,
-      wrappedEVMAccount.accountType
-    )
-    return shardusAddress
-  }
-  if (
-    wrappedEVMAccount.accountType === AccountType.Receipt ||
-    wrappedEVMAccount.accountType === AccountType.StakeReceipt ||
-    wrappedEVMAccount.accountType === AccountType.UnstakeReceipt
-  ) {
-    //We use the whole eth address for the receipt (non siloed)
-    const shardusAddress = toShardusAddress(addressSource, wrappedEVMAccount.accountType)
-    return shardusAddress
-  }
-
-  const otherAccount = wrappedEVMAccount
-  if (
-    otherAccount.accountType === AccountType.NetworkAccount ||
-    otherAccount.accountType === AccountType.NodeAccount ||
-    otherAccount.accountType === AccountType.NodeAccount2 ||
-    otherAccount.accountType === AccountType.DevAccount
-  ) {
-    return (otherAccount as unknown as NetworkAccount).id
-  }
-
-  if (otherAccount.accountType === AccountType.NodeRewardReceipt) {
-    return otherAccount.ethAddress
-  }
-
-  const shardusAddress = toShardusAddress(addressSource, wrappedEVMAccount.accountType)
-  return shardusAddress
+export function getAccountShardusAddress(account: WrappedEVMAccount | InternalAccount): string {
+    if (isWrappedEVMAccount(account)) {
+        const addressSource = account.ethAddress
+        if (account.accountType === AccountType.ContractStorage) {
+            //addressSource = account.key
+            const shardusAddress = toShardusAddressWithKey(
+                account.ethAddress,
+                account.key,
+                account.accountType
+            )
+            return shardusAddress
+        }
+        if (account.accountType === AccountType.ContractCode) {
+            //in this case ethAddress is the code hash which is what we want for the key
+            //account.codeHash.toString('hex')
+            const shardusAddress = toShardusAddressWithKey(
+                account.contractAddress,
+                account.ethAddress,
+                account.accountType
+            )
+            return shardusAddress
+        }
+        if (
+            account.accountType === AccountType.Receipt ||
+            account.accountType === AccountType.StakeReceipt ||
+            account.accountType === AccountType.UnstakeReceipt
+        ) {
+            //We use the whole eth address for the receipt (non siloed)
+            const shardusAddress = toShardusAddress(addressSource, account.accountType)
+            return shardusAddress
+        }
+        if (account.accountType === AccountType.NodeRewardReceipt) {
+            return account.ethAddress
+        }
+        const shardusAddress = toShardusAddress(addressSource, account.accountType)
+        return shardusAddress
+    } else if (isInternalAccount(account)) {
+        if (
+            account.accountType === AccountType.NetworkAccount ||
+            account.accountType === AccountType.NodeAccount ||
+            account.accountType === AccountType.NodeAccount2 ||
+            account.accountType === AccountType.DevAccount
+        ) {
+            return (account as unknown as NetworkAccount).id
+        }
+    }
 }
 
 export function toShardusAddressWithKey(
