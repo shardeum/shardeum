@@ -123,6 +123,7 @@ export const INITIAL_PARAMETERS: NetworkParameters = {
   latestVersion: '1.0.0',
   stabilityScaleMul: 1000,
   stabilityScaleDiv: 1000,
+  txPause: false,
 }
 
 export let genesisAccounts: string[] = []
@@ -895,8 +896,19 @@ shardus.registerExternalGet('debug-points', debugMiddleware, async (req, res) =>
 shardus.registerExternalPost('inject', async (req, res) => {
   const tx = req.body
   if (ShardeumFlags.VerboseLogs) console.log('Transaction injected:', new Date(), tx)
+
   let numActiveNodes = 0
   try {
+    // Reject transaction if network is paused
+    const networkAccount = AccountsStorage.cachedNetworkAccount
+    if (networkAccount.current.txPause && !isInternalTx(tx)) {
+      return res.json({
+        success: false,
+        reason: `Network will not accept EVM tx until it has at least ${ShardeumFlags.minNodesEVMtx} active node in the network. numActiveNodes: ${numActiveNodes}`,
+        status: 500,
+      })
+    }
+
     numActiveNodes = shardus.getNumActiveNodes()
     let belowEVMtxMinNodes = numActiveNodes < ShardeumFlags.minNodesEVMtx
     let txRequiresMinNodes = false
@@ -4644,7 +4656,7 @@ shardus.setup({
         /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`validateJoinRequest fail: version number is newer than latest`)
         return {
           success: false,
-          reason: `version number is newer than latest. Our app version is ${version}. Join request node app version is ${appJoinData.version}`,
+          reason: `version number is newer than latest. The latest allowed app version is ${latestVersion}. Join request node app version is ${appJoinData.version}`,
           fatal: true,
         }
       }
@@ -4920,15 +4932,18 @@ shardus.setup({
   getNodeInfoAppData() {
     let minVersion = ''
     let activeVersion = ''
+    let latestVersion = ''
     const cachedNetworkAccount = AccountsStorage.cachedNetworkAccount
     if (cachedNetworkAccount) {
       minVersion = cachedNetworkAccount.current.minVersion
       activeVersion = cachedNetworkAccount.current.activeVersion
+      latestVersion = cachedNetworkAccount.current.latestVersion
     }
     const shardeumNodeInfo: NodeInfoAppData = {
       shardeumVersion: version,
       minVersion,
       activeVersion,
+      latestVersion,
     }
     return shardeumNodeInfo
   },

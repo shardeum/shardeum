@@ -274,6 +274,7 @@ export interface NetworkParameters {
   minVersion: string
   activeVersion: string
   latestVersion: string
+  txPause: boolean
 }
 
 export interface NodeAccount2 extends BaseAccount {
@@ -387,6 +388,7 @@ export interface NodeInfoAppData {
   shardeumVersion: string
   minVersion: string
   activeVersion: string
+  latestVersion: string
 }
 
 export type HexString = string

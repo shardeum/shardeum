@@ -3,6 +3,7 @@ import { ShardeumFlags } from '../shardeum/shardeumFlags'
 import { InitRewardTimes, InternalTx, InternalTXType } from '../shardeum/shardeumTypes'
 import { crypto, getTransactionObj, isDebugTx, isInternalTx, isInternalTXGlobal, verify } from './helpers'
 import * as InitRewardTimesTx from '../tx/initRewardTimes'
+import * as AccountsStorage from '../storage/accountStorage'
 
 type Response = {
   result: string
@@ -42,6 +43,15 @@ export const validateTransaction =
         const isValid = crypto.verifyObj(internalTx)
         if (isValid) return { result: 'pass', reason: 'valid' }
         else return { result: 'fail', reason: 'Invalid signature' }
+      }
+    }
+
+    // Reject all other transactions if txPause is enabled
+    const networkAccount = AccountsStorage.cachedNetworkAccount
+    if (networkAccount.current.txPause) {
+      return {
+        result: 'fail',
+        reason: 'Transaction is not allowed. Network is paused.',
       }
     }
 
