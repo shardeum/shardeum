@@ -33,17 +33,19 @@ export async function injectClaimRewardTx(shardus, eventData: ShardusTypes.Shard
     internalTXType: InternalTXType.ClaimReward,
   }
 
-  // to make sure that differnt nodes all submit an equivalent tx that is counted as the same tx,
-  // we need to make sure that we have a determinstic timestamp
-  const cycleEndTime = eventData.time
-  let futureTimestamp = cycleEndTime * 1000
-  while (futureTimestamp < Date.now()) {
-    futureTimestamp += 30 * 1000
+  if (ShardeumFlags.txHashingFix) {
+    // to make sure that differnt nodes all submit an equivalent tx that is counted as the same tx,
+    // we need to make sure that we have a determinstic timestamp
+    const cycleEndTime = eventData.time
+    let futureTimestamp = cycleEndTime * 1000
+    while (futureTimestamp < Date.now()) {
+      futureTimestamp += 30 * 1000
+    }
+    const waitTime = futureTimestamp - Date.now()
+    tx.timestamp = futureTimestamp
+    // since we have to pick a future timestamp, we need to wait until it is time to submit the tx
+    await sleep(waitTime)
   }
-  const waitTime = futureTimestamp - Date.now()
-  tx.timestamp = futureTimestamp
-  // since we have to pick a future timestamp, we need to wait until it is time to submit the tx
-  await sleep(waitTime)
 
   tx = shardus.signAsNode(tx)
   if (ShardeumFlags.VerboseLogs) {

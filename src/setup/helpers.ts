@@ -87,6 +87,11 @@ export function getInjectedOrGeneratedTimestamp(timestampedTx) {
  * @returns
  */
 export function hashSignedObj(obj) {
+  if (ShardeumFlags.txHashingFix === false) {
+    //if the feature is not on ignore the smart logic below and just hash the object
+    return crypto.hashObj(obj)
+  }
+
   if (!obj.sign) {
     return crypto.hashObj(obj)
   }

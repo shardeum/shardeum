@@ -18,4 +18,5 @@ export const migrate: Migration = async () => {
   ShardeumFlags.fixCertExpRenew = false
   ShardeumFlags.supportInternalTxReceipt = false
   ShardeumFlags.totalUnstakeAmount = false
+  ShardeumFlags.txHashingFix = false
 }

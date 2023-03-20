@@ -22,24 +22,25 @@ export async function injectInitRewardTimesTx(shardus, eventData: ShardusTypes.S
     timestamp: Date.now(),
   } as InitRewardTimes
 
-  // to make sure that different nodes all submit an equivalent tx that is counted as the same tx,
-  // we need to make sure that we have a deterministic timestamp
-  const cycleEndTime = eventData.time
-  let futureTimestamp = cycleEndTime * 1000
-  while (futureTimestamp < Date.now()) {
-    futureTimestamp += 30 * 1000
+  if (ShardeumFlags.txHashingFix) {
+    // to make sure that different nodes all submit an equivalent tx that is counted as the same tx,
+    // we need to make sure that we have a deterministic timestamp
+    const cycleEndTime = eventData.time
+    let futureTimestamp = cycleEndTime * 1000
+    while (futureTimestamp < Date.now()) {
+      futureTimestamp += 30 * 1000
+    }
+    const waitTime = futureTimestamp - Date.now()
+    tx.timestamp = futureTimestamp
+    // since we have to pick a future timestamp, we need to wait until it is time to submit the tx
+    await sleep(waitTime)
   }
-  const waitTime = futureTimestamp - Date.now()
-  tx.timestamp = futureTimestamp
-  // since we have to pick a future timestamp, we need to wait until it is time to submit the tx
-  await sleep(waitTime)
 
   tx = shardus.signAsNode(tx)
   if (ShardeumFlags.VerboseLogs) {
     const txid = hashSignedObj(tx)
     console.log(`injectInitRewardTimesTx: tx.timestamp: ${tx.timestamp} txid: ${txid}`, tx)
   }
-
   return await shardus.put(tx)
 }
 

@@ -4607,7 +4607,17 @@ shardus.setup({
     wrappedStates: { [id: string]: WrappedAccount },
     applyResponse: ShardusTypes.ApplyResponse
   ) {
-    const txId = hashSignedObj(tx)
+    let txId: string
+    //this code may seem equivalent but hashSignedObj will not be "smart" until after txHashingFix is true
+    if (ShardeumFlags.txHashingFix === true) {
+      txId = hashSignedObj(tx)
+    } else {
+      if (!tx.sign) {
+        txId = crypto.hashObj(tx)
+      } else {
+        txId = crypto.hashObj(tx, true) // compute from tx
+      }
+    }
 
     //This next log is usefull but very heavy on the output lines:
     //Updating to be on only with verbose logs
