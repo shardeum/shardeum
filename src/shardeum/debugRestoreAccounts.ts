@@ -186,7 +186,8 @@ export const processAccountsData = async (shardus, report: LoadReport, accountAr
         account.data.accountType === AccountType.Receipt ||
         account.data.accountType === AccountType.NodeRewardReceipt ||
         account.data.accountType === AccountType.StakeReceipt ||
-        account.data.accountType === AccountType.UnstakeReceipt
+        account.data.accountType === AccountType.UnstakeReceipt ||
+        account.data.accountType === AccountType.InternalTxReceipt
       )
         accountArrayClean.receipts.push(account)
       else accountArrayClean.accounts.push(account)

@@ -1824,7 +1824,9 @@ async function applyInternalTx(
       readableReceipt,
       amountSpent: '0',
       txId: txId,
-      accountType: AccountType.Receipt,
+      accountType: ShardeumFlags.addInternalTxReceiptAccount
+        ? AccountType.InternalTxReceipt
+        : AccountType.Receipt,
       txFrom: readableReceipt.from,
     }
     const receiptShardusAccount = WrappedEVMAccountFunctions._shardusWrappedAccount(wrappedReceiptAccount)

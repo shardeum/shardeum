@@ -17,6 +17,7 @@ export enum AccountType {
   NodeAccount2 = 9,
   StakeReceipt = 10,
   UnstakeReceipt = 11,
+  InternalTxReceipt = 12,
 }
 
 export interface BaseAccount {

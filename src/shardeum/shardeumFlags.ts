@@ -68,6 +68,7 @@ interface ShardeumFlags {
   supportInternalTxReceipt: boolean
   totalUnstakeAmount: boolean
   txHashingFix: boolean
+  addInternalTxReceiptAccount: boolean
 }
 
 export const ShardeumFlags: ShardeumFlags = {
@@ -138,6 +139,7 @@ export const ShardeumFlags: ShardeumFlags = {
   supportInternalTxReceipt: true,
   totalUnstakeAmount: true,
   txHashingFix: true,
+  addInternalTxReceiptAccount: true,
 }
 
 export function updateShardeumFlag(key: string, value: string | number | boolean) {
