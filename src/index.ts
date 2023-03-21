@@ -1680,31 +1680,31 @@ async function applyInternalTx(
     // network will consens that this is the correct value
     ourAppDefinedData.globalMsg = { address: networkAccount, value, when, source: value.from }
 
-    if (ShardeumFlags.useAccountWrites) {
-      /* eslint-disable security/detect-object-injection */
-      const networkAccountCopy = wrappedStates[networkAccount]
-      const devAccountCopy = wrappedStates[internalTx.from]
-      /* eslint-enable security/detect-object-injection */
-      networkAccountCopy.data.timestamp = txTimestamp
-      devAccountCopy.data.timestamp = txTimestamp
-      shardus.applyResponseAddChangedAccount(
-        applyResponse,
-        networkAccount,
-        networkAccountCopy as ShardusTypes.WrappedResponse,
-        txId,
-        txTimestamp
-      )
-      shardus.applyResponseAddChangedAccount(
-        applyResponse,
-        internalTx.from,
-        devAccountCopy as ShardusTypes.WrappedResponse,
-        txId,
-        txTimestamp
-      )
-    } else {
-      network.timestamp = txTimestamp
-      devAccount.timestamp = txTimestamp
-    }
+    // if (ShardeumFlags.useAccountWrites) {
+    //   /* eslint-disable security/detect-object-injection */
+    //   const networkAccountCopy = wrappedStates[networkAccount]
+    //   const devAccountCopy = wrappedStates[internalTx.from]
+    //   /* eslint-enable security/detect-object-injection */
+    //   networkAccountCopy.data.timestamp = txTimestamp
+    //   devAccountCopy.data.timestamp = txTimestamp
+    //   shardus.applyResponseAddChangedAccount(
+    //     applyResponse,
+    //     networkAccount,
+    //     networkAccountCopy as ShardusTypes.WrappedResponse,
+    //     txId,
+    //     txTimestamp
+    //   )
+    //   shardus.applyResponseAddChangedAccount(
+    //     applyResponse,
+    //     internalTx.from,
+    //     devAccountCopy as ShardusTypes.WrappedResponse,
+    //     txId,
+    //     txTimestamp
+    //   )
+    // } else {
+    //   network.timestamp = txTimestamp
+    //   devAccount.timestamp = txTimestamp
+    // }
     console.log('Applied change_config tx')
     shardus.log('Applied change_config tx')
   }
@@ -4620,6 +4620,7 @@ shardus.setup({
     if (ShardeumFlags.txHashingFix === true) {
       txId = hashSignedObj(tx)
     } else {
+      // @ts-ignore
       if (!tx.sign) {
         txId = crypto.hashObj(tx)
       } else {
