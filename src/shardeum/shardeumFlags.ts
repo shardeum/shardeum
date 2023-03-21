@@ -125,17 +125,19 @@ export const ShardeumFlags: ShardeumFlags = {
   FullCertChecksEnabled: true,
   extraTxTime: 8, // This is to predict the cycleNumber from the tx timestamp + 8s
   minNodesEVMtx: 5,
-  checkNodesEVMtx: false,
-  allowForceUnstake: false, // Set to be enabled in 1.1.3
   ClaimRewardRetryCount: 20,
   FailedTxLinearBackOffConstantInSecs: 30,
-  fixExtraStakeLessThanMin: false,
-  unstakeCertCheckFix: false, // Set to be enabled in 1.1.3
-  fixCertExpRenew: false,
-  rewardedFalseInInitRewardTx: false,
-  supportInternalTxReceipt: false,
-  totalUnstakeAmount: false,
-  txHashingFix: false,
+
+  // 1.1.3 migration
+  fixExtraStakeLessThanMin: true,
+  checkNodesEVMtx: true,
+  allowForceUnstake: true,
+  unstakeCertCheckFix: true,
+  rewardedFalseInInitRewardTx: true,
+  fixCertExpRenew: true,
+  supportInternalTxReceipt: true,
+  totalUnstakeAmount: true,
+  txHashingFix: true,
 }
 
 export function updateShardeumFlag(key: string, value: string | number | boolean) {

@@ -104,7 +104,7 @@ config = merge(config, {
     p2p: {
       cycleDuration: 60,
       minNodesToAllowTxs: 1, // to allow single node networks
-      minNodes: process.env.minNodes ? parseInt(process.env.minNodes) : 150,
+      minNodes: process.env.minNodes ? parseInt(process.env.minNodes) : 300,
       maxNodes: process.env.maxNodes ? parseInt(process.env.maxNodes) : 1100,
       maxJoinedPerCycle: 10,
       maxSyncingPerCycle: 10,
@@ -156,6 +156,18 @@ config = merge(config, {
     },
     stateManager: {
       accountBucketSize: 200, // todo: we need to re-test with higher numbers after some recent improvements
+    },
+  },
+})
+
+// features
+config = merge(config, {
+  server: {
+    features: {
+      //1.1.3
+      fixHomeNodeCheckForTXGroupChanges: true,
+      //1.1.4
+      archiverDataSubscriptionsUpdate: true,
     },
   },
 })

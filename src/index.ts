@@ -118,9 +118,9 @@ export const INITIAL_PARAMETERS: NetworkParameters = {
   stakeRequiredUsd: oneSHM.mul(new BN(10)), // $10 x 10 ^ 18
   maintenanceInterval: ONE_DAY,
   maintenanceFee: 0,
-  minVersion: '1.1.0',
-  activeVersion: '1.1.0',
-  latestVersion: '1.0.0',
+  minVersion: '1.1.4',
+  activeVersion: '1.1.4',
+  latestVersion: '1.1.4',
   stabilityScaleMul: 1000,
   stabilityScaleDiv: 1000,
   txPause: false,
@@ -133,6 +133,8 @@ const ERC20_BALANCEOF_CODE = '0x70a08231'
 const shardus = shardusFactory(config, {
   customStringifier: SerializeToJsonString,
 })
+
+/** This is just the ServerConfiguration part of the shardus core configuration*/
 export const shardusConfig = shardus.config
 
 const profilerInstance = shardus.getShardusProfiler()
