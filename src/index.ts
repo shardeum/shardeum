@@ -139,6 +139,12 @@ export const shardusConfig = shardus.config
 
 const profilerInstance = shardus.getShardusProfiler()
 
+console.log('Shardeum valiator started')
+console.log('Shardus Server Config:')
+console.log(JSON.stringify(shardusConfig, null, 2))
+console.log('Shardeum Flags:')
+console.log(JSON.stringify(ShardeumFlags, null, 2))
+
 // const pay_address = '0x50F6D9E5771361Ec8b95D6cfb8aC186342B70120' // testing account for node_reward
 const random_wallet = Wallet.generate()
 const pay_address = random_wallet.getAddressString()
