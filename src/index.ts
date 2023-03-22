@@ -815,7 +815,7 @@ async function _internalHackPostWithResp(url: string, body) {
   const host = parseUrl(normalized, true)
   try {
     const res = await got.post(host, {
-      timeout: 7000,
+      timeout: ShardeumFlags.shardeumTimeout,
       retry: 0,
       throwHttpErrors: false,
       body,
