@@ -128,7 +128,7 @@ export const ShardeumFlags: ShardeumFlags = {
   extraTxTime: 8, // This is to predict the cycleNumber from the tx timestamp + 8s
   minNodesEVMtx: 5,
   ClaimRewardRetryCount: 20,
-  shardeumTimeout: 7000,
+  shardeumTimeout: 50000,
   FailedTxLinearBackOffConstantInSecs: 30,
 
   // 1.1.3 migration
