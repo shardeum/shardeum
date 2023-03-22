@@ -1,4 +1,5 @@
 import { nestedCountersInstance } from '@shardus/core'
+import { ShardeumFlags } from '../../shardeum/shardeumFlags'
 import { Migration } from '../types'
 // import { shardusConfig } from '../..'
 
@@ -7,6 +8,7 @@ export const migrate: Migration = async () => {
   console.log('migrate 1.1.5')
   nestedCountersInstance.countEvent('migrate-1.1.5', 'calling migrate 1.1.5')
 
+  ShardeumFlags.shardeumTimeout = 50000
   // this is from reverse migrate.  keeping the comments for local testing but will turn in to real migration code later
   //shardusConfig.features.archiverDataSubscriptionsUpdate = false
 }
