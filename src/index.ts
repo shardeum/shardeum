@@ -2680,8 +2680,8 @@ shardus.setup({
         to: transaction.to ? transaction.to.toString() : null,
         stakeInfo: {
           nominee: nomineeNodeAccount2Address,
-          stakeAmount: stakeCoinsTx.stake.toString(),
-          totalStakeAmount: operatorEVMAccount.operatorAccountInfo.stake.toString(),
+          stakeAmount: stakeCoinsTx.stake.toString('hex'),
+          totalStakeAmount: operatorEVMAccount.operatorAccountInfo.stake.toString('hex'),
         },
         value: transaction.value.toString('hex'),
         data: '0x' + transaction.data.toString('hex'),
