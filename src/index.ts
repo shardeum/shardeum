@@ -120,7 +120,7 @@ export const INITIAL_PARAMETERS: NetworkParameters = {
   maintenanceFee: 0,
   minVersion: '1.1.4',
   activeVersion: '1.1.4',
-  latestVersion: '1.1.4',
+  latestVersion: '1.1.6',
   stabilityScaleMul: 1000,
   stabilityScaleDiv: 1000,
   txPause: false,
