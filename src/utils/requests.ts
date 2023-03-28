@@ -93,3 +93,22 @@ export const shardusPutToNode = async <ResponseType>(
   const url = urlFromNode(node, path)
   return shardusPut<ResponseType>(url, data, config)
 }
+
+/**
+ * Get an IP from a request.  This is kept simple and will not try to get
+ * an IP from behind a proxy or load balancer.  This is for perf reasons
+ * if the stats are not good enough we may rethink this.
+ * @param req
+ * @returns
+ */
+export function getUserIp(req) {
+  if (req == null) {
+    return 'no-req'
+  }
+  return (
+    req.headers['x-forwarded-for'] ||
+    (req.connection ? req.connection.remoteAddress : null) ||
+    (req.socket ? req.socket.remoteAddress : null) ||
+    null
+  )
+}

@@ -119,3 +119,17 @@ export const _readableSHM = (bnum: BN, autoDecimal = true): string => {
 
   return bnum.toString() + unit_WEI
 }
+
+export function debug_map_replacer(key, value) {
+  if (value instanceof Map) {
+    // return {
+    //   dataType: 'Map',
+    //   value: Array.from(value.entries()), // or with spread: value: [...value]
+    // }
+
+    // we do not intend to revive this
+    return Array.from(value.entries())
+  } else {
+    return value
+  }
+}

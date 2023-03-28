@@ -71,6 +71,7 @@ interface ShardeumFlags {
   txHashingFix: boolean
   addInternalTxReceiptAccount: boolean
   fixSetCertTimeTxApply: boolean
+  logServicePointSenders: boolean
 }
 
 export const ShardeumFlags: ShardeumFlags = {
@@ -131,6 +132,7 @@ export const ShardeumFlags: ShardeumFlags = {
   ClaimRewardRetryCount: 20,
   shardeumTimeout: 50000,
   FailedTxLinearBackOffConstantInSecs: 30,
+  logServicePointSenders: false,
 
   // 1.1.3 migration
   fixExtraStakeLessThanMin: true,
@@ -145,7 +147,7 @@ export const ShardeumFlags: ShardeumFlags = {
   addInternalTxReceiptAccount: true,
 
   // 1.1.6 migration
-  fixSetCertTimeTxApply: false
+  fixSetCertTimeTxApply: false,
 }
 
 export function updateShardeumFlag(key: string, value: string | number | boolean) {

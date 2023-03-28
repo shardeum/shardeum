@@ -60,6 +60,7 @@ import {
   _readableSHM,
   scaleByStabilityFactor,
   isEqualOrOlderVersion,
+  debug_map_replacer,
 } from './utils'
 import config from './config'
 import { RunTxResult } from '@ethereumjs/vm/dist/runTx'
@@ -90,6 +91,7 @@ import {
 } from './setup/helpers'
 import { onActiveVersionChange } from './versioning'
 import { shardusFactory } from '@shardus/core'
+import { getUserIp } from './utils/requests'
 
 export const networkAccount = '0'.repeat(64) //address
 
@@ -171,13 +173,20 @@ const pointsAverageInterval = 2 // seconds
 const servicePointSpendHistory: { points: number; ts: number }[] = []
 let debugLastTotalServicePoints = 0
 
+//debug map of map. The outer key is the service point type, the inner key is the request ip, the value is the number of points spent
+const debugServicePointSpendersByType: Map<string, Map<string, number>> = new Map()
+//debug map of service point types and the number of points spent
+const debugServicePointsByType: Map<string, number> = new Map()
+//total number of service points spent, since we last cleared or started the capturing data
+let debugTotalServicePointRequests = 0
+
 /**
  * Allows us to attempt to spend points.  We have ShardeumFlags.ServicePointsPerSecond
  * that can be spent as a total bucket
  * @param points
  * @returns
  */
-function trySpendServicePoints(points: number): boolean {
+function trySpendServicePoints(points: number, req, key: string): boolean {
   const nowTs = Date.now()
   const maxAge = 1000 * pointsAverageInterval
   const maxAllowedPoints = ShardeumFlags.ServicePointsPerSecond * pointsAverageInterval
@@ -195,6 +204,31 @@ function trySpendServicePoints(points: number): boolean {
   }
 
   debugLastTotalServicePoints = totalPoints
+
+  if (ShardeumFlags.logServicePointSenders) {
+    const requestIP = getUserIp(req) || 'cant-get-ip'
+    let serviePointSpenders: Map<string, number> = debugServicePointSpendersByType.get(key)
+    if (!serviePointSpenders) {
+      serviePointSpenders = new Map()
+      debugServicePointSpendersByType.set(key, serviePointSpenders)
+    }
+    if (serviePointSpenders.has(requestIP) === false) {
+      serviePointSpenders.set(requestIP, points)
+    } else {
+      const currentPoints = serviePointSpenders.get(requestIP)
+      serviePointSpenders.set(requestIP, currentPoints + points)
+    }
+    debugTotalServicePointRequests += points
+
+    //upate debugServiePointByType
+    if (debugServicePointsByType.has(key) === false) {
+      debugServicePointsByType.set(key, points)
+    } else {
+      const currentPoints = debugServicePointsByType.get(key)
+      debugServicePointsByType.set(key, currentPoints + points)
+    }
+  }
+
   //is the new operation too expensive?
   if (totalPoints + points > maxAllowedPoints) {
     nestedCountersInstance.countEvent('shardeum-service-points', 'fail: not enough points available to spend')
@@ -890,7 +924,7 @@ shardus.registerExternalGet('debug-points', debugMiddleware, async (req, res) =>
   // }
 
   const points = Number(req.query.points ?? ShardeumFlags.ServicePoints['debug-points'])
-  if (trySpendServicePoints(points) === false) {
+  if (trySpendServicePoints(points, null, 'debug-points') === false) {
     return res.json({ error: 'node busy', points, servicePointSpendHistory, debugLastTotalServicePoints })
   }
 
@@ -899,6 +933,22 @@ shardus.registerExternalGet('debug-points', debugMiddleware, async (req, res) =>
       servicePointSpendHistory
     )} `
   )
+})
+
+shardus.registerExternalGet('debug-point-spenders', debugMiddleware, async (req, res) => {
+  const debugObj = {
+    debugTotalPointRequests: debugTotalServicePointRequests,
+    debugServiePointByType: debugServicePointsByType,
+    debugServiePointSpendersByType: debugServicePointSpendersByType,
+  }
+  return res.json(JSON.stringify(debugObj, debug_map_replacer))
+})
+
+shardus.registerExternalGet('debug-point-spenders-clear', debugMiddleware, async (req, res) => {
+  const totalSpends = debugTotalServicePointRequests
+  debugTotalServicePointRequests = 0
+  debugServicePointSpendersByType.clear()
+  return res.json(`point spenders cleared. totalSpendActions: ${totalSpends} `)
 })
 
 shardus.registerExternalPost('inject', async (req, res) => {
@@ -1132,7 +1182,7 @@ shardus.registerExternalGet('debug-set-service-point', debugMiddleware, async (r
 })
 
 shardus.registerExternalGet('account/:address', async (req, res) => {
-  if (trySpendServicePoints(ShardeumFlags.ServicePoints['account/:address']) === false) {
+  if (trySpendServicePoints(ShardeumFlags.ServicePoints['account/:address'], req, 'account') === false) {
     return res.json({ error: 'node busy' })
   }
 
@@ -1236,7 +1286,10 @@ shardus.registerExternalPost('contract/call', async (req, res) => {
   // if(isDebugMode()){
   //   return res.json(`endpoint not available`)
   // }
-  if (trySpendServicePoints(ShardeumFlags.ServicePoints['contract/call'].endpoint) === false) {
+  if (
+    trySpendServicePoints(ShardeumFlags.ServicePoints['contract/call'].endpoint, req, 'call-endpoint') ===
+    false
+  ) {
     return res.json({ result: null, error: 'node busy' })
   }
 
@@ -1323,8 +1376,10 @@ shardus.registerExternalPost('contract/call', async (req, res) => {
       }
     }
 
-    // if we are going to handle the call directly charge 20 points
-    if (trySpendServicePoints(ShardeumFlags.ServicePoints['contract/call'].direct) === false) {
+    // if we are going to handle the call directly charge 20 points.
+    if (
+      trySpendServicePoints(ShardeumFlags.ServicePoints['contract/call'].direct, req, 'call-direct') === false
+    ) {
       return res.json({ result: null, error: 'node busy' })
     }
 
@@ -1386,7 +1441,10 @@ shardus.registerExternalPost('contract/call', async (req, res) => {
 })
 
 shardus.registerExternalPost('contract/accesslist', async (req, res) => {
-  if (trySpendServicePoints(ShardeumFlags.ServicePoints['contract/accesslist'].endpoint) === false) {
+  if (
+    trySpendServicePoints(ShardeumFlags.ServicePoints['contract/accesslist'].endpoint, req, 'accesslist') ===
+    false
+  ) {
     return res.json({ result: null, error: 'node busy' })
   }
 
@@ -1404,7 +1462,7 @@ shardus.registerExternalPost('contract/accesslist', async (req, res) => {
 })
 
 shardus.registerExternalGet('tx/:hash', async (req, res) => {
-  if (trySpendServicePoints(ShardeumFlags.ServicePoints['tx/:hash']) === false) {
+  if (trySpendServicePoints(ShardeumFlags.ServicePoints['tx/:hash'], req, 'tx') === false) {
     return res.json({ error: 'node busy' })
   }
 
