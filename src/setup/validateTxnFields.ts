@@ -155,11 +155,11 @@ export const validateTxnFields =
         const perfectCount = appData.nonce + appData.queueCount
         if (txNonce != perfectCount) {
           success = false
-          reason = `Transaction nonce != ${txNonce} ${perfectCount}`
-          /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`nonce fail: perfectCount:${perfectCount} != ${txNonce}.    current nonce:${appData.nonce}  queueCount:${appData.queueCount} txHash: ${txObj.hash().toString('hex')} `)
+          reason = `Transaction nonce != ${perfectCount}  txNonce:${txNonce} accountNonce:${appData.nonce} queueCount:${appData.queueCount}`
+          /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`nonce fail: expectedNonce:${perfectCount} != txNonce:${txNonce}.    accountNonce:${appData.nonce}  queueCount:${appData.queueCount} txHash: ${txObj.hash().toString('hex')} `)
           nestedCountersInstance.countEvent('shardeum', 'validate - nonce fail')
         } else {
-          /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`nonce pass: perfectCount:${perfectCount} == ${txNonce}.    current nonce:${appData.nonce}  queueCount:${appData.queueCount}  txHash: ${txObj.hash().toString('hex')}`)
+          /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`nonce pass: expectedNonce:${perfectCount} == txNonce:${txNonce}.    accountNonce:${appData.nonce}  queueCount:${appData.queueCount}  txHash: ${txObj.hash().toString('hex')}`)
         }
       }
 
