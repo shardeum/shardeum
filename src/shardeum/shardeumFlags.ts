@@ -70,6 +70,7 @@ interface ShardeumFlags {
   totalUnstakeAmount: boolean
   txHashingFix: boolean
   addInternalTxReceiptAccount: boolean
+  fixSetCertTimeTxApply: boolean
 }
 
 export const ShardeumFlags: ShardeumFlags = {
@@ -142,6 +143,9 @@ export const ShardeumFlags: ShardeumFlags = {
   totalUnstakeAmount: true,
   txHashingFix: true,
   addInternalTxReceiptAccount: true,
+
+  // 1.1.6 migration
+  fixSetCertTimeTxApply: false
 }
 
 export function updateShardeumFlag(key: string, value: string | number | boolean) {
