@@ -98,6 +98,8 @@ export const shardusPutToNode = async <ResponseType>(
  * Get an IP from a request.  This is kept simple and will not try to get
  * an IP from behind a proxy or load balancer.  This is for perf reasons
  * if the stats are not good enough we may rethink this.
+ * This is for debug use only and does not validate that a potential proxy is trusted
+ * This should only be used to get an IP so that we can log it for debugging purposes
  * @param req
  * @returns
  */
@@ -113,7 +115,13 @@ export function getUserIp(req) {
   )
 }
 
-export function getClientIp(req) {
+/**
+ * This is for debug use only and does not validate that a potential proxy is trusted
+ * This should only be used to get an IP so that we can log it for debugging purposes
+ * @param req
+ * @returns
+ */
+export function unsafeGetClientIp(req) {
   if (req == null) {
     return null
   }
@@ -126,5 +134,6 @@ export function getClientIp(req) {
     // fallback to remoteAddress if X-Forwarded-For header is not present
     clientIp = req.connection ? req.connection.remoteAddress : null
   }
-  return clientIp
+  // make sure we return a string or null
+  return clientIp as string
 }
