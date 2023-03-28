@@ -103,7 +103,7 @@ export const shardusPutToNode = async <ResponseType>(
  */
 export function getUserIp(req) {
   if (req == null) {
-    return 'no-req'
+    return null
   }
   return (
     req.headers['x-forwarded-for'] ||
@@ -111,4 +111,20 @@ export function getUserIp(req) {
     (req.socket ? req.socket.remoteAddress : null) ||
     null
   )
+}
+
+export function getClientIp(req) {
+  if (req == null) {
+    return null
+  }
+  let clientIp = req.headers['x-forwarded-for']
+  if (clientIp) {
+    // extract the client IP address from the X-Forwarded-For header
+    const ips = clientIp.split(',')
+    clientIp = ips[ips.length - 1].trim()
+  } else {
+    // fallback to remoteAddress if X-Forwarded-For header is not present
+    clientIp = req.connection ? req.connection.remoteAddress : null
+  }
+  return clientIp
 }

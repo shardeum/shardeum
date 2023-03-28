@@ -91,7 +91,7 @@ import {
 } from './setup/helpers'
 import { onActiveVersionChange } from './versioning'
 import { shardusFactory } from '@shardus/core'
-import { getUserIp } from './utils/requests'
+import { getClientIp } from './utils/requests'
 
 export const networkAccount = '0'.repeat(64) //address
 
@@ -206,7 +206,11 @@ function trySpendServicePoints(points: number, req, key: string): boolean {
   debugLastTotalServicePoints = totalPoints
 
   if (ShardeumFlags.logServicePointSenders) {
-    const requestIP = getUserIp(req) || 'cant-get-ip'
+    let requestIP = 'null-req'
+    if (req != null) {
+      requestIP = getClientIp(req) || 'cant-get-ip'
+    }
+
     let serviePointSpenders: Map<string, number> = debugServicePointSpendersByType.get(key)
     if (!serviePointSpenders) {
       serviePointSpenders = new Map()
