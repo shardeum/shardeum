@@ -189,7 +189,15 @@ export function applySetCertTimeTx(
   if (certExp > 0) {
     const certStartTimestamp =
       certExp - ShardeumFlags.certCycleDuration * ONE_SECOND * serverConfig.p2p.cycleDuration
-    const expiredPercentage = (txTimestamp - certStartTimestamp) / (certExp - certStartTimestamp)
+
+    let expiredPercentage
+    if (ShardeumFlags.fixSetCertTimeTxApply === true) {
+      //use tx timestampe for a deterministic result
+      expiredPercentage = (txTimestamp - certStartTimestamp) / (certExp - certStartTimestamp)
+    } else {
+      //old way
+      expiredPercentage = (Date.now() - certStartTimestamp) / (certExp - certStartTimestamp)
+    }
 
     if (ShardeumFlags.VerboseLogs) {
       console.log(`applySetCertTimeTx expiredPercentage: ${expiredPercentage}`)

@@ -4806,7 +4806,10 @@ shardus.setup({
 
     if (lastCertTimeTxTimestamp === 0) {
       // inject setCertTimeTx for the first time
-      nestedCountersInstance.countEvent('shardeum-staking', 'lastCertTimeTxTimestamp === 0 first time or expired')
+      nestedCountersInstance.countEvent(
+        'shardeum-staking',
+        'lastCertTimeTxTimestamp === 0 first time or expired'
+      )
 
       const response = await injectSetCertTimeTx(shardus, publicKey, activeNodes)
       if (response == null) {
@@ -4847,7 +4850,9 @@ shardus.setup({
       }
       if (isExpiringSoon || (isCertTimeExpired && ShardeumFlags.fixCertExpRenew)) {
         nestedCountersInstance.countEvent('shardeum-staking', 'stakeCert is expired or expiring soon')
-
+        if (ShardeumFlags.fixSetCertTimeTxApply === false) {
+          stakeCert = null //clear stake cert, so we will know to query for it again
+        }
         const response = await injectSetCertTimeTx(shardus, publicKey, activeNodes)
         if (response == null) {
           /* prettier-ignore */ nestedCountersInstance.countEvent('shardeum-staking', `failed call to injectSetCertTimeTx 2 reason: response is null`)
@@ -4857,7 +4862,9 @@ shardus.setup({
           /* prettier-ignore */ nestedCountersInstance.countEvent( 'shardeum-staking', `failed call to injectSetCertTimeTx 2 reason: ${(response as ValidatorError).reason}` )
           return false
         }
-        stakeCert = null //clear stake cert, so we will know to query for it again
+        if (ShardeumFlags.fixSetCertTimeTxApply === true) {
+          stakeCert = null //clear stake cert, so we will know to query for it again
+        }
         lastCertTimeTxTimestamp = Date.now()
         lastCertTimeTxCycle = latestCycle.counter
         // return false and check again in next cycle
@@ -4885,6 +4892,14 @@ shardus.setup({
       const res = await queryCertificate(shardus, publicKey, activeNodes)
       if (ShardeumFlags.VerboseLogs) console.log('queryCertificate', res)
       if (!res.success) {
+        if (ShardeumFlags.fixSetCertTimeTxApply === false) {
+          //old logic
+          if ((res as ValidatorError).reason === 'Operator certificate has expired') {
+            //force a set cert time next cycle, this should not be needed
+            lastCertTimeTxTimestamp = 0
+          }
+        }
+
         nestedCountersInstance.countEvent(
           'shardeum-staking',
           `call to queryCertificate failed with reason: ${(res as ValidatorError).reason}`
