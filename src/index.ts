@@ -945,13 +945,16 @@ shardus.registerExternalGet('debug-point-spenders', debugMiddleware, async (req,
     debugServiePointByType: debugServicePointsByType,
     debugServiePointSpendersByType: debugServicePointSpendersByType,
   }
-  return res.json(JSON.stringify(debugObj, debug_map_replacer))
+  res.write(JSON.stringify(debugObj, debug_map_replacer, 2))
+  res.end()
+  return
 })
 
 shardus.registerExternalGet('debug-point-spenders-clear', debugMiddleware, async (req, res) => {
   const totalSpends = debugTotalServicePointRequests
   debugTotalServicePointRequests = 0
   debugServicePointSpendersByType.clear()
+  debugServicePointsByType.clear()
   return res.json(`point spenders cleared. totalSpendActions: ${totalSpends} `)
 })
 
