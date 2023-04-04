@@ -2490,6 +2490,7 @@ shardus.setup({
       operatorEVMAccount.account.nonce = operatorEVMAccount.account.nonce.add(new BN('1'))
 
       const operatorEVMAddress: Address = Address.fromString(stakeCoinsTx.nominator)
+      shardus.setDebugSetLastAppAwait(`apply():checkpoint_putAccount_commit`)
       await shardeumState.checkpoint()
       await shardeumState.putAccount(operatorEVMAddress, operatorEVMAccount.account)
       await shardeumState.commit()
@@ -2689,6 +2690,7 @@ shardus.setup({
       operatorEVMAccount.operatorAccountInfo.operatorStats.lastStakedNodeKey = nomineeNodeAccount2Address
 
       const operatorEVMAddress: Address = Address.fromString(unstakeCoinsTX.nominator)
+      shardus.setDebugSetLastAppAwait(`apply():checkpoint_putAccount_commit`)
       await shardeumState.checkpoint()
       await shardeumState.putAccount(operatorEVMAddress, operatorEVMAccount.account)
       await shardeumState.commit()
@@ -2904,6 +2906,7 @@ shardus.setup({
     if (ShardeumFlags.VerboseLogs) console.log(`Block for tx ${ethTxId}`, blockForTx.header.number.toNumber())
     let runTxResult: RunTxResult
     let wrappedReceiptAccount: WrappedEVMAccount
+    shardus.setDebugSetLastAppAwait(`apply():getLocalOrRemoteAccount(${networkAccount})`)
     const wrappedNetworkAccount: ShardusTypes.WrappedData = await shardus.getLocalOrRemoteAccount(
       networkAccount
     )
@@ -2911,6 +2914,7 @@ shardus.setup({
       // if checkNonce is true, we're not gonna skip the nonce
       EVM.stateManager = null
       EVM.stateManager = shardeumState
+      shardus.setDebugSetLastAppAwait(`apply():runTx`)
       runTxResult = await EVM.runTx({
         block: blockForTx,
         tx: transaction,
@@ -3840,6 +3844,7 @@ shardus.setup({
         WrappedEVMAccountFunctions.fixDeserializedWrappedEVMAccount(wrappedEVMAccount)
 
       //accounts[shardusAddress] = wrappedEVMAccount
+      shardus.setDebugSetLastAppAwait(`setAccountData.setAccount(${shardusAddress})`)
       await AccountsStorage.setAccount(shardusAddress, wrappedEVMAccount)
     }
   },
@@ -3853,6 +3858,7 @@ shardus.setup({
 
       let accountCreated = false
       //let wrappedEVMAccount = accounts[accountId]
+      shardus.setDebugSetLastAppAwait('getRelevantData.AccountsStorage.getAccount')
       let wrappedEVMAccount: NetworkAccount | WrappedEVMAccount = await AccountsStorage.getAccount(accountId)
 
       if (internalTx.internalTXType === InternalTXType.SetGlobalCodeBytes) {
@@ -3946,6 +3952,7 @@ shardus.setup({
     if (isDebugTx(tx)) {
       let accountCreated = false
       //let wrappedEVMAccount = accounts[accountId]
+      shardus.setDebugSetLastAppAwait(`getRelevantData.AccountsStorage.getAccount(${accountId})`)
       let wrappedEVMAccount = await AccountsStorage.getAccount(accountId)
       if (wrappedEVMAccount == null) {
         const evmAccountInfo = shardusAddressToEVMAccountInfo.get(accountId)
@@ -3990,6 +3997,7 @@ shardus.setup({
       const txHash = bufferToHex(transactionObj.hash())
 
       let accountCreated = false
+      shardus.setDebugSetLastAppAwait(`getRelevantData.AccountsStorage.getAccount(${accountId})`)
       const wrappedEVMAccount = await AccountsStorage.getAccount(accountId)
 
       if (appData.internalTXType === InternalTXType.Stake) {
@@ -4062,6 +4070,7 @@ shardus.setup({
     }
 
     //let wrappedEVMAccount = accounts[accountId]
+    shardus.setDebugSetLastAppAwait(`getRelevantData.AccountsStorage.getAccount(${accountId})`)
     let wrappedEVMAccount = await AccountsStorage.getAccount(accountId)
     let accountCreated = false
 
@@ -4122,8 +4131,10 @@ shardus.setup({
         //this is needed, but also kind of a waste.  Would be nice if shardus could be told to ignore creating certain accounts
       } else if (accountType === AccountType.Account) {
         //some of this feels a bit redundant, will need to think more on the cleanup
+        shardus.setDebugSetLastAppAwait(`getRelevantData.createAccount(${evmAccountID})`)
         await createAccount(evmAccountID, shardeumState)
         const address = Address.fromString(evmAccountID)
+        shardus.setDebugSetLastAppAwait(`getRelevantData.shardeumState.getAccount(${evmAccountID})`)
         const account = await shardeumState.getAccount(address)
         wrappedEVMAccount = {
           timestamp: 0,
@@ -4272,17 +4283,20 @@ shardus.setup({
       //if account?
       const addressStr = updatedEVMAccount.ethAddress
       const ethAccount = updatedEVMAccount.account
+      shardus.setDebugSetLastAppAwait(`shardeumState._transactionState.commitAccount(${addressStr})`)
       await shardeumState._transactionState.commitAccount(addressStr, ethAccount) //yikes this wants an await.
     } else if (updatedEVMAccount.accountType === AccountType.ContractStorage) {
       //if ContractAccount?
       const addressStr = updatedEVMAccount.ethAddress
       const key = updatedEVMAccount.key
       const bufferValue = updatedEVMAccount.value
+      shardus.setDebugSetLastAppAwait(`shardeumState._transactionState.commitContractStorage(${addressStr})`)
       await shardeumState._transactionState.commitContractStorage(addressStr, key, bufferValue)
     } else if (updatedEVMAccount.accountType === AccountType.ContractCode) {
       const contractAddress = updatedEVMAccount.contractAddress
       const codeHash = updatedEVMAccount.codeHash
       const codeByte = updatedEVMAccount.codeByte
+      shardus.setDebugSetLastAppAwait(`shardeumState._transactionState.commitContractBytes(${contractAddress})`)
       await shardeumState._transactionState.commitContractBytes(contractAddress, codeHash, codeByte)
     } else if (updatedEVMAccount.accountType === AccountType.Receipt) {
       //TODO we can add the code that processes a receipt now.
@@ -4307,6 +4321,7 @@ shardus.setup({
 
     // Save updatedAccount to db / persistent storage
     //accounts[accountId] = updatedEVMAccount
+    shardus.setDebugSetLastAppAwait(`updateAccountFull.AccountsStorage.setAccount(${accountId})`)
     await AccountsStorage.setAccount(accountId, updatedEVMAccount)
 
     if (ShardeumFlags.AppliedTxsMaps) {
@@ -4505,6 +4520,7 @@ shardus.setup({
     for (const address of addressList) {
       //const wrappedEVMAccount = accounts[address]
       // TODO perf: could replace with a single query
+      shardus.setDebugSetLastAppAwait(`getAccountDataByList.AccountsStorage.getAccount(${address})`)
       const wrappedEVMAccount = await AccountsStorage.getAccount(address)
       if (wrappedEVMAccount) {
         const wrapped = WrappedEVMAccountFunctions._shardusWrappedAccount(wrappedEVMAccount)
