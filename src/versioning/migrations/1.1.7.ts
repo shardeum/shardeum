@@ -4,9 +4,7 @@ import { Migration } from '../types'
 // import { shardusConfig } from '../..'
 
 export const migrate: Migration = async () => {
-  console.log('migrate 1.1.5')
-  nestedCountersInstance.countEvent('migrate-1.1.5', 'calling migrate 1.1.5')
-
-  // this is redundant as we do not gate this varible on the active version
-  //ShardeumFlags.shardeumTimeout = 50000
+  console.log('migrate 1.1.7')
+  //no migration feature in 1.1.7 so far
+  nestedCountersInstance.countEvent('migrate-1.1.7', 'calling migrate 1.1.7')
 }

@@ -21,13 +21,12 @@ import {
   ClaimRewardTX,
   DebugTx,
   DebugTXType,
-  DevAccount,
+  //DevAccount,
   EVMAccountInfo,
   InitRewardTimes,
   InternalTx,
   InternalTXType,
   NetworkAccount,
-  NetworkParameters,
   NodeAccount2,
   NodeInfoAppData,
   OperatorAccountInfo,
@@ -92,6 +91,7 @@ import {
 import { onActiveVersionChange } from './versioning'
 import { shardusFactory } from '@shardus/core'
 import { unsafeGetClientIp } from './utils/requests'
+import { initialNetworkParamters } from './initialNetworkParameters'
 
 export const networkAccount = '0'.repeat(64) //address
 
@@ -108,25 +108,7 @@ export const blocks: BlockMap = {}
 export const blocksByHash: { [hash: string]: number } = {}
 export const readableBlocks: { [blockNumber: number | string]: ShardeumBlockOverride } = {}
 
-const oneSHM = new BN(10).pow(new BN(18))
-
-// INITIAL NETWORK PARAMETERS FOR Shardeum
-export const INITIAL_PARAMETERS: NetworkParameters = {
-  title: 'Initial parameters',
-  description: 'These are the initial network parameters Shardeum started with',
-  nodeRewardInterval: ONE_HOUR, // 1 hour reward interval
-  nodeRewardAmountUsd: oneSHM.mul(new BN(1)), // $1 x 10 ^ 18
-  nodePenaltyUsd: oneSHM.mul(new BN(10)), // $10 x 10 ^ 18
-  stakeRequiredUsd: oneSHM.mul(new BN(10)), // $10 x 10 ^ 18
-  maintenanceInterval: ONE_DAY,
-  maintenanceFee: 0,
-  minVersion: '1.1.5',
-  activeVersion: '1.1.5',
-  latestVersion: '1.1.6',
-  stabilityScaleMul: 1000,
-  stabilityScaleDiv: 1000,
-  txPause: false,
-}
+export const oneSHM = new BN(10).pow(new BN(18))
 
 export let genesisAccounts: string[] = []
 
@@ -1712,8 +1694,8 @@ async function applyInternalTx(
   }
   if (internalTx.internalTXType === InternalTXType.ChangeConfig) {
     /* eslint-disable security/detect-object-injection */
-    const network: NetworkAccount = wrappedStates[networkAccount].data
-    const devAccount: DevAccount = wrappedStates[internalTx.from].data
+    // const network: NetworkAccount = wrappedStates[networkAccount].data
+    // const devAccount: DevAccount = wrappedStates[internalTx.from].data
     /* eslint-enable security/detect-object-injection */
 
     let changeOnCycle
@@ -2018,7 +2000,7 @@ const createNetworkAccount = (accountId: string) => {
         },
       },
     ],
-    current: INITIAL_PARAMETERS,
+    current: initialNetworkParamters,
     next: {},
     hash: '',
     timestamp: 0,
