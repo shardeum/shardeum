@@ -1,7 +1,7 @@
 import { nestedCountersInstance, Shardus, ShardusTypes } from '@shardus/core'
 import * as crypto from '@shardus/crypto-utils'
 import { BN, isValidAddress } from 'ethereumjs-util'
-import { ONE_SECOND } from '..'
+import { ONE_SECOND } from '../shardeum/shardeumConstants'
 import config from '../config'
 import { getNodeAccountWithRetry, InjectTxToConsensor } from '../handlers/queryCertificate'
 import { toShardusAddress } from '../shardeum/evmAddress'

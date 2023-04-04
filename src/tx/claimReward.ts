@@ -1,7 +1,7 @@
 import { nestedCountersInstance, ShardusTypes } from '@shardus/core'
 import * as crypto from '@shardus/crypto-utils'
 import { Address, BN } from 'ethereumjs-util'
-import { networkAccount } from '..'
+import { networkAccount } from '../shardeum/shardeumConstants'
 import { getApplyTXState } from '../index'
 import { hashSignedObj } from '../setup/helpers'
 import { toShardusAddress } from '../shardeum/evmAddress'

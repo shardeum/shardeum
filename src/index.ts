@@ -91,24 +91,13 @@ import {
 import { onActiveVersionChange } from './versioning'
 import { shardusFactory } from '@shardus/core'
 import { unsafeGetClientIp } from './utils/requests'
-import { initialNetworkParamters } from './initialNetworkParameters'
-
-export const networkAccount = '0'.repeat(64) //address
-
-// HELPFUL TIME CONSTANTS IN MILLISECONDS
-export const ONE_SECOND = 1000
-export const ONE_MINUTE = 60 * ONE_SECOND
-export const ONE_HOUR = 60 * ONE_MINUTE
-export const ONE_DAY = 24 * ONE_HOUR
-// export const ONE_WEEK = 7 * ONE_DAY
-// export const ONE_YEAR = 365 * ONE_DAY
+import { initialNetworkParamters } from './shardeum/initialNetworkParameters'
+import { oneSHM, networkAccount, ONE_SECOND } from './shardeum/shardeumConstants'
 
 let latestBlock = 0
 export const blocks: BlockMap = {}
 export const blocksByHash: { [hash: string]: number } = {}
 export const readableBlocks: { [blockNumber: number | string]: ShardeumBlockOverride } = {}
-
-export const oneSHM = new BN(10).pow(new BN(18))
 
 export let genesisAccounts: string[] = []
 

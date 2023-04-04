@@ -3,7 +3,7 @@ import { NetworkAccount, WrappedEVMAccount, WrappedEVMAccountMap } from '../shar
 import { ShardeumFlags } from '../shardeum/shardeumFlags'
 import Storage from '../storage/storage'
 import { DeSerializeFromJsonString, _base16BNParser } from '../utils'
-import { networkAccount } from '..'
+import { networkAccount } from '../shardeum/shardeumConstants'
 
 //WrappedEVMAccount
 export let accounts: WrappedEVMAccountMap = {}

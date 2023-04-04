@@ -1,6 +1,6 @@
 import { BN } from 'ethereumjs-util'
-import { NetworkParameters } from './shardeum/shardeumTypes'
-import { ONE_HOUR, oneSHM, ONE_DAY } from './index'
+import { NetworkParameters } from './shardeumTypes'
+import { ONE_HOUR, oneSHM, ONE_DAY } from './shardeumConstants'
 
 // INITIAL NETWORK PARAMETERS FOR Shardeum
 
