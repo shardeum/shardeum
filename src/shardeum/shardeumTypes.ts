@@ -390,6 +390,8 @@ export interface NodeInfoAppData {
   minVersion: string
   activeVersion: string
   latestVersion: string
+  operatorCLIVersion: string
+  operatorGUIVersion: string
 }
 
 export type HexString = string
