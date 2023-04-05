@@ -11,7 +11,7 @@ import { parse as parseUrl } from 'url'
 import got from 'got'
 import 'dotenv/config'
 import { ShardeumState, TransactionState } from './state'
-import { __ShardFunctions, nestedCountersInstance, ShardusTypes } from '@shardus/core'
+import { __ShardFunctions, nestedCountersInstance, ShardusTypes, DebugComplete } from '@shardus/core'
 import { ContractByteWrite } from './state/transactionState'
 import { version } from '../package.json'
 import {
@@ -2490,10 +2490,11 @@ shardus.setup({
       operatorEVMAccount.account.nonce = operatorEVMAccount.account.nonce.add(new BN('1'))
 
       const operatorEVMAddress: Address = Address.fromString(stakeCoinsTx.nominator)
-      shardus.setDebugSetLastAppAwait(`apply():checkpoint_putAccount_commit`)
+      shardus.setDebugSetLastAppAwait(`apply():checkpoint_putAccount_commit 1`)
       await shardeumState.checkpoint()
       await shardeumState.putAccount(operatorEVMAddress, operatorEVMAccount.account)
       await shardeumState.commit()
+      shardus.setDebugSetLastAppAwait(`apply():checkpoint_putAccount_commit 1`, DebugComplete.Completed)
 
       // eslint-disable-next-line security/detect-object-injection
       const nodeAccount2: NodeAccount2 = wrappedStates[nomineeNodeAccount2Address].data as NodeAccount2
@@ -2690,10 +2691,11 @@ shardus.setup({
       operatorEVMAccount.operatorAccountInfo.operatorStats.lastStakedNodeKey = nomineeNodeAccount2Address
 
       const operatorEVMAddress: Address = Address.fromString(unstakeCoinsTX.nominator)
-      shardus.setDebugSetLastAppAwait(`apply():checkpoint_putAccount_commit`)
+      shardus.setDebugSetLastAppAwait(`apply():checkpoint_putAccount_commit 2`)
       await shardeumState.checkpoint()
       await shardeumState.putAccount(operatorEVMAddress, operatorEVMAccount.account)
       await shardeumState.commit()
+      shardus.setDebugSetLastAppAwait(`apply():checkpoint_putAccount_commit 2`, DebugComplete.Completed)
 
       let stakeInfo: unknown
       if (ShardeumFlags.totalUnstakeAmount) {
@@ -2906,10 +2908,11 @@ shardus.setup({
     if (ShardeumFlags.VerboseLogs) console.log(`Block for tx ${ethTxId}`, blockForTx.header.number.toNumber())
     let runTxResult: RunTxResult
     let wrappedReceiptAccount: WrappedEVMAccount
-    shardus.setDebugSetLastAppAwait(`apply():getLocalOrRemoteAccount(${networkAccount})`)
+    /* prettier-ignore */ shardus.setDebugSetLastAppAwait(`apply():getLocalOrRemoteAccount(${networkAccount})`)
     const wrappedNetworkAccount: ShardusTypes.WrappedData = await shardus.getLocalOrRemoteAccount(
       networkAccount
     )
+    /* prettier-ignore */ shardus.setDebugSetLastAppAwait( `apply():getLocalOrRemoteAccount(${networkAccount})`, DebugComplete.Completed )
     try {
       // if checkNonce is true, we're not gonna skip the nonce
       EVM.stateManager = null
@@ -2921,6 +2924,7 @@ shardus.setup({
         skipNonce: !ShardeumFlags.CheckNonce,
         networkAccount: wrappedNetworkAccount.data,
       })
+      shardus.setDebugSetLastAppAwait(`apply():runTx`, DebugComplete.Completed)
       if (ShardeumFlags.VerboseLogs) console.log('runTxResult', txId, runTxResult)
     } catch (e) {
       // if (!transactionFailHashMap[ethTxId]) {
@@ -3846,6 +3850,7 @@ shardus.setup({
       //accounts[shardusAddress] = wrappedEVMAccount
       shardus.setDebugSetLastAppAwait(`setAccountData.setAccount(${shardusAddress})`)
       await AccountsStorage.setAccount(shardusAddress, wrappedEVMAccount)
+      shardus.setDebugSetLastAppAwait(`setAccountData.setAccount(${shardusAddress})`, DebugComplete.Completed)
     }
   },
   async getRelevantData(accountId, timestampedTx, appData) {
@@ -3858,9 +3863,9 @@ shardus.setup({
 
       let accountCreated = false
       //let wrappedEVMAccount = accounts[accountId]
-      shardus.setDebugSetLastAppAwait('getRelevantData.AccountsStorage.getAccount')
+      shardus.setDebugSetLastAppAwait('getRelevantData.AccountsStorage.getAccount 4')
       let wrappedEVMAccount: NetworkAccount | WrappedEVMAccount = await AccountsStorage.getAccount(accountId)
-
+      shardus.setDebugSetLastAppAwait('getRelevantData.AccountsStorage.getAccount 4', DebugComplete.Completed)
       if (internalTx.internalTXType === InternalTXType.SetGlobalCodeBytes) {
         if (wrappedEVMAccount == null) {
           accountCreated = true
@@ -3952,8 +3957,9 @@ shardus.setup({
     if (isDebugTx(tx)) {
       let accountCreated = false
       //let wrappedEVMAccount = accounts[accountId]
-      shardus.setDebugSetLastAppAwait(`getRelevantData.AccountsStorage.getAccount(${accountId})`)
+      /* prettier-ignore */ shardus.setDebugSetLastAppAwait(`getRelevantData.AccountsStorage.getAccount(${accountId}) 1`)
       let wrappedEVMAccount = await AccountsStorage.getAccount(accountId)
+      /* prettier-ignore */ shardus.setDebugSetLastAppAwait(`getRelevantData.AccountsStorage.getAccount(${accountId}) 1`, DebugComplete.Completed)
       if (wrappedEVMAccount == null) {
         const evmAccountInfo = shardusAddressToEVMAccountInfo.get(accountId)
         let evmAccountID = null
@@ -3997,9 +4003,9 @@ shardus.setup({
       const txHash = bufferToHex(transactionObj.hash())
 
       let accountCreated = false
-      shardus.setDebugSetLastAppAwait(`getRelevantData.AccountsStorage.getAccount(${accountId})`)
+      /* prettier-ignore */ shardus.setDebugSetLastAppAwait(`getRelevantData.AccountsStorage.getAccount(${accountId}) 2`)
       const wrappedEVMAccount = await AccountsStorage.getAccount(accountId)
-
+      /* prettier-ignore */ shardus.setDebugSetLastAppAwait(`getRelevantData.AccountsStorage.getAccount(${accountId}) 2`, DebugComplete.Completed)
       if (appData.internalTXType === InternalTXType.Stake) {
         nestedCountersInstance.countEvent('shardeum-staking', 'internalTXType === Stake')
         if (!wrappedEVMAccount) {
@@ -4070,8 +4076,9 @@ shardus.setup({
     }
 
     //let wrappedEVMAccount = accounts[accountId]
-    shardus.setDebugSetLastAppAwait(`getRelevantData.AccountsStorage.getAccount(${accountId})`)
+    /* prettier-ignore */ shardus.setDebugSetLastAppAwait(`getRelevantData.AccountsStorage.getAccount(${accountId}) 3`)
     let wrappedEVMAccount = await AccountsStorage.getAccount(accountId)
+    /* prettier-ignore */ shardus.setDebugSetLastAppAwait(`getRelevantData.AccountsStorage.getAccount(${accountId}) 3`,DebugComplete.Completed)
     let accountCreated = false
 
     const txId = hashSignedObj(tx)
@@ -4131,11 +4138,14 @@ shardus.setup({
         //this is needed, but also kind of a waste.  Would be nice if shardus could be told to ignore creating certain accounts
       } else if (accountType === AccountType.Account) {
         //some of this feels a bit redundant, will need to think more on the cleanup
-        shardus.setDebugSetLastAppAwait(`getRelevantData.createAccount(${evmAccountID})`)
+        /* prettier-ignore */ shardus.setDebugSetLastAppAwait(`getRelevantData.createAccount(${evmAccountID})`)
         await createAccount(evmAccountID, shardeumState)
+        /* prettier-ignore */ shardus.setDebugSetLastAppAwait(`getRelevantData.createAccount(${evmAccountID})`, DebugComplete.Completed)
+
         const address = Address.fromString(evmAccountID)
-        shardus.setDebugSetLastAppAwait(`getRelevantData.shardeumState.getAccount(${evmAccountID})`)
+        /* prettier-ignore */ shardus.setDebugSetLastAppAwait(`getRelevantData.shardeumState.getAccount(${evmAccountID})`)
         const account = await shardeumState.getAccount(address)
+        /* prettier-ignore */ shardus.setDebugSetLastAppAwait(`getRelevantData.shardeumState.getAccount(${evmAccountID})`, DebugComplete.Completed)
         wrappedEVMAccount = {
           timestamp: 0,
           account,
@@ -4283,21 +4293,24 @@ shardus.setup({
       //if account?
       const addressStr = updatedEVMAccount.ethAddress
       const ethAccount = updatedEVMAccount.account
-      shardus.setDebugSetLastAppAwait(`shardeumState._transactionState.commitAccount(${addressStr})`)
+      /* prettier-ignore */ shardus.setDebugSetLastAppAwait(`shardeumState._transactionState.commitAccount(${addressStr})`)
       await shardeumState._transactionState.commitAccount(addressStr, ethAccount) //yikes this wants an await.
+      /* prettier-ignore */ shardus.setDebugSetLastAppAwait(`shardeumState._transactionState.commitAccount(${addressStr})`, DebugComplete.Completed)
     } else if (updatedEVMAccount.accountType === AccountType.ContractStorage) {
       //if ContractAccount?
       const addressStr = updatedEVMAccount.ethAddress
       const key = updatedEVMAccount.key
       const bufferValue = updatedEVMAccount.value
-      shardus.setDebugSetLastAppAwait(`shardeumState._transactionState.commitContractStorage(${addressStr})`)
+      /* prettier-ignore */ shardus.setDebugSetLastAppAwait(`shardeumState._transactionState.commitContractStorage(${addressStr})`)
       await shardeumState._transactionState.commitContractStorage(addressStr, key, bufferValue)
+      /* prettier-ignore */ shardus.setDebugSetLastAppAwait(`shardeumState._transactionState.commitContractStorage(${addressStr})`, DebugComplete.Completed)
     } else if (updatedEVMAccount.accountType === AccountType.ContractCode) {
       const contractAddress = updatedEVMAccount.contractAddress
       const codeHash = updatedEVMAccount.codeHash
       const codeByte = updatedEVMAccount.codeByte
-      shardus.setDebugSetLastAppAwait(`shardeumState._transactionState.commitContractBytes(${contractAddress})`)
+      /* prettier-ignore */ shardus.setDebugSetLastAppAwait( `shardeumState._transactionState.commitContractBytes(${contractAddress})` )
       await shardeumState._transactionState.commitContractBytes(contractAddress, codeHash, codeByte)
+      /* prettier-ignore */ shardus.setDebugSetLastAppAwait( `shardeumState._transactionState.commitContractBytes(${contractAddress})`, DebugComplete.Completed )
     } else if (updatedEVMAccount.accountType === AccountType.Receipt) {
       //TODO we can add the code that processes a receipt now.
       //  This will not call back into transactionState
@@ -4321,8 +4334,9 @@ shardus.setup({
 
     // Save updatedAccount to db / persistent storage
     //accounts[accountId] = updatedEVMAccount
-    shardus.setDebugSetLastAppAwait(`updateAccountFull.AccountsStorage.setAccount(${accountId})`)
+    /* prettier-ignore */ shardus.setDebugSetLastAppAwait(`updateAccountFull.AccountsStorage.setAccount(${accountId})`)
     await AccountsStorage.setAccount(accountId, updatedEVMAccount)
+    /* prettier-ignore */ shardus.setDebugSetLastAppAwait(`updateAccountFull.AccountsStorage.setAccount(${accountId})`, DebugComplete.Completed)
 
     if (ShardeumFlags.AppliedTxsMaps) {
       /* eslint-disable security/detect-object-injection */
@@ -4520,8 +4534,9 @@ shardus.setup({
     for (const address of addressList) {
       //const wrappedEVMAccount = accounts[address]
       // TODO perf: could replace with a single query
-      shardus.setDebugSetLastAppAwait(`getAccountDataByList.AccountsStorage.getAccount(${address})`)
+      /* prettier-ignore */ shardus.setDebugSetLastAppAwait(`getAccountDataByList.AccountsStorage.getAccount(${address})`)
       const wrappedEVMAccount = await AccountsStorage.getAccount(address)
+      /* prettier-ignore */ shardus.setDebugSetLastAppAwait(`getAccountDataByList.AccountsStorage.getAccount(${address})`, DebugComplete.Completed)
       if (wrappedEVMAccount) {
         const wrapped = WrappedEVMAccountFunctions._shardusWrappedAccount(wrappedEVMAccount)
         results.push(wrapped)
