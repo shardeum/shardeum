@@ -53,7 +53,11 @@ export async function injectSetCertTimeTx(
   const nodeAccountQueryResponse = accountQueryResponse as NodeAccountQueryResponse
   const nominator = nodeAccountQueryResponse.nodeAccount?.nominator
 
-  // TODO: Validate the nodeAccount
+  if (!nominator) {
+    console.log(`Nominator for this node account ${publicKey} is not found!`)
+    return { success: false, reason: `Nominator for this node account ${publicKey} is not found!` }
+  }
+  // TODO: I think we can add another validation here that checks that nominator stakeAmount has enough for minStakeRequired in the network
 
   // Inject the setCertTime Tx
   const randomConsensusNode: ShardusTypes.ValidatorNodeDetails = getRandom(activeNodes, 1)[0]

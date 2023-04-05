@@ -14,11 +14,7 @@ import {
 import { fixDeserializedWrappedEVMAccount, isWrappedEVMAccount } from '../shardeum/wrappedEVMAccountFunctions'
 import { setCertTimeTx } from '../tx/setCertTime'
 import { getRandom } from '../utils'
-import {
-  shardusGetFromNode,
-  shardusPostToNode,
-  shardusPutToNode,
-} from '../utils/requests'
+import { shardusGetFromNode, shardusPostToNode, shardusPutToNode } from '../utils/requests'
 
 // constants
 
@@ -32,7 +28,7 @@ const errNodeBusy = 'node busy'
 export interface QueryCertRequest {
   nominee: string
   nominator: string
-  sign?: ShardusTypes.Sign
+  sign: ShardusTypes.Sign
 }
 
 export type CertSignaturesResult = {
@@ -54,13 +50,17 @@ export interface ValidatorError {
   reason: string
 }
 
-function validateQueryCertRequest(req: QueryCertRequest, rawRequest: Request): ValidatorError {
+function validateQueryCertRequest(req: QueryCertRequest): ValidatorError {
   if (!isValidAddress(req.nominator)) {
     return { success: false, reason: 'Invalid nominator address' }
   }
+  if (!req.nominee || req.nominee === '' || req.nominee.length !== 64) {
+    /* prettier-ignore */ nestedCountersInstance.countEvent('shardeum-staking', `validateQueryCertRequest fail req.nominee address invalid`)
+    /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log('validateQueryCertRequest fail req.nominee address invalid', req)
+    return { success: false, reason: 'Invalid nominee address' }
+  }
   try {
-    if (!crypto.verifyObj(rawRequest.body))
-      return { success: false, reason: 'Invalid signature for QueryCert tx' }
+    if (!crypto.verifyObj(req)) return { success: false, reason: 'Invalid signature for QueryCert tx' }
   } catch (e) {
     return { success: false, reason: 'Invalid signature for QueryCert tx' }
   }
@@ -229,7 +229,7 @@ export async function queryCertificateHandler(
   nestedCountersInstance.countEvent('shardeum-staking', 'calling queryCertificateHandler')
 
   const queryCertReq = req.body as QueryCertRequest
-  const reqValidationResult = validateQueryCertRequest(queryCertReq, req)
+  const reqValidationResult = validateQueryCertRequest(queryCertReq)
   if (!reqValidationResult.success) {
     nestedCountersInstance.countEvent(
       'shardeum-staking',
@@ -265,6 +265,17 @@ export async function queryCertificateHandler(
     return {
       success: false,
       reason: 'Operator account info is null',
+    }
+  }
+
+  if (operatorAccount.operatorAccountInfo.certExp === null) {
+    nestedCountersInstance.countEvent(
+      'shardeum-staking',
+      'queryCertificateHandler: Operator certificate time is null'
+    )
+    return {
+      success: false,
+      reason: 'Operator certificate time is null',
     }
   }
 

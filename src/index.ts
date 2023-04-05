@@ -1628,7 +1628,7 @@ shardus.registerExternalPut('query-certificate', async (req: Request, res: Respo
   nestedCountersInstance.countEvent('shardeum-staking', 'called query-certificate')
 
   const queryCertRes = await queryCertificateHandler(req, shardus)
-  console.log('queryCertRes', queryCertRes)
+  if (ShardeumFlags.VerboseLogs) console.log('queryCertRes', queryCertRes)
   if (queryCertRes.success) {
     const successRes = queryCertRes as CertSignaturesResult
     stakeCert = successRes.signedStakeCert
@@ -4977,6 +4977,12 @@ shardus.setup({
           if ((res as ValidatorError).reason === 'Operator certificate has expired') {
             //force a set cert time next cycle, this should not be needed
             lastCertTimeTxTimestamp = 0
+            lastCertTimeTxCycle = 0
+          }
+
+          if ((res as ValidatorError).reason === 'Operator certificate time is null') {
+            lastCertTimeTxTimestamp = 0
+            lastCertTimeTxCycle = 0
           }
         }
 
