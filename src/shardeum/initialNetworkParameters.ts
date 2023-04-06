@@ -21,4 +21,5 @@ export const initialNetworkParamters: NetworkParameters = {
   stabilityScaleMul: 1000,
   stabilityScaleDiv: 1000,
   txPause: false,
+  certCycleDuration: 10
 }

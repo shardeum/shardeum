@@ -36,6 +36,11 @@ export type setCertTimeTx = {
   timestamp: number
 }
 
+export function getCertCycleDuration() {
+  if (AccountsStorage.cachedNetworkAccount.current.certCycleDuration !== null) return AccountsStorage.cachedNetworkAccount.current.certCycleDuration
+  return ShardeumFlags.certCycleDuration
+}
+
 export async function injectSetCertTimeTx(
   shardus: Shardus,
   publicKey: string,
@@ -57,7 +62,7 @@ export async function injectSetCertTimeTx(
     internalTXType: InternalTXType.SetCertTime,
     nominee: publicKey,
     nominator,
-    duration: ShardeumFlags.certCycleDuration, //temp setting to 20 to make debugging easier
+    duration: getCertCycleDuration(), //temp setting to 20 to make debugging easier
     timestamp: Date.now(),
   }
   tx = shardus.signAsNode(tx)
@@ -78,7 +83,7 @@ export function validateSetCertTimeTx(tx: SetCertTime): { isValid: boolean; reas
   if (tx.duration <= 0) {
     return { isValid: false, reason: 'Duration in cert tx must be > 0' }
   }
-  if (tx.duration > ShardeumFlags.certCycleDuration) {
+  if (tx.duration > getCertCycleDuration()) {
     return { isValid: false, reason: 'Duration in cert tx must be not greater than certCycleDuration' }
   }
   if (tx.timestamp <= 0) {
@@ -188,7 +193,7 @@ export function applySetCertTimeTx(
 
   if (certExp > 0) {
     const certStartTimestamp =
-      certExp - ShardeumFlags.certCycleDuration * ONE_SECOND * serverConfig.p2p.cycleDuration
+      certExp - getCertCycleDuration() * ONE_SECOND * serverConfig.p2p.cycleDuration
 
     let expiredPercentage
     if (ShardeumFlags.fixSetCertTimeTxApply === true) {

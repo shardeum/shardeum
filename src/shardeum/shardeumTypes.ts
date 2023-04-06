@@ -276,6 +276,7 @@ export interface NetworkParameters {
   activeVersion: string
   latestVersion: string
   txPause: boolean
+  certCycleDuration: number
 }
 
 export interface NodeAccount2 extends BaseAccount {

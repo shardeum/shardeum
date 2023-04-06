@@ -73,7 +73,7 @@ import { ShardeumBlock } from './block/blockchain'
 import * as AccountsStorage from './storage/accountStorage'
 import { StateManager } from '@ethereumjs/vm/dist/state'
 import { sync, validateTransaction, validateTxnFields } from './setup'
-import { applySetCertTimeTx, injectSetCertTimeTx, isSetCertTimeTx } from './tx/setCertTime'
+import { applySetCertTimeTx, injectSetCertTimeTx, isSetCertTimeTx, getCertCycleDuration } from './tx/setCertTime'
 import { applyClaimRewardTx, injectClaimRewardTxWithRetry } from './tx/claimReward'
 import { Request, Response } from 'express'
 import {
@@ -3939,7 +3939,7 @@ shardus.setup({
         if (!wrappedEVMAccount) {
           // Node Account or EVM Account(Nominator) has to be already created at this point.
           if (accountId === internalTx.nominee) {
-            throw Error(`Node Account <nominee> is not found ${accountId}`)
+            throw Error(`Node Account <nominee> is not found ${accountId}, tx: ${JSON.stringify(internalTx)}`)
           } else if (accountId === internalTx.nominator) {
             throw Error(`EVM Account <nominator> is not found ${accountId}`)
           }
@@ -4910,7 +4910,7 @@ shardus.setup({
     }
 
     const isCertTimeExpired =
-      lastCertTimeTxCycle > 0 && latestCycle.counter - lastCertTimeTxCycle > ShardeumFlags.certCycleDuration
+      lastCertTimeTxCycle > 0 && latestCycle.counter - lastCertTimeTxCycle > getCertCycleDuration()
     if (isCertTimeExpired) {
       nestedCountersInstance.countEvent('shardeum-staking', 'stakeCert expired and need to be renewed')
     }
@@ -4921,7 +4921,7 @@ shardus.setup({
 
       const remainingValidTime = stakeCert.certExp - Date.now()
       const certStartTimestamp =
-        stakeCert.certExp - ShardeumFlags.certCycleDuration * ONE_SECOND * latestCycle.duration
+        stakeCert.certExp - getCertCycleDuration() * ONE_SECOND * latestCycle.duration
       const certEndTimestamp = stakeCert.certExp
       const expiredPercentage = (Date.now() - certStartTimestamp) / (certEndTimestamp - certStartTimestamp)
       const isExpiringSoon = expiredPercentage >= 0.9
@@ -4994,7 +4994,7 @@ shardus.setup({
       const remainingValidTime = signedStakeCert.certExp - Date.now()
 
       const certStartTimestamp =
-        signedStakeCert.certExp - ShardeumFlags.certCycleDuration * ONE_SECOND * latestCycle.duration
+        signedStakeCert.certExp - getCertCycleDuration() * ONE_SECOND * latestCycle.duration
       const certEndTimestamp = signedStakeCert.certExp
       const expiredPercentage = (Date.now() - certStartTimestamp) / (certEndTimestamp - certStartTimestamp)
       const isExpiringSoon = expiredPercentage >= 0.9
