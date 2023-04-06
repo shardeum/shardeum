@@ -1936,7 +1936,7 @@ export const createInternalTxReceipt = (
     transactionIndex: '0x1',
     // eslint-disable-next-line security/detect-object-injection
     blockNumber: readableBlocks[blockNumberForTx]?.number,
-    nonce: '0x0',
+    nonce: '0',
     blockHash: readableBlocks[blockNumberForTx]?.hash, // eslint-disable-line security/detect-object-injection
     cumulativeGasUsed: '0x0',
     gasUsed: '0x0',
