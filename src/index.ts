@@ -4913,6 +4913,23 @@ shardus.setup({
       lastCertTimeTxCycle > 0 && latestCycle.counter - lastCertTimeTxCycle > getCertCycleDuration()
     if (isCertTimeExpired) {
       nestedCountersInstance.countEvent('shardeum-staking', 'stakeCert expired and need to be renewed')
+      if (ShardeumFlags.fixCertExpRenew) {
+        const response = await injectSetCertTimeTx(shardus, publicKey, activeNodes)
+        if (response == null) {
+          /* prettier-ignore */ nestedCountersInstance.countEvent('shardeum-staking', `failed call to injectSetCertTimeTx 2 reason: response is null`)
+          return false
+        }
+        if (!response.success) {
+          /* prettier-ignore */ nestedCountersInstance.countEvent('shardeum-staking', `failed call to injectSetCertTimeTx 2 reason: ${(response as ValidatorError).reason}`)
+          return false
+        }
+        stakeCert = null //clear stake cert, so we will know to query for it again
+        // set lastCertTimeTxTimestamp and cycle
+        lastCertTimeTxTimestamp = Date.now()
+        lastCertTimeTxCycle = latestCycle.counter
+        // return false and query/check again in next cycle
+        return false
+      }
     }
 
     //if we have stakeCert, check its time
@@ -4928,7 +4945,7 @@ shardus.setup({
       if (ShardeumFlags.VerboseLogs) {
         /* prettier-ignore */ console.log('stakeCert != null. remainingValidTime / minimum time ', remainingValidTime, certExpireSoonCycles * ONE_SECOND * latestCycle.duration, `expiredPercentage: ${expiredPercentage}, isExpiringSoon: ${isExpiringSoon}`)
       }
-      if (isExpiringSoon || (isCertTimeExpired && ShardeumFlags.fixCertExpRenew)) {
+      if (isExpiringSoon) {
         nestedCountersInstance.countEvent('shardeum-staking', 'stakeCert is expired or expiring soon')
         if (ShardeumFlags.fixSetCertTimeTxApply === false) {
           stakeCert = null //clear stake cert, so we will know to query for it again
