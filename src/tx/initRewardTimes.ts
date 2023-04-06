@@ -12,6 +12,7 @@ import {
 } from '../shardeum/shardeumTypes'
 import * as WrappedEVMAccountFunctions from '../shardeum/wrappedEVMAccountFunctions'
 import { sleep } from '../utils'
+import { createInternalTxReceipt } from '..'
 
 export async function injectInitRewardTimesTx(shardus, eventData: ShardusTypes.ShardusEvent) {
   let tx = {
@@ -142,6 +143,9 @@ export function apply(
       txId,
       txTimestamp
     )
+  }
+  if (ShardeumFlags.supportInternalTxReceipt) {
+    createInternalTxReceipt(shardus, applyResponse, tx, tx.nominee, tx.nominee, txTimestamp, txId)
   }
   /* prettier-ignore */ nestedCountersInstance.countEvent('shardeum-staking', `Applied InitRewardTimesTX`)
   console.log('Applied InitRewardTimesTX for', tx.nominee)

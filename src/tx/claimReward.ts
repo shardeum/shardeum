@@ -2,7 +2,7 @@ import { nestedCountersInstance, ShardusTypes } from '@shardus/core'
 import * as crypto from '@shardus/crypto-utils'
 import { Address, BN } from 'ethereumjs-util'
 import { networkAccount } from '../shardeum/shardeumConstants'
-import { getApplyTXState } from '../index'
+import { createInternalTxReceipt, getApplyTXState } from '../index'
 import { hashSignedObj } from '../setup/helpers'
 import { toShardusAddress } from '../shardeum/evmAddress'
 import { ShardeumFlags } from '../shardeum/shardeumFlags'
@@ -334,6 +334,10 @@ export async function applyClaimRewardTx(
       txId,
       txTimestamp
     )
+  }
+
+  if (ShardeumFlags.supportInternalTxReceipt) {
+    createInternalTxReceipt(shardus, applyResponse, tx, tx.nominee, tx.nominee, txTimestamp, txId)
   }
 
   /* prettier-ignore */ nestedCountersInstance.countEvent('shardeum-staking', `Applied ClaimRewardTX`)

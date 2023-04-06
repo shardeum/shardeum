@@ -2,7 +2,16 @@
 import { exec } from 'child_process'
 import { arch, cpus, freemem, totalmem, platform } from 'os'
 import stringify from 'fast-json-stable-stringify'
-import { Account, Address, BN, bufferToHex, isValidAddress, toAscii, toBuffer } from 'ethereumjs-util'
+import {
+  Account,
+  Address,
+  BN,
+  bufferToHex,
+  fromAscii,
+  isValidAddress,
+  toAscii,
+  toBuffer,
+} from 'ethereumjs-util'
 import { AccessListEIP2930Transaction, Transaction } from '@ethereumjs/tx'
 import Common, { Chain } from '@ethereumjs/common'
 import VM from '@ethereumjs/vm'
@@ -1657,10 +1666,6 @@ async function applyInternalTx(
 ): Promise<ShardusTypes.ApplyResponse> {
   const txId = hashSignedObj(tx)
   const applyResponse: ShardusTypes.ApplyResponse = shardus.createApplyResponse(txId, txTimestamp)
-  if (isSetCertTimeTx(tx)) {
-    const setCertTimeTx = tx as SetCertTime
-    applySetCertTimeTx(shardus, setCertTimeTx, wrappedStates, txTimestamp, applyResponse)
-  }
   const internalTx = tx as InternalTx
   if (internalTx.internalTXType === InternalTXType.SetGlobalCodeBytes) {
     // eslint-disable-next-line security/detect-object-injection
@@ -1671,6 +1676,17 @@ async function applyInternalTx(
 
     //need to run this to fix buffer types after serialization
     fixDeserializedWrappedEVMAccount(wrappedEVMAccount)
+    if (ShardeumFlags.supportInternalTxReceipt) {
+      createInternalTxReceipt(
+        shardus,
+        applyResponse,
+        internalTx,
+        networkAccount,
+        networkAccount,
+        txTimestamp,
+        txId
+      )
+    }
   }
 
   if (internalTx.internalTXType === InternalTXType.InitNetwork) {
@@ -1690,6 +1706,17 @@ async function applyInternalTx(
       )
     } else {
       network.timestamp = txTimestamp
+    }
+    if (ShardeumFlags.supportInternalTxReceipt) {
+      createInternalTxReceipt(
+        shardus,
+        applyResponse,
+        internalTx,
+        networkAccount,
+        networkAccount,
+        txTimestamp,
+        txId
+      )
     }
     console.log(`init_network NETWORK_ACCOUNT: ${stringify(network)}`)
     shardus.log('Applied init_network transaction', network)
@@ -1754,6 +1781,17 @@ async function applyInternalTx(
     //   network.timestamp = txTimestamp
     //   devAccount.timestamp = txTimestamp
     // }
+    if (ShardeumFlags.supportInternalTxReceipt) {
+      createInternalTxReceipt(
+        shardus,
+        applyResponse,
+        internalTx,
+        internalTx.from,
+        networkAccount,
+        txTimestamp,
+        txId
+      )
+    }
     console.log('Applied change_config tx')
     shardus.log('Applied change_config tx')
   }
@@ -1779,6 +1817,17 @@ async function applyInternalTx(
     }
     console.log(`Applied CHANGE_CONFIG GLOBAL transaction: ${stringify(network)}`)
     shardus.log('Applied CHANGE_CONFIG GLOBAL transaction', stringify(network))
+    if (ShardeumFlags.supportInternalTxReceipt) {
+      createInternalTxReceipt(
+        shardus,
+        applyResponse,
+        internalTx,
+        internalTx.from,
+        networkAccount,
+        txTimestamp,
+        txId
+      )
+    }
   }
   if (internalTx.internalTXType === InternalTXType.ChangeNetworkParam) {
     let changeOnCycle
@@ -1806,6 +1855,17 @@ async function applyInternalTx(
     // network will consens that this is the correct value
     ourAppDefinedData.globalMsg = { address: networkAccount, value, when, source: value.from }
 
+    if (ShardeumFlags.supportInternalTxReceipt) {
+      createInternalTxReceipt(
+        shardus,
+        applyResponse,
+        internalTx,
+        internalTx.from,
+        networkAccount,
+        txTimestamp,
+        txId
+      )
+    }
     console.log('Applied change_network_param tx')
     shardus.log('Applied change_network_param tx')
   }
@@ -1829,8 +1889,23 @@ async function applyInternalTx(
       network.timestamp = txTimestamp
       network.listOfChanges.push(internalTx.change)
     }
+    if (ShardeumFlags.supportInternalTxReceipt) {
+      createInternalTxReceipt(
+        shardus,
+        applyResponse,
+        internalTx,
+        internalTx.from,
+        networkAccount,
+        txTimestamp,
+        txId
+      )
+    }
     console.log(`Applied CHANGE_NETWORK_PARAM GLOBAL transaction: ${stringify(network)}`)
     shardus.log('Applied CHANGE_NETWORK_PARAM GLOBAL transaction', stringify(network))
+  }
+  if (internalTx.internalTXType === InternalTXType.SetCertTime) {
+    const setCertTimeTx = internalTx as SetCertTime
+    applySetCertTimeTx(shardus, setCertTimeTx, wrappedStates, txTimestamp, applyResponse)
   }
   if (internalTx.internalTXType === InternalTXType.InitRewardTimes) {
     const rewardTimesTx = internalTx as InitRewardTimes
@@ -1840,52 +1915,60 @@ async function applyInternalTx(
     const claimRewardTx = internalTx as ClaimRewardTX
     applyClaimRewardTx(shardus, claimRewardTx, wrappedStates, txTimestamp, applyResponse)
   }
-
-  if (ShardeumFlags.supportInternalTxReceipt) {
-    const blockForReceipt = getOrCreateBlockFromTimestamp(internalTx.timestamp)
-    const blockNumberForTx = blockForReceipt.header.number.toString()
-    const readableReceipt: ReadableReceipt = {
-      status: 1,
-      transactionHash: '0x' + txId,
-      transactionIndex: '0x1',
-      // eslint-disable-next-line security/detect-object-injection
-      blockNumber: readableBlocks[blockNumberForTx]?.number,
-      nonce: '0x0',
-      blockHash: readableBlocks[blockNumberForTx]?.hash, // eslint-disable-line security/detect-object-injection
-      cumulativeGasUsed: '0x0',
-      gasUsed: '0x0',
-      logs: [],
-      logsBloom: '',
-      contractAddress: null,
-      from: internalTx.from ? internalTx.from : networkAccount,
-      to: internalTx.to ? internalTx.to : networkAccount,
-      stakeInfo: null,
-      value: '0x0',
-      data: '0x0',
-      isInternalTx: true,
-      internalTx: { ...internalTx, sign: null },
-    }
-    const wrappedReceiptAccount = {
-      timestamp: internalTx.timestamp,
-      ethAddress: '0x' + txId,
-      hash: '',
-      receipt: null,
-      readableReceipt,
-      amountSpent: '0',
-      txId: txId,
-      accountType: ShardeumFlags.addInternalTxReceiptAccount
-        ? AccountType.InternalTxReceipt
-        : AccountType.Receipt,
-      txFrom: readableReceipt.from,
-    }
-    const receiptShardusAccount = WrappedEVMAccountFunctions._shardusWrappedAccount(wrappedReceiptAccount)
-    shardus.applyResponseAddReceiptData(
-      applyResponse,
-      receiptShardusAccount,
-      crypto.hashObj(receiptShardusAccount)
-    )
-  }
   return applyResponse
+}
+
+export const createInternalTxReceipt = (
+  shardus,
+  applyResponse: ShardusTypes.ApplyResponse,
+  internalTx: InternalTx,
+  from: string,
+  to: string,
+  txTimestamp: number,
+  txId: string,
+  amountSpent: string = '0'
+) => {
+  const blockForReceipt = getOrCreateBlockFromTimestamp(txTimestamp)
+  const blockNumberForTx = blockForReceipt.header.number.toString()
+  const readableReceipt: ReadableReceipt = {
+    status: 1,
+    transactionHash: '0x' + txId,
+    transactionIndex: '0x1',
+    // eslint-disable-next-line security/detect-object-injection
+    blockNumber: readableBlocks[blockNumberForTx]?.number,
+    nonce: '0x0',
+    blockHash: readableBlocks[blockNumberForTx]?.hash, // eslint-disable-line security/detect-object-injection
+    cumulativeGasUsed: '0x0',
+    gasUsed: '0x0',
+    logs: [],
+    logsBloom: '',
+    contractAddress: null,
+    from,
+    to,
+    value: '0x0',
+    data: '0x0',
+    isInternalTx: true,
+    internalTx: { ...internalTx, sign: null },
+  }
+  const wrappedReceiptAccount = {
+    timestamp: txTimestamp,
+    ethAddress: '0x' + txId,
+    hash: '',
+    receipt: null,
+    readableReceipt,
+    amountSpent,
+    txId: txId,
+    accountType: ShardeumFlags.addInternalTxReceiptAccount
+      ? AccountType.InternalTxReceipt
+      : AccountType.Receipt,
+    txFrom: readableReceipt.from,
+  }
+  const receiptShardusAccount = WrappedEVMAccountFunctions._shardusWrappedAccount(wrappedReceiptAccount)
+  shardus.applyResponseAddReceiptData(
+    applyResponse,
+    receiptShardusAccount,
+    crypto.hashObj(receiptShardusAccount)
+  )
 }
 
 async function applyDebugTx(

@@ -19,6 +19,7 @@ import { fixDeserializedWrappedEVMAccount } from '../shardeum/wrappedEVMAccountF
 import * as AccountsStorage from '../storage/accountStorage'
 import { getRandom, scaleByStabilityFactor, _base16BNParser, _readableSHM } from '../utils'
 import { hashSignedObj } from '../setup/helpers'
+import { createInternalTxReceipt } from '..'
 
 export function isSetCertTimeTx(tx): boolean {
   if (tx.isInternalTx && tx.internalTXType === InternalTXType.SetCertTime) {
@@ -230,12 +231,14 @@ export function applySetCertTimeTx(
   if (ShardeumFlags.VerboseLogs) {
     console.log(`applySetCertTimeTx shouldChargeTxFee: ${shouldChargeTxFee}`)
   }
+  let amountSpent = '0'
   if (shouldChargeTxFee) {
-    const constTxFee = scaleByStabilityFactor(
+    const costTxFee = scaleByStabilityFactor(
       new BN(ShardeumFlags.constantTxFeeUsd),
       AccountsStorage.cachedNetworkAccount
     )
-    operatorEVMAccount.account.balance = operatorEVMAccount.account.balance.sub(constTxFee)
+    operatorEVMAccount.account.balance = operatorEVMAccount.account.balance.sub(costTxFee)
+    amountSpent = costTxFee.toString()
   }
 
   if (ShardeumFlags.VerboseLogs) {
@@ -252,6 +255,19 @@ export function applySetCertTimeTx(
       wrappedChangedAccount,
       txId,
       txTimestamp
+    )
+  }
+
+  if (ShardeumFlags.supportInternalTxReceipt) {
+    createInternalTxReceipt(
+      shardus,
+      applyResponse,
+      tx,
+      tx.nominee,
+      tx.nominator,
+      txTimestamp,
+      txId,
+      amountSpent
     )
   }
 }
