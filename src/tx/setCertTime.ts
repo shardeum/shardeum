@@ -38,7 +38,7 @@ export type setCertTimeTx = {
 }
 
 export function getCertCycleDuration() {
-  if (AccountsStorage.cachedNetworkAccount.current.certCycleDuration !== null) return AccountsStorage.cachedNetworkAccount.current.certCycleDuration
+  if (AccountsStorage.cachedNetworkAccount && AccountsStorage.cachedNetworkAccount.current.certCycleDuration !== null) return AccountsStorage.cachedNetworkAccount.current.certCycleDuration
   return ShardeumFlags.certCycleDuration
 }
 
