@@ -113,7 +113,6 @@ export const readableBlocks: { [blockNumber: number | string]: ShardeumBlockOver
 
 export let genesisAccounts: string[] = []
 
-
 // Two global variables: at the top of utils/versions.ts
 // Where to call this function: After shradus factory line 146 console.logs ke pehle
 // Add a console log to log out to fetched versions
@@ -1927,7 +1926,7 @@ export const createInternalTxReceipt = (
   to: string,
   txTimestamp: number,
   txId: string,
-  amountSpent: string = '0'
+  amountSpent = '0'
 ) => {
   const blockForReceipt = getOrCreateBlockFromTimestamp(txTimestamp)
   const blockNumberForTx = blockForReceipt.header.number.toString()
