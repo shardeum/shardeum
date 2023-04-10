@@ -7,7 +7,7 @@ import {
   Address,
   BN,
   bufferToHex,
-  fromAscii,
+  //fromAscii,
   isValidAddress,
   toAscii,
   toBuffer,
@@ -82,7 +82,7 @@ import { ShardeumBlock } from './block/blockchain'
 import * as AccountsStorage from './storage/accountStorage'
 import { StateManager } from '@ethereumjs/vm/dist/state'
 import { sync, validateTransaction, validateTxnFields } from './setup'
-import { applySetCertTimeTx, injectSetCertTimeTx, isSetCertTimeTx, getCertCycleDuration } from './tx/setCertTime'
+import { applySetCertTimeTx, injectSetCertTimeTx, getCertCycleDuration } from './tx/setCertTime'
 import { applyClaimRewardTx, injectClaimRewardTxWithRetry } from './tx/claimReward'
 import { Request, Response } from 'express'
 import {
@@ -112,6 +112,7 @@ export const blocksByHash: { [hash: string]: number } = {}
 export const readableBlocks: { [blockNumber: number | string]: ShardeumBlockOverride } = {}
 
 export let genesisAccounts: string[] = []
+
 
 // Two global variables: at the top of utils/versions.ts
 // Where to call this function: After shradus factory line 146 console.logs ke pehle
