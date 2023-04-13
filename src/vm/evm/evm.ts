@@ -14,6 +14,7 @@ import { StateManager } from '../state/index'
 import TxContext from './txContext'
 import Message from './message'
 import EEI from './eei'
+import { getPrecompile, PrecompileFunc } from './precompiles'
 // eslint-disable-next-line
 import { short } from './opcodes/util'
 import * as eof from './opcodes/eof'
@@ -300,10 +301,22 @@ export default class EVM {
       }
     }
 
-    if (this._vm.DEBUG) {
-      debug(`Start bytecode processing...`)
+    let result: ExecResult
+    if (message.isCompiled && ShardeumFlags.shardeumVMPrecompiledFix) {
+      if (this._vm.DEBUG) {
+        debug(`Run precompile`)
+      }
+      result = await this.runPrecompile(
+        message.code as PrecompileFunc,
+        message.data,
+        message.gasLimit
+      )
+    } else {
+      if (this._vm.DEBUG) {
+        debug(`Start bytecode processing...`)
+      }
+      result = await this.runInterpreter(message)
     }
-    const result: ExecResult = await this.runInterpreter(message)
 
     return {
       gasUsed: result.gasUsed,
@@ -572,10 +585,42 @@ export default class EVM {
     }
   }
 
+  getPrecompile(address: Address): PrecompileFunc {
+    return getPrecompile(address, this._vm._common)
+  }
+
+  /**
+   * Executes a precompiled contract with given data and gas limit.
+   */
+  runPrecompile(
+    code: PrecompileFunc,
+    data: Buffer,
+    gasLimit: BN
+  ): Promise<ExecResult> | ExecResult {
+    if (typeof code !== 'function') {
+      throw new Error('Invalid precompile')
+    }
+
+    const opts = {
+      data,
+      gasLimit,
+      _common: this._vm._common,
+      _VM: this._vm,
+    }
+
+    return code(opts)
+  }
+
   async _loadCode(message: Message): Promise<void> {
     if (!message.code) {
-      message.code = await this._state.getContractCode(message.codeAddress)
-      message.isCompiled = false
+      const precompile = this.getPrecompile(message.codeAddress)
+      if (precompile && ShardeumFlags.shardeumVMPrecompiledFix) {
+        message.code = precompile
+        message.isCompiled = true
+      } else {
+        message.code = await this._state.getContractCode(message.codeAddress)
+        message.isCompiled = false
+      }
     }
   }
 

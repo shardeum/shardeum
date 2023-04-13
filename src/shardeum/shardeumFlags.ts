@@ -77,6 +77,7 @@ interface ShardeumFlags {
   fixContractBytes: boolean
   setCertTimeDurationOverride: boolean
   fixCertExpTiming: boolean
+  shardeumVMPrecompiledFix: boolean
 }
 
 export const ShardeumFlags: ShardeumFlags = {
@@ -162,8 +163,10 @@ export const ShardeumFlags: ShardeumFlags = {
   // 1.2.3 migration
   fixContractBytes: true,
   fixCertExpTiming: true,
-
+  shardeumVMPrecompiledFix: true,
+  
   // 1.3.1 migration
+  
 }
 
 export function updateShardeumFlag(key: string, value: string | number | boolean) {
