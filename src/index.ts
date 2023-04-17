@@ -911,8 +911,24 @@ const debugMiddleware = shardus.getDebugModeMiddleware()
 //   return res.json({ success: true })
 // })
 
+let motdCount = 0
 shardus.registerExternalGet('motd', async (req, res) => {
-  return res.json(`fix-block-timestamp 20220527`)
+  motdCount++
+  // let localCount = 0
+  // await sleep(1000)
+  // localCount++
+  // await sleep(1000)
+  // localCount++
+  // await sleep(1000)
+  // localCount++
+  // await sleep(1000)
+  // localCount++
+  // await sleep(1000)
+  // localCount++
+  // await sleep(1000)
+  // localCount++
+
+  return res.json(`20230414a ${motdCount}`)
 })
 
 shardus.registerExternalGet('debug-points', debugMiddleware, async (req, res) => {
@@ -3009,6 +3025,12 @@ shardus.setup({
       })
       shardus.setDebugSetLastAppAwait(`apply():runTx`, DebugComplete.Completed)
       if (ShardeumFlags.VerboseLogs) console.log('runTxResult', txId, runTxResult)
+
+      if (ShardeumFlags.labTest) {
+        if (shardus.testFailChance(0.01, 'labTest: loop-lock1', txId, '', true)) {
+          await shardus.debugForeverLoop('labTest: loop-lock1')
+        }
+      }
     } catch (e) {
       // if (!transactionFailHashMap[ethTxId]) {
       let caAddr = null

@@ -72,6 +72,7 @@ interface ShardeumFlags {
   addInternalTxReceiptAccount: boolean
   fixSetCertTimeTxApply: boolean
   logServicePointSenders: boolean
+  labTest: boolean
 }
 
 export const ShardeumFlags: ShardeumFlags = {
@@ -133,6 +134,7 @@ export const ShardeumFlags: ShardeumFlags = {
   shardeumTimeout: 50000,
   FailedTxLinearBackOffConstantInSecs: 30,
   logServicePointSenders: false,
+  labTest: false,
 
   // 1.1.3 migration
   fixExtraStakeLessThanMin: true,
