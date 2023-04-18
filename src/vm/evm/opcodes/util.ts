@@ -11,7 +11,7 @@ const MASK_160 = new BN(1).shln(160).subn(1)
  * length buffer in case the buffer is full of zeros.
  * @param {Buffer} value Buffer which we want to pad
  */
-export function setLengthLeftStorage(value: Buffer) {
+export function setLengthLeftStorage(value: Buffer): Buffer {
   if (value.equals(Buffer.alloc(value.length, 0))) {
     // return the empty buffer (the value is zero)
     return Buffer.alloc(0)
@@ -25,7 +25,7 @@ export function setLengthLeftStorage(value: Buffer) {
  *
  * @param {string} err
  */
-export function trap(err: string) {
+export function trap(err: string): void {
   // TODO: facilitate extra data along with errors
   throw new VmError(err as ERROR)
 }
@@ -36,7 +36,7 @@ export function trap(err: string) {
  * @param  {BN}     address
  * @return {Buffer}
  */
-export function addressToBuffer(address: BN | Buffer) {
+export function addressToBuffer(address: BN | Buffer): Buffer {
   if (Buffer.isBuffer(address)) return address
   return address.and(MASK_160).toArrayLike(Buffer, 'be', 20)
 }
@@ -185,7 +185,7 @@ export function maxCallGas(gasLimit: BN, gasLeft: BN, runState: RunState, common
  * @param {BN} offset
  * @param {BN} length
  */
-export function subMemUsage(runState: RunState, offset: BN, length: BN, common: Common) {
+export function subMemUsage(runState: RunState, offset: BN, length: BN, common: Common): BN {
   // YP (225): access with zero length will not extend the memory
   if (length.isZero()) return new BN(0)
 
@@ -216,7 +216,7 @@ export function subMemUsage(runState: RunState, offset: BN, length: BN, common: 
  * @param {BN}       outOffset
  * @param {BN}       outLength
  */
-export function writeCallOutput(runState: RunState, outOffset: BN, outLength: BN) {
+export function writeCallOutput(runState: RunState, outOffset: BN, outLength: BN): void {
   const returnData = runState.eei.getReturnData()
   if (returnData.length > 0) {
     const memOffset = outOffset.toNumber()

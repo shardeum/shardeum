@@ -303,7 +303,7 @@ export default class Interpreter {
   }
 
   // Returns all valid jump and jumpsub destinations.
-  _getValidJumpDests(code: Buffer) {
+  _getValidJumpDests(code: Buffer): Uint8Array {
     const jumps = new Uint8Array(code.length).fill(0)
 
     for (let i = 0; i < code.length; i++) {

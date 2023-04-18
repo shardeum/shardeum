@@ -35,14 +35,14 @@ export const handlers: Map<number, OpHandler> = new Map([
   // 0x00: STOP
   [
     0x00,
-    function () {
+    function (): void {
       trap(ERROR.STOP)
     },
   ],
   // 0x01: ADD
   [
     0x01,
-    function (runState) {
+    function (runState): void {
       const [a, b] = runState.stack.popN(2)
       const r = a.add(b).mod(TWO_POW256)
       runState.stack.push(r)
@@ -51,7 +51,7 @@ export const handlers: Map<number, OpHandler> = new Map([
   // 0x02: MUL
   [
     0x02,
-    function (runState) {
+    function (runState): void {
       const [a, b] = runState.stack.popN(2)
       const r = a.mul(b).mod(TWO_POW256)
       runState.stack.push(r)
@@ -60,7 +60,7 @@ export const handlers: Map<number, OpHandler> = new Map([
   // 0x03: SUB
   [
     0x03,
-    function (runState) {
+    function (runState): void {
       const [a, b] = runState.stack.popN(2)
       const r = a.sub(b).toTwos(256)
       runState.stack.push(r)
@@ -69,7 +69,7 @@ export const handlers: Map<number, OpHandler> = new Map([
   // 0x04: DIV
   [
     0x04,
-    function (runState) {
+    function (runState): void {
       const [a, b] = runState.stack.popN(2)
       let r
       if (b.isZero()) {
@@ -83,7 +83,7 @@ export const handlers: Map<number, OpHandler> = new Map([
   // 0x05: SDIV
   [
     0x05,
-    function (runState) {
+    function (runState): void {
       let [a, b] = runState.stack.popN(2)
       let r
       if (b.isZero()) {
@@ -99,7 +99,7 @@ export const handlers: Map<number, OpHandler> = new Map([
   // 0x06: MOD
   [
     0x06,
-    function (runState) {
+    function (runState): void {
       const [a, b] = runState.stack.popN(2)
       let r
       if (b.isZero()) {
@@ -113,7 +113,7 @@ export const handlers: Map<number, OpHandler> = new Map([
   // 0x07: SMOD
   [
     0x07,
-    function (runState) {
+    function (runState): void {
       let [a, b] = runState.stack.popN(2)
       let r
       if (b.isZero()) {
@@ -133,7 +133,7 @@ export const handlers: Map<number, OpHandler> = new Map([
   // 0x08: ADDMOD
   [
     0x08,
-    function (runState) {
+    function (runState): void {
       const [a, b, c] = runState.stack.popN(3)
       let r
       if (c.isZero()) {
@@ -147,7 +147,7 @@ export const handlers: Map<number, OpHandler> = new Map([
   // 0x09: MULMOD
   [
     0x09,
-    function (runState) {
+    function (runState): void {
       const [a, b, c] = runState.stack.popN(3)
       let r
       if (c.isZero()) {
@@ -161,7 +161,7 @@ export const handlers: Map<number, OpHandler> = new Map([
   // 0x0a: EXP
   [
     0x0a,
-    function (runState, common) {
+    function (runState, common): void {
       const [base, exponent] = runState.stack.popN(2)
       if (exponent.isZero()) {
         runState.stack.push(new BN(1))
@@ -188,7 +188,7 @@ export const handlers: Map<number, OpHandler> = new Map([
   // 0x0b: SIGNEXTEND
   [
     0x0b,
-    function (runState) {
+    function (runState): void {
       /* eslint-disable-next-line prefer-const */
       let [k, val] = runState.stack.popN(2)
       if (k.ltn(31)) {
@@ -210,7 +210,7 @@ export const handlers: Map<number, OpHandler> = new Map([
   // 0x10: LT
   [
     0x10,
-    function (runState) {
+    function (runState): void {
       const [a, b] = runState.stack.popN(2)
       const r = new BN(a.lt(b) ? 1 : 0)
       runState.stack.push(r)
@@ -219,7 +219,7 @@ export const handlers: Map<number, OpHandler> = new Map([
   // 0x11: GT
   [
     0x11,
-    function (runState) {
+    function (runState): void {
       const [a, b] = runState.stack.popN(2)
       const r = new BN(a.gt(b) ? 1 : 0)
       runState.stack.push(r)
@@ -228,7 +228,7 @@ export const handlers: Map<number, OpHandler> = new Map([
   // 0x12: SLT
   [
     0x12,
-    function (runState) {
+    function (runState): void {
       const [a, b] = runState.stack.popN(2)
       const r = new BN(a.fromTwos(256).lt(b.fromTwos(256)) ? 1 : 0)
       runState.stack.push(r)
@@ -237,7 +237,7 @@ export const handlers: Map<number, OpHandler> = new Map([
   // 0x13: SGT
   [
     0x13,
-    function (runState) {
+    function (runState): void {
       const [a, b] = runState.stack.popN(2)
       const r = new BN(a.fromTwos(256).gt(b.fromTwos(256)) ? 1 : 0)
       runState.stack.push(r)
@@ -246,7 +246,7 @@ export const handlers: Map<number, OpHandler> = new Map([
   // 0x14: EQ
   [
     0x14,
-    function (runState) {
+    function (runState): void {
       const [a, b] = runState.stack.popN(2)
       const r = new BN(a.eq(b) ? 1 : 0)
       runState.stack.push(r)
@@ -255,7 +255,7 @@ export const handlers: Map<number, OpHandler> = new Map([
   // 0x15: ISZERO
   [
     0x15,
-    function (runState) {
+    function (runState): void {
       const a = runState.stack.pop()
       const r = new BN(a.isZero() ? 1 : 0)
       runState.stack.push(r)
@@ -264,7 +264,7 @@ export const handlers: Map<number, OpHandler> = new Map([
   // 0x16: AND
   [
     0x16,
-    function (runState) {
+    function (runState): void {
       const [a, b] = runState.stack.popN(2)
       const r = a.and(b)
       runState.stack.push(r)
@@ -273,7 +273,7 @@ export const handlers: Map<number, OpHandler> = new Map([
   // 0x17: OR
   [
     0x17,
-    function (runState) {
+    function (runState): void {
       const [a, b] = runState.stack.popN(2)
       const r = a.or(b)
       runState.stack.push(r)
@@ -282,7 +282,7 @@ export const handlers: Map<number, OpHandler> = new Map([
   // 0x18: XOR
   [
     0x18,
-    function (runState) {
+    function (runState): void {
       const [a, b] = runState.stack.popN(2)
       const r = a.xor(b)
       runState.stack.push(r)
@@ -291,7 +291,7 @@ export const handlers: Map<number, OpHandler> = new Map([
   // 0x19: NOT
   [
     0x19,
-    function (runState) {
+    function (runState): void {
       const a = runState.stack.pop()
       const r = a.notn(256)
       runState.stack.push(r)
@@ -300,7 +300,7 @@ export const handlers: Map<number, OpHandler> = new Map([
   // 0x1a: BYTE
   [
     0x1a,
-    function (runState) {
+    function (runState): void {
       const [pos, word] = runState.stack.popN(2)
       if (pos.gten(32)) {
         runState.stack.push(new BN(0))
@@ -314,7 +314,7 @@ export const handlers: Map<number, OpHandler> = new Map([
   // 0x1b: SHL
   [
     0x1b,
-    function (runState) {
+    function (runState): void {
       const [a, b] = runState.stack.popN(2)
       if (a.gten(256)) {
         runState.stack.push(new BN(0))
@@ -328,7 +328,7 @@ export const handlers: Map<number, OpHandler> = new Map([
   // 0x1c: SHR
   [
     0x1c,
-    function (runState) {
+    function (runState): void {
       const [a, b] = runState.stack.popN(2)
       if (a.gten(256)) {
         runState.stack.push(new BN(0))
@@ -342,7 +342,7 @@ export const handlers: Map<number, OpHandler> = new Map([
   // 0x1d: SAR
   [
     0x1d,
-    function (runState) {
+    function (runState): void {
       const [a, b] = runState.stack.popN(2)
 
       let r
@@ -372,7 +372,7 @@ export const handlers: Map<number, OpHandler> = new Map([
   // 0x20: SHA3
   [
     0x20,
-    function (runState) {
+    function (runState): void {
       const [offset, length] = runState.stack.popN(2)
       let data = Buffer.alloc(0)
       if (!length.isZero()) {
@@ -386,7 +386,7 @@ export const handlers: Map<number, OpHandler> = new Map([
   // 0x30: ADDRESS
   [
     0x30,
-    function (runState) {
+    function (runState): void {
       const address = new BN(runState.eei.getAddress().buf)
       runState.stack.push(address)
     },
@@ -394,7 +394,7 @@ export const handlers: Map<number, OpHandler> = new Map([
   // 0x31: BALANCE
   [
     0x31,
-    async function (runState) {
+    async function (runState): Promise<void> {
       const addressBN = runState.stack.pop()
       const address = new Address(addressToBuffer(addressBN))
       const balance = await runState.eei.getExternalBalance(address)
@@ -404,28 +404,28 @@ export const handlers: Map<number, OpHandler> = new Map([
   // 0x32: ORIGIN
   [
     0x32,
-    function (runState) {
+    function (runState): void {
       runState.stack.push(runState.eei.getTxOrigin())
     },
   ],
   // 0x33: CALLER
   [
     0x33,
-    function (runState) {
+    function (runState): void {
       runState.stack.push(runState.eei.getCaller())
     },
   ],
   // 0x34: CALLVALUE
   [
     0x34,
-    function (runState) {
+    function (runState): void {
       runState.stack.push(runState.eei.getCallValue())
     },
   ],
   // 0x35: CALLDATALOAD
   [
     0x35,
-    function (runState) {
+    function (runState): void {
       const pos = runState.stack.pop()
       if (pos.gt(runState.eei.getCallDataSize())) {
         runState.stack.push(new BN(0))
@@ -443,7 +443,7 @@ export const handlers: Map<number, OpHandler> = new Map([
   // 0x36: CALLDATASIZE
   [
     0x36,
-    function (runState) {
+    function (runState): void {
       const r = runState.eei.getCallDataSize()
       runState.stack.push(r)
     },
@@ -451,7 +451,7 @@ export const handlers: Map<number, OpHandler> = new Map([
   // 0x37: CALLDATACOPY
   [
     0x37,
-    function (runState) {
+    function (runState): void {
       const [memOffset, dataOffset, dataLength] = runState.stack.popN(3)
 
       if (!dataLength.eqn(0)) {
@@ -466,14 +466,14 @@ export const handlers: Map<number, OpHandler> = new Map([
   // 0x38: CODESIZE
   [
     0x38,
-    function (runState) {
+    function (runState): void {
       runState.stack.push(runState.eei.getCodeSize())
     },
   ],
   // 0x39: CODECOPY
   [
     0x39,
-    function (runState) {
+    function (runState): void {
       const [memOffset, codeOffset, dataLength] = runState.stack.popN(3)
 
       if (!dataLength.eqn(0)) {
@@ -488,7 +488,7 @@ export const handlers: Map<number, OpHandler> = new Map([
   // 0x3b: EXTCODESIZE
   [
     0x3b,
-    async function (runState) {
+    async function (runState): Promise<void> {
       const addressBN = runState.stack.pop()
       const size = await runState.eei.getExternalCodeSize(addressBN)
       runState.stack.push(size)
@@ -497,7 +497,7 @@ export const handlers: Map<number, OpHandler> = new Map([
   // 0x3c: EXTCODECOPY
   [
     0x3c,
-    async function (runState) {
+    async function (runState): Promise<void> {
       const [addressBN, memOffset, codeOffset, dataLength] = runState.stack.popN(4)
 
       if (!dataLength.eqn(0)) {
@@ -514,7 +514,7 @@ export const handlers: Map<number, OpHandler> = new Map([
   // 0x3f: EXTCODEHASH
   [
     0x3f,
-    async function (runState) {
+    async function (runState): Promise<void> {
       const addressBN = runState.stack.pop()
       const address = new Address(addressToBuffer(addressBN))
       const empty = await runState.eei.isAccountEmpty(address)
@@ -535,14 +535,14 @@ export const handlers: Map<number, OpHandler> = new Map([
   // 0x3d: RETURNDATASIZE
   [
     0x3d,
-    function (runState) {
+    function (runState): void {
       runState.stack.push(runState.eei.getReturnDataSize())
     },
   ],
   // 0x3e: RETURNDATACOPY
   [
     0x3e,
-    function (runState) {
+    function (runState): void {
       const [memOffset, returnDataOffset, dataLength] = runState.stack.popN(3)
 
       if (!dataLength.eqn(0)) {
@@ -557,7 +557,7 @@ export const handlers: Map<number, OpHandler> = new Map([
   // 0x3a: GASPRICE
   [
     0x3a,
-    function (runState) {
+    function (runState): void {
       runState.stack.push(runState.eei.getTxGasPrice())
     },
   ],
@@ -565,7 +565,7 @@ export const handlers: Map<number, OpHandler> = new Map([
   // 0x40: BLOCKHASH
   [
     0x40,
-    async function (runState) {
+    async function (runState): Promise<void> {
       const number = runState.stack.pop()
 
       const diff = runState.eei.getBlockNumber().sub(number)
@@ -582,28 +582,28 @@ export const handlers: Map<number, OpHandler> = new Map([
   // 0x41: COINBASE
   [
     0x41,
-    function (runState) {
+    function (runState): void {
       runState.stack.push(runState.eei.getBlockCoinbase())
     },
   ],
   // 0x42: TIMESTAMP
   [
     0x42,
-    function (runState) {
+    function (runState): void {
       runState.stack.push(runState.eei.getBlockTimestamp())
     },
   ],
   // 0x43: NUMBER
   [
     0x43,
-    function (runState) {
+    function (runState): void {
       runState.stack.push(runState.eei.getBlockNumber())
     },
   ],
   // 0x44: DIFFICULTY (EIP-4399: supplanted as PREVRANDAO)
   [
     0x44,
-    function (runState, common) {
+    function (runState, common): void {
       if (common.isActivatedEIP(4399)) {
         runState.stack.push(runState.eei.getBlockPrevRandao())
       } else {
@@ -614,28 +614,28 @@ export const handlers: Map<number, OpHandler> = new Map([
   // 0x45: GASLIMIT
   [
     0x45,
-    function (runState) {
+    function (runState): void {
       runState.stack.push(runState.eei.getBlockGasLimit())
     },
   ],
   // 0x46: CHAINID
   [
     0x46,
-    function (runState) {
+    function (runState): void {
       runState.stack.push(runState.eei.getChainId())
     },
   ],
   // 0x47: SELFBALANCE
   [
     0x47,
-    function (runState) {
+    function (runState): void {
       runState.stack.push(runState.eei.getSelfBalance())
     },
   ],
   // 0x48: BASEFEE
   [
     0x48,
-    function (runState) {
+    function (runState): void {
       runState.stack.push(runState.eei.getBlockBaseFee())
     },
   ],
@@ -643,14 +643,14 @@ export const handlers: Map<number, OpHandler> = new Map([
   // 0x50: POP
   [
     0x50,
-    function (runState) {
+    function (runState): void {
       runState.stack.pop()
     },
   ],
   // 0x51: MLOAD
   [
     0x51,
-    function (runState) {
+    function (runState): void {
       const pos = runState.stack.pop()
       const word = runState.memory.read(pos.toNumber(), 32)
       runState.stack.push(new BN(word))
@@ -659,7 +659,7 @@ export const handlers: Map<number, OpHandler> = new Map([
   // 0x52: MSTORE
   [
     0x52,
-    function (runState) {
+    function (runState): void {
       const [offset, word] = runState.stack.popN(2)
       const buf = word.toArrayLike(Buffer, 'be', 32)
       const offsetNum = offset.toNumber()
@@ -670,7 +670,7 @@ export const handlers: Map<number, OpHandler> = new Map([
   // 0x53: MSTORE8
   [
     0x53,
-    function (runState) {
+    function (runState): void {
       const [offset, byte] = runState.stack.popN(2)
 
       // NOTE: we're using a 'trick' here to get the least significant byte
@@ -685,7 +685,7 @@ export const handlers: Map<number, OpHandler> = new Map([
   // 0x54: SLOAD
   [
     0x54,
-    async function (runState) {
+    async function (runState): Promise<void> {
       const key = runState.stack.pop()
       const keyBuf = key.toArrayLike(Buffer, 'be', 32)
       const value = await runState.eei.storageLoad(keyBuf)
@@ -696,7 +696,7 @@ export const handlers: Map<number, OpHandler> = new Map([
   // 0x55: SSTORE
   [
     0x55,
-    async function (runState) {
+    async function (runState): Promise<void> {
       const [key, val] = runState.stack.popN(2)
 
       const keyBuf = key.toArrayLike(Buffer, 'be', 32)
@@ -714,7 +714,7 @@ export const handlers: Map<number, OpHandler> = new Map([
   // 0x56: JUMP
   [
     0x56,
-    function (runState) {
+    function (runState): void {
       const dest = runState.stack.pop()
       if (dest.gt(runState.eei.getCodeSize())) {
         trap(ERROR.INVALID_JUMP + ' at ' + describeLocation(runState))
@@ -732,7 +732,7 @@ export const handlers: Map<number, OpHandler> = new Map([
   // 0x57: JUMPI
   [
     0x57,
-    function (runState) {
+    function (runState): void {
       const [dest, cond] = runState.stack.popN(2)
       if (!cond.isZero()) {
         if (dest.gt(runState.eei.getCodeSize())) {
@@ -752,42 +752,42 @@ export const handlers: Map<number, OpHandler> = new Map([
   // 0x58: PC
   [
     0x58,
-    function (runState) {
+    function (runState): void {
       runState.stack.push(new BN(runState.programCounter - 1))
     },
   ],
   // 0x59: MSIZE
   [
     0x59,
-    function (runState) {
+    function (runState): void {
       runState.stack.push(runState.memoryWordCount.muln(32))
     },
   ],
   // 0x5a: GAS
   [
     0x5a,
-    function (runState) {
+    function (runState): void {
       runState.stack.push(new BN(runState.eei.getGasLeft()))
     },
   ],
   // 0x5b: JUMPDEST
   [
     0x5b,
-    function () {
+    function (): void {
       /* empty */
     },
   ],
   // 0x5c: BEGINSUB
   [
     0x5c,
-    function (runState) {
+    function (runState): void {
       trap(ERROR.INVALID_BEGINSUB + ' at ' + describeLocation(runState))
     },
   ],
   // 0x5d: RETURNSUB
   [
     0x5d,
-    function (runState) {
+    function (runState): void {
       if (runState.returnStack.length < 1) {
         trap(ERROR.INVALID_RETURNSUB)
       }
@@ -799,7 +799,7 @@ export const handlers: Map<number, OpHandler> = new Map([
   // 0x5e: JUMPSUB
   [
     0x5e,
-    function (runState) {
+    function (runState): void {
       const dest = runState.stack.pop()
 
       if (dest.gt(runState.eei.getCodeSize())) {
@@ -819,14 +819,14 @@ export const handlers: Map<number, OpHandler> = new Map([
   // 0x5f: PUSH0
   [
     0x5f,
-    function (runState) {
+    function (runState): void {
       runState.stack.push(new BN(0))
     },
   ],
   // 0x60: PUSH
   [
     0x60,
-    function (runState) {
+    function (runState): void {
       const numToPush = runState.opCode - 0x5f
       if (
         runState.eei._common.isActivatedEIP(3540) &&
@@ -842,7 +842,7 @@ export const handlers: Map<number, OpHandler> = new Map([
   // 0x80: DUP
   [
     0x80,
-    function (runState) {
+    function (runState): void {
       const stackPos = runState.opCode - 0x7f
       runState.stack.dup(stackPos)
     },
@@ -850,7 +850,7 @@ export const handlers: Map<number, OpHandler> = new Map([
   // 0x90: SWAP
   [
     0x90,
-    function (runState) {
+    function (runState): void {
       const stackPos = runState.opCode - 0x8f
       runState.stack.swap(stackPos)
     },
@@ -858,7 +858,7 @@ export const handlers: Map<number, OpHandler> = new Map([
   // 0xa0: LOG
   [
     0xa0,
-    function (runState) {
+    function (runState): void {
       const [memOffset, memLength] = runState.stack.popN(2)
 
       const topicsCount = runState.opCode - 0xa0
@@ -881,7 +881,7 @@ export const handlers: Map<number, OpHandler> = new Map([
   // 0xf0: CREATE
   [
     0xf0,
-    async function (runState) {
+    async function (runState): Promise<void> {
       const [value, offset, length] = runState.stack.popN(3)
 
       const gasLimit = runState.messageGasLimit!
@@ -899,7 +899,7 @@ export const handlers: Map<number, OpHandler> = new Map([
   // 0xf5: CREATE2
   [
     0xf5,
-    async function (runState) {
+    async function (runState): Promise<void> {
       if (runState.eei.isStatic()) {
         trap(ERROR.STATIC_STATE_CHANGE)
       }
@@ -921,7 +921,7 @@ export const handlers: Map<number, OpHandler> = new Map([
   // 0xf1: CALL
   [
     0xf1,
-    async function (runState: RunState) {
+    async function (runState: RunState): Promise<void> {
       const [, toAddr, value, inOffset, inLength, outOffset, outLength] = runState.stack.popN(7)
       const toAddress = new Address(addressToBuffer(toAddr))
 
@@ -942,7 +942,7 @@ export const handlers: Map<number, OpHandler> = new Map([
   // 0xf2: CALLCODE
   [
     0xf2,
-    async function (runState: RunState) {
+    async function (runState: RunState): Promise<void> {
       const [, toAddr, value, inOffset, inLength, outOffset, outLength] = runState.stack.popN(7)
       const toAddress = new Address(addressToBuffer(toAddr))
 
@@ -963,7 +963,7 @@ export const handlers: Map<number, OpHandler> = new Map([
   // 0xf4: DELEGATECALL
   [
     0xf4,
-    async function (runState) {
+    async function (runState): Promise<void> {
       const value = runState.eei.getCallValue()
       const [, toAddr, inOffset, inLength, outOffset, outLength] = runState.stack.popN(6)
       const toAddress = new Address(addressToBuffer(toAddr))
@@ -985,7 +985,7 @@ export const handlers: Map<number, OpHandler> = new Map([
   // 0x06: STATICCALL
   [
     0xfa,
-    async function (runState) {
+    async function (runState): Promise<void> {
       const value = new BN(0)
       const [, toAddr, inOffset, inLength, outOffset, outLength] = runState.stack.popN(6)
       const toAddress = new Address(addressToBuffer(toAddr))
@@ -1007,7 +1007,7 @@ export const handlers: Map<number, OpHandler> = new Map([
   // 0xf3: RETURN
   [
     0xf3,
-    function (runState) {
+    function (runState): void {
       const [offset, length] = runState.stack.popN(2)
       let returnData = Buffer.alloc(0)
       if (!length.isZero()) {
@@ -1019,7 +1019,7 @@ export const handlers: Map<number, OpHandler> = new Map([
   // 0xfd: REVERT
   [
     0xfd,
-    function (runState) {
+    function (runState): void {
       const [offset, length] = runState.stack.popN(2)
       let returnData = Buffer.alloc(0)
       if (!length.isZero()) {
@@ -1032,7 +1032,7 @@ export const handlers: Map<number, OpHandler> = new Map([
   // 0xff: SELFDESTRUCT
   [
     0xff,
-    async function (runState) {
+    async function (runState): Promise<void> {
       const selfdestructToAddressBN = runState.stack.pop()
       const selfdestructToAddress = new Address(addressToBuffer(selfdestructToAddressBN))
       return runState.eei.selfDestruct(selfdestructToAddress)

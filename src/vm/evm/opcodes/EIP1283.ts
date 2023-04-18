@@ -17,7 +17,7 @@ export function updateSstoreGasEIP1283(
   originalStorage: Buffer,
   value: Buffer,
   common: Common
-) {
+): BN {
   if (currentStorage.equals(value)) {
     // If current value equals new value (this is a no-op), 200 gas is deducted.
     return new BN(common.param('gasPrices', 'netSstoreNoopGas'))

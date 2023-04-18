@@ -13,11 +13,11 @@ export default class Stack {
     this._maxHeight = maxHeight ?? 1024
   }
 
-  get length() {
+  get length(): number {
     return this._store.length
   }
 
-  push(value: BN) {
+  push(value: BN): void {
     if (!BN.isBN(value)) {
       throw new VmError(ERROR.INTERNAL_ERROR)
     }
@@ -82,7 +82,7 @@ export default class Stack {
    * Swap top of stack with an item in the stack.
    * @param position - Index of item from top of the stack (0-indexed)
    */
-  swap(position: number) {
+  swap(position: number): void {
     if (this._store.length <= position) {
       throw new VmError(ERROR.STACK_UNDERFLOW)
     }
@@ -101,7 +101,7 @@ export default class Stack {
    * Pushes a copy of an item in the stack.
    * @param position - Index of item to be copied (1-indexed)
    */
-  dup(position: number) {
+  dup(position: number): void {
     if (this._store.length < position) {
       throw new VmError(ERROR.STACK_UNDERFLOW)
     }

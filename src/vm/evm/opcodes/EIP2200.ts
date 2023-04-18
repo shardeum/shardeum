@@ -20,7 +20,7 @@ export function updateSstoreGasEIP2200(
   value: Buffer,
   key: Buffer,
   common: Common
-) {
+): BN {
   // Fail if not enough gas is left
   if (runState.eei.getGasLeft().lten(common.param('gasPrices', 'sstoreSentryGasEIP2200'))) {
     trap(ERROR.OUT_OF_GAS)

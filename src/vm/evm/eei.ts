@@ -11,12 +11,12 @@ import { Log } from './types'
 
 const debugGas = createDebugLogger('vm:eei:gas')
 
-function trap(err: ERROR) {
+function trap(err: ERROR): void {
   throw new VmError(err)
 }
 
 const MASK_160 = new BN(1).shln(160).subn(1)
-function addressToBuffer(address: BN) {
+function addressToBuffer(address: BN): Buffer {
   if (Buffer.isBuffer(address)) return address
   return address.and(MASK_160).toArrayLike(Buffer, 'be', 20)
 }
@@ -664,7 +664,7 @@ export default class EEI {
     return this._state.accountExists(address)
   }
 
-  private _getReturnCode(results: EVMResult) {
+  private _getReturnCode(results: EVMResult): BN {
     // This preserves the previous logic, but seems to contradict the EEI spec
     // https://github.com/ewasm/design/blob/38eeded28765f3e193e12881ea72a6ab807a3371/eth_interface.md
     if (results.execResult.exceptionError) {

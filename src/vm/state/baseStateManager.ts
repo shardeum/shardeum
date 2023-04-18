@@ -112,7 +112,7 @@ export abstract class BaseStateManager {
    * Deletes an account from state under the provided `address`. The account will also be removed from the state trie.
    * @param address - Address of the account which should be deleted
    */
-  async deleteAccount(address: Address) {
+  async deleteAccount(address: Address): Promise<void> {
     if (this.DEBUG) {
       this._debug(`Delete account ${address}`)
     }
@@ -206,7 +206,7 @@ export abstract class BaseStateManager {
   private _accessedStorageMerge(
     storageList: Map<string, Set<string>>[],
     storageMap: Map<string, Set<string>>
-  ) {
+  ): void {
     const mapTarget = storageList[storageList.length - 1]
 
     if (mapTarget) {

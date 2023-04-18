@@ -88,7 +88,7 @@ export default class DefaultStateManager extends BaseStateManager implements Sta
       const trie = this._trie
       await trie.put(keyBuf, accountRlp)
     }
-    const deleteCb = async (keyBuf: Buffer) => {
+    const deleteCb = async (keyBuf: Buffer): Promise<void> => {
       const trie = this._trie
       await trie.del(keyBuf)
     }
