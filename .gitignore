@@ -25,3 +25,4 @@ scripts/*/
 consensorAccounts.json
 archiverAccounts.json
 .DS_Store
+.direnv/

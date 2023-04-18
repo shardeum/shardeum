@@ -1,0 +1,93 @@
+{
+  "nodes": {
+    "nixpkgs": {
+      "locked": {
+        "lastModified": 1678298120,
+        "narHash": "sha256-iaV5xqgn29xy765Js3EoZePQyZIlLZA3pTYtTnKkejg=",
+        "owner": "NixOS",
+        "repo": "nixpkgs",
+        "rev": "1e383aada51b416c6c27d4884d2e258df201bc11",
+        "type": "github"
+      },
+      "original": {
+        "owner": "NixOS",
+        "ref": "nixpkgs-unstable",
+        "repo": "nixpkgs",
+        "type": "github"
+      }
+    },
+    "nixpkgs_2": {
+      "locked": {
+        "lastModified": 1678418513,
+        "narHash": "sha256-HLLR2Fmkn3TgD0F+u5gMcTKx5YzAU1rbS4cLfm6ugiU=",
+        "owner": "NixOS",
+        "repo": "nixpkgs",
+        "rev": "5496585eb876f2ce97654bc8f96838c6f8642563",
+        "type": "github"
+      },
+      "original": {
+        "id": "nixpkgs",
+        "type": "indirect"
+      }
+    },
+    "root": {
+      "inputs": {
+        "nixpkgs": "nixpkgs",
+        "shardus-cli": "shardus-cli",
+        "utils": "utils_2"
+      }
+    },
+    "shardus-cli": {
+      "inputs": {
+        "nixpkgs": "nixpkgs_2",
+        "utils": "utils"
+      },
+      "locked": {
+        "lastModified": 1678464148,
+        "narHash": "sha256-RpNjhjV8Lw6BZhEx4uKYDHHKUQvtOuk3Z92Sb5F2ZwU=",
+        "ref": "nix-flake",
+        "rev": "c77e6fbb4e0e1ddadbfe68a2a9b9b37e9d4b69b0",
+        "revCount": 73,
+        "type": "git",
+        "url": "https://gitlab.com/shardus/tools/shardus-cli"
+      },
+      "original": {
+        "ref": "nix-flake",
+        "type": "git",
+        "url": "https://gitlab.com/shardus/tools/shardus-cli"
+      }
+    },
+    "utils": {
+      "locked": {
+        "lastModified": 1676283394,
+        "narHash": "sha256-XX2f9c3iySLCw54rJ/CZs+ZK6IQy7GXNY4nSOyu2QG4=",
+        "owner": "numtide",
+        "repo": "flake-utils",
+        "rev": "3db36a8b464d0c4532ba1c7dda728f4576d6d073",
+        "type": "github"
+      },
+      "original": {
+        "owner": "numtide",
+        "repo": "flake-utils",
+        "type": "github"
+      }
+    },
+    "utils_2": {
+      "locked": {
+        "lastModified": 1676283394,
+        "narHash": "sha256-XX2f9c3iySLCw54rJ/CZs+ZK6IQy7GXNY4nSOyu2QG4=",
+        "owner": "numtide",
+        "repo": "flake-utils",
+        "rev": "3db36a8b464d0c4532ba1c7dda728f4576d6d073",
+        "type": "github"
+      },
+      "original": {
+        "owner": "numtide",
+        "repo": "flake-utils",
+        "type": "github"
+      }
+    }
+  },
+  "root": "root",
+  "version": 7
+}
