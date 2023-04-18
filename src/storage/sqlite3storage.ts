@@ -62,7 +62,7 @@ class Sqlite3Storage {
     }
   }
 
-  sqlite3Define(modelName, modelAttributes) {
+  sqlite3Define(modelName, modelAttributes): void {
     const tableName = modelName
 
     const modelData: ModelData = {
@@ -121,7 +121,7 @@ class Sqlite3Storage {
     // todo base this off of models
   }
 
-  async init() {
+  async init(): Promise<void> {
     const dbDir = path.parse(this.dbPath).dir
 
     // Rename dbDir if it exists
@@ -190,25 +190,25 @@ class Sqlite3Storage {
     //this.mainLogger.info('Database initialized.')
   }
 
-  async close() {
+  async close(): Promise<void> {
     // //this.mainLogger.info('Closing Database connections.')
     await this.db.close()
     if (this.oldDb) await this.oldDb.close()
   }
 
-  async runCreate(createStatement) {
+  async runCreate(createStatement): Promise<void> {
     await this.run(createStatement)
   }
 
-  async dropAndCreateModel() {
+  async dropAndCreateModel(): Promise<void> {
     // await model.sync({ force: true })
   }
 
-  _checkInit() {
+  _checkInit(): void {
     if (!this.initialized) throw new Error('Storage not initialized.')
   }
 
-  _create(table, object, opts) {
+  _create(table, object, opts): Promise<unknown> {
     try {
       //this.profiler.profileSectionStart('db')
       // if (logFlags.console) console.log('_create2: ' + stringify(object))
@@ -248,7 +248,7 @@ class Sqlite3Storage {
     }
   }
 
-  async _read(table, params, opts) {
+  async _read(table, params, opts): Promise<unknown> {
     try {
       //this.profiler.profileSectionStart('db')
       // return table.findAll({ where, ...opts })
@@ -282,7 +282,7 @@ class Sqlite3Storage {
     }
   }
 
-  async _readOld(table, params, opts) {
+  async _readOld(table, params, opts): Promise<unknown> {
     try {
       //this.profiler.profileSectionStart('db')
       // return table.findAll({ where, ...opts })
@@ -316,7 +316,7 @@ class Sqlite3Storage {
     }
   }
 
-  _update(table, values, where, opts) {
+  _update(table, values, where, opts): Promise<unknown> {
     try {
       //this.profiler.profileSectionStart('db')
       // return table.update(values, { where, ...opts })
@@ -343,7 +343,7 @@ class Sqlite3Storage {
     }
   }
 
-  _delete(table, where, opts) {
+  _delete(table, where, opts): Promise<unknown> {
     try {
       //this.profiler.profileSectionStart('db')
       // if (!where) {
@@ -366,7 +366,7 @@ class Sqlite3Storage {
     }
   }
 
-  _rawQuery(queryString, valueArray) {
+  _rawQuery(queryString, valueArray): Promise<unknown> {
     // return this.sequelize.query(query, { model: table })
     try {
       //this.profiler.profileSectionStart('db')
@@ -376,7 +376,7 @@ class Sqlite3Storage {
     }
   }
 
-  _rawQueryOld(queryString, valueArray) {
+  _rawQueryOld(queryString, valueArray): Promise<unknown> {
     // return this.sequelize.query(query, { model: table })
     try {
       //this.profiler.profileSectionStart('db')
@@ -386,7 +386,7 @@ class Sqlite3Storage {
     }
   }
 
-  params2Array(paramsObj, table) {
+  params2Array(paramsObj, table): unknown[] {
     if (paramsObj === null || paramsObj === undefined) {
       return []
     }
@@ -457,7 +457,7 @@ class Sqlite3Storage {
     return paramsArray
   }
 
-  paramsToWhereStringAndValues(paramsArray) {
+  paramsToWhereStringAndValues(paramsArray): { whereString: string; whereValueArray: unknown[] } {
     let whereValueArray = []
     let whereString = ''
     for (let i = 0; i < paramsArray.length; i++) {
@@ -475,7 +475,7 @@ class Sqlite3Storage {
     return { whereString, whereValueArray }
   }
 
-  paramsToAssignmentStringAndValues(paramsArray) {
+  paramsToAssignmentStringAndValues(paramsArray): { resultString: string; valueArray: unknown[] } {
     let valueArray = []
     let resultString = ''
     for (let i = 0; i < paramsArray.length; i++) {
@@ -490,7 +490,7 @@ class Sqlite3Storage {
     return { resultString, valueArray }
   }
 
-  options2string(optionsObj) {
+  options2string(optionsObj): string {
     if (optionsObj === null || optionsObj === undefined) {
       return ''
     }
@@ -518,7 +518,7 @@ class Sqlite3Storage {
   }
 
   // run/get/all promise wraps from this tutorial: https://stackabuse.com/a-sqlite-tutorial-with-node-js/
-  run(sql, params = []) {
+  run(sql, params = []): Promise<unknown> {
     return new Promise((resolve, reject) => {
       this.db.run(sql, params, function (err) {
         if (err) {
@@ -532,7 +532,7 @@ class Sqlite3Storage {
     })
   }
 
-  get(sql, params = []) {
+  get(sql, params = []): Promise<unknown> {
     return new Promise((resolve, reject) => {
       this.db.get(sql, params, (err, result) => {
         if (err) {
@@ -546,7 +546,7 @@ class Sqlite3Storage {
     })
   }
 
-  all(sql, params = []) {
+  all(sql, params = []): Promise<unknown> {
     return new Promise((resolve, reject) => {
       this.db.all(sql, params, (err, rows) => {
         if (err) {
@@ -560,7 +560,7 @@ class Sqlite3Storage {
     })
   }
 
-  allOld(sql, params = []) {
+  allOld(sql, params = []): Promise<unknown> {
     return new Promise((resolve, reject) => {
       this.oldDb.all(sql, params, (err, rows) => {
         if (err) {
@@ -575,7 +575,7 @@ class Sqlite3Storage {
   }
 }
 
-async function _ensureExists(dir) {
+async function _ensureExists(dir): Promise<void> {
   return new Promise<void>((resolve, reject) => {
     // dir is 'db/shardeum.sqlite'
     // eslint-disable-next-line security/detect-non-literal-fs-filename

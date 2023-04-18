@@ -126,7 +126,7 @@ export async function loadAccountDataFromDB(shardus: Shardus, options: LoadOptio
   return report
 }
 
-export const processAccountsData = async (shardus, report: LoadReport, accountArray) => {
+export const processAccountsData = async (shardus, report: LoadReport, accountArray): Promise<void> => {
   const logVerbose = ShardeumFlags.VerboseLogs
   let lastTS = -1
   const accountArrayClean = {

@@ -34,7 +34,11 @@ import {
  */
 export const validateTxnFields =
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  (shardus: Shardus, debugAppdata: Map<string, unknown>) => (timestampedTx: any, appData: any) => {
+  (shardus: Shardus, debugAppdata: Map<string, unknown>) => (timestampedTx: any, appData: any): {
+      success: boolean
+      reason: string
+      txnTimestamp: number
+    } => {
     const { tx } = timestampedTx
     const txnTimestamp: number = getInjectedOrGeneratedTimestamp(timestampedTx)
 

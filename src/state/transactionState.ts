@@ -106,7 +106,7 @@ export default class TransactionState {
   tryGetRemoteAccountCB: getAccountEvent
   monitorEventCB: monitorEvent
 
-  resetTransactionState() {
+  resetTransactionState(): void {
     this.firstAccountReads = new Map()
     this.allAccountWrites = new Map()
     this.committedAccountWrites = new Map()
@@ -138,7 +138,7 @@ export default class TransactionState {
     linkedTX,
     firstReads: Map<string, Buffer>,
     firstContractStorageReads: Map<string, Map<string, Buffer>>
-  ) {
+  ): void {
     this.createdTimestamp = Date.now()
 
     this.linkedTX = linkedTX
@@ -191,7 +191,11 @@ export default class TransactionState {
     this.checkpointCount = 0
   }
 
-  getReadAccounts() {
+  getReadAccounts(): {
+    accounts: Map<string, Buffer>
+    contractStorages: Map<string, Map<string, Buffer>>
+    contractBytes: Map<string, ContractByteWrite>
+  } {
     return {
       accounts: this.firstAccountReads,
       contractStorages: this.firstContractStorageReads,
@@ -199,7 +203,11 @@ export default class TransactionState {
     }
   }
 
-  getWrittenAccounts() {
+  getWrittenAccounts(): {
+    accounts: Map<string, Buffer>
+    contractStorages: Map<string, Map<string, Buffer>>
+    contractBytes: Map<string, ContractByteWrite>
+  } {
     //flatten accounts maps. from newest to oldest in our stack (newest has the highest array index)
     //only update values if there is not an existing newer value!!
 
@@ -225,7 +233,7 @@ export default class TransactionState {
     }
   }
 
-  getTransferBlob() {
+  getTransferBlob(): { accounts: Map<string, Buffer>; kvPairs: Map<string, Map<string, Buffer>> } {
     //this is the data needed to start computation on another shard
     return { accounts: this.firstAccountReads, kvPairs: this.firstContractStorageReads }
   }
@@ -235,7 +243,7 @@ export default class TransactionState {
    * accounts need some adjustments after being deseralized
    * @param account
    */
-  static fixAccountFields(account) {
+  static fixAccountFields(account): void {
     //hmm some hacks to fix data after getting copied around..
     if (typeof account.nonce === 'string') {
       //account.nonce = new BN(account.nonce)
@@ -255,7 +263,7 @@ export default class TransactionState {
     }
   }
 
-  private static fixAccountBuffers(account) {
+  private static fixAccountBuffers(account): void {
     if (account.stateRoot.data) {
       account.stateRoot = Buffer.from(account.stateRoot.data)
     }
@@ -269,7 +277,7 @@ export default class TransactionState {
    * @param addressString
    * @param account
    */
-  async commitAccount(addressString: string, account: Account) {
+  async commitAccount(addressString: string, account: Account): Promise<void> {
     //store all writes to the persistant trie.
     const address = Address.fromString(addressString)
 
@@ -360,7 +368,7 @@ export default class TransactionState {
    * @param codeHash
    * @param contractByte
    */
-  async commitContractBytes(contractAddress: string, codeHash: Buffer, contractByte: Buffer) {
+  async commitContractBytes(contractAddress: string, codeHash: Buffer, contractByte: Buffer): Promise<void> {
     if (ShardeumFlags.SaveEVMTries) {
       //only put this in the pending commit structure. we will do the real commit when updating the account
       if (this.pendingContractBytesCommits.has(contractAddress)) {
@@ -396,7 +404,7 @@ export default class TransactionState {
     }
   }
 
-  async commitContractStorage(contractAddress: string, keyString: string, value: Buffer) {
+  async commitContractStorage(contractAddress: string, keyString: string, value: Buffer): Promise<void> {
     //store all writes to the persistant trie.
     if (ShardeumFlags.SaveEVMTries) {
       //only put this in the pending commit structure. we will do the real commit when updating the account
@@ -571,7 +579,7 @@ export default class TransactionState {
    * @param address - Address under which to store `account`
    * @param account - The account to store
    */
-  putAccount(address: Address, account: Account) {
+  putAccount(address: Address, account: Account): void {
     const addressString = address.toString()
 
     if (ShardeumFlags.Virtual0Address && addressString === zeroAddressStr) {
@@ -608,7 +616,7 @@ export default class TransactionState {
     }
   }
 
-  insertFirstAccountReads(address: Address, account: Account) {
+  insertFirstAccountReads(address: Address, account: Account): void {
     const addressString = address.toString()
 
     if (this.accountInvolvedCB(this, addressString, false) === false) {
@@ -743,7 +751,7 @@ export default class TransactionState {
     return codeBytes
   }
 
-  async putContractCode(contractAddress: Address, codeByte: Buffer) {
+  async putContractCode(contractAddress: Address, codeByte: Buffer): Promise<void> {
     const addressString = contractAddress.toString()
 
     if (this.accountInvolvedCB(this, addressString, false) === false) {
@@ -774,7 +782,7 @@ export default class TransactionState {
     this.touchedCAs.add(addressString)
   }
 
-  insertFirstContractBytesReads(contractAddress: Address, codeByte: Buffer) {
+  insertFirstContractBytesReads(contractAddress: Address, codeByte: Buffer): void {
     const addressString = contractAddress.toString()
 
     if (this.accountInvolvedCB(this, addressString, false) === false) {
@@ -946,7 +954,7 @@ export default class TransactionState {
     this.touchedCAs.add(addressString)
   }
 
-  insertFirstContractStorageReads(address: Address, keyString: string, value: Buffer) {
+  insertFirstContractStorageReads(address: Address, keyString: string, value: Buffer): void {
     const addressString = address.toString()
 
     if (this.contractStorageInvolvedCB(this, addressString, keyString, true) === false) {
@@ -969,7 +977,7 @@ export default class TransactionState {
   }
 
   //should go away with SaveEVMTries = false
-  async exectutePendingCAStateRoots() {
+  async exectutePendingCAStateRoots(): Promise<void> {
     //for all touched CAs,
     // get CA storage trie.
     // checkpoint the CA storage trie
@@ -984,7 +992,7 @@ export default class TransactionState {
   }
 
   //should go away with SaveEVMTries = false
-  async generateTrieProofs() {
+  async generateTrieProofs(): Promise<void> {
     //alternative to exectutePendingCAStateRoots
     //in this code we would look at all READ CA keys and create a set of proofs on checkpointed trie.
     //may have to insert a dummy write to the trie if there is none yet!
@@ -1001,11 +1009,11 @@ export default class TransactionState {
   // this.touchAccount(address)
   //}
 
-  debugTraceLog(message: string) {
+  debugTraceLog(message: string): void {
     if (ShardeumFlags.VerboseLogs) console.log(`DBG:${this.linkedTX} msg:${message}`)
   }
 
-  checkpoint() {
+  checkpoint(): void {
     if (ShardeumFlags.CheckpointRevertSupport === false) {
       return
     }
@@ -1023,7 +1031,7 @@ export default class TransactionState {
     // if (this.debugTrace) console.log('checkpoint: allAccountWritesStack', this.logAccountWritesStack(this.allAccountWritesStack))
   }
 
-  commit() {
+  commit(): void {
     if (ShardeumFlags.CheckpointRevertSupport === false) {
       return
     }
@@ -1077,7 +1085,7 @@ export default class TransactionState {
     //this.allAccountWrites.clear()
   }
 
-  revert() {
+  revert(): void {
     if (ShardeumFlags.CheckpointRevertSupport === false) {
       return
     }
@@ -1132,7 +1140,7 @@ export default class TransactionState {
     }
   }
 
-  flushToCommittedValues() {
+  flushToCommittedValues(): void {
     if (this.debugTrace) this.debugTraceLog(`Flushing the allAccountWritesStack to committedAccountWrites`)
     const allAtOnce = false
     if (allAtOnce) {
@@ -1162,7 +1170,7 @@ export default class TransactionState {
     }
   }
 
-  logAccountWrites(accountWrites: Map<string, Buffer>) {
+  logAccountWrites(accountWrites: Map<string, Buffer>): Map<unknown, unknown> {
     const resultMap = new Map()
     for (const [key, value] of accountWrites.entries()) {
       const readableAccount: Account = Account.fromRlpSerializedAccount(value)
@@ -1174,7 +1182,7 @@ export default class TransactionState {
     return resultMap
   }
 
-  logAccountWritesStack(accountWritesStack: Map<string, Buffer>[]) {
+  logAccountWritesStack(accountWritesStack: Map<string, Buffer>[]): unknown[] {
     const resultStack = []
     for (const accountWrites of accountWritesStack) {
       const readableAccountWrites = this.logAccountWrites(accountWrites)

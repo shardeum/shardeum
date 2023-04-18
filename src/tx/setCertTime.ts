@@ -13,6 +13,7 @@ import {
   SetCertTime,
   WrappedEVMAccount,
   WrappedStates,
+  InjectTxResponse,
 } from '../shardeum/shardeumTypes'
 import * as WrappedEVMAccountFunctions from '../shardeum/wrappedEVMAccountFunctions'
 import { fixDeserializedWrappedEVMAccount } from '../shardeum/wrappedEVMAccountFunctions'
@@ -37,7 +38,7 @@ export type setCertTimeTx = {
   timestamp: number
 }
 
-export function getCertCycleDuration() {
+export function getCertCycleDuration(): number {
   if (
     AccountsStorage.cachedNetworkAccount &&
     AccountsStorage.cachedNetworkAccount.current.certCycleDuration !== null
@@ -51,7 +52,7 @@ export async function injectSetCertTimeTx(
   shardus: Shardus,
   publicKey: string,
   activeNodes: ShardusTypes.ValidatorNodeDetails[]
-) {
+): Promise<InjectTxResponse> {
   // Query the nodeAccount and see if it is ready before injecting setCertTime
   const accountQueryResponse = await getNodeAccountWithRetry(publicKey, activeNodes)
   if (!accountQueryResponse.success) return accountQueryResponse
@@ -108,7 +109,10 @@ export function validateSetCertTimeTx(tx: SetCertTime): { isValid: boolean; reas
   return { isValid: true, reason: '' }
 }
 
-export function validateSetCertTimeState(tx: SetCertTime, wrappedStates: WrappedStates) {
+export function validateSetCertTimeState(
+  tx: SetCertTime,
+  wrappedStates: WrappedStates
+): { result: string; reason: string } {
   let committedStake = new BN(0)
 
   let operatorEVMAccount: WrappedEVMAccount
@@ -175,7 +179,7 @@ export function applySetCertTimeTx(
   wrappedStates: WrappedStates,
   txTimestamp: number,
   applyResponse: ShardusTypes.ApplyResponse
-) {
+): void {
   if (ShardeumFlags.VerboseLogs) {
     console.log(`applySetCertTimeTx txTimestamp:${txTimestamp}   tx.timestamp:${tx.timestamp}`)
   }

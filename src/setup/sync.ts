@@ -13,7 +13,7 @@ import * as AccountsStorage from '../storage/accountStorage'
 import { sleep } from '../utils'
 import { StateManager } from '../vm/state'
 
-function isDebugMode() {
+function isDebugMode(): boolean {
   // eslint-disable-next-line @typescript-eslint/ban-ts-comment
   //@ts-ignore
   return config.server.mode === 'debug'
@@ -133,7 +133,17 @@ async function manuallyCreateAccount(
   balance = defaultBalance,
   evmCommon: Common,
   latestCycles: any // eslint-disable-line @typescript-eslint/no-explicit-any
-) {
+): Promise<{
+  accountId: string
+  wrappedEVMAccount: {
+    timestamp: number
+    account: Account
+    ethAddress: string
+    hash: string
+    accountType: AccountType
+  }
+  cycle: { counter: number }
+}> {
   const shardusAccountID = toShardusAddress(ethAccountID, AccountType.Account)
 
   const debugTXState = getDebugTXState(evmCommon) //this isn't so great..
@@ -175,7 +185,7 @@ async function manuallyCreateAccount(
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-const createDevAccount = (accountId: string, latestCycles: any) => {
+const createDevAccount = (accountId: string, latestCycles: any): { account: DevAccount; cycle: any } => {
   let cycleStart = 0
   if (latestCycles != null && latestCycles.length > 0) {
     cycleStart = latestCycles[0].start * 1000

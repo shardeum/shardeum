@@ -8,14 +8,14 @@ crypto.init('69fa4195670576c0160d660c3be36556ff8d504725be8a59b5a96509e0c994bc')
 export { crypto }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-export function verify(obj: any, expectedPk?: string) {
+export function verify(obj: any, expectedPk?: string): boolean {
   if (expectedPk) {
     if (obj.sign.owner !== expectedPk) return false
   }
   return crypto.verifyObj(obj)
 }
 
-export function isInternalTXGlobal(internalTx: InternalTx) {
+export function isInternalTXGlobal(internalTx: InternalTx): boolean {
   return (
     internalTx.internalTXType === InternalTXType.SetGlobalCodeBytes ||
     internalTx.internalTXType === InternalTXType.ApplyChangeConfig ||
@@ -62,7 +62,7 @@ export function getTransactionObj(tx: any): Transaction | AccessListEIP2930Trans
   }
 }
 
-export function getInjectedOrGeneratedTimestamp(timestampedTx) {
+export function getInjectedOrGeneratedTimestamp(timestampedTx): number {
   const { tx, timestampReceipt } = timestampedTx
   let txnTimestamp: number
 
@@ -86,7 +86,7 @@ export function getInjectedOrGeneratedTimestamp(timestampedTx) {
  * @param obj
  * @returns
  */
-export function hashSignedObj(obj) {
+export function hashSignedObj(obj): string {
   if (ShardeumFlags.txHashingFix === false) {
     //if the feature is not on ignore the smart logic below and just hash the object
     return crypto.hashObj(obj)

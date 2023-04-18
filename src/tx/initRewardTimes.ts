@@ -14,7 +14,7 @@ import * as WrappedEVMAccountFunctions from '../shardeum/wrappedEVMAccountFuncti
 import { sleep } from '../utils'
 import { createInternalTxReceipt } from '..'
 
-export async function injectInitRewardTimesTx(shardus, eventData: ShardusTypes.ShardusEvent) {
+export async function injectInitRewardTimesTx(shardus, eventData: ShardusTypes.ShardusEvent): Promise<unknown> {
   let tx = {
     isInternalTx: true,
     internalTXType: InternalTXType.InitRewardTimes,
@@ -86,7 +86,7 @@ export function validateFields(tx: InitRewardTimes, shardus: Shardus): { success
   return { success: true, reason: 'valid' }
 }
 
-export function validatePreCrackData(tx: InternalTx) {
+export function validatePreCrackData(tx: InternalTx): void {
   /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log('Validating InitRewardTimesTX PreCrackData', tx)
 }
 
@@ -123,7 +123,7 @@ export function apply(
   txTimestamp: number,
   wrappedStates: WrappedStates,
   applyResponse: ShardusTypes.ApplyResponse
-) {
+): void {
   let nodeAccount: NodeAccount2
   const acct = wrappedStates[tx.nominee].data
   if (isNodeAccount2(acct)) {

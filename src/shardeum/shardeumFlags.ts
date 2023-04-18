@@ -169,7 +169,7 @@ export const ShardeumFlags: ShardeumFlags = {
   
 }
 
-export function updateShardeumFlag(key: string, value: string | number | boolean) {
+export function updateShardeumFlag(key: string, value: string | number | boolean): void {
   /* eslint-disable security/detect-object-injection */
   try {
     if (ShardeumFlags[key] == null) {
@@ -189,7 +189,7 @@ export function updateShardeumFlag(key: string, value: string | number | boolean
   /* eslint-enable security/detect-object-injection */
 }
 
-export function updateServicePoints(key1: string, key2: string, value: number) {
+export function updateServicePoints(key1: string, key2: string, value: number): void {
   try {
     /* eslint-disable security/detect-object-injection */
     if (!ShardeumFlags['ServicePoints'][key1]) return

@@ -53,11 +53,11 @@ export function accountSpecificHash(account: WrappedEVMAccount | InternalAccount
   return hash
 }
 
-export function updateEthAccountHash(wrappedEVMAccount: WrappedEVMAccount | InternalAccount) {
+export function updateEthAccountHash(wrappedEVMAccount: WrappedEVMAccount | InternalAccount): void {
   wrappedEVMAccount.hash = _calculateAccountHash(wrappedEVMAccount)
 }
 
-export function _calculateAccountHash(account: WrappedEVMAccount | InternalAccount) {
+export function _calculateAccountHash(account: WrappedEVMAccount | InternalAccount): string {
   return accountSpecificHash(account)
 }
 
@@ -75,7 +75,7 @@ export function _shardusWrappedAccount(wrappedEVMAccount: WrappedEVMAccount | In
  * make in place repairs to deserialized wrappedEVMAccount
  * @param wrappedEVMAccount
  */
-export function fixDeserializedWrappedEVMAccount(wrappedEVMAccount: WrappedEVMAccount) {
+export function fixDeserializedWrappedEVMAccount(wrappedEVMAccount: WrappedEVMAccount): void {
   if (wrappedEVMAccount.accountType === AccountType.Account) {
     TransactionState.fixAccountFields(wrappedEVMAccount.account)
     wrappedEVMAccount.account = Account.fromAccountData(wrappedEVMAccount.account)
@@ -83,7 +83,7 @@ export function fixDeserializedWrappedEVMAccount(wrappedEVMAccount: WrappedEVMAc
   fixWrappedEVMAccountBuffers(wrappedEVMAccount)
 }
 
-function fixWrappedEVMAccountBuffers(wrappedEVMAccount: WrappedEVMAccount) {
+function fixWrappedEVMAccountBuffers(wrappedEVMAccount: WrappedEVMAccount): void {
   if (wrappedEVMAccount.accountType === AccountType.ContractCode) {
     wrappedEVMAccount.codeHash = Buffer.from(wrappedEVMAccount.codeHash)
     wrappedEVMAccount.codeByte = Buffer.from(wrappedEVMAccount.codeByte)

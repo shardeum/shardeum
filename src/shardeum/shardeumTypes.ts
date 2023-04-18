@@ -392,6 +392,7 @@ export interface NodeAccountAxiosResponse {
 
 export interface InjectTxResponse {
   success: boolean
+  reason?: string
 }
 
 export interface NodeInfoAppData {

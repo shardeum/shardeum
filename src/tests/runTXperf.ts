@@ -17,7 +17,7 @@ const common = new Common({ chain: Chain.Mainnet, hardfork: Hardfork.Merge })
 const shardeumStateManager = new ShardeumState() //as StateManager
 const vm = new VM({ common, stateManager: shardeumStateManager })
 
-function debugTX(txStr) {
+function debugTX(txStr): void {
   const serializedInput = toBuffer(txStr)
   const transaction = Transaction.fromRlpSerializedTx(serializedInput)
 
@@ -49,7 +49,7 @@ function getTransactionObj(tx): Transaction {
 const signedTxs: Transaction[] = []
 const accounts = new Map()
 
-function initGenesis() {
+function initGenesis(): void {
   const fileName = 'genesis_block.json'
   const localDir = path.resolve('./')
 
@@ -63,7 +63,7 @@ function initGenesis() {
   vm.stateManager.generateGenesis(transformedGenData)
 }
 
-async function loadTXAndAccounts() {
+async function loadTXAndAccounts(): Promise<void> {
   const fileName = 'raw_txs.json'
   const localDir = path.resolve('./')
 
@@ -99,7 +99,7 @@ function getTxType(txObj: Transaction): string {
   }
 }
 
-async function getOrCreateAccount(addressStr: string) {
+async function getOrCreateAccount(addressStr: string): Promise<Account> {
   if (accounts.has(addressStr)) {
     return null
   }
@@ -128,10 +128,10 @@ async function getOrCreateAccount(addressStr: string) {
   return updatedAccount
 }
 
-function roundTo2decimals(num: number) {
+function roundTo2decimals(num: number): number {
   return Math.round((num + Number.EPSILON) * 100) / 100
 }
-async function runTXs(signedTxs: Transaction[]) {
+async function runTXs(signedTxs: Transaction[]): Promise<void> {
   let index = 0
   const batchSize = 100
   const batches = 100
@@ -196,7 +196,7 @@ async function runTXs(signedTxs: Transaction[]) {
 }
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
-async function test() {
+async function test(): Promise<void> {
   initGenesis()
   await loadTXAndAccounts()
   await runTXs(signedTxs)

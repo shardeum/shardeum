@@ -156,7 +156,7 @@ let lastCertTimeTxCycle: number | null = null
 
 export let stakeCert: StakeCert = null
 
-function isDebugMode() {
+function isDebugMode(): boolean {
   return config.server.mode === 'debug'
 }
 
@@ -243,7 +243,7 @@ function trySpendServicePoints(points: number, req, key: string): boolean {
   return true
 }
 
-function pruneOldBlocks() {
+function pruneOldBlocks(): void {
   /* eslint-disable security/detect-object-injection */
   const maxOldBlocksCount = ShardeumFlags.maxNumberOfOldBlocks || 256
   if (latestBlock > maxOldBlocksCount) {
@@ -321,7 +321,7 @@ function createNewBlock(blockNumber: number, timestamp: number): Block {
   /* eslint-enable security/detect-object-injection */
 }
 
-export function setGenesisAccounts(accounts = []) {
+export function setGenesisAccounts(accounts = []): void {
   genesisAccounts = accounts
 }
 
@@ -379,7 +379,7 @@ export let evmCommon: Common
 let debugAppdata: Map<string, unknown>
 
 //todo refactor some object init into here
-function initEVMSingletons() {
+function initEVMSingletons(): void {
   const chainIDBN = new BN(ShardeumFlags.ChainID)
 
   // setting up only to 'istanbul' hardfork for now
@@ -422,7 +422,7 @@ function initEVMSingletons() {
   })
 
   //hack override this function.  perhaps a nice thing would be to use forCustomChain to create a custom common object
-  evmCommon.chainIdBN = () => {
+  evmCommon.chainIdBN = (): BN => {
     return chainIDBN
   }
 
@@ -644,7 +644,7 @@ function tryGetRemoteAccountCBNoOp(
   return undefined
 }
 
-function monitorEventCBNoOp() {
+function monitorEventCBNoOp(): void {
   // no op
 }
 
@@ -667,11 +667,11 @@ async function tryGetRemoteAccountCB(
   return fixedEVMAccount
 }
 
-function isStakingEVMTx(transaction: Transaction | AccessListEIP2930Transaction) {
+function isStakingEVMTx(transaction: Transaction | AccessListEIP2930Transaction): boolean {
   return transaction.to && transaction.to.toString() === ShardeumFlags.stakeTargetAddress
 }
 
-function getStakeTxBlobFromEVMTx(transaction: Transaction | AccessListEIP2930Transaction) {
+function getStakeTxBlobFromEVMTx(transaction: Transaction | AccessListEIP2930Transaction): unknown {
   const stakeTxString = toAscii(transaction.data.toString('hex'))
   return JSON.parse(stakeTxString)
 }
@@ -739,7 +739,15 @@ function getTransactionObj(tx): Transaction | AccessListEIP2930Transaction {
   } else throw Error('tx obj fail')
 }
 
-async function getReadableAccountInfo(account) {
+async function getReadableAccountInfo(
+  account
+): Promise<{
+  nonce: string
+  balance: string
+  stateRoot: string
+  codeHash: string
+  operatorAccountInfo: unknown
+}> {
   try {
     //todo this code needs additional support for account type contract storage or contract code
     return {
@@ -872,18 +880,18 @@ export function getApplyTXState(txId: string): ShardeumState {
   return shardeumState
 }
 
-function _containsProtocol(url: string) {
+function _containsProtocol(url: string): boolean {
   if (!url.match('https?://*')) return false
   return true
 }
 
-function _normalizeUrl(url: string) {
+function _normalizeUrl(url: string): string {
   let normalized = url
   if (!_containsProtocol(url)) normalized = 'http://' + url
   return normalized
 }
 
-async function _internalHackPostWithResp(url: string, body) {
+async function _internalHackPostWithResp(url: string, body): Promise<got.Response> {
   const normalized = _normalizeUrl(url)
   const host = parseUrl(normalized, true)
   try {
@@ -903,7 +911,7 @@ async function _internalHackPostWithResp(url: string, body) {
   }
 }
 
-function logAccessList(message: string, appData) {
+function logAccessList(message: string, appData): void {
   if (appData != null && appData.accessList != null) {
     if (ShardeumFlags.VerboseLogs)
       console.log(`access list for ${message} ${JSON.stringify(appData.accessList)}`)
@@ -2017,7 +2025,7 @@ export const createInternalTxReceipt = (
   txTimestamp: number,
   txId: string,
   amountSpent = new BN(0).toString('hex')
-) => {
+): void => {
   const blockForReceipt = getOrCreateBlockFromTimestamp(txTimestamp)
   const blockNumberForTx = blockForReceipt.header.number.toString()
   const readableReceipt: ReadableReceipt = {
@@ -2095,7 +2103,7 @@ function setGlobalCodeByteUpdate(
   txTimestamp: number,
   wrappedEVMAccount: WrappedEVMAccount,
   applyResponse: ShardusTypes.ApplyResponse
-) {
+): void {
   const globalAddress = getAccountShardusAddress(wrappedEVMAccount)
   const when = txTimestamp + 1000 * 10
   const value = {
@@ -2118,7 +2126,7 @@ async function _transactionReceiptPass(
   txId: string,
   wrappedStates: WrappedStates,
   applyResponse: ShardusTypes.ApplyResponse
-) {
+): Promise<void> {
   if (applyResponse == null) {
     return
   }
@@ -2159,7 +2167,7 @@ async function _transactionReceiptPass(
   }
 }
 
-const createNetworkAccount = (accountId: string) => {
+const createNetworkAccount = (accountId: string): NetworkAccount => {
   const account: NetworkAccount = {
     id: accountId,
     accountType: AccountType.NetworkAccount,
@@ -2185,7 +2193,7 @@ const createNetworkAccount = (accountId: string) => {
   return account
 }
 
-const createNodeAccount2 = (accountId: string) => {
+const createNodeAccount2 = (accountId: string): NodeAccount2 => {
   const nodeAccount = {
     id: accountId,
     hash: '',
@@ -5403,7 +5411,7 @@ shardus.setup({
 
 shardus.registerExceptionHandler()
 
-function periodicMemoryCleanup() {
+function periodicMemoryCleanup(): void {
   const keys = shardeumStateTXMap.keys()
   //todo any provisions needed for TXs that can hop and extend the timer
   const maxAge = Date.now() - 60000

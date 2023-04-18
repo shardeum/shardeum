@@ -32,7 +32,7 @@ export function GetBufferFromField(input: any, encoding?: 'base64' | 'hex'): Buf
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-function base64BufferReviver(key: string, value: any) {
+function base64BufferReviver(key: string, value: any): any {
   const originalObject = value
   if (
     isObject(originalObject) &&
@@ -120,7 +120,7 @@ export const _readableSHM = (bnum: BN, autoDecimal = true): string => {
   return bnum.toString() + unit_WEI
 }
 
-export function debug_map_replacer(key, value) {
+export function debug_map_replacer<T, K, V>(key, value: T | Map<K, V>): T | [K, V][] {
   if (value instanceof Map) {
     // return {
     //   dataType: 'Map',

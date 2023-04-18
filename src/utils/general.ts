@@ -26,7 +26,15 @@ export function sleep(ms): Promise<NodeJS.Timeout> {
   })
 }
 
-export const replacer = (key, value) => {
+export const replacer = <T, K, V>(
+  _key,
+  value: Map<K, V> | T
+):
+  | {
+      dataType: 'stringifyReduce_map_2_array',
+      value: [K, V][]
+    }
+  | T => {
   const originalObject = value // this[key]
   if (originalObject instanceof Map) {
     return {
@@ -34,7 +42,7 @@ export const replacer = (key, value) => {
       value: Array.from(originalObject.entries()), // or with spread: value: [...originalObject]
     }
   } else {
-    return value
+    return value as T
   }
 }
 

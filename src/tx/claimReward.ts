@@ -22,7 +22,15 @@ import * as AccountsStorage from '../storage/accountStorage'
 import { scaleByStabilityFactor, sleep, _base16BNParser, _readableSHM } from '../utils'
 import { retry } from '../utils/retry'
 
-export async function injectClaimRewardTx(shardus, eventData: ShardusTypes.ShardusEvent, nodeAccount) {
+export async function injectClaimRewardTx(
+  shardus,
+  eventData: ShardusTypes.ShardusEvent,
+  nodeAccount
+): Promise<{
+  success: boolean
+  reason: string
+  status: number
+}> {
   let tx = {
     nominee: eventData.publicKey,
     nominator: nodeAccount.data.nominator,
@@ -53,10 +61,13 @@ export async function injectClaimRewardTx(shardus, eventData: ShardusTypes.Shard
     console.log(`injectClaimRewardTx: tx.timestamp: ${tx.timestamp} txid: ${txid}`, tx)
   }
 
-  return await shardus.put(tx) // response of this { success: boolean; reason: string; status: number }
+  return await shardus.put(tx)
 }
 
-export async function injectClaimRewardTxWithRetry(shardus, eventData: ShardusTypes.ShardusEvent) {
+export async function injectClaimRewardTxWithRetry(
+  shardus,
+  eventData: ShardusTypes.ShardusEvent
+): Promise<unknown> {
   let nodeAccount = await shardus.getLocalOrRemoteAccount(eventData.publicKey)
   if (nodeAccount === null) {
     //try one more time
@@ -73,7 +84,7 @@ export async function injectClaimRewardTxWithRetry(shardus, eventData: ShardusTy
     rewardEndTime = 0
   }
 
-  const retryFunc = async () => {
+  const retryFunc = async (): Promise<unknown> => {
     return await injectClaimRewardTx(shardus, eventData, nodeAccount)
   }
 
@@ -154,7 +165,7 @@ export function validateClaimRewardTx(tx: ClaimRewardTX): { isValid: boolean; re
   return { isValid: true, reason: '' }
 }
 
-export function validateClaimRewardState(tx: ClaimRewardTX, shardus) {
+export function validateClaimRewardState(tx: ClaimRewardTX, shardus): { result: string; reason: string } {
   /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log('validating claimRewardTX', tx)
   const isValid = crypto.verifyObj(tx)
   if (!isValid) {
@@ -197,7 +208,7 @@ export async function applyClaimRewardTx(
   wrappedStates: WrappedStates,
   txTimestamp: number,
   applyResponse: ShardusTypes.ApplyResponse
-) {
+): Promise<void> {
   if (ShardeumFlags.VerboseLogs) console.log(`Running applyClaimRewardTx`, tx, wrappedStates)
   const isValidRequest = validateClaimRewardState(tx, shardus)
   if (isValidRequest.result === 'fail') {

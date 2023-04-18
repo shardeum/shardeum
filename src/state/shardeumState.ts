@@ -97,7 +97,7 @@ export default class ShardeumState implements StateManager {
   }
 
   //critical to function
-  setTransactionState(transactionState: TransactionState) {
+  setTransactionState(transactionState: TransactionState): void {
     if (ShardeumFlags.VerboseLogs) console.log('Setting new transactionState', transactionState.linkedTX)
     if (this._transactionState) {
       /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log( `Try to set new transaction state ${transactionState.linkedTX}. But found existing transaction state ${this._transactionState.linkedTX}` )
@@ -106,7 +106,7 @@ export default class ShardeumState implements StateManager {
     this._transactionState = transactionState
   }
 
-  unsetTransactionState(txId: string) {
+  unsetTransactionState(txId: string): void {
     if (ShardeumFlags.VerboseLogs)
       console.log('Running unsetTransactionState', this._transactionState.linkedTX)
     if (this._transactionState.linkedTX !== txId) {
@@ -116,7 +116,7 @@ export default class ShardeumState implements StateManager {
     this._transactionState = null
   }
 
-  resetState() {
+  resetState(): void {
     //todo any other reset?
 
     this._transactionState.resetTransactionState()
@@ -184,7 +184,7 @@ export default class ShardeumState implements StateManager {
    * Deletes an account from state under the provided `address`. The account will also be removed from the state trie.
    * @param address - Address of the account which should be deleted
    */
-  async deleteAccount(address: Address) {
+  async deleteAccount(address: Address): Promise<void> {
     if (this.DEBUG) {
       debug(`Delete account ${address}`)
     }

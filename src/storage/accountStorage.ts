@@ -12,13 +12,13 @@ export let storage: Storage = null
 
 let isInitialized = false
 
-export async function init(baseDir: string, dbPath: string) {
+export async function init(baseDir: string, dbPath: string): Promise<void> {
   storage = new Storage(baseDir, dbPath)
 
   //we have to lazy init storage, because this init happens very early
 }
 
-export async function lazyInit() {
+export async function lazyInit(): Promise<void> {
   if (isInitialized === false) {
     await storage.init()
     isInitialized = true

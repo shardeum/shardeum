@@ -38,7 +38,7 @@ class Storage {
     this.storage = new Sqlite3Storage(models, baseDir, dbPath)
   }
 
-  async init() {
+  async init(): Promise<void> {
     console.log('shardeum storage init:' + this.storage.dbPath)
     await this.storage.init()
     console.log('shardeum storage init complete:')
@@ -56,25 +56,25 @@ class Storage {
     // get models and helper methods from the storage class we just initializaed.
     this.storageModels = this.storage.storageModels
 
-    this._create = async (table, values, opts) => this.storage._create(table, values, opts)
-    this._read = async (table, where, opts) => this.storage._read(table, where, opts)
-    this._readOld = async (table, where, opts) => this.storage._readOld(table, where, opts)
-    this._update = async (table, values, where, opts) => this.storage._update(table, values, where, opts)
-    this._delete = async (table, where, opts) => this.storage._delete(table, where, opts)
-    this._query = async (query, tableModel) => this.storage._rawQuery(query, tableModel) // or queryString, valueArray for non-sequelize
-    this._queryOld = async (query, tableModel) => this.storage._rawQueryOld(query, tableModel) // or queryString, valueArray for non-sequelize
+    this._create = async (table, values, opts): Promise<unknown> => this.storage._create(table, values, opts)
+    this._read = async (table, where, opts): Promise<unknown> => this.storage._read(table, where, opts)
+    this._readOld = async (table, where, opts): Promise<unknown> => this.storage._readOld(table, where, opts)
+    this._update = async (table, values, where, opts): Promise<unknown> => this.storage._update(table, values, where, opts)
+    this._delete = async (table, where, opts): Promise<unknown> => this.storage._delete(table, where, opts)
+    this._query = async (query, tableModel): Promise<unknown> => this.storage._rawQuery(query, tableModel) // or queryString, valueArray for non-sequelize
+    this._queryOld = async (query, tableModel): Promise<unknown> => this.storage._rawQueryOld(query, tableModel) // or queryString, valueArray for non-sequelize
 
     this.initialized = true
   }
-  async close() {
+  async close(): Promise<void> {
     await this.storage.close()
   }
 
-  _checkInit() {
+  _checkInit(): void {
     if (!this.initialized) throw new Error('Storage not initialized.')
   }
 
-  async createOrReplaceAccountEntry(accountEntry: AccountsEntry) {
+  async createOrReplaceAccountEntry(accountEntry: AccountsEntry): Promise<void> {
     this._checkInit()
     try {
       await this._create(this.storageModels.accountsEntry, accountEntry, {
@@ -193,7 +193,7 @@ class Storage {
     }
   }
 
-  async deleteAccountsEntry() {
+  async deleteAccountsEntry(): Promise<void> {
     this._checkInit()
     try {
       await this._delete(this.storageModels.accountsEntry, null, null)
@@ -202,7 +202,7 @@ class Storage {
     }
   }
 
-  async debugSelectAllAccountsEntry() {
+  async debugSelectAllAccountsEntry(): Promise<unknown> {
     this._checkInit()
     try {
       return await this._read(this.storageModels.accountsEntry, null, null)
