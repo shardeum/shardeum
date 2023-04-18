@@ -1271,6 +1271,30 @@ shardus.registerExternalGet('account/:address', async (req, res) => {
     res.json({ error })
   }
 })
+
+shardus.registerExternalGet('eth_getCode', async (req, res) => {
+  if (trySpendServicePoints(ShardeumFlags.ServicePoints['eth_getCode'], req, 'account') === false) {
+    return res.json({ error: 'node busy' })
+  }
+
+  try {
+    const address = req.query.address
+    const shardusAddress = toShardusAddress(address, AccountType.Account)
+    const account = await shardus.getLocalOrRemoteAccount(shardusAddress)
+    if (!account) {
+      return res.json({ contractCode: '0x' })
+    }
+
+    const contractAddress = Address.fromString(address)
+    const contractCodeBuffer: Buffer = await EVM.stateManager.getContractCode(contractAddress)
+    const contractCode = bufferToHex(contractCodeBuffer)
+    return res.json({ contractCode })
+  } catch (error) {
+    console.log(error)
+    res.json({ error })
+  }
+})
+
 // shardus.registerExternalPost('eth_estimateGas', async (req, res) => {
 //   try {
 //     const transaction = req.body
