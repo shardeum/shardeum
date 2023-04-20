@@ -2343,13 +2343,25 @@ async function generateAccessList(
       readSet.add(shardusKey)
     }
 
-    for (const [codeHash, contractByteWrite] of writtenAccounts.contractBytes) {
-      const contractAddress = contractByteWrite.contractAddress.toString()
-      if (!allInvolvedContracts.includes(contractAddress)) allInvolvedContracts.push(contractAddress)
-      const shardusKey = toShardusAddressWithKey(contractAddress, codeHash, AccountType.ContractCode)
-      writeSet.add(shardusKey)
-      //special case shardeum behavoir.  contract bytes can only be written once
-      writeOnceSet.add(shardusKey)
+    if (ShardeumFlags.fixContractBytes) {
+      for (const [contractAddress, contractByteWrite] of writtenAccounts.contractBytes) {
+        // for (const [contractAddress, contractByteWrite] of writtenAccounts.contractBytes) {
+        if (!allInvolvedContracts.includes(contractAddress)) allInvolvedContracts.push(contractAddress)
+        const codeHash = contractByteWrite.codeHash.toString('hex')
+        const shardusKey = toShardusAddressWithKey(contractAddress, codeHash, AccountType.ContractCode)
+        writeSet.add(shardusKey)
+        //special case shardeum behavoir.  contract bytes can only be written once
+        writeOnceSet.add(shardusKey)
+      }
+    } else {
+      for (const [codeHash, contractByteWrite] of writtenAccounts.contractBytes) {
+        const contractAddress = contractByteWrite.contractAddress.toString()
+        if (!allInvolvedContracts.includes(contractAddress)) allInvolvedContracts.push(contractAddress)
+        const shardusKey = toShardusAddressWithKey(contractAddress, codeHash, AccountType.ContractCode)
+        writeSet.add(shardusKey)
+        //special case shardeum behavoir.  contract bytes can only be written once
+        writeOnceSet.add(shardusKey)
+      }
     }
     for (const [key] of writtenAccounts.accounts) {
       if (!allInvolvedContracts.includes(key)) allInvolvedContracts.push(key)
@@ -2416,7 +2428,8 @@ async function generateAccessList(
         if (contractAddress !== address) continue
         if (!allKeys.has(codeHash)) allKeys.add(codeHash)
       }
-      for (const [codeHash, byteReads] of writtenAccounts.contractBytes) {
+      for (const [, byteReads] of writtenAccounts.contractBytes) {
+        const codeHash = byteReads.codeHash.toString('hex')
         const contractAddress = byteReads.contractAddress.toString()
         if (contractAddress !== address) continue
         if (!allKeys.has(codeHash)) allKeys.add(codeHash)
@@ -3239,16 +3252,18 @@ shardus.setup({
     //use this later in the loop of account updates to set the correct account code hash values
     const accountToCodeHash: Map<string, Buffer> = new Map()
 
+    if (ShardeumFlags.VerboseLogs) console.log(`DBG: all contractBytes writes`, contractBytesWrites)
+
     for (const contractBytesEntry of contractBytesWrites.entries()) {
       //1. wrap and save/update this to shardeum accounts[] map
-      const addressStr = '0x' + contractBytesEntry[0]
       const contractByteWrite: ContractByteWrite = contractBytesEntry[1]
+      const codeHashStr = contractByteWrite.codeHash.toString('hex')
 
       const wrappedEVMAccount: WrappedEVMAccount = {
         timestamp: txTimestamp,
         codeHash: contractByteWrite.codeHash,
         codeByte: contractByteWrite.contractByte,
-        ethAddress: addressStr,
+        ethAddress: codeHashStr,
         contractAddress: contractByteWrite.contractAddress.toString(),
         hash: '',
         accountType: AccountType.ContractCode,
@@ -3274,7 +3289,7 @@ shardus.setup({
         }
       }
     }
-
+    /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log('DBG: accountsToCodeHash', accountToCodeHash)
     /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log('DBG: all account writes', shardeumState._transactionState.logAccountWrites(accountWrites))
 
     // Handle Account type last, because CAs may depend on CA:Storage or CA:Bytecode updates

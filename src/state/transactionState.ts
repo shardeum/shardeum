@@ -221,7 +221,7 @@ export default class TransactionState {
     return {
       accounts: this.committedAccountWrites,
       contractStorages: this.allContractStorageWrites,
-      contractBytes: this.allContractBytesWrites,
+      contractBytes: ShardeumFlags.fixContractBytes ? this.allContractBytesWritesByAddress : this.allContractBytesWrites
     }
   }
 
