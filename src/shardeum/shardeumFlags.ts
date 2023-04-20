@@ -150,7 +150,7 @@ export const ShardeumFlags: ShardeumFlags = {
   addInternalTxReceiptAccount: true,
 
   // 1.1.6 migration
-  fixSetCertTimeTxApply: false,
+  fixSetCertTimeTxApply: true,
 
   // 1.1.8 migration
   setCertTimeDurationOverride: false,

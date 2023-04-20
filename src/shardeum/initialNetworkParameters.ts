@@ -15,11 +15,11 @@ export const initialNetworkParamters: NetworkParameters = {
   stakeRequiredUsd: oneSHM.mul(new BN(10)),
   maintenanceInterval: ONE_DAY,
   maintenanceFee: 0,
-  minVersion: '1.1.6',
-  activeVersion: '1.1.6',
-  latestVersion: '1.1.7',
+  minVersion: '1.1.7',
+  activeVersion: '1.1.7',
+  latestVersion: '1.1.8',
   stabilityScaleMul: 1000,
   stabilityScaleDiv: 1000,
   txPause: false,
-  certCycleDuration: 10
+  certCycleDuration: 10,
 }
