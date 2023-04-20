@@ -1,10 +1,12 @@
 import { nestedCountersInstance } from '@shardus/core'
-//import { ShardeumFlags } from '../../shardeum/shardeumFlags'
+import { ShardeumFlags } from '../../shardeum/shardeumFlags'
 import { Migration } from '../types'
 // import { shardusConfig } from '../..'
 
 export const migrate: Migration = async () => {
-  console.log('migrate 1.1.7')
-  //no migration feature in 1.1.7 so far
-  nestedCountersInstance.countEvent('migrate-1.1.7', 'calling migrate 1.1.7')
+  console.log('migrate 1.1.8')
+
+  //This enables a feature that will have the set cert time tx override the duration in the apply function with the global setting
+  ShardeumFlags.setCertTimeDurationOverride = true
+  nestedCountersInstance.countEvent('migrate-1.1.8', 'calling migrate 1.1.8')
 }

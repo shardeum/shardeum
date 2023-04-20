@@ -38,7 +38,12 @@ export type setCertTimeTx = {
 }
 
 export function getCertCycleDuration() {
-  if (AccountsStorage.cachedNetworkAccount && AccountsStorage.cachedNetworkAccount.current.certCycleDuration !== null) return AccountsStorage.cachedNetworkAccount.current.certCycleDuration
+  if (
+    AccountsStorage.cachedNetworkAccount &&
+    AccountsStorage.cachedNetworkAccount.current.certCycleDuration !== null
+  ) {
+    return AccountsStorage.cachedNetworkAccount.current.certCycleDuration
+  }
   return ShardeumFlags.certCycleDuration
 }
 
@@ -197,8 +202,7 @@ export function applySetCertTimeTx(
   const certExp = operatorEVMAccount.operatorAccountInfo.certExp
 
   if (certExp > 0) {
-    const certStartTimestamp =
-      certExp - getCertCycleDuration() * ONE_SECOND * serverConfig.p2p.cycleDuration
+    const certStartTimestamp = certExp - getCertCycleDuration() * ONE_SECOND * serverConfig.p2p.cycleDuration
 
     let expiredPercentage
     if (ShardeumFlags.fixSetCertTimeTxApply === true) {
@@ -223,9 +227,20 @@ export function applySetCertTimeTx(
     }
   }
 
+  let duration = tx.duration
+
+  // If this feature is enabled (1.1.8) then just use the network setting for duration
+  // this avoids a problem where new nodes syncing into the network may not have correct duration setting
+  // as they are not aware of the global network setting
+  // ...but in the future we should perhaps do a trustless get of the network object for standby nodes
+  //    in case there are other settings that are important to know
+  if (ShardeumFlags.setCertTimeDurationOverride) {
+    duration = getCertCycleDuration()
+  }
+
   // update operator cert expiration
   operatorEVMAccount.operatorAccountInfo.certExp =
-    txTimestamp + serverConfig.p2p.cycleDuration * ONE_SECOND * tx.duration
+    txTimestamp + serverConfig.p2p.cycleDuration * ONE_SECOND * duration
 
   // deduct tx fee if certExp is not set yet or far from expiration
   if (ShardeumFlags.VerboseLogs) {
