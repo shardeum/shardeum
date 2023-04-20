@@ -175,6 +175,9 @@ const debugServicePointsByType: Map<string, number> = new Map()
 //total number of service points spent, since we last cleared or started the capturing data
 let debugTotalServicePointRequests = 0
 
+//latest value from isReadyToJoin function call
+let isReadyToJoinLatestValue = false
+
 /**
  * Allows us to attempt to spend points.  We have ShardeumFlags.ServicePointsPerSecond
  * that can be spent as a total bucket
@@ -1666,6 +1669,14 @@ shardus.registerExternalPut('query-certificate', async (req: Request, res: Respo
   }
 
   return res.json(queryCertRes)
+})
+
+// Returns the latest value from isReadyToJoin call
+shardus.registerExternalGet('debug-is-ready-to-join', async (req, res) => {
+
+  const publicKey = shardus.crypto.getPublicKey()
+
+  return res.json({isReady:isReadyToJoinLatestValue,  nodePubKey:publicKey})
 })
 
 /***
@@ -5000,8 +5011,17 @@ shardus.setup({
   },
   // Update the activeNodes type here; We can import from P2P.P2PTypes.Node from '@shardus/type' lib but seems it's not installed yet
   async isReadyToJoin(latestCycle: ShardusTypes.Cycle, publicKey: string, activeNodes: []) {
-    if (ShardeumFlags.StakingEnabled === false) return true
-    if (activeNodes.length + latestCycle.syncing < ShardeumFlags.minActiveNodesForStaking) return true
+    isReadyToJoinLatestValue = false
+
+    if (ShardeumFlags.StakingEnabled === false) {
+      isReadyToJoinLatestValue = true
+      return true
+    }
+
+    if (activeNodes.length + latestCycle.syncing < ShardeumFlags.minActiveNodesForStaking) {
+      isReadyToJoinLatestValue = true
+      return true
+    }
 
     if (ShardeumFlags.VerboseLogs) {
       console.log(`Running isReadyToJoin cycle:${latestCycle.counter} publicKey: ${publicKey}`)
@@ -5102,6 +5122,7 @@ shardus.setup({
           console.log('valid cert, isReadyToJoin = true ', stakeCert)
         }
 
+        isReadyToJoinLatestValue = true
         return true
       }
     }
@@ -5179,6 +5200,8 @@ shardus.setup({
         if (ShardeumFlags.VerboseLogs) {
           console.log('valid cert, isReadyToJoin = true ', stakeCert)
         }
+
+        isReadyToJoinLatestValue = true
         return true
       }
     }
