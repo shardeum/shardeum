@@ -72,6 +72,7 @@ import {
   operatorCLIVersion,
   operatorGUIVersion,
   readOperatorVersions,
+  formatErrorMessage,
 } from './utils'
 import config from './config'
 import { RunTxResult } from '@ethereumjs/vm/dist/runTx'
@@ -1027,7 +1028,7 @@ shardus.registerExternalPost('inject', async (req, res) => {
     try {
       res.json({
         success: false,
-        reason: `Failed to inject tx:  ${JSON.stringify(err)}`,
+        reason: `Failed to inject tx:  ${formatErrorMessage(err)}`,
         status: 500,
       })
     } catch (e) {

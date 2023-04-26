@@ -89,3 +89,39 @@ export function getRandom<T>(arr: T[], n: number): T[] {
   /* eslint-enable security/detect-object-injection */
   return result
 }
+
+/**
+ * Try to print a variety of possible erros for debug purposes
+ * @param err
+ * @returns
+ */
+export function formatErrorMessage(err: unknown): string {
+  let errMsg = 'An error occurred'
+
+  if (typeof err === 'string') {
+    errMsg = err
+  } else if (err instanceof Error) {
+    errMsg = err.message
+
+    if (err.stack) {
+      errMsg += ` \nStack trace:\n${err.stack}`
+    }
+  } else if (typeof err === 'object' && err !== null) {
+    //chat gpt reccomended this fancy part but the linter doesn't like it
+
+    // const keys = Object.keys(err)
+    // if (keys.length > 0) {
+    //   errMsg = 'Error properties:\n'
+    //   const errObj = err as object
+    //   for (const key of keys) {
+    //     errMsg += `${key}: ${errObj[key]}\n`
+    //   }
+    // } else {
+    errMsg = `Unknown error: ${JSON.stringify(err)}`
+    // }
+  } else {
+    errMsg = `Unknown error: ${err}`
+  }
+
+  return errMsg
+}
