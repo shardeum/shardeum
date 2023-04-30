@@ -233,14 +233,22 @@ export interface ReadableReceipt {
   value: string
   data: string
   reason?: string // Added this to add the evm error reason
-  stakeInfo?: {
-    // Node Account; used this in stake/unstake tx
-    nominee?: string
-    stakeAmount?: string
-    totalStakeAmount?: string
-  }
+  stakeInfo?: StakeInfo
   isInternalTx?: boolean
   internalTx?: InternalTx
+}
+
+// This is used in stake/unstake tx receipt
+export interface StakeInfo {
+  // Node Account;
+  nominee: string
+  stake?: BN
+  reward?: BN
+  penalty?: BN
+  totalStakeAmount?: BN
+  totalUnstakeAmount?: BN
+  rewardStartTime?: number // this is not used anymore
+  rewardEndTime?: number // this is not used anymore
 }
 
 export interface NetworkAccount extends BaseAccount {

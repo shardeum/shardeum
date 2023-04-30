@@ -246,14 +246,14 @@ export function applySetCertTimeTx(
   if (ShardeumFlags.VerboseLogs) {
     console.log(`applySetCertTimeTx shouldChargeTxFee: ${shouldChargeTxFee}`)
   }
-  let amountSpent = '0'
+  let amountSpent = '0x'
   if (shouldChargeTxFee) {
     const costTxFee = scaleByStabilityFactor(
       new BN(ShardeumFlags.constantTxFeeUsd),
       AccountsStorage.cachedNetworkAccount
     )
     operatorEVMAccount.account.balance = operatorEVMAccount.account.balance.sub(costTxFee)
-    amountSpent = costTxFee.toString()
+    amountSpent = costTxFee.toString('hex')
   }
 
   if (ShardeumFlags.VerboseLogs) {

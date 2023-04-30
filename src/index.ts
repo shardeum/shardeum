@@ -44,6 +44,7 @@ import {
   SetCertTime,
   ShardeumBlockOverride,
   StakeCoinsTX,
+  StakeInfo,
   UnstakeCoinsTX,
   WrappedAccount,
   WrappedEVMAccount,
@@ -1943,7 +1944,7 @@ export const createInternalTxReceipt = (
   to: string,
   txTimestamp: number,
   txId: string,
-  amountSpent = '0'
+  amountSpent = '0x'
 ) => {
   const blockForReceipt = getOrCreateBlockFromTimestamp(txTimestamp)
   const blockNumberForTx = blockForReceipt.header.number.toString()
@@ -2680,8 +2681,8 @@ shardus.setup({
         to: transaction.to ? transaction.to.toString() : null,
         stakeInfo: {
           nominee: nomineeNodeAccount2Address,
-          stakeAmount: stakeCoinsTx.stake.toString('hex'),
-          totalStakeAmount: operatorEVMAccount.operatorAccountInfo.stake.toString('hex'),
+          stake: stakeCoinsTx.stake,
+          totalStakeAmount: operatorEVMAccount.operatorAccountInfo.stake,
         },
         value: transaction.value.toString('hex'),
         data: '0x' + transaction.data.toString('hex'),
@@ -2797,7 +2798,7 @@ shardus.setup({
       await shardeumState.commit()
       shardus.setDebugSetLastAppAwait(`apply():checkpoint_putAccount_commit 2`, DebugComplete.Completed)
 
-      let stakeInfo: unknown
+      let stakeInfo: StakeInfo
       if (ShardeumFlags.totalUnstakeAmount) {
         // I think rewardStartTime and rewardEndTime can be omitted now, since it's only for the last time the node was participated
         stakeInfo = {
@@ -3073,7 +3074,7 @@ shardus.setup({
         hash: '',
         // receipt: runTxResult.receipt,
         readableReceipt,
-        amountSpent: '0',
+        amountSpent: '0x',
         txId,
         accountType: AccountType.Receipt,
         txFrom: transaction.getSenderAddress().toString(),
