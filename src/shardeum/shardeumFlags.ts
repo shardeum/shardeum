@@ -153,7 +153,7 @@ export const ShardeumFlags: ShardeumFlags = {
   fixSetCertTimeTxApply: true,
 
   // 1.1.8 migration
-  setCertTimeDurationOverride: false,
+  setCertTimeDurationOverride: true,
 }
 
 export function updateShardeumFlag(key: string, value: string | number | boolean) {

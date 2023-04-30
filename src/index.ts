@@ -930,7 +930,8 @@ shardus.registerExternalGet('motd', async (req, res) => {
   // await sleep(1000)
   // localCount++
 
-  return res.json(`20230414a ${motdCount}`)
+  //unofficial version number, may not be maintained always.  used for debug
+  return res.json({ version: '1.2.0.0', date: '20230430', note: '', motd: `${motdCount}` })
 })
 
 shardus.registerExternalGet('debug-points', debugMiddleware, async (req, res) => {
