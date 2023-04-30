@@ -1944,7 +1944,7 @@ export const createInternalTxReceipt = (
   to: string,
   txTimestamp: number,
   txId: string,
-  amountSpent = '0x'
+  amountSpent = new BN(0).toString('hex')
 ) => {
   const blockForReceipt = getOrCreateBlockFromTimestamp(txTimestamp)
   const blockNumberForTx = blockForReceipt.header.number.toString()
@@ -3074,7 +3074,7 @@ shardus.setup({
         hash: '',
         // receipt: runTxResult.receipt,
         readableReceipt,
-        amountSpent: '0x',
+        amountSpent: new BN(0).toString('hex'),
         txId,
         accountType: AccountType.Receipt,
         txFrom: transaction.getSenderAddress().toString(),

@@ -246,7 +246,7 @@ export function applySetCertTimeTx(
   if (ShardeumFlags.VerboseLogs) {
     console.log(`applySetCertTimeTx shouldChargeTxFee: ${shouldChargeTxFee}`)
   }
-  let amountSpent = '0x'
+  let amountSpent = new BN(0).toString('hex')
   if (shouldChargeTxFee) {
     const costTxFee = scaleByStabilityFactor(
       new BN(ShardeumFlags.constantTxFeeUsd),
