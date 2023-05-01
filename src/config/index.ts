@@ -189,7 +189,7 @@ config = merge(
         disableSnapshots: true, // do not check in if set to false
         countEndpointStart: -1,
         hashedDevAuth: '',
-        devPublicKey: '774491f80f47fedb119bb861601490f42bc3ea3b57fc63906c0d08e6d777a592',
+        devPublicKey: 'fe73383a971bd52be51c660cc9758c13763a7d804ee2062b6f7426698148240c',
       },
     },
   },
