@@ -17,7 +17,18 @@ const appliedMigrations = new Set<string>()
 // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
 export const onActiveVersionChange = async (newActiveVersion: string) => {
   // For future migrations, add a file under ./migrations and add the version here
-  const migrations = ['1.1.1', '1.1.2', '1.1.3', '1.1.4', '1.1.5', '1.1.6', '1.1.7', '1.1.8', '1.1.9']
+  const migrations = [
+    '1.1.1',
+    '1.1.2',
+    '1.1.3',
+    '1.1.4',
+    '1.1.5',
+    '1.1.6',
+    '1.1.7',
+    '1.1.8',
+    '1.1.9',
+    '1.2.3',
+  ]
 
   for (let index = 0; index < migrations.length; index++) {
     const migrationVersion = migrations[index] // eslint-disable-line security/detect-object-injection
