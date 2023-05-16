@@ -7,5 +7,6 @@ export const migrate: Migration = async () => {
   console.log('migrate 1.1.8')
 
   ShardeumFlags.fixContractBytes = true
+  ShardeumFlags.fixCertExpTiming = true
   nestedCountersInstance.countEvent('migrate-1.1.8', 'calling migrate 1.1.8')
 }

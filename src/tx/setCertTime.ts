@@ -119,6 +119,10 @@ export function validateSetCertTimeState(tx: SetCertTime, wrappedStates: Wrapped
   fixDeserializedWrappedEVMAccount(operatorEVMAccount)
   if (operatorEVMAccount == undefined) {
     /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`setCertTime validate state: found no wrapped state for operator account ${tx.nominator}`)
+    if (ShardeumFlags.fixCertExpTiming) return {
+      result: 'fail',
+      reason: `Found no wrapped state for operator account ${tx.nominator}`,
+    }
   } else {
     if (operatorEVMAccount && operatorEVMAccount.operatorAccountInfo) {
       try {
@@ -138,6 +142,14 @@ export function validateSetCertTimeState(tx: SetCertTime, wrappedStates: Wrapped
         result: 'fail',
         reason: `Operator account info is null: ${JSON.stringify(operatorEVMAccount)}`,
       }
+    }
+  }
+
+  if (AccountsStorage.cachedNetworkAccount == null && ShardeumFlags.fixCertExpTiming) {
+    /* prettier-ignore */ nestedCountersInstance.countEvent('shardeum-staking', 'validateSetCertTimeState' + ' Cached network account is null')
+    return {
+      result: 'fail',
+      reason: `Cached network account is null`,
     }
   }
 
@@ -217,7 +229,8 @@ export function applySetCertTimeTx(
       console.log(`applySetCertTimeTx expiredPercentage: ${expiredPercentage}`)
     }
 
-    if (expiredPercentage >= 0.8) {
+    if (expiredPercentage >= ShardeumFlags.fixCertExpTiming ? 0.5 : 0.8) { // don't charge gas after 50% of the cert has
+      // expired
       shouldChargeTxFee = false
       /* prettier-ignore */ nestedCountersInstance.countEvent('shardeum-staking', 'applySetCertTimeTx' + ' renew' +
         ' certExp chargeTxFee: false')

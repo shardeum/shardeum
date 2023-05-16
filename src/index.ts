@@ -154,8 +154,6 @@ console.log('old Pay Address (not for new staking/rewards) ', pay_address, isVal
 let lastCertTimeTxTimestamp = 0
 let lastCertTimeTxCycle: number | null = null
 
-export const certExpireSoonCycles = 3
-
 export let stakeCert: StakeCert = null
 
 function isDebugMode() {
@@ -5084,9 +5082,10 @@ shardus.setup({
         stakeCert.certExp - getCertCycleDuration() * ONE_SECOND * latestCycle.duration
       const certEndTimestamp = stakeCert.certExp
       const expiredPercentage = (Date.now() - certStartTimestamp) / (certEndTimestamp - certStartTimestamp)
-      const isExpiringSoon = expiredPercentage >= 0.9
+      const isExpiringSoon = expiredPercentage >= (ShardeumFlags.fixCertExpTiming ? 0.7 : 0.9) // only renew
+      // if the cert is expired 70% or more
       if (ShardeumFlags.VerboseLogs) {
-        /* prettier-ignore */ console.log('stakeCert != null. remainingValidTime / minimum time ', remainingValidTime, certExpireSoonCycles * ONE_SECOND * latestCycle.duration, `expiredPercentage: ${expiredPercentage}, isExpiringSoon: ${isExpiringSoon}`)
+        /* prettier-ignore */ console.log(`cert != null, remainingValidTime: ${remainingValidTime}, expiredPercentage: ${expiredPercentage}, isExpiringSoon: ${isExpiringSoon}`)
       }
       if (isExpiringSoon) {
         nestedCountersInstance.countEvent('shardeum-staking', 'stakeCert is expired or expiring soon')
@@ -5151,6 +5150,18 @@ shardus.setup({
           'shardeum-staking',
           `call to queryCertificate failed with reason: ${(res as ValidatorError).reason}`
         )
+
+        if (ShardeumFlags.fixCertExpTiming) {
+          // if we injected setCertTimeTx more than 3 cycles ago but still cannot get new cert, we need to inject it again
+          if (latestCycle.counter - lastCertTimeTxCycle > 3 || Date.now() - lastCertTimeTxTimestamp > 3 * ONE_SECOND * latestCycle.duration) {
+            nestedCountersInstance.countEvent(
+              'shardeum-staking',
+              `call to queryCertificate failed for 3 consecutive cycles, will inject setCertTimeTx again`
+            )
+            lastCertTimeTxTimestamp = 0
+          }
+        }
+
         return false
       }
       const signedStakeCert = (res as CertSignaturesResult).signedStakeCert
@@ -5164,12 +5175,13 @@ shardus.setup({
         signedStakeCert.certExp - getCertCycleDuration() * ONE_SECOND * latestCycle.duration
       const certEndTimestamp = signedStakeCert.certExp
       const expiredPercentage = (Date.now() - certStartTimestamp) / (certEndTimestamp - certStartTimestamp)
-      const isExpiringSoon = expiredPercentage >= 0.9
-      /* prettier-ignore */ console.log('stakeCert received. remainingValidTime / minimum time ', remainingValidTime, certExpireSoonCycles * ONE_SECOND * latestCycle.duration, `expiredPercent: ${expiredPercentage}, isExpiringSoon: ${isExpiringSoon}`)
+      const isNewCertExpiringSoon = expiredPercentage >= 0.7
+      /* prettier-ignore */ console.log(`stakeCert received. remainingValidTime: ${remainingValidTime} expiredPercent: ${expiredPercentage}, isNewCertExpiringSoon: ${isNewCertExpiringSoon}`)
 
       // if queried cert is going to expire soon, inject a new setCertTimeTx
-      if (isExpiringSoon) {
-        nestedCountersInstance.countEvent('shardeum-staking', 'stakeCert is expiring soon')
+      if (isNewCertExpiringSoon) {
+        nestedCountersInstance.countEvent('shardeum-staking', 'new stakeCert is expiring soon. will inject' +
+          ' setCertTimeTx again')
 
         stakeCert = null //clear stake cert, so we will know to query for it again
         const response = await injectSetCertTimeTx(shardus, publicKey, activeNodes)
