@@ -1,7 +1,7 @@
 import Blockchain from '@ethereumjs/blockchain'
 import { Block } from '@ethereumjs/block'
 import { BN } from 'ethereumjs-util'
-import { blocks } from '..'
+import { blocks, evmCommon } from '..'
 
 export class ShardeumBlock extends Blockchain {
   /**
@@ -31,6 +31,6 @@ export class ShardeumBlock extends Blockchain {
       transactions: [],
       uncleHeaders: [],
     }
-    return Block.fromBlockData(blockData)
+    return Block.fromBlockData(blockData, { common: evmCommon })
   }
 }

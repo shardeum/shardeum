@@ -310,7 +310,7 @@ function createNewBlock(blockNumber: number, timestamp: number): Block {
       transactions: [],
       uncleHeaders: [],
     }
-    const block = Block.fromBlockData(blockData)
+    const block = Block.fromBlockData(blockData, { common: evmCommon })
     const readableBlock = convertToReadableBlock(block)
     blocks[blockNumber] = block
     readableBlocks[blockNumber] = readableBlock
@@ -374,7 +374,7 @@ let shardeumStateTXMap: Map<string, ShardeumState>
 // const debugShardeumState: ShardeumState = null
 
 let shardusAddressToEVMAccountInfo: Map<string, EVMAccountInfo>
-let evmCommon
+export let evmCommon: Common
 
 let debugAppdata: Map<string, unknown>
 
@@ -382,7 +382,9 @@ let debugAppdata: Map<string, unknown>
 function initEVMSingletons() {
   const chainIDBN = new BN(ShardeumFlags.ChainID)
 
-  evmCommon = new Common({ chain: Chain.Mainnet })
+  evmCommon = Common.forCustomChain(Chain.Mainnet, {
+    hardforks: [],
+  })
 
   //hack override this function.  perhaps a nice thing would be to use forCustomChain to create a custom common object
   evmCommon.chainIdBN = () => {
@@ -2164,17 +2166,17 @@ const getOrCreateBlockFromTimestamp = (timestamp: number, scheduleNextBlock = fa
   if (latestCycles == null || latestCycles.length === 0) return
   const cycle = latestCycles[0]
 
-  if (ShardeumFlags.extraTxTime) timestamp = timestamp + ShardeumFlags.extraTxTime * 1000
+  if (ShardeumFlags.extraTxTime && !scheduleNextBlock) timestamp = timestamp + ShardeumFlags.extraTxTime * 1000
 
   const cycleStart = (cycle.start + cycle.duration) * 1000
   const timeElapsed = timestamp - cycleStart
   const decimal = timeElapsed / (cycle.duration * 1000)
   const numBlocksPerCycle = cycle.duration / ShardeumFlags.blockProductionRate
-  const blockNumber = Math.floor((cycle.counter + 1 + decimal) * numBlocksPerCycle)
+  const blockNumber = Math.floor(ShardeumFlags.initialBlockNumber + ((cycle.counter + 1 + decimal) * numBlocksPerCycle))
   const newBlockTimestampInSecond =
     cycle.start +
     cycle.duration +
-    (blockNumber - (cycle.counter + 1) * 10) * ShardeumFlags.blockProductionRate
+    (blockNumber - ShardeumFlags.initialBlockNumber - (cycle.counter + 1) * 10) * ShardeumFlags.blockProductionRate
   const newBlockTimestamp = newBlockTimestampInSecond * 1000
   if (ShardeumFlags.VerboseLogs) {
     console.log('Cycle counter vs derived blockNumber', cycle.counter, blockNumber)
