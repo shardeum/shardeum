@@ -383,7 +383,44 @@ function initEVMSingletons() {
   const chainIDBN = new BN(ShardeumFlags.ChainID)
 
   evmCommon = Common.forCustomChain(Chain.Mainnet, {
-    hardforks: [],
+    hardforks: [
+      {
+        "name": "chainstart",
+        "block": 0,
+      },
+      {
+        "name": "homestead",
+        "block": 0,
+      },
+      // {
+      //   "name": "dao",
+      //   "block": 0,
+      // },
+      {
+        "name": "tangerineWhistle",
+        "block": 0,
+      },
+      {
+        "name": "spuriousDragon",
+        "block": 0,
+      },
+      {
+        "name": "byzantium",
+        "block": 0,
+      },
+      {
+        "name": "constantinople",
+        "block": 0,
+      },
+      {
+        "name": "petersburg",
+        "block": 0,
+      },
+      {
+        "name": "istanbul",
+        "block": 0,
+      },
+    ]
   })
 
   //hack override this function.  perhaps a nice thing would be to use forCustomChain to create a custom common object
@@ -407,6 +444,8 @@ function initEVMSingletons() {
   } else {
     EVM = new VM({ common: evmCommon, stateManager: undefined, blockchain: shardeumBlock }) as VM
   }
+
+  console.log('EVM_common', JSON.stringify(EVM._common, null, 4));
 
   //todo need to evict old data
   ////transactionStateMap = new Map<string, TransactionState>()
