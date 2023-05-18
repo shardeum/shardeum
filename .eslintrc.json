@@ -14,7 +14,7 @@
     "plugin:no-unsanitized/DOM",
     "prettier"
   ],
-  "ignorePatterns": [],
+  "ignorePatterns": ["**/evm/precompiles/**"],
   "rules": {
     "no-empty": [
       1,
