@@ -382,6 +382,8 @@ let debugAppdata: Map<string, unknown>
 function initEVMSingletons() {
   const chainIDBN = new BN(ShardeumFlags.ChainID)
 
+  // setting up only to 'istanbul' hardfork for now
+  // https://github.com/ethereumjs/ethereumjs-monorepo/blob/master/packages/common/src/chains/mainnet.json
   evmCommon = Common.forCustomChain(Chain.Mainnet, {
     hardforks: [
       {
@@ -392,10 +394,6 @@ function initEVMSingletons() {
         "name": "homestead",
         "block": 0,
       },
-      // {
-      //   "name": "dao",
-      //   "block": 0,
-      // },
       {
         "name": "tangerineWhistle",
         "block": 0,
@@ -1715,7 +1713,7 @@ shardus.registerExternalGet('debug-is-ready-to-join', async (req, res) => {
 
   const publicKey = shardus.crypto.getPublicKey()
 
-  return res.json({isReady:isReadyToJoinLatestValue,  nodePubKey:publicKey})
+  return res.json({ isReady: isReadyToJoinLatestValue, nodePubKey: publicKey })
 })
 
 /***
@@ -3077,7 +3075,7 @@ shardus.setup({
     const wrappedNetworkAccount: ShardusTypes.WrappedData = await shardus.getLocalOrRemoteAccount(
       networkAccount
     )
-    /* prettier-ignore */ shardus.setDebugSetLastAppAwait( `apply():getLocalOrRemoteAccount(${networkAccount})`, DebugComplete.Completed )
+    /* prettier-ignore */ shardus.setDebugSetLastAppAwait(`apply():getLocalOrRemoteAccount(${networkAccount})`, DebugComplete.Completed)
     try {
       // if checkNonce is true, we're not gonna skip the nonce
       EVM.stateManager = null
@@ -3688,8 +3686,7 @@ shardus.setup({
       }
       if (ShardeumFlags.VerboseLogs)
         console.log(
-          `txPreCrackData final result: txNonce: ${appData.txNonce}, currentNonce: ${
-            appData.nonce
+          `txPreCrackData final result: txNonce: ${appData.txNonce}, currentNonce: ${appData.nonce
           }, queueCount: ${appData.queueCount}, appData ${JSON.stringify(appData)}`
         )
     }
@@ -4251,7 +4248,7 @@ shardus.setup({
     //let wrappedEVMAccount = accounts[accountId]
     /* prettier-ignore */ shardus.setDebugSetLastAppAwait(`getRelevantData.AccountsStorage.getAccount(${accountId}) 3`)
     let wrappedEVMAccount = await AccountsStorage.getAccount(accountId)
-    /* prettier-ignore */ shardus.setDebugSetLastAppAwait(`getRelevantData.AccountsStorage.getAccount(${accountId}) 3`,DebugComplete.Completed)
+    /* prettier-ignore */ shardus.setDebugSetLastAppAwait(`getRelevantData.AccountsStorage.getAccount(${accountId}) 3`, DebugComplete.Completed)
     let accountCreated = false
 
     const txId = hashSignedObj(tx)
@@ -4481,9 +4478,9 @@ shardus.setup({
       const contractAddress = updatedEVMAccount.contractAddress
       const codeHash = updatedEVMAccount.codeHash
       const codeByte = updatedEVMAccount.codeByte
-      /* prettier-ignore */ shardus.setDebugSetLastAppAwait( `shardeumState._transactionState.commitContractBytes(${contractAddress})` )
+      /* prettier-ignore */ shardus.setDebugSetLastAppAwait(`shardeumState._transactionState.commitContractBytes(${contractAddress})`)
       await shardeumState._transactionState.commitContractBytes(contractAddress, codeHash, codeByte)
-      /* prettier-ignore */ shardus.setDebugSetLastAppAwait( `shardeumState._transactionState.commitContractBytes(${contractAddress})`, DebugComplete.Completed )
+      /* prettier-ignore */ shardus.setDebugSetLastAppAwait(`shardeumState._transactionState.commitContractBytes(${contractAddress})`, DebugComplete.Completed)
     } else if (updatedEVMAccount.accountType === AccountType.Receipt) {
       //TODO we can add the code that processes a receipt now.
       //  This will not call back into transactionState
@@ -4749,7 +4746,7 @@ shardus.setup({
           minStakeRequiredUsd = _base16BNParser(AccountsStorage.cachedNetworkAccount.current.stakeRequiredUsd)
         } catch (e) {
           /* prettier-ignore */ nestedCountersInstance.countEvent('shardeum-staking', 'signAppData' +
-              ' stakeRequiredUsd parse error')
+          ' stakeRequiredUsd parse error')
           /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`signAppData minStakeRequiredUsd parse error ${type} ${JSON.stringify(stakeCert)}, cachedNetworkAccount: ${JSON.stringify(AccountsStorage.cachedNetworkAccount)} `)
           return fail
         }
@@ -4757,7 +4754,7 @@ shardus.setup({
           minStakeRequired = scaleByStabilityFactor(minStakeRequiredUsd, AccountsStorage.cachedNetworkAccount)
         } catch (e) {
           /* prettier-ignore */ nestedCountersInstance.countEvent('shardeum-staking', 'signAppData' +
-              ' minStakeRequired parse error')
+          ' minStakeRequired parse error')
           /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`signAppData minStakeRequired parse error ${type} ${JSON.stringify(stakeCert)}, cachedNetworkAccount: ${JSON.stringify(AccountsStorage.cachedNetworkAccount)} `)
           return fail
         }
@@ -4765,7 +4762,7 @@ shardus.setup({
           stakeAmount = _base16BNParser(stakeCert.stake)
         } catch (e) {
           /* prettier-ignore */ nestedCountersInstance.countEvent('shardeum-staking', 'signAppData' +
-              ' stakeAmount parse error')
+          ' stakeAmount parse error')
           /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`signAppData stakeAmount parse error ${type} ${JSON.stringify(stakeCert)}`)
           return fail
         }
@@ -4977,7 +4974,7 @@ shardus.setup({
 
         if (tx_time > stake_cert.certExp) {
           /* prettier-ignore */ nestedCountersInstance.countEvent('shardeum-staking', 'validateJoinRequest fail: tx_time > stake_cert.certExp')
-          /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`validateJoinRequest fail: tx_time > stake_cert.certExp ${tx_time} > ${stake_cert.certExp}`  )
+          /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`validateJoinRequest fail: tx_time > stake_cert.certExp ${tx_time} > ${stake_cert.certExp}`)
           return {
             success: false,
             reason: `Certificate has expired at ${stake_cert.certExp}`,
@@ -4991,7 +4988,7 @@ shardus.setup({
         // stake certification should not expired for at least 2 cycle.
         if (Date.now() + two_cycle_ms > stake_cert.certExp) {
           /* prettier-ignore */ nestedCountersInstance.countEvent('shardeum-staking', 'validateJoinRequest fail: cert expires soon')
-          /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`validateJoinRequest fail: cert expires soon ${Date.now() + two_cycle_ms} > ${stake_cert.certExp}`  )
+          /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`validateJoinRequest fail: cert expires soon ${Date.now() + two_cycle_ms} > ${stake_cert.certExp}`)
           return {
             success: false,
             reason: `Certificate will be expired really soon.`,
@@ -5079,7 +5076,7 @@ shardus.setup({
         return false
       }
       if (!response.success) {
-        /* prettier-ignore */ nestedCountersInstance.countEvent( 'shardeum-staking', `failed call to injectSetCertTimeTx 1 reason: ${(response as ValidatorError).reason}` )
+        /* prettier-ignore */ nestedCountersInstance.countEvent('shardeum-staking', `failed call to injectSetCertTimeTx 1 reason: ${(response as ValidatorError).reason}`)
         return false
       }
 
@@ -5139,7 +5136,7 @@ shardus.setup({
           return false
         }
         if (!response.success) {
-          /* prettier-ignore */ nestedCountersInstance.countEvent( 'shardeum-staking', `failed call to injectSetCertTimeTx 2 reason: ${(response as ValidatorError).reason}` )
+          /* prettier-ignore */ nestedCountersInstance.countEvent('shardeum-staking', `failed call to injectSetCertTimeTx 2 reason: ${(response as ValidatorError).reason}`)
           return false
         }
         if (ShardeumFlags.fixSetCertTimeTxApply === true) {
@@ -5231,7 +5228,7 @@ shardus.setup({
           return false
         }
         if (!response.success) {
-          /* prettier-ignore */ nestedCountersInstance.countEvent( 'shardeum-staking', `failed call to injectSetCertTimeTx 3 reason: ${(response as ValidatorError).reason}` )
+          /* prettier-ignore */ nestedCountersInstance.countEvent('shardeum-staking', `failed call to injectSetCertTimeTx 3 reason: ${(response as ValidatorError).reason}`)
           return false
         }
 
@@ -5390,7 +5387,7 @@ setTimeout(periodicMemoryCleanup, 60000)
 
 if (ShardeumFlags.GlobalNetworkAccount) {
   // CODE THAT GETS EXECUTED WHEN NODES START
-  ;(async (): Promise<void> => {
+  ; (async (): Promise<void> => {
     const serverConfig = config.server
     const cycleInterval = serverConfig.p2p.cycleDuration * ONE_SECOND
 
