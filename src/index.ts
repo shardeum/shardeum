@@ -387,38 +387,38 @@ function initEVMSingletons() {
   evmCommon = Common.forCustomChain(Chain.Mainnet, {
     hardforks: [
       {
-        "name": "chainstart",
-        "block": 0,
+        name: 'chainstart',
+        block: 0,
       },
       {
-        "name": "homestead",
-        "block": 0,
+        name: 'homestead',
+        block: 0,
       },
       {
-        "name": "tangerineWhistle",
-        "block": 0,
+        name: 'tangerineWhistle',
+        block: 0,
       },
       {
-        "name": "spuriousDragon",
-        "block": 0,
+        name: 'spuriousDragon',
+        block: 0,
       },
       {
-        "name": "byzantium",
-        "block": 0,
+        name: 'byzantium',
+        block: 0,
       },
       {
-        "name": "constantinople",
-        "block": 0,
+        name: 'constantinople',
+        block: 0,
       },
       {
-        "name": "petersburg",
-        "block": 0,
+        name: 'petersburg',
+        block: 0,
       },
       {
-        "name": "istanbul",
-        "block": 0,
+        name: 'istanbul',
+        block: 0,
       },
-    ]
+    ],
   })
 
   //hack override this function.  perhaps a nice thing would be to use forCustomChain to create a custom common object
@@ -443,7 +443,7 @@ function initEVMSingletons() {
     EVM = new VM({ common: evmCommon, stateManager: undefined, blockchain: shardeumBlock }) as VM
   }
 
-  console.log('EVM_common', JSON.stringify(EVM._common, null, 4));
+  console.log('EVM_common', JSON.stringify(EVM._common, null, 4))
 
   //todo need to evict old data
   ////transactionStateMap = new Map<string, TransactionState>()
@@ -971,7 +971,7 @@ shardus.registerExternalGet('motd', async (req, res) => {
   // localCount++
 
   //unofficial version number, may not be maintained always.  used for debug
-  return res.json({ version: '1.2.2.2', date: '20230502', note: '', motd: `${motdCount}` })
+  return res.json({ version: '1.3.0.0', date: '20230518', note: '', motd: `${motdCount}` })
 })
 
 shardus.registerExternalGet('debug-points', debugMiddleware, async (req, res) => {
@@ -1710,7 +1710,6 @@ shardus.registerExternalPut('query-certificate', async (req: Request, res: Respo
 
 // Returns the latest value from isReadyToJoin call
 shardus.registerExternalGet('debug-is-ready-to-join', async (req, res) => {
-
   const publicKey = shardus.crypto.getPublicKey()
 
   return res.json({ isReady: isReadyToJoinLatestValue, nodePubKey: publicKey })
@@ -2203,17 +2202,21 @@ const getOrCreateBlockFromTimestamp = (timestamp: number, scheduleNextBlock = fa
   if (latestCycles == null || latestCycles.length === 0) return
   const cycle = latestCycles[0]
 
-  if (ShardeumFlags.extraTxTime && !scheduleNextBlock) timestamp = timestamp + ShardeumFlags.extraTxTime * 1000
+  if (ShardeumFlags.extraTxTime && !scheduleNextBlock)
+    timestamp = timestamp + ShardeumFlags.extraTxTime * 1000
 
   const cycleStart = (cycle.start + cycle.duration) * 1000
   const timeElapsed = timestamp - cycleStart
   const decimal = timeElapsed / (cycle.duration * 1000)
   const numBlocksPerCycle = cycle.duration / ShardeumFlags.blockProductionRate
-  const blockNumber = Math.floor(ShardeumFlags.initialBlockNumber + ((cycle.counter + 1 + decimal) * numBlocksPerCycle))
+  const blockNumber = Math.floor(
+    ShardeumFlags.initialBlockNumber + (cycle.counter + 1 + decimal) * numBlocksPerCycle
+  )
   const newBlockTimestampInSecond =
     cycle.start +
     cycle.duration +
-    (blockNumber - ShardeumFlags.initialBlockNumber - (cycle.counter + 1) * 10) * ShardeumFlags.blockProductionRate
+    (blockNumber - ShardeumFlags.initialBlockNumber - (cycle.counter + 1) * 10) *
+      ShardeumFlags.blockProductionRate
   const newBlockTimestamp = newBlockTimestampInSecond * 1000
   if (ShardeumFlags.VerboseLogs) {
     console.log('Cycle counter vs derived blockNumber', cycle.counter, blockNumber)
@@ -3686,7 +3689,8 @@ shardus.setup({
       }
       if (ShardeumFlags.VerboseLogs)
         console.log(
-          `txPreCrackData final result: txNonce: ${appData.txNonce}, currentNonce: ${appData.nonce
+          `txPreCrackData final result: txNonce: ${appData.txNonce}, currentNonce: ${
+            appData.nonce
           }, queueCount: ${appData.queueCount}, appData ${JSON.stringify(appData)}`
         )
     }
@@ -5191,7 +5195,10 @@ shardus.setup({
 
         if (ShardeumFlags.fixCertExpTiming) {
           // if we injected setCertTimeTx more than 3 cycles ago but still cannot get new cert, we need to inject it again
-          if (latestCycle.counter - lastCertTimeTxCycle > 3 || Date.now() - lastCertTimeTxTimestamp > 3 * ONE_SECOND * latestCycle.duration) {
+          if (
+            latestCycle.counter - lastCertTimeTxCycle > 3 ||
+            Date.now() - lastCertTimeTxTimestamp > 3 * ONE_SECOND * latestCycle.duration
+          ) {
             nestedCountersInstance.countEvent(
               'shardeum-staking',
               `call to queryCertificate failed for 3 consecutive cycles, will inject setCertTimeTx again`
@@ -5218,8 +5225,10 @@ shardus.setup({
 
       // if queried cert is going to expire soon, inject a new setCertTimeTx
       if (isNewCertExpiringSoon) {
-        nestedCountersInstance.countEvent('shardeum-staking', 'new stakeCert is expiring soon. will inject' +
-          ' setCertTimeTx again')
+        nestedCountersInstance.countEvent(
+          'shardeum-staking',
+          'new stakeCert is expiring soon. will inject' + ' setCertTimeTx again'
+        )
 
         stakeCert = null //clear stake cert, so we will know to query for it again
         const response = await injectSetCertTimeTx(shardus, publicKey, activeNodes)
@@ -5387,7 +5396,7 @@ setTimeout(periodicMemoryCleanup, 60000)
 
 if (ShardeumFlags.GlobalNetworkAccount) {
   // CODE THAT GETS EXECUTED WHEN NODES START
-  ; (async (): Promise<void> => {
+  ;(async (): Promise<void> => {
     const serverConfig = config.server
     const cycleInterval = serverConfig.p2p.cycleDuration * ONE_SECOND
 
