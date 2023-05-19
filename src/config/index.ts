@@ -41,7 +41,7 @@ if (process.env.APP_SEEDLIST) {
           existingArchivers: [
             {
               ip: process.env.APP_SEEDLIST,
-              port: 4000,
+              port: process.env.APP_SEEDLIST_PORT || 4000,
               publicKey:
                 process.env.APP_SEEDLIST_PUBLIC_KEY ||
                 '758b1c119412298802cd28dbfa394cdfeecc4074492d60844cc192d632d84de3',
