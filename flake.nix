@@ -29,6 +29,7 @@
 
         nativeBuildInputs = with pkgs; [
           pkg-config
+          cargo
           custom-nodejs
         ];
         buildInputs = with pkgs; [];
