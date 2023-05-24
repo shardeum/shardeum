@@ -1540,10 +1540,10 @@ shardus.registerExternalPost('contract/accesslist', async (req, res) => {
   }
 
   try {
-    const callObj = req.body
-    if (ShardeumFlags.VerboseLogs) console.log('AccessList endpoint callObj', callObj)
+    const injectedTx = req.body
+    if (ShardeumFlags.VerboseLogs) console.log('AccessList endpoint injectedTx', injectedTx)
 
-    const { accessList } = await generateAccessList(callObj)
+    const { accessList } = await generateAccessList(injectedTx)
 
     res.json(accessList)
   } catch (e) {
@@ -2267,47 +2267,14 @@ const getOrCreateBlockFromTimestamp = (timestamp: number, scheduleNextBlock = fa
 }
 
 async function generateAccessList(
-  callObj
+  injectedTx: ShardusTypes.OpaqueTransaction
 ): Promise<{ accessList: unknown[]; shardusMemoryPatterns: unknown }> {
   try {
-    let valueInHexString: string
-    if (!callObj.value) {
-      valueInHexString = '0'
-    } else if (callObj.value.indexOf('0x') >= 0) {
-      valueInHexString = callObj.value.slice(2)
-    } else {
-      valueInHexString = callObj.value
-    }
-
-    const opt = {
-      to: callObj.to ? Address.fromString(callObj.to) : null,
-      caller: Address.fromString(callObj.from),
-      origin: Address.fromString(callObj.from), // The tx.origin is also the caller here
-      data: toBuffer(callObj.data),
-      value: new BN(valueInHexString, 16),
-    }
-
-    if (callObj.to) {
-      opt['to'] = Address.fromString(callObj.to)
-    }
-
-    if (callObj.gas) {
-      opt['gasLimit'] = new BN(Number(callObj.gas))
-    }
-
-    if (callObj.gasPrice) {
-      opt['gasPrice'] = callObj.gasPrice
-    }
-
-    let caShardusAddress
-    if (opt['to']) {
-      caShardusAddress = toShardusAddress(callObj.to, AccountType.Account)
-    } else if (callObj.newContractAddress != null) {
-      caShardusAddress = toShardusAddress(callObj.newContractAddress, AccountType.Account)
-    }
+    const transaction: Transaction | AccessListEIP2930Transaction = getTransactionObj(injectedTx)
+    const caShardusAddress = transaction.to ? toShardusAddress(transaction.to.toString(), AccountType.Account) : null
 
     if (caShardusAddress != null) {
-      if (ShardeumFlags.VerboseLogs) console.log('Generating accessList to ', opt.to, caShardusAddress)
+      if (ShardeumFlags.VerboseLogs) console.log('Generating accessList to ', transaction.to.toString(), caShardusAddress)
 
       const address = caShardusAddress
       const accountIsRemote = shardus.isAccountRemote(address)
@@ -2321,16 +2288,13 @@ async function generateAccessList(
 
           const postResp = await _internalHackPostWithResp(
             `${consensusNode.externalIp}:${consensusNode.externalPort}/contract/accesslist`,
-            callObj
+            injectedTx
           )
           if (ShardeumFlags.VerboseLogs)
             console.log('Accesslist response from node', consensusNode.externalPort, postResp.body)
           if (postResp.body != null && postResp.body != '' && postResp.body.accessList != null) {
             /* prettier-ignore */
             if (ShardeumFlags.VerboseLogs) console.log(`Node is in remote shard: gotResp:${JSON.stringify(postResp.body)}`)
-            // if (Array.isArray(postResp.body) && postResp.body.length){
-            //    return {accessList : postResp.body, postResp.body}
-            // }
             if (Array.isArray(postResp.body.accessList) && postResp.body.accessList.length) {
               return {
                 accessList: postResp.body.accessList,
@@ -2349,33 +2313,39 @@ async function generateAccessList(
       }
     }
 
-    const txId = crypto.hashObj(opt)
+    const txId = crypto.hashObj(transaction)
     const preRunTxState = getPreRunTXState(txId)
-
-    const callerAddress = toShardusAddress(callObj.from, AccountType.Account)
-    const callerAccount = await AccountsStorage.getAccount(callerAddress)
-    if (callerAccount) {
-      preRunTxState._transactionState.insertFirstAccountReads(opt.caller, callerAccount.account)
-    } else {
-      const acctData = {
-        nonce: 0,
-        balance: oneSHM.mul(new BN(100)), // 100 SHM.  This is a temporary account that will never exist.
-      }
-      const fakeAccount = Account.fromAccountData(acctData)
-      preRunTxState._transactionState.insertFirstAccountReads(opt.caller, fakeAccount)
+    const callerEVMAddress = transaction.getSenderAddress().toString()
+    const callerShardusAddress = toShardusAddress(callerEVMAddress, AccountType.Account)
+    let callerAccount = await AccountsStorage.getAccount(callerShardusAddress)
+    const fakeAccountData = {
+      nonce: 0,
+      balance: oneSHM.mul(new BN(100)), // 100 SHM.  This is a temporary account that will never exist.
     }
-
-    opt['block'] = blocks[latestBlock] // eslint-disable-line security/detect-object-injection
+    const fakeAccount = Account.fromAccountData(fakeAccountData)
+    if (callerAccount == null) {
+      const remoteCallerAccount = await shardus.getLocalOrRemoteAccount(callerShardusAddress)
+      if (remoteCallerAccount) {
+        callerAccount = remoteCallerAccount.data as WrappedEVMAccount
+        fixDeserializedWrappedEVMAccount(callerAccount)
+      }
+    }
+    if (callerAccount == null) { console.log(`Unable to find caller account: ${callerShardusAddress} while generating accessList. Using a fake account to generate accessList`) }
+    preRunTxState._transactionState.insertFirstAccountReads(transaction.getSenderAddress(), callerAccount ? callerAccount.account : fakeAccount)
 
     EVM.stateManager = null
     EVM.stateManager = preRunTxState
-    const callResult = await EVM.runCall(opt)
 
-    // const callResult = = await EVM.runTx({
-    //   block: blocks[latestBlock],
-    //   tx: transaction,
-    //   skipNonce: !ShardeumFlags.CheckNonce,
-    // })
+    if (transaction == null) {
+      return { accessList: [], shardusMemoryPatterns: null }
+    }
+
+    const runTxResult = await EVM.runTx({
+      block: blocks[latestBlock],
+      tx: transaction,
+      skipNonce: !ShardeumFlags.CheckNonce,
+      networkAccount: AccountsStorage.cachedNetworkAccount,
+    })
 
     const readAccounts = preRunTxState._transactionState.getReadAccounts()
     const writtenAccounts = preRunTxState._transactionState.getWrittenAccounts()
@@ -2389,8 +2359,8 @@ async function generateAccessList(
     const writeOnceSet = new Set()
 
     //always make the sender rw.  This is because the sender will always spend gas and increment nonce
-    if (callObj.from != null && callObj.from.length > 0) {
-      const shardusKey = toShardusAddress(callObj.from, AccountType.Account)
+    if (transaction.getSenderAddress() != null) {
+      const shardusKey = callerShardusAddress
       writeSet.add(shardusKey)
       readSet.add(shardusKey)
     }
@@ -2523,8 +2493,8 @@ async function generateAccessList(
 
     if (ShardeumFlags.VerboseLogs) console.log('Predicted accessList', accessList)
 
-    if (callResult.execResult.exceptionError) {
-      if (ShardeumFlags.VerboseLogs) console.log('Execution Error:', callResult.execResult.exceptionError)
+    if (runTxResult.execResult.exceptionError) {
+      if (ShardeumFlags.VerboseLogs) console.log('Execution Error:', runTxResult.execResult.exceptionError)
       return { accessList: [], shardusMemoryPatterns: null }
     }
     return { accessList, shardusMemoryPatterns }
@@ -3693,13 +3663,21 @@ shardus.setup({
           }
 
           profilerInstance.scopedProfileSectionStart('accesslist-generate')
-          const { accessList: generatedAccessList, shardusMemoryPatterns } = await generateAccessList(callObj)
+          const { accessList: generatedAccessList, shardusMemoryPatterns } = await generateAccessList(tx)
           profilerInstance.scopedProfileSectionEnd('accesslist-generate')
 
           appData.accessList = generatedAccessList ? generatedAccessList : null
           appData.requestNewTimestamp = true
           appData.shardusMemoryPatterns = shardusMemoryPatterns
-          nestedCountersInstance.countEvent('shardeum', 'precrack - generateAccessList')
+          if (appData.accessList && appData.accessList.length > 0) {
+            nestedCountersInstance.countEvent('shardeum', 'precrack' +
+              ' -' +
+              ' generateAccessList success: true')
+          } else {
+            nestedCountersInstance.countEvent('shardeum', 'precrack' +
+              ' -' +
+              ' generateAccessList success: false')
+          }
         }
       }
 
