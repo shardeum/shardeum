@@ -123,6 +123,7 @@ config = merge(config, {
       validateActiveRequests: true, //new logic to prevent already active nodes from submitting active requests
       continueOnException: true, //Allow nodes to contineue on unhandled exceptions if the network is low on nodes
       useSignaturesForAuth: true, //This is a major performance upgrade for p2p tell
+      uniqueRemovedIds: false,
     },
   },
 })

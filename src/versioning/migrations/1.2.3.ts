@@ -8,7 +8,7 @@ export const migrate: Migration = async () => {
 
   ShardeumFlags.fixContractBytes = true
   ShardeumFlags.fixCertExpTiming = true
-  nestedCountersInstance.countEvent('migrate-1.1.8', 'calling migrate 1.1.8')
+  nestedCountersInstance.countEvent('migrate-1.2.3', 'calling migrate 1.2.3')
 
   //new logic to prevent already active nodes from submitting active requests
   shardusConfig.p2p.validateActiveRequests = true
