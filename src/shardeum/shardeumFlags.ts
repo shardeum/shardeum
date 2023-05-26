@@ -78,6 +78,8 @@ interface ShardeumFlags {
   setCertTimeDurationOverride: boolean
   fixCertExpTiming: boolean
   shardeumVMPrecompiledFix: boolean
+  baselineTxGasUsage: string
+  baselineTxFee: string
 }
 
 export const ShardeumFlags: ShardeumFlags = {
@@ -164,9 +166,10 @@ export const ShardeumFlags: ShardeumFlags = {
   fixContractBytes: true,
   fixCertExpTiming: true,
   shardeumVMPrecompiledFix: true,
-  
+
   // 1.3.1 migration
-  
+  baselineTxGasUsage: '36655',
+  baselineTxFee: '10000000000000000', // $0.01 * 10 ^ 18
 }
 
 export function updateShardeumFlag(key: string, value: string | number | boolean): void {

@@ -31,7 +31,7 @@ import { Log } from './evm/types'
 
 const debug = createDebugLogger('vm:tx')
 const debugGas = createDebugLogger('vm:tx:gas')
-const { chargeConstantTxFee, constantTxFeeUsd } = ShardeumFlags
+const { chargeConstantTxFee, constantTxFeeUsd, baselineTxGasUsage, baselineTxFee } = ShardeumFlags
 
 /**
  * Options for the `runTx` method.
@@ -210,6 +210,14 @@ export async function generateTxReceipt(
   return receipt
 }
 
+function calculateGasPrice(networkAccount: NetworkAccount): BN {
+  const txFee = new BN(baselineTxFee)
+  const gas = new BN(baselineTxGasUsage)
+  const gasPrice = txFee.div(gas)
+  const scaledGasPrice = scaleByStabilityFactor(gasPrice, networkAccount)
+  return scaledGasPrice
+}
+
 async function _runTx(this: VM, opts: RunTxOpts): Promise<RunTxResult> {
   // Have to cast as `EIP2929StateManager` to access the EIP2929 methods
   const state = this.stateManager as EIP2929StateManager
@@ -322,7 +330,7 @@ async function _runTx(this: VM, opts: RunTxOpts): Promise<RunTxResult> {
     }
   }
 
-  let gasPrice
+  let gasPrice = calculateGasPrice(opts.networkAccount)
   let inclusionFeePerGas
   // EIP-1559 tx
   if (tx.supports(Capability.EIP1559FeeMarket)) {
@@ -334,7 +342,7 @@ async function _runTx(this: VM, opts: RunTxOpts): Promise<RunTxResult> {
     gasPrice = inclusionFeePerGas.add(baseFee)
   } else {
     // Have to cast as legacy tx since EIP1559 tx does not have gas price
-    gasPrice = (tx as Transaction).gasPrice
+    // gasPrice = (tx as Transaction).gasPrice
     if (this._common.isActivatedEIP(1559)) {
       const baseFee = block.header.baseFeePerGas!
       inclusionFeePerGas = (tx as Transaction).gasPrice.sub(baseFee)
