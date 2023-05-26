@@ -891,7 +891,7 @@ function _normalizeUrl(url: string): string {
   return normalized
 }
 
-async function _internalHackPostWithResp(url: string, body): Promise<got.Response> {
+async function _internalHackPostWithResp(url: string, body): Promise<got.Response<any>> {
   const normalized = _normalizeUrl(url)
   const host = parseUrl(normalized, true)
   try {
@@ -1286,7 +1286,7 @@ shardus.registerExternalGet('eth_getCode', async (req, res) => {
   }
 
   try {
-    const address = req.query.address
+    const address = req.query.address.toString()
     const shardusAddress = toShardusAddress(address, AccountType.Account)
     const account = await shardus.getLocalOrRemoteAccount(shardusAddress)
     if (!account) {
@@ -2248,7 +2248,7 @@ const getOrCreateBlockFromTimestamp = (timestamp: number, scheduleNextBlock = fa
     cycle.start +
     cycle.duration +
     (blockNumber - ShardeumFlags.initialBlockNumber - (cycle.counter + 1) * 10) *
-      ShardeumFlags.blockProductionRate
+    ShardeumFlags.blockProductionRate
   const newBlockTimestamp = newBlockTimestampInSecond * 1000
   if (ShardeumFlags.VerboseLogs) {
     console.log('Cycle counter vs derived blockNumber', cycle.counter, blockNumber)
@@ -3721,8 +3721,7 @@ shardus.setup({
       }
       if (ShardeumFlags.VerboseLogs)
         console.log(
-          `txPreCrackData final result: txNonce: ${appData.txNonce}, currentNonce: ${
-            appData.nonce
+          `txPreCrackData final result: txNonce: ${appData.txNonce}, currentNonce: ${appData.nonce
           }, queueCount: ${appData.queueCount}, appData ${JSON.stringify(appData)}`
         )
     }
@@ -5428,7 +5427,7 @@ setTimeout(periodicMemoryCleanup, 60000)
 
 if (ShardeumFlags.GlobalNetworkAccount) {
   // CODE THAT GETS EXECUTED WHEN NODES START
-  ;(async (): Promise<void> => {
+  ; (async (): Promise<void> => {
     const serverConfig = config.server
     const cycleInterval = serverConfig.p2p.cycleDuration * ONE_SECOND
 
