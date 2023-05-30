@@ -13,6 +13,7 @@ export function applyPenalty(nodeAccount: NodeAccount2, operatorEOA: WrappedEVMA
   nodeAccount.stakeLock.isub(penalty)
   operatorEOA.operatorAccountInfo.stake.isub(penalty)
 
+  nodeAccount.penalty.iadd(penalty)
   nodeAccount.nodeAccountStats.totalPenalty.iadd(penalty)
   operatorEOA.operatorAccountInfo.operatorStats.totalNodePenalty.iadd(penalty)
   return penalty
