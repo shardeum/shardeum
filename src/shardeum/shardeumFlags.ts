@@ -80,6 +80,7 @@ interface ShardeumFlags {
   shardeumVMPrecompiledFix: boolean
   baselineTxGasUsage: string
   baselineTxFee: string
+  lowStakePercent: number
 }
 
 export const ShardeumFlags: ShardeumFlags = {
@@ -143,6 +144,7 @@ export const ShardeumFlags: ShardeumFlags = {
   FailedTxLinearBackOffConstantInSecs: 30,
   logServicePointSenders: false,
   labTest: false,
+  lowStakePercent: 0.2,
 
   // 1.1.3 migration
   fixExtraStakeLessThanMin: true,

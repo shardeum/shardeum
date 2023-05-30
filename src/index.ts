@@ -1286,7 +1286,7 @@ shardus.registerExternalGet('eth_getCode', async (req, res) => {
   }
 
   try {
-    const address = req.query.address.toString()
+    const address = req.query.address as string
     const shardusAddress = toShardusAddress(address, AccountType.Account)
     const account = await shardus.getLocalOrRemoteAccount(shardusAddress)
     if (!account) {
