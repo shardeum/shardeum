@@ -1026,6 +1026,14 @@ shardus.registerExternalPost('inject', async (req, res) => {
   try {
     // Reject transaction if network is paused
     const networkAccount = AccountsStorage.cachedNetworkAccount
+    if (networkAccount == null || networkAccount.current == null) {
+      return res.json({
+        success: false,
+        reason: `Node not ready for inject, waiting for network account data.`,
+        status: 500,
+      })
+    }
+
     if (networkAccount.current.txPause && !isInternalTx(tx)) {
       return res.json({
         success: false,
