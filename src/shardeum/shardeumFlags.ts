@@ -100,7 +100,7 @@ export const ShardeumFlags: ShardeumFlags = {
   DebugRestoreArchiveBatch: 2000,
   CheckNonce: true,
   txNoncePreCheck: true,
-  txBalancePreCheck: true,
+  txBalancePreCheck: false, //setting this to false for dev testing, need to be set back to true for release
   autoGenerateAccessList: true,
   forwardGenesisAccounts: true,
   UseDBForAccounts: true,
