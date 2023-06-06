@@ -124,6 +124,8 @@ config = merge(config, {
       continueOnException: true, //Allow nodes to contineue on unhandled exceptions if the network is low on nodes
       useSignaturesForAuth: true, //This is a major performance upgrade for p2p tell
       uniqueRemovedIds: false,
+      useLruCacheForSocketMgmt: true,
+      lruCacheSizeForSocketMgmt: 1000,
     },
   },
 })
