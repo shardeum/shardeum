@@ -118,7 +118,7 @@ config = merge(config, {
       amountToShrink: 5,
       maxDesiredMultiplier: 1.2,
       maxScaleReqs: 250, // todo: this will become a variable config but this should work for a 500 node demo
-      forceBogonFilteringOn: true,
+      forceBogonFilteringOn: false,
       //these are new feature in 1.3.0, we can make them default:true in shardus-core later
       validateActiveRequests: true, //new logic to prevent already active nodes from submitting active requests
       continueOnException: true, //Allow nodes to contineue on unhandled exceptions if the network is low on nodes
