@@ -125,7 +125,7 @@ config = merge(config, {
       useSignaturesForAuth: true, //This is a major performance upgrade for p2p tell
       uniqueRemovedIds: false,
       useLruCacheForSocketMgmt: true,
-      lruCacheSizeForSocketMgmt: 1000,
+      lruCacheSizeForSocketMgmt: 500,
     },
   },
 })
