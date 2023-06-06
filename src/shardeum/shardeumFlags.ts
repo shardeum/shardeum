@@ -113,7 +113,7 @@ export const ShardeumFlags: ShardeumFlags = {
   UseBase64BufferEncoding: true,
   useAccountWrites: true,
   useShardeumVM: true,
-  chargeConstantTxFee: true,
+
   // '10000000000000'// $0.00001 * 10 ^ 18
   // '1000000000000000'// $0.001 * 10 ^ 18
   // '10000000000000000'// $0.01 * 10 ^ 18
@@ -170,6 +170,7 @@ export const ShardeumFlags: ShardeumFlags = {
   shardeumVMPrecompiledFix: true,
 
   // 1.3.1 migration
+  chargeConstantTxFee: false, //true is the old way.  and false is to activate the variable TXs
   baselineTxGasUsage: '36655',
   baselineTxFee: '10000000000000000', // $0.01 * 10 ^ 18
 }
