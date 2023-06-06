@@ -1551,9 +1551,9 @@ shardus.registerExternalPost('contract/accesslist', async (req, res) => {
     const injectedTx = req.body
     if (ShardeumFlags.VerboseLogs) console.log('AccessList endpoint injectedTx', injectedTx)
 
-    const { accessList } = await generateAccessList(injectedTx)
+    const result = await generateAccessList(injectedTx)
 
-    res.json(accessList)
+    res.json(result)
   } catch (e) {
     if (ShardeumFlags.VerboseLogs) console.log('Error predict accessList', e)
     return res.json([])
