@@ -7,6 +7,7 @@ import {
   InternalTx,
   InternalTXType,
   NodeAccount2,
+  PenaltyTX,
   SetCertTime,
   StakeCoinsTX,
   UnstakeCoinsTX,
@@ -25,6 +26,7 @@ import {
   isInternalTXGlobal,
   verify,
 } from './helpers'
+import { validatePenaltyTX } from '../tx/penalty/transaction'
 
 /**
  * Checks that Transaction fields are valid
@@ -92,6 +94,10 @@ export const validateTxnFields =
         reason = result.reason
       } else if (tx.internalTXType === InternalTXType.ClaimReward) {
         const result = validateClaimRewardTx(tx as ClaimRewardTX)
+        success = result.isValid
+        reason = result.reason
+      } else if (tx.internalTXType === InternalTXType.Penalty) {
+        const result = validatePenaltyTX(tx as PenaltyTX)
         success = result.isValid
         reason = result.reason
       } else {

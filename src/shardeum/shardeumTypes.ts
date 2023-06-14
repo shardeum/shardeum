@@ -98,6 +98,7 @@ export enum InternalTXType {
   ClaimReward = 9,
   ChangeNetworkParam = 10,
   ApplyNetworkParam = 11,
+  Penalty = 12,
 }
 
 export enum DebugTXType {
@@ -170,6 +171,22 @@ export interface ClaimRewardTX extends InternalTxBase {
   timestamp: number
   deactivatedNodeId: string
   nodeDeactivatedTime: number
+  sign: ShardusTypes.Sign
+}
+
+export enum ViolationType {
+  // 0-999 reserved for shardus core
+  LeftNetworkEarly = 1000,
+  SyncingTooLong = 1001,
+  DoubleVote = 1002,
+  //..others tbd
+}
+
+export interface PenaltyTX extends InternalTxBase {
+  reportedNode: string
+  violationType: ViolationType
+  violationData: object // will depend of violation type
+  timestamp: number
   sign: ShardusTypes.Sign
 }
 

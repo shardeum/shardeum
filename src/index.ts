@@ -40,6 +40,7 @@ import {
   NodeInfoAppData,
   OperatorAccountInfo,
   OurAppDefinedData,
+  PenaltyTX,
   ReadableReceipt,
   SetCertTime,
   ShardeumBlockOverride,
@@ -107,6 +108,7 @@ import { shardusFactory } from '@shardus/core'
 import { unsafeGetClientIp } from './utils/requests'
 import { initialNetworkParamters } from './shardeum/initialNetworkParameters'
 import { oneSHM, networkAccount, ONE_SECOND } from './shardeum/shardeumConstants'
+import { applyPenaltyTX } from './tx/penalty/transaction'
 
 let latestBlock = 0
 export const blocks: BlockMap = {}
@@ -2016,6 +2018,10 @@ async function applyInternalTx(
   if (internalTx.internalTXType === InternalTXType.ClaimReward) {
     const claimRewardTx = internalTx as ClaimRewardTX
     applyClaimRewardTx(shardus, claimRewardTx, wrappedStates, txTimestamp, applyResponse)
+  }
+  if (internalTx.internalTXType === InternalTXType.Penalty) {
+    const penaltyTx = internalTx as PenaltyTX
+    applyPenaltyTX(shardus, penaltyTx, wrappedStates, txTimestamp, applyResponse)
   }
   return applyResponse
 }
