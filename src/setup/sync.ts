@@ -61,8 +61,9 @@ export const sync = (shardus: Shardus, evmCommon: Common) => async (): Promise<v
             continue
           }
 
+          const ethAccountID = Address.fromString(address).toString()
           const { wrappedEVMAccount, accountId, cycle } = await manuallyCreateAccount(
-            address,
+            ethAccountID,
             amount,
             evmCommon,
             shardus.getLatestCycles()
