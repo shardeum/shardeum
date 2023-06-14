@@ -1,11 +1,10 @@
 import { nestedCountersInstance, ShardusTypes } from '@shardus/core'
-import { AccountType, InternalTXType, isNetworkAccount, isNodeAccount2, NetworkAccount, NodeAccount2, PenaltyTX, WrappedEVMAccount, WrappedStates } from '../../shardeum/shardeumTypes'
+import { AccountType, InternalTXType, isNodeAccount2, NodeAccount2, PenaltyTX, WrappedEVMAccount, WrappedStates } from '../../shardeum/shardeumTypes'
 import { ShardeumFlags } from '../../shardeum/shardeumFlags'
 import { crypto, hashSignedObj } from '../../setup/helpers'
 import { createInternalTxReceipt, getApplyTXState } from '../..'
 import { toShardusAddress } from '../../shardeum/evmAddress'
 import { getPenaltyForViolation } from './violation'
-import { networkAccount } from '../../shardeum/shardeumConstants'
 import * as WrappedEVMAccountFunctions from '../../shardeum/wrappedEVMAccountFunctions'
 import { _base16BNParser, _readableSHM } from '../../utils'
 import { Address } from 'ethereumjs-util'
@@ -13,7 +12,6 @@ import { Address } from 'ethereumjs-util'
 export async function injectPenaltyTX(
   shardus,
   eventData: ShardusTypes.ShardusEvent,
-  nodeAccount
 ): Promise<{
   success: boolean
   reason: string
@@ -100,10 +98,6 @@ export async function applyPenaltyTX(
     if (isNodeAccount2(wrappedStates[tx.reportedNode].data)) {
       nodeAccount = wrappedStates[tx.reportedNode].data as NodeAccount2
     }
-    let network: NetworkAccount
-    if (isNetworkAccount(wrappedStates[networkAccount].data)) {
-      network = wrappedStates[networkAccount].data as NetworkAccount
-    }
     let operatorAccount: WrappedEVMAccount
     if (WrappedEVMAccountFunctions.isWrappedEVMAccount(wrappedStates[reportedNodeShardusAddress].data)) {
       operatorAccount = wrappedStates[reportedNodeShardusAddress].data as WrappedEVMAccount
@@ -179,4 +173,3 @@ export async function applyPenaltyTX(
     console.log('Applied PenaltyTX', tx.reportedNode)
   }
 
-export function crackPenaltyTX() {}

@@ -3796,6 +3796,9 @@ shardus.setup({
         // let roundedNow = Math.round(now / 3000) * 3000
         // tx.timestamp = roundedNow
         // customTXhash = crypto.hashObj(tx, true)
+      } else if (internalTx.internalTXType === InternalTXType.Penalty) {
+        keys.sourceKeys = [tx.reportedNode]
+        keys.targetKeys = []
       }
       keys.allKeys = keys.allKeys.concat(keys.sourceKeys, keys.targetKeys, keys.storageKeys)
       // temporary hack for creating a receipt of node reward tx
