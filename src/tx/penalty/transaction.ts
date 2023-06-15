@@ -83,7 +83,7 @@ export async function applyPenaltyTX(
     const isValidRequest = validatePenaltyTX(tx)
     if (!isValidRequest) {
       /* prettier-ignore */
-      console.log(`Invalid claimRewardTx, reportedNode ${tx.reportedNode}, reason: ${isValidRequest.reason}`)
+      console.log(`Invalid penaltyTX, reportedNode ${tx.reportedNode}, reason: ${isValidRequest.reason}`)
       nestedCountersInstance.countEvent('shardeum-penalty', `applyPenaltyTX fail `)
       shardus.applyResponseSetFailed(
         applyResponse,
