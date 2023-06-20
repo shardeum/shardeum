@@ -7,5 +7,6 @@ export const migrate: Migration = async () => {
   console.log('migrate 1.3.2')
   nestedCountersInstance.countEvent('migrate-1.3.2', 'calling migrate 1.3.2')
 
-  ShardeumFlags.enableNodeSlashing = true
+  //moved to 1.4.1 migration
+  //ShardeumFlags.enableNodeSlashing = true
 }
