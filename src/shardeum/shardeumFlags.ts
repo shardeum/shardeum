@@ -81,6 +81,7 @@ interface ShardeumFlags {
   baselineTxGasUsage: string
   baselineTxFee: string
   lowStakePercent: number
+  removeTokenBalanceCache: boolean
 }
 
 export const ShardeumFlags: ShardeumFlags = {
@@ -173,6 +174,9 @@ export const ShardeumFlags: ShardeumFlags = {
   chargeConstantTxFee: false, //true is the old way.  and false is to activate the variable TXs
   baselineTxGasUsage: '36655',
   baselineTxFee: '10000000000000000', // $0.01 * 10 ^ 18
+
+  // 1.4.1 migration
+  removeTokenBalanceCache: false,
 }
 
 export function updateShardeumFlag(key: string, value: string | number | boolean): void {

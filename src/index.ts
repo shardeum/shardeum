@@ -1401,9 +1401,6 @@ shardus.registerExternalPost('contract/call', async (req, res) => {
       origin: Address.fromString(callObj.from), // The tx.origin is also the caller here
       data: toBuffer(callObj.data),
     }
-    if (callObj.to) {
-      opt['to'] = Address.fromString(callObj.to)
-    }
 
     if (callObj.gas) {
       opt['gasLimit'] = new BN(Number(callObj.gas))
@@ -1418,9 +1415,8 @@ shardus.registerExternalPost('contract/call', async (req, res) => {
     let caAccount
     if (opt['to']) {
       caShardusAddress = toShardusAddress(callObj.to, AccountType.Account)
-      if (methodCode === ERC20_BALANCEOF_CODE) {
+      if (!ShardeumFlags.removeTokenBalanceCache && methodCode === ERC20_BALANCEOF_CODE) {
         // ERC20 Token balance query
-        const caShardusAddress = toShardusAddress(callObj.to, AccountType.Account)
         //to do convert to timestamp query getAccountTimestamp!!
         caAccount = await AccountsStorage.getAccount(caShardusAddress)
         if (caAccount) {
@@ -1509,7 +1505,7 @@ shardus.registerExternalPost('contract/call', async (req, res) => {
     //shardeumStateManager.unsetTransactionState(callTxState.linkedTX)
     /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log('Call Result', callResult.execResult.returnValue.toString('hex'))
 
-    if (methodCode === ERC20_BALANCEOF_CODE) {
+    if (!ShardeumFlags.removeTokenBalanceCache && methodCode === ERC20_BALANCEOF_CODE) {
       //TODO would be way faster to have timestamp in db as field
       //let caAccount = await AccountsStorage.getAccount(caShardusAddress)
 
