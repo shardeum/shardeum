@@ -97,7 +97,7 @@ export const validateTxnFields =
         success = result.isValid
         reason = result.reason
       } else if (tx.internalTXType === InternalTXType.Penalty) {
-        const result = validatePenaltyTX(tx as PenaltyTX)
+        const result = validatePenaltyTX(tx as PenaltyTX, shardus)
         success = result.isValid
         reason = result.reason
       } else {

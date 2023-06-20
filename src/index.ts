@@ -96,6 +96,7 @@ import {
   ValidatorError,
 } from './handlers/queryCertificate'
 import * as InitRewardTimesTx from './tx/initRewardTimes'
+import * as PenaltyTx from './tx/penalty/transaction'
 import {
   isDebugTx,
   isInternalTx,
@@ -3797,8 +3798,8 @@ shardus.setup({
         // tx.timestamp = roundedNow
         // customTXhash = crypto.hashObj(tx, true)
       } else if (internalTx.internalTXType === InternalTXType.Penalty) {
-        keys.sourceKeys = [tx.reportedNode]
-        keys.targetKeys = []
+        keys.sourceKeys = [tx.reportedNodePublickKey]
+        keys.targetKeys = [toShardusAddress(tx.operatorEVMAddress, AccountType.Account), networkAccount]
       }
       keys.allKeys = keys.allKeys.concat(keys.sourceKeys, keys.targetKeys, keys.storageKeys)
       // temporary hack for creating a receipt of node reward tx
@@ -5341,7 +5342,7 @@ shardus.setup({
 
     // Waiting a bit here to make sure that shardus.getLatestCycles gives the latest cycle
     await sleep(1000)
-    const latestCycles: ShardusTypes.Cycle[] = shardus.getLatestCycles()
+    const latestCycles: ShardusTypes.Cycle[] = shardus.getLatestCycles(10)
     const currentCycle = latestCycles[0]
     if (!currentCycle) {
       console.log('No cycle records found', latestCycles)
@@ -5376,6 +5377,31 @@ shardus.setup({
         nestedCountersInstance.countEvent('shardeum-staking', `node-deactivated: injectClaimRewardTx`)
         const result = await injectClaimRewardTxWithRetry(shardus, data)
         console.log('INJECTED_CLAIM_REWARD_TX', result)
+      } else if (eventType === 'node-left-early' && ShardeumFlags.enableNodeSlashing === true) {
+        let nodeLostCycle
+        let nodeDroppedCycle
+        for (let i = 0; i < latestCycles.length; i++) {
+          const cycle = latestCycles[i]
+          if (cycle == null) continue
+          if (cycle.apoptosized.includes(data.nodeId)) {
+            nodeDroppedCycle = cycle.counter
+          } else if (cycle.lost.includes(data.nodeId)) {
+            nodeLostCycle = cycle.counter
+          }
+        }
+        if (nodeLostCycle && nodeDroppedCycle && nodeLostCycle < nodeDroppedCycle) {
+          const violationData = {
+            nodeLostCycle,
+            nodeDroppedCycle,
+            nodeDroppedTime: data.time
+          }
+          nestedCountersInstance.countEvent('shardeum-staking', `node-left-early: injectClaimRewardTx`)
+          const result = await PenaltyTx.injectPenaltyTX(shardus, data, violationData)
+          console.log('INJECTED_PENALTY_TX', result)
+        } else {
+          nestedCountersInstance.countEvent('shardeum-staking', `node-left-early: event skipped`)
+          if (ShardeumFlags.VerboseLogs) console.log(`Shardeum node-left-early event skipped`, data, nodeLostCycle, nodeDroppedCycle)
+        }
       }
     }
   },

@@ -82,6 +82,8 @@ interface ShardeumFlags {
   baselineTxFee: string
   lowStakePercent: number
   removeTokenBalanceCache: boolean
+  enableNodeSlashing: boolean
+  penaltyPercent: number
 }
 
 export const ShardeumFlags: ShardeumFlags = {
@@ -175,6 +177,10 @@ export const ShardeumFlags: ShardeumFlags = {
   baselineTxGasUsage: '36655',
   baselineTxFee: '10000000000000000', // $0.01 * 10 ^ 18
 
+  // 1.3.2 migration
+  enableNodeSlashing: false,
+  penaltyPercent: 0.2,
+  
   // 1.4.1 migration
   removeTokenBalanceCache: false,
 }

@@ -182,10 +182,18 @@ export enum ViolationType {
   //..others tbd
 }
 
+export interface LeftNetworkEarlyViolationData {
+  nodeLostCycle: number
+  nodeDroppedCycle: number
+  nodeDroppedTime: number
+}
+
 export interface PenaltyTX extends InternalTxBase {
-  reportedNode: string
+  reportedNodeId: string
+  reportedNodePublickKey: string
+  operatorEVMAddress: string
   violationType: ViolationType
-  violationData: object // will depend of violation type
+  violationData: LeftNetworkEarlyViolationData // will add more types later
   timestamp: number
   sign: ShardusTypes.Sign
 }
