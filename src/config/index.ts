@@ -126,6 +126,7 @@ config = merge(config, {
       uniqueRemovedIds: true, //1.3.1 migration. enabled by default in 1.4.0
       useLruCacheForSocketMgmt: true,
       lruCacheSizeForSocketMgmt: 500,
+      uniqueRemovedIdsUpdate: false, // To enable on 1.4.1
     },
   },
 })
