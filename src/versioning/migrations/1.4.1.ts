@@ -8,7 +8,7 @@ export const migrate: Migration = async () => {
   nestedCountersInstance.countEvent('migrate-1.4.1', 'calling migrate 1.4.1')
 
   ShardeumFlags.enableNodeSlashing = true
-
+  ShardeumFlags.removeTokenBalanceCache = true
   // To be unique ids in the apoped and removed nodes
   shardusConfig.p2p.uniqueRemovedIdsUpdate = true
 }
