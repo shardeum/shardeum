@@ -24,7 +24,7 @@
         custom-nodejs = buildNodeJs {
           enableNpm = true;
           version = "18.16.1";
-          sha256 = "0y32mdv8zs35la2bny8d9rxjvj1vr8z079ji1g6ajc2yw96pyn37";
+          sha256 = "0wp2xyz5yqcvb6949xaqpan73rfhdc3cdfsvx7vzvzc9in64yh78";
         };
 
         nativeBuildInputs = with pkgs; [
