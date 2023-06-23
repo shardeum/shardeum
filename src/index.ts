@@ -742,9 +742,7 @@ function getTransactionObj(tx): Transaction | AccessListEIP2930Transaction {
   } else throw Error('tx obj fail')
 }
 
-async function getReadableAccountInfo(
-  account
-): Promise<{
+async function getReadableAccountInfo(account): Promise<{
   nonce: string
   balance: string
   stateRoot: string
@@ -982,7 +980,7 @@ shardus.registerExternalGet('motd', async (req, res) => {
   // localCount++
 
   //unofficial version number, may not be maintained always.  used for debug
-  return res.json({ version: '1.3.0.0', date: '20230518', note: '', motd: `${motdCount}` })
+  return res.json({ version: '1.4.2.0', date: '20230623', note: '', motd: `${motdCount}` })
 })
 
 shardus.registerExternalGet('debug-points', debugMiddleware, async (req, res) => {
@@ -2259,7 +2257,7 @@ const getOrCreateBlockFromTimestamp = (timestamp: number, scheduleNextBlock = fa
     cycle.start +
     cycle.duration +
     (blockNumber - ShardeumFlags.initialBlockNumber - (cycle.counter + 1) * 10) *
-    ShardeumFlags.blockProductionRate
+      ShardeumFlags.blockProductionRate
   const newBlockTimestamp = newBlockTimestampInSecond * 1000
   if (ShardeumFlags.VerboseLogs) {
     console.log('Cycle counter vs derived blockNumber', cycle.counter, blockNumber)
@@ -2282,10 +2280,13 @@ async function generateAccessList(
 ): Promise<{ accessList: unknown[]; shardusMemoryPatterns: unknown }> {
   try {
     const transaction: Transaction | AccessListEIP2930Transaction = getTransactionObj(injectedTx)
-    const caShardusAddress = transaction.to ? toShardusAddress(transaction.to.toString(), AccountType.Account) : null
+    const caShardusAddress = transaction.to
+      ? toShardusAddress(transaction.to.toString(), AccountType.Account)
+      : null
 
     if (caShardusAddress != null) {
-      if (ShardeumFlags.VerboseLogs) console.log('Generating accessList to ', transaction.to.toString(), caShardusAddress)
+      if (ShardeumFlags.VerboseLogs)
+        console.log('Generating accessList to ', transaction.to.toString(), caShardusAddress)
 
       const address = caShardusAddress
       const accountIsRemote = shardus.isAccountRemote(address)
@@ -2341,8 +2342,15 @@ async function generateAccessList(
         fixDeserializedWrappedEVMAccount(callerAccount)
       }
     }
-    if (callerAccount == null) { console.log(`Unable to find caller account: ${callerShardusAddress} while generating accessList. Using a fake account to generate accessList`) }
-    preRunTxState._transactionState.insertFirstAccountReads(transaction.getSenderAddress(), callerAccount ? callerAccount.account : fakeAccount)
+    if (callerAccount == null) {
+      console.log(
+        `Unable to find caller account: ${callerShardusAddress} while generating accessList. Using a fake account to generate accessList`
+      )
+    }
+    preRunTxState._transactionState.insertFirstAccountReads(
+      transaction.getSenderAddress(),
+      callerAccount ? callerAccount.account : fakeAccount
+    )
 
     EVM.stateManager = null
     EVM.stateManager = preRunTxState
@@ -3681,13 +3689,15 @@ shardus.setup({
           appData.requestNewTimestamp = true
           appData.shardusMemoryPatterns = shardusMemoryPatterns
           if (appData.accessList && appData.accessList.length > 0) {
-            nestedCountersInstance.countEvent('shardeum', 'precrack' +
-              ' -' +
-              ' generateAccessList success: true')
+            nestedCountersInstance.countEvent(
+              'shardeum',
+              'precrack' + ' -' + ' generateAccessList success: true'
+            )
           } else {
-            nestedCountersInstance.countEvent('shardeum', 'precrack' +
-              ' -' +
-              ' generateAccessList success: false')
+            nestedCountersInstance.countEvent(
+              'shardeum',
+              'precrack' + ' -' + ' generateAccessList success: false'
+            )
           }
         }
       }
@@ -3710,7 +3720,8 @@ shardus.setup({
       }
       if (ShardeumFlags.VerboseLogs)
         console.log(
-          `txPreCrackData final result: txNonce: ${appData.txNonce}, currentNonce: ${appData.nonce
+          `txPreCrackData final result: txNonce: ${appData.txNonce}, currentNonce: ${
+            appData.nonce
           }, queueCount: ${appData.queueCount}, appData ${JSON.stringify(appData)}`
         )
     }
@@ -5393,14 +5404,15 @@ shardus.setup({
           const violationData = {
             nodeLostCycle,
             nodeDroppedCycle,
-            nodeDroppedTime: data.time
+            nodeDroppedTime: data.time,
           }
           nestedCountersInstance.countEvent('shardeum-staking', `node-left-early: injectClaimRewardTx`)
           const result = await PenaltyTx.injectPenaltyTX(shardus, data, violationData)
           console.log('INJECTED_PENALTY_TX', result)
         } else {
           nestedCountersInstance.countEvent('shardeum-staking', `node-left-early: event skipped`)
-          if (ShardeumFlags.VerboseLogs) console.log(`Shardeum node-left-early event skipped`, data, nodeLostCycle, nodeDroppedCycle)
+          if (ShardeumFlags.VerboseLogs)
+            console.log(`Shardeum node-left-early event skipped`, data, nodeLostCycle, nodeDroppedCycle)
         }
       }
     }
@@ -5444,7 +5456,7 @@ setTimeout(periodicMemoryCleanup, 60000)
 
 if (ShardeumFlags.GlobalNetworkAccount) {
   // CODE THAT GETS EXECUTED WHEN NODES START
-  ; (async (): Promise<void> => {
+  ;(async (): Promise<void> => {
     const serverConfig = config.server
     const cycleInterval = serverConfig.p2p.cycleDuration * ONE_SECOND
 
