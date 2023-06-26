@@ -178,9 +178,9 @@ export const ShardeumFlags: ShardeumFlags = {
   baselineTxFee: '10000000000000000', // $0.01 * 10 ^ 18
 
   // 1.4.1 migration
-  removeTokenBalanceCache: false,
-  enableNodeSlashing: false,
-  penaltyPercent: 0.2,
+  removeTokenBalanceCache: true,
+  enableNodeSlashing: true,
+  penaltyPercent: 0.2, //this is just a setting and does not need to be adjusted for migration
 }
 
 export function updateShardeumFlag(key: string, value: string | number | boolean): void {
