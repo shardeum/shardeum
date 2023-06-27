@@ -1566,11 +1566,15 @@ shardus.registerExternalGet('tx/:hash', async (req, res) => {
   if (!ShardeumFlags.EVMReceiptsAsAccounts) {
     try {
       const dataId = toShardusAddressWithKey(txHash, '', AccountType.Receipt)
-      let cachedAppData = await shardus.getLocalOrRemoteCachedAppData('receipt', dataId)
+      const cachedAppData  = await shardus.getLocalOrRemoteCachedAppData('receipt', dataId)
       if (ShardeumFlags.VerboseLogs) console.log(`cachedAppData for tx hash ${txHash}`, cachedAppData)
-      if (cachedAppData && cachedAppData.appData) cachedAppData = cachedAppData.appData
-      // @ts-ignore
-      return res.json({ account: cachedAppData?.data ? cachedAppData.data : cachedAppData })
+      if (cachedAppData && cachedAppData.appData) {
+        const receipt  = cachedAppData.appData as ShardusTypes.WrappedData
+        return res.json({ account: receipt.data })
+      } else {
+        console.log(`Unable to find tx receipt for ${txHash}`)
+      }
+      return res.json({ account: null})
     } catch (e) {
       console.log('Unable to get tx receipt', e)
       return res.json({ account: null })
@@ -3614,7 +3618,7 @@ shardus.setup({
           } else {
             appData.queueCount = queueCountResult.count
             appData.nonce = parseInt(nonce.toString())
-            if (queueCountResult.committingAppData.length > 0) {
+            if (queueCountResult.committingAppData?.length > 0) {
               const highestCommittingNonce = queueCountResult.committingAppData
                 .map((appData) => appData.txNonce)
                 .sort()[0]
