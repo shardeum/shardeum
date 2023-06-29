@@ -29,7 +29,7 @@ export function scaleByStabilityFactor(input: BN, networkAccount: NetworkAccount
 
 export function sleep(ms: number): Promise<void> {
   return new Promise((resolve) => {
-    setTimeout(resolve, ms)
+    setTimeout(() => resolve(null), ms)
   })
 }
 
