@@ -21,7 +21,7 @@ function isDebugMode(): boolean {
 
 const oneEth = new BN(10).pow(new BN(18))
 
-export const networkAccount = '0'.repeat(64)
+export const networkAccount = config.server.globalAccount
 
 //In debug mode the default value is 100 SHM.  This is needed for certain load test operations
 const defaultBalance = isDebugMode() ? oneEth.mul(new BN(100)) : new BN(0)

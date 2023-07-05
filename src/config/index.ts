@@ -8,11 +8,17 @@ const overwriteMerge = (target: any[], source: any[]): any[] => source // eslint
 let config: {
   storage?: any // eslint-disable-line @typescript-eslint/no-explicit-any
   server: {
+    globalAccount: string
     p2p?: { cycleDuration: number }
     baseDir: string
     mode?: 'debug' | 'release'
   }
-} = { server: { baseDir: './' } }
+} = {
+  server: {
+    globalAccount: '1' + '0'.repeat(63),
+    baseDir: './',
+  },
+}
 
 if (fs.existsSync(path.join(process.cwd(), 'config.json'))) {
   const fileConfig = JSON.parse(fs.readFileSync(path.join(process.cwd(), 'config.json')).toString())

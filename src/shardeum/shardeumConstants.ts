@@ -1,6 +1,7 @@
+import config from '../config'
 import { BN } from 'ethereumjs-util'
 
-export const networkAccount = '0'.repeat(64) //address
+export const networkAccount = config.server.globalAccount
 
 // HELPFUL TIME CONSTANTS IN MILLISECONDS
 export const ONE_SECOND = 1000
