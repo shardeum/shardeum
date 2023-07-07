@@ -15,7 +15,7 @@ let config: {
   }
 } = {
   server: {
-    globalAccount: '1' + '0'.repeat(63),
+    globalAccount: '0'.repeat(64), //dev-relaunch required to change this: '1' + '0'.repeat(63),
     baseDir: './',
   },
 }
