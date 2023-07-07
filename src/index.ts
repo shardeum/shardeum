@@ -1101,6 +1101,27 @@ shardus.registerExternalGet('eth_blockNumber', async (req, res) => {
   return res.json({ blockNumber: latestBlock ? '0x' + latestBlock.toString(16) : '0x0' })
 })
 
+shardus.registerExternalGet('eth_getBlockHashes', async (req, res) => {
+  let fromBlock: any = req.query.fromBlock
+  let toBlock: any = req.query.toBlock
+
+  if (fromBlock == null) return res.json({ error: 'Missing fromBlock' })
+  if (typeof fromBlock === 'string') fromBlock = parseInt(fromBlock)
+  if (fromBlock < latestBlock - ShardeumFlags.maxNumberOfOldBlocks) { // return max 100 blocks
+    fromBlock = latestBlock - ShardeumFlags.maxNumberOfOldBlocks + 1 // 1 is added for safety
+  }
+  if (toBlock == null) toBlock = latestBlock
+  if (typeof toBlock === 'string') fromBlock = parseInt(toBlock)
+  if (toBlock > latestBlock) toBlock = latestBlock
+
+  const blockHashes = []
+  for (let i = fromBlock; i <= toBlock; i++) {
+    const block = readableBlocks[i]
+    if (block) blockHashes.push(block.hash)
+  }
+  return res.json({ blockHashes, fromBlock, toBlock })
+})
+
 shardus.registerExternalGet('eth_getBlockByNumber', async (req, res) => {
   let blockNumber: number | string
   if (typeof req.query.blockNumber === 'string' || typeof req.query.blockNumber === 'number') {
