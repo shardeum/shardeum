@@ -4598,10 +4598,10 @@ shardus.setup({
       accountCreated
     )
   },
-  updateAccountPartial(wrappedData, localCache, applyResponse) {
+  async updateAccountPartial(wrappedData, localCache, applyResponse) {
     //I think we may need to utilize this so that shardus is not oblicated to make temporary copies of large CAs
     //
-    this.updateAccountFull(wrappedData, localCache, applyResponse)
+    await this.updateAccountFull(wrappedData, localCache, applyResponse)
   },
   async getAccountDataByRange(
     accountStart,
@@ -4904,9 +4904,9 @@ shardus.setup({
       console.log(`getSimpleTxDebugValue failed: ${JSON.stringify(e)}  tx:${JSON.stringify(tx)}`)
     }
   },
-  close() {
+  close: async (): Promise<void> => {
     if (ShardeumFlags.VerboseLogs) console.log('Shutting down...')
-  },
+},
   getTimestampAndHashFromAccount(account) {
     if (account != null && account.hash) {
       const wrappedEVMAccount = account as WrappedEVMAccount
