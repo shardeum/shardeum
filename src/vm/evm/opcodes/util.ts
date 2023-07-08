@@ -68,8 +68,11 @@ export function divCeil(a: BN, b: BN): BN {
   // Fast case - exact division
   if (mod.isZero()) return div
 
-  // Round up
-  return div.isNeg() ? div.isubn(1) : div.iaddn(1)
+  // determine sign for rounding
+  const shouldRoundDown = a.isNeg() !== b.isNeg() && !mod.isZero()
+
+  // Round up if positive, round down if negative
+  return shouldRoundDown ? div.isubn(1) : div.iaddn(1)
 }
 
 export function short(buffer: Buffer): string {
