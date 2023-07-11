@@ -1,4 +1,4 @@
-image: 'registry.gitlab.com/shardus/dev-container:latest18'
+image: 'registry.gitlab.com/shardus/dev-container:latest_node18'
 
 before_script:
   - node -v
