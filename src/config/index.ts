@@ -9,7 +9,14 @@ let config: {
   storage?: any // eslint-disable-line @typescript-eslint/no-explicit-any
   server: {
     globalAccount: string
-    p2p?: { cycleDuration: number }
+    p2p?: {
+      cycleDuration: number
+      existingArchivers: Array<{
+        ip: string
+        port: number
+        publicKey: string
+      }>
+     }
     baseDir: string
     mode?: 'debug' | 'release'
   }
