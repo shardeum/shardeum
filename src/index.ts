@@ -3442,9 +3442,9 @@ shardus.setup({
       if (runState == null) {
         if (ShardeumFlags.VerboseLogs) console.log(`No runState found in the receipt for ${txId}`)
       } else {
-        logs = runState.logs.map((l: [Buffer, Buffer[], Buffer]) => {
+        logs = runState.logs.map((l: [Buffer, Buffer[], Buffer], index) => {
           return {
-            logIndex: '0x1',
+            logIndex: ShardeumFlags.receiptLogIndexFix ? '0x' + index.toString(16) : '0x1',
             blockNumber: readableBlocks[blockForTx.header.number.toNumber()].number,
             blockHash: readableBlocks[blockForTx.header.number.toNumber()].hash,
             transactionHash: ethTxId,

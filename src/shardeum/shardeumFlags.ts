@@ -84,6 +84,7 @@ interface ShardeumFlags {
   removeTokenBalanceCache: boolean
   enableNodeSlashing: boolean
   penaltyPercent: number
+  receiptLogIndexFix: boolean
 }
 
 export const ShardeumFlags: ShardeumFlags = {
@@ -181,6 +182,9 @@ export const ShardeumFlags: ShardeumFlags = {
   removeTokenBalanceCache: true,
   enableNodeSlashing: true,
   penaltyPercent: 0.2, //this is just a setting and does not need to be adjusted for migration
+
+  // 1.5.2 migration
+  receiptLogIndexFix: false
 }
 
 export function updateShardeumFlag(key: string, value: string | number | boolean): void {
