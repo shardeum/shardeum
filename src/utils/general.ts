@@ -3,7 +3,7 @@ import { NetworkAccount } from '../shardeum/shardeumTypes'
 
 /**
  * After a Buffer goes through json stringify/parse it comes out broken
- *   maybe fix this in shardus-global-server.  for now use this safe function
+ *   maybe fix this in shardus-global-server. for now use this safe function
  * @param buffer
  * @returns
  */
@@ -20,7 +20,7 @@ export function scaleByStabilityFactor(input: BN, networkAccount: NetworkAccount
   return input.mul(stabilityScaleMult).div(stabilityScaleDiv)
 }
 
-export function sleep(ms): Promise<NodeJS.Timeout> {
+export function sleep(ms: number): Promise<void> {
   return new Promise((resolve) => {
     setTimeout(resolve, ms)
   })
