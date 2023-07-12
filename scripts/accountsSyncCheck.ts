@@ -5,13 +5,13 @@ let db: any
 
 const instancesDirPath = 'instances'
 const numberOfNodes = 8
-const saveAccountsDataAsFile = false
+const saveAccountsDataAsFile = true
 
 let consensorAccounts: any = []
 let archiverAccounts: any = []
 
-const consensorAccountsFileName = 'instances/consensorAccounts'
-const archiverAccountsFileName = 'instances/archiverAccounts'
+const consensorAccountsFileName = 'instances/consensorAccounts.json'
+const archiverAccountsFileName = 'instances/archiverAccounts.json'
 
 export async function initShardeumDB(node) {
   const dbName = `${instancesDirPath}/shardus-instance-${node}/db/shardeum.sqlite`
@@ -30,7 +30,7 @@ export async function runCreate(createStatement) {
 
 export async function run(sql, params = [] || {}) {
   return new Promise((resolve, reject) => {
-    db.run(sql, params, function(err) {
+    db.run(sql, params, function (err) {
       if (err) {
         console.log('Error running sql ' + sql)
         console.log(err)
@@ -90,6 +90,13 @@ export const getAccountsDataFromConsensors = async () => {
     const accounts = await queryAccountsFromConsensor()
     console.log('Node', node, accounts.length)
     for (const account of accounts) {
+      for (const acc of consensorAccounts) {
+        if (acc.accountId === account.accountId) {
+          if (acc.timestamp < account.timestamp) {
+            consensorAccounts.splice(consensorAccounts.indexOf(acc), 1)
+          }
+        }
+      }
       if (!consensorAccounts.find((acc: any) => acc.accountId === account.accountId))
         consensorAccounts.push(account)
     }
@@ -144,7 +151,7 @@ export async function queryAccountsFromArchiver(skip = 0, limit = 10000) {
 }
 
 export const getAccountsDataFromArchiver = async () => {
-  const dbName = `${instancesDirPath}/archiver-db/archiverdb-4000.sqlite3`
+  const dbName = `${instancesDirPath}/archiver-db-4000/archiverdb-4000.sqlite3`
   db = new sqlite3.Database(dbName)
   await run('PRAGMA journal_mode=WAL')
   console.log('Database initialized.')
@@ -173,6 +180,8 @@ const checkAccountsDataSync = async () => {
     for (let account2 of archiverAccounts) {
       if (account1.accountId === account2.accountId) {
         found = true
+        if (account1.timestamp !== account2.timestamp)
+          console.log('Found but timestamp mismatch', account1.accountId)
       }
     }
     if (!found) {
@@ -185,6 +194,8 @@ const checkAccountsDataSync = async () => {
     for (let account2 of consensorAccounts) {
       if (account1.accountId === account2.accountId) {
         found = true
+        if (account1.timestamp !== account2.timestamp)
+          console.log('Found but timestamp mismatch', account1.accountId)
       }
     }
     if (!found) {
