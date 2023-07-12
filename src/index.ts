@@ -922,7 +922,7 @@ function logAccessList(message: string, appData): void {
  *    ##       ##   ### ##     ## ##        ##     ##  ##  ##   ###    ##    ##    ##
  *    ######## ##    ## ########  ##         #######  #### ##    ##    ##     ######
  */
-const configShardusEndpoints = () => {
+const configShardusEndpoints = (): void => {
   const debugMiddleware = shardus.getDebugModeMiddleware()
 
   //TODO request needs a signature and a timestamp.  or make it a real TX from a faucet account..
@@ -2583,7 +2583,7 @@ function getNodeCountForCertSignatures(): number {
  *    ##    ## ##     ## ##     ## ##    ##  ##     ## ##     ## ##    ##    ##    ## ##          ##    ##     ## ##
  *     ######  ##     ## ##     ## ##     ## ########   #######   ######      ######  ########    ##     #######  ##
  */
-const shardusSetup = () => {
+const shardusSetup = (): void => {
   /**
    * interface tx {
    *   type: string
@@ -5543,7 +5543,7 @@ export let shardusConfig
 /**
  * Shardus start
  */
-;(async () => {
+;(async (): Promise<void> => {
   setTimeout(periodicMemoryCleanup, 60000)
 
   await setupArchiverDiscovery({
