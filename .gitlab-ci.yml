@@ -13,7 +13,7 @@ build-job:
   stage: build
   script:
     - echo "Compiling the code..."
-    - npm install
+    - npm install --silent
     - npm run compile
     - echo "Compile complete."
 
