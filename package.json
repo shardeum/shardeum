@@ -33,8 +33,8 @@
   "author": "",
   "dependencies": {
     "@ethereumjs/vm": "^5.6.0",
-    "@shardus/core": "2.9.24",
-    "@shardus/crypto-utils": "4.0.4",
+    "@shardus/core": "2.10.0",
+    "@shardus/crypto-utils": "4.1.1",
     "@types/sqlite3": "^3.1.8",
     "cliffy": "^2.5.1",
     "deepmerge": "^4.2.2",
