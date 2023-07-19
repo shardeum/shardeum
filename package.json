@@ -3,9 +3,6 @@
   "version": "1.5.2",
   "description": "",
   "main": "dist/src/index.js",
-  "engines": {
-    "node": "18.16.1"
-  },
   "scripts": {
     "pm2": "cross-env PM2_HOME='./.pm2' pm2",
     "start": "node scripts/start.js && node dist/src/index.js",
