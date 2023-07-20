@@ -14,6 +14,13 @@ export function safeBufferToHex(buffer): string {
   return bufferToHex(buffer)
 }
 
+export function calculateGasPrice(baselineTxFee: string, baselineTxGasUsage: string, networkAccount: NetworkAccount): BN {
+  const txFee = new BN(baselineTxFee)
+  const gas = new BN(baselineTxGasUsage)
+  const gasPrice = txFee.div(gas)
+  return scaleByStabilityFactor(gasPrice, networkAccount)
+}
+
 export function scaleByStabilityFactor(input: BN, networkAccount: NetworkAccount): BN {
   const stabilityScaleMult = new BN(networkAccount.current.stabilityScaleMul)
   const stabilityScaleDiv = new BN(networkAccount.current.stabilityScaleDiv)

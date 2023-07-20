@@ -26,7 +26,7 @@ import type {
 } from '@ethereumjs/vm/src/types'
 import { ShardeumFlags } from '../shardeum/shardeumFlags'
 import { NetworkAccount } from '../shardeum/shardeumTypes'
-import { scaleByStabilityFactor } from '../utils'
+import { calculateGasPrice, scaleByStabilityFactor } from '../utils'
 import { Log } from './evm/types'
 
 const debug = createDebugLogger('vm:tx')
@@ -210,14 +210,6 @@ export async function generateTxReceipt(
   return receipt
 }
 
-function calculateGasPrice(networkAccount: NetworkAccount): BN {
-  const txFee = new BN(baselineTxFee)
-  const gas = new BN(baselineTxGasUsage)
-  const gasPrice = txFee.div(gas)
-  const scaledGasPrice = scaleByStabilityFactor(gasPrice, networkAccount)
-  return scaledGasPrice
-}
-
 async function _runTx(this: VM, opts: RunTxOpts): Promise<RunTxResult> {
   // Have to cast as `EIP2929StateManager` to access the EIP2929 methods
   const state = this.stateManager as EIP2929StateManager
@@ -330,7 +322,7 @@ async function _runTx(this: VM, opts: RunTxOpts): Promise<RunTxResult> {
     }
   }
 
-  let gasPrice = calculateGasPrice(opts.networkAccount)
+  let gasPrice = calculateGasPrice(baselineTxFee, baselineTxGasUsage, opts.networkAccount)
   let inclusionFeePerGas
   // EIP-1559 tx
   if (tx.supports(Capability.EIP1559FeeMarket)) {

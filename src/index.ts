@@ -75,6 +75,7 @@ import {
   operatorGUIVersion,
   readOperatorVersions,
   formatErrorMessage,
+  calculateGasPrice,
 } from './utils'
 import config from './config'
 import { RunTxResult } from '@ethereumjs/vm/dist/runTx'
@@ -1327,6 +1328,20 @@ shardus.registerExternalGet('eth_getCode', async (req, res) => {
     const contractCodeBuffer: Buffer = await EVM.stateManager.getContractCode(contractAddress)
     const contractCode = bufferToHex(contractCodeBuffer)
     return res.json({ contractCode })
+  } catch (error) {
+    console.log(error)
+    res.json({ error })
+  }
+})
+
+shardus.registerExternalGet('eth_gasPrice', async (req, res) => {
+  if (trySpendServicePoints(ShardeumFlags.ServicePoints['eth_gasPrice'], req, 'account') === false) {
+    return res.json({ error: 'node busy' })
+  }
+
+  try {
+    const result = calculateGasPrice(ShardeumFlags.baselineTxFee, ShardeumFlags.baselineTxGasUsage, AccountsStorage.cachedNetworkAccount)
+    return res.json({ result: `0x${result.toString(16)}` })
   } catch (error) {
     console.log(error)
     res.json({ error })
