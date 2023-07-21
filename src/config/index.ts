@@ -213,6 +213,7 @@ config = merge(
         countEndpointStart: -1,
         hashedDevAuth: '',
         devPublicKey: 'fe73383a971bd52be51c660cc9758c13763a7d804ee2062b6f7426698148240c', //'fe73383a971bd52be51c660cc9758c13763a7d804ee2062b6f7426698148240c',
+        checkAddressFormat: false,
       },
     },
   },
