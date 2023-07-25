@@ -86,6 +86,7 @@ interface ShardeumFlags {
   enableNodeSlashing: boolean
   penaltyPercent: number
   receiptLogIndexFix: boolean
+  blockedAtVerbose: boolean
 }
 
 export const ShardeumFlags: ShardeumFlags = {
@@ -151,6 +152,7 @@ export const ShardeumFlags: ShardeumFlags = {
   logServicePointSenders: false,
   labTest: false,
   lowStakePercent: 0.2,
+  blockedAtVerbose: false,
 
   // 1.1.3 migration
   fixExtraStakeLessThanMin: true,
@@ -186,7 +188,7 @@ export const ShardeumFlags: ShardeumFlags = {
   penaltyPercent: 0.2, //this is just a setting and does not need to be adjusted for migration
 
   // 1.5.2 migration
-  receiptLogIndexFix: false
+  receiptLogIndexFix: false,
 }
 
 export function updateShardeumFlag(key: string, value: string | number | boolean): void {

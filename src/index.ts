@@ -113,7 +113,7 @@ import { oneSHM, networkAccount, ONE_SECOND } from './shardeum/shardeumConstants
 import { applyPenaltyTX } from './tx/penalty/transaction'
 import { getFinalArchiverList, setupArchiverDiscovery } from '@shardus/archiver-discovery'
 import blockedAt from 'blocked-at'
-import { v4 as uuidv4 } from 'uuid'
+//import { v4 as uuidv4 } from 'uuid'
 import { debug as createDebugLogger } from 'debug'
 
 let latestBlock = 0
@@ -155,6 +155,8 @@ let lastCertTimeTxTimestamp = 0
 let lastCertTimeTxCycle: number | null = null
 
 export let stakeCert: StakeCert = null
+
+let uuidCounter = 1
 
 function isDebugMode(): boolean {
   return config.server.mode === 'debug'
@@ -1321,25 +1323,31 @@ const configShardusEndpoints = (): void => {
         return res.json({ contractCode: '0x' })
       }
 
-    const codeHashHex = Buffer.from((account.data as WrappedEVMAccount).account.codeHash).toString('hex')
-    const codeAddress = toShardusAddressWithKey(address, codeHashHex, AccountType.ContractCode)
-    const codeAccount = await shardus.getLocalOrRemoteAccount(codeAddress)
-    const contractCode = codeAccount ? `0x${Buffer.from((codeAccount.data as WrappedEVMAccount).codeByte).toString('hex')}` : '0x'
+      const codeHashHex = Buffer.from((account.data as WrappedEVMAccount).account.codeHash).toString('hex')
+      const codeAddress = toShardusAddressWithKey(address, codeHashHex, AccountType.ContractCode)
+      const codeAccount = await shardus.getLocalOrRemoteAccount(codeAddress)
+      const contractCode = codeAccount
+        ? `0x${Buffer.from((codeAccount.data as WrappedEVMAccount).codeByte).toString('hex')}`
+        : '0x'
       return res.json({ contractCode })
-  } catch (error) {
-    console.log(error)
-    res.json({ error })
-  }
-})
+    } catch (error) {
+      console.log(error)
+      res.json({ error })
+    }
+  })
 
-shardus.registerExternalGet('eth_gasPrice', async (req, res) => {
-  if (trySpendServicePoints(ShardeumFlags.ServicePoints['eth_gasPrice'], req, 'account') === false) {
-    return res.json({ error: 'node busy' })
-  }
+  shardus.registerExternalGet('eth_gasPrice', async (req, res) => {
+    if (trySpendServicePoints(ShardeumFlags.ServicePoints['eth_gasPrice'], req, 'account') === false) {
+      return res.json({ error: 'node busy' })
+    }
 
-  try {
-    const result = calculateGasPrice(ShardeumFlags.baselineTxFee, ShardeumFlags.baselineTxGasUsage, AccountsStorage.cachedNetworkAccount)
-    return res.json({ result: `0x${result.toString(16)}` })
+    try {
+      const result = calculateGasPrice(
+        ShardeumFlags.baselineTxFee,
+        ShardeumFlags.baselineTxGasUsage,
+        AccountsStorage.cachedNetworkAccount
+      )
+      return res.json({ result: `0x${result.toString(16)}` })
     } catch (error) {
       console.log(error)
       res.json({ error })
@@ -1796,21 +1804,21 @@ shardus.registerExternalGet('eth_gasPrice', async (req, res) => {
     return res.json({ isReady: isReadyToJoinLatestValue, nodePubKey: publicKey })
   })
 
-// Changes the threshold for the blocked-At function
-shardus.registerExternalGet('debug-set-event-block-threshold', debugMiddleware, async (req, res) => {
-  try {
-    let threshold = Number(req.query.threshold);
+  // Changes the threshold for the blocked-At function
+  shardus.registerExternalGet('debug-set-event-block-threshold', debugMiddleware, async (req, res) => {
+    try {
+      const threshold = Number(req.query.threshold)
 
-    if (isNaN(threshold) || threshold <= 0) {
-      return res.json({ error: `Invalid threshold: ${req.query.threshold}` });
+      if (isNaN(threshold) || threshold <= 0) {
+        return res.json({ error: `Invalid threshold: ${req.query.threshold}` })
+      }
+
+      startBlockedCheck(threshold)
+      return res.json({ success: `Threshold set to ${threshold}ms` })
+    } catch (err) {
+      return res.json({ error: `Error setting threshold: ${err.toString()}` })
     }
-
-    startBlockedCheck(threshold);
-    return res.json({ success: `Threshold set to ${threshold}ms` });
-  } catch (err) {
-    return res.json({ error: `Error setting threshold: ${err.toString()}` });
-  }
-});
+  })
 }
 
 /***
@@ -2593,54 +2601,64 @@ function getNodeCountForCertSignatures(): number {
   return Math.min(ShardeumFlags.MinStakeCertSig, activeNodeCount)
 }
 
-let blockedAtEventHook = null;
+let blockedAtEventHook = null
 
 function startBlockedCheck(threshold: number): void {
   // Stop any existing blocked-at check
   if (blockedAtEventHook) {
     try {
-      blockedAtEventHook.stop();
+      blockedAtEventHook.stop()
     } catch (error) {
       console.error('Error stopping blocked check:', error)
     }
   }
-
+  let resourcesCap = 100 // reccomended by blocked-at
+  if (ShardeumFlags.blockedAtVerbose) {
+    resourcesCap = 1000 // allow more if doing a verbose inspection
+  }
   // Start a new blocked-at check with the given threshold
   blockedAtEventHook = blockedAt(
     (time, stack, { type, resource }) => {
-      const uuid = uuidv4();
-      
-      // Log the event loop block details
-      /* prettier-ignore */ console.log(`[event_loop:blocked] request id: ${uuid} timestamp: ${Date.now()} blocked for: ${time}ms by resource type: ${type} resource:${resource}`);
+      //take the time variable which is in ms and make round to the nearest 100ms. This is to reduce the number of events
+      const timeBucket = Math.round(time / 100) * 100
 
-      // Extracting info from the stack
-      const appCodeLine = stack.find(line => line.includes('\\server\\src\\'));
-      if (appCodeLine) {
-        const match = appCodeLine.match(/at\s+(.*)\s\((.*):(\d+):(\d+)\)/);
-  
-        if (match) {
-          const functionName = match[1];
-          const filePath = match[2];
-          const line = match[3];
-          const column = match[4];
-  
-          /* prettier-ignore */ console.log(`[event_loop:blocked] request id: ${uuid} Function: ${functionName}, File: ${filePath}, Line: ${line}, Column: ${column}`);
+      nestedCountersInstance.countEvent('blocked-at', `100ms bucket: ${timeBucket}`)
 
-          nestedCountersInstance.countEvent('blocked-at detected at', `[event_loop:blocked] request id: ${uuid} Function: ${functionName}, File: ${filePath}, Line: ${line}, Column: ${column}`)
+      const uuid = uuidCounter++ //uuidv4()
+      if (ShardeumFlags.blockedAtVerbose) {
+        // Log the event loop block details
+        /* prettier-ignore */ console.log(`[event_loop:blocked] request id: ${uuid} timestamp: ${Date.now()} blocked for: ${time}ms by resource type: ${type} resource:${resource}`);
 
+        // Extracting info from the stack
+        const appCodeLine = stack.find((line) => line.includes('\\server\\src\\'))
+        if (appCodeLine) {
+          const match = appCodeLine.match(/at\s+(.*)\s\((.*):(\d+):(\d+)\)/)
+
+          if (match) {
+            const functionName = match[1]
+            const filePath = match[2]
+            const line = match[3]
+            const column = match[4]
+
+            /* prettier-ignore */ console.log(`[event_loop:blocked] request id: ${uuid} Function: ${functionName}, File: ${filePath}, Line: ${line}, Column: ${column}`);
+
+            nestedCountersInstance.countEvent(
+              'blocked-at detected at',
+              `[event_loop:blocked] request id: ${uuid} Function: ${functionName}, File: ${filePath}, Line: ${line}, Column: ${column}`
+            )
+          }
         }
+
+        // Log the complete stack trace
+        /* prettier-ignore */ console.log(`[event_loop:blocked] request id: ${uuid} Complete Stack: ${JSON.stringify(stack)}`);
       }
-  
-      // Log the complete stack trace
-      /* prettier-ignore */ console.log(`[event_loop:blocked] request id: ${uuid} Complete Stack: ${JSON.stringify(stack)}`);
-      
     },
-    { threshold: threshold, debug: false }
-  );  
+    { threshold: threshold, debug: false, resourcesCap }
+  )
 }
 
 // Start with a default threshold of 1000ms
-startBlockedCheck(1000);
+startBlockedCheck(1000)
 
 /***
  *     ######  ##     ##    ###    ########  ########  ##     ##  ######      ######  ######## ######## ##     ## ########
@@ -3527,28 +3545,28 @@ const shardusSetup = (): void => {
         }
       }
 
-    const txSenderEvmAddr = transaction.getSenderAddress().toString()
-    //TODO also create an account for the receipt (nested in the returned runTxResult should be a receipt with a list of logs)
-    // We are ready to loop over the receipts and add them
-    if (runTxResult) {
-      const runState: RunStateWithLogs = runTxResult.execResult.runState
-      let logs = []
-      if (runState == null) {
-        if (ShardeumFlags.VerboseLogs) console.log(`No runState found in the receipt for ${txId}`)
-      } else {
-        logs = runState.logs.map((l: [Buffer, Buffer[], Buffer], index) => {
-          return {
-            logIndex: ShardeumFlags.receiptLogIndexFix ? '0x' + index.toString(16) : '0x1',
-            blockNumber: readableBlocks[blockForTx.header.number.toNumber()].number,
-            blockHash: readableBlocks[blockForTx.header.number.toNumber()].hash,
-            transactionHash: ethTxId,
-            transactionIndex: '0x1',
-            address: bufferToHex(l[0]),
-            topics: l[1].map((i) => bufferToHex(i)),
-            data: bufferToHex(l[2]),
-          }
-        })
-      }
+      const txSenderEvmAddr = transaction.getSenderAddress().toString()
+      //TODO also create an account for the receipt (nested in the returned runTxResult should be a receipt with a list of logs)
+      // We are ready to loop over the receipts and add them
+      if (runTxResult) {
+        const runState: RunStateWithLogs = runTxResult.execResult.runState
+        let logs = []
+        if (runState == null) {
+          if (ShardeumFlags.VerboseLogs) console.log(`No runState found in the receipt for ${txId}`)
+        } else {
+          logs = runState.logs.map((l: [Buffer, Buffer[], Buffer], index) => {
+            return {
+              logIndex: ShardeumFlags.receiptLogIndexFix ? '0x' + index.toString(16) : '0x1',
+              blockNumber: readableBlocks[blockForTx.header.number.toNumber()].number,
+              blockHash: readableBlocks[blockForTx.header.number.toNumber()].hash,
+              transactionHash: ethTxId,
+              transactionIndex: '0x1',
+              address: bufferToHex(l[0]),
+              topics: l[1].map((i) => bufferToHex(i)),
+              data: bufferToHex(l[2]),
+            }
+          })
+        }
 
         const readableReceipt: ReadableReceipt = {
           status: runTxResult.receipt['status'],
@@ -5584,13 +5602,13 @@ const shardusSetup = (): void => {
         /* eslint-enable security/detect-object-injection */
       }
     },
-  beforeStateAccountFilter(account: WrappedAccount) {
-    if (account.data.accountType === 1) {
-      return (account.data as WrappedEVMAccount).value?.length === 0 ? false : true
-    } else {
-      return false
-    }
-  },
+    beforeStateAccountFilter(account: WrappedAccount) {
+      if (account.data.accountType === 1) {
+        return (account.data as WrappedEVMAccount).value?.length === 0 ? false : true
+      } else {
+        return false
+      }
+    },
   })
 
   shardus.registerExceptionHandler()
@@ -5611,9 +5629,9 @@ function periodicMemoryCleanup(): void {
 
 export let shardusConfig
 
-/**
- * Shardus start
- */
+  /**
+   * Shardus start
+   */
 ;(async (): Promise<void> => {
   setTimeout(periodicMemoryCleanup, 60000)
 
