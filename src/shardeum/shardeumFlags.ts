@@ -4,6 +4,7 @@ interface ShardeumFlags {
   contractStorageKeySilo: boolean
   globalCodeBytes: boolean
   VerboseLogs: boolean
+  debugTraceLogs: boolean
   Virtual0Address: boolean
   GlobalNetworkAccount: boolean
   FirstNodeRewardCycle: number
@@ -91,6 +92,7 @@ export const ShardeumFlags: ShardeumFlags = {
   contractStorageKeySilo: true,
   globalCodeBytes: false,
   VerboseLogs: false,
+  debugTraceLogs: false,
   Virtual0Address: true,
   GlobalNetworkAccount: true,
   FirstNodeRewardCycle: 100,

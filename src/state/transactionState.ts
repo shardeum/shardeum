@@ -186,7 +186,7 @@ export default class TransactionState {
       this.firstContractStorageReads = firstContractStorageReads
     }
 
-    this.debugTrace = false
+    this.debugTrace = ShardeumFlags.debugTraceLogs
 
     this.checkpointCount = 0
   }
@@ -1010,7 +1010,7 @@ export default class TransactionState {
   //}
 
   debugTraceLog(message: string): void {
-    if (ShardeumFlags.VerboseLogs) console.log(`DBG:${this.linkedTX} msg:${message}`)
+    if (ShardeumFlags.VerboseLogs) console.log(`DBG-Trace: ${this.linkedTX} msg:${message}`)
   }
 
   checkpoint(): void {
