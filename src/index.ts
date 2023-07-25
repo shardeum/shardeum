@@ -1324,9 +1324,10 @@ shardus.registerExternalGet('eth_getCode', async (req, res) => {
       return res.json({ contractCode: '0x' })
     }
 
-    const contractAddress = Address.fromString(address)
-    const contractCodeBuffer: Buffer = await EVM.stateManager.getContractCode(contractAddress)
-    const contractCode = bufferToHex(contractCodeBuffer)
+    const codeHashHex = Buffer.from((account.data as WrappedEVMAccount).account.codeHash).toString('hex')
+    const codeAddress = toShardusAddressWithKey(address, codeHashHex, AccountType.ContractCode)
+    const codeAccount = await shardus.getLocalOrRemoteAccount(codeAddress)
+    const contractCode = codeAccount ? `0x${Buffer.from((codeAccount.data as WrappedEVMAccount).codeByte).toString('hex')}` : '0x'
     return res.json({ contractCode })
   } catch (error) {
     console.log(error)
