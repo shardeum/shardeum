@@ -112,6 +112,9 @@ import { initialNetworkParamters } from './shardeum/initialNetworkParameters'
 import { oneSHM, networkAccount, ONE_SECOND } from './shardeum/shardeumConstants'
 import { applyPenaltyTX } from './tx/penalty/transaction'
 import { getFinalArchiverList, setupArchiverDiscovery } from '@shardus/archiver-discovery'
+import blockedAt from 'blocked-at'
+import { v4 as uuidv4 } from 'uuid'
+import { debug as createDebugLogger } from 'debug'
 
 let latestBlock = 0
 export const blocks: BlockMap = {}
@@ -1792,6 +1795,22 @@ shardus.registerExternalGet('eth_gasPrice', async (req, res) => {
 
     return res.json({ isReady: isReadyToJoinLatestValue, nodePubKey: publicKey })
   })
+
+// Changes the threshold for the blocked-At function
+shardus.registerExternalGet('debug-set-event-block-threshold', debugMiddleware, async (req, res) => {
+  try {
+    let threshold = Number(req.query.threshold);
+
+    if (isNaN(threshold) || threshold <= 0) {
+      return res.json({ error: `Invalid threshold: ${req.query.threshold}` });
+    }
+
+    startBlockedCheck(threshold);
+    return res.json({ success: `Threshold set to ${threshold}ms` });
+  } catch (err) {
+    return res.json({ error: `Error setting threshold: ${err.toString()}` });
+  }
+});
 }
 
 /***
@@ -2573,6 +2592,55 @@ function getNodeCountForCertSignatures(): number {
   if (ShardeumFlags.VerboseLogs) console.log(`Active node count computed for cert signs ${activeNodeCount}`)
   return Math.min(ShardeumFlags.MinStakeCertSig, activeNodeCount)
 }
+
+let blockedAtEventHook = null;
+
+function startBlockedCheck(threshold: number): void {
+  // Stop any existing blocked-at check
+  if (blockedAtEventHook) {
+    try {
+      blockedAtEventHook.stop();
+    } catch (error) {
+      console.error('Error stopping blocked check:', error)
+    }
+  }
+
+  // Start a new blocked-at check with the given threshold
+  blockedAtEventHook = blockedAt(
+    (time, stack, { type, resource }) => {
+      const uuid = uuidv4();
+      
+      // Log the event loop block details
+      /* prettier-ignore */ console.log(`[event_loop:blocked] request id: ${uuid} timestamp: ${Date.now()} blocked for: ${time}ms by resource type: ${type} resource:${resource}`);
+
+      // Extracting info from the stack
+      const appCodeLine = stack.find(line => line.includes('\\server\\src\\'));
+      if (appCodeLine) {
+        const match = appCodeLine.match(/at\s+(.*)\s\((.*):(\d+):(\d+)\)/);
+  
+        if (match) {
+          const functionName = match[1];
+          const filePath = match[2];
+          const line = match[3];
+          const column = match[4];
+  
+          /* prettier-ignore */ console.log(`[event_loop:blocked] request id: ${uuid} Function: ${functionName}, File: ${filePath}, Line: ${line}, Column: ${column}`);
+
+          nestedCountersInstance.countEvent('blocked-at detected at', `[event_loop:blocked] request id: ${uuid} Function: ${functionName}, File: ${filePath}, Line: ${line}, Column: ${column}`)
+
+        }
+      }
+  
+      // Log the complete stack trace
+      /* prettier-ignore */ console.log(`[event_loop:blocked] request id: ${uuid} Complete Stack: ${JSON.stringify(stack)}`);
+      
+    },
+    { threshold: threshold, debug: false }
+  );  
+}
+
+// Start with a default threshold of 1000ms
+startBlockedCheck(1000);
 
 /***
  *     ######  ##     ##    ###    ########  ########  ##     ##  ######      ######  ######## ######## ##     ## ########

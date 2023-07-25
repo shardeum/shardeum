@@ -48,7 +48,8 @@
     "inquirer": "9.1.4",
     "sequelize": "6.15.1",
     "sqlite3": "5.1.6",
-    "typescript": "4.5.2"
+    "typescript": "4.5.2",
+    "blocked-at": "^1.2.0"
   },
   "devDependencies": {
     "@shardus/archiver": "3.3.2",
