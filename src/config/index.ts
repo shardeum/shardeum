@@ -172,6 +172,7 @@ config = merge(config, {
     },
     stateManager: {
       accountBucketSize: 200, // todo: we need to re-test with higher numbers after some recent improvements
+      includeBeforeStatesInReceipts: false,
     },
   },
 })

@@ -5475,6 +5475,13 @@ shardus.setup({
       /* eslint-enable security/detect-object-injection */
     }
   },
+  beforeStateAccountFilter(account: WrappedAccount) {
+    if (account.data.accountType === 1) {
+      return (account.data as WrappedEVMAccount).value?.length === 0 ? false : true
+    } else {
+      return false
+    }
+  },
 })
 
 shardus.registerExceptionHandler()
