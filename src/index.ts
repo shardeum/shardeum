@@ -3598,7 +3598,7 @@ const shardusSetup = (): void => {
           const txSenderEvmAddr = transaction.getSenderAddress().toString()
           const transformedSourceKey = toShardusAddress(txSenderEvmAddr, AccountType.Account)
 
-          let queueCountResult = { count: 0, committingAppData: [] }
+          let queueCountResult = { count: 0, committingAppData: [], account: null }
           //this is likely QueueCountsResult but it is not exported from shardus
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
           let countPromise: Promise<any> = undefined
@@ -3619,6 +3619,9 @@ const shardusSetup = (): void => {
             queueCountResult = await countPromise
             // queueCountResult = await shardus.getLocalOrRemoteAccountQueueCount(transformedSourceKey)
             if (ShardeumFlags.VerboseLogs) console.log('queueCountResult:', queueCountResult)
+            if (queueCountResult.account) {
+              remoteShardusAccount.data = queueCountResult.account
+            }
           }
 
           if (remoteShardusAccount == undefined) {
