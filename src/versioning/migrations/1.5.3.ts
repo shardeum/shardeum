@@ -7,4 +7,5 @@ export const migrate: Migration = async () => {
   nestedCountersInstance.countEvent('migrate-1.5.3', 'calling migrate 1.5.3')
 
   shardusConfig.stateManager.includeBeforeStatesInReceipts = true
+  shardusConfig.p2p.instantForwardReceipts = true
 }

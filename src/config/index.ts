@@ -140,7 +140,7 @@ config = merge(config, {
       useLruCacheForSocketMgmt: true,
       lruCacheSizeForSocketMgmt: 500,
       uniqueRemovedIdsUpdate: true, // To enable on 1.4.1
-      instantForwardReceipts: false // To enable on later version along with the related changes in the archiver
+      instantForwardReceipts: false // To enable on 1.5.3
     },
   },
 })
