@@ -2416,6 +2416,11 @@ async function generateAccessList(
         `Unable to find caller account: ${callerShardusAddress} while generating accessList. Using a fake account to generate accessList`
       )
     }
+    // temporarily set caller account's nonce same as tx's nonce
+    if (callerAccount && callerAccount.account) {
+      callerAccount.account.nonce = transaction.nonce
+    }
+
     preRunTxState._transactionState.insertFirstAccountReads(
       transaction.getSenderAddress(),
       callerAccount ? callerAccount.account : fakeAccount
