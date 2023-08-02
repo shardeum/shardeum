@@ -2417,7 +2417,7 @@ async function generateAccessList(
       )
     }
     // temporarily set caller account's nonce same as tx's nonce
-    if (callerAccount && callerAccount.account) {
+    if (ShardeumFlags.accesslistNonceFix && callerAccount && callerAccount.account) {
       callerAccount.account.nonce = transaction.nonce
     }
 

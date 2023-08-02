@@ -87,6 +87,7 @@ interface ShardeumFlags {
   penaltyPercent: number
   receiptLogIndexFix: boolean
   blockedAtVerbose: boolean
+  accesslistNonceFix: boolean
 }
 
 export const ShardeumFlags: ShardeumFlags = {
@@ -189,6 +190,9 @@ export const ShardeumFlags: ShardeumFlags = {
 
   // 1.5.2 migration
   receiptLogIndexFix: false,
+
+  // 1.5.4 migration
+  accesslistNonceFix: false
 }
 
 export function updateShardeumFlag(key: string, value: string | number | boolean): void {

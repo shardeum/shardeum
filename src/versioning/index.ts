@@ -33,6 +33,7 @@ export const onActiveVersionChange = async (newActiveVersion: string) => {
     '1.4.2',
     '1.5.2',
     '1.5.3',
+    '1.5.4',
   ]
 
   for (let index = 0; index < migrations.length; index++) {
