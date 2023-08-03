@@ -8,7 +8,7 @@
 # Useful for development, but don't ship it. Use 'Dockerfile' instead.
 
 # Node.js LTS 12.x.x from Docker Hub
-FROM node:16.11.1
+FROM node:18.16.1
 
 # Create app directory
 WORKDIR /usr/src/app
@@ -26,7 +26,6 @@ RUN curl https://sh.rustup.rs -sSf | bash -s -- -y
 ENV PATH="/root/.cargo/bin:${PATH}"
 
 # Install node_modules
-RUN npm set unsafe-perm true
 RUN npm install
 
 # Define run command
