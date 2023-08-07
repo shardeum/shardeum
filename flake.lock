@@ -43,11 +43,11 @@
         "utils": "utils"
       },
       "locked": {
-        "lastModified": 1691078307,
-        "narHash": "sha256-FmcBTgY+dbVSxw0cXUGY8DCzgbJWwMYayWW5/YbVzrg=",
+        "lastModified": 1691434472,
+        "narHash": "sha256-r6lxjANJ6vmJXmUEttWqKHDjXRfLpp5hdMb1DZH6Ivc=",
         "ref": "nix-flake",
-        "rev": "5527200ea48efa094327c34277bd9bcd0b0ccebe",
-        "revCount": 83,
+        "rev": "e3896a0473ae34ceb4318bcd64ff9a51f44e7c40",
+        "revCount": 85,
         "type": "git",
         "url": "https://gitlab.com/shardus/tools/shardus-cli"
       },
