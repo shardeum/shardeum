@@ -2588,11 +2588,13 @@ async function generateAccessList(
 
     if (runTxResult.execResult.exceptionError) {
       if (ShardeumFlags.VerboseLogs) console.log('Execution Error:', runTxResult.execResult.exceptionError)
+      nestedCountersInstance.countEvent('accesslist', `Fail with error: CA ${transaction.to && ShardeumFlags.VerboseLogs ? transaction.to.toString() : ''}`)
       return { accessList: [], shardusMemoryPatterns: null }
     }
     return { accessList, shardusMemoryPatterns }
   } catch (e) {
     console.log(`Error: generateAccessList`, e)
+    nestedCountersInstance.countEvent('accesslist', `Fail: unknown`)
     return { accessList: [], shardusMemoryPatterns: null }
   }
 }
