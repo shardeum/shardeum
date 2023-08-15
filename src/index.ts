@@ -4915,7 +4915,7 @@ const shardusSetup = (): void => {
       }
       return results
     },
-    async getGlobalAccount(shardus) {
+    async queryGlobalNetworkAccount(shardus) {
       //const globalAccount = await AccountsStorage.getGlobalAccount()
       //const globalAccount = AccountsStorage.cachedGlobalAccount
       const globalAccountAddress = '0x0000000000000000000000000000000000000000'
@@ -4932,7 +4932,7 @@ const shardusSetup = (): void => {
 
           // Handle errors
           if (response.status !== 200) {
-            throw new Error(`getGlobalAccount: ${response.status} ${response.statusText}`)
+            throw new Error(`queryGlobalNetworkAccount: ${response.status} ${response.statusText}`)
           }
           // Validate response
           const data = await response.json()
