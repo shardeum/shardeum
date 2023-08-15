@@ -4915,6 +4915,27 @@ const shardusSetup = (): void => {
       }
       return results
     },
+    async queryGlobalAccount(shardus) {
+      //const globalAccount = await AccountsStorage.getGlobalAccount()
+      //const globalAccount = AccountsStorage.cachedGlobalAccount
+      const globalAccountAddress = "0x0000000000000000000000000000000000000000"
+
+      const endpoint = `/account/${globalAccountAddress}`
+      const response = await shardus.get(endpoint)
+
+      if(response.status !== 200) {
+        throw new Error(`queryGlobalAccount: ${response.status} ${response.statusText}`)
+      }
+
+      const data = await response.json()
+
+      if(!data || !data.account) {
+        throw new Error ("Invalid response from global account query")
+      }
+
+      return data.account;
+      
+    },
     async signAppData(
       type: string,
       hash: string,
