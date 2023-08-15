@@ -4915,6 +4915,14 @@ const shardusSetup = (): void => {
       }
       return results
     },
+    async getNetworkAccount() {
+      const changeListGlobalAccount = this.config.globalAccount
+      const accounts = await this.app.getAccountDataByList([changeListGlobalAccount])
+      if (accounts == null && accounts.length > 1) {
+        return null
+      }
+      return accounts[0]
+    },
     async signAppData(
       type: string,
       hash: string,
