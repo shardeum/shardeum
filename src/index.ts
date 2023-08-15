@@ -4916,12 +4916,11 @@ const shardusSetup = (): void => {
       return results
     },
     async getNetworkAccount() {
-      const changeListGlobalAccount = this.config.globalAccount
-      const accounts = await this.app.getAccountDataByList([changeListGlobalAccount])
-      if (accounts == null && accounts.length > 1) {
-        return null
-      }
-      return accounts[0]
+      const globalAccount = shardusConfig.globalAccount
+      const wrappedEVMAccount = await AccountsStorage.getAccount(globalAccount)
+      if (!wrappedEVMAccount) return null
+      const account = WrappedEVMAccountFunctions._shardusWrappedAccount(wrappedEVMAccount)
+      return account
     },
     async signAppData(
       type: string,
