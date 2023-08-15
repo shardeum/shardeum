@@ -4918,23 +4918,39 @@ const shardusSetup = (): void => {
     async queryGlobalAccount(shardus) {
       //const globalAccount = await AccountsStorage.getGlobalAccount()
       //const globalAccount = AccountsStorage.cachedGlobalAccount
-      const globalAccountAddress = "0x0000000000000000000000000000000000000000"
+      const globalAccountAddress = '0x0000000000000000000000000000000000000000'
 
-      const endpoint = `/account/${globalAccountAddress}`
-      const response = await shardus.get(endpoint)
+      // Retry logic
+      const numRetries = 3
+      for (let i = 0; i < numRetries; i++) {
 
-      if(response.status !== 200) {
-        throw new Error(`queryGlobalAccount: ${response.status} ${response.statusText}`)
+        try {
+
+          // Make request
+          const endpoint = `/account/${globalAccountAddress}`
+          const response = await shardus.get(endpoint)
+
+          // Handle errors
+          if (response.status !== 200) {
+            throw new Error(`queryGlobalAccount: ${response.status} ${response.statusText}`)
+          }
+          // Validate response
+          const data = await response.json()
+          if (!data || !data.account) {
+            throw new Error('Invalid response from global account query')
+          }
+
+          // Success
+          return data.account
+        } catch (e) {
+          // Retry after delay
+          await sleep(500)
+        }
+
+        // Retires exceeded
+        throw new Error("Exceeded max retries for global account query");
       }
-
-      const data = await response.json()
-
-      if(!data || !data.account) {
-        throw new Error ("Invalid response from global account query")
-      }
-
-      return data.account;
-      
+      // add monitor metrics?
     },
     async signAppData(
       type: string,
