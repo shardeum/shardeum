@@ -5685,6 +5685,52 @@ function periodicMemoryCleanup(): void {
   setTimeout(periodicMemoryCleanup, 60000)
 }
 
+// updateConfigFromNetworkAccount(inputConfig, networkAccount){
+
+//   // clone config with rfdc
+//   let config = rfdc()(inputConfig)
+//   //this.appliedConfigChanges  can be a local set
+//   let changes = account.data.listOfChanges as {
+//     cycle: number
+//     change: any
+//     appData: any
+//   }[]
+//   //let changes = this.app.getChangesFromNetworkAccount()
+//   if (!changes || !Array.isArray(changes)) {
+//     return
+//   }
+//   for (let change of changes) {
+//     //skip future changes
+//     if (change.cycle > lastCycle.counter) {
+//       continue
+//     }
+//     //skip handled changes
+
+//     if (this.appliedConfigChanges.has(change.cycle)) {
+//       continue
+//     }
+//     //apply this change
+//     this.appliedConfigChanges.add(change.cycle)
+//     let changeObj = change.change
+//     let appData = change.appData
+
+//     this.patchObject(this.config, changeObj, appData)
+
+//     if (appData) {
+//       const data: WrappedData[] = await this.app.updateNetworkChangeQueue(account, appData)
+
+//       //this cant happen at all:
+//       //await this.stateManager.checkAndSetAccountData(data, 'global network account update', true)
+//     }
+
+//     //this cant happen at all:
+//     // this.p2p.configUpdated()
+//     // this.loadDetection.configUpdated()
+//   }
+
+//   return config
+// }
+
 export let shardusConfig
 
   /**
@@ -5698,6 +5744,19 @@ export let shardusConfig
   })
 
   config.server.p2p.existingArchivers = getFinalArchiverList()
+
+  /** Standby nodes will sync network config very early here */
+
+  // //this networkAccount will only be used to help build/update a config and will not be stored as a local account
+  // //later when a node joins it can get the network account as part of the normal sync process
+  // //   intially  use    someactivenode:<externalPort>/account/0x00000000...  to get the network account
+  // //   would have to get a list active nodes from the archiver so we can know of one to ask.
+  // const networkAccount = await getTrustlessNetworkAccount()
+
+  // // this needs the logic to patch a config
+  // // it will also have to call its own function:
+  // let patchedConfig = updateConfigFromNetworkAccount(config, networkAccount)
+  // //use patchedConfig instead of config below
 
   shardus = shardusFactory(config, {
     customStringifier: SerializeToJsonString,
