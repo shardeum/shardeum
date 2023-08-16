@@ -31,7 +31,7 @@ export const replacer = <T, K, V>(
   value: Map<K, V> | T
 ):
   | {
-      dataType: 'stringifyReduce_map_2_array',
+      dataType: 'stringifyReduce_map_2_array'
       value: [K, V][]
     }
   | T => {
@@ -59,10 +59,18 @@ export function isEqualOrNewerVersion(minimumVersion: string, testVersion: strin
 
   const minVerParts = minimumVersion.split('.')
   const testVerParts = testVersion.split('.')
+
+  const numbersToCheck = Math.max(minVerParts.length, testVerParts.length)
+
   /* eslint-disable security/detect-object-injection */
-  for (let i = 0; i < testVerParts.length; i++) {
-    const testV = ~~testVerParts[i] // parse int
-    const minV = ~~minVerParts[i] // parse int
+  for (let i = 0; i < numbersToCheck; i++) {
+    // const testV = ~~testVerParts[i] // parse int
+    // const minV = ~~minVerParts[i] // parse int
+
+    // support comparison when there are different number of parts
+    const testV = i < testVerParts.length ? parseInt(testVerParts[i], 10) : 0
+    const minV = i < minVerParts.length ? parseInt(minVerParts[i], 10) : 0
+
     if (testV > minV) return true
     if (testV < minV) return false
   }
