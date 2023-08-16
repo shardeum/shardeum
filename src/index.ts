@@ -5701,10 +5701,16 @@ export let shardusConfig
 
   /** Standby nodes will sync network config very early here */
 
+  // //getTrustlessNetworkAccount()  notes
   // //this networkAccount will only be used to help build/update a config and will not be stored as a local account
   // //later when a node joins it can get the network account as part of the normal sync process
   // //   intially  use    someactivenode:<externalPort>/account/0x00000000...  to get the network account
   // //   would have to get a list active nodes from the archiver so we can know of one to ask.
+
+  // // updated version:
+  // //trustless version will query the archiver's get-network-account?hash=true    if you ask for hash = true then just get the hash
+  // // then we will get the actuall account data and verify that it matches the hash we got vefore
+
   // const networkAccount = await getTrustlessNetworkAccount()
 
   // // this needs the logic to patch a config
