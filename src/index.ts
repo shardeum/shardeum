@@ -5646,6 +5646,9 @@ export let shardusConfig
 
   config.server.p2p.existingArchivers = getFinalArchiverList()
 
+  // ONLY FOR Nodelist Sync V2 Network Test; DO NOT MERGE
+  config.server.p2p.useSyncProtocolV2 = true
+
   shardus = shardusFactory(config, {
     customStringifier: SerializeToJsonString,
   })

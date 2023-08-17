@@ -10,6 +10,7 @@ let config: {
   server: {
     globalAccount: string
     p2p?: {
+      useSyncProtocolV2: boolean
       cycleDuration: number
       existingArchivers: Array<{
         ip: string
