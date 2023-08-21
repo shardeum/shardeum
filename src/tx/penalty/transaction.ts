@@ -16,7 +16,7 @@ import {createInternalTxReceipt, getApplyTXState} from '../..'
 import {toShardusAddress} from '../../shardeum/evmAddress'
 import {getPenaltyForViolation} from './violation'
 import * as WrappedEVMAccountFunctions from '../../shardeum/wrappedEVMAccountFunctions'
-import {_readableSHM, sleep} from '../../utils'
+import {_readableSHM, sleep, generateTxId} from '../../utils'
 import {Address} from 'ethereumjs-util'
 import {applyPenalty} from './penaltyFunctions'
 
@@ -76,8 +76,8 @@ export async function injectPenaltyTX(
 
   tx = shardus.signAsNode(tx) as PenaltyTX
   if (ShardeumFlags.VerboseLogs) {
-    const txid = hashSignedObj(tx)
-    console.log(`injectPenaltyTX: tx.timestamp: ${tx.timestamp} txid: ${txid}`, tx)
+    const txId = generateTxId(tx)
+    console.log(`injectPenaltyTX: tx.timestamp: ${tx.timestamp} txid: ${txId}`, tx)
   }
 
   return await shardus.put(tx)
@@ -212,7 +212,7 @@ export async function applyPenaltyTX(
   const penaltyAmount = getPenaltyForViolation(tx, new BN(nodeAccount.stakeLock, 'hex'))
   applyPenalty(nodeAccount, operatorAccount, penaltyAmount)
 
-  const txId = hashSignedObj(tx)
+  const txId = generateTxId(tx)
   const shardeumState = getApplyTXState(txId)
   shardeumState._transactionState.appData = {}
 

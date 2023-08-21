@@ -11,7 +11,7 @@ import {
   WrappedStates,
 } from '../shardeum/shardeumTypes'
 import * as WrappedEVMAccountFunctions from '../shardeum/wrappedEVMAccountFunctions'
-import { sleep } from '../utils'
+import { sleep, generateTxId } from '../utils'
 import { createInternalTxReceipt } from '..'
 
 export async function injectInitRewardTimesTx(shardus, eventData: ShardusTypes.ShardusEvent): Promise<unknown> {
@@ -39,8 +39,8 @@ export async function injectInitRewardTimesTx(shardus, eventData: ShardusTypes.S
 
   tx = shardus.signAsNode(tx)
   if (ShardeumFlags.VerboseLogs) {
-    const txid = hashSignedObj(tx)
-    console.log(`injectInitRewardTimesTx: tx.timestamp: ${tx.timestamp} txid: ${txid}`, tx)
+    const txId = generateTxId(tx)
+    console.log(`injectInitRewardTimesTx: tx.timestamp: ${tx.timestamp} txid: ${txId}`, tx)
   }
   return await shardus.put(tx)
 }

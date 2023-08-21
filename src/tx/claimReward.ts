@@ -19,7 +19,7 @@ import {
 } from '../shardeum/shardeumTypes'
 import * as WrappedEVMAccountFunctions from '../shardeum/wrappedEVMAccountFunctions'
 import * as AccountsStorage from '../storage/accountStorage'
-import { scaleByStabilityFactor, sleep, _base16BNParser, _readableSHM } from '../utils'
+import { scaleByStabilityFactor, sleep, _base16BNParser, _readableSHM, generateTxId } from '../utils'
 import { retry } from '../utils/retry'
 
 export async function injectClaimRewardTx(
@@ -57,8 +57,8 @@ export async function injectClaimRewardTx(
 
   tx = shardus.signAsNode(tx)
   if (ShardeumFlags.VerboseLogs) {
-    const txid = hashSignedObj(tx)
-    console.log(`injectClaimRewardTx: tx.timestamp: ${tx.timestamp} txid: ${txid}`, tx)
+    const txId = generateTxId(tx)
+    console.log(`injectClaimRewardTx: tx.timestamp: ${tx.timestamp} txid: ${txId}`, tx)
   }
 
   return await shardus.put(tx)
@@ -292,7 +292,7 @@ export async function applyClaimRewardTx(
   )
   nodeAccount.nodeAccountStats.history.push({ b: nodeAccount.rewardStartTime, e: nodeAccount.rewardEndTime })
 
-  const txId = hashSignedObj(tx)
+  const txId = generateTxId(tx)
   const shardeumState = getApplyTXState(txId)
   shardeumState._transactionState.appData = {}
 

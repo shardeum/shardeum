@@ -18,7 +18,7 @@ import {
 import * as WrappedEVMAccountFunctions from '../shardeum/wrappedEVMAccountFunctions'
 import { fixDeserializedWrappedEVMAccount } from '../shardeum/wrappedEVMAccountFunctions'
 import * as AccountsStorage from '../storage/accountStorage'
-import { getRandom, scaleByStabilityFactor, _base16BNParser, _readableSHM } from '../utils'
+import { getRandom, scaleByStabilityFactor, _base16BNParser, _readableSHM, generateTxId } from '../utils'
 import { hashSignedObj } from '../setup/helpers'
 import { createInternalTxReceipt } from '..'
 
@@ -278,7 +278,7 @@ export function applySetCertTimeTx(
   }
 
   // Apply state
-  const txId = hashSignedObj(tx)
+  const txId = generateTxId(tx)
   if (ShardeumFlags.useAccountWrites) {
     const wrappedChangedAccount = WrappedEVMAccountFunctions._shardusWrappedAccount(operatorEVMAccount)
     shardus.applyResponseAddChangedAccount(

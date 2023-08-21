@@ -76,6 +76,7 @@ import {
   readOperatorVersions,
   formatErrorMessage,
   calculateGasPrice,
+  generateTxId
 } from './utils'
 import config from './config'
 import { RunTxResult } from '@ethereumjs/vm/dist/runTx'
@@ -1836,7 +1837,7 @@ async function applyInternalTx(
   wrappedStates: WrappedStates,
   txTimestamp: number
 ): Promise<ShardusTypes.ApplyResponse> {
-  const txId = hashSignedObj(tx)
+  const txId = generateTxId(tx)
   const applyResponse: ShardusTypes.ApplyResponse = shardus.createApplyResponse(txId, txTimestamp)
   const internalTx = tx as InternalTx
   if (internalTx.internalTXType === InternalTXType.SetGlobalCodeBytes) {
@@ -2172,7 +2173,7 @@ async function applyDebugTx(
     fixDeserializedWrappedEVMAccount(toAccount)
   }
 
-  const txId = crypto.hashObj(debugTx)
+  const txId = generateTxId(debugTx)
   return shardus.createApplyResponse(txId, txTimestamp)
   /* eslint-enable security/detect-object-injection */
 }
@@ -2239,7 +2240,7 @@ async function _transactionReceiptPass(
     shardus.setGlobal(address, value, when, source)
     if (ShardeumFlags.VerboseLogs) {
       const tx = { address, value, when, source }
-      const txHash = hashSignedObj(tx)
+      const txHash = generateTxId(tx)
       console.log(`transactionReceiptPass setglobal: ${txHash} ${JSON.stringify(tx)}  `)
     }
   }
@@ -2690,7 +2691,7 @@ const shardusSetup = (): void => {
     //also appdata and wrapped accounts should be passed in?
     validateTransaction: validateTransaction(shardus),
     validateTxnFields: validateTxnFields(shardus, debugAppdata),
-    async apply(timestampedTx, wrappedStates, appData) {
+    async apply(timestampedTx: ShardusTypes.OpaqueTransaction, wrappedStates, appData) {
       //@ts-ignore
       const { tx } = timestampedTx
       const txTimestamp = getInjectedOrGeneratedTimestamp(timestampedTx)
@@ -2709,10 +2710,16 @@ const shardusSetup = (): void => {
         return applyDebugTx(debugTx, wrappedStates, txTimestamp)
       }
 
+      // it is an EVM tx
+      const rawSerializedTx = tx.raw
+      if (rawSerializedTx == null) {
+        throw new Error(`Invalid evm transaction, reason: unable to extract raw tx from the transaction object, tx: ${JSON.stringify(tx)}`)
+      }
+
       const transaction: Transaction | AccessListEIP2930Transaction = getTransactionObj(tx)
       const ethTxId = bufferToHex(transaction.hash())
       const shardusReceiptAddress = toShardusAddressWithKey(ethTxId, '', AccountType.Receipt)
-      const txId = hashSignedObj(tx)
+      const txId = generateTxId(tx)
       // Create an applyResponse which will be used to tell Shardus that the tx has been applied
       if (ShardeumFlags.VerboseLogs)
         console.log('DBG', new Date(), 'attempting to apply tx', txId, ethTxId, tx, wrappedStates, appData)
@@ -3660,7 +3667,7 @@ const shardusSetup = (): void => {
 
       if (isInternalTx(tx) === false && isDebugTx(tx) === false) {
         const transaction = getTransactionObj(tx)
-        const shardusTxId = hashSignedObj(tx)
+        const shardusTxId = generateTxId(tx)
         const ethTxId = bufferToHex(transaction.hash())
         if (ShardeumFlags.VerboseLogs) {
           console.log(`EVM tx ${ethTxId} is mapped to shardus tx ${shardusTxId}`)
@@ -3966,18 +3973,18 @@ const shardusSetup = (): void => {
         //   }
         // }
 
-        const txid = hashSignedObj(tx)
-        if (ShardeumFlags.VerboseLogs) console.log('crack', { timestamp, keys, id: txid })
+        const txId = generateTxId(tx)
+        if (ShardeumFlags.VerboseLogs) console.log('crack', { timestamp, keys, id: txId })
         return {
           timestamp,
           keys,
-          id: customTXhash ?? txid,
+          id: customTXhash ?? txId,
           shardusMemoryPatterns: null,
         }
       }
       if (isDebugTx(tx)) {
         const debugTx = tx as DebugTx
-        const txid = hashSignedObj(tx)
+        const txId = generateTxId(tx)
         const keys = {
           sourceKeys: [],
           targetKeys: [],
@@ -4005,10 +4012,16 @@ const shardusSetup = (): void => {
         return {
           timestamp,
           keys,
-          id: txid,
+          id: txId,
           shardusMemoryPatterns: null,
         }
       }
+      // it is an EVM transaction
+      const rawSerializedTx = tx.raw
+      if (rawSerializedTx == null) {
+        throw new Error(`Unable to crack EVM transaction. ${JSON.stringify(tx)}`)
+      }
+      const txId = generateTxId(tx)
 
       const transaction = getTransactionObj(tx)
       const result = {
@@ -4018,7 +4031,6 @@ const shardusSetup = (): void => {
         allKeys: [],
         timestamp: timestamp,
       }
-      const txId = hashSignedObj(tx)
       try {
         const otherAccountKeys = []
         const txSenderEvmAddr = transaction.getSenderAddress().toString()
@@ -4448,7 +4460,7 @@ const shardusSetup = (): void => {
       /* prettier-ignore */ shardus.setDebugSetLastAppAwait(`getRelevantData.AccountsStorage.getAccount(${accountId}) 3`, DebugComplete.Completed)
       let accountCreated = false
 
-      const txId = hashSignedObj(tx)
+      const txId = generateTxId(tx)
       // let transactionState = transactionStateMap.get(txId)
       // if (transactionState == null) {
       //   transactionState = new TransactionState()
@@ -5077,7 +5089,7 @@ const shardusSetup = (): void => {
       let txId: string
       //this code may seem equivalent but hashSignedObj will not be "smart" until after txHashingFix is true
       if (ShardeumFlags.txHashingFix === true) {
-        txId = hashSignedObj(tx)
+        txId = generateTxId(tx)
       } else {
         // @ts-ignore
         if (!tx.sign) {
