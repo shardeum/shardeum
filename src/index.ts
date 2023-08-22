@@ -5686,7 +5686,7 @@ const shardusSetup = (): void => {
             shardeumConfigs = Object.keys(thisChange.appData).map((configPath) => configPath = "appdata." + configPath)
           }
 
-          let shardusConfigs = []
+          const shardusConfigs = []
           for (const category of Object.keys(thisChange.change)) {
             for(const config of Object.keys(thisChange.change[category]).map((configPath) => configPath = category + "." + configPath)) {
               shardusConfigs.push(config);
