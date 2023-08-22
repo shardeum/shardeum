@@ -780,40 +780,22 @@ export const handlers: Map<number, OpHandler> = new Map([
   // 0x5c: BEGINSUB
   [
     0x5c,
-    function (runState): void {
-      trap(ERROR.INVALID_BEGINSUB + ' at ' + describeLocation(runState))
+    function (): void {
+      /* empty */
     },
   ],
   // 0x5d: RETURNSUB
   [
     0x5d,
-    function (runState): void {
-      if (runState.returnStack.length < 1) {
-        trap(ERROR.INVALID_RETURNSUB)
-      }
-
-      const dest = runState.returnStack.pop()
-      runState.programCounter = dest.toNumber()
+    function (): void {
+      /* empty */
     },
   ],
   // 0x5e: JUMPSUB
   [
     0x5e,
-    function (runState): void {
-      const dest = runState.stack.pop()
-
-      if (dest.gt(runState.eei.getCodeSize())) {
-        trap(ERROR.INVALID_JUMPSUB + ' at ' + describeLocation(runState))
-      }
-
-      const destNum = dest.toNumber()
-
-      if (!jumpSubIsValid(runState, destNum)) {
-        trap(ERROR.INVALID_JUMPSUB + ' at ' + describeLocation(runState))
-      }
-
-      runState.returnStack.push(new BN(runState.programCounter))
-      runState.programCounter = destNum + 1
+    function (): void {
+      /* empty */
     },
   ],
   // 0x5f: PUSH0
