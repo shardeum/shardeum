@@ -5669,6 +5669,59 @@ const shardusSetup = (): void => {
         /* eslint-enable security/detect-object-injection */
       }
     },
+    async pruneNetworkChangeQueue(account: WrappedAccount, currentCycle: number) {
+      if (account.accountId === networkAccount) {
+        /* eslint-disable security/detect-object-injection */
+        const networkAccount: NetworkAccount = account.data
+        const listOfChanges = account.data.listOfChanges
+        
+        const configsMap = new Map()
+        const keepAliveCount = shardusConfig.stateManager.configChangeMaxChangesToKeep
+        for (let i = listOfChanges.length - 1; i >= 0; i--) {
+          const thisChange = listOfChanges[i]
+          let keepAlive = false
+
+          let shardeumConfigs = []
+          if(thisChange.appData) {
+            shardeumConfigs = Object.keys(thisChange.appData).map((configPath) => configPath = "appdata." + configPath)
+          }
+
+          let shardusConfigs = []
+          for (const category of Object.keys(thisChange.change)) {
+            for(const config of Object.keys(thisChange.change[category]).map((configPath) => configPath = category + "." + configPath)) {
+              shardusConfigs.push(config);
+            }
+          }
+
+          const allConfigs = shardeumConfigs.concat(shardusConfigs)
+
+          for (const config of allConfigs) {
+            if(!configsMap.has(config)) {
+              configsMap.set(config, 1)
+              keepAlive = true
+            } else if(configsMap.get(config) < keepAliveCount) {
+              configsMap.set(config, configsMap.get(config) + 1)
+              keepAlive = true
+            }
+          }
+
+          if((currentCycle - thisChange.cycle) <= shardusConfig.stateManager.configChangeMaxCyclesToKeep) {
+            keepAlive = true
+          }
+
+          if(keepAlive == false) {
+            listOfChanges.splice(i, 1)
+          }
+
+        }
+
+        account.timestamp = Date.now()
+        networkAccount.hash = WrappedEVMAccountFunctions._calculateAccountHash(networkAccount)
+        account.stateId = networkAccount.hash
+        return [account]
+        /* eslint-enable security/detect-object-injection */
+      }
+    },
     beforeStateAccountFilter(account: WrappedAccount) {
       if (account.data.accountType === 1) {
         return (account.data as WrappedEVMAccount).value?.length === 0 ? false : true
@@ -5777,7 +5830,7 @@ async function fetchNetworkAccountFromArchiver(): Promise<WrappedAccount> {
 //   return config
 // }
 
-export let shardusConfig
+export let shardusConfig: ShardusTypes.ServerConfiguration
 
   /**
    * Shardus start
