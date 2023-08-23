@@ -2245,22 +2245,31 @@ async function _transactionReceiptPass(
   }
 }
 
-const createNetworkAccount = (accountId: string): NetworkAccount => {
+const getNetworkAccount = async (): Promise<ShardusTypes.WrappedData> => {
+  const globalAccount = shardusConfig.globalAccount
+  const wrappedEVMAccount = await AccountsStorage.getAccount(globalAccount)
+  if (!wrappedEVMAccount) return null
+  const account = WrappedEVMAccountFunctions._shardusWrappedAccount(wrappedEVMAccount)
+  return account
+}
+
+const createNetworkAccount = async (accountId: string): Promise<NetworkAccount> => {
+  let listOfChanges = []
+
+  const networkAccount = await getNetworkAccount()
+  if (networkAccount) {
+    // @ts-ignore
+    listOfChanges = networkAccount.data?.listOfChanges as {
+      cycle: number
+      change: any
+      appData: any
+    }[]
+  }
+
   const account: NetworkAccount = {
     id: accountId,
     accountType: AccountType.NetworkAccount,
-    listOfChanges: [
-      {
-        cycle: 1,
-        change: {
-          server: {
-            p2p: {
-              minNodes: 15,
-            },
-          },
-        },
-      },
-    ],
+    listOfChanges,
     current: initialNetworkParamters,
     next: {},
     hash: '',
@@ -4242,7 +4251,7 @@ const shardusSetup = (): void => {
         if (internalTx.internalTXType === InternalTXType.InitNetwork) {
           if (!wrappedEVMAccount) {
             if (accountId === networkAccount) {
-              wrappedEVMAccount = createNetworkAccount(accountId)
+              wrappedEVMAccount = await createNetworkAccount(accountId)
             } else {
               //wrappedEVMAccount = createNodeAccount(accountId) as any
             }
@@ -4915,13 +4924,7 @@ const shardusSetup = (): void => {
       }
       return results
     },
-    async getNetworkAccount() {
-      const globalAccount = shardusConfig.globalAccount
-      const wrappedEVMAccount = await AccountsStorage.getAccount(globalAccount)
-      if (!wrappedEVMAccount) return null
-      const account = WrappedEVMAccountFunctions._shardusWrappedAccount(wrappedEVMAccount)
-      return account
-    },
+    getNetworkAccount,
     async signAppData(
       type: string,
       hash: string,
