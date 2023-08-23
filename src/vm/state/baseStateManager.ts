@@ -1,11 +1,10 @@
-import Set from 'core-js-pure/es/set'
-import Common, { Chain, Hardfork } from '@ethereumjs/common'
+import { Common, Chain, Hardfork } from '@ethereumjs/common'
 import { AccessList, AccessListItem } from '@ethereumjs/tx'
 import { debug as createDebugLogger, Debugger } from 'debug'
 import { Account, Address, toBuffer } from 'ethereumjs-util'
 import Cache from './cache'
 import { DefaultStateManagerOpts } from './stateManager'
-import { GenesisState } from '@ethereumjs/common/dist/types'
+import type { GenesisState } from '@ethereumjs/util'
 
 type AddressHex = string
 
@@ -62,7 +61,7 @@ export abstract class BaseStateManager {
   constructor(opts: DefaultStateManagerOpts) {
     let common = opts.common
     if (!common) {
-      common = new Common({ chain: Chain.Mainnet, hardfork: Hardfork.Merge })
+      common = new Common({ chain: Chain.Mainnet, hardfork: Hardfork.Paris })
     }
     this._common = common
 
@@ -278,22 +277,6 @@ export abstract class BaseStateManager {
   abstract hasGenesisState(): Promise<boolean>
 
   /**
-   * Generates a canonical genesis state on the instance based on the
-   * configured chain parameters. Will error if there are uncommitted
-   * checkpoints on the instance.
-   */
-  async generateCanonicalGenesis(): Promise<void> {
-    if (this._checkpointCount !== 0) {
-      throw new Error('Cannot create genesis state with uncommitted checkpoints')
-    }
-
-    const genesis = await this.hasGenesisState()
-    if (!genesis) {
-      await this.generateGenesis(this._common.genesisState())
-    }
-  }
-
-  /**
    * Initializes the provided genesis state into the state trie
    * @param initState address -> balance | [balance, code, storage]
    */
@@ -391,7 +374,7 @@ export abstract class BaseStateManager {
     const key = address.toString('hex')
     const storageSet = this._accessedStorage[this._accessedStorage.length - 1].get(key)
     if (!storageSet) {
-      const emptyStorage = new Set()
+      const emptyStorage = new Set<string>()
       this._accessedStorage[this._accessedStorage.length - 1].set(key, emptyStorage)
     }
   }

@@ -1,8 +1,8 @@
 import { debug as createDebugLogger } from 'debug'
 import { Account, Address, BN, MAX_UINT64 } from 'ethereumjs-util'
 import { Block } from '@ethereumjs/block'
-import Blockchain from '@ethereumjs/blockchain'
-import Common, { ConsensusAlgorithm } from '@ethereumjs/common'
+import { Blockchain } from '@ethereumjs/blockchain'
+import { Common, ConsensusAlgorithm } from '@ethereumjs/common'
 import { StateManager } from '../state/index'
 import { VmError, ERROR } from '../exceptions'
 import Message from './message'
@@ -69,6 +69,9 @@ export default class EEI {
   _lastReturned: Buffer
   _common: Common
   _gasLeft: BN
+
+  public readonly allowUnlimitedContractSize: boolean
+  public readonly allowUnlimitedInitCodeSize: boolean
 
   constructor(env: Env, state: StateManager, evm: EVM, common: Common, gasLeft: BN) {
     this._env = env

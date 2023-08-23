@@ -13,8 +13,8 @@ import {
   toBuffer,
 } from 'ethereumjs-util'
 import { AccessListEIP2930Transaction, Transaction } from '@ethereumjs/tx'
-import Common, { Chain } from '@ethereumjs/common'
-import VM from '@ethereumjs/vm'
+import { Common, Chain } from '@ethereumjs/common'
+import { VM } from '@ethereumjs/vm'
 import ShardeumVM from './vm'
 import { parse as parseUrl } from 'url'
 import got from 'got'
@@ -78,13 +78,13 @@ import {
   calculateGasPrice,
 } from './utils'
 import config from './config'
-import { RunTxResult } from '@ethereumjs/vm/dist/runTx'
+import { RunTxResult } from '@ethereumjs/vm/dist/esm/types'
 import { RunState } from '@ethereumjs/vm/dist/evm/interpreter'
 import Wallet from 'ethereumjs-wallet'
 import { Block } from '@ethereumjs/block'
 import { ShardeumBlock } from './block/blockchain'
 import * as AccountsStorage from './storage/accountStorage'
-import { StateManager } from '@ethereumjs/vm/dist/state'
+import { EthersStateManager } from '@ethereumjs/statemanager/dist/esm'
 import { sync, validateTransaction, validateTxnFields } from './setup'
 import { applySetCertTimeTx, injectSetCertTimeTx, getCertCycleDuration } from './tx/setCertTime'
 import { applyClaimRewardTx, injectClaimRewardTxWithRetry } from './tx/claimReward'
@@ -386,8 +386,10 @@ function initEVMSingletons(): void {
 
   // setting up only to 'istanbul' hardfork for now
   // https://github.com/ethereumjs/ethereumjs-monorepo/blob/master/packages/common/src/chains/mainnet.json
-  evmCommon = Common.forCustomChain(Chain.Mainnet, {
-    hardforks: [
+  evmCommon = Common.custom({
+    name: Chain.Mainnet,
+  }, {
+        hardforks: [
       {
         name: 'chainstart',
         block: 0,
@@ -421,6 +423,10 @@ function initEVMSingletons(): void {
         block: 0,
       },
     ],
+    eips: [
+      1153, 2315, 2565, 2718, 2930, 3074, 3198, 3529, 3540, 3541, 3607, 3651, 3670,
+      3855, 3860, 4399, 4895, 4788, 5133, 5656, 6780,
+    ]
   })
 
   //hack override this function.  perhaps a nice thing would be to use forCustomChain to create a custom common object
@@ -690,7 +696,7 @@ function getStakeTxBlobFromEVMTx(transaction: Transaction | AccessListEIP2930Tra
 
 async function createAccount(
   addressStr: string,
-  stateManager: StateManager,
+  stateManager: EthersStateManager,
   balance: BN = defaultBalance
 ): Promise<WrappedEVMAccount> {
   if (ShardeumFlags.VerboseLogs) console.log('Creating new account', addressStr)

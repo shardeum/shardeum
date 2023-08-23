@@ -1,4 +1,4 @@
-import Blockchain from '@ethereumjs/blockchain'
+import { Blockchain } from '@ethereumjs/blockchain'
 import { Block } from '@ethereumjs/block'
 import { BN } from 'ethereumjs-util'
 import { blocks, evmCommon } from '..'

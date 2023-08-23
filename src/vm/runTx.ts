@@ -11,7 +11,6 @@ import {
   TypedTransaction,
   Capability,
 } from '@ethereumjs/tx'
-import VM from '@ethereumjs/vm'
 import Bloom from './bloom'
 import { default as EVM, EVMResult } from './evm/evm'
 import { short } from './evm/opcodes/util'
@@ -28,6 +27,7 @@ import { ShardeumFlags } from '../shardeum/shardeumFlags'
 import { NetworkAccount } from '../shardeum/shardeumTypes'
 import { calculateGasPrice, scaleByStabilityFactor } from '../utils'
 import { Log } from './evm/types'
+import { VM } from "@ethereumjs/vm";
 
 const debug = createDebugLogger('vm:tx')
 const debugGas = createDebugLogger('vm:tx:gas')
@@ -185,7 +185,7 @@ export async function generateTxReceipt(
 
   if (!tx.supports(Capability.EIP2718TypedTransaction)) {
     // Legacy transaction
-    if (this._common.gteHardfork('byzantium')) {
+    if (this.common.gteHardfork('byzantium')) {
       // Post-Byzantium
       receipt = {
         status: txResult.execResult.exceptionError ? 0 : 1, // Receipts have a 0 as status on error
@@ -193,7 +193,7 @@ export async function generateTxReceipt(
       } as PostByzantiumTxReceipt
     } else {
       // Pre-Byzantium
-      const stateRoot = await this.stateManager.getStateRoot(true)
+      const stateRoot = await this.stateManager.getStateRoot()
       receipt = {
         stateRoot: stateRoot,
         ...baseReceipt,
@@ -236,14 +236,6 @@ async function _runTx(this: VM, opts: RunTxOpts): Promise<RunTxResult> {
     )
   }
 
-  if (this._common.isActivatedEIP(2929)) {
-    state.addWarmedAddress(caller.buf)
-    if (tx.to) {
-      // Note: in case we create a contract, we do this in EVMs `_executeCreate` (this is also correct in inner calls, per the EIP)
-      state.addWarmedAddress(tx.to.buf)
-    }
-  }
-
   // Validate gas limit against tx base fee (DataFee + TxFee + Creation Fee)
   const txBaseFee = tx.getBaseFee()
   const gasLimit = tx.gasLimit.clone()
@@ -256,7 +248,7 @@ async function _runTx(this: VM, opts: RunTxOpts): Promise<RunTxResult> {
     debugGas(`Subtracting base fee (${txBaseFee}) from gasLimit (-> ${gasLimit})`)
   }
 
-  if (this._common.isActivatedEIP(1559)) {
+  if (this.common.isActivatedEIP(1559)) {
     // EIP-1559 spec:
     // Ensure that the user was willing to at least pay the base fee
     // assert transaction.max_fee_per_gas >= block.base_fee_per_gas
@@ -278,7 +270,7 @@ async function _runTx(this: VM, opts: RunTxOpts): Promise<RunTxResult> {
   const { nonce, balance } = fromAccount
 
   // EIP-3607: Reject transactions from senders with deployed code
-  if (this._common.isActivatedEIP(3607) && !fromAccount.codeHash.equals(KECCAK256_NULL)) {
+  if (this.common.isActivatedEIP(3607) && !fromAccount.codeHash.equals(KECCAK256_NULL)) {
     const msg = _errorMsg('invalid sender address, address is not EOA (EIP-3607)', this, block, tx)
     throw new Error(msg)
   }
@@ -335,7 +327,7 @@ async function _runTx(this: VM, opts: RunTxOpts): Promise<RunTxResult> {
   } else {
     // Have to cast as legacy tx since EIP1559 tx does not have gas price
     // gasPrice = (tx as Transaction).gasPrice
-    if (this._common.isActivatedEIP(1559)) {
+    if (this.common.isActivatedEIP(1559)) {
       const baseFee = block.header.baseFeePerGas!
       inclusionFeePerGas = (tx as Transaction).gasPrice.sub(baseFee)
     }
@@ -410,7 +402,7 @@ async function _runTx(this: VM, opts: RunTxOpts): Promise<RunTxResult> {
 
   // Process any gas refund
   let gasRefund = results.execResult.gasRefund ?? new BN(0)
-  const maxRefundQuotient = this._common.param('gasConfig', 'maxRefundQuotient')
+  const maxRefundQuotient = this.common.param('gasConfig', 'maxRefundQuotient')
   if (!gasRefund.isZero()) {
     const maxRefund = results.gasUsed.divn(maxRefundQuotient)
     gasRefund = BN.min(gasRefund, maxRefund)
@@ -444,7 +436,7 @@ async function _runTx(this: VM, opts: RunTxOpts): Promise<RunTxResult> {
 
   // Update miner's balance
   let miner
-  if (this._common.consensusType() === ConsensusType.ProofOfAuthority) {
+  if (this.common.consensusType() === ConsensusType.ProofOfAuthority) {
     // Backwards-compatibility check
     // TODO: can be removed along VM v6 release
     if ('cliqueSigner' in block.header) {
@@ -458,7 +450,7 @@ async function _runTx(this: VM, opts: RunTxOpts): Promise<RunTxResult> {
 
   const minerAccount = await state.getAccount(miner)
   // add the amount spent on gas to the miner's account
-  if (this._common.isActivatedEIP(1559)) {
+  if (this.common.isActivatedEIP(1559)) {
     minerAccount.balance.iadd(results.gasUsed.mul(inclusionFeePerGas as BN))
   } else {
     minerAccount.balance.iadd(results.amountSpent)
@@ -542,11 +534,6 @@ export default async function runTx(this: VM, opts: RunTxOpts): Promise<RunTxRes
     throw new Error(msg)
   }
 
-  // Ensure we start with a clear warmed accounts Map
-  if (this._common.isActivatedEIP(2929)) {
-    state.clearWarmedAccounts()
-  }
-
   await state.checkpoint()
   if (this.DEBUG) {
     debug('-'.repeat(100))
@@ -554,9 +541,9 @@ export default async function runTx(this: VM, opts: RunTxOpts): Promise<RunTxRes
   }
 
   // Typed transaction specific setup tasks
-  if (opts.tx.supports(Capability.EIP2718TypedTransaction) && this._common.isActivatedEIP(2718)) {
+  if (opts.tx.supports(Capability.EIP2718TypedTransaction) && this.common.isActivatedEIP(2718)) {
     // Is it an Access List transaction?
-    if (!this._common.isActivatedEIP(2930)) {
+    if (!this.common.isActivatedEIP(2930)) {
       await state.revert()
       const msg = _errorMsg('Cannot run transaction: EIP 2930 is not activated.', this, opts.block, opts.tx)
       throw new Error(msg)
@@ -571,7 +558,7 @@ export default async function runTx(this: VM, opts: RunTxOpts): Promise<RunTxRes
       )
       throw new Error(msg)
     }
-    if (opts.tx.supports(Capability.EIP1559FeeMarket) && !this._common.isActivatedEIP(1559)) {
+    if (opts.tx.supports(Capability.EIP1559FeeMarket) && !this.common.isActivatedEIP(1559)) {
       await state.revert()
       const msg = _errorMsg('Cannot run transaction: EIP 1559 is not activated.', this, opts.block, opts.tx)
       throw new Error(msg)
@@ -594,14 +581,6 @@ export default async function runTx(this: VM, opts: RunTxOpts): Promise<RunTxRes
     if (this.DEBUG) {
       debug(`tx checkpoint committed`)
     }
-    if (this._common.isActivatedEIP(2929) && opts.reportAccessList) {
-      const { tx } = opts
-      // Do not include sender address in access list
-      const removed = [tx.getSenderAddress()]
-      // Only include to address on present storage slot accesses
-      const onlyStorage = tx.to ? [tx.to] : []
-      result.accessList = state.generateAccessList!(removed, onlyStorage)
-    }
     return result
   } catch (e: unknown) {
     await state.revert()
@@ -610,7 +589,7 @@ export default async function runTx(this: VM, opts: RunTxOpts): Promise<RunTxRes
     }
     throw e
   } finally {
-    if (this._common.isActivatedEIP(2929)) {
+    if (this.common.isActivatedEIP(2929)) {
       state.clearWarmedAccounts()
     }
   }

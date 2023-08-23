@@ -1,5 +1,5 @@
-import VM, { VMOpts } from '@ethereumjs/vm'
-import { default as runTx, RunTxOpts } from './runTx'
+import { VMOpts, VM, RunTxOpts } from '@ethereumjs/vm'
+import { default as runTx } from './runTx'
 import { default as runCall, RunCallOpts } from './runCall'
 import { ShardeumFlags } from '../shardeum/shardeumFlags'
 

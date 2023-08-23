@@ -14,12 +14,14 @@ import {
   KECCAK256_RLP,
   setLengthLeft,
 } from 'ethereumjs-util'
-import Common from '@ethereumjs/common'
+import { Common } from '@ethereumjs/common'
 import { StateManager, StorageDump } from './interface'
 import Cache, { getCb, putCb } from './cache'
 import { BaseStateManager } from './'
 import { short } from '../evm/opcodes'
 import { ShardeumAccount } from '../../shardeum/shardeumTypes'
+
+export type AccountFields = Partial<Pick<Account, 'nonce' | 'balance' | 'stateRoot' | 'codeHash'>>
 
 type StorageProof = {
   key: PrefixedHexString

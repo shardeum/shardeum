@@ -1,4 +1,4 @@
-import Common from '@ethereumjs/common'
+import {Common} from '@ethereumjs/common'
 import {
   Address,
   BN,
@@ -863,8 +863,16 @@ export const handlers: Map<number, OpHandler> = new Map([
   // 0xf0: CREATE
   [
     0xf0,
-    async function (runState): Promise<void> {
+    async function (runState, common): Promise<void> {
       const [value, offset, length] = runState.stack.popN(3)
+
+      if (
+        common.isActivatedEIP(3860) &&
+        length.gt(common.param('vm', 'maxInitCodeSize'))
+        // && !runState.eei._evm.allowUnlimitedInitCodeSize
+      ) {
+        trap(ERROR.INITCODE_SIZE_VIOLATION)
+      }
 
       const gasLimit = runState.messageGasLimit!
       runState.messageGasLimit = undefined
@@ -881,12 +889,20 @@ export const handlers: Map<number, OpHandler> = new Map([
   // 0xf5: CREATE2
   [
     0xf5,
-    async function (runState): Promise<void> {
+    async function (runState, common): Promise<void> {
       if (runState.eei.isStatic()) {
         trap(ERROR.STATIC_STATE_CHANGE)
       }
 
       const [value, offset, length, salt] = runState.stack.popN(4)
+
+      if (
+        common.isActivatedEIP(3860) &&
+        length.gt(common.param('vm', 'maxInitCodeSize'))
+        // && !runState.eei._evm.allowUnlimitedInitCodeSize
+      ) {
+        trap(ERROR.INITCODE_SIZE_VIOLATION)
+      }
 
       const gasLimit = runState.messageGasLimit!
       runState.messageGasLimit = undefined
