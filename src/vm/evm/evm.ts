@@ -239,7 +239,10 @@ export default class EVM {
   }
 
   async _executeCall(message: Message): Promise<EVMResult> {
-    const account = await this._state.getAccount(message.caller)
+    let account = await this._state.getAccount(message.caller)
+    if (!account) {
+      account = new Account()
+    }
     // Reduce tx value from sender
     if (!message.delegatecall) {
       if (ShardeumFlags.VerboseLogs) {
@@ -252,7 +255,10 @@ export default class EVM {
       }
     }
     // Load `to` account
-    const toAccount = await this._state.getAccount(message.to)
+    let toAccount = await this._state.getAccount(message.to)
+    if (!toAccount) {
+      toAccount = new Account()
+    }
     // Add tx value to the `to` account
     let errorMessage
     if (!message.delegatecall) {
@@ -325,7 +331,10 @@ export default class EVM {
   }
 
   async _executeCreate(message: Message): Promise<EVMResult> {
-    const account = await this._state.getAccount(message.caller)
+    let account = await this._state.getAccount(message.caller)
+    if (!account) {
+      account = new Account()
+    }
     // Reduce tx value from sender
     await this._reduceSenderBalance(account, message)
 
@@ -350,6 +359,9 @@ export default class EVM {
       debug(`Generated CREATE contract address ${message.to}`)
     }
     let toAccount = await this._state.getAccount(message.to)
+    if (!toAccount) {
+      toAccount = new Account()
+    }
 
     // Check for collision
     if ((toAccount.nonce && toAccount.nonce.gtn(0)) || !toAccount.codeHash.equals(KECCAK256_NULL)) {
@@ -377,6 +389,9 @@ export default class EVM {
     await this._vm._emit('newContract', newContractEvent)
 
     toAccount = await this._state.getAccount(message.to)
+    if (!toAccount) {
+      toAccount = new Account()
+    }
     // EIP-161 on account creation and CREATE execution
     if (this._vm._common.gteHardfork('spuriousDragon')) {
       toAccount.nonce.iaddn(1)
@@ -514,7 +529,7 @@ export default class EVM {
         // It does change the state root, but it only wastes storage.
         //await this._state.putContractCode(message.to, result.returnValue)
         const account = await this._state.getAccount(message.to)
-        await this._state.putAccount(message.to, account)
+        await this._state.putAccount(message.to, account ?? new Account())
       }
     }
 
@@ -542,7 +557,7 @@ export default class EVM {
       gasPrice: this._tx.gasPrice,
       origin: this._tx.origin || message.caller || Address.zero(),
       block: this._block || new Block(),
-      contract: await this._state.getAccount(message.to || Address.zero()),
+      contract: await this._state.getAccount(message.to || Address.zero()) ?? new Account(),
       codeAddress: message.codeAddress,
     }
     const eei = new EEI(env, this._state, this, this._vm._common, message.gasLimit.clone())
@@ -629,7 +644,10 @@ export default class EVM {
     if (message.salt) {
       addr = generateAddress2(message.caller.buf, message.salt, message.code as Buffer)
     } else {
-      const acc = await this._state.getAccount(message.caller)
+      let acc = await this._state.getAccount(message.caller)
+      if (!acc) {
+        acc = new Account()
+      }
       const newNonce = acc.nonce.subn(1)
       addr = generateAddress(message.caller.buf, newNonce.toArrayLike(Buffer))
     }

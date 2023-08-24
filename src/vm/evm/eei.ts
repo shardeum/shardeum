@@ -281,7 +281,7 @@ export default class EEI {
   /**
    * Returns the block’s number.
    */
-  getBlockNumber(): BN {
+  getBlockNumber(): bigint {
     return this._env.block.header.number
   }
 
@@ -307,14 +307,14 @@ export default class EEI {
   /**
    * Returns the block's timestamp.
    */
-  getBlockTimestamp(): BN {
+  getBlockTimestamp(): bigint {
     return this._env.block.header.timestamp
   }
 
   /**
    * Returns the block's difficulty.
    */
-  getBlockDifficulty(): BN {
+  getBlockDifficulty(): bigint {
     return this._env.block.header.difficulty
   }
 
@@ -328,7 +328,7 @@ export default class EEI {
   /**
    * Returns the block's gas limit.
    */
-  getBlockGasLimit(): BN {
+  getBlockGasLimit(): bigint {
     return this._env.block.header.gasLimit
   }
 
@@ -336,14 +336,14 @@ export default class EEI {
    * Returns the chain ID for current chain. Introduced for the
    * CHAINID opcode proposed in [EIP-1344](https://eips.ethereum.org/EIPS/eip-1344).
    */
-  getChainId(): BN {
+  getChainId(): bigint {
     return this._common.chainIdBN()
   }
 
   /**
    * Returns the Base Fee of the block as proposed in [EIP-3198](https;//eips.etheruem.org/EIPS/eip-3198)
    */
-  getBlockBaseFee(): BN {
+  getBlockBaseFee(): bigint {
     const baseFee = this._env.block.header.baseFeePerGas
     if (baseFee === undefined) {
       // Sanity check

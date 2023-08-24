@@ -7,6 +7,7 @@ import Stack from './stack'
 import EEI from './eei'
 import { Opcode, OpHandler, AsyncOpHandler } from './opcodes'
 import * as eof from './opcodes/eof'
+import {Blockchain} from "@ethereumjs/blockchain";
 
 export interface InterpreterOpts {
   pc?: number
@@ -16,16 +17,18 @@ export interface RunState {
   programCounter: number
   opCode: number
   memory: Memory
-  memoryWordCount: BN
-  highestMemCost: BN
+  memoryWordCount: bigint
+  highestMemCost: bigint
   stack: Stack
   returnStack: Stack
-  code: Buffer
+  code: Uint8Array
   shouldDoJumpAnalysis: boolean
   validJumps: Uint8Array // array of values where validJumps[index] has value 0 (default), 1 (jumpdest), 2 (beginsub)
   stateManager: StateManager
   eei: EEI
-  messageGasLimit?: BN // Cache value from `gas.ts` to save gas limit for a message call
+  messageGasLimit?: bigint // Cache value from `gas.ts` to save gas limit for a message call
+  interpreter: Interpreter
+  returnBytes: Uint8Array /* Current bytes in the return Uint8Array. Cleared each time a CALL/CREATE is made in the current frame. */
 }
 
 export interface InterpreterResult {
@@ -50,7 +53,7 @@ export interface InterpreterStep {
   address: Address
   depth: number
   memory: Buffer
-  memoryWordCount: BN
+  memoryWordCount: bigint
   codeAddress: Address
 }
 
@@ -80,8 +83,8 @@ export default class Interpreter {
       programCounter: 0,
       opCode: 0xfe, // INVALID opcode
       memory: new Memory(),
-      memoryWordCount: new BN(0),
-      highestMemCost: new BN(0),
+      memoryWordCount: BigInt(0),
+      highestMemCost: BigInt(0),
       stack: new Stack(),
       returnStack: new Stack(1023), // 1023 return stack height limit per EIP 2315 spec
       code: Buffer.alloc(0),
@@ -89,6 +92,8 @@ export default class Interpreter {
       stateManager: this._state,
       eei: this._eei,
       shouldDoJumpAnalysis: true,
+      interpreter: this,
+      returnBytes: new Uint8Array(0),
     }
   }
 
@@ -303,7 +308,7 @@ export default class Interpreter {
   }
 
   // Returns all valid jump and jumpsub destinations.
-  _getValidJumpDests(code: Buffer): Uint8Array {
+  _getValidJumpDests(code: Uint8Array): Uint8Array {
     const jumps = new Uint8Array(code.length).fill(0)
 
     for (let i = 0; i < code.length; i++) {

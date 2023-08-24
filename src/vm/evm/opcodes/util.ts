@@ -1,7 +1,8 @@
-import Common from '@ethereumjs/common'
+import { Common } from '@ethereumjs/common'
 import { BN, keccak256, setLengthRight, setLengthLeft } from 'ethereumjs-util'
 import { ERROR, VmError } from './../../exceptions'
 import { RunState } from './../interpreter'
+import {bytesToHex} from "@ethereumjs/util";
 
 const MASK_160 = new BN(1).shln(160).subn(1)
 
@@ -57,31 +58,36 @@ export function describeLocation(runState: RunState): string {
 /**
  * Find Ceil(a / b)
  *
- * @param {BN} a
- * @param {BN} b
- * @return {BN}
+ * @param {bigint} a
+ * @param {bigint} b
+ * @return {bigint}
  */
-export function divCeil(a: BN, b: BN): BN {
-  const div = a.div(b)
-  const mod = a.mod(b)
+export function divCeil(a: bigint, b: bigint): bigint {
+  const div = a / b
+  const modulus = mod(a, b)
 
   // Fast case - exact division
-  if (mod.isZero()) return div
+  if (modulus === BigInt(0)) return div
 
-  // determine sign for rounding
-  const shouldRoundDown = a.isNeg() !== b.isNeg() && !mod.isZero()
-
-  // Round up if positive, round down if negative
-  return shouldRoundDown ? div.isubn(1) : div.iaddn(1)
+  // Round up
+  return div < BigInt(0) ? div - BigInt(1) : div + BigInt(1)
 }
 
-export function short(buffer: Buffer): string {
-  const MAX_LENGTH = 50
-  const bufferStr = buffer.toString('hex')
-  if (bufferStr.length <= MAX_LENGTH) {
-    return bufferStr
+export const short = (bytes: Uint8Array | string, maxLength = 50): string => {
+  const byteStr = bytes instanceof Uint8Array ? bytesToHex(bytes) : bytes
+  const len = byteStr.slice(0, 2) === '0x' ? maxLength + 2 : maxLength
+  if (byteStr.length <= len) {
+    return byteStr
   }
-  return bufferStr.slice(0, MAX_LENGTH) + '...'
+  return byteStr.slice(0, len) + '…'
+}
+
+export function mod(a: bigint, b: bigint): bigint {
+  let r = a % b
+  if (r < BigInt(0)) {
+    r = b + r
+  }
+  return r
 }
 
 /**
@@ -188,23 +194,23 @@ export function maxCallGas(gasLimit: BN, gasLeft: BN, runState: RunState, common
  * @param {BN} offset
  * @param {BN} length
  */
-export function subMemUsage(runState: RunState, offset: BN, length: BN, common: Common): BN {
+export function subMemUsage(runState: RunState, offset: bigint, length: bigint, common: Common): bigint {
   // YP (225): access with zero length will not extend the memory
-  if (length.isZero()) return new BN(0)
+  if (length === BigInt(0)) return BigInt(0)
 
-  const newMemoryWordCount = divCeil(offset.add(length), new BN(32))
-  if (newMemoryWordCount.lte(runState.memoryWordCount)) return new BN(0)
+  const newMemoryWordCount = divCeil(offset + length, BigInt(32))
+  if (newMemoryWordCount <= runState.memoryWordCount) return BigInt(0)
 
   const words = newMemoryWordCount
-  const fee = new BN(common.param('gasPrices', 'memory'))
-  const quadCoeff = new BN(common.param('gasPrices', 'quadCoeffDiv'))
+  const fee = common.param('gasPrices', 'memory')
+  const quadCoeff = common.param('gasPrices', 'quadCoeffDiv')
   // words * 3 + words ^2 / 512
-  const cost = words.mul(fee).add(words.mul(words).div(quadCoeff))
+  let cost = words * fee + (words * words) / quadCoeff
 
-  if (cost.gt(runState.highestMemCost)) {
+  if (cost > runState.highestMemCost) {
     const currentHighestMemCost = runState.highestMemCost
-    runState.highestMemCost = cost.clone()
-    cost.isub(currentHighestMemCost)
+    runState.highestMemCost = cost
+    cost -= currentHighestMemCost
   }
 
   runState.memoryWordCount = newMemoryWordCount
@@ -244,16 +250,15 @@ export function updateSstoreGas(
   currentStorage: Buffer,
   value: Buffer,
   common: Common
-): BN {
+): bigint {
   if (
     (value.length === 0 && currentStorage.length === 0) ||
     (value.length > 0 && currentStorage.length > 0)
   ) {
-    const gas = new BN(common.param('gasPrices', 'sstoreReset'))
-    return gas
+    return common.param('gasPrices', 'sstoreReset')
   } else if (value.length === 0 && currentStorage.length > 0) {
-    const gas = new BN(common.param('gasPrices', 'sstoreReset'))
-    runState.eei.refundGas(new BN(common.param('gasPrices', 'sstoreRefund')), 'updateSstoreGas')
+    const gas = common.param('gasPrices', 'sstoreReset'
+    runState.eei.refundGas(common.param('gasPrices', 'sstoreRefund'), 'updateSstoreGas')
     return gas
   } else {
     /*
@@ -263,6 +268,6 @@ export function updateSstoreGas(
       -> Value is zero, but slot is nonzero
       Thus, the remaining case is where value is nonzero, but slot is zero, which is this clause
     */
-    return new BN(common.param('gasPrices', 'sstoreSet'))
+    return common.param('gasPrices', 'sstoreSet')
   }
 }

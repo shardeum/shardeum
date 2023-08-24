@@ -367,6 +367,22 @@ export abstract class BaseStateManager {
   }
 
   /**
+   * Generates a canonical genesis state on the instance based on the
+   * configured chain parameters. Will error if there are uncommitted
+   * checkpoints on the instance.
+   */
+  async generateCanonicalGenesis(): Promise<void> {
+    if (this._checkpointCount !== 0) {
+      throw new Error('Cannot create genesis state with uncommitted checkpoints')
+    }
+
+    const genesis = await this.hasGenesisState()
+    if (!genesis) {
+      await this.generateGenesis(this._common.genesisState())
+    }
+  }
+
+  /**
    * Add a warm address in the current context
    * @param address - The address (as a Buffer) to check
    */

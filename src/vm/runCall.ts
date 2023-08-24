@@ -33,7 +33,7 @@ export interface RunCallOpts {
  * @ignore
  */
 export default function runCall(this: VM, opts: RunCallOpts): Promise<EVMResult> {
-  const block = opts.block ?? Block.fromBlockData({}, { common: this._common })
+  const block = opts.block ?? Block.fromBlockData({}, { common: this.common })
 
   const txContext = new TxContext(opts.gasPrice ?? new BN(0), opts.origin ?? opts.caller ?? Address.zero())
 

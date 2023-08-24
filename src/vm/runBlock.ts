@@ -1,8 +1,8 @@
 import { debug as createDebugLogger } from 'debug'
-import { BaseTrie as Trie } from 'merkle-patricia-tree'
+import { Trie } from '@ethereumjs/trie'
 import { Account, Address, BN, intToBuffer, rlp } from 'ethereumjs-util'
 import { Block } from '@ethereumjs/block'
-import { ConsensusType } from '@ethereumjs/common'
+import {ConsensusType, Hardfork} from '@ethereumjs/common'
 import VM from './index'
 import Bloom from './bloom'
 import { StateManager } from './state'
@@ -11,6 +11,7 @@ import { Capability, TypedTransaction } from '@ethereumjs/tx'
 import type { RunTxResult } from './runTx'
 import type { TxReceipt } from './types'
 import * as DAOConfig from './config/dao_fork_accounts_config.json'
+import { bytesToHex, equalsBytes } from '@ethereumjs/util'
 
 // For backwards compatibility from v5.3.0,
 // TxReceipts are exported. These exports are
@@ -51,6 +52,13 @@ export interface RunBlockOpts {
    */
   skipBlockValidation?: boolean
   /**
+   * if true, will skip "Header validation"
+   * If the block has been picked from the blockchain to be executed,
+   * header has already been validated, and can be skipped especially when
+   * consensus of the chain has moved ahead.
+   */
+  skipHeaderValidation?: boolean
+  /**
    * If true, skips the nonce check
    */
   skipNonce?: boolean
@@ -62,6 +70,16 @@ export interface RunBlockOpts {
    * For merge transition support, pass the chain TD up to the block being run
    */
   hardforkByTD?: BN
+  /**
+   * Set the hardfork either by timestamp (for HFs from Shanghai onwards) or by block number
+   * for older Hfs.
+   *
+   * Additionally it is possible to pass in a specific TD value to support live-Merge-HF
+   * transitions. Note that this should only be needed in very rare and specific scenarios.
+   *
+   * Default: `false` (HF is set to whatever default HF is set by the {@link Common} instance)
+   */
+  setHardfork?: boolean
 }
 
 /**
@@ -79,19 +97,19 @@ export interface RunBlockResult {
   /**
    * The stateRoot after executing the block
    */
-  stateRoot: Buffer
+  stateRoot: Uint8Array
   /**
    * The gas used after executing the block
    */
-  gasUsed: BN
+  gasUsed: bigint
   /**
    * The bloom filter of the LOGs (events) after executing the block
    */
-  logsBloom: Buffer
+  logsBloom: Uint8Array
   /**
    * The receipt root after executing the block
    */
-  receiptRoot: Buffer
+  receiptsRoot: Uint8Array
 }
 
 /**
@@ -107,12 +125,12 @@ function _errorMsg(msg: string, vm: VM, block: Block): string {
   return errorMsg
 }
 
-async function _genTxTrie(block: Block): Promise<Buffer> {
+async function _genTxTrie(block: Block): Promise<Uint8Array> {
   const trie = new Trie()
   for (const [i, tx] of block.transactions.entries()) {
     await trie.put(rlp.encode(i), tx.serialize())
   }
-  return trie.root
+  return trie.root()
 }
 
 /**
@@ -139,11 +157,15 @@ export interface AfterBlockEvent extends RunBlockResult {
   block: Block
 }
 
-function calculateOmmerReward(ommerBlockNumber: BN, blockNumber: BN, minerReward: BN): BN {
-  const heightDiff = blockNumber.sub(ommerBlockNumber)
-  let reward = new BN(8).sub(heightDiff).mul(minerReward.divn(8))
-  if (reward.ltn(0)) {
-    reward = new BN(0)
+function calculateOmmerReward(
+  ommerBlockNumber: bigint,
+  blockNumber: bigint,
+  minerReward: bigint
+): bigint {
+  const heightDiff = blockNumber - ommerBlockNumber
+  let reward = ((BigInt(8) - heightDiff) * minerReward) / BigInt(8)
+  if (reward < BigInt(0)) {
+    reward = BigInt(0)
   }
   return reward
 }
@@ -176,7 +198,7 @@ async function assignBlockRewards(this: VM, block: Block): Promise<void> {
     debug(`Assign block rewards`)
   }
   const state = this.stateManager
-  const minerReward = new BN(this._common.param('pow', 'minerReward'))
+  const minerReward = this.common.param('pow', 'minerReward')
   const ommers = block.uncleHeaders
   // Reward ommers
   for (const ommer of ommers) {
@@ -204,14 +226,14 @@ async function assignBlockRewards(this: VM, block: Block): Promise<void> {
 //TODO make this a type
 async function applyTransactions(this: VM, block: Block, opts: RunBlockOpts): Promise<{
   bloom: Bloom,
-  gasUsed: BN,
-  receiptRoot: Buffer,
-  receipts,
+  gasUsed: bigint,
+  receiptsRoot: Uint8Array,
+  receipts: TxReceipt[],
   results: TxReceipt[],
 }> {
   const bloom = new Bloom()
   // the total amount of gas used processing these transactions
-  let gasUsed = new BN(0)
+  let gasUsed = BigInt(0)
   const receiptTrie = new Trie()
   const receipts = []
   const txResults = []
@@ -224,15 +246,13 @@ async function applyTransactions(this: VM, block: Block, opts: RunBlockOpts): Pr
     const tx = block.transactions[txIdx]
 
     let maxGasLimit
-    if (this._common.isActivatedEIP(1559)) {
-      maxGasLimit = block.header.gasLimit.muln(
-        this._common.param('gasConfig', 'elasticityMultiplier')
-      )
+    if (this.common.isActivatedEIP(1559)) {
+      maxGasLimit = block.header.gasLimit * this.common.param('gasConfig', 'elasticityMultiplier')
     } else {
       maxGasLimit = block.header.gasLimit
     }
 
-    const gasLimitIsHigherThanBlock = maxGasLimit.lt(tx.gasLimit.add(gasUsed))
+    const gasLimitIsHigherThanBlock = maxGasLimit < tx.gasLimit + gasUsed
     if (gasLimitIsHigherThanBlock) {
       const msg = _errorMsg('tx has a higher gas limit than the block', this, block)
       throw new Error(msg)
@@ -254,7 +274,7 @@ async function applyTransactions(this: VM, block: Block, opts: RunBlockOpts): Pr
     }
 
     // Add to total block gas usage
-    gasUsed = gasUsed.add(txRes.gasUsed)
+    gasUsed += txRes.totalGasSpent
     if (this.DEBUG) {
       debug(`Add tx gas used (${txRes.gasUsed}) to total block gas usage (-> ${gasUsed})`)
     }
@@ -271,7 +291,7 @@ async function applyTransactions(this: VM, block: Block, opts: RunBlockOpts): Pr
   return {
     bloom,
     gasUsed,
-    receiptRoot: receiptTrie.root,
+    receiptsRoot: receiptTrie.root(),
     receipts,
     results: txResults,
   }
@@ -285,23 +305,33 @@ async function applyTransactions(this: VM, block: Block, opts: RunBlockOpts): Pr
  * @param {Block} block
  * @param {RunBlockOpts} opts
  */
-async function applyBlock(this: VM, block: Block, opts: RunBlockOpts): Promise<{ 
-  gasUsed: BN, 
-  bloom: Bloom, 
-  receiptRoot: Buffer, 
-  equals: Buffer, 
-  receipts: string, 
+async function applyBlock(this: VM, block: Block, opts: RunBlockOpts): Promise<{
+  gasUsed: BN,
+  bloom: Bloom,
+  receiptsRoot: Buffer,
+  equals: Buffer,
+  receipts: string,
   results: string }> {
   // Validate block
   if (!opts.skipBlockValidation) {
-    if (block.header.gasLimit.gte(new BN('8000000000000000', 16))) {
+    if (block.header.gasLimit>= BigInt('0x8000000000000000')) {
       const msg = _errorMsg('Invalid block with gas limit greater than (2^63 - 1)', this, block)
       throw new Error(msg)
     } else {
       if (this.DEBUG) {
         debug(`Validate block`)
       }
-      await block.validate(this.blockchain)
+      await block.validateData()
+
+      // TODO: decide what block validation method is appropriate here
+      if (opts.skipHeaderValidation !== true) {
+        if (typeof (<any>this.blockchain).validateHeader === 'function') {
+          await (<any>this.blockchain).validateHeader(block.header)
+        } else {
+          throw new Error('cannot validate header: blockchain has no `validateHeader` method')
+        }
+      }
+      await block.validateData()
     }
   }
   // Apply transactions
@@ -310,7 +340,7 @@ async function applyBlock(this: VM, block: Block, opts: RunBlockOpts): Promise<{
   }
   const blockResults = await applyTransactions.bind(this)(block, opts)
   // Pay ommers and miners
-  if (block._common.consensusType() === ConsensusType.ProofOfWork) {
+  if (block.common.consensusType() === ConsensusType.ProofOfWork) {
     await assignBlockRewards.bind(this)(block)
   }
   return blockResults
@@ -346,6 +376,7 @@ export default async function runBlock(this: VM, opts: RunBlockOpts): Promise<Ru
   const { root } = opts
   let { block } = opts
   const generateFields = !!opts.generate
+  const setHardfork = opts.setHardfork ?? false
 
   /**
    * The `beforeBlock` event.
@@ -356,19 +387,28 @@ export default async function runBlock(this: VM, opts: RunBlockOpts): Promise<Ru
    */
   await this._emit('beforeBlock', block)
 
-  if (this._hardforkByBlockNumber || this._hardforkByTD || opts.hardforkByTD) {
-    this._common.setHardforkByBlockNumber(
-      block.header.number,
-      opts.hardforkByTD ?? this._hardforkByTD
-    )
+  if (setHardfork !== false || this._setHardfork !== false) {
+    const setHardforkUsed = setHardfork ?? this._setHardfork
+    if (setHardforkUsed === true) {
+      this.common.setHardforkBy({
+        blockNumber: block.header.number,
+        timestamp: block.header.timestamp,
+      })
+    } else if (typeof setHardforkUsed !== 'boolean') {
+      this.common.setHardforkBy({
+        blockNumber: block.header.number,
+        td: setHardforkUsed,
+        timestamp: block.header.timestamp,
+      })
+    }
   }
 
   if (this.DEBUG) {
     debug('-'.repeat(100))
     debug(
-      `Running block hash=${block.hash().toString('hex')} number=${
+      `Running block hash=${bytesToHex(block.hash())} number=${
         block.header.number
-      } hardfork=${this._common.hardfork()}`
+      } hardfork=${this.common.hardfork()}`
     )
   }
 
@@ -382,13 +422,15 @@ export default async function runBlock(this: VM, opts: RunBlockOpts): Promise<Ru
 
   // check for DAO support and if we should apply the DAO fork
   if (
-    this._common.hardforkIsActiveOnChain('dao') &&
-    block.header.number.eq(this._common.hardforkBlockBN('dao')!)
+      this.common.hardforkIsActiveOnBlock(Hardfork.Dao, block.header.number) === true &&
+      block.header.number === this.common.hardforkBlock(Hardfork.Dao)!
   ) {
     if (this.DEBUG) {
       debug(`Apply DAO hardfork`)
     }
+    await this.evm.journal.checkpoint()
     await _applyDAOHardfork(state)
+    await this.evm.journal.commit()
   }
 
   // Checkpoint state
@@ -397,14 +439,14 @@ export default async function runBlock(this: VM, opts: RunBlockOpts): Promise<Ru
     debug(`block checkpoint`)
   }
 
-  let result: { gasUsed: BN, bloom: Bloom, receiptRoot: Buffer, equals: Buffer, receipts: TxReceipt[], results: RunTxResult[] }
+  let result: { gasUsed: bigint, bloom: Bloom, receiptsRoot: Buffer, equals: Buffer, receipts: TxReceipt[], results: RunTxResult[] }
   try {
     result = await applyBlock.bind(this)(block, opts)
     if (this.DEBUG) {
       debug(
         `Received block results gasUsed=${result.gasUsed} bloom=${short(result.bloom.bitvector)} (${
           result.bloom.bitvector.length
-        } bytes) receiptRoot=${result.receiptRoot.toString('hex')} receipts=${
+        } bytes) receiptsRoot=${bytesToHex(result.receiptsRoot)} receipts=${
           result.receipts.length
         } txResults=${result.results.length}`
       )
@@ -423,7 +465,7 @@ export default async function runBlock(this: VM, opts: RunBlockOpts): Promise<Ru
     debug(`block checkpoint committed`)
   }
 
-  const stateRoot = await state.getStateRoot(false)
+  const stateRoot = await state.getStateRoot()
 
   // Given the generate option, either set resulting header
   // values to the current block, or validate the resulting
@@ -431,50 +473,50 @@ export default async function runBlock(this: VM, opts: RunBlockOpts): Promise<Ru
   if (generateFields) {
     const bloom = result.bloom.bitvector
     const gasUsed = result.gasUsed
-    const receiptTrie = result.receiptRoot
+    const receiptTrie = result.receiptsRoot
     const transactionsTrie = await _genTxTrie(block)
     const generatedFields = { stateRoot, bloom, gasUsed, receiptTrie, transactionsTrie }
     const blockData = {
       ...block,
       header: { ...block.header, ...generatedFields },
     }
-    block = Block.fromBlockData(blockData, { common: this._common })
+    block = Block.fromBlockData(blockData, { common: this.common })
   } else {
-    if (result.receiptRoot && !result.receiptRoot.equals(block.header.receiptTrie)) {
+    if (equalsBytes(result.receiptsRoot, block.header.receiptTrie) === false) {
       if (this.DEBUG) {
         debug(
-          `Invalid receiptTrie received=${result.receiptRoot.toString(
-            'hex'
-          )} expected=${block.header.receiptTrie.toString('hex')}`
+          `Invalid receiptTrie received=${bytesToHex(result.receiptsRoot)} expected=${bytesToHex(
+            block.header.receiptTrie
+          )}`
         )
       }
       const msg = _errorMsg('invalid receiptTrie', this, block)
       throw new Error(msg)
     }
-    if (!result.bloom.bitvector.equals(block.header.logsBloom)) {
+    if (!(equalsBytes(result.bloom.bitvector, block.header.logsBloom) === true)) {
       if (this.DEBUG) {
         debug(
-          `Invalid bloom received=${result.bloom.bitvector.toString(
-            'hex'
-          )} expected=${block.header.logsBloom.toString('hex')}`
+          `Invalid bloom received=${bytesToHex(result.bloom.bitvector)} expected=${bytesToHex(
+            block.header.logsBloom
+          )}`
         )
       }
       const msg = _errorMsg('invalid bloom', this, block)
       throw new Error(msg)
     }
-    if (!result.gasUsed.eq(block.header.gasUsed)) {
+    if (result.gasUsed !== block.header.gasUsed) {
       if (this.DEBUG) {
         debug(`Invalid gasUsed received=${result.gasUsed} expected=${block.header.gasUsed}`)
       }
       const msg = _errorMsg('invalid gasUsed', this, block)
       throw new Error(msg)
     }
-    if (!stateRoot.equals(block.header.stateRoot)) {
+    if (!(equalsBytes(stateRoot, block.header.stateRoot) === true)) {
       if (this.DEBUG) {
         debug(
-          `Invalid stateRoot received=${stateRoot.toString(
-            'hex'
-          )} expected=${block.header.stateRoot.toString('hex')}`
+          `Invalid stateRoot received=${bytesToHex(stateRoot)} expected=${bytesToHex(
+            block.header.stateRoot
+          )}`
         )
       }
       const msg = _errorMsg('invalid block stateRoot', this, block)
@@ -488,7 +530,7 @@ export default async function runBlock(this: VM, opts: RunBlockOpts): Promise<Ru
     stateRoot,
     gasUsed: result.gasUsed,
     logsBloom: result.bloom.bitvector,
-    receiptRoot: result.receiptRoot,
+    receiptsRoot: result.receiptsRoot,
   }
 
   const afterBlockEvent: AfterBlockEvent = { ...results, block }
@@ -503,9 +545,9 @@ export default async function runBlock(this: VM, opts: RunBlockOpts): Promise<Ru
   await this._emit('afterBlock', afterBlockEvent)
   if (this.DEBUG) {
     debug(
-      `Running block finished hash=${block.hash().toString('hex')} number=${
+      `Running block finished hash=${bytesToHex(block.hash())} number=${
         block.header.number
-      } hardfork=${this._common.hardfork()}`
+      } hardfork=${this.common.hardfork()}`
     )
   }
 
@@ -538,7 +580,7 @@ export async function generateTxReceipt(this: VM, tx: TypedTransaction, txRes: R
 
   if (!tx.supports(999)) {
     // Legacy transaction
-    if (this._common.gteHardfork('byzantium')) {
+    if (this.common.gteHardfork('byzantium')) {
       // Post-Byzantium
       txReceipt = {
         status: txRes.execResult.exceptionError ? 0 : 1, // Receipts have a 0 as status on error
@@ -548,7 +590,7 @@ export async function generateTxReceipt(this: VM, tx: TypedTransaction, txRes: R
       receiptLog += ` status=${txReceipt.status} (${statusInfo}) (>= Byzantium)`
     } else {
       // Pre-Byzantium
-      const stateRoot = await this.stateManager.getStateRoot(true)
+      const stateRoot = await this.stateManager.getStateRoot()
       txReceipt = {
         stateRoot: stateRoot,
         ...abstractTxReceipt,

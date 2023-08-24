@@ -71,7 +71,7 @@ export interface RunCodeOpts {
  * @ignore
  */
 export default function runCode(this: VM, opts: RunCodeOpts): Promise<ExecResult> {
-  const block = opts.block ?? Block.fromBlockData({}, { common: this._common })
+  const block = opts.block ?? Block.fromBlockData({}, { common: this.common })
 
   // Backwards compatibility
   const txContext =

@@ -79,7 +79,7 @@ import {
 } from './utils'
 import config from './config'
 import { RunTxResult } from '@ethereumjs/vm/dist/esm/types'
-import { RunState } from '@ethereumjs/vm/dist/evm/interpreter'
+import { RunState } from '@ethereumjs/evm'
 import Wallet from 'ethereumjs-wallet'
 import { Block } from '@ethereumjs/block'
 import { ShardeumBlock } from './block/blockchain'

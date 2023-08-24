@@ -1,5 +1,5 @@
 import { Block } from '@ethereumjs/block'
-import Blockchain from '@ethereumjs/blockchain'
+import { Blockchain } from '@ethereumjs/blockchain'
 import VM from './index'
 
 /**
@@ -11,7 +11,7 @@ export default async function runBlockchain(
   maxBlocks?: number
 ): Promise<void | number> {
   let headBlock: Block
-  let parentState: Buffer
+  let parentState
 
   blockchain = blockchain ?? this.blockchain
 

@@ -14,11 +14,12 @@ export function safeBufferToHex(buffer): string {
   return bufferToHex(buffer)
 }
 
-export function calculateGasPrice(baselineTxFee: string, baselineTxGasUsage: string, networkAccount: NetworkAccount): BN {
-  const txFee = new BN(baselineTxFee)
-  const gas = new BN(baselineTxGasUsage)
-  const gasPrice = txFee.div(gas)
-  return scaleByStabilityFactor(gasPrice, networkAccount)
+export function calculateGasPrice(baselineTxFee: string, baselineTxGasUsage: string, networkAccount: NetworkAccount): bigint {
+  const txFee = BigInt(baselineTxFee)
+  const gas = BigInt(baselineTxGasUsage)
+  const gasPrice = txFee / gas
+  const factor = scaleByStabilityFactor(new BN(gasPrice.toString()), networkAccount);
+  return BigInt(factor.toString())
 }
 
 export function scaleByStabilityFactor(input: BN, networkAccount: NetworkAccount): BN {

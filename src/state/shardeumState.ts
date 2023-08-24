@@ -1,11 +1,10 @@
-import Set from 'core-js-pure/es/set'
 import { debug as createDebugLogger } from 'debug'
 import { SecureTrie as Trie } from 'merkle-patricia-tree'
 import { Account, Address } from 'ethereumjs-util'
-import Common, { Chain, Hardfork } from '@ethereumjs/common'
-import { StateManager, StorageDump } from '@ethereumjs/vm/src/state/interface'
+import { Common, Chain, Hardfork, StorageDump } from '@ethereumjs/common'
 import TransactionState from './transactionState'
 import { ShardeumFlags } from '../shardeum/shardeumFlags'
+import {StateManager} from "../vm/state";
 
 const debug = createDebugLogger('vm:state')
 
@@ -74,7 +73,7 @@ export default class ShardeumState implements StateManager {
   constructor(opts: DefaultStateManagerOpts = {}) {
     let common = opts.common
     if (!common) {
-      common = new Common({ chain: Chain.Mainnet, hardfork: Hardfork.Merge })
+      common = new Common({ chain: Chain.Mainnet, hardfork: Hardfork.Paris })
     }
     this._common = common
 
@@ -622,7 +621,7 @@ export default class ShardeumState implements StateManager {
     const key = address.toString('hex')
     const storageSet = this._accessedStorage[this._accessedStorage.length - 1].get(key)
     if (!storageSet) {
-      const emptyStorage = new Set()
+      const emptyStorage = new Set<string>()
       this._accessedStorage[this._accessedStorage.length - 1].set(key, emptyStorage)
     }
   }

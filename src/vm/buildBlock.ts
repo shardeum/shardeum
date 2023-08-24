@@ -79,7 +79,7 @@ export class BlockBuilder {
 
   constructor(vm: VM, opts: BuildBlockOpts) {
     this.vm = vm
-    this.blockOpts = { putBlockIntoBlockchain: true, ...opts.blockOpts, common: this.vm._common }
+    this.blockOpts = { putBlockIntoBlockchain: true, ...opts.blockOpts, common: this.vm.common }
 
     this.headerData = {
       ...opts.headerData,
@@ -88,7 +88,7 @@ export class BlockBuilder {
       gasLimit: opts.headerData?.gasLimit ?? opts.parentBlock.header.gasLimit,
     }
 
-    if (this.vm._common.isActivatedEIP(1559) && this.headerData.baseFeePerGas === undefined) {
+    if (this.vm.common.isActivatedEIP(1559) && this.headerData.baseFeePerGas === undefined) {
       this.headerData.baseFeePerGas = opts.parentBlock.header.calcNextBaseFee()
     }
   }
@@ -148,7 +148,7 @@ export class BlockBuilder {
    * Adds the block miner reward to the coinbase account.
    */
   private async rewardMiner(): Promise<void> {
-    const minerReward = new BN(this.vm._common.param('pow', 'minerReward'))
+    const minerReward = new BN(this.vm.common.param('pow', 'minerReward'))
     const reward = calculateMinerReward(minerReward, 0)
     const coinbase = this.headerData.coinbase
       ? new Address(toBuffer(this.headerData.coinbase))
@@ -219,13 +219,13 @@ export class BlockBuilder {
   async build(sealOpts?: SealBlockOpts): Promise<Block> {
     this.checkStatus()
     const blockOpts = this.blockOpts
-    const consensusType = this.vm._common.consensusType()
+    const consensusType = this.vm.common.consensusType()
 
     if (consensusType === ConsensusType.ProofOfWork) {
       await this.rewardMiner()
     }
 
-    const stateRoot = await this.vm.stateManager.getStateRoot(true)
+    const stateRoot = await this.vm.stateManager.getStateRoot()
     const transactionsTrie = await this.transactionsTrie()
     const receiptTrie = await this.receiptTrie()
     const logsBloom = this.logsBloom()
