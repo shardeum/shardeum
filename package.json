@@ -1,6 +1,6 @@
 {
   "name": "shardeum",
-  "version": "1.5.2.1",
+  "version": "1.5.2.2",
   "description": "",
   "main": "dist/src/index.js",
   "scripts": {
@@ -33,7 +33,7 @@
   "author": "",
   "dependencies": {
     "@ethereumjs/vm": "^5.6.0",
-    "@shardus/core": "2.9.25",
+    "@shardus/core": "2.9.26",
     "@shardus/crypto-utils": "4.0.4",
     "@types/sqlite3": "^3.1.8",
     "cliffy": "^2.5.1",
