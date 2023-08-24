@@ -308,6 +308,11 @@ export interface NetworkParameters {
   minVersion: string
   activeVersion: string
   latestVersion: string
+  archiver: {
+    minVersion: string
+    activeVersion: string
+    latestVersion: string
+  }
   txPause: boolean
   certCycleDuration: number
 }

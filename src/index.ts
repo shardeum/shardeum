@@ -22,7 +22,7 @@ import 'dotenv/config'
 import { ShardeumState, TransactionState } from './state'
 import { __ShardFunctions, nestedCountersInstance, ShardusTypes, DebugComplete, Shardus } from '@shardus/core'
 import { ContractByteWrite } from './state/transactionState'
-import { version } from '../package.json'
+import { version, devDependencies } from '../package.json'
 import {
   AccountType,
   AppJoinData,
@@ -5251,6 +5251,52 @@ const shardusSetup = (): void => {
         return {
           success: false,
           reason: `validateJoinRequest fail: exception: ${e}`,
+          fatal: true,
+        }
+      }
+    },
+    validateArchiverJoinRequest(data) {
+      try {
+        /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`validateArchiverJoinRequest ${JSON.stringify(data)}`)
+        if (!data.appData) {
+          /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`validateArchiverJoinRequest fail: !data.appData`)
+          return {
+            success: false,
+            reason: `Join request Archiver doesn't provide the app data (appData).`,
+            fatal: true,
+          }
+        }
+        const { appData } = data
+        const { minVersion } = AccountsStorage.cachedNetworkAccount.current.archiver
+        if (!isEqualOrNewerVersion(minVersion, appData.version)) {
+          /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`validateArchiverJoinRequest() fail: old version`)
+          return {
+            success: false,
+            reason: `Archiver Version number is old. Our Archiver version is: ${devDependencies['@shardus/archiver']}. Join Archiver app version is ${appData.version}`,
+            fatal: true,
+          }
+        }
+
+        const { latestVersion } = AccountsStorage.cachedNetworkAccount.current.archiver
+        if (latestVersion && appData.version && !isEqualOrOlderVersion(latestVersion, appData.version)) {
+          /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`validateArchiverJoinRequest() fail: version number is newer than latest`)
+          return {
+            success: false,
+            reason: `Archiver Version number is newer than latest. The latest allowed Archiver version is ${latestVersion}. Join Archiver app version is ${appData.version}`,
+            fatal: true,
+          }
+        }
+         /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`validateArchiverJoinRequest() Successful!`)
+         return {
+          success: true,
+          reason: 'Archiver-Join Request Validated!',
+          fatal: false,
+        }
+      } catch (e) {
+        /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`validateArchiverJoinRequest exception: ${e}`)
+        return {
+          success: false,
+          reason: `validateArchiverJoinRequest fail: exception: ${e}`,
           fatal: true,
         }
       }
