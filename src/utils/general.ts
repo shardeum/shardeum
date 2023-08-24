@@ -14,7 +14,11 @@ export function safeBufferToHex(buffer): string {
   return bufferToHex(buffer)
 }
 
-export function calculateGasPrice(baselineTxFee: string, baselineTxGasUsage: string, networkAccount: NetworkAccount): BN {
+export function calculateGasPrice(
+  baselineTxFee: string,
+  baselineTxGasUsage: string,
+  networkAccount: NetworkAccount
+): BN {
   const txFee = new BN(baselineTxFee)
   const gas = new BN(baselineTxGasUsage)
   const gasPrice = txFee.div(gas)
@@ -38,7 +42,7 @@ export const replacer = <T, K, V>(
   value: Map<K, V> | T
 ):
   | {
-      dataType: 'stringifyReduce_map_2_array',
+      dataType: 'stringifyReduce_map_2_array'
       value: [K, V][]
     }
   | T => {
@@ -139,4 +143,53 @@ export function formatErrorMessage(err: unknown): string {
   }
 
   return errMsg
+}
+
+type MajorityTargetValueFunc<T> = (o: T) => string
+type MajorityResult<T> = T | null
+type MajorityParam<T> = T[]
+/**
+  Gather the results into an array.
+  Use an object to count the occurrences of each result.
+  Iterate through the object to determine the majority result.
+  Check if the majority count is greater than 1/2 of the total results
+  @param results -  The original array
+  @param getTargetValue - Function to get the target value for the object, default to identity function
+ */
+export function findMajorityResult<T>(
+  results: MajorityParam<T>,
+  getTargetValue: MajorityTargetValueFunc<T>
+): MajorityResult<T> {
+  const resultCounts = {}
+
+  // Count the occurrences of each result
+  for (const result of results) {
+    const value = getTargetValue(result)
+    /* eslint-disable security/detect-object-injection */
+    resultCounts[value] = (resultCounts[value] || 0) + 1
+  }
+
+  const totalResults = results.length
+
+  // Find the majority result
+  let majorityResult
+  let majorityCount = 0
+
+  for (const result of results) {
+    const value = getTargetValue(result)
+    /* eslint-disable security/detect-object-injection */
+    const resultCount = resultCounts[value]
+    if (resultCount > majorityCount) {
+      majorityResult = result
+      /* eslint-disable security/detect-object-injection */
+      majorityCount = resultCount
+    }
+  }
+
+  // Check if majority count is greater than 1/2 of total results
+  if (majorityCount > totalResults / 2) {
+    return majorityResult
+  } else {
+    return null
+  }
 }

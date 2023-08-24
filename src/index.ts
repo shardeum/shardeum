@@ -76,6 +76,8 @@ import {
   readOperatorVersions,
   formatErrorMessage,
   calculateGasPrice,
+  getRandom,
+  findMajorityResult,
 } from './utils'
 import config from './config'
 import { RunTxResult } from '@ethereumjs/vm/dist/runTx'
@@ -112,9 +114,13 @@ import { initialNetworkParamters } from './shardeum/initialNetworkParameters'
 import { oneSHM, networkAccount, ONE_SECOND } from './shardeum/shardeumConstants'
 import { applyPenaltyTX } from './tx/penalty/transaction'
 import { getFinalArchiverList, setupArchiverDiscovery } from '@shardus/archiver-discovery'
+import { Archiver } from '@shardus/archiver-discovery/dist/src/types'
+import axios from 'axios'
 import blockedAt from 'blocked-at'
 //import { v4 as uuidv4 } from 'uuid'
 import { debug as createDebugLogger } from 'debug'
+
+
 
 let latestBlock = 0
 export const blocks: BlockMap = {}
@@ -5640,6 +5646,43 @@ function periodicMemoryCleanup(): void {
     }
   }
   setTimeout(periodicMemoryCleanup, 60000)
+}
+
+async function fetchNetworkAccountFromArchiver(): Promise<WrappedAccount> {
+  //make a trustless query which will check 3 random archivers and call the endpoint with hash=true
+  let archiverList = getFinalArchiverList()
+  archiverList = getRandom(archiverList, archiverList.length >= 3 ? 3 : archiverList.length)
+  const values: {
+    hash: string
+    archiver: Archiver
+  }[] = []
+  for (const archiver of archiverList) {
+    const res = await axios.get<string>(
+      `http://${archiver.ip}:${archiver.port}/get-network-account?hash=true`
+    )
+    if (!res.data) {
+      throw new Error(`get-network-account from archiver pk:${archiver.publicKey} returned null`)
+    }
+
+    values.push({
+      hash: res.data,
+      archiver,
+    })
+  }
+
+  //make sure there was a majority winner for the hash
+  const majorityValue = findMajorityResult(values, (v) => v.hash)
+  if (!majorityValue) {
+    throw new Error(`no majority found for archivers get-network-account result `)
+  }
+
+  const res = await axios.get<WrappedAccount>(
+    `http://${majorityValue.archiver.ip}:${majorityValue.archiver.port}/get-network-account?hash=false`
+  )
+  if (!res.data) {
+    throw new Error(`get-network-account from archiver pk:${majorityValue.archiver.publicKey} returned null`)
+  }
+  return res.data
 }
 
 // updateConfigFromNetworkAccount(inputConfig, networkAccount){
