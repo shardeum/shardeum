@@ -108,6 +108,13 @@ export function getRandom<T>(arr: T[], n: number): T[] {
   /* eslint-enable security/detect-object-injection */
   return result
 }
+export function isWithinRange(a: number, b: number, range: number): boolean {
+  try {
+    return Math.abs(a - b) <= range;
+  } catch (e) {
+    return false
+  }
+}
 
 /**
  * Try to print a variety of possible erros for debug purposes

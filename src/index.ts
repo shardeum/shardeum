@@ -78,7 +78,8 @@ import {
   calculateGasPrice,
   getRandom,
   findMajorityResult,
-  generateTxId
+  generateTxId,
+  isWithinRange
 } from './utils'
 import config, { Config } from './config'
 import { RunTxResult } from '@ethereumjs/vm/dist/runTx'
@@ -3830,12 +3831,23 @@ const shardusSetup = (): void => {
           if (ShardeumFlags.txNoncePreCheck && appData != null) {
             const txNonce = transaction.nonce.toNumber()
             const perfectCount = appData.nonce + appData.queueCount
-            if (txNonce != perfectCount) {
-              success = false
-              /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`precrack nonce fail: perfectCount:${perfectCount} != ${txNonce}.    current nonce:${appData.nonce}  queueCount:${appData.queueCount} txHash: ${transaction.hash().toString('hex')} `)
-              nestedCountersInstance.countEvent('shardeum', 'precrack - nonce fail')
+
+            if (ShardeumFlags.looseNonceCheck) {
+              if (isWithinRange(txNonce, perfectCount, ShardeumFlags.nonceCheckRange)) {
+                /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`precrack nonce pass: txNonce:${txNonce} is within +/- ${ShardeumFlags.nonceCheckRange} of perfect nonce ${perfectCount}.    current nonce:${appData.nonce}  queueCount:${appData.queueCount} txHash: ${transaction.hash().toString('hex')} `)
+              } else {
+                success = false
+                /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`precrack nonce fail: txNonce:${txNonce} is not within +/- ${ShardeumFlags.nonceCheckRange} of perfect nonce ${perfectCount}.    current nonce:${appData.nonce}  queueCount:${appData.queueCount} txHash: ${transaction.hash().toString('hex')} `)
+                nestedCountersInstance.countEvent('shardeum', 'precrack - nonce fail')
+              }
             } else {
-              /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`precrack nonce pass: perfectCount:${perfectCount} == ${txNonce}.    current nonce:${appData.nonce}  queueCount:${appData.queueCount}  txHash: ${transaction.hash().toString('hex')}`)
+              if (txNonce != perfectCount) {
+                success = false
+                /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`precrack nonce fail: perfectCount:${perfectCount} != ${txNonce}.    current nonce:${appData.nonce}  queueCount:${appData.queueCount} txHash: ${transaction.hash().toString('hex')} `)
+                nestedCountersInstance.countEvent('shardeum', 'precrack - nonce fail')
+              } else {
+                /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`precrack nonce pass: perfectCount:${perfectCount} == ${txNonce}.    current nonce:${appData.nonce}  queueCount:${appData.queueCount}  txHash: ${transaction.hash().toString('hex')}`)
+              }
             }
           }
 
