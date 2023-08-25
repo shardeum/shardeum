@@ -45,7 +45,6 @@ interface ShardeumFlags {
   UseBase64BufferEncoding: boolean
   useAccountWrites: boolean
   useShardeumVM: boolean
-  maxArchiverSubcriptionsPerNode: number
   chargeConstantTxFee: boolean
   constantTxFeeUsd: DecimalString
   devPublicKey: string
@@ -122,7 +121,6 @@ export const ShardeumFlags: ShardeumFlags = {
   UseBase64BufferEncoding: true,
   useAccountWrites: true,
   useShardeumVM: true,
-  maxArchiverSubcriptionsPerNode: 2,
 
   // '10000000000000'// $0.00001 * 10 ^ 18
   // '1000000000000000'// $0.001 * 10 ^ 18
