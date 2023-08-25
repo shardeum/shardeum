@@ -1,3 +1,4 @@
+import { Chain, Hardfork, Common as CommonFactory } from '@ethereumjs/common'
 import Common from '@ethereumjs/common'
 import { Shardus, ShardusTypes } from '@shardus/core'
 import { Account, Address, BN } from 'ethereumjs-util'
@@ -11,7 +12,9 @@ import * as WrappedEVMAccountFunctions from '../shardeum/wrappedEVMAccountFuncti
 import { ShardeumState, TransactionState } from '../state'
 import * as AccountsStorage from '../storage/accountStorage'
 import { sleep } from '../utils'
-import { StateManager } from '../vm/state'
+// import { StateManager } from '../vm/state'
+import { DefaultStateManager } from '@ethereumjs/statemanager'
+
 
 function isDebugMode(): boolean {
   // eslint-disable-next-line @typescript-eslint/ban-ts-comment
@@ -30,7 +33,7 @@ const debugShardeumState: ShardeumState = null
 
 export const ONE_SECOND = 1000
 
-export const sync = (shardus: Shardus, evmCommon: Common) => async (): Promise<void> => {
+export const sync = (shardus: Shardus, evmCommon: any) => async (): Promise<void> => {
   if (ShardeumFlags.useAccountWrites) shardus.useAccountWrites()
   if (ShardeumFlags.GlobalNetworkAccount) {
     if (shardus.p2p.isFirstSeed) {
@@ -132,7 +135,7 @@ export const sync = (shardus: Shardus, evmCommon: Common) => async (): Promise<v
 async function manuallyCreateAccount(
   ethAccountID: string,
   balance = defaultBalance,
-  evmCommon: Common,
+  evmCommon: any,
   latestCycles: any // eslint-disable-line @typescript-eslint/no-explicit-any
 ): Promise<{
   accountId: string
@@ -206,7 +209,7 @@ const createDevAccount = (accountId: string, latestCycles: any): { account: DevA
  * Cant be used in parallel
  * @returns
  */
-function getDebugTXState(evmCommon: Common): ShardeumState {
+function getDebugTXState(evmCommon: any): ShardeumState {
   const txId = '7'.repeat(64)
   if (ShardeumFlags.VerboseLogs) console.log('Creating a debug tx ShardeumState for ')
 
@@ -242,7 +245,7 @@ function getDebugTXState(evmCommon: Common): ShardeumState {
 
 async function createAccount(
   addressStr: string,
-  stateManager: StateManager,
+  stateManager: any,
   balance: BN = defaultBalance
 ): Promise<WrappedEVMAccount> {
   if (ShardeumFlags.VerboseLogs) console.log('Creating new account', addressStr)

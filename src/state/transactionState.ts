@@ -1,4 +1,4 @@
-import { Account, Address, keccak256, KECCAK256_NULL, rlp, unpadBuffer } from 'ethereumjs-util'
+import { Account, keccak256, Address, KECCAK256_NULL, rlp, unpadBuffer } from 'ethereumjs-util'
 import { SecureTrie as Trie } from 'merkle-patricia-tree'
 import { ShardeumState } from '.'
 import { ShardeumFlags } from '../shardeum/shardeumFlags'
@@ -334,7 +334,7 @@ export default class TransactionState {
 
           if (this.debugTrace)
             this.debugTraceLog(
-              `commitAccount:contractCode: addr:${addressString} codeHash:${codeHash.toString('hex')} v:${
+              `commitAccount:contractCode: addr:${addressString} codeHash:${codeHash.toString()} v:${
                 codeByte.length
               }`
             )
@@ -373,8 +373,8 @@ export default class TransactionState {
       //only put this in the pending commit structure. we will do the real commit when updating the account
       if (this.pendingContractBytesCommits.has(contractAddress)) {
         const contractBytesCommit = this.pendingContractBytesCommits.get(contractAddress)
-        if (contractBytesCommit.has(codeHash.toString('hex'))) {
-          contractBytesCommit.set(codeHash.toString('hex'), {
+        if (contractBytesCommit.has(codeHash.toString())) {
+          contractBytesCommit.set(codeHash.toString(), {
             codeHash,
             codeByte: contractByte,
             ethAddress: '',
@@ -385,7 +385,7 @@ export default class TransactionState {
         }
       } else {
         const contractBytesCommit = new Map()
-        contractBytesCommit.set(codeHash.toString('hex'), { codeHash, codeByte: contractByte })
+        contractBytesCommit.set(codeHash.toString(), { codeHash, codeByte: contractByte })
         this.pendingContractBytesCommits.set(contractAddress, contractBytesCommit)
       }
 
@@ -397,7 +397,7 @@ export default class TransactionState {
 
       if (this.debugTrace)
         this.debugTraceLog(
-          `commitContractBytes:contractCode codeHash:${codeHash.toString('hex')} v:${contractByte.toString(
+          `commitContractBytes:contractCode codeHash:${codeHash.toString()} v:${contractByte.toString(
             'hex'
           )}`
         )
@@ -616,7 +616,7 @@ export default class TransactionState {
     }
   }
 
-  insertFirstAccountReads(address: Address, account: Account): void {
+  insertFirstAccountReads(address: any, account: Account): void {
     const addressString = address.toString()
 
     if (this.accountInvolvedCB(this, addressString, false) === false) {
@@ -646,7 +646,7 @@ export default class TransactionState {
       return
     }
     const codeHash = contractAccount.codeHash
-    const codeHashStr = codeHash.toString('hex')
+    const codeHashStr = codeHash.toString()
 
     if (originalOnly === false) {
       if (this.allContractBytesWrites.has(codeHashStr)) {
@@ -773,10 +773,10 @@ export default class TransactionState {
       this.debugTraceLog(
         `putContractCode: addr:${addressString} codeHash:${codeHash.toString(
           'hex'
-        )} v:${contractByteWrite.contractByte.toString('hex')}`
+        )} v:${contractByteWrite.contractByte.toString()}`
       )
 
-    this.allContractBytesWrites.set(codeHash.toString('hex'), contractByteWrite)
+    this.allContractBytesWrites.set(codeHash.toString(), contractByteWrite)
     this.allContractBytesWritesByAddress.set(addressString, contractByteWrite)
 
     this.touchedCAs.add(addressString)
@@ -790,7 +790,7 @@ export default class TransactionState {
     }
 
     const codeHash = keccak256(codeByte)
-    const codeHashStr = codeHash.toString('hex')
+    const codeHashStr = codeHash.toString()
     if (codeHash.equals(KECCAK256_NULL)) {
       return
     }
@@ -806,7 +806,7 @@ export default class TransactionState {
     canThrow: boolean
   ): Promise<Buffer> {
     const addressString = contractAddress.toString()
-    const keyString = key.toString('hex')
+    const keyString = key.toString()
 
     if (originalOnly === false) {
       if (this.allContractStorageWrites.has(addressString)) {
@@ -849,7 +849,7 @@ export default class TransactionState {
       //see if we can get it from the storage trie.
       storedRlp = await storage.get(key)
       storedValue = storedRlp ? rlp.decode(storedRlp) : undefined
-      if (ShardeumFlags.VerboseLogs) console.log(`storedValue for ${key.toString('hex')}`, storedValue)
+      if (ShardeumFlags.VerboseLogs) console.log(`storedValue for ${key.toString()}`, storedValue)
     } else {
       //get from accounts db
       //throw new Error('get from accounts db')
@@ -908,7 +908,7 @@ export default class TransactionState {
 
     if (this.debugTrace)
       this.debugTraceLog(
-        `getContractStorage: addr:${addressString} key:${keyString} v:${storedValue.toString('hex')}`
+        `getContractStorage: addr:${addressString} key:${keyString} v:${storedValue.toString()}`
       )
 
     return storedValue
@@ -916,7 +916,7 @@ export default class TransactionState {
 
   async putContractStorage(contractAddress: Address, key: Buffer, value: Buffer): Promise<void> {
     const addressString = contractAddress.toString()
-    const keyString = key.toString('hex')
+    const keyString = key.toString()
 
     if (this.contractStorageInvolvedCB(this, addressString, keyString, true) === false) {
       throw new Error('unable to proceed, cant involve contract storage')
@@ -935,7 +935,7 @@ export default class TransactionState {
 
     if (this.debugTrace)
       this.debugTraceLog(
-        `putContractStorage: addr:${addressString} key:${keyString} v:${value.toString('hex')}`
+        `putContractStorage: addr:${addressString} key:${keyString} v:${value.toString()}`
       )
 
     //here is our take on things:

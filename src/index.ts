@@ -11,11 +11,13 @@ import {
   isValidAddress,
   toAscii,
   toBuffer,
+  arrToBufArr
 } from 'ethereumjs-util'
-import { AccessListEIP2930Transaction, Transaction } from '@ethereumjs/tx'
-import Common, { Chain } from '@ethereumjs/common'
+import { AccessListEIP2930Transaction, Transaction, TransactionFactory, TransactionType } from '@ethereumjs/tx'
+import { Chain, Hardfork, Common as CommonFactory } from '@ethereumjs/common'
+import {Blockchain, BlockchainOptions} from '@ethereumjs/blockchain'
 import VM from '@ethereumjs/vm'
-import ShardeumVM from './vm'
+import { ShardeumVM } from './vm_v7'
 import { parse as parseUrl } from 'url'
 import got from 'got'
 import 'dotenv/config'
@@ -299,10 +301,10 @@ function convertToReadableBlock(block: Block): ShardeumBlockOverride {
     transactionsRoot: '0x0000000000000000000000000000000000000000000000000000000000000000',
     uncles: [],
   }
-  defaultBlock.number = '0x' + block.header.number.toString('hex')
-  defaultBlock.timestamp = '0x' + block.header.timestamp.toString('hex')
-  defaultBlock.hash = '0x' + block.header.hash().toString('hex')
-  const previousBlockNumber = String(block.header.number.toNumber() - 1)
+  defaultBlock.number = '0x' + block.header.number.toString()
+  defaultBlock.timestamp = '0x' + block.header.timestamp.toString()
+  defaultBlock.hash = '0x' + block.header.hash().toString()
+  const previousBlockNumber = String(parseInt(block.header.number.toString(10)) - 1)
   const previousBlock = readableBlocks[previousBlockNumber] // eslint-disable-line security/detect-object-injection
   if (previousBlock) defaultBlock.parentHash = previousBlock.hash
   // Todo: The Block type is being effectively overridden here. Ideally this should be a type of it's own in the
@@ -316,7 +318,7 @@ function createNewBlock(blockNumber: number, timestamp: number): Block {
   if (!blocks[blockNumber]) {
     const timestampInSecond = timestamp ? Math.round(timestamp / 1000) : Math.round(Date.now() / 1000)
     const blockData = {
-      header: { number: blockNumber, timestamp: new BN(timestampInSecond) },
+      header: { number: blockNumber, timestamp: timestampInSecond },
       transactions: [],
       uncleHeaders: [],
     }
@@ -384,56 +386,21 @@ let shardeumStateTXMap: Map<string, ShardeumState>
 // const debugShardeumState: ShardeumState = null
 
 let shardusAddressToEVMAccountInfo: Map<string, EVMAccountInfo>
-export let evmCommon: Common
+export let evmCommon
 
 let debugAppdata: Map<string, unknown>
 
 //todo refactor some object init into here
-function initEVMSingletons(): void {
+async function initEVMSingletons(): Promise<void> {
   const chainIDBN = new BN(ShardeumFlags.ChainID)
 
   // setting up only to 'istanbul' hardfork for now
   // https://github.com/ethereumjs/ethereumjs-monorepo/blob/master/packages/common/src/chains/mainnet.json
-  evmCommon = Common.forCustomChain(Chain.Mainnet, {
-    hardforks: [
-      {
-        name: 'chainstart',
-        block: 0,
-      },
-      {
-        name: 'homestead',
-        block: 0,
-      },
-      {
-        name: 'tangerineWhistle',
-        block: 0,
-      },
-      {
-        name: 'spuriousDragon',
-        block: 0,
-      },
-      {
-        name: 'byzantium',
-        block: 0,
-      },
-      {
-        name: 'constantinople',
-        block: 0,
-      },
-      {
-        name: 'petersburg',
-        block: 0,
-      },
-      {
-        name: 'istanbul',
-        block: 0,
-      },
-    ],
-  })
+  evmCommon = new CommonFactory({chain: 'mainnet', hardfork: Hardfork.Istanbul})
 
   //hack override this function.  perhaps a nice thing would be to use forCustomChain to create a custom common object
-  evmCommon.chainIdBN = (): BN => {
-    return chainIDBN
+  evmCommon.chainId = (): bigint => {
+    return BigInt(chainIDBN.toString(10))
   }
 
   //let shardeumStateManager = new ShardeumState({ common }) //as StateManager
@@ -444,13 +411,13 @@ function initEVMSingletons(): void {
   //let EVM = new VM({ common, stateManager: shardeumStateManager, blockchain: shardeumBlock })
 
   if (ShardeumFlags.useShardeumVM) {
-    EVM = new ShardeumVM({
+    EVM = await VM.create({
       common: evmCommon,
       stateManager: undefined,
-      blockchain: shardeumBlock,
-    }) as ShardeumVM
+      // blockchain: shardeumBlock,
+    })
   } else {
-    EVM = new VM({ common: evmCommon, stateManager: undefined, blockchain: shardeumBlock }) as VM
+    // EVM = VM.create({ common: evmCommon, stateManager: undefined, blockchain: shardeumBlock })
   }
 
   console.log('EVM_common', JSON.stringify(EVM._common, null, 4))
@@ -677,12 +644,12 @@ async function tryGetRemoteAccountCB(
   return fixedEVMAccount
 }
 
-function isStakingEVMTx(transaction: Transaction | AccessListEIP2930Transaction): boolean {
+function isStakingEVMTx(transaction: Transaction[TransactionType.Legacy] | Transaction[TransactionType.AccessListEIP2930]): boolean {
   return transaction.to && transaction.to.toString() === ShardeumFlags.stakeTargetAddress
 }
 
-function getStakeTxBlobFromEVMTx(transaction: Transaction | AccessListEIP2930Transaction): unknown {
-  const stakeTxString = toAscii(transaction.data.toString('hex'))
+function getStakeTxBlobFromEVMTx(transaction: Transaction[TransactionType.Legacy] | Transaction[TransactionType.AccessListEIP2930]): unknown {
+  const stakeTxString = toAscii(transaction.data.toString())
   return JSON.parse(stakeTxString)
 }
 
@@ -727,18 +694,18 @@ async function createAccount(
   return wrappedEVMAccount
 }
 
-function getTransactionObj(tx): Transaction | AccessListEIP2930Transaction {
+function getTransactionObj(tx): Transaction[TransactionType.Legacy] | Transaction[TransactionType.AccessListEIP2930] {
   if (!tx.raw) throw Error('fail')
   let transactionObj
   const serializedInput = toBuffer(tx.raw)
   try {
-    transactionObj = Transaction.fromRlpSerializedTx(serializedInput)
+    transactionObj = TransactionFactory.fromSerializedData<TransactionType.Legacy>(serializedInput)
   } catch (e) {
     // if (ShardeumFlags.VerboseLogs) console.log('Unable to get legacy transaction obj', e)
   }
   if (!transactionObj) {
     try {
-      transactionObj = AccessListEIP2930Transaction.fromRlpSerializedTx(serializedInput)
+      transactionObj = TransactionFactory.fromSerializedData<TransactionType.AccessListEIP2930>(serializedInput)
     } catch (e) {
       if (ShardeumFlags.VerboseLogs) console.log('Unable to get transaction obj', e)
     }
@@ -1068,9 +1035,9 @@ const configShardusEndpoints = (): void => {
           //todo possibly later limit what internal TXs are allowed
           isAllowedInternal = true
         } else {
-          const txObj: Transaction | AccessListEIP2930Transaction = getTransactionObj(tx)
-          if (txObj != null) {
-            isStaking = isStakingEVMTx(txObj)
+          const transaction = getTransactionObj(tx)
+          if (transaction != null) {
+            isStaking = isStakingEVMTx(transaction)
           }
         }
         txRequiresMinNodes = (isStaking || isAllowedInternal) === false
@@ -1331,11 +1298,11 @@ const configShardusEndpoints = (): void => {
         return res.json({ contractCode: '0x' })
       }
 
-      const codeHashHex = Buffer.from((account.data as WrappedEVMAccount).account.codeHash).toString('hex')
+      const codeHashHex = Buffer.from((account.data as WrappedEVMAccount).account.codeHash).toString()
       const codeAddress = toShardusAddressWithKey(address, codeHashHex, AccountType.ContractCode)
       const codeAccount = await shardus.getLocalOrRemoteAccount(codeAddress)
       const contractCode = codeAccount
-        ? `0x${Buffer.from((codeAccount.data as WrappedEVMAccount).codeByte).toString('hex')}`
+        ? `0x${Buffer.from((codeAccount.data as WrappedEVMAccount).codeByte).toString()}`
         : '0x'
       return res.json({ contractCode })
     } catch (error) {
@@ -1418,7 +1385,7 @@ const configShardusEndpoints = (): void => {
   //
   //     await debugStateManager.revert()
   //
-  //     let gasUsed = runResult.gasUsed.toString('hex')
+  //     let gasUsed = runResult.gasUsed.toString()
   //     if (ShardeumFlags.VerboseLogs) console.log('Gas estimated:', gasUsed)
   //
   //     if (runResult.execResult.exceptionError) {
@@ -1511,7 +1478,7 @@ const configShardusEndpoints = (): void => {
               //getResp.body
 
               /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`Node is in remote shard: gotResp:${JSON.stringify(postResp.body)}`)
-              //res.json({ result: callResult.execResult.returnValue.toString('hex') })
+              //res.json({ result: callResult.execResult.returnValue.toString() })
               //return res.json({ result: '0x' + postResp.body })   //I think the 0x is worse?
               return res.json({ result: postResp.body.result })
             }
@@ -1557,7 +1524,7 @@ const configShardusEndpoints = (): void => {
       EVM.stateManager = callTxState
       const callResult = await EVM.runCall(opt)
       //shardeumStateManager.unsetTransactionState(callTxState.linkedTX)
-      /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log('Call Result', callResult.execResult.returnValue.toString('hex'))
+      /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log('Call Result', callResult.execResult.returnValue.toString())
 
       if (!ShardeumFlags.removeTokenBalanceCache && methodCode === ERC20_BALANCEOF_CODE) {
         //TODO would be way faster to have timestamp in db as field
@@ -1569,7 +1536,7 @@ const configShardusEndpoints = (): void => {
           timestamp: caAccount && caAccount.timestamp, //this will invalidate for any user..
           result: callResult.execResult.exceptionError
             ? null
-            : callResult.execResult.returnValue.toString('hex'),
+            : callResult.execResult.returnValue.toString(),
         })
         if (ERC20TokenBalanceMap.length > ERC20TokenCacheSize + 10) {
           const extra = ERC20TokenBalanceMap.length - ERC20TokenCacheSize
@@ -1582,7 +1549,7 @@ const configShardusEndpoints = (): void => {
         return res.json({ result: null })
       }
 
-      res.json({ result: callResult.execResult.returnValue.toString('hex') })
+      res.json({ result: callResult.execResult.returnValue.toString() })
     } catch (e) {
       if (ShardeumFlags.VerboseLogs) console.log('Error eth_call', e)
       return res.json({ result: null })
@@ -2110,7 +2077,7 @@ export const createInternalTxReceipt = (
   to: string,
   txTimestamp: number,
   txId: string,
-  amountSpent = new BN(0).toString('hex')
+  amountSpent = new BN(0).toString()
 ): void => {
   const blockForReceipt = getOrCreateBlockFromTimestamp(txTimestamp)
   const blockNumberForTx = blockForReceipt.header.number.toString()
@@ -2317,10 +2284,10 @@ const getOrCreateBlockFromTimestamp = (timestamp: number, scheduleNextBlock = fa
   /* eslint-disable security/detect-object-injection */
   if (ShardeumFlags.VerboseLogs) console.log('Getting block from timestamp', timestamp)
   if (ShardeumFlags.VerboseLogs && blocks[latestBlock]) {
-    /* prettier-ignore */ console.log('Latest block timestamp', blocks[latestBlock].header.timestamp, blocks[latestBlock].header.timestamp.toNumber() + 6000)
-    /* prettier-ignore */ console.log('Latest block number', blocks[latestBlock].header.number.toNumber())
+    /* prettier-ignore */ console.log('Latest block timestamp', blocks[latestBlock].header.timestamp, parseInt(blocks[latestBlock].header.timestamp.toString(10)) + 6000)
+    /* prettier-ignore */ console.log('Latest block number', blocks[latestBlock].header.number.toString(10))
   }
-  if (blocks[latestBlock] && blocks[latestBlock].header.timestamp.toNumber() >= timestamp) {
+  if (blocks[latestBlock] && parseInt(blocks[latestBlock].header.timestamp.toString(10)) >= timestamp) {
     return blocks[latestBlock]
   }
   /* eslint-enable security/detect-object-injection */
@@ -2365,7 +2332,7 @@ async function generateAccessList(
   injectedTx: ShardusTypes.OpaqueTransaction
 ): Promise<{ accessList: unknown[]; shardusMemoryPatterns: unknown }> {
   try {
-    const transaction: Transaction | AccessListEIP2930Transaction = getTransactionObj(injectedTx)
+    const transaction = getTransactionObj(injectedTx)
     const caShardusAddress = transaction.to
       ? toShardusAddress(transaction.to.toString(), AccountType.Account)
       : null
@@ -2435,11 +2402,13 @@ async function generateAccessList(
     }
     // temporarily set caller account's nonce same as tx's nonce
     if (ShardeumFlags.accesslistNonceFix && callerAccount && callerAccount.account) {
-      callerAccount.account.nonce = transaction.nonce
+      callerAccount.account.nonce = new BN(transaction.nonce.toString())
     }
 
+    const senderAddress = transaction.getSenderAddress()
+
     preRunTxState._transactionState.insertFirstAccountReads(
-      transaction.getSenderAddress(),
+      senderAddress,
       callerAccount ? callerAccount.account : fakeAccount
     )
 
@@ -2510,7 +2479,7 @@ async function generateAccessList(
       for (const [contractAddress, contractByteWrite] of writtenAccounts.contractBytes) {
         // for (const [contractAddress, contractByteWrite] of writtenAccounts.contractBytes) {
         if (!allInvolvedContracts.includes(contractAddress)) allInvolvedContracts.push(contractAddress)
-        const codeHash = contractByteWrite.codeHash.toString('hex')
+        const codeHash = contractByteWrite.codeHash.toString()
         const shardusKey = toShardusAddressWithKey(contractAddress, codeHash, AccountType.ContractCode)
         writeSet.add(shardusKey)
         //special case shardeum behavoir.  contract bytes can only be written once
@@ -2592,7 +2561,7 @@ async function generateAccessList(
         if (!allKeys.has(codeHash)) allKeys.add(codeHash)
       }
       for (const [, byteReads] of writtenAccounts.contractBytes) {
-        const codeHash = byteReads.codeHash.toString('hex')
+        const codeHash = byteReads.codeHash.toString()
         const contractAddress = byteReads.contractAddress.toString()
         if (contractAddress !== address) continue
         if (!allKeys.has(codeHash)) allKeys.add(codeHash)
@@ -2903,21 +2872,21 @@ const shardusSetup = (): void => {
           transactionHash: ethTxId,
           transactionIndex: '0x1',
           // eslint-disable-next-line security/detect-object-injection
-          blockNumber: '0x' + blocks[blockNumberForTx].header.number.toString('hex'),
-          nonce: transaction.nonce.toString('hex'),
+          blockNumber: '0x' + blocks[blockNumberForTx].header.number.toString(),
+          nonce: transaction.nonce.toString(),
           blockHash: readableBlocks[blockNumberForTx].hash, // eslint-disable-line security/detect-object-injection
           cumulativeGasUsed:
             '0x' +
             scaleByStabilityFactor(
               new BN(ShardeumFlags.constantTxFeeUsd),
               AccountsStorage.cachedNetworkAccount
-            ).toString('hex'),
+            ).toString(),
           gasUsed:
             '0x' +
             scaleByStabilityFactor(
               new BN(ShardeumFlags.constantTxFeeUsd),
               AccountsStorage.cachedNetworkAccount
-            ).toString('hex'),
+            ).toString(),
           logs: [],
           logsBloom: '',
           contractAddress: null,
@@ -2928,8 +2897,8 @@ const shardusSetup = (): void => {
             stake: stakeCoinsTx.stake,
             totalStakeAmount: operatorEVMAccount.operatorAccountInfo.stake,
           },
-          value: transaction.value.toString('hex'),
-          data: '0x' + transaction.data.toString('hex'),
+          value: transaction.value.toString(),
+          data: '0x' + transaction.data.toString(),
         }
 
         const wrappedReceiptAccount: WrappedEVMAccount = {
@@ -2937,7 +2906,7 @@ const shardusSetup = (): void => {
           ethAddress: ethTxId,
           hash: '',
           readableReceipt,
-          amountSpent: txFee.toString('hex'),
+          amountSpent: txFee.toString(),
           txId,
           accountType: AccountType.StakeReceipt,
           txFrom: stakeCoinsTx.nominator,
@@ -3128,8 +3097,8 @@ const shardusSetup = (): void => {
           transactionHash: ethTxId,
           transactionIndex: '0x1',
           // eslint-disable-next-line security/detect-object-injection
-          blockNumber: '0x' + blocks[blockNumberForTx].header.number.toString('hex'),
-          nonce: transaction.nonce.toString('hex'),
+          blockNumber: '0x' + blocks[blockNumberForTx].header.number.toString(),
+          nonce: transaction.nonce.toString(),
           // eslint-disable-next-line security/detect-object-injection
           blockHash: readableBlocks[blockNumberForTx].hash,
           cumulativeGasUsed:
@@ -3137,21 +3106,21 @@ const shardusSetup = (): void => {
             scaleByStabilityFactor(
               new BN(ShardeumFlags.constantTxFeeUsd),
               AccountsStorage.cachedNetworkAccount
-            ).toString('hex'),
+            ).toString(),
           gasUsed:
             '0x' +
             scaleByStabilityFactor(
               new BN(ShardeumFlags.constantTxFeeUsd),
               AccountsStorage.cachedNetworkAccount
-            ).toString('hex'),
+            ).toString(),
           logs: [],
           logsBloom: '',
           contractAddress: null,
           from: transaction.getSenderAddress().toString(),
           to: transaction.to ? transaction.to.toString() : null,
           stakeInfo,
-          value: transaction.value.toString('hex'),
-          data: '0x' + transaction.data.toString('hex'),
+          value: transaction.value.toString(),
+          data: '0x' + transaction.data.toString(),
         }
 
         const wrappedReceiptAccount = {
@@ -3159,7 +3128,7 @@ const shardusSetup = (): void => {
           ethAddress: ethTxId,
           hash: '',
           readableReceipt,
-          amountSpent: txFee.toString('hex'),
+          amountSpent: txFee.toString(),
           txId,
           accountType: AccountType.UnstakeReceipt,
           txFrom: unstakeCoinsTX.nominator,
@@ -3259,7 +3228,7 @@ const shardusSetup = (): void => {
       // const runTxResult = await EVM.runTx({tx: transaction, skipNonce: !ShardeumFlags.CheckNonce, skipBlockGasLimitValidation: true})
       const blockForTx = getOrCreateBlockFromTimestamp(txTimestamp)
       if (ShardeumFlags.VerboseLogs)
-        console.log(`Block for tx ${ethTxId}`, blockForTx.header.number.toNumber())
+        console.log(`Block for tx ${ethTxId}`, blockForTx.header.number.toString(10))
       let runTxResult: RunTxResult
       let wrappedReceiptAccount: WrappedEVMAccount
       /* prettier-ignore */ shardus.setDebugSetLastAppAwait(`apply():getLocalOrRemoteAccount(${networkAccount})`)
@@ -3295,7 +3264,7 @@ const shardusSetup = (): void => {
           const hack0Nonce = new BN(0)
           const caAddrBuf = predictContractAddressDirect(txSenderEvmAddr, hack0Nonce)
 
-          caAddr = '0x' + caAddrBuf.toString('hex')
+          caAddr = '0x' + caAddrBuf.toString()
 
           const shardusAddr = toShardusAddress(caAddr, AccountType.Account)
           // otherAccountKeys.push(shardusAddr)
@@ -3307,9 +3276,9 @@ const shardusSetup = (): void => {
           status: 0,
           transactionHash: ethTxId,
           transactionIndex: '0x1',
-          blockNumber: readableBlocks[blockForTx.header.number.toNumber()].number,
-          nonce: transaction.nonce.toString('hex'),
-          blockHash: readableBlocks[blockForTx.header.number.toNumber()].hash,
+          blockNumber: readableBlocks[blockForTx.header.number.toString(10)].number,
+          nonce: transaction.nonce.toString(),
+          blockHash: readableBlocks[blockForTx.header.number.toString(10)].hash,
           cumulativeGasUsed: '0x',
           logs: null,
           logsBloom: null,
@@ -3317,7 +3286,7 @@ const shardusSetup = (): void => {
           contractAddress: caAddr,
           from: transaction.getSenderAddress().toString(),
           to: transaction.to ? transaction.to.toString() : null,
-          value: transaction.value.toString('hex'),
+          value: transaction.value.toString(),
           data: '0x',
           reason: e.toString(),
         }
@@ -3327,7 +3296,7 @@ const shardusSetup = (): void => {
           hash: '',
           // receipt: runTxResult.receipt,
           readableReceipt,
-          amountSpent: new BN(0).toString('hex'),
+          amountSpent: new BN(0).toString(),
           txId,
           accountType: AccountType.Receipt,
           txFrom: transaction.getSenderAddress().toString(),
@@ -3358,16 +3327,16 @@ const shardusSetup = (): void => {
       //     transactionHash: ethTxId,
       //     transactionIndex: '0x1',
       //     blockNumber: readableBlocks[latestBlock].number,
-      //     nonce: transaction.nonce.toString('hex'),
+      //     nonce: transaction.nonce.toString(),
       //     blockHash: readableBlocks[latestBlock].hash,
-      //     cumulativeGasUsed: '0x' + runTxResult.gasUsed.toString('hex'),
-      //     gasUsed: '0x' + runTxResult.gasUsed.toString('hex'),
+      //     cumulativeGasUsed: '0x' + runTxResult.gasUsed.toString(),
+      //     gasUsed: '0x' + runTxResult.gasUsed.toString(),
       //     logs: null,
       //     contractAddress: runTxResult.createdAddress ? runTxResult.createdAddress.toString() : null,
       //     from: transaction.getSenderAddress().toString(),
       //     to: transaction.to ? transaction.to.toString() : null,
-      //     value: transaction.value.toString('hex'),
-      //     data: '0x' + transaction.data.toString('hex'),
+      //     value: transaction.value.toString(),
+      //     data: '0x' + transaction.data.toString(),
       //   }
       //   let wrappedFailReceiptAccount: WrappedEVMAccount = {
       //     timestamp: txTimestamp,
@@ -3411,7 +3380,7 @@ const shardusSetup = (): void => {
         appliedTxs[ethTxId] = {
           txId: ethTxId,
           injected: tx,
-          receipt: { ...runTxResult, nonce: transaction.nonce.toString('hex'), status: 1 },
+          receipt: { ...runTxResult, nonce: transaction.nonce.toString(), status: 1 },
         }
       }
 
@@ -3496,7 +3465,7 @@ const shardusSetup = (): void => {
       for (const contractBytesEntry of contractBytesWrites.entries()) {
         //1. wrap and save/update this to shardeum accounts[] map
         const contractByteWrite: ContractByteWrite = contractBytesEntry[1]
-        const codeHashStr = contractByteWrite.codeHash.toString('hex')
+        const codeHashStr = contractByteWrite.codeHash.toString()
 
         const wrappedEVMAccount: WrappedEVMAccount = {
           timestamp: txTimestamp,
@@ -3587,8 +3556,8 @@ const shardusSetup = (): void => {
           logs = runState.logs.map((l: [Buffer, Buffer[], Buffer], index) => {
             return {
               logIndex: ShardeumFlags.receiptLogIndexFix ? '0x' + index.toString(16) : '0x1',
-              blockNumber: readableBlocks[blockForTx.header.number.toNumber()].number,
-              blockHash: readableBlocks[blockForTx.header.number.toNumber()].hash,
+              blockNumber: readableBlocks[blockForTx.header.number.toString(10)].number,
+              blockHash: readableBlocks[blockForTx.header.number.toString(10)].hash,
               transactionHash: ethTxId,
               transactionIndex: '0x1',
               address: bufferToHex(l[0]),
@@ -3602,18 +3571,18 @@ const shardusSetup = (): void => {
           status: runTxResult.receipt['status'],
           transactionHash: ethTxId,
           transactionIndex: '0x1',
-          blockNumber: readableBlocks[blockForTx.header.number.toNumber()].number,
-          nonce: transaction.nonce.toString('hex'),
-          blockHash: readableBlocks[blockForTx.header.number.toNumber()].hash,
-          cumulativeGasUsed: '0x' + runTxResult.gasUsed.toString('hex'),
-          gasUsed: '0x' + runTxResult.gasUsed.toString('hex'),
+          blockNumber: readableBlocks[blockForTx.header.number.toString(10)].number,
+          nonce: transaction.nonce.toString(),
+          blockHash: readableBlocks[blockForTx.header.number.toString(10)].hash,
+          cumulativeGasUsed: '0x' + runTxResult.gasUsed.toString(),
+          gasUsed: '0x' + runTxResult.gasUsed.toString(),
           logs: logs,
           logsBloom: bufferToHex(runTxResult.receipt.bitvector),
           contractAddress: runTxResult.createdAddress ? runTxResult.createdAddress.toString() : null,
           from: transaction.getSenderAddress().toString(),
           to: transaction.to ? transaction.to.toString() : null,
-          value: transaction.value.toString('hex'),
-          data: '0x' + transaction.data.toString('hex'),
+          value: transaction.value.toString(),
+          data: '0x' + transaction.data.toString(),
         }
         if (runTxResult.execResult.exceptionError) {
           readableReceipt.reason = runTxResult.execResult.exceptionError.error
@@ -3624,7 +3593,7 @@ const shardusSetup = (): void => {
           hash: '',
           receipt: runTxResult.receipt,
           readableReceipt,
-          amountSpent: runTxResult.amountSpent.toString('hex'),
+          amountSpent: runTxResult.amountSpent.toString(),
           txId,
           accountType: AccountType.Receipt,
           txFrom: txSenderEvmAddr,
@@ -3759,7 +3728,7 @@ const shardusSetup = (): void => {
             const wrappedEVMAccount = remoteTargetAccount.data as WrappedEVMAccount
             if (wrappedEVMAccount && wrappedEVMAccount.account) {
               fixDeserializedWrappedEVMAccount(wrappedEVMAccount)
-              const codeHashString = wrappedEVMAccount.account.codeHash.toString('hex')
+              const codeHashString = wrappedEVMAccount.account.codeHash.toString()
               if (codeHashString && codeHashString === emptyCodeHash) {
                 isSimpleTransfer = true
               }
@@ -3769,7 +3738,7 @@ const shardusSetup = (): void => {
           //Predict the new CA address if not eip2930.  is this correct though?
           if (transaction.to == null && isEIP2930 === false) {
             const caAddrBuf = predictContractAddressDirect(txSenderEvmAddr, nonce)
-            const caAddr = '0x' + caAddrBuf.toString('hex')
+            const caAddr = '0x' + caAddrBuf.toString()
             appData.newCAAddr = caAddr
             /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`txPreCrackData found nonce:${foundNonce} found sender:${foundSender} for ${txSenderEvmAddr} nonce:${nonce.toString()} ca:${caAddr}`)
           }
@@ -3791,7 +3760,7 @@ const shardusSetup = (): void => {
                 const expectedAccountNonce = highestCommittingNonce + 1
                 if (appData.nonce < expectedAccountNonce) appData.nonce = expectedAccountNonce
               }
-              appData.txNonce = transaction.nonce.toNumber()
+              appData.txNonce = parseInt(transaction.nonce.toString(10))
               /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`txPreCrackData found nonce:${foundNonce} found sender:${foundSender} for ${txSenderEvmAddr} nonce:${nonce.toString()} queueCount:${queueCountResult.count.toString()}`)
             }
           }
@@ -3817,7 +3786,7 @@ const shardusSetup = (): void => {
               : new BN(1)
             let minBalance = scaleByStabilityFactor(minBalanceUsd, AccountsStorage.cachedNetworkAccount)
             //check with value added in
-            minBalance = minBalance.add(transaction.value)
+            minBalance = minBalance.add(new BN(transaction.value.toString()))
             const accountBalance = new BN(appData.balance)
             if (accountBalance.lt(minBalance)) {
               success = false
@@ -3829,7 +3798,7 @@ const shardusSetup = (): void => {
           }
 
           if (ShardeumFlags.txNoncePreCheck && appData != null) {
-            const txNonce = transaction.nonce.toNumber()
+            const txNonce = parseInt(transaction.nonce.toString(16), 16)
             const perfectCount = appData.nonce + appData.queueCount
 
             if (ShardeumFlags.looseNonceCheck) {
@@ -3856,9 +3825,9 @@ const shardusSetup = (): void => {
             const callObj = {
               from: await transaction.getSenderAddress().toString(),
               to: transaction.to ? transaction.to.toString() : null,
-              value: '0x' + transaction.value.toString('hex'),
-              data: '0x' + transaction.data.toString('hex'),
-              gasLimit: '0x' + transaction.gasLimit.toString('hex'),
+              value: '0x' + transaction.value.toString(),
+              data: '0x' + transaction.data.toString(),
+              gasLimit: '0x' + transaction.gasLimit.toString(),
               newContractAddress: appData.newCAAddr,
             }
 
@@ -4095,7 +4064,7 @@ const shardusSetup = (): void => {
             //only will work with first deploy, since we do not have a way to get nonce that works with sharding
             const hack0Nonce = new BN(0)
             const caAddrBuf = predictContractAddressDirect(txSenderEvmAddr, hack0Nonce)
-            const caAddr = '0x' + caAddrBuf.toString('hex')
+            const caAddr = '0x' + caAddrBuf.toString()
             const shardusAddr = toShardusAddress(caAddr, AccountType.Account)
             otherAccountKeys.push(shardusAddr)
             shardusAddressToEVMAccountInfo.set(shardusAddr, { evmAddress: caAddr, type: AccountType.Account })
@@ -4179,7 +4148,7 @@ const shardusSetup = (): void => {
         // If a transactions knows a key is for an account that will be created than it does not need to attempt to aquire and share the data
         const additionalAccounts = []
         if (ShardeumFlags.EVMReceiptsAsAccounts) {
-          const txHash = bufferToHex(transaction.hash())
+          const txHash = bufferToHex(arrToBufArr(transaction.hash()))
           const shardusReceiptAddress = toShardusAddressWithKey(txHash, '', AccountType.Receipt)
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
           /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`getKeyFromTransaction: adding tx receipt key: ${shardusReceiptAddress} ts:${(tx as any).timestamp}`)
@@ -4402,13 +4371,13 @@ const shardusSetup = (): void => {
       // todo: create new accounts for staking
 
       // check if it a stake tx
-      const transactionObj = getTransactionObj(tx)
-      const isStakeRelatedTx: boolean = isStakingEVMTx(transactionObj)
+      const transaction = getTransactionObj(tx)
+      const isStakeRelatedTx: boolean = isStakingEVMTx(transaction)
 
       if (isStakeRelatedTx) {
         nestedCountersInstance.countEvent('shardeum-staking', 'getRelevantData: isStakeRelatedTx === true')
         const stakeTxBlob: StakeCoinsTX = appData.internalTx
-        const txHash = bufferToHex(transactionObj.hash())
+        const txHash = bufferToHex(arrToBufArr(transaction.hash()))
 
         let accountCreated = false
         /* prettier-ignore */ shardus.setDebugSetLastAppAwait(`getRelevantData.AccountsStorage.getAccount(${accountId}) 2`)
@@ -4534,7 +4503,7 @@ const shardusSetup = (): void => {
         }
 
         const transaction = getTransactionObj(tx)
-        const txHash = bufferToHex(transaction.hash())
+        const txHash = bufferToHex(arrToBufArr(transaction.hash()))
         const shardusReceiptAddress = toShardusAddressWithKey(txHash, '', AccountType.Receipt)
         if (shardusReceiptAddress === accountId) {
           wrappedEVMAccount = {
@@ -5077,11 +5046,11 @@ const shardusSetup = (): void => {
           const debugTx = tx as DebugTx
           return `debugTX: ${DebugTXType[debugTx.debugTXType]}`
         }
-        const txObj: Transaction | AccessListEIP2930Transaction = getTransactionObj(tx)
-        if (txObj && isStakingEVMTx(txObj)) {
+        const transaction = getTransactionObj(tx)
+        if (transaction && isStakingEVMTx(transaction)) {
           return `stakingEVMtx`
         }
-        if (txObj) {
+        if (transaction) {
           return `EVMtx`
         }
       } catch (e) {
@@ -5770,7 +5739,7 @@ function periodicMemoryCleanup(): void {
       shardeumStateTXMap.delete(key)
     }
   }
-  setTimeout(periodicMemoryCleanup, 60000)
+  // setTimeout(periodicMemoryCleanup, 60000)
 }
 
 async function fetchNetworkAccountFromArchiver(): Promise<WrappedAccount> {

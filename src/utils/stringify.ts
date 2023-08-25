@@ -59,7 +59,7 @@ function stringifier(val: any, isArrayProp: boolean, options: StringifierOptions
               })
             case 'hex':
               return JSON.stringify({
-                data: Buffer.from(val['data']).toString('hex'),
+                data: Buffer.from(val['data']).toString(),
                 dataType: 'bh',
               })
           }

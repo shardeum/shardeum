@@ -49,7 +49,7 @@ export default class Cache {
    * @param key - Address of account
    */
   lookup(key: Address): Account | undefined {
-    const keyStr = key.buf.toString('hex')
+    const keyStr = key.buf.toString()
 
     const it = this._cache.find(keyStr)
     if (it.node) {
@@ -66,7 +66,7 @@ export default class Cache {
    * @param key - trie key to lookup
    */
   keyIsDeleted(key: Address): boolean {
-    const keyStr = key.buf.toString('hex')
+    const keyStr = key.buf.toString()
     const it = this._cache.find(keyStr)
     if (it.node) {
       return it.value.deleted
@@ -203,7 +203,7 @@ export default class Cache {
    * @param virtual - Account doesn't exist in the underlying trie
    */
   _update(key: Address, value: Account, modified: boolean, deleted: boolean, virtual = false): void {
-    const keyHex = key.buf.toString('hex')
+    const keyHex = key.buf.toString()
     const it = this._cache.find(keyHex)
     const val = value.serialize()
     if (it.node) {

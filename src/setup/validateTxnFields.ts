@@ -1,5 +1,5 @@
 import { nestedCountersInstance, Shardus } from '@shardus/core'
-import { BN, bufferToHex } from 'ethereumjs-util'
+import { BN, bufferToHex, arrToBufArr } from 'ethereumjs-util'
 import { ShardeumFlags } from '../shardeum/shardeumFlags'
 import {
   ClaimRewardTX,
@@ -120,13 +120,13 @@ export const validateTxnFields =
     let reason = 'Invalid EVM transaction fields'
 
     try {
-      const txObj = getTransactionObj(tx)
-      const isSigned = txObj.isSigned()
-      const isSignatureValid = txObj.validate()
+      const transaction = getTransactionObj(tx)
+      const isSigned = transaction.isSigned()
+      const isSignatureValid = transaction.isValid()
       if (ShardeumFlags.VerboseLogs) console.log('validate evm tx', isSigned, isSignatureValid)
 
       //const txId = '0x' + crypto.hashObj(timestampedTx.tx)
-      const txHash = bufferToHex(txObj.hash())
+      const txHash = bufferToHex(arrToBufArr(transaction.hash()))
 
       //limit debug app data size.  (a queue would be nicer, but this is very simple)
       if (debugAppdata.size > 1000) {
@@ -148,20 +148,20 @@ export const validateTxnFields =
           : new BN(1)
         let minBalance = scaleByStabilityFactor(minBalanceUsd, AccountsStorage.cachedNetworkAccount)
         //check with value added in
-        minBalance = minBalance.add(txObj.value)
+        minBalance = minBalance.add(new BN(transaction.value.toString()))
         const accountBalance = new BN(appData.balance)
         if (accountBalance.lt(minBalance)) {
           success = false
           reason = `Sender does not have enough balance.`
-          /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`balance fail: sender ${txObj.getSenderAddress()} does not have enough balance. Min balance: ${minBalance.toString()}, Account balance: ${accountBalance.toString()}`)
+          /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`balance fail: sender ${transaction.getSenderAddress()} does not have enough balance. Min balance: ${minBalance.toString()}, Account balance: ${accountBalance.toString()}`)
           nestedCountersInstance.countEvent('shardeum', 'validate - insufficient balance')
         } else {
-          /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`balance pass: sender ${txObj.getSenderAddress()} has balance of ${accountBalance.toString()}`)
+          /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`balance pass: sender ${transaction.getSenderAddress()} has balance of ${accountBalance.toString()}`)
         }
       }
 
       if (ShardeumFlags.txNoncePreCheck && appData != null) {
-        const txNonce = txObj.nonce.toNumber()
+        const txNonce = parseInt(transaction.nonce.toString(10))
         const perfectCount = appData.nonce + appData.queueCount
 
         if (ShardeumFlags.looseNonceCheck) {
@@ -194,10 +194,10 @@ export const validateTxnFields =
         if (typeof stakeCoinsTx.stake === 'string') stakeCoinsTx.stake = new BN(stakeCoinsTx.stake, 16)
         if (
           stakeCoinsTx.nominator == null ||
-          stakeCoinsTx.nominator.toLowerCase() !== txObj.getSenderAddress().toString()
+          stakeCoinsTx.nominator.toLowerCase() !== transaction.getSenderAddress().toString()
         ) {
           if (ShardeumFlags.VerboseLogs)
-            console.log(`nominator vs tx signer`, stakeCoinsTx.nominator, txObj.getSenderAddress().toString())
+            console.log(`nominator vs tx signer`, stakeCoinsTx.nominator, transaction.getSenderAddress().toString())
           success = false
           reason = `Invalid nominator address in stake coins tx`
         } else if (stakeCoinsTx.nominee == null) {
@@ -207,12 +207,12 @@ export const validateTxnFields =
           //TODO: NEED to potentially write a custom faster test that avoids regex so we can avoid a regex-dos attack
           success = false
           reason = 'Invalid nominee address in stake coins tx'
-        } else if (!stakeCoinsTx.stake.eq(txObj.value)) {
+        } else if (!stakeCoinsTx.stake.eq(new BN(transaction.value.toString()))) {
           if (ShardeumFlags.VerboseLogs)
             console.log(
               `Tx value and stake amount are different`,
               stakeCoinsTx.stake.toString(),
-              txObj.value.toString()
+              transaction.value.toString()
             )
           success = false
           reason = `Tx value and stake amount are different`
@@ -262,13 +262,13 @@ export const validateTxnFields =
         const unstakeCoinsTX = appData.internalTx as UnstakeCoinsTX
         if (
           unstakeCoinsTX.nominator == null ||
-          unstakeCoinsTX.nominator.toLowerCase() !== txObj.getSenderAddress().toString()
+          unstakeCoinsTX.nominator.toLowerCase() !== transaction.getSenderAddress().toString()
         ) {
           nestedCountersInstance.countEvent(
             'shardeum-unstaking',
             'invalid nominator address in stake coins tx'
           )
-          /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log( `nominator vs tx signer`, unstakeCoinsTX.nominator, txObj.getSenderAddress().toString() )
+          /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log( `nominator vs tx signer`, unstakeCoinsTX.nominator, transaction.getSenderAddress().toString() )
           success = false
           reason = `Invalid nominator address in stake coins tx`
         } else if (unstakeCoinsTX.nominee == null) {

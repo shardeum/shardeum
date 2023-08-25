@@ -68,13 +68,14 @@ export const validateTransaction =
     }
     if (!txObj) return response
 
-    if (!txObj.isSigned() || !txObj.validate()) {
+    if (!txObj.isSigned() || !txObj.isValid()) {
       response.reason = 'Transaction is not signed or signature is not valid.'
       return response
     }
 
     try {
-      const senderAddress = txObj.getSenderAddress()
+      // const senderAddress = txObj.getSenderAddress()
+      const senderAddress = txObj
       if (!senderAddress) {
         return {
           result: 'fail',
