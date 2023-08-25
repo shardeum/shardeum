@@ -4,23 +4,25 @@ import merge from 'deepmerge'
 
 const overwriteMerge = (target: any[], source: any[]): any[] => source // eslint-disable-line @typescript-eslint/no-explicit-any
 
-//TODO: improve typing here
-let config: {
-  storage?: any // eslint-disable-line @typescript-eslint/no-explicit-any
+export interface Config {
+  storage?: any; // eslint-disable-line @typescript-eslint/no-explicit-any
   server: {
-    globalAccount: string
+    globalAccount: string;
     p2p?: {
-      cycleDuration: number
+      cycleDuration: number;
       existingArchivers: Array<{
-        ip: string
-        port: number
-        publicKey: string
-      }>
-     }
-    baseDir: string
-    mode?: 'debug' | 'release'
-  }
-} = {
+        ip: string;
+        port: number;
+        publicKey: string;
+      }>;
+    };
+    baseDir: string;
+    mode?: 'debug' | 'release';
+  };
+}
+
+//TODO: improve typing here
+let config: Config = {
   server: {
     globalAccount: '0'.repeat(64), //dev-relaunch required to change this: '1' + '0'.repeat(63),
     baseDir: './',
