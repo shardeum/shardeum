@@ -79,7 +79,7 @@ import {
   getRandom,
   findMajorityResult,
 } from './utils'
-import config from './config'
+import config, { Config } from './config'
 import { RunTxResult } from '@ethereumjs/vm/dist/runTx'
 import { RunState } from '@ethereumjs/vm/dist/evm/interpreter'
 import Wallet from 'ethereumjs-wallet'
@@ -119,7 +119,7 @@ import axios from 'axios'
 import blockedAt from 'blocked-at'
 //import { v4 as uuidv4 } from 'uuid'
 import { debug as createDebugLogger } from 'debug'
-
+import rfdc = require("rfdc")
 
 
 let latestBlock = 0
@@ -5784,51 +5784,51 @@ async function fetchNetworkAccountFromArchiver(): Promise<WrappedAccount> {
   return res.data
 }
 
-// updateConfigFromNetworkAccount(inputConfig, networkAccount){
+async function updateConfigFromNetworkAccount(
+  inputConfig: Config,
+  account: WrappedAccount
+): Promise<Config> {
+  // Clone config with rfdc
+  const config = rfdc()(inputConfig)
 
-//   // clone config with rfdc
-//   let config = rfdc()(inputConfig)
-//   //this.appliedConfigChanges  can be a local set
-//   let changes = account.data.listOfChanges as {
-//     cycle: number
-//     change: any
-//     appData: any
-//   }[]
-//   //let changes = this.app.getChangesFromNetworkAccount()
-//   if (!changes || !Array.isArray(changes)) {
-//     return
-//   }
-//   for (let change of changes) {
-//     //skip future changes
-//     if (change.cycle > lastCycle.counter) {
-//       continue
-//     }
-//     //skip handled changes
+  // Extract changes from the account
+  const changes = account.data.listOfChanges
 
-//     if (this.appliedConfigChanges.has(change.cycle)) {
-//       continue
-//     }
-//     //apply this change
-//     this.appliedConfigChanges.add(change.cycle)
-//     let changeObj = change.change
-//     let appData = change.appData
+  // Validate changes
+  if (!changes || !Array.isArray(changes)) {
+    return config
+  }
 
-//     this.patchObject(this.config, changeObj, appData)
+  // Iterate through changes and apply them
+  for (const change of changes) {
+    // Apply changes using patchObject function
+    patchObject(config, change.change)
+  }
+  // Return the patched config
+  return config
+}
 
-//     if (appData) {
-//       const data: WrappedData[] = await this.app.updateNetworkChangeQueue(account, appData)
+function patchObject(
+  existingObject: Config,
+  changeObj: Partial<WrappedAccount>
+): void {
+  //remove after testing
+  console.log(`TESTING existingObject: ${JSON.stringify(existingObject, null, 2)}`)
+  console.log(`TESTING changeObj: ${JSON.stringify(changeObj, null, 2)}`)
+  for (const changeKey in changeObj) {
+    if (changeObj[changeKey] && existingObject.server[changeKey]) {
+      const targetObject = existingObject.server[changeKey]
+      const changeProperties = changeObj[changeKey]
 
-//       //this cant happen at all:
-//       //await this.stateManager.checkAndSetAccountData(data, 'global network account update', true)
-//     }
+      for (const propKey in changeProperties) {
+        if (changeProperties[propKey] && targetObject[propKey]) {
+          targetObject[propKey] = changeProperties[propKey]
+        }
+      }
+    }
+  }
+}
 
-//     //this cant happen at all:
-//     // this.p2p.configUpdated()
-//     // this.loadDetection.configUpdated()
-//   }
-
-//   return config
-// }
 
 export let shardusConfig: ShardusTypes.ServerConfiguration
 
@@ -5846,24 +5846,37 @@ export let shardusConfig: ShardusTypes.ServerConfiguration
 
   /** Standby nodes will sync network config very early here */
 
-  // //getTrustlessNetworkAccount()  notes
-  // //this networkAccount will only be used to help build/update a config and will not be stored as a local account
-  // //later when a node joins it can get the network account as part of the normal sync process
-  // //   intially  use    someactivenode:<externalPort>/account/0x00000000...  to get the network account
-  // //   would have to get a list active nodes from the archiver so we can know of one to ask.
+  //this networkAccount will only be used to help build/update a config and will not be stored as a local account
+  //later when a node joins it can get the network account as part of the normal sync process
+  //   intially  use    someactivenode:<externalPort>/account/0x00000000...  to get the network account
+  //   would have to get a list active nodes from the archiver so we can know of one to ask.
+  //const networkAccount = await getTrustlessNetworkAccount()
 
-  // // updated version:
-  // //trustless version will query the archiver's get-network-account?hash=true    if you ask for hash = true then just get the hash
-  // // then we will get the actuall account data and verify that it matches the hash we got vefore
+  // this needs the logic to patch a config
+  // it will also have to call its own function:
+  //const patchedConfig = updateConfigFromNetworkAccount(config, networkAccount)
+  //use patchedConfig instead of config below
 
-  // const networkAccount = await getTrustlessNetworkAccount()
+  let configToLoad
+  try {
 
-  // // this needs the logic to patch a config
-  // // it will also have to call its own function:
-  // let patchedConfig = updateConfigFromNetworkAccount(config, networkAccount)
-  // //use patchedConfig instead of config below
+    
+    // Attempt to get and patch config. Error if unable to get config.
+    const networkAccount = await fetchNetworkAccountFromArchiver()
 
-  shardus = shardusFactory(config, {
+    configToLoad = await updateConfigFromNetworkAccount(config, networkAccount)
+    
+    console.log( `Using patched configs: ${JSON.stringify(configToLoad)}`)
+
+  } catch (error) {
+    console.log(`Error getting network account: ${error} \nUsing default configs`)
+ 
+    configToLoad = config;
+  }
+
+  // this code is only excuted when starting or setting up the network***
+  // shardus factory for nodes joining later in the network.
+  shardus = shardusFactory(configToLoad, {
     customStringifier: SerializeToJsonString,
   })
 
