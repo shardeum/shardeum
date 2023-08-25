@@ -24,7 +24,7 @@ export function getAccountShardusAddress(account: WrappedEVMAccount | InternalAc
         }
         if (account.accountType === AccountType.ContractCode) {
             //in this case ethAddress is the code hash which is what we want for the key
-            //account.codeHash.toString('hex')
+            //account.codeHash.toString()
             const shardusAddress = toShardusAddressWithKey(
                 account.contractAddress,
                 account.ethAddress,

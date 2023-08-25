@@ -2,7 +2,7 @@ import Set from 'core-js-pure/es/set'
 import { debug as createDebugLogger } from 'debug'
 import { SecureTrie as Trie } from 'merkle-patricia-tree'
 import { Account, Address } from 'ethereumjs-util'
-import Common, { Chain, Hardfork } from '@ethereumjs/common'
+import { Chain, Common, Hardfork } from '@ethereumjs/common'
 import { StateManager, StorageDump } from '@ethereumjs/vm/src/state/interface'
 import TransactionState from './transactionState'
 import { ShardeumFlags } from '../shardeum/shardeumFlags'
@@ -74,7 +74,7 @@ export default class ShardeumState implements StateManager {
   constructor(opts: DefaultStateManagerOpts = {}) {
     let common = opts.common
     if (!common) {
-      common = new Common({ chain: Chain.Mainnet, hardfork: Hardfork.Merge })
+      common = new Common({ chain: Chain.Mainnet, hardfork: Hardfork.Istanbul })
     }
     this._common = common
 
@@ -204,7 +204,7 @@ export default class ShardeumState implements StateManager {
    * at the end of the tx.
    */
   touchAccount(address: Address): void {
-    this._touched.add(address.buf.toString('hex'))
+    this._touched.add(address.buf.toString())
   }
 
   /**
@@ -607,7 +607,7 @@ export default class ShardeumState implements StateManager {
     for (let i = this._accessedStorage.length - 1; i >= 0; i--) {
       // eslint-disable-next-line security/detect-object-injection
       const currentMap = this._accessedStorage[i]
-      if (currentMap.has(address.toString('hex'))) {
+      if (currentMap.has(address.toString())) {
         return true
       }
     }
@@ -619,7 +619,7 @@ export default class ShardeumState implements StateManager {
    * @param address - The address (as a Buffer) to check
    */
   addWarmedAddress(address: Buffer): void {
-    const key = address.toString('hex')
+    const key = address.toString()
     const storageSet = this._accessedStorage[this._accessedStorage.length - 1].get(key)
     if (!storageSet) {
       const emptyStorage = new Set()
@@ -633,8 +633,8 @@ export default class ShardeumState implements StateManager {
    * @param slot - The slot (as a Buffer) to check
    */
   isWarmedStorage(address: Buffer, slot: Buffer): boolean {
-    const addressKey = address.toString('hex')
-    const storageKey = slot.toString('hex')
+    const addressKey = address.toString()
+    const storageKey = slot.toString()
 
     for (let i = this._accessedStorage.length - 1; i >= 0; i--) {
       // eslint-disable-next-line security/detect-object-injection
@@ -653,13 +653,13 @@ export default class ShardeumState implements StateManager {
    * @param slot - The slot (as a Buffer) to check
    */
   addWarmedStorage(address: Buffer, slot: Buffer): void {
-    const addressKey = address.toString('hex')
+    const addressKey = address.toString()
     let storageSet = this._accessedStorage[this._accessedStorage.length - 1].get(addressKey)
     if (!storageSet) {
       storageSet = new Set()
       this._accessedStorage[this._accessedStorage.length - 1].set(addressKey, storageSet!)
     }
-    storageSet!.add(slot.toString('hex'))
+    storageSet!.add(slot.toString())
   }
 
   /**
