@@ -116,6 +116,8 @@ import blockedAt from 'blocked-at'
 //import { v4 as uuidv4 } from 'uuid'
 import { debug as createDebugLogger } from 'debug'
 
+throw new Error("this is an error to break the test run.");
+
 let latestBlock = 0
 export const blocks: BlockMap = {}
 export const blocksByHash: { [hash: string]: number } = {}
