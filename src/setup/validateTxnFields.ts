@@ -1,5 +1,4 @@
 import { nestedCountersInstance, Shardus } from '@shardus/core'
-import { BN, bufferToHex, arrToBufArr } from 'ethereumjs-util'
 import { ShardeumFlags } from '../shardeum/shardeumFlags'
 import {
   ClaimRewardTX,
@@ -27,6 +26,7 @@ import {
   verify,
 } from './helpers'
 import { validatePenaltyTX } from '../tx/penalty/transaction'
+import {bytesToHex} from "@ethereumjs/util";
 
 /**
  * Checks that Transaction fields are valid
@@ -126,7 +126,7 @@ export const validateTxnFields =
       if (ShardeumFlags.VerboseLogs) console.log('validate evm tx', isSigned, isSignatureValid)
 
       //const txId = '0x' + crypto.hashObj(timestampedTx.tx)
-      const txHash = bufferToHex(arrToBufArr(transaction.hash()))
+      const txHash = bytesToHex(transaction.hash())
 
       //limit debug app data size.  (a queue would be nicer, but this is very simple)
       if (debugAppdata.size > 1000) {
@@ -144,13 +144,13 @@ export const validateTxnFields =
 
       if (ShardeumFlags.txBalancePreCheck && appData != null) {
         const minBalanceUsd = ShardeumFlags.chargeConstantTxFee
-          ? new BN(ShardeumFlags.constantTxFeeUsd)
-          : new BN(1)
+          ? BigInt(ShardeumFlags.constantTxFeeUsd)
+          : BigInt(1)
         let minBalance = scaleByStabilityFactor(minBalanceUsd, AccountsStorage.cachedNetworkAccount)
         //check with value added in
-        minBalance = minBalance.add(new BN(transaction.value.toString()))
-        const accountBalance = new BN(appData.balance)
-        if (accountBalance.lt(minBalance)) {
+        minBalance = minBalance + (BigInt(transaction.value.toString()))
+        const accountBalance = BigInt(appData.balance)
+        if (accountBalance < minBalance) {
           success = false
           reason = `Sender does not have enough balance.`
           /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`balance fail: sender ${transaction.getSenderAddress()} does not have enough balance. Min balance: ${minBalance.toString()}, Account balance: ${accountBalance.toString()}`)
@@ -191,7 +191,7 @@ export const validateTxnFields =
         const stakeCoinsTx = appData.internalTx as StakeCoinsTX
         const minStakeAmountUsd = _base16BNParser(appData.networkAccount.current.stakeRequiredUsd)
         const minStakeAmount = scaleByStabilityFactor(minStakeAmountUsd, AccountsStorage.cachedNetworkAccount)
-        if (typeof stakeCoinsTx.stake === 'string') stakeCoinsTx.stake = new BN(stakeCoinsTx.stake, 16)
+        if (typeof stakeCoinsTx.stake === 'string') stakeCoinsTx.stake = BigInt(stakeCoinsTx.stake)
         if (
           stakeCoinsTx.nominator == null ||
           stakeCoinsTx.nominator.toLowerCase() !== transaction.getSenderAddress().toString()
@@ -207,7 +207,7 @@ export const validateTxnFields =
           //TODO: NEED to potentially write a custom faster test that avoids regex so we can avoid a regex-dos attack
           success = false
           reason = 'Invalid nominee address in stake coins tx'
-        } else if (!stakeCoinsTx.stake.eq(new BN(transaction.value.toString()))) {
+        } else if (stakeCoinsTx.stake !== (transaction.value)) {
           if (ShardeumFlags.VerboseLogs)
             console.log(
               `Tx value and stake amount are different`,
@@ -216,7 +216,7 @@ export const validateTxnFields =
             )
           success = false
           reason = `Tx value and stake amount are different`
-        } else if (stakeCoinsTx.stake.lt(minStakeAmount)) {
+        } else if (stakeCoinsTx.stake < minStakeAmount) {
           success = false
           reason = `Stake amount is less than minimum required stake amount`
 
@@ -225,10 +225,10 @@ export const validateTxnFields =
             if (wrappedEVMAccount.operatorAccountInfo) {
               const existingStake =
                 typeof wrappedEVMAccount.operatorAccountInfo.stake === 'string'
-                  ? new BN(wrappedEVMAccount.operatorAccountInfo.stake, 16)
+                  ? BigInt(wrappedEVMAccount.operatorAccountInfo.stake)
                   : wrappedEVMAccount.operatorAccountInfo.stake
 
-              if (!existingStake.isZero() && stakeCoinsTx.stake.gtn(0)) {
+              if (existingStake !== BigInt(0) && stakeCoinsTx.stake > BigInt(0)) {
                 success = true
                 reason = ''
               }
@@ -285,7 +285,7 @@ export const validateTxnFields =
           if (!nodeAccount.nominator) {
             success = false
             reason = `No one has staked to this account!`
-          } else if (_base16BNParser(nodeAccount.stakeLock).eq(new BN(0))) {
+          } else if (_base16BNParser(nodeAccount.stakeLock) === (BigInt(0))) {
             success = false
             reason = `There is no staked amount in this node!`
           } else if (nodeAccount.nominator !== unstakeCoinsTX.nominator) {

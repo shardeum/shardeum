@@ -4,7 +4,7 @@ import { ShardeumFlags } from '../../shardeum/shardeumFlags'
 import * as AccountsStorage from '../../storage/accountStorage'
 import { NodeAccount2, WrappedEVMAccount } from '../../shardeum/shardeumTypes'
 
-export function applyPenalty(nodeAccount: NodeAccount2, operatorEOA: WrappedEVMAccount, penalty: BN): boolean {
+export function applyPenalty(nodeAccount: NodeAccount2, operatorEOA: WrappedEVMAccount, penalty: bigint): boolean {
   if (ShardeumFlags.VerboseLogs)
     console.log(`\nApplying Penalty on Node: ${nodeAccount.id} of ${penalty.toString()} SHM`)
 
@@ -15,16 +15,16 @@ export function applyPenalty(nodeAccount: NodeAccount2, operatorEOA: WrappedEVMA
   nodeAccount.penalty = _base16BNParser(nodeAccount.penalty)
   nodeAccount.nodeAccountStats.totalPenalty = _base16BNParser(nodeAccount.nodeAccountStats.totalPenalty)
 
-  if (penalty.gt(nodeAccount.stakeLock)) penalty = nodeAccount.stakeLock
+  if (penalty > nodeAccount.stakeLock) penalty = nodeAccount.stakeLock
 
   // update operator account
-  operatorEOA.operatorAccountInfo.stake.isub(penalty)
-  operatorEOA.operatorAccountInfo.operatorStats.totalNodePenalty.iadd(penalty)
+  operatorEOA.operatorAccountInfo.stake -= penalty
+  operatorEOA.operatorAccountInfo.operatorStats.totalNodePenalty += penalty
 
   // update node account
-  nodeAccount.stakeLock.isub(penalty)
-  nodeAccount.penalty.iadd(penalty)
-  nodeAccount.nodeAccountStats.totalPenalty.iadd(penalty)
+  nodeAccount.stakeLock -= penalty
+  nodeAccount.penalty += penalty
+  nodeAccount.nodeAccountStats.totalPenalty += penalty
   nodeAccount.nodeAccountStats.history.push({ b: nodeAccount.rewardStartTime, e: nodeAccount.rewardEndTime })
   return true
 }
@@ -37,12 +37,11 @@ export function isLowStake(nodeAccount: NodeAccount2): boolean {
    */
 
   const stakeRequiredUSD = AccountsStorage.cachedNetworkAccount.current.stakeRequiredUsd
-  const lowStakeThresholdUSD = stakeRequiredUSD.mul(new BN(ShardeumFlags.lowStakePercent * 100)).div(new BN(100));
+  const lowStakeThresholdUSD = (stakeRequiredUSD * BigInt(ShardeumFlags.lowStakePercent * 100))/(BigInt(100));
   const lowStakeThreshold = scaleByStabilityFactor(
     lowStakeThresholdUSD,
     AccountsStorage.cachedNetworkAccount
   )
 
-  if (nodeAccount.stakeLock.lt(lowStakeThreshold)) return true
-  return false
+  return nodeAccount.stakeLock < lowStakeThreshold;
 }

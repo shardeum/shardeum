@@ -12,6 +12,7 @@ import {
   short,
 } from '@ethereumjs/util'
 import debugDefault from 'debug'
+const { chargeConstantTxFee, constantTxFeeUsd, baselineTxGasUsage, baselineTxFee } = ShardeumFlags
 
 import { Bloom } from './bloom/index.js'
 
@@ -33,6 +34,8 @@ import type {
   LegacyTransaction,
   TypedTransaction,
 } from '@ethereumjs/tx'
+import {calculateGasPrice, scaleByStabilityFactor} from "../utils";
+import {ShardeumFlags} from "../shardeum/shardeumFlags";
 const { debug: createDebugLogger } = debugDefault
 
 const debug = createDebugLogger('vm:tx')
@@ -348,7 +351,7 @@ async function _runTx(this: VM, opts: RunTxOpts): Promise<RunTxResult> {
     }
   }
 
-  let gasPrice: bigint
+  let gasPrice = calculateGasPrice(baselineTxFee, baselineTxGasUsage, opts.networkAccount)
   let inclusionFeePerGas: bigint
   // EIP-1559 tx
   if (tx.supports(Capability.EIP1559FeeMarket)) {
@@ -362,7 +365,7 @@ async function _runTx(this: VM, opts: RunTxOpts): Promise<RunTxResult> {
     gasPrice = inclusionFeePerGas + baseFee
   } else {
     // Have to cast as legacy tx since EIP1559 tx does not have gas price
-    gasPrice = (<LegacyTransaction>tx).gasPrice
+    // gasPrice = (<LegacyTransaction>tx).gasPrice
     if (this.common.isActivatedEIP(1559) === true) {
       const baseFee = block.header.baseFeePerGas!
       inclusionFeePerGas = (<LegacyTransaction>tx).gasPrice - baseFee
@@ -376,7 +379,13 @@ async function _runTx(this: VM, opts: RunTxOpts): Promise<RunTxResult> {
   }
 
   // Update from account's balance
-  const txCost = tx.gasLimit * gasPrice
+  let txCost: bigint
+  if (chargeConstantTxFee) {
+    const baseTxCost = BigInt(constantTxFeeUsd)
+    txCost = scaleByStabilityFactor(baseTxCost, opts.networkAccount)
+  } else {
+    txCost = tx.gasLimit * gasPrice
+  }
   const blobGasCost = totalblobGas * blobGasPrice
   fromAccount.balance -= txCost
   fromAccount.balance -= blobGasCost
@@ -464,14 +473,21 @@ async function _runTx(this: VM, opts: RunTxOpts): Promise<RunTxResult> {
       debug(`No tx gasRefund`)
     }
   }
-  results.amountSpent = results.totalGasSpent * gasPrice
+  let actualTxCost: bigint
+  if (chargeConstantTxFee) {
+    const baseTxCost = BigInt(constantTxFeeUsd)
+    actualTxCost = scaleByStabilityFactor(baseTxCost, opts.networkAccount)
+  } else {
+    actualTxCost = results.totalGasSpent * gasPrice
+  }
+
+  results.amountSpent = actualTxCost
 
   // Update sender's balance
   fromAccount = await state.getAccount(caller)
   if (fromAccount === undefined) {
     fromAccount = new Account()
   }
-  const actualTxCost = results.totalGasSpent * gasPrice
   const txCostDiff = txCost - actualTxCost
   fromAccount.balance += txCostDiff
   await this.evm.journal.putAccount(caller, fromAccount)
@@ -676,7 +692,7 @@ export async function generateTxReceipt(
  * @param msg Base error message
  * @hidden
  */
-function _errorMsg(msg: string, vm: VM, block: Block, tx: TypedTransaction) {
+function _errorMsg(msg: string, vm: VM, block: Block, tx: TypedTransaction): string {
   const blockErrorStr = 'errorStr' in block ? block.errorStr() : 'block'
   const txErrorStr = 'errorStr' in tx ? tx.errorStr() : 'tx'
 

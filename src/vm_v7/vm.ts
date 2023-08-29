@@ -246,7 +246,7 @@ export class VM {
   /**
    * Return a compact error string representation of the object
    */
-  errorStr() {
+  errorStr(): string {
     let hf = ''
     try {
       hf = this.common.hardfork()

@@ -1,5 +1,4 @@
-import { Account, keccak256, Address, KECCAK256_NULL, rlp, unpadBuffer } from 'ethereumjs-util'
-import { SecureTrie as Trie } from 'merkle-patricia-tree'
+import {Account, Address, bytesToHex, equalsBytes, hexToBytes, KECCAK256_NULL, unpadBytes} from '@ethereumjs/util'
 import { ShardeumState } from '.'
 import { ShardeumFlags } from '../shardeum/shardeumFlags'
 import { zeroAddressAccount, zeroAddressStr } from '../utils'
@@ -7,6 +6,8 @@ import * as AccountsStorage from '../storage/accountStorage'
 import { AccountType, WrappedEVMAccount } from '../shardeum/shardeumTypes'
 import { toShardusAddress, toShardusAddressWithKey } from '../shardeum/evmAddress'
 import { fixDeserializedWrappedEVMAccount } from '../shardeum/wrappedEVMAccountFunctions'
+import {Trie} from "@ethereumjs/trie";
+import {keccak256} from "ethereum-cryptography/keccak.js";
 
 export type accountEvent = (transactionState: TransactionState, address: string) => Promise<boolean>
 export type contractStorageEvent = (
@@ -52,8 +53,8 @@ export interface TryRemoteAccountHistory {
 //would be nice if shardus called put account data on a list of accounts for a given TX !!!
 
 export interface ContractByteWrite {
-  contractByte: Buffer
-  codeHash: Buffer
+  contractByte: Uint8Array
+  codeHash: Uint8Array
   contractAddress: Address
 }
 
@@ -65,15 +66,15 @@ export default class TransactionState {
   shardeumState: ShardeumState
 
   // account data
-  firstAccountReads: Map<string, Buffer>
-  allAccountWrites: Map<string, Buffer>
-  committedAccountWrites: Map<string, Buffer>
+  firstAccountReads: Map<string, Uint8Array>
+  allAccountWrites: Map<string, Uint8Array>
+  committedAccountWrites: Map<string, Uint8Array>
 
-  allAccountWritesStack: Map<string, Buffer>[]
+  allAccountWritesStack: Map<string, Uint8Array>[]
 
   // contract account key: value data
-  firstContractStorageReads: Map<string, Map<string, Buffer>>
-  allContractStorageWrites: Map<string, Map<string, Buffer>>
+  firstContractStorageReads: Map<string, Map<string, Uint8Array>>
+  allContractStorageWrites: Map<string, Map<string, Uint8Array>>
 
   // contract account key: value data
   firstContractBytesReads: Map<string, ContractByteWrite>
@@ -81,7 +82,7 @@ export default class TransactionState {
   allContractBytesWritesByAddress: Map<string, ContractByteWrite>
 
   // pending contract storage commits
-  pendingContractStorageCommits: Map<string, Map<string, Buffer>>
+  pendingContractStorageCommits: Map<string, Map<string, Uint8Array>>
   pendingContractBytesCommits: Map<string, Map<string, WrappedEVMAccount>>
 
   tryRemoteHistory: TryRemoteAccountHistory
@@ -136,8 +137,8 @@ export default class TransactionState {
     shardeumState: ShardeumState,
     callbacks: ShardeumStorageCallbacks,
     linkedTX,
-    firstReads: Map<string, Buffer>,
-    firstContractStorageReads: Map<string, Map<string, Buffer>>
+    firstReads: Map<string, Uint8Array>,
+    firstContractStorageReads: Map<string, Map<string, Uint8Array>>
   ): void {
     this.createdTimestamp = Date.now()
 
@@ -192,8 +193,8 @@ export default class TransactionState {
   }
 
   getReadAccounts(): {
-    accounts: Map<string, Buffer>
-    contractStorages: Map<string, Map<string, Buffer>>
+    accounts: Map<string, Uint8Array>
+    contractStorages: Map<string, Map<string, Uint8Array>>
     contractBytes: Map<string, ContractByteWrite>
   } {
     return {
@@ -204,8 +205,8 @@ export default class TransactionState {
   }
 
   getWrittenAccounts(): {
-    accounts: Map<string, Buffer>
-    contractStorages: Map<string, Map<string, Buffer>>
+    accounts: Map<string, Uint8Array>
+    contractStorages: Map<string, Map<string, Uint8Array>>
     contractBytes: Map<string, ContractByteWrite>
   } {
     //flatten accounts maps. from newest to oldest in our stack (newest has the highest array index)
@@ -233,7 +234,7 @@ export default class TransactionState {
     }
   }
 
-  getTransferBlob(): { accounts: Map<string, Buffer>; kvPairs: Map<string, Map<string, Buffer>> } {
+  getTransferBlob(): { accounts: Map<string, Uint8Array>; kvPairs: Map<string, Map<string, Uint8Array>> } {
     //this is the data needed to start computation on another shard
     return { accounts: this.firstAccountReads, kvPairs: this.firstContractStorageReads }
   }
@@ -259,16 +260,16 @@ export default class TransactionState {
       if (account.balance.startsWith('0x') === false) {
         account.balance = '0x' + account.balance
       }
-      this.fixAccountBuffers(account)
+      this.fixAccountUint8Arrays(account)
     }
   }
 
-  private static fixAccountBuffers(account): void {
+  private static fixAccountUint8Arrays(account): void {
     if (account.stateRoot.data) {
-      account.stateRoot = Buffer.from(account.stateRoot.data)
+      account.stateRoot = Uint8Array.from(account.stateRoot.data)
     }
     if (account.codeHash.data) {
-      account.codeHash = Buffer.from(account.codeHash.data)
+      account.codeHash = Uint8Array.from(account.codeHash.data)
     }
   }
 
@@ -299,15 +300,13 @@ export default class TransactionState {
         //walk through all of these
         for (const entry of contractStorageCommits.entries()) {
           const keyString = entry[0]
-          const value = entry[1] // need to check wrapping.  Does this need one more layer of toBuffer?/rlp?
-          const keyBuffer = Buffer.from(keyString, 'hex')
-          await storageTrie.put(keyBuffer, value)
+          const value = entry[1] // need to check wrapping.  Does this need one more layer of toUint8Array?/rlp?
+          const keyUint8Array = hexToBytes(keyString)
+          await storageTrie.put(keyUint8Array, value)
 
           if (this.debugTrace)
             this.debugTraceLog(
-              `commitAccount:contractStorage: addr:${addressString} key:${keyString} v:${value.toString(
-                'hex'
-              )}`
+              `commitAccount:contractStorage: addr:${addressString} key:${keyString} v:${bytesToHex(value)}`
             )
         }
         await storageTrie.commit()
@@ -343,11 +342,11 @@ export default class TransactionState {
 
       TransactionState.fixAccountFields(account)
 
-      account.stateRoot = Buffer.from(account.stateRoot)
+      account.stateRoot = Uint8Array.from(account.stateRoot)
 
       const accountObj = Account.fromAccountData(account)
       const accountRlp = accountObj.serialize()
-      const accountKeyBuf = address.buf
+      const accountKeyBuf = address.bytes
       await this.shardeumState._trie.put(accountKeyBuf, accountRlp)
 
       await this.shardeumState._trie.commit()
@@ -368,7 +367,7 @@ export default class TransactionState {
    * @param codeHash
    * @param contractByte
    */
-  async commitContractBytes(contractAddress: string, codeHash: Buffer, contractByte: Buffer): Promise<void> {
+  async commitContractBytes(contractAddress: string, codeHash: Uint8Array, contractByte: Uint8Array): Promise<void> {
     if (ShardeumFlags.SaveEVMTries) {
       //only put this in the pending commit structure. we will do the real commit when updating the account
       if (this.pendingContractBytesCommits.has(contractAddress)) {
@@ -397,14 +396,12 @@ export default class TransactionState {
 
       if (this.debugTrace)
         this.debugTraceLog(
-          `commitContractBytes:contractCode codeHash:${codeHash.toString()} v:${contractByte.toString(
-            'hex'
-          )}`
+          `commitContractBytes:contractCode codeHash:${codeHash.toString()} v:${bytesToHex(contractByte)}`
         )
     }
   }
 
-  async commitContractStorage(contractAddress: string, keyString: string, value: Buffer): Promise<void> {
+  async commitContractStorage(contractAddress: string, keyString: string, value: Uint8Array): Promise<void> {
     //store all writes to the persistant trie.
     if (ShardeumFlags.SaveEVMTries) {
       //only put this in the pending commit structure. we will do the real commit when updating the account
@@ -492,11 +489,11 @@ export default class TransactionState {
       throw new Error('unable to proceed, cant involve account')
     }
 
-    let storedRlp: Buffer
+    let storedRlp: Uint8Array
 
     if (ShardeumFlags.SaveEVMTries) {
       //see if we can get it from the storage trie.
-      storedRlp = await worldStateTrie.get(address.buf)
+      storedRlp = await worldStateTrie.get(address.bytes)
       account = storedRlp ? Account.fromRlpSerializedAccount(storedRlp) : undefined
     } else {
       //get from accounts
@@ -635,7 +632,7 @@ export default class TransactionState {
     contractAddress: Address,
     originalOnly: boolean,
     canThrow: boolean
-  ): Promise<Buffer> {
+  ): Promise<Uint8Array> {
     const addressString = contractAddress.toString()
 
     //first get the account so we can have the correct code hash to look at
@@ -679,8 +676,8 @@ export default class TransactionState {
       throw new Error('unable to proceed, cant involve contract bytes')
     }
 
-    let storedCodeByte: Buffer
-    let codeBytes: Buffer
+    let storedCodeByte: Uint8Array
+    let codeBytes: Uint8Array
     if (ShardeumFlags.SaveEVMTries) {
       //see if we can get it from the worldStateTrie.db
       storedCodeByte = await worldStateTrie.db.get(codeHash)
@@ -733,7 +730,7 @@ export default class TransactionState {
 
       //return unitiazlied new code bytes
       //todo need to insert it into a map of new / virtual accounts?
-      return Buffer.alloc(0)
+      return new Uint8Array(0)
     }
 
     if (this.debugTrace)
@@ -751,7 +748,7 @@ export default class TransactionState {
     return codeBytes
   }
 
-  async putContractCode(contractAddress: Address, codeByte: Buffer): Promise<void> {
+  async putContractCode(contractAddress: Address, codeByte: Uint8Array): Promise<void> {
     const addressString = contractAddress.toString()
 
     if (this.accountInvolvedCB(this, addressString, false) === false) {
@@ -759,7 +756,7 @@ export default class TransactionState {
     }
 
     const codeHash = keccak256(codeByte)
-    if (codeHash.equals(KECCAK256_NULL)) {
+    if (equalsBytes(codeHash,KECCAK256_NULL)) {
       return
     }
 
@@ -771,9 +768,8 @@ export default class TransactionState {
 
     if (this.debugTrace)
       this.debugTraceLog(
-        `putContractCode: addr:${addressString} codeHash:${codeHash.toString(
-          'hex'
-        )} v:${contractByteWrite.contractByte.toString()}`
+        `putContractCode: addr:${addressString} codeHash:${bytesToHex(codeHash) 
+        } v:${contractByteWrite.contractByte.toString()}`
       )
 
     this.allContractBytesWrites.set(codeHash.toString(), contractByteWrite)
@@ -782,7 +778,7 @@ export default class TransactionState {
     this.touchedCAs.add(addressString)
   }
 
-  insertFirstContractBytesReads(contractAddress: Address, codeByte: Buffer): void {
+  insertFirstContractBytesReads(contractAddress: Address, codeByte: Uint8Array): void {
     const addressString = contractAddress.toString()
 
     if (this.accountInvolvedCB(this, addressString, false) === false) {
@@ -791,7 +787,7 @@ export default class TransactionState {
 
     const codeHash = keccak256(codeByte)
     const codeHashStr = codeHash.toString()
-    if (codeHash.equals(KECCAK256_NULL)) {
+    if (equalsBytes(codeHash,KECCAK256_NULL)) {
       return
     }
     this.firstContractBytesReads.set(codeHashStr, { codeHash, contractByte: codeByte, contractAddress })
@@ -801,10 +797,10 @@ export default class TransactionState {
   async getContractStorage(
     storage: Trie,
     contractAddress: Address,
-    key: Buffer,
+    key: Uint8Array,
     originalOnly: boolean,
     canThrow: boolean
-  ): Promise<Buffer> {
+  ): Promise<Uint8Array> {
     const addressString = contractAddress.toString()
     const keyString = key.toString()
 
@@ -894,7 +890,7 @@ export default class TransactionState {
       if (canThrow && isRemoteShard) throw new Error('account not available') //todo smarter throw?
 
       //rlp.decode(null) returns this:
-      return Buffer.from([])
+      return Uint8Array.from([])
     }
 
     // storage hit!!! data exists in this shard
@@ -914,7 +910,7 @@ export default class TransactionState {
     return storedValue
   }
 
-  async putContractStorage(contractAddress: Address, key: Buffer, value: Buffer): Promise<void> {
+  async putContractStorage(contractAddress: Address, key: Uint8Array, value: Uint8Array): Promise<void> {
     const addressString = contractAddress.toString()
     const keyString = key.toString()
 
@@ -922,7 +918,7 @@ export default class TransactionState {
       throw new Error('unable to proceed, cant involve contract storage')
     }
 
-    value = unpadBuffer(value) // Trims leading zeros from a Buffer.
+    value = unpadBytes(value) // Trims leading zeros from a Uint8Array.
 
     // Step 1 update the account storage
     const storedRlp = rlp.encode(value)
@@ -954,7 +950,7 @@ export default class TransactionState {
     this.touchedCAs.add(addressString)
   }
 
-  insertFirstContractStorageReads(address: Address, keyString: string, value: Buffer): void {
+  insertFirstContractStorageReads(address: Address, keyString: string, value: Uint8Array): void {
     const addressString = address.toString()
 
     if (this.contractStorageInvolvedCB(this, addressString, keyString, true) === false) {
@@ -962,7 +958,7 @@ export default class TransactionState {
     }
 
     // todo research the meaning of this next line!!!!, borrowed from existing ethereumJS code
-    value = unpadBuffer(value)
+    value = unpadBytes(value)
 
     // Step 1 update the account storage
     // let storedRlp = rlp.encode(value)
@@ -1020,7 +1016,7 @@ export default class TransactionState {
 
     //we need checkpoint / revert stack support for accounts so that gas is handled correctly
     //this.allAccountWritesStack.push(this.allAccountWrites)
-    this.allAccountWritesStack.push(new Map<string, Buffer>())
+    this.allAccountWritesStack.push(new Map<string, Uint8Array>())
 
     this.allAccountWrites = new Map()
 
@@ -1170,7 +1166,7 @@ export default class TransactionState {
     }
   }
 
-  logAccountWrites(accountWrites: Map<string, Buffer>): Map<unknown, unknown> {
+  logAccountWrites(accountWrites: Map<string, Uint8Array>): Map<unknown, unknown> {
     const resultMap = new Map()
     for (const [key, value] of accountWrites.entries()) {
       const readableAccount: Account = Account.fromRlpSerializedAccount(value)
@@ -1182,7 +1178,7 @@ export default class TransactionState {
     return resultMap
   }
 
-  logAccountWritesStack(accountWritesStack: Map<string, Buffer>[]): unknown[] {
+  logAccountWritesStack(accountWritesStack: Map<string, Uint8Array>[]): unknown[] {
     const resultStack = []
     for (const accountWrites of accountWritesStack) {
       const readableAccountWrites = this.logAccountWrites(accountWrites)

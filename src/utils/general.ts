@@ -1,34 +1,16 @@
-import { BN, bufferToHex } from 'ethereumjs-util'
 import { NetworkAccount } from '../shardeum/shardeumTypes'
 
-/**
- * After a Buffer goes through json stringify/parse it comes out broken
- *   maybe fix this in shardus-global-server. for now use this safe function
- * @param buffer
- * @returns
- */
-export function safeBufferToHex(buffer): string {
-  if (buffer.data != null) {
-    return bufferToHex(buffer.data)
-  }
-  return bufferToHex(buffer)
-}
-
-export function calculateGasPrice(
-  baselineTxFee: string,
-  baselineTxGasUsage: string,
-  networkAccount: NetworkAccount
-): BN {
-  const txFee = new BN(baselineTxFee)
-  const gas = new BN(baselineTxGasUsage)
-  const gasPrice = txFee.div(gas)
+export function calculateGasPrice(baselineTxFee: string, baselineTxGasUsage: string, networkAccount: NetworkAccount): bigint {
+  const txFee = BigInt(baselineTxFee)
+  const gas = BigInt(baselineTxGasUsage)
+  const gasPrice = txFee / gas
   return scaleByStabilityFactor(gasPrice, networkAccount)
 }
 
-export function scaleByStabilityFactor(input: BN, networkAccount: NetworkAccount): BN {
-  const stabilityScaleMult = new BN(networkAccount.current.stabilityScaleMul)
-  const stabilityScaleDiv = new BN(networkAccount.current.stabilityScaleDiv)
-  return input.mul(stabilityScaleMult).div(stabilityScaleDiv)
+export function scaleByStabilityFactor(input: bigint, networkAccount: NetworkAccount): bigint {
+  const stabilityScaleMult = BigInt(networkAccount.current.stabilityScaleMul)
+  const stabilityScaleDiv = BigInt(networkAccount.current.stabilityScaleDiv)
+  return (input * stabilityScaleMult) / (stabilityScaleDiv)
 }
 
 export function sleep(ms: number): Promise<void> {

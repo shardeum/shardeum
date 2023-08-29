@@ -1,7 +1,7 @@
 import { Chain, Hardfork, Common as CommonFactory } from '@ethereumjs/common'
 import Common from '@ethereumjs/common'
 import { Shardus, ShardusTypes } from '@shardus/core'
-import { Account, Address, BN } from 'ethereumjs-util'
+import { Account, Address } from '@ethereumjs/util'
 import config from '../config'
 import genesis from '../config/genesis.json'
 import { loadAccountDataFromDB } from '../shardeum/debugRestoreAccounts'
@@ -22,12 +22,12 @@ function isDebugMode(): boolean {
   return config.server.mode === 'debug'
 }
 
-const oneEth = new BN(10).pow(new BN(18))
+const oneEth = BigInt(10) ** BigInt(18)
 
 export const networkAccount = config.server.globalAccount
 
 //In debug mode the default value is 100 SHM.  This is needed for certain load test operations
-const defaultBalance = isDebugMode() ? oneEth.mul(new BN(100)) : new BN(0)
+const defaultBalance = isDebugMode() ? oneEth * BigInt(100) : BigInt(0)
 
 const debugShardeumState: ShardeumState = null
 
@@ -55,7 +55,7 @@ export const sync = (shardus: Shardus, evmCommon: any) => async (): Promise<void
         let skippedAccountCount = 0
         const accountCopies = []
         for (const address in genesis) {
-          const amount = new BN(genesis[address].wei) // eslint-disable-line security/detect-object-injection
+          const amount = BigInt(genesis[address].wei) // eslint-disable-line security/detect-object-injection
 
           const shardusAccountID = toShardusAddress(address, AccountType.Account)
           const existingAccount = await shardus.getLocalOrRemoteAccount(shardusAccountID)
@@ -246,7 +246,7 @@ function getDebugTXState(evmCommon: any): ShardeumState {
 async function createAccount(
   addressStr: string,
   stateManager: any,
-  balance: BN = defaultBalance
+  balance: bigint = defaultBalance
 ): Promise<WrappedEVMAccount> {
   if (ShardeumFlags.VerboseLogs) console.log('Creating new account', addressStr)
   const accountAddress = Address.fromString(addressStr)

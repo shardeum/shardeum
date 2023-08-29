@@ -1,4 +1,4 @@
-import { Account, BN, generateAddress } from 'ethereumjs-util'
+import {Account, bigIntToBytes, generateAddress} from '@ethereumjs/util'
 
 import { ShardusTypes } from '@shardus/core'
 import * as crypto from '@shardus/crypto-utils'
@@ -94,7 +94,7 @@ function fixWrappedEVMAccountBuffers(wrappedEVMAccount: WrappedEVMAccount): void
   }
 }
 
-export function predictContractAddress(wrappedEVMAccount: WrappedEVMAccount): Buffer {
+export function predictContractAddress(wrappedEVMAccount: WrappedEVMAccount): Uint8Array {
   if (wrappedEVMAccount.accountType != AccountType.Account) {
     throw new Error('predictContractAddress requires AccountType.Account')
   }
@@ -104,14 +104,14 @@ export function predictContractAddress(wrappedEVMAccount: WrappedEVMAccount): Bu
   return addressBuffer
 }
 
-export function predictContractAddressDirect(ethAddress: string, nonce: BN): Buffer {
+export function predictContractAddressDirect(ethAddress: string, nonce: bigint): Uint8Array {
   let fromStr = ethAddress
   if (fromStr.length === 42) {
     fromStr = fromStr.slice(2) //trim 0x
   }
   const fromBuffer = Buffer.from(fromStr, 'hex')
 
-  const nonceBuffer: Buffer = Buffer.from(nonce.toArray())
-  const addressBuffer = generateAddress(fromBuffer, nonceBuffer)
+
+  const addressBuffer = generateAddress(fromBuffer, bigIntToBytes(nonce))
   return addressBuffer
 }

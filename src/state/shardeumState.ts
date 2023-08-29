@@ -1,11 +1,9 @@
-import Set from 'core-js-pure/es/set'
-import { debug as createDebugLogger } from 'debug'
-import { SecureTrie as Trie } from 'merkle-patricia-tree'
-import { Account, Address } from 'ethereumjs-util'
-import { Chain, Common, Hardfork } from '@ethereumjs/common'
-import { StateManager, StorageDump } from '@ethereumjs/vm/src/state/interface'
+import {debug as createDebugLogger} from 'debug'
+import {Account, Address, bytesToHex} from '@ethereumjs/util'
+import {AccountFields, Chain, Common, Hardfork, StateManagerInterface, StorageDump} from '@ethereumjs/common'
 import TransactionState from './transactionState'
-import { ShardeumFlags } from '../shardeum/shardeumFlags'
+import {ShardeumFlags} from '../shardeum/shardeumFlags'
+import {Trie} from "@ethereumjs/trie";
 
 const debug = createDebugLogger('vm:state')
 
@@ -29,8 +27,8 @@ export interface DefaultStateManagerOpts {
  * Interface for getting and setting data from an underlying
  * state trie.
  */
-export default class ShardeumState implements StateManager {
-  _common: Common
+export default class ShardeumState implements StateManagerInterface {
+  common: Common
 
   _touched: Set<AddressHex>
   _touchedStack: Set<AddressHex>[]
@@ -76,7 +74,7 @@ export default class ShardeumState implements StateManager {
     if (!common) {
       common = new Common({ chain: Chain.Mainnet, hardfork: Hardfork.Istanbul })
     }
-    this._common = common
+    this.common = common
 
     this.temporaryParallelOldMode = false
 
@@ -127,9 +125,9 @@ export default class ShardeumState implements StateManager {
    * at the last fully committed point, i.e. as if all current
    * checkpoints were reverted.
    */
-  copy(): StateManager {
+  copy(): StateManagerInterface {
     return new ShardeumState({
-      common: this._common,
+      common: this.common,
     })
   }
 
@@ -204,7 +202,7 @@ export default class ShardeumState implements StateManager {
    * at the end of the tx.
    */
   touchAccount(address: Address): void {
-    this._touched.add(address.buf.toString())
+    this._touched.add(bytesToHex(address.bytes))
   }
 
   /**
@@ -235,7 +233,7 @@ export default class ShardeumState implements StateManager {
    * @returns {Promise<Buffer>} -  Resolves with the code corresponding to the provided address.
    * Returns an empty `Buffer` if the account has no associated code.
    */
-  async getContractCode(address: Address): Promise<Buffer> {
+  async getContractCode(address: Address): Promise<Uint8Array> {
     //side run system on the side for now
     if (this._transactionState != null) {
       if (ShardeumFlags.SaveEVMTries) {
@@ -315,7 +313,7 @@ export default class ShardeumState implements StateManager {
    * @param address - Address of the account to get the storage for
    * @param key - Key in the account's storage to get the value for. Must be 32 bytes long.
    */
-  async getOriginalContractStorage(address: Address, key: Buffer): Promise<Buffer> {
+  async getOriginalContractStorage(address: Address, key: Buffer): Promise<Uint8Array> {
     if (this._transactionState != null) {
       if (ShardeumFlags.SaveEVMTries) {
         const storageTrie = await this._getStorageTrie(address)
@@ -622,7 +620,7 @@ export default class ShardeumState implements StateManager {
     const key = address.toString()
     const storageSet = this._accessedStorage[this._accessedStorage.length - 1].get(key)
     if (!storageSet) {
-      const emptyStorage = new Set()
+      const emptyStorage = new Set<string>()
       this._accessedStorage[this._accessedStorage.length - 1].set(key, emptyStorage)
     }
   }
@@ -756,5 +754,29 @@ export default class ShardeumState implements StateManager {
     //     }
     //   }
     // }
+  }
+
+
+  hasStateRoot(root: Uint8Array): Promise<boolean> {
+    // todo: flesh this out
+    return Promise.resolve(false);
+  }
+
+  async modifyAccountFields(address: Address, accountFields: AccountFields): Promise<void> {
+    let account = await this.getAccount(address)
+    if (!account) {
+      account = new Account()
+    }
+    account.nonce = accountFields.nonce ?? account.nonce
+    account.balance = accountFields.balance ?? account.balance
+    account.storageRoot = accountFields.storageRoot ?? account.storageRoot
+    account.codeHash = accountFields.codeHash ?? account.codeHash
+    await this.putAccount(address, account)
+  }
+
+  shallowCopy(): StateManagerInterface {
+    // todo: flesh this out
+    const trie = this._trie.shallowCopy()
+    return this
   }
 }

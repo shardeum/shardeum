@@ -1,6 +1,5 @@
 import {Blockchain, BlockchainOptions} from '@ethereumjs/blockchain'
 import { Block,BlockData } from '@ethereumjs/block'
-import { BN } from 'ethereumjs-util'
 import { blocks, evmCommon } from '..'
 
 export class ShardeumBlock extends Blockchain {

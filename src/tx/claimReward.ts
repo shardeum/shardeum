@@ -1,6 +1,6 @@
 import { nestedCountersInstance, ShardusTypes } from '@shardus/core'
 import * as crypto from '@shardus/crypto-utils'
-import { Address, BN } from 'ethereumjs-util'
+import { Address } from '@ethereumjs/util'
 import { networkAccount } from '../shardeum/shardeumConstants'
 import { createInternalTxReceipt, getApplyTXState } from '../index'
 import { hashSignedObj } from '../setup/helpers'
@@ -241,9 +241,9 @@ export async function applyClaimRewardTx(
 
   /* eslint-enable security/detect-object-injection */
 
-  const nodeRewardAmountUsd = _base16BNParser(network.current.nodeRewardAmountUsd) //new BN(Number('0x' +
+  const nodeRewardAmountUsd = _base16BNParser(network.current.nodeRewardAmountUsd) //BigInt(Number('0x' +
   const nodeRewardAmount = scaleByStabilityFactor(nodeRewardAmountUsd, AccountsStorage.cachedNetworkAccount)
-  const nodeRewardInterval = new BN(network.current.nodeRewardInterval)
+  const nodeRewardInterval = BigInt(network.current.nodeRewardInterval)
 
   if (nodeAccount.rewardStartTime <= 0) {
     nestedCountersInstance.countEvent('shardeum-staking', `applyClaimRewardTx fail rewardStartTime <= 0`)
@@ -275,21 +275,19 @@ export async function applyClaimRewardTx(
   nodeAccount.rewardEndTime = tx.nodeDeactivatedTime
 
   //we multiply fist then devide to preserve precision
-  let totalReward = nodeRewardAmount.mul(new BN(durationInNetwork * 1000)) // Convert from seconds to milliseconds
+  let totalReward = nodeRewardAmount * (BigInt(durationInNetwork * 1000)) // Convert from seconds to milliseconds
   //update total reward var so it can be logged
-  totalReward = totalReward.div(nodeRewardInterval)
+  totalReward = totalReward / (nodeRewardInterval)
   //re-parse reward since it was saved as hex
   nodeAccount.reward = _base16BNParser(nodeAccount.reward)
   //add the reward because nodes can cycle without unstaking
-  nodeAccount.reward = nodeAccount.reward.add(totalReward)
+  nodeAccount.reward = nodeAccount.reward + (totalReward)
   nodeAccount.timestamp = txTimestamp
 
   nodeAccount.rewarded = true
 
   // update the node account historical stats
-  nodeAccount.nodeAccountStats.totalReward = _base16BNParser(nodeAccount.nodeAccountStats.totalReward).add(
-    nodeAccount.reward
-  )
+  nodeAccount.nodeAccountStats.totalReward = _base16BNParser(nodeAccount.nodeAccountStats.totalReward) + nodeAccount.reward
   nodeAccount.nodeAccountStats.history.push({ b: nodeAccount.rewardStartTime, e: nodeAccount.rewardEndTime })
 
   const txId = generateTxId(tx)
@@ -303,7 +301,7 @@ export async function applyClaimRewardTx(
   })
   operatorAccount.operatorAccountInfo.operatorStats.totalNodeReward = _base16BNParser(
     operatorAccount.operatorAccountInfo.operatorStats.totalNodeReward
-  ).add(nodeAccount.reward)
+  ) + (nodeAccount.reward)
   operatorAccount.operatorAccountInfo.operatorStats.totalNodeTime += durationInNetwork
 
   operatorAccount.operatorAccountInfo.operatorStats.lastStakedNodeKey =
