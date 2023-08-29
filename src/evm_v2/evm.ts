@@ -44,6 +44,7 @@ import type {
   ExecResult,
 } from './types.js'
 import type { EVMStateManagerInterface } from '@ethereumjs/common'
+import {ShardeumFlags} from "../shardeum/shardeumFlags";
 const { debug: createDebugLogger } = debugDefault
 
 const debug = createDebugLogger('evm:evm')
@@ -218,7 +219,15 @@ export class EVM implements EVMInterface {
     // Reduce tx value from sender
     if (!message.delegatecall) {
       try {
-        await this._reduceSenderBalance(account, message)
+
+        if (ShardeumFlags.VerboseLogs) {
+          let to = message.to ? message.to.toString() : ''
+          let value = message.value ? message.value.toString() : 0
+          console.log(`reduce balance: ${to} ${value} skip: ${message.value <= 0}`)
+        }
+        if (message.value > 0) {
+          await this._reduceSenderBalance(account, message)
+        }
       } catch (e) {
         errorMessage = e
       }
@@ -231,7 +240,20 @@ export class EVM implements EVMInterface {
     // Add tx value to the `to` account
     if (!message.delegatecall) {
       try {
-        await this._addToBalance(toAccount, message)
+
+        //SHARDEUM FORK:
+        //APF: only add to balance it there will be a change in balance.
+        //it does not appear that this could mess up a payable endpoint
+        //TODO: need to review if this breaks functionality of createing an EOA via 0 balance transfer...
+        //if it did break that would it matter?
+        if (ShardeumFlags.VerboseLogs) {
+          let to = message.to ? message.to.toString() : ''
+          let value = message.value ? message.value.toString() : 0
+          console.log(`add balance: ${to} ${value} skip: ${message.value <= 0}`)
+        }
+        if(message.value > 0){
+          await this._addToBalance(toAccount, message)
+        }
       } catch (e: any) {
         errorMessage = e
       }
@@ -264,7 +286,10 @@ export class EVM implements EVMInterface {
     }
 
     let result: ExecResult
-    if (message.isCompiled) {
+    if (message.isCompiled && ShardeumFlags.shardeumVMPrecompiledFix) {
+      if (this.DEBUG) {
+        debug(`Run precompile`)
+      }
       result = await this.runPrecompile(
         message.code as PrecompileFunc,
         message.data,
