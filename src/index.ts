@@ -14,10 +14,9 @@ import {
   arrToBufArr
 } from 'ethereumjs-util'
 import { AccessListEIP2930Transaction, Transaction, TransactionFactory, TransactionType } from '@ethereumjs/tx'
-import { Chain, Hardfork, Common as CommonFactory } from '@ethereumjs/common'
+import { Common, Chain, Hardfork } from '@ethereumjs/common'
 import {Blockchain, BlockchainOptions} from '@ethereumjs/blockchain'
-import VM from '@ethereumjs/vm'
-import { ShardeumVM } from './vm_v7'
+import {RunTxResult, ShardeumVM} from './vm_v7'
 import { parse as parseUrl } from 'url'
 import got from 'got'
 import 'dotenv/config'
@@ -90,7 +89,6 @@ import Wallet from 'ethereumjs-wallet'
 import { Block } from '@ethereumjs/block'
 import { ShardeumBlock } from './block/blockchain'
 import * as AccountsStorage from './storage/accountStorage'
-import { StateManager } from '@ethereumjs/vm/dist/state'
 import { sync, validateTransaction, validateTxnFields } from './setup'
 import { applySetCertTimeTx, injectSetCertTimeTx, getCertCycleDuration } from './tx/setCertTime'
 import { applyClaimRewardTx, injectClaimRewardTxWithRetry } from './tx/claimReward'
@@ -123,6 +121,9 @@ import axios from 'axios'
 import blockedAt from 'blocked-at'
 //import { v4 as uuidv4 } from 'uuid'
 import { debug as createDebugLogger } from 'debug'
+import {RunState} from "./evm_v2/interpreter";
+import {StateManager} from "@ethereumjs/vm/src/state/interface";
+import { VM } from './vm_v7/vm'
 import rfdc = require("rfdc")
 
 
@@ -396,7 +397,7 @@ async function initEVMSingletons(): Promise<void> {
 
   // setting up only to 'istanbul' hardfork for now
   // https://github.com/ethereumjs/ethereumjs-monorepo/blob/master/packages/common/src/chains/mainnet.json
-  evmCommon = new CommonFactory({chain: 'mainnet', hardfork: Hardfork.Istanbul})
+  evmCommon = new Common({chain: 'mainnet', hardfork: Hardfork.Istanbul})
 
   //hack override this function.  perhaps a nice thing would be to use forCustomChain to create a custom common object
   evmCommon.chainId = (): bigint => {
@@ -420,7 +421,7 @@ async function initEVMSingletons(): Promise<void> {
     // EVM = VM.create({ common: evmCommon, stateManager: undefined, blockchain: shardeumBlock })
   }
 
-  console.log('EVM_common', JSON.stringify(EVM._common, null, 4))
+  // console.log('EVM_common', JSON.stringify(EVM.common, null, 4))
 
   //todo need to evict old data
   ////transactionStateMap = new Map<string, TransactionState>()
@@ -1522,7 +1523,7 @@ const configShardusEndpoints = (): void => {
 
       EVM.stateManager = null
       EVM.stateManager = callTxState
-      const callResult = await EVM.runCall(opt)
+      const callResult = await (EVM as any).runCall(opt)
       //shardeumStateManager.unsetTransactionState(callTxState.linkedTX)
       /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log('Call Result', callResult.execResult.returnValue.toString())
 
@@ -3548,7 +3549,7 @@ const shardusSetup = (): void => {
       //TODO also create an account for the receipt (nested in the returned runTxResult should be a receipt with a list of logs)
       // We are ready to loop over the receipts and add them
       if (runTxResult) {
-        const runState: RunStateWithLogs = runTxResult.execResult.runState
+        const runState: any = runTxResult.execResult.runState
         let logs = []
         if (runState == null) {
           if (ShardeumFlags.VerboseLogs) console.log(`No runState found in the receipt for ${txId}`)
@@ -3574,10 +3575,10 @@ const shardusSetup = (): void => {
           blockNumber: readableBlocks[blockForTx.header.number.toString(10)].number,
           nonce: transaction.nonce.toString(),
           blockHash: readableBlocks[blockForTx.header.number.toString(10)].hash,
-          cumulativeGasUsed: '0x' + runTxResult.gasUsed.toString(),
-          gasUsed: '0x' + runTxResult.gasUsed.toString(),
+          cumulativeGasUsed: '0x' + runTxResult.totalGasSpent.toString(),
+          gasUsed: '0x' + runTxResult.totalGasSpent.toString(),
           logs: logs,
-          logsBloom: bufferToHex(runTxResult.receipt.bitvector),
+          logsBloom: bufferToHex(runTxResult.receipt.bitvector as any),
           contractAddress: runTxResult.createdAddress ? runTxResult.createdAddress.toString() : null,
           from: transaction.getSenderAddress().toString(),
           to: transaction.to ? transaction.to.toString() : null,
@@ -3591,7 +3592,7 @@ const shardusSetup = (): void => {
           timestamp: txTimestamp,
           ethAddress: ethTxId, //.slice(0, 42),  I think the full 32byte TX should be fine now that toShardusAddress understands account type
           hash: '',
-          receipt: runTxResult.receipt,
+          receipt: runTxResult.receipt as any,
           readableReceipt,
           amountSpent: runTxResult.amountSpent.toString(),
           txId,
