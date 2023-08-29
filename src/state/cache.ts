@@ -1,4 +1,4 @@
-import { Account, Address } from 'ethereumjs-util'
+import {Account, Address, bytesToHex} from '@ethereumjs/util'
 import Tree from 'functional-red-black-tree'
 import { ShardeumAccount } from '../shardeum/shardeumTypes'
 
@@ -49,7 +49,7 @@ export default class Cache {
    * @param key - Address of account
    */
   lookup(key: Address): Account | undefined {
-    const keyStr = key.buf.toString()
+    const keyStr = bytesToHex(key.bytes)
 
     const it = this._cache.find(keyStr)
     if (it.node) {
@@ -66,7 +66,7 @@ export default class Cache {
    * @param key - trie key to lookup
    */
   keyIsDeleted(key: Address): boolean {
-    const keyStr = key.buf.toString()
+    const keyStr = bytesToHex(key.bytes)
     const it = this._cache.find(keyStr)
     if (it.node) {
       return it.value.deleted
@@ -79,7 +79,7 @@ export default class Cache {
    * @param address - Address of account
    */
   async _lookupAccount(address: Address): Promise<Account | undefined> {
-    const rlp = await this._trie.get(address.buf)
+    const rlp = await this._trie.get(bytesToHex(address.bytes))
     return rlp ? Account.fromRlpSerializedAccount(rlp) : undefined
   }
 
@@ -203,7 +203,7 @@ export default class Cache {
    * @param virtual - Account doesn't exist in the underlying trie
    */
   _update(key: Address, value: Account, modified: boolean, deleted: boolean, virtual = false): void {
-    const keyHex = key.buf.toString()
+    const keyHex = bytesToHex(key.bytes)
     const it = this._cache.find(keyHex)
     const val = value.serialize()
     if (it.node) {

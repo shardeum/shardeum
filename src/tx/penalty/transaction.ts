@@ -1,5 +1,4 @@
 import {nestedCountersInstance, Shardus, ShardusTypes} from '@shardus/core'
-import { BN } from 'ethereumjs-util'
 import {
   AccountType,
   InternalTXType,
@@ -17,7 +16,7 @@ import {toShardusAddress} from '../../shardeum/evmAddress'
 import {getPenaltyForViolation} from './violation'
 import * as WrappedEVMAccountFunctions from '../../shardeum/wrappedEVMAccountFunctions'
 import {_readableSHM, sleep, generateTxId} from '../../utils'
-import {Address} from 'ethereumjs-util'
+import {Address} from '@ethereumjs/util'
 import {applyPenalty} from './penaltyFunctions'
 
 export async function injectPenaltyTX(
@@ -209,7 +208,7 @@ export async function applyPenaltyTX(
   nodeAccount.rewardEndTime = tx.violationData?.nodeDroppedTime || Math.floor(tx.timestamp / 1000)
 
   //TODO should we check if it was already penalized?
-  const penaltyAmount = getPenaltyForViolation(tx, new BN(nodeAccount.stakeLock, 'hex'))
+  const penaltyAmount = getPenaltyForViolation(tx, nodeAccount.stakeLock)
   applyPenalty(nodeAccount, operatorAccount, penaltyAmount)
 
   const txId = generateTxId(tx)

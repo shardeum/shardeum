@@ -1,4 +1,3 @@
-import { BN } from 'ethereumjs-util'
 import { ShardeumFlags } from '../shardeum/shardeumFlags'
 import { DecimalString, HexString } from '../shardeum/shardeumTypes'
 import { stringify } from './stringify'
@@ -56,43 +55,43 @@ export function DeSerializeFromJsonString<T>(jsonString: string): T {
   return parsedStruct
 }
 
-export const _base16BNParser = (value: BN | HexString): BN => {
+export const _base16BNParser = (value: bigint | HexString): bigint => {
   if (typeof value == 'string' && value.slice(0, 2) == '0x') {
     throw new Error(
-      'Parsing hex string with prefix 0x to BN instance is not the same without 0x and could skewed the data'
+      'Parsing hex string with prefix 0x to bigint instance is not the same without 0x and could skewed the data'
     )
   }
 
-  if (BN.isBN(value)) {
+  if (typeof value === 'bigint') {
     return value
   }
 
   if (typeof value == 'string') {
-    return new BN(value, 16)
+    return BigInt('0x' + value)
   }
 
   throw new Error('Unacceptable parameter value')
 }
 
-export const _base10BNParser = (value: BN | DecimalString): BN => {
+export const _base10BNParser = (value: bigint | DecimalString): bigint => {
   if (typeof value == 'string' && value.slice(0, 2) == '0x') {
     throw new Error('Parameter value does not seem to be a valid base 10 (decimal)')
   }
   if (typeof value === 'string' && isNaN(value as unknown as number)) {
     throw new Error('Parameter value does not seem to be a valid base 10 (decimal)')
   }
-  if (BN.isBN(value)) {
+  if (typeof value === 'bigint') {
     return value
   }
   if (typeof value == 'string') {
-    return new BN(value, 10)
+    return BigInt(value)
   }
   throw new Error('Unacceptable parameter value')
 }
 
-export const _readableSHM = (bnum: BN, autoDecimal = true): string => {
-  if (!BN.isBN(bnum)) {
-    throw new Error('Parameter value is not a valid BN instance')
+export const _readableSHM = (bnum: bigint, autoDecimal = true): string => {
+  if (typeof bnum !== 'bigint') {
+    throw new Error('Parameter value is not a valid bigint instance')
   }
 
   const unit_SHM = ' shm'

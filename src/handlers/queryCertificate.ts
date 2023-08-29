@@ -1,6 +1,6 @@
 import { nestedCountersInstance, Shardus, ShardusTypes } from '@shardus/core'
 import * as crypto from '@shardus/crypto-utils'
-import { BN, isValidAddress } from 'ethereumjs-util'
+import { isValidAddress } from '@ethereumjs/util'
 import { Request } from 'express'
 import { toShardusAddress } from '../shardeum/evmAddress'
 import { ShardeumFlags } from '../shardeum/shardeumFlags'
@@ -39,7 +39,7 @@ export type CertSignaturesResult = {
 export interface StakeCert {
   nominator: string //the operator account that nominated a node account
   nominee: string //the node account that was nominated
-  stake: BN //the amount staked
+  stake: bigint //the amount staked
   certExp: number //cert expiration time in seconds
   signs?: ShardusTypes.Sign[] //this is used when when the cert has a list of valid signatures
   sign?: ShardusTypes.Sign //this is use when we need to sign and unsigned cert. signs and sign will not exist yet when sign() is called

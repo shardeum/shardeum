@@ -1,6 +1,5 @@
 import { nestedCountersInstance, Shardus, ShardusTypes } from '@shardus/core'
 import * as crypto from '@shardus/crypto-utils'
-import { BN, isValidAddress } from 'ethereumjs-util'
 import { ONE_SECOND } from '../shardeum/shardeumConstants'
 import config from '../config'
 import { getNodeAccountWithRetry, InjectTxToConsensor } from '../handlers/queryCertificate'
@@ -21,6 +20,7 @@ import * as AccountsStorage from '../storage/accountStorage'
 import { getRandom, scaleByStabilityFactor, _base16BNParser, _readableSHM, generateTxId } from '../utils'
 import { hashSignedObj } from '../setup/helpers'
 import { createInternalTxReceipt } from '..'
+import {isValidAddress} from "@ethereumjs/util";
 
 export function isSetCertTimeTx(tx): boolean {
   if (tx.isInternalTx && tx.internalTXType === InternalTXType.SetCertTime) {
@@ -113,7 +113,7 @@ export function validateSetCertTimeState(
   tx: SetCertTime,
   wrappedStates: WrappedStates
 ): { result: string; reason: string } {
-  let committedStake = new BN(0)
+  let committedStake = BigInt(0)
 
   let operatorEVMAccount: WrappedEVMAccount
   const acct = wrappedStates[toShardusAddress(tx.nominator, AccountType.Account)].data
@@ -160,10 +160,10 @@ export function validateSetCertTimeState(
   const minStakeRequiredUsd = AccountsStorage.cachedNetworkAccount.current.stakeRequiredUsd
   const minStakeRequired = scaleByStabilityFactor(minStakeRequiredUsd, AccountsStorage.cachedNetworkAccount)
 
-  /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log( 'validate operator stake', _readableSHM(committedStake), _readableSHM(minStakeRequired), ' committedStake < minStakeRequired : ', committedStake.lt(minStakeRequired) )
+  /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log( 'validate operator stake', _readableSHM(committedStake), _readableSHM(minStakeRequired), ' committedStake < minStakeRequired : ', committedStake < minStakeRequired )
 
   // validate operator stake
-  if (committedStake.lt(minStakeRequired)) {
+  if (committedStake < minStakeRequired) {
     /* prettier-ignore */ nestedCountersInstance.countEvent('shardeum-staking', 'validateSetCertTimeState' + ' Operator has not staked the required amount')
     return {
       result: 'fail',
@@ -263,13 +263,13 @@ export function applySetCertTimeTx(
   if (ShardeumFlags.VerboseLogs) {
     console.log(`applySetCertTimeTx shouldChargeTxFee: ${shouldChargeTxFee}`)
   }
-  let amountSpent = new BN(0).toString()
+  let amountSpent = BigInt(0).toString()
   if (shouldChargeTxFee) {
     const costTxFee = scaleByStabilityFactor(
-      new BN(ShardeumFlags.constantTxFeeUsd),
+      BigInt(ShardeumFlags.constantTxFeeUsd),
       AccountsStorage.cachedNetworkAccount
     )
-    operatorEVMAccount.account.balance = operatorEVMAccount.account.balance.sub(costTxFee)
+    operatorEVMAccount.account.balance = operatorEVMAccount.account.balance - costTxFee
     amountSpent = costTxFee.toString()
   }
 

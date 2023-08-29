@@ -1,8 +1,8 @@
-import { Account, BN } from 'ethereumjs-util'
-import { TxReceipt } from '@ethereumjs/vm/dist/types'
+import { Account } from '@ethereumjs/util'
 import { ShardusTypes } from '@shardus/core'
 import { Block } from '@ethereumjs/block'
 import { StakeCert } from '../handlers/queryCertificate'
+import { TxReceipt } from '../vm_v7/types'
 
 export enum AccountType {
   Account = 0, //  EOA or CA
@@ -54,10 +54,10 @@ export interface WrappedEVMAccount extends BaseAccount {
   account?: Account //actual EVM account. if this is type Account
   //variant data: contract storage
   key?: string //EVM CA storage key
-  value?: Buffer //EVM buffer value if this is of type CA_KVP
+  value?: Uint8Array //EVM buffer value if this is of type CA_KVP
   //variant data: Contract code related and addresses
-  codeHash?: Buffer
-  codeByte?: Buffer
+  codeHash?: Uint8Array
+  codeByte?: Uint8Array
   contractAddress?: string
   //variant data: Receipt related
   receipt?: TxReceipt
@@ -141,7 +141,7 @@ export interface SetCertTime extends InternalTxBase {
 export interface StakeCoinsTX extends InternalTxBase {
   nominee: string
   nominator: string
-  stake: BN
+  stake: bigint
   timestamp: number
   sign: ShardusTypes.Sign
 }
@@ -267,11 +267,11 @@ export interface ReadableReceipt {
 export interface StakeInfo {
   // Node Account;
   nominee: string
-  stake?: BN
-  reward?: BN
-  penalty?: BN
-  totalStakeAmount?: BN
-  totalUnstakeAmount?: BN
+  stake?: bigint
+  reward?: bigint
+  penalty?: bigint
+  totalStakeAmount?: bigint
+  totalUnstakeAmount?: bigint
   rewardStartTime?: number // this is not used anymore
   rewardEndTime?: number // this is not used anymore
 }
@@ -298,9 +298,9 @@ export interface NetworkParameters {
   title: string
   description: string
   nodeRewardInterval: number
-  nodeRewardAmountUsd: BN
-  nodePenaltyUsd: BN
-  stakeRequiredUsd: BN
+  nodeRewardAmountUsd: bigint
+  nodePenaltyUsd: bigint
+  stakeRequiredUsd: bigint
   maintenanceInterval: number
   maintenanceFee: number
   stabilityScaleMul: number
@@ -322,11 +322,11 @@ export interface NodeAccount2 extends BaseAccount {
   hash: string
   timestamp: number
   nominator: string | null
-  stakeLock: BN //amount of coins in stake
-  reward: BN
+  stakeLock: bigint //amount of coins in stake
+  reward: bigint
   rewardStartTime: number
   rewardEndTime: number
-  penalty: BN
+  penalty: bigint
   nodeAccountStats: NodeAccountStats
   rewarded: boolean
 }
@@ -339,8 +339,8 @@ export function isNodeAccount2(obj: any): obj is NodeAccount2 {
 
 export interface NodeAccountStats {
   //update when node is rewarded (exits)
-  totalReward: BN
-  totalPenalty: BN
+  totalReward: bigint
+  totalPenalty: bigint
   //push begin and end times when rewarded
   history: { b: number; e: number }[]
 
@@ -355,7 +355,7 @@ export interface DevAccount extends BaseAccount {
 }
 
 export interface OperatorAccountInfo {
-  stake: BN
+  stake: bigint
   nominee: string
   certExp: number
   operatorStats: OperatorStats
@@ -363,14 +363,14 @@ export interface OperatorAccountInfo {
 
 export interface OperatorStats {
   //update when node is rewarded (exits)
-  totalNodeReward: BN
-  totalNodePenalty: BN
+  totalNodeReward: bigint
+  totalNodePenalty: bigint
   totalNodeTime: number
   //push begin and end times when rewarded
   history: { b: number; e: number }[]
 
   //update then unstaked
-  totalUnstakeReward: BN
+  totalUnstakeReward: bigint
   unstakeCount: number
 
   //set when first staked
