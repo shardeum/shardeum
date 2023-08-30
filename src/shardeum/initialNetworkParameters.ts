@@ -15,9 +15,9 @@ export const initialNetworkParamters: NetworkParameters = {
   stakeRequiredUsd: oneSHM.mul(new BN(10)),
   maintenanceInterval: ONE_DAY,
   maintenanceFee: 0,
-  minVersion: '1.5.3',
-  activeVersion: '1.5.3',
-  latestVersion: '1.5.4',
+  minVersion: '1.5.4',
+  activeVersion: '1.5.4',
+  latestVersion: '1.5.5',
   archiver: {
     minVersion: '3.3.3',
     activeVersion: '3.3.3',
