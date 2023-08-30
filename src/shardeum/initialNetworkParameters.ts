@@ -17,7 +17,7 @@ export const initialNetworkParamters: NetworkParameters = {
   maintenanceFee: 0,
   minVersion: '1.5.4',
   activeVersion: '1.5.4',
-  latestVersion: '1.5.5',
+  latestVersion: '1.5.6',
   stabilityScaleMul: 1000,
   stabilityScaleDiv: 1000,
   txPause: false,
