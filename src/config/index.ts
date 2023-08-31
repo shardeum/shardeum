@@ -16,7 +16,7 @@ let config: {
         port: number
         publicKey: string
       }>
-     }
+    }
     baseDir: string
     mode?: 'debug' | 'release'
   }
@@ -140,7 +140,8 @@ config = merge(config, {
       useLruCacheForSocketMgmt: true,
       lruCacheSizeForSocketMgmt: 500,
       uniqueRemovedIdsUpdate: true, // To enable on 1.4.1
-      instantForwardReceipts: false // To enable on 1.5.3
+      instantForwardReceipts: false, // To enable on 1.5.3 -todo investigate if this gets set to true for current builds or is this a mistake?
+      writeSyncProtocolV2: true, // enabled in 1.5.5
     },
   },
 })
