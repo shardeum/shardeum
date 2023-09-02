@@ -3,6 +3,8 @@ import path from 'path'
 import merge from 'deepmerge'
 import { ShardeumFlags } from '../shardeum/shardeumFlags'
 import { DevSecurityLevel } from '@shardus/core'
+import { FilePaths } from '../shardeum/shardeumFlags';
+
 const overwriteMerge = (target: any[], source: any[]): any[] => source // eslint-disable-line @typescript-eslint/no-explicit-any
 
 export interface Config {
@@ -30,8 +32,10 @@ let config: Config = {
   },
 }
 
-if (fs.existsSync(path.join(process.cwd(), 'config.json'))) {
-  const fileConfig = JSON.parse(fs.readFileSync(path.join(process.cwd(), 'config.json')).toString())
+// eslint-disable-next-line security/detect-non-literal-fs-filename
+if (fs.existsSync(path.join(process.cwd(), FilePaths.CONFIG))) {
+  // eslint-disable-next-line security/detect-non-literal-fs-filename
+  const fileConfig = JSON.parse(fs.readFileSync(path.join(process.cwd(), FilePaths.CONFIG)).toString())
   config = merge(config, fileConfig, { arrayMerge: overwriteMerge })
 }
 
@@ -40,9 +44,9 @@ if (process.env.BASE_DIR) {
   let baseDirFileConfig = {}
 
   // eslint-disable-next-line security/detect-non-literal-fs-filename
-  if (fs.existsSync(path.join(baseDir, 'config.json'))) {
+  if (fs.existsSync(path.join(baseDir, FilePaths.CONFIG))) {
     // eslint-disable-next-line security/detect-non-literal-fs-filename
-    baseDirFileConfig = JSON.parse(fs.readFileSync(path.join(baseDir, 'config.json')).toString())
+    baseDirFileConfig = JSON.parse(fs.readFileSync(path.join(baseDir, FilePaths.CONFIG)).toString())
   }
   config = merge(config, baseDirFileConfig, { arrayMerge: overwriteMerge })
   config.server.baseDir = process.env.BASE_DIR

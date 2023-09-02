@@ -75,6 +75,7 @@ import {
   WrappedStates,
 } from './shardeum/shardeumTypes'
 import { getAccountShardusAddress, toShardusAddress, toShardusAddressWithKey } from './shardeum/evmAddress'
+import { FilePaths, ShardeumFlags, updateServicePoints, updateShardeumFlag } from './shardeum/shardeumFlags'
 import * as WrappedEVMAccountFunctions from './shardeum/wrappedEVMAccountFunctions'
 import {
   fixDeserializedWrappedEVMAccount,
@@ -403,7 +404,7 @@ export function setGenesisAccounts(accounts = []): void {
  */
 
 if (ShardeumFlags.UseDBForAccounts === true) {
-  AccountsStorage.init(config.server.baseDir, 'db/shardeum.sqlite')
+  AccountsStorage.init(config.server.baseDir, 'db/' + FilePaths.SHARDEUM_DB)
   if (isServiceMode()) AccountsStorage.lazyInit()
 }
 

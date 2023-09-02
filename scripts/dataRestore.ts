@@ -1,6 +1,8 @@
 import fs from 'fs'
 import path from 'path'
 import { DeSerializeFromJsonString } from '../src/utils'
+import { FilePaths } from '../src/shardeum/shardeumFlags'
+const { Sequelize } = require('sequelize')
 const sqlite3 = require('sqlite3').verbose()
 
 /* dataRestore tool collects all the rows in all the databases (sharded network will have more than 1
@@ -14,8 +16,8 @@ async function main() {
   }
   const baseDirectory = myArgs[0] ?? '.'
   const batchSize = parseInt(myArgs[1], 10) ?? 1000
-  const targetDBPath = './shardeum.sqlite'
-  const targetJSONPath = './account-export.json'
+  const targetDBPath = './' + FilePaths.SHARDEUM_DB
+  const targetJSONPath = './' + FilePaths.ACCOUNT_EXPORT
 
   // get all the database files to fetch data from
   const dbFiles = await dbFilesFromFolders(baseDirectory)
@@ -32,7 +34,8 @@ async function dbFilesFromFolders(baseDirectory: string): Promise<string[]> {
       const nodeDirectory = path.resolve(baseDirectory, file)
       const isDir = fs.lstatSync(nodeDirectory).isDirectory()
       if (isDir) {
-        const dbFilepath = path.resolve(baseDirectory, nodeDirectory + '/db/shardeum.sqlite')
+        let dbFilepath = path.resolve(baseDirectory, nodeDirectory, 'db', FilePaths.SHARDEUM_DB)
+        let size = fs.lstatSync(dbFilepath)?.size ?? -1
         dbFiles.push(dbFilepath)
       }
     } catch (error) {

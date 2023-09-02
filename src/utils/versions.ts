@@ -1,4 +1,5 @@
 import fs from 'fs'
+import { FilePaths } from '../shardeum/shardeumFlags';
 
 export let operatorCLIVersion = ''
 export let operatorGUIVersion = ''
@@ -6,7 +7,8 @@ export let operatorGUIVersion = ''
 export function readOperatorVersions(): { operatorCLIVersion: string; operatorGUIVersion: string } {
   // Read the operator version from the CLI
   try {
-    const operatorCLIPackageJson = JSON.parse(fs.readFileSync('/home/node/app/cli/package.json').toString())
+    // eslint-disable-next-line security/detect-non-literal-fs-filename
+    const operatorCLIPackageJson = JSON.parse(fs.readFileSync(FilePaths.CLI_PACKAGE).toString())
     operatorCLIVersion = operatorCLIPackageJson.version
   } catch (e) {
     operatorCLIVersion = ''
@@ -14,7 +16,8 @@ export function readOperatorVersions(): { operatorCLIVersion: string; operatorGU
 
   // Read the operator version from the GUI
   try {
-    const operatorGUIPackageJson = JSON.parse(fs.readFileSync('/home/node/app/gui/package.json').toString())
+    // eslint-disable-next-line security/detect-non-literal-fs-filename
+    const operatorGUIPackageJson = JSON.parse(fs.readFileSync(FilePaths.GUI_PACKAGE).toString())
     operatorGUIVersion = operatorGUIPackageJson.version
   } catch (e) {
     operatorGUIVersion = ''

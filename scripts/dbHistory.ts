@@ -3,6 +3,7 @@ import path from 'path'
 const sqlite3 = require('sqlite3').verbose()
 import * as crypto from '@shardus/crypto-utils'
 import { DBHistoryFile, AccountHistoryModel } from './types'
+import { FilePaths } from '../src/shardeum/shardeumFlags'
 
 crypto.init('69fa4195670576c0160d660c3be36556ff8d504725be8a59b5a96509e0c994bc')
 
@@ -21,16 +22,16 @@ async function dbFilesFromFolders() {
         let filepath = path.resolve(directory, file)
         const isDir = fs.lstatSync(filepath).isDirectory()
         if (isDir) {
-          const oldFilePath = path.resolve(directory, filepath + '/db/db.sqlite')
-          const oldSize = fs.lstatSync(oldFilePath)?.size ?? -1
+          let oldFilePath = path.resolve(directory, filepath, 'db', FilePaths.DB)
+          let oldSize = fs.lstatSync(oldFilePath)?.size ?? -1
           console.log(oldFilePath + ' ' + oldSize)
 
-          const oldFilepath = path.resolve(directory, filepath + '/db/shardeum.sqlite')
-          const newSize = fs.lstatSync(oldFilepath)?.size ?? -1
+          let oldFilepath = path.resolve(directory, filepath, 'db', FilePaths.SHARDEUM_DB)
+          let newSize = fs.lstatSync(oldFilepath)?.size ?? -1
           console.log(oldFilepath + ' ' + newSize)
 
-          const historyFilePath = path.resolve(directory, filepath + '/db/history.sqlite')
-          const historySize = fs.existsSync(historyFilePath) ? fs.lstatSync(historyFilePath)?.size ?? -1 : -1
+          let historyFilePath = path.resolve(directory, filepath, 'db', FilePaths.HISTORY_DB)
+          let historySize = fs.existsSync(historyFilePath) ? fs.lstatSync(historyFilePath)?.size ?? -1 : -1
           console.log(historyFilePath + ' ' + historySize)
 
           dbFiles.push({

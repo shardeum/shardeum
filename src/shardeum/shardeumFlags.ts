@@ -308,3 +308,15 @@ export function updateServicePoints(key1: string, key2: string, value: number): 
   }
   /* eslint-enable security/detect-object-injection */
 }
+
+export const enum FilePaths {
+  ARCHIVER_DB = 'archiver-db-4000/archiverdb-4000.sqlite3',
+  FULL_NODELIST = 'http://localhost:4000/full-nodelist',
+  SHARDEUM_DB = 'shardeum.sqlite',
+  DB = 'db.sqlite',
+  HISTORY_DB = 'history.sqlite',
+  ACCOUNT_EXPORT = 'account-export.json',
+  CONFIG = 'config.json',
+  CLI_PACKAGE = '/home/node/app/cli/package.json',
+  GUI_PACKAGE = '/home/node/app/gui/package.json'
+}
