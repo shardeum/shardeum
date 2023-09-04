@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/ban-ts-comment */
 import { exec } from 'child_process'
 import { arch, cpus, freemem, totalmem, platform } from 'os'
-import stringify from 'fast-json-stable-stringify'
+import { stringify } from './utils/stringify'
 import {
   Account,
   Address,
@@ -10,10 +10,13 @@ import {
   isValidAddress,
   toAscii, toBytes,
 } from '@ethereumjs/util'
+import { ShardeumFlags, updateServicePoints, updateShardeumFlag } from './shardeum/shardeumFlags'
 import { AccessListEIP2930Transaction, Transaction, TransactionFactory, TransactionType } from '@ethereumjs/tx'
 import { Common, Chain, Hardfork } from '@ethereumjs/common'
 import {Blockchain, BlockchainOptions} from '@ethereumjs/blockchain'
 import {RunTxResult, ShardeumVM} from './vm_v7'
+// import { EVM as EthereumVirtualMachine, getActivePrecompiles } from '@ethereumjs/evm'
+import { EVM as EthereumVirtualMachine, getActivePrecompiles } from './evm_v2'
 import { parse as parseUrl } from 'url'
 import got from 'got'
 import 'dotenv/config'
@@ -50,7 +53,6 @@ import {
   WrappedStates,
 } from './shardeum/shardeumTypes'
 import { getAccountShardusAddress, toShardusAddress, toShardusAddressWithKey } from './shardeum/evmAddress'
-import { ShardeumFlags, updateServicePoints, updateShardeumFlag } from './shardeum/shardeumFlags'
 import * as WrappedEVMAccountFunctions from './shardeum/wrappedEVMAccountFunctions'
 import {
   fixDeserializedWrappedEVMAccount,
@@ -62,6 +64,7 @@ import {
   isEqualOrNewerVersion,
   replacer,
   SerializeToJsonString,
+  fixBigIntLiteralsToBigInt,
   sleep,
   zeroAddressStr,
   _base16BNParser,
@@ -409,16 +412,21 @@ async function initEVMSingletons(): Promise<void> {
   //let EVM = new VM({ common, stateManager: shardeumStateManager, blockchain: shardeumBlock })
 
   if (ShardeumFlags.useShardeumVM) {
+    const customEVM = new EthereumVirtualMachine({
+      common: evmCommon,
+      stateManager: undefined,
+    })
     EVM = await VM.create({
       common: evmCommon,
       stateManager: undefined,
+      evm: customEVM
       // blockchain: shardeumBlock,
     })
   } else {
     // EVM = VM.create({ common: evmCommon, stateManager: undefined, blockchain: shardeumBlock })
   }
 
-  // console.log('EVM_common', JSON.stringify(EVM.common, null, 4))
+  // console.log('EVM_common', stringify(EVM.common, null, 4))
 
   //todo need to evict old data
   ////transactionStateMap = new Map<string, TransactionState>()
@@ -647,7 +655,8 @@ function isStakingEVMTx(transaction: Transaction[TransactionType.Legacy] | Trans
 }
 
 function getStakeTxBlobFromEVMTx(transaction: Transaction[TransactionType.Legacy] | Transaction[TransactionType.AccessListEIP2930]): unknown {
-  const stakeTxString = toAscii(transaction.data.toString())
+  const stakeTxString = toAscii(bytesToHex(transaction.data))
+  console.log(`stakeTxString`, stakeTxString)
   return JSON.parse(stakeTxString)
 }
 
@@ -663,7 +672,7 @@ function getStakeTxBlobFromEVMTx(transaction: Transaction[TransactionType.Legacy
 
 async function createAccount(
   addressStr: string,
-  stateManager: EthersStateManager,
+  stateManager: ShardeumState,
   balance: bigint = defaultBalance
 ): Promise<WrappedEVMAccount> {
   if (ShardeumFlags.VerboseLogs) console.log('Creating new account', addressStr)
@@ -887,7 +896,7 @@ async function _internalHackPostWithResp(url: string, body): Promise<got.Respons
 function logAccessList(message: string, appData): void {
   if (appData != null && appData.accessList != null) {
     if (ShardeumFlags.VerboseLogs)
-      console.log(`access list for ${message} ${JSON.stringify(appData.accessList)}`)
+      console.log(`access list for ${message} ${stringify(appData.accessList)}`)
   }
 }
 
@@ -966,7 +975,7 @@ const configShardusEndpoints = (): void => {
     }
 
     return res.json(
-      `spent points: ${points} total:${debugLastTotalServicePoints}  ${JSON.stringify(
+      `spent points: ${points} total:${debugLastTotalServicePoints}  ${stringify(
         servicePointSpendHistory
       )} `
     )
@@ -1179,7 +1188,7 @@ const configShardusEndpoints = (): void => {
     // }
     try {
       //use a replacer so we get the map:
-      //let output = JSON.stringify(shardeumStateTXMap, replacer, 4)
+      //let output = stringify(shardeumStateTXMap, replacer, 4)
       const output = `tx shardeumState count:${shardeumStateTXMap.size}`
       res.write(output)
       res.end()
@@ -1349,7 +1358,7 @@ const configShardusEndpoints = (): void => {
   //
   //         let postResp = await _internalHackPostWithResp(`${node.externalIp}:${node.externalPort}/eth_estimateGas`, transaction)
   //         if (postResp.body != null && postResp.body != '') {
-  //           if (ShardeumFlags.VerboseLogs) console.log(`Node is in remote shard: gotResp:${JSON.stringify(postResp.body)}`)
+  //           if (ShardeumFlags.VerboseLogs) console.log(`Node is in remote shard: gotResp:${stringify(postResp.body)}`)
   //           return res.json({ result: postResp.body.result })
   //         }
   //       } else {
@@ -1475,7 +1484,7 @@ const configShardusEndpoints = (): void => {
             if (postResp.body != null && postResp.body != '') {
               //getResp.body
 
-              /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`Node is in remote shard: gotResp:${JSON.stringify(postResp.body)}`)
+              /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`Node is in remote shard: gotResp:${stringify(postResp.body)}`)
               //res.json({ result: callResult.execResult.returnValue.toString() })
               //return res.json({ result: '0x' + postResp.body })   //I think the 0x is worse?
               return res.json({ result: postResp.body.result })
@@ -1591,7 +1600,7 @@ const configShardusEndpoints = (): void => {
         if (ShardeumFlags.VerboseLogs) console.log(`cachedAppData for tx hash ${txHash}`, cachedAppData)
         if (cachedAppData && cachedAppData.appData) {
           const receipt = cachedAppData.appData as ShardusTypes.WrappedData
-          return res.json({ account: receipt.data })
+          return res.json({ account: JSON.parse(stringify(receipt.data)) })
         } else {
           console.log(`Unable to find tx receipt for ${txHash}`)
         }
@@ -1632,7 +1641,7 @@ const configShardusEndpoints = (): void => {
 
     // let shardeumState = shardeumStateTXMap.get(txHash)
     // if(shardeumState == null){
-    //   return res.json(JSON.stringify({result:`shardeumState not found`}))
+    //   return res.json(stringify({result:`shardeumState not found`}))
     // }
 
     // let appData = shardeumState._transactionState?.appData
@@ -1640,12 +1649,12 @@ const configShardusEndpoints = (): void => {
     const appData = debugAppdata.get(txHash)
 
     if (appData == null) {
-      return res.json(JSON.stringify({ result: `no appData` }))
+      return res.json(stringify({ result: `no appData` }))
     }
 
-    //return res.json(`${JSON.stringify(appData)}`)
+    //return res.json(`${stringify(appData)}`)
 
-    res.write(`${JSON.stringify(appData, null, 2)}`)
+    res.write(`${stringify(appData, null)}`)
 
     res.end()
   })
@@ -2357,7 +2366,7 @@ async function generateAccessList(
             console.log('Accesslist response from node', consensusNode.externalPort, postResp.body)
           if (postResp.body != null && postResp.body != '' && postResp.body.accessList != null) {
             /* prettier-ignore */
-            if (ShardeumFlags.VerboseLogs) console.log(`Node is in remote shard: gotResp:${JSON.stringify(postResp.body)}`)
+            if (ShardeumFlags.VerboseLogs) console.log(`Node is in remote shard: gotResp:${stringify(postResp.body)}`)
             if (Array.isArray(postResp.body.accessList) && postResp.body.accessList.length) {
               return {
                 accessList: postResp.body.accessList,
@@ -2410,8 +2419,8 @@ async function generateAccessList(
       callerAccount ? callerAccount.account : fakeAccount
     )
 
-    EVM.stateManager = null
-    EVM.stateManager = preRunTxState
+    EVM.evm.stateManager = null
+    EVM.evm.stateManager = preRunTxState
 
     if (transaction == null) {
       return { accessList: [], shardusMemoryPatterns: null }
@@ -2641,7 +2650,7 @@ function startBlockedCheck(threshold: number): void {
         }
 
         // Log the complete stack trace
-        /* prettier-ignore */ console.log(`[event_loop:blocked] request id: ${uuid} Complete Stack: ${JSON.stringify(stack)}`);
+        /* prettier-ignore */ console.log(`[event_loop:blocked] request id: ${uuid} Complete Stack: ${stringify(stack)}`);
       }
     },
     { threshold: threshold, debug: false, resourcesCap }
@@ -2680,10 +2689,11 @@ const shardusSetup = (): void => {
       //@ts-ignore
       const { tx } = timestampedTx
       const txTimestamp = getInjectedOrGeneratedTimestamp(timestampedTx)
+      const appData = fixBigIntLiteralsToBigInt(originalAppData)
       // Validate the tx
       const { result, reason } = this.validateTransaction(tx)
       if (result !== 'pass') {
-        throw new Error(`invalid transaction, reason: ${reason}. tx: ${JSON.stringify(tx)}`)
+        throw new Error(`invalid transaction, reason: ${reason}. tx: ${stringify(tx)}`)
       }
 
       if (isInternalTx(tx)) {
@@ -3215,7 +3225,7 @@ const shardusSetup = (): void => {
       //   let senderAccount:WrappedEVMAccount = wrappedStates[shardusAddress]
       //  bug here seem like nonce is undefined even though type def indicate, it does.
       //   if(senderAccount.account.nonce >= transaction.nonce ){
-      //     throw new Error(`invalid transaction, reason: nonce fail. tx: ${JSON.stringify(tx)}`)
+      //     throw new Error(`invalid transaction, reason: nonce fail. tx: ${stringify(tx)}`)
       //   }
       // }
 
@@ -3234,7 +3244,12 @@ const shardusSetup = (): void => {
       try {
         // if checkNonce is true, we're not gonna skip the nonce
         EVM.stateManager = null
+        EVM.evm.stateManager = null
+        EVM.evm.journal.stateManager = null
+
         EVM.stateManager = shardeumState
+        EVM.evm.stateManager = shardeumState
+        EVM.evm.journal.stateManager = shardeumState
         shardus.setDebugSetLastAppAwait(`apply():runTx`)
         runTxResult = await EVM.runTx({
           block: blockForTx,
@@ -3315,54 +3330,6 @@ const shardusSetup = (): void => {
         if (ShardeumFlags.VerboseLogs) console.log('Unable to apply transaction', txId, e)
         // throw new Error(e)
       }
-      // Still keeping this here to check later if it may need later
-      // if (runTxResult.execResult.exceptionError) {
-      //   let readableReceipt: ReadableReceipt = {
-      //     status: 0,
-      //     transactionHash: ethTxId,
-      //     transactionIndex: '0x1',
-      //     blockNumber: readableBlocks[latestBlock].number,
-      //     nonce: transaction.nonce.toString(),
-      //     blockHash: readableBlocks[latestBlock].hash,
-      //     cumulativeGasUsed: '0x' + runTxResult.gasUsed.toString(),
-      //     gasUsed: '0x' + runTxResult.gasUsed.toString(),
-      //     logs: null,
-      //     contractAddress: runTxResult.createdAddress ? runTxResult.createdAddress.toString() : null,
-      //     from: transaction.getSenderAddress().toString(),
-      //     to: transaction.to ? transaction.to.toString() : null,
-      //     value: transaction.value.toString(),
-      //     data: '0x' + transaction.data.toString(),
-      //   }
-      //   let wrappedFailReceiptAccount: WrappedEVMAccount = {
-      //     timestamp: txTimestamp,
-      //     ethAddress: ethTxId, //.slice(0, 42),  I think the full 32byte TX should be fine now that toShardusAddress understands account type
-      //     hash: '',
-      //     receipt: runTxResult.receipt,
-      //     readableReceipt,
-      //     txId,
-      //     accountType: AccountType.Receipt,
-      //     txFrom: transaction.getSenderAddress().toString(),
-      //   }
-      //   if(ShardeumFlags.EVMReceiptsAsAccounts){
-      //     // transactionFailHashMap[ethTxId] = wrappedFailReceiptAccount
-      //     const wrappedChangedAccount = WrappedEVMAccountFunctions._shardusWrappedAccount(wrappedFailReceiptAccount)
-      //     if (shardus.applyResponseAddChangedAccount != null) {
-      //       shardus.applyResponseAddChangedAccount(applyResponse, wrappedChangedAccount.accountId, wrappedChangedAccount, txId, wrappedChangedAccount.timestamp)
-      //     }
-      //     shardeumStateManager.unsetTransactionState()
-      //     return applyResponse //return rather than throw exception
-      //   } else {
-      //     //keep this for now but maybe remove it soon
-      //     // transactionFailHashMap[ethTxId] = wrappedFailReceiptAccount
-
-      //     //put this on the fail receipt. we need a way to pass it in the exception!
-      //     const shardusWrappedAccount = WrappedEVMAccountFunctions._shardusWrappedAccount(wrappedFailReceiptAccount)
-      //     shardus.applyResponseAddReceiptData(applyResponse,shardusWrappedAccount, crypto.hashObj(shardusWrappedAccount))
-      //     shardus.applyResponseSetFailed(applyResponse, reason)
-      //     return applyResponse //return rather than throw exception
-      //   }
-      //   // throw new Error(`invalid transaction, reason: ${JSON.stringify(runTxResult.execResult.exceptionError)}. tx: ${JSON.stringify(tx)}`)
-      // }
       if (ShardeumFlags.VerboseLogs) console.log('DBG', 'applied tx', txId, runTxResult)
       if (ShardeumFlags.VerboseLogs) console.log('DBG', 'applied tx eth', ethTxId, runTxResult)
 
@@ -3378,35 +3345,6 @@ const shardusSetup = (): void => {
           receipt: { ...runTxResult, nonce: transaction.nonce.toString(), status: 1 },
         }
       }
-
-      // if (ShardeumFlags.temporaryParallelOldMode === true) {
-      //   //This is also temporary.  It will move to the UpdateAccountFull code once we wrap the receipt a an account type
-      //   // shardus-global-server wont be calling all of the UpdateAccountFull calls just yet though so we need this here
-      //   // but it is ok to start adding the code that handles receipts in UpdateAccountFull and understand it will get called
-      //   // soon
-
-      //   // TEMPORARY HACK
-      //   // store contract account, when shardus-global-server has more progress we can disable this
-      //   if (runTxResult.createdAddress) {
-      //     let ethAccountID = runTxResult.createdAddress.toString()
-      //     let shardusAddress = toShardusAddress(ethAccountID, AccountType.Account)
-      //     let contractAccount = await EVM.stateManager.getAccount(runTxResult.createdAddress)
-      //     let wrappedEVMAccount = {
-      //       timestamp: 0,
-      //       account: contractAccount,
-      //       ethAddress: ethAccountID,
-      //       hash: '',
-      //       accountType: AccountType.Account,
-      //     }
-
-      //     WrappedEVMAccountFunctions.updateEthAccountHash(wrappedEVMAccount)
-
-      //     //accounts[shardusAddress] = wrappedEVMAccount
-      //     await AccountsStorage.setAccount(shardusAddress, wrappedEVMAccount)
-
-      //     if (ShardeumFlags.VerboseLogs) console.log('Contract account stored', wrappedEVMAccount)
-      //   }
-      // }
 
       //get a list of accounts or CA keys that have been written to
       //This is important because the EVM could change many accounts or keys that we are not aware of
@@ -3867,7 +3805,7 @@ const shardusSetup = (): void => {
           console.log(
             `txPreCrackData final result: txNonce: ${appData.txNonce}, currentNonce: ${
               appData.nonce
-            }, queueCount: ${appData.queueCount}, appData ${JSON.stringify(appData)}`
+            }, queueCount: ${appData.queueCount}, appData ${stringify(appData)}`
           )
       }
     },
@@ -4310,7 +4248,7 @@ const shardusSetup = (): void => {
             // Node Account or EVM Account(Nominator) has to be already created at this point.
             if (accountId === internalTx.nominee) {
               throw Error(
-                `Node Account <nominee> is not found ${accountId}, tx: ${JSON.stringify(internalTx)}`
+                `Node Account <nominee> is not found ${accountId}, tx: ${stringify(internalTx)}`
               )
             } else if (accountId === internalTx.nominator) {
               throw Error(`EVM Account <nominator> is not found ${accountId}`)
@@ -4773,6 +4711,7 @@ const shardusSetup = (): void => {
           accountOffset
         )
 
+
         for (const wrappedEVMAccount of dbResults) {
           // Process and add to finalResults
           const wrapped = WrappedEVMAccountFunctions._shardusWrappedAccount(wrappedEVMAccount)
@@ -4862,7 +4801,7 @@ const shardusSetup = (): void => {
       }
 
       shardus.log(
-        `getAccountDataByRange: extra:${extra} ${JSON.stringify({
+        `getAccountDataByRange: extra:${extra} ${stringify({
           accountStart,
           accountEnd,
           tsStart,
@@ -4937,13 +4876,13 @@ const shardusSetup = (): void => {
           const stakeCert = appData as StakeCert
           if (!stakeCert.nominator || !stakeCert.nominee || !stakeCert.stake || !stakeCert.certExp) {
             nestedCountersInstance.countEvent('shardeum-staking', 'signAppData format failed')
-            /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`signAppData format failed ${type} ${JSON.stringify(stakeCert)} `)
+            /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`signAppData format failed ${type} ${stringify(stakeCert)} `)
             return fail
           }
           const currentTimestamp = Date.now()
           if (stakeCert.certExp < currentTimestamp) {
             /* prettier-ignore */ nestedCountersInstance.countEvent('shardeum-staking', 'signAppData cert expired')
-            /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`signAppData cert expired ${type} ${JSON.stringify(stakeCert)} `)
+            /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`signAppData cert expired ${type} ${stringify(stakeCert)} `)
             return fail
           }
           let minStakeRequiredUsd: bigint
@@ -4956,7 +4895,7 @@ const shardusSetup = (): void => {
           } catch (e) {
             /* prettier-ignore */ nestedCountersInstance.countEvent('shardeum-staking', 'signAppData' +
             ' stakeRequiredUsd parse error')
-            /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`signAppData minStakeRequiredUsd parse error ${type} ${JSON.stringify(stakeCert)}, cachedNetworkAccount: ${JSON.stringify(AccountsStorage.cachedNetworkAccount)} `)
+            /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`signAppData minStakeRequiredUsd parse error ${type} ${stringify(stakeCert)}, cachedNetworkAccount: ${stringify(AccountsStorage.cachedNetworkAccount)} `)
             return fail
           }
           try {
@@ -4967,7 +4906,7 @@ const shardusSetup = (): void => {
           } catch (e) {
             /* prettier-ignore */ nestedCountersInstance.countEvent('shardeum-staking', 'signAppData' +
             ' minStakeRequired parse error')
-            /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`signAppData minStakeRequired parse error ${type} ${JSON.stringify(stakeCert)}, cachedNetworkAccount: ${JSON.stringify(AccountsStorage.cachedNetworkAccount)} `)
+            /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`signAppData minStakeRequired parse error ${type} ${stringify(stakeCert)}, cachedNetworkAccount: ${stringify(AccountsStorage.cachedNetworkAccount)} `)
             return fail
           }
           try {
@@ -4975,12 +4914,12 @@ const shardusSetup = (): void => {
           } catch (e) {
             /* prettier-ignore */ nestedCountersInstance.countEvent('shardeum-staking', 'signAppData' +
             ' stakeAmount parse error')
-            /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`signAppData stakeAmount parse error ${type} ${JSON.stringify(stakeCert)}`)
+            /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`signAppData stakeAmount parse error ${type} ${stringify(stakeCert)}`)
             return fail
           }
           if (stakeAmount < minStakeRequired) {
             /* prettier-ignore */ nestedCountersInstance.countEvent('shardeum-staking', 'signAppData stake amount lower than required')
-            /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`signAppData stake amount lower than required ${type} ${JSON.stringify(stakeCert)} `)
+            /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`signAppData stake amount lower than required ${type} ${stringify(stakeCert)} `)
             return fail
           }
           if (ShardeumFlags.FullCertChecksEnabled) {
@@ -4988,24 +4927,24 @@ const shardusSetup = (): void => {
             const nominatorAccount = await shardus.getLocalOrRemoteAccount(nominatorAddress)
             if (!nominatorAccount) {
               /* prettier-ignore */ nestedCountersInstance.countEvent('shardeum-staking', 'could not find nominator account')
-              /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`could not find nominator account ${type} ${JSON.stringify(stakeCert)} `)
+              /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`could not find nominator account ${type} ${stringify(stakeCert)} `)
               return fail
             }
             const nominatorEVMAccount = nominatorAccount.data as WrappedEVMAccount
             fixDeserializedWrappedEVMAccount(nominatorEVMAccount)
             if (!nominatorEVMAccount.operatorAccountInfo) {
               /* prettier-ignore */ nestedCountersInstance.countEvent('shardeum-staking', 'operatorAccountInfo missing from nominator')
-              /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`operatorAccountInfo missing from nominator ${type} ${JSON.stringify(stakeCert)} `)
+              /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`operatorAccountInfo missing from nominator ${type} ${stringify(stakeCert)} `)
               return fail
             }
             if (stakeCert.stake != nominatorEVMAccount.operatorAccountInfo.stake) {
               /* prettier-ignore */ nestedCountersInstance.countEvent('shardeum-staking', 'operatorAccountInfo missing from nominator')
-              /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`stake amount in cert and operator account does not match ${type} ${JSON.stringify(stakeCert)} ${JSON.stringify(nominatorEVMAccount)} `)
+              /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`stake amount in cert and operator account does not match ${type} ${stringify(stakeCert)} ${stringify(nominatorEVMAccount)} `)
               return fail
             }
             if (stakeCert.nominee != nominatorEVMAccount.operatorAccountInfo.nominee) {
               /* prettier-ignore */ nestedCountersInstance.countEvent('shardeum-staking', 'nominee in cert and operator account does not match')
-              /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`nominee in cert and operator account does not match ${type} ${JSON.stringify(stakeCert)} ${JSON.stringify(nominatorEVMAccount)} `)
+              /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`nominee in cert and operator account does not match ${type} ${stringify(stakeCert)} ${stringify(nominatorEVMAccount)} `)
               return fail
             }
           }
@@ -5014,12 +4953,12 @@ const shardusSetup = (): void => {
           const signedCert: StakeCert = shardus.signAsNode(stakeCert)
           const result: ShardusTypes.SignAppDataResult = { success: true, signature: signedCert.sign }
           if (ShardeumFlags.VerboseLogs)
-            console.log(`signAppData passed ${type} ${JSON.stringify(stakeCert)}`)
+            console.log(`signAppData passed ${type} ${stringify(stakeCert)}`)
           nestedCountersInstance.countEvent('shardeum-staking', 'sign-stake-cert - passed')
           return result
         }
       } catch (e) {
-        /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`signAppData failed: ${type} ${JSON.stringify(stakeCert)}, error: ${JSON.stringify(e)}`)
+        /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`signAppData failed: ${type} ${stringify(stakeCert)}, error: ${stringify(e)}`)
         nestedCountersInstance.countEvent('shardeum-staking', 'sign-stake-cert - fail uncaught')
       }
       return fail
@@ -5028,7 +4967,7 @@ const shardusSetup = (): void => {
       return `${stringify(wrappedAccount)}`
     },
     getSimpleTxDebugValue(timestampedTx) {
-      //console.log(`getSimpleTxDebugValue: ${JSON.stringify(tx)}`)
+      //console.log(`getSimpleTxDebugValue: ${stringify(tx)}`)
 
       try {
         //@ts-ignore
@@ -5051,7 +4990,7 @@ const shardusSetup = (): void => {
       } catch (e) {
         //@ts-ignore
         const { tx } = timestampedTx
-        console.log(`getSimpleTxDebugValue failed: ${JSON.stringify(e)}  tx:${JSON.stringify(tx)}`)
+        console.log(`getSimpleTxDebugValue failed: ${stringify(e)}  tx:${stringify(tx)}`)
       }
     },
     close: async (): Promise<void> => {
@@ -5113,7 +5052,7 @@ const shardusSetup = (): void => {
     },
     validateJoinRequest(data) {
       try {
-        /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`validateJoinRequest ${JSON.stringify(data)}`)
+        /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`validateJoinRequest ${stringify(data)}`)
         if (!data.appJoinData) {
           /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`validateJoinRequest fail: !data.appJoinData`)
           return {
@@ -5164,7 +5103,7 @@ const shardusSetup = (): void => {
 
           const nodeAcc = data.sign.owner
           const stake_cert: StakeCert = appJoinData.stakeCert
-          if (ShardeumFlags.VerboseLogs) console.log(`validateJoinRequest ${JSON.stringify(stake_cert)}`)
+          if (ShardeumFlags.VerboseLogs) console.log(`validateJoinRequest ${stringify(stake_cert)}`)
 
           const tx_time = data.joinRequestTimestamp as number
 

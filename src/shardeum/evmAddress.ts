@@ -66,7 +66,7 @@ export function toShardusAddressWithKey(
 ): string {
   if (accountType === AccountType.Account) {
     if (addressStr.length != 42) {
-      throw new Error('must pass in a 42 character hex addressStr for AccountType.Account type.')
+      throw new Error(`must pass in a 42 character hex addressStr for AccountType of Account. addressStr: ${addressStr}`)
     }
 
     //change this:0x665eab3be2472e83e3100b4233952a16eed20c76
@@ -96,7 +96,7 @@ export function toShardusAddressWithKey(
     const prefix = addressStr.slice(2, numPrefixChars + 2)
 
     if (addressStr.length != 42) {
-      throw new Error('must pass in a 42 character hex address for Account type.')
+      throw new Error('must pass in a 42 character hex address for Account type ContractStorage or ContractCode.')
     }
     if (secondaryAddressStr.length === 66) {
       secondaryAddressStr = secondaryAddressStr.slice(2)
@@ -157,6 +157,7 @@ export function toShardusAddressWithKey(
 }
 
 export function toShardusAddress(addressStr: string, accountType: AccountType): string {
+  console.log(`Running toShardusAddress`, typeof addressStr, addressStr, accountType)
   if (accountType === AccountType.ContractStorage || accountType === AccountType.ContractCode) {
     throw new Error(
       `toShardusAddress does not work anymore with type ContractStorage, use toShardusAddressWithKey instead`
@@ -165,7 +166,7 @@ export function toShardusAddress(addressStr: string, accountType: AccountType): 
 
   if (accountType === AccountType.Account || accountType === AccountType.Debug) {
     if (addressStr.length != 42) {
-      throw new Error('must pass in a 42 character hex address for Account type.')
+      throw new Error(`must pass in a 42 character hex address for Account type of Account or Debug. addressStr: ${addressStr} ${addressStr.length}}`)
     }
     //change this:0x665eab3be2472e83e3100b4233952a16eed20c76
     //    to this:  665eab3be2472e83e3100b4233952a16eed20c76000000000000000000000000

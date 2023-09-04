@@ -1,6 +1,7 @@
 import { ShardeumFlags } from '../shardeum/shardeumFlags'
 import { DecimalString, HexString } from '../shardeum/shardeumTypes'
 import { stringify } from './stringify'
+import { isHexPrefixed, isHexString } from '@ethereumjs/util'
 
 export function SerializeToJsonString(obj: unknown): string {
   if (ShardeumFlags.UseBase64BufferEncoding) {
@@ -39,7 +40,9 @@ function base64BufferReviver(key: string, value: any): any {
     originalObject.dataType &&
     originalObject.dataType == 'bh'
   ) {
-    return GetBufferFromField(originalObject, 'base64')
+    return new Uint8Array(GetBufferFromField(originalObject, 'base64'))
+  } else if (value && value.__BigInt__) {
+    return BigInt(value.__BigInt__)
   } else {
     return value
   }
@@ -52,6 +55,13 @@ export function DeSerializeFromJsonString<T>(jsonString: string): T {
   } else {
     parsedStruct = JSON.parse(jsonString) as T
   }
+  return parsedStruct
+}
+
+// convert obj with __BigInt__ to BigInt
+export function fixBigIntLiteralsToBigInt(obj): any {
+  const jsonString = SerializeToJsonString(obj)
+  const parsedStruct = DeSerializeFromJsonString(jsonString)
   return parsedStruct
 }
 

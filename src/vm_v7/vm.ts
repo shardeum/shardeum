@@ -1,7 +1,7 @@
 import { Blockchain } from '@ethereumjs/blockchain'
 import { Chain, Common } from '@ethereumjs/common'
-// import { EVM, getActivePrecompiles } from '../evm_v2'
-import { EVM, getActivePrecompiles } from '@ethereumjs/evm'
+import { EVM, getActivePrecompiles } from '../evm_v2'
+// import { EVM, getActivePrecompiles } from '@ethereumjs/evm'
 import { DefaultStateManager } from '@ethereumjs/statemanager'
 import { Account, Address, AsyncEventEmitter, unprefixedHexToBytes } from '@ethereumjs/util'
 
@@ -47,7 +47,7 @@ export class VM {
   /**
    * The EVM used for bytecode execution
    */
-  readonly evm: EVMInterface
+  readonly evm: any
 
   protected readonly _opts: VMOpts
   protected _isInitialized: boolean = false

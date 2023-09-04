@@ -181,7 +181,7 @@ export function applySetCertTimeTx(
   applyResponse: ShardusTypes.ApplyResponse
 ): void {
   if (ShardeumFlags.VerboseLogs) {
-    console.log(`applySetCertTimeTx txTimestamp:${txTimestamp}   tx.timestamp:${tx.timestamp}`)
+    console.log(`applySetCertTimeTx txTimestamp:${txTimestamp}   tx.timestamp:${tx.timestamp}`, tx)
   }
 
   //TODO this is failing with a warning like this:

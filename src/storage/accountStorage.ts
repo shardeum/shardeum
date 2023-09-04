@@ -2,7 +2,7 @@ import { NetworkAccount, WrappedEVMAccount, WrappedEVMAccountMap } from '../shar
 
 import { ShardeumFlags } from '../shardeum/shardeumFlags'
 import Storage from '../storage/storage'
-import { DeSerializeFromJsonString, _base16BNParser } from '../utils'
+import { DeSerializeFromJsonString, fixBigIntLiteralsToBigInt, _base16BNParser } from '../utils'
 import { networkAccount } from '../shardeum/shardeumConstants'
 
 //WrappedEVMAccount
@@ -81,21 +81,22 @@ export async function setAccount(address: string, account: WrappedEVMAccount): P
 
       if (address === networkAccount) {
         cachedNetworkAccount = account as unknown as NetworkAccount
-        if (typeof cachedNetworkAccount.current.stakeRequiredUsd === 'string') {
-          cachedNetworkAccount.current.stakeRequiredUsd = _base16BNParser(
-            cachedNetworkAccount.current.stakeRequiredUsd
-          )
-        }
-        if (typeof cachedNetworkAccount.current.nodePenaltyUsd === 'string') {
-          cachedNetworkAccount.current.nodePenaltyUsd = _base16BNParser(
-            cachedNetworkAccount.current.nodePenaltyUsd
-          )
-        }
-        if (typeof cachedNetworkAccount.current.nodeRewardAmountUsd === 'string') {
-          cachedNetworkAccount.current.nodeRewardAmountUsd = _base16BNParser(
-            cachedNetworkAccount.current.nodeRewardAmountUsd
-          )
-        }
+        cachedNetworkAccount = fixBigIntLiteralsToBigInt(cachedNetworkAccount)
+        // if (typeof cachedNetworkAccount.current.stakeRequiredUsd === 'string') {
+        //   cachedNetworkAccount.current.stakeRequiredUsd = _base16BNParser(
+        //     cachedNetworkAccount.current.stakeRequiredUsd
+        //   )
+        // }
+        // if (typeof cachedNetworkAccount.current.nodePenaltyUsd === 'string') {
+        //   cachedNetworkAccount.current.nodePenaltyUsd = _base16BNParser(
+        //     cachedNetworkAccount.current.nodePenaltyUsd
+        //   )
+        // }
+        // if (typeof cachedNetworkAccount.current.nodeRewardAmountUsd === 'string') {
+        //   cachedNetworkAccount.current.nodeRewardAmountUsd = _base16BNParser(
+        //     cachedNetworkAccount.current.nodeRewardAmountUsd
+        //   )
+        // }
       }
     } else {
       // eslint-disable-next-line security/detect-object-injection

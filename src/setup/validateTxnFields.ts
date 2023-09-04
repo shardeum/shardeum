@@ -11,6 +11,7 @@ import {
   StakeCoinsTX,
   UnstakeCoinsTX,
   WrappedEVMAccount,
+  NetworkAccount
 } from '../shardeum/shardeumTypes'
 import * as AccountsStorage from '../storage/accountStorage'
 import { validateClaimRewardTx } from '../tx/claimReward'
@@ -25,6 +26,7 @@ import {
   isInternalTXGlobal,
   verify,
 } from './helpers'
+import {fixBigIntLiteralsToBigInt} from "../utils/serialization"
 import { validatePenaltyTX } from '../tx/penalty/transaction'
 import {bytesToHex} from "@ethereumjs/util";
 
@@ -36,13 +38,14 @@ import {bytesToHex} from "@ethereumjs/util";
  */
 export const validateTxnFields =
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  (shardus: Shardus, debugAppdata: Map<string, unknown>) => (timestampedTx: any, appData: any): {
+  (shardus: Shardus, debugAppdata: Map<string, unknown>) => (timestampedTx: any, originalAppData: any): {
       success: boolean
       reason: string
       txnTimestamp: number
     } => {
     const { tx } = timestampedTx
     const txnTimestamp: number = getInjectedOrGeneratedTimestamp(timestampedTx)
+    const appData = fixBigIntLiteralsToBigInt(originalAppData)
 
     if (!txnTimestamp) {
       return {
@@ -189,9 +192,10 @@ export const validateTxnFields =
       if (appData && appData.internalTx && appData.internalTXType === InternalTXType.Stake) {
         if (ShardeumFlags.VerboseLogs) console.log('Validating stake coins tx fields', appData)
         const stakeCoinsTx = appData.internalTx as StakeCoinsTX
-        const minStakeAmountUsd = _base16BNParser(appData.networkAccount.current.stakeRequiredUsd)
+        const networkAccount = appData.networkAccount as NetworkAccount
+        const minStakeAmountUsd = networkAccount.current.stakeRequiredUsd
         const minStakeAmount = scaleByStabilityFactor(minStakeAmountUsd, AccountsStorage.cachedNetworkAccount)
-        if (typeof stakeCoinsTx.stake === 'string') stakeCoinsTx.stake = BigInt(stakeCoinsTx.stake)
+        if (typeof stakeCoinsTx.stake === 'object') stakeCoinsTx.stake = BigInt(stakeCoinsTx.stake)
         if (
           stakeCoinsTx.nominator == null ||
           stakeCoinsTx.nominator.toLowerCase() !== transaction.getSenderAddress().toString()

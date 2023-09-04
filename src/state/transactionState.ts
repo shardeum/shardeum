@@ -1,13 +1,15 @@
 import {Account, Address, bytesToHex, equalsBytes, hexToBytes, KECCAK256_NULL, unpadBytes} from '@ethereumjs/util'
-import { ShardeumState } from '.'
-import { ShardeumFlags } from '../shardeum/shardeumFlags'
-import { zeroAddressAccount, zeroAddressStr } from '../utils'
+import {ShardeumState} from '.'
+import {ShardeumFlags} from '../shardeum/shardeumFlags'
+import {zeroAddressAccount, zeroAddressStr} from '../utils'
 import * as AccountsStorage from '../storage/accountStorage'
-import { AccountType, WrappedEVMAccount } from '../shardeum/shardeumTypes'
-import { toShardusAddress, toShardusAddressWithKey } from '../shardeum/evmAddress'
-import { fixDeserializedWrappedEVMAccount } from '../shardeum/wrappedEVMAccountFunctions'
+import {AccountType, WrappedEVMAccount} from '../shardeum/shardeumTypes'
+import {toShardusAddress, toShardusAddressWithKey} from '../shardeum/evmAddress'
+import {fixDeserializedWrappedEVMAccount} from '../shardeum/wrappedEVMAccountFunctions'
 import {Trie} from "@ethereumjs/trie";
 import {keccak256} from "ethereum-cryptography/keccak.js";
+import {RLP} from '@ethereumjs/rlp'
+import {stringify} from '../utils/stringify'
 
 export type accountEvent = (transactionState: TransactionState, address: string) => Promise<boolean>
 export type contractStorageEvent = (
@@ -106,6 +108,31 @@ export default class TransactionState {
 
   tryGetRemoteAccountCB: getAccountEvent
   monitorEventCB: monitorEvent
+
+  /**
+   * repair the fields on this account.
+   * accounts need some adjustments after being deseralized
+   * @param account
+   */
+  static fixAccountFields(account): void {
+    //hmm some hacks to fix data after getting copied around..
+    if (typeof account.nonce && account.nonce.__BigInt__) {
+      account.nonce = BigInt(account.nonce.__BigInt__)
+    }
+    if (typeof account.balance && account.balance.__BigInt__) {
+      account.balance = BigInt(account.balance.__BigInt__)
+    }
+    this.fixAccountUint8Arrays(account)
+  }
+
+  private static fixAccountUint8Arrays(account): void {
+    if (account.storageRoot.data) {
+      account.storageRoot = Uint8Array.from(account.storageRoot.data)
+    }
+    if (account.codeHash.data) {
+      account.codeHash = Uint8Array.from(account.codeHash.data)
+    }
+  }
 
   resetTransactionState(): void {
     this.firstAccountReads = new Map()
@@ -236,41 +263,7 @@ export default class TransactionState {
 
   getTransferBlob(): { accounts: Map<string, Uint8Array>; kvPairs: Map<string, Map<string, Uint8Array>> } {
     //this is the data needed to start computation on another shard
-    return { accounts: this.firstAccountReads, kvPairs: this.firstContractStorageReads }
-  }
-
-  /**
-   * repair the fields on this account.
-   * accounts need some adjustments after being deseralized
-   * @param account
-   */
-  static fixAccountFields(account): void {
-    //hmm some hacks to fix data after getting copied around..
-    if (typeof account.nonce === 'string') {
-      //account.nonce = new BN(account.nonce)
-      if (account.nonce.startsWith('0x') === false) {
-        account.nonce = '0x' + account.nonce
-      }
-    }
-    // if(typeof account.balance === 'string'){
-    //   account.balance = new BN('0x' + account.balance)
-    // }
-    if (typeof account.balance === 'string') {
-      //account.balance = new BN( account.balance, 'hex')
-      if (account.balance.startsWith('0x') === false) {
-        account.balance = '0x' + account.balance
-      }
-      this.fixAccountUint8Arrays(account)
-    }
-  }
-
-  private static fixAccountUint8Arrays(account): void {
-    if (account.stateRoot.data) {
-      account.stateRoot = Uint8Array.from(account.stateRoot.data)
-    }
-    if (account.codeHash.data) {
-      account.codeHash = Uint8Array.from(account.codeHash.data)
-    }
+    return {accounts: this.firstAccountReads, kvPairs: this.firstContractStorageReads}
   }
 
   /**
@@ -294,7 +287,7 @@ export default class TransactionState {
       if (this.pendingContractStorageCommits.has(addressString)) {
         const contractStorageCommits = this.pendingContractStorageCommits.get(addressString)
 
-        const storageTrie = await this.shardeumState._getStorageTrie(address)
+        const storageTrie = await this.shardeumState._getStorageTrie(address, account)
         //what if storage trie was just created?
         storageTrie.checkpoint()
         //walk through all of these
@@ -312,7 +305,7 @@ export default class TransactionState {
         await storageTrie.commit()
 
         //update the accounts state root!
-        account.stateRoot = storageTrie.root
+        account.storageRoot = storageTrie.root()
         //TODO:  handle key deletion
       }
       if (this.pendingContractBytesCommits.has(addressString)) {
@@ -342,7 +335,7 @@ export default class TransactionState {
 
       TransactionState.fixAccountFields(account)
 
-      account.stateRoot = Uint8Array.from(account.stateRoot)
+      account.storageRoot = Uint8Array.from(account.storageRoot)
 
       const accountObj = Account.fromAccountData(account)
       const accountRlp = accountObj.serialize()
@@ -352,7 +345,7 @@ export default class TransactionState {
       await this.shardeumState._trie.commit()
 
       if (this.debugTrace)
-        this.debugTraceLog(`commitAccount: addr:${addressString} v:${JSON.stringify(accountObj)}`)
+        this.debugTraceLog(`commitAccount: addr:${addressString} v:${stringify(accountObj)}`)
 
       //TODO:  handle account deletion, if account is null. This is not a shardus concept yet
       //await this._trie.del(keyBuf)
@@ -384,14 +377,14 @@ export default class TransactionState {
         }
       } else {
         const contractBytesCommit = new Map()
-        contractBytesCommit.set(codeHash.toString(), { codeHash, codeByte: contractByte })
+        contractBytesCommit.set(codeHash.toString(), {codeHash, codeByte: contractByte})
         this.pendingContractBytesCommits.set(contractAddress, contractBytesCommit)
       }
 
       //Update the trie right away.  This used to be queued and only committed at the same time as the CA
       //Since CA bytes are global we must commit them right away because there will not be CA being updated in the same transaction any more
       this.shardeumState._trie.checkpoint()
-      await this.shardeumState._trie.db.put(codeHash, contractByte)
+      await this.shardeumState._trie.put(codeHash, contractByte)
       await this.shardeumState._trie.commit()
 
       if (this.debugTrace)
@@ -558,13 +551,13 @@ export default class TransactionState {
       //todo need to insert it into a map of new / virtual accounts?
       if (this.debugTrace)
         this.debugTraceLog(
-          `getAccount: initialized new account addr:${addressString} v:${JSON.stringify(account)}`
+          `getAccount: initialized new account addr:${addressString} v:${stringify(account)}`
         )
 
       return account
     }
 
-    if (this.debugTrace) this.debugTraceLog(`getAccount: addr:${addressString} v:${JSON.stringify(account)}`)
+    if (this.debugTrace) this.debugTraceLog(`getAccount: addr:${addressString} v:${stringify(account)}`)
     // storage hit!!! data exists in this shard
     //put this in our first reads map
     this.firstAccountReads.set(addressString, storedRlp)
@@ -599,7 +592,7 @@ export default class TransactionState {
     const storedRlp = accountObj.serialize()
 
     if (this.debugTrace)
-      this.debugTraceLog(`putAccount: addr:${addressString} v:${JSON.stringify(accountObj)}`)
+      this.debugTraceLog(`putAccount: addr:${addressString} v:${stringify(accountObj)}`)
 
     //this.allAccountWrites.set(addressString, storedRlp)
 
@@ -680,7 +673,7 @@ export default class TransactionState {
     let codeBytes: Uint8Array
     if (ShardeumFlags.SaveEVMTries) {
       //see if we can get it from the worldStateTrie.db
-      storedCodeByte = await worldStateTrie.db.get(codeHash)
+      storedCodeByte = await worldStateTrie.get(codeHash)
       codeBytes = storedCodeByte // seems to be no conversio needed for codebytes.
     } else {
       //get from accounts db
@@ -756,7 +749,7 @@ export default class TransactionState {
     }
 
     const codeHash = keccak256(codeByte)
-    if (equalsBytes(codeHash,KECCAK256_NULL)) {
+    if (equalsBytes(codeHash, KECCAK256_NULL)) {
       return
     }
 
@@ -768,7 +761,7 @@ export default class TransactionState {
 
     if (this.debugTrace)
       this.debugTraceLog(
-        `putContractCode: addr:${addressString} codeHash:${bytesToHex(codeHash) 
+        `putContractCode: addr:${addressString} codeHash:${bytesToHex(codeHash)
         } v:${contractByteWrite.contractByte.toString()}`
       )
 
@@ -787,10 +780,10 @@ export default class TransactionState {
 
     const codeHash = keccak256(codeByte)
     const codeHashStr = codeHash.toString()
-    if (equalsBytes(codeHash,KECCAK256_NULL)) {
+    if (equalsBytes(codeHash, KECCAK256_NULL)) {
       return
     }
-    this.firstContractBytesReads.set(codeHashStr, { codeHash, contractByte: codeByte, contractAddress })
+    this.firstContractBytesReads.set(codeHashStr, {codeHash, contractByte: codeByte, contractAddress})
     this.touchedCAs.add(addressString)
   }
 
@@ -809,12 +802,10 @@ export default class TransactionState {
         const contractStorageWrites = this.allContractStorageWrites.get(addressString)
         if (contractStorageWrites.has(keyString)) {
           const storedRlp = contractStorageWrites.get(keyString)
-          const returnValue = storedRlp ? rlp.decode(storedRlp) : undefined
+          const returnValue = storedRlp ? RLP.decode(storedRlp ?? new Uint8Array(0)) as Uint8Array : undefined
           if (this.debugTrace)
             this.debugTraceLog(
-              `getContractStorage: (contractStorageWrites) addr:${addressString} key:${keyString} v:${returnValue?.toString(
-                'hex'
-              )}`
+              `getContractStorage: (contractStorageWrites) addr:${addressString} key:${keyString} v:${returnValue?.toString()}`
             )
           return returnValue
         }
@@ -824,12 +815,10 @@ export default class TransactionState {
       const contractStorageReads = this.firstContractStorageReads.get(addressString)
       if (contractStorageReads.has(keyString)) {
         const storedRlp = contractStorageReads.get(keyString)
-        const returnValue = storedRlp ? rlp.decode(storedRlp) : undefined
+        const returnValue = storedRlp ? RLP.decode(storedRlp ?? new Uint8Array(0)) as Uint8Array : undefined
         if (this.debugTrace)
           this.debugTraceLog(
-            `getContractStorage: (contractStorageReads) addr:${addressString} key:${keyString} v:${returnValue?.toString(
-              'hex'
-            )}`
+            `getContractStorage: (contractStorageReads) addr:${addressString} key:${keyString} v:${returnValue?.toString()}`
           )
         return returnValue
       }
@@ -844,7 +833,7 @@ export default class TransactionState {
     if (ShardeumFlags.SaveEVMTries) {
       //see if we can get it from the storage trie.
       storedRlp = await storage.get(key)
-      storedValue = storedRlp ? rlp.decode(storedRlp) : undefined
+      storedValue = storedRlp ? RLP.decode(storedRlp) : undefined
       if (ShardeumFlags.VerboseLogs) console.log(`storedValue for ${key.toString()}`, storedValue)
     } else {
       //get from accounts db
@@ -859,7 +848,7 @@ export default class TransactionState {
       if (wrappedAccount != null) {
         fixDeserializedWrappedEVMAccount(wrappedAccount)
         storedRlp = wrappedAccount.value
-        storedValue = storedRlp ? rlp.decode(storedRlp) : undefined
+        storedValue = storedRlp ? RLP.decode(storedRlp) : undefined
       }
     }
 
@@ -875,7 +864,7 @@ export default class TransactionState {
       if (wrappedEVMAccount != undefined && wrappedEVMAccount.value) {
         //get account aout of the wrapped evm account
         storedRlp = wrappedEVMAccount.value
-        storedValue = storedRlp ? rlp.decode(storedRlp) : undefined
+        storedValue = storedRlp ? RLP.decode(storedRlp) : undefined
       }
     }
 
@@ -889,7 +878,7 @@ export default class TransactionState {
 
       if (canThrow && isRemoteShard) throw new Error('account not available') //todo smarter throw?
 
-      //rlp.decode(null) returns this:
+      //RLP.decode(null) returns this:
       return Uint8Array.from([])
     }
 
@@ -921,7 +910,7 @@ export default class TransactionState {
     value = unpadBytes(value) // Trims leading zeros from a Uint8Array.
 
     // Step 1 update the account storage
-    const storedRlp = rlp.encode(value)
+    const storedRlp = RLP.encode(value)
     let contractStorageWrites = this.allContractStorageWrites.get(addressString)
     if (contractStorageWrites == null) {
       contractStorageWrites = new Map()
@@ -961,7 +950,7 @@ export default class TransactionState {
     value = unpadBytes(value)
 
     // Step 1 update the account storage
-    // let storedRlp = rlp.encode(value)
+    // let storedRlp = RLP.encode(value)
     const storedRlp = value
     let contractStorageReads = this.firstContractStorageReads.get(addressString)
     if (contractStorageReads == null) {
@@ -977,7 +966,7 @@ export default class TransactionState {
     //for all touched CAs,
     // get CA storage trie.
     // checkpoint the CA storage trie
-    // update contract.stateRoot = storageTrie.root
+    // update contract.storageRoot = storageTrie.root
     // await this.putAccount(address, contract)
     // revert the CA storage trie
     //OOF, this only work if the CA values are local (single shard).  we may not be able to sign CA roots in the main receipt, unless we have some
