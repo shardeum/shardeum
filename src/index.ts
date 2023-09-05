@@ -2416,7 +2416,7 @@ async function generateAccessList(
 
     preRunTxState._transactionState.insertFirstAccountReads(
       senderAddress,
-      callerAccount ? callerAccount.account : fakeAccount
+      callerAccount ? callerAccount.account : fakeAccount // todo: using fake account may not work in new ethereumJS
     )
 
     EVM.evm.stateManager = null
@@ -2429,7 +2429,9 @@ async function generateAccessList(
     const runTxResult = await EVM.runTx({
       block: blocks[latestBlock],
       tx: transaction,
-      skipNonce: !ShardeumFlags.CheckNonce,
+      // skipNonce: !ShardeumFlags.CheckNonce,
+      skipNonce: true,
+      skipBalance: true,
       networkAccount: AccountsStorage.cachedNetworkAccount,
     })
 
@@ -3273,7 +3275,7 @@ const shardusSetup = (): void => {
           const hack0Nonce = BigInt(0)
           const caAddrBuf = predictContractAddressDirect(txSenderEvmAddr, hack0Nonce)
 
-          caAddr = '0x' + caAddrBuf.toString()
+          caAddr = '0x' + caAddrBuf.toString('hex')
 
           const shardusAddr = toShardusAddress(caAddr, AccountType.Account)
           // otherAccountKeys.push(shardusAddr)
@@ -3670,7 +3672,7 @@ const shardusSetup = (): void => {
           //Predict the new CA address if not eip2930.  is this correct though?
           if (transaction.to == null && isEIP2930 === false) {
             const caAddrBuf = predictContractAddressDirect(txSenderEvmAddr, nonce)
-            const caAddr = '0x' + caAddrBuf.toString()
+            const caAddr = '0x' + caAddrBuf.toString('hex')
             appData.newCAAddr = caAddr
             /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`txPreCrackData found nonce:${foundNonce} found sender:${foundSender} for ${txSenderEvmAddr} nonce:${nonce.toString()} ca:${caAddr}`)
           }
@@ -3996,7 +3998,7 @@ const shardusSetup = (): void => {
             //only will work with first deploy, since we do not have a way to get nonce that works with sharding
             const hack0Nonce = BigInt(0)
             const caAddrBuf = predictContractAddressDirect(txSenderEvmAddr, hack0Nonce)
-            const caAddr = '0x' + caAddrBuf.toString()
+            const caAddr = '0x' + caAddrBuf.toString('hex')
             const shardusAddr = toShardusAddress(caAddr, AccountType.Account)
             otherAccountKeys.push(shardusAddr)
             shardusAddressToEVMAccountInfo.set(shardusAddr, { evmAddress: caAddr, type: AccountType.Account })

@@ -115,8 +115,6 @@ export function predictContractAddressDirect(ethAddress: string, nonce: bigint):
     fromStr = fromStr.slice(2) //trim 0x
   }
   const fromBuffer = Buffer.from(fromStr, 'hex')
-
-
-  const addressBuffer = generateAddress(fromBuffer, bigIntToBytes(nonce))
-  return Buffer.from(addressBuffer)
+  const addressArray = generateAddress(fromBuffer, bigIntToBytes(nonce))
+  return Buffer.from(addressArray)
 }
