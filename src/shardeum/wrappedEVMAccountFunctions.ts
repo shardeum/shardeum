@@ -5,6 +5,7 @@ import * as crypto from '@shardus/crypto-utils'
 import { TransactionState } from '../state'
 import { getAccountShardusAddress } from './evmAddress'
 import { AccountType, InternalAccount, WrappedEVMAccount } from './shardeumTypes'
+import {fixBigIntLiteralsToBigInt} from '../utils'
 
 // type guard
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -79,8 +80,12 @@ export function fixDeserializedWrappedEVMAccount(wrappedEVMAccount: WrappedEVMAc
   if (wrappedEVMAccount.accountType === AccountType.Account) {
     TransactionState.fixAccountFields(wrappedEVMAccount.account)
     wrappedEVMAccount.account = Account.fromAccountData(wrappedEVMAccount.account)
+    if (wrappedEVMAccount.operatorAccountInfo) wrappedEVMAccount.operatorAccountInfo = fixBigIntLiteralsToBigInt(wrappedEVMAccount.operatorAccountInfo)
   }
   fixWrappedEVMAccountBuffers(wrappedEVMAccount)
+  for (const key in wrappedEVMAccount) {
+    wrappedEVMAccount[key] = fixBigIntLiteralsToBigInt(wrappedEVMAccount[key])
+  }
 }
 
 function fixWrappedEVMAccountBuffers(wrappedEVMAccount: WrappedEVMAccount): void {
@@ -104,7 +109,7 @@ export function predictContractAddress(wrappedEVMAccount: WrappedEVMAccount): Ui
   return addressBuffer
 }
 
-export function predictContractAddressDirect(ethAddress: string, nonce: bigint): Uint8Array {
+export function predictContractAddressDirect(ethAddress: string, nonce: bigint): Buffer {
   let fromStr = ethAddress
   if (fromStr.length === 42) {
     fromStr = fromStr.slice(2) //trim 0x
@@ -113,5 +118,5 @@ export function predictContractAddressDirect(ethAddress: string, nonce: bigint):
 
 
   const addressBuffer = generateAddress(fromBuffer, bigIntToBytes(nonce))
-  return addressBuffer
+  return Buffer.from(addressBuffer)
 }

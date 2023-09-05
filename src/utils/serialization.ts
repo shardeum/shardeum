@@ -65,7 +65,7 @@ export function fixBigIntLiteralsToBigInt(obj): any {
   return parsedStruct
 }
 
-export const _base16BNParser = (value: bigint | HexString): bigint => {
+export const _base16BNParser = (value: bigint | HexString | {__BigInt__: string}): bigint => {
   if (typeof value == 'string' && value.slice(0, 2) == '0x') {
     throw new Error(
       'Parsing hex string with prefix 0x to bigint instance is not the same without 0x and could skewed the data'
@@ -78,6 +78,10 @@ export const _base16BNParser = (value: bigint | HexString): bigint => {
 
   if (typeof value == 'string') {
     return BigInt('0x' + value)
+  }
+
+  if (value && typeof value.__BigInt__ === 'string') {
+    return BigInt(value.__BigInt__)
   }
 
   throw new Error('Unacceptable parameter value')

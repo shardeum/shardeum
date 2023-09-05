@@ -723,7 +723,7 @@ function getTransactionObj(tx): Transaction[TransactionType.Legacy] | Transactio
   } else throw Error('tx obj fail')
 }
 
-async function getReadableAccountInfo(account): Promise<{
+async function getReadableAccountInfo(account: any): Promise<{
   nonce: string
   balance: string
   stateRoot: string
@@ -737,7 +737,7 @@ async function getReadableAccountInfo(account): Promise<{
       balance: account.account.balance.toString(),
       stateRoot: bytesToHex(account.account.stateRoot),
       codeHash: bytesToHex(account.account.codeHash),
-      operatorAccountInfo: account.operatorAccountInfo ? account.operatorAccountInfo : null,
+      operatorAccountInfo: account.operatorAccountInfo ? JSON.parse(stringify(account.operatorAccountInfo)) : null,
     }
   } catch (e) {
     if (ShardeumFlags.VerboseLogs) console.log('Unable to get readable account', e)
@@ -1284,10 +1284,10 @@ const configShardusEndpoints = (): void => {
         const id = req.params['address']
         const shardusAddress = toShardusAddressWithKey(id, '', accountType)
         const account = await shardus.getLocalOrRemoteAccount(shardusAddress)
-        return res.json({ account })
+        const readableAccount = JSON.parse(stringify(account))
+        return res.json({ account: readableAccount })
       }
     } catch (error) {
-      console.log(error)
       res.json({ error })
     }
   })
@@ -1776,7 +1776,7 @@ const configShardusEndpoints = (): void => {
       /* prettier-ignore */ nestedCountersInstance.countEvent('shardeum-staking', `queryCertificateHandler failed with reason: ${(queryCertRes as ValidatorError).reason}`)
     }
 
-    return res.json(queryCertRes)
+    return res.json(JSON.parse(stringify(queryCertRes)))
   })
 
   // Returns the latest value from isReadyToJoin call
@@ -2793,8 +2793,7 @@ const shardusSetup = (): void => {
             },
           }
         } else {
-          if (typeof operatorEVMAccount.operatorAccountInfo.stake === 'string')
-            operatorEVMAccount.operatorAccountInfo.stake = BigInt('0x' + operatorEVMAccount.operatorAccountInfo.stake);
+          operatorEVMAccount.operatorAccountInfo = fixBigIntLiteralsToBigInt(operatorEVMAccount.operatorAccountInfo)
         }
         operatorEVMAccount.operatorAccountInfo.stake += stakeCoinsTx.stake
         operatorEVMAccount.operatorAccountInfo.nominee = stakeCoinsTx.nominee
@@ -4864,9 +4863,10 @@ const shardusSetup = (): void => {
       type: string,
       hash: string,
       nodesToSign: number,
-      appData
+      originalAppData: any
     ): Promise<ShardusTypes.SignAppDataResult> {
       nestedCountersInstance.countEvent('shardeum-staking', 'calling signAppData')
+      const appData = fixBigIntLiteralsToBigInt(originalAppData)
       const fail: ShardusTypes.SignAppDataResult = { success: false, signature: null }
       try {
         console.log('Running signAppData', type, hash, nodesToSign, appData)
@@ -4932,6 +4932,7 @@ const shardusSetup = (): void => {
             }
             const nominatorEVMAccount = nominatorAccount.data as WrappedEVMAccount
             fixDeserializedWrappedEVMAccount(nominatorEVMAccount)
+            nominatorEVMAccount.operatorAccountInfo = fixBigIntLiteralsToBigInt(nominatorEVMAccount.operatorAccountInfo)
             if (!nominatorEVMAccount.operatorAccountInfo) {
               /* prettier-ignore */ nestedCountersInstance.countEvent('shardeum-staking', 'operatorAccountInfo missing from nominator')
               /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`operatorAccountInfo missing from nominator ${type} ${stringify(stakeCert)} `)

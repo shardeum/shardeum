@@ -121,6 +121,7 @@ export function validateSetCertTimeState(
     operatorEVMAccount = acct
   }
   fixDeserializedWrappedEVMAccount(operatorEVMAccount)
+  console.log('validateSetCertTimeState', tx, operatorEVMAccount)
   if (operatorEVMAccount == undefined) {
     /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`setCertTime validate state: found no wrapped state for operator account ${tx.nominator}`)
     if (ShardeumFlags.fixCertExpTiming) return {
@@ -135,7 +136,7 @@ export function validateSetCertTimeState(
         /* prettier-ignore */ nestedCountersInstance.countEvent('shardeum-staking', 'validateSetCertTimeState' + ' stake failed to parse')
         return {
           result: 'fail',
-          reason: `stake failed to parse: ${JSON.stringify(
+          reason: `stake failed to parse: ${stringify(
             operatorEVMAccount.operatorAccountInfo.stake
           )} er:${er.message}`,
         }
@@ -144,7 +145,7 @@ export function validateSetCertTimeState(
       /* prettier-ignore */ nestedCountersInstance.countEvent('shardeum-staking', 'validateSetCertTimeState' + ' Operator account info is null')
       return {
         result: 'fail',
-        reason: `Operator account info is null: ${JSON.stringify(operatorEVMAccount)}`,
+        reason: `Operator account info is null: ${stringify(operatorEVMAccount)}`,
       }
     }
   }
