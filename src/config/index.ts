@@ -5,20 +5,20 @@ import merge from 'deepmerge'
 const overwriteMerge = (target: any[], source: any[]): any[] => source // eslint-disable-line @typescript-eslint/no-explicit-any
 
 export interface Config {
-  storage?: any; // eslint-disable-line @typescript-eslint/no-explicit-any
+  storage?: any // eslint-disable-line @typescript-eslint/no-explicit-any
   server: {
-    globalAccount: string;
+    globalAccount: string
     p2p?: {
-      cycleDuration: number;
+      cycleDuration: number
       existingArchivers: Array<{
-        ip: string;
-        port: number;
-        publicKey: string;
-      }>;
-    };
-    baseDir: string;
-    mode?: 'debug' | 'release';
-  };
+        ip: string
+        port: number
+        publicKey: string
+      }>
+    }
+    baseDir: string
+    mode?: 'debug' | 'release'
+  }
 }
 
 //TODO: improve typing here
@@ -142,7 +142,8 @@ config = merge(config, {
       useLruCacheForSocketMgmt: true,
       lruCacheSizeForSocketMgmt: 500,
       uniqueRemovedIdsUpdate: true, // To enable on 1.4.1
-      instantForwardReceipts: false // To enable on 1.5.3
+      instantForwardReceipts: true, // To enable on 1.5.3
+      validateArchiverAppData: false, // To enable this on new reset network
     },
   },
 })
