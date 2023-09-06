@@ -498,7 +498,7 @@ export default class TransactionState {
       const wrappedAccount = await AccountsStorage.getAccount(accountShardusAddress)
       if (wrappedAccount != null) {
         fixDeserializedWrappedEVMAccount(wrappedAccount)
-        account = wrappedAccount.account
+        account = Account.fromAccountData(wrappedAccount.account)
       }
 
       if (account != null) {
@@ -795,7 +795,7 @@ export default class TransactionState {
     canThrow: boolean
   ): Promise<Uint8Array> {
     const addressString = contractAddress.toString()
-    const keyString = key.toString()
+    const keyString = bytesToHex(key)
 
     if (originalOnly === false) {
       if (this.allContractStorageWrites.has(addressString)) {
@@ -901,7 +901,7 @@ export default class TransactionState {
 
   async putContractStorage(contractAddress: Address, key: Uint8Array, value: Uint8Array): Promise<void> {
     const addressString = contractAddress.toString()
-    const keyString = key.toString()
+    const keyString = bytesToHex(key)
 
     if (this.contractStorageInvolvedCB(this, addressString, keyString, true) === false) {
       throw new Error('unable to proceed, cant involve contract storage')

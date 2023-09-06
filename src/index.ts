@@ -17,6 +17,7 @@ import {Blockchain, BlockchainOptions} from '@ethereumjs/blockchain'
 import {RunTxResult, ShardeumVM} from './vm_v7'
 // import { EVM as EthereumVirtualMachine, getActivePrecompiles } from '@ethereumjs/evm'
 import { EVM as EthereumVirtualMachine, getActivePrecompiles } from './evm_v2'
+import {EVMResult} from './evm_v2/types'
 import { parse as parseUrl } from 'url'
 import got from 'got'
 import 'dotenv/config'
@@ -397,7 +398,7 @@ async function initEVMSingletons(): Promise<void> {
 
   // setting up only to 'istanbul' hardfork for now
   // https://github.com/ethereumjs/ethereumjs-monorepo/blob/master/packages/common/src/chains/mainnet.json
-  evmCommon = new Common({chain: 'mainnet', hardfork: Hardfork.Istanbul})
+  evmCommon = new Common({chain: 'mainnet', hardfork: Hardfork.Istanbul, eips: [3855]})
 
   //hack override this function.  perhaps a nice thing would be to use forCustomChain to create a custom common object
   evmCommon.chainId = (): bigint => {
@@ -1528,10 +1529,21 @@ const configShardusEndpoints = (): void => {
       opt['block'] = blocks[latestBlock] // eslint-disable-line security/detect-object-injection
 
       EVM.stateManager = null
+      EVM.evm.stateManager = null
+      EVM.evm.journal.stateManager = null
+
       EVM.stateManager = callTxState
-      const callResult = await (EVM as any).runCall(opt)
+      EVM.evm.stateManager = callTxState
+      EVM.evm.journal.stateManager = callTxState
+
+      const callResult: EVMResult = await EVM.evm.runCall(opt)
+      let returnedValue = bytesToHex(callResult.execResult.returnValue)
+      if (returnedValue && returnedValue.indexOf('0x') === 0) {
+        returnedValue = returnedValue.slice(2)
+      }
+
       //shardeumStateManager.unsetTransactionState(callTxState.linkedTX)
-      /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log('Call Result', callResult.execResult.returnValue.toString())
+      /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log('Call Result', returnedValue)
 
       if (!ShardeumFlags.removeTokenBalanceCache && methodCode === ERC20_BALANCEOF_CODE) {
         //TODO would be way faster to have timestamp in db as field
@@ -1543,7 +1555,7 @@ const configShardusEndpoints = (): void => {
           timestamp: caAccount && caAccount.timestamp, //this will invalidate for any user..
           result: callResult.execResult.exceptionError
             ? null
-            : callResult.execResult.returnValue.toString(),
+            : returnedValue,
         })
         if (ERC20TokenBalanceMap.length > ERC20TokenCacheSize + 10) {
           const extra = ERC20TokenBalanceMap.length - ERC20TokenCacheSize
@@ -1556,7 +1568,7 @@ const configShardusEndpoints = (): void => {
         return res.json({ result: null })
       }
 
-      res.json({ result: callResult.execResult.returnValue.toString() })
+      res.json({ result: returnedValue })
     } catch (e) {
       if (ShardeumFlags.VerboseLogs) console.log('Error eth_call', e)
       return res.json({ result: null })
@@ -2419,8 +2431,13 @@ async function generateAccessList(
       callerAccount ? callerAccount.account : fakeAccount // todo: using fake account may not work in new ethereumJS
     )
 
+    EVM.stateManager = null
     EVM.evm.stateManager = null
+    EVM.evm.journal.stateManager = null
+
+    EVM.stateManager = preRunTxState
     EVM.evm.stateManager = preRunTxState
+    EVM.evm.journal.stateManager = preRunTxState
 
     if (transaction == null) {
       return { accessList: [], shardusMemoryPatterns: null }
@@ -2488,7 +2505,7 @@ async function generateAccessList(
       for (const [contractAddress, contractByteWrite] of writtenAccounts.contractBytes) {
         // for (const [contractAddress, contractByteWrite] of writtenAccounts.contractBytes) {
         if (!allInvolvedContracts.includes(contractAddress)) allInvolvedContracts.push(contractAddress)
-        const codeHash = contractByteWrite.codeHash.toString()
+        const codeHash = bytesToHex(contractByteWrite.codeHash)
         const shardusKey = toShardusAddressWithKey(contractAddress, codeHash, AccountType.ContractCode)
         writeSet.add(shardusKey)
         //special case shardeum behavoir.  contract bytes can only be written once
@@ -2570,7 +2587,7 @@ async function generateAccessList(
         if (!allKeys.has(codeHash)) allKeys.add(codeHash)
       }
       for (const [, byteReads] of writtenAccounts.contractBytes) {
-        const codeHash = byteReads.codeHash.toString()
+        const codeHash = bytesToHex(byteReads.codeHash)
         const contractAddress = byteReads.contractAddress.toString()
         if (contractAddress !== address) continue
         if (!allKeys.has(codeHash)) allKeys.add(codeHash)
