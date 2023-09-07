@@ -81,7 +81,5 @@ export async function estimateGas(
   if (runTxResult.execResult.gasRefund) {
     estimatedGasRequired.iadd(runTxResult.execResult.gasRefund)
   }
-  // Add 5% buffer to the gas estimate
-  estimatedGasRequired.imuln(1.05)
   console.log(`0x${estimatedGasRequired.toString(16)}`)
 }
