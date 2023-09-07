@@ -77,5 +77,11 @@ export async function estimateGas(
     skipNonce: true,
     networkAccount: networkAccount.data,
   })
-  console.log(`0x${runTxResult.gasUsed.toString(16)}`)
+  const estimatedGasRequired = new BN(runTxResult.gasUsed)
+  if (runTxResult.execResult.gasRefund) {
+    estimatedGasRequired.iadd(runTxResult.execResult.gasRefund)
+  }
+  // Add 5% buffer to the gas estimate
+  estimatedGasRequired.imuln(1.05)
+  console.log(`0x${estimatedGasRequired.toString(16)}`)
 }
