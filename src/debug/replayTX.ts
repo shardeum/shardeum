@@ -19,6 +19,7 @@ import { TraceDataFactory, ITraceData } from './trace/traceDataFactory'
 import * as AccountsStorage from './db'
 import * as WrappedEVMAccountFunctions from '../shardeum/wrappedEVMAccountFunctions'
 import { StateManager } from '@ethereumjs/vm/dist/state'
+import { estimateGas } from './estimateGas/estimateGas'
 
 export async function createAccount(
   addressStr: string,
@@ -46,7 +47,7 @@ export async function createAccount(
   return wrappedEVMAccount
 }
 
-function getApplyTXState(txId: string, noBeforeStates: boolean): ShardeumState {
+function getApplyTXState(txId: string, estimateOnly: boolean): ShardeumState {
   let shardeumState = shardeumStateTXMap.get(txId)
   if (shardeumState == null) {
     shardeumState = new ShardeumState({ common: evmCommon })
@@ -86,7 +87,7 @@ function getApplyTXState(txId: string, noBeforeStates: boolean): ShardeumState {
         contractStorageInvolved: (txState: TransactionState, address: string, key: string) => {
           const { account, shardusKey } = getKey(address, key, AccountType.ContractStorage)
           if (!account) {
-            if (noBeforeStates) {
+            if (estimateOnly) {
               console.log(
                 JSON.stringify({
                   status: 'error',
@@ -141,15 +142,20 @@ const runTransaction = async (
   txJson,
   wrappedStates: Map<string, WrappedEVMAccount>,
   execOptions: { structLogs: boolean; gasEstimate: boolean },
-  noBeforeStates: boolean
+  estimateOnly: boolean
 ): Promise<void> => {
+  if (estimateOnly) {
+    const preRunState = getApplyTXState('0', estimateOnly)
+    await estimateGas(txJson, preRunState, wrappedStates, EVM)
+    return
+  }
   const tx = txJson
   const txTimestamp = getInjectedOrGeneratedTimestamp({ tx: tx })
   const transaction: Transaction | AccessListEIP2930Transaction = getTransactionObj(tx)
   const ethTxId = bufferToHex(transaction.hash())
   const shardusReceiptAddress = toShardusAddressWithKey(ethTxId, '', AccountType.Receipt)
   const txId = hashSignedObj(tx)
-  const shardeumState = getApplyTXState(txId, noBeforeStates)
+  const shardeumState = getApplyTXState(txId, estimateOnly)
   // TODO: Do I set appData in above shardeumState?
 
   const validatorStakedAccounts: Map<string, OperatorAccountInfo> = new Map()
@@ -387,11 +393,11 @@ if (!file) {
       if (!fs.existsSync(file)) {
         throw new Error('File not found')
       }
-
-      const noBeforeStates = loadStatesFromJson(file)
+      const estimateOnly = loadStatesFromJson(file)
       // eslint-disable-next-line security/detect-non-literal-fs-filename
       const txJson = JSON.parse(fs.readFileSync(file, 'utf8'))
-      return runTransaction(txJson.tx.originalTxData, accounts, options, noBeforeStates)
+      const transaction = estimateOnly ? txJson.txData : txJson.tx.originalTxData
+      return runTransaction(transaction, accounts, options, estimateOnly)
     })
     .then(() => {
       // TODO: Utilize the original TX account data to verify
