@@ -77,5 +77,5 @@ export async function estimateGas(
     skipNonce: true,
     networkAccount: networkAccount.data,
   })
-  console.log(runTxResult.gasUsed.toString())
+  console.log(`0x${runTxResult.gasUsed.toString(16)}`)
 }
