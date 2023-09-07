@@ -22,16 +22,16 @@ export function addCreatedAccount(address: string, account: WrappedEVMAccount): 
 
 export function loadStatesFromJson(fileName: string): boolean {
   // LOAD BEFORE STATES (CS)
-  let noBeforeStates = false
   // eslint-disable-next-line security/detect-non-literal-fs-filename
   const data = JSON.parse(fs.readFileSync(fileName, 'utf8'))
+  const estimateOnly = !!data.txData
+
   if (!data.beforeStateAccounts) {
-    if (!data.estimateGas) {
+    if (!estimateOnly) {
       throw new Error('beforeStateAccounts not found in file')
     }
-    noBeforeStates = true
   }
-  const beforeStates: jsonState[] = noBeforeStates ? [] : data.beforeStateAccounts
+  const beforeStates: jsonState[] = estimateOnly ? [] : data.beforeStateAccounts
 
   // LOAD STATES (EOA | CA | CB)
   fileName = `${fileName.slice(0, -5)}_states.json`
@@ -40,7 +40,7 @@ export function loadStatesFromJson(fileName: string): boolean {
     // State file not found. Create a new one.
     // eslint-disable-next-line security/detect-non-literal-fs-filename
     fs.writeFileSync(fileName, '[]')
-    return
+    return estimateOnly
   }
 
   // eslint-disable-next-line security/detect-non-literal-fs-filename
@@ -48,7 +48,7 @@ export function loadStatesFromJson(fileName: string): boolean {
   const stateArray: jsonState[] = JSON.parse(fileContent)
 
   beforeStates.concat(stateArray).forEach((state) => accounts.set(state.accountId, state.data))
-  return noBeforeStates
+  return estimateOnly
 }
 
 export function getAccount(address: string): WrappedEVMAccount {
