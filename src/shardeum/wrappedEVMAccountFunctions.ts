@@ -83,9 +83,9 @@ export function fixDeserializedWrappedEVMAccount(wrappedEVMAccount: WrappedEVMAc
     if (wrappedEVMAccount.operatorAccountInfo) wrappedEVMAccount.operatorAccountInfo = fixBigIntLiteralsToBigInt(wrappedEVMAccount.operatorAccountInfo)
   }
   fixWrappedEVMAccountBuffers(wrappedEVMAccount)
-  for (const key in wrappedEVMAccount) {
-    wrappedEVMAccount[key] = fixBigIntLiteralsToBigInt(wrappedEVMAccount[key])
-  }
+  // for (const key in wrappedEVMAccount) {
+  //   wrappedEVMAccount[key] = fixBigIntLiteralsToBigInt(wrappedEVMAccount[key])
+  // }
 }
 
 function fixWrappedEVMAccountBuffers(wrappedEVMAccount: WrappedEVMAccount): void {

@@ -2592,7 +2592,7 @@ async function generateAccessList(
         if (contractAddress !== address) continue
         if (!allKeys.has(codeHash)) allKeys.add(codeHash)
       }
-      const accessListItem = [address, Array.from(allKeys).map((key) => '0x' + key)]
+      const accessListItem = [address, Array.from(allKeys).map((key) => key)]
       accessList.push(accessListItem)
     }
 
@@ -3416,8 +3416,7 @@ const shardusSetup = (): void => {
       for (const contractBytesEntry of contractBytesWrites.entries()) {
         //1. wrap and save/update this to shardeum accounts[] map
         const contractByteWrite: ContractByteWrite = contractBytesEntry[1]
-        const codeHashStr = contractByteWrite.codeHash.toString()
-
+        const codeHashStr = bytesToHex(contractByteWrite.codeHash)
         const wrappedEVMAccount: WrappedEVMAccount = {
           timestamp: txTimestamp,
           codeHash: contractByteWrite.codeHash,
@@ -3679,7 +3678,7 @@ const shardusSetup = (): void => {
             const wrappedEVMAccount = remoteTargetAccount.data as WrappedEVMAccount
             if (wrappedEVMAccount && wrappedEVMAccount.account) {
               fixDeserializedWrappedEVMAccount(wrappedEVMAccount)
-              const codeHashString = wrappedEVMAccount.account.codeHash.toString()
+              const codeHashString = bytesToHex(wrappedEVMAccount.account.codeHash)
               if (codeHashString && codeHashString === emptyCodeHash) {
                 isSimpleTransfer = true
               }

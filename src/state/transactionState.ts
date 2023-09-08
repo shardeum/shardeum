@@ -116,11 +116,23 @@ export default class TransactionState {
    */
   static fixAccountFields(account): void {
     //hmm some hacks to fix data after getting copied around..
-    if (typeof account.nonce && account.nonce.__BigInt__) {
-      account.nonce = BigInt(account.nonce.__BigInt__)
+    // if (typeof account.nonce && account.nonce.__BigInt__) {
+    //   account.nonce = BigInt(account.nonce.__BigInt__)
+    // }
+    // if (typeof account.balance && account.balance.__BigInt__) {
+    //   account.balance = BigInt(account.balance.__BigInt__)
+    // }
+    //hmm some hacks to fix data after getting copied around..
+    if (typeof account.nonce === 'string') {
+      if (account.nonce.startsWith('0x') === false) {
+        account.nonce = '0x' + account.nonce
+      }
     }
-    if (typeof account.balance && account.balance.__BigInt__) {
-      account.balance = BigInt(account.balance.__BigInt__)
+
+    if (typeof account.balance === 'string') {
+      if (account.balance.startsWith('0x') === false) {
+        account.balance = '0x' + account.balance
+      }
     }
     this.fixAccountUint8Arrays(account)
   }
@@ -326,7 +338,7 @@ export default class TransactionState {
 
           if (this.debugTrace)
             this.debugTraceLog(
-              `commitAccount:contractCode: addr:${addressString} codeHash:${codeHash.toString()} v:${
+              `commitAccount:contractCode: addr:${addressString} codeHash:${bytesToHex(codeHash)} v:${
                 codeByte.length
               }`
             )
@@ -361,12 +373,13 @@ export default class TransactionState {
    * @param contractByte
    */
   async commitContractBytes(contractAddress: string, codeHash: Uint8Array, contractByte: Uint8Array): Promise<void> {
+    const codeHashStr = bytesToHex(codeHash)
     if (ShardeumFlags.SaveEVMTries) {
       //only put this in the pending commit structure. we will do the real commit when updating the account
       if (this.pendingContractBytesCommits.has(contractAddress)) {
         const contractBytesCommit = this.pendingContractBytesCommits.get(contractAddress)
-        if (contractBytesCommit.has(codeHash.toString())) {
-          contractBytesCommit.set(codeHash.toString(), {
+        if (contractBytesCommit.has(codeHashStr)) {
+          contractBytesCommit.set(codeHashStr, {
             codeHash,
             codeByte: contractByte,
             ethAddress: '',
@@ -377,7 +390,7 @@ export default class TransactionState {
         }
       } else {
         const contractBytesCommit = new Map()
-        contractBytesCommit.set(codeHash.toString(), {codeHash, codeByte: contractByte})
+        contractBytesCommit.set(codeHashStr, {codeHash, codeByte: contractByte})
         this.pendingContractBytesCommits.set(contractAddress, contractBytesCommit)
       }
 
@@ -389,7 +402,7 @@ export default class TransactionState {
 
       if (this.debugTrace)
         this.debugTraceLog(
-          `commitContractBytes:contractCode codeHash:${codeHash.toString()} v:${bytesToHex(contractByte)}`
+          `commitContractBytes:contractCode codeHash:${codeHashStr} v:${bytesToHex(contractByte)}`
         )
     }
   }
@@ -636,7 +649,7 @@ export default class TransactionState {
       return
     }
     const codeHash = contractAccount.codeHash
-    const codeHashStr = codeHash.toString()
+    const codeHashStr = bytesToHex(codeHash)
 
     if (originalOnly === false) {
       if (this.allContractBytesWrites.has(codeHashStr)) {
@@ -749,6 +762,7 @@ export default class TransactionState {
     }
 
     const codeHash = keccak256(codeByte)
+    const codeHashStr = bytesToHex(codeHash)
     if (equalsBytes(codeHash, KECCAK256_NULL)) {
       return
     }
@@ -761,11 +775,10 @@ export default class TransactionState {
 
     if (this.debugTrace)
       this.debugTraceLog(
-        `putContractCode: addr:${addressString} codeHash:${bytesToHex(codeHash)
-        } v:${contractByteWrite.contractByte.toString()}`
+        `putContractCode: addr:${addressString} codeHash:${codeHashStr} v:${bytesToHex(contractByteWrite.contractByte)}`
       )
 
-    this.allContractBytesWrites.set(codeHash.toString(), contractByteWrite)
+    this.allContractBytesWrites.set(codeHashStr, contractByteWrite)
     this.allContractBytesWritesByAddress.set(addressString, contractByteWrite)
 
     this.touchedCAs.add(addressString)
@@ -779,7 +792,7 @@ export default class TransactionState {
     }
 
     const codeHash = keccak256(codeByte)
-    const codeHashStr = codeHash.toString()
+    const codeHashStr = bytesToHex(codeHash)
     if (equalsBytes(codeHash, KECCAK256_NULL)) {
       return
     }
@@ -805,7 +818,7 @@ export default class TransactionState {
           const returnValue = storedRlp ? RLP.decode(storedRlp ?? new Uint8Array(0)) as Uint8Array : undefined
           if (this.debugTrace)
             this.debugTraceLog(
-              `getContractStorage: (contractStorageWrites) addr:${addressString} key:${keyString} v:${returnValue?.toString()}`
+              `getContractStorage: (contractStorageWrites) addr:${addressString} key:${keyString} v:${returnValue ? bytesToHex(returnValue) : undefined}`
             )
           return returnValue
         }
@@ -818,7 +831,7 @@ export default class TransactionState {
         const returnValue = storedRlp ? RLP.decode(storedRlp ?? new Uint8Array(0)) as Uint8Array : undefined
         if (this.debugTrace)
           this.debugTraceLog(
-            `getContractStorage: (contractStorageReads) addr:${addressString} key:${keyString} v:${returnValue?.toString()}`
+            `getContractStorage: (contractStorageReads) addr:${addressString} key:${keyString} v:${returnValue ? bytesToHex(returnValue) : undefined}}`
           )
         return returnValue
       }
@@ -834,7 +847,7 @@ export default class TransactionState {
       //see if we can get it from the storage trie.
       storedRlp = await storage.get(key)
       storedValue = storedRlp ? RLP.decode(storedRlp) : undefined
-      if (ShardeumFlags.VerboseLogs) console.log(`storedValue for ${key.toString()}`, storedValue)
+      if (ShardeumFlags.VerboseLogs) console.log(`storedValue for ${keyString}`, storedValue)
     } else {
       //get from accounts db
       //throw new Error('get from accounts db')
@@ -893,7 +906,7 @@ export default class TransactionState {
 
     if (this.debugTrace)
       this.debugTraceLog(
-        `getContractStorage: addr:${addressString} key:${keyString} v:${storedValue.toString()}`
+        `getContractStorage: addr:${addressString} key:${keyString} v:${storedValue ? bytesToHex(storedValue) : undefined}`
       )
 
     return storedValue
@@ -920,7 +933,7 @@ export default class TransactionState {
 
     if (this.debugTrace)
       this.debugTraceLog(
-        `putContractStorage: addr:${addressString} key:${keyString} v:${value.toString()}`
+        `putContractStorage: addr:${addressString} key:${keyString} v:${value ? bytesToHex(value) : undefined}`
       )
 
     //here is our take on things:

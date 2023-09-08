@@ -2,6 +2,17 @@ import { ShardeumFlags } from '../shardeum/shardeumFlags'
 import { DecimalString, HexString } from '../shardeum/shardeumTypes'
 import { stringify } from './stringify'
 import { isHexPrefixed, isHexString } from '@ethereumjs/util'
+import BN from 'bn.js'
+
+export function isHexStringWithoutPrefix(value: string, length?: number): boolean {
+  if (value && typeof value === 'string' && value.indexOf('0x') >= 0) return false // do not convert strings with 0x
+  // prefix
+  if (typeof value !== 'string' || !value.match(/^[0-9A-Fa-f]*$/)) return false
+
+  if (typeof length !== 'undefined' && length > 0 && value.length !== 2 + 2 * length) return false
+
+  return true
+}
 
 export function SerializeToJsonString(obj: unknown): string {
   if (ShardeumFlags.UseBase64BufferEncoding) {
@@ -41,8 +52,8 @@ function base64BufferReviver(key: string, value: any): any {
     originalObject.dataType == 'bh'
   ) {
     return new Uint8Array(GetBufferFromField(originalObject, 'base64'))
-  } else if (value && value.__BigInt__) {
-    return BigInt(value.__BigInt__)
+  } else if (value && isHexStringWithoutPrefix(value) && value.length !== 42 && value.length !== 64) {
+    return BigInt('0x' + value)
   } else {
     return value
   }

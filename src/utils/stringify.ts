@@ -110,7 +110,8 @@ function stringifier(
       return JSON.stringify(val)
     case 'bigint':
       // Add some special identifier for bigint
-      return JSON.stringify({__BigInt__: val.toString()})
+      // return JSON.stringify({__BigInt__: val.toString()})
+      return JSON.stringify(bigIntToHex(val).slice(2))
     default:
       return isFinite(val) ? val : null
   }
