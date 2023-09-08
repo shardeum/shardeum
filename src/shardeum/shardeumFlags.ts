@@ -25,6 +25,10 @@ interface ShardeumFlags {
     ['contract/accesslist']: {
       endpoint: number
       direct: number
+    },
+    ['contract/estimateGas']: {
+      endpoint: number
+      direct: number
     }
     ['tx/:hash']: number
   }
@@ -140,6 +144,7 @@ export const ShardeumFlags: ShardeumFlags = {
     ['account/:address']: 5,
     ['contract/call']: { endpoint: 5, direct: 20 },
     ['contract/accesslist']: { endpoint: 5, direct: 20 },
+    ['contract/estimateGas']: { endpoint: 5, direct: 20 },
     ['tx/:hash']: 5,
   },
   generateMemoryPatternData: true,

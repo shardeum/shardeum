@@ -14,6 +14,7 @@ import {
 } from 'ethereumjs-util'
 import { AccessListEIP2930Transaction, Transaction } from '@ethereumjs/tx'
 import Common, { Chain } from '@ethereumjs/common'
+import { TxData, TransactionFactory } from '@ethereumjs/tx'
 import VM from '@ethereumjs/vm'
 import ShardeumVM from './vm'
 import { parse as parseUrl } from 'url'
@@ -1613,6 +1614,37 @@ const configShardusEndpoints = (): void => {
     }
   })
 
+  shardus.registerExternalPost('contract/estimateGas', async (req, res) => {
+    if (
+      trySpendServicePoints(
+        ShardeumFlags.ServicePoints['contract/estimateGas'].endpoint,
+        req,
+        'estimateGas'
+      ) === false
+    ) {
+      return res.json({ result: null, error: 'node busy' })
+    }
+
+    try {
+      const injectedTx = req.body
+      if (ShardeumFlags.VerboseLogs) console.log('EstimateGas endpoint injectedTx', injectedTx)
+
+      const result = await estimateGas(injectedTx)
+
+      res.json(result)
+    } catch (e) {
+      if (ShardeumFlags.VerboseLogs) console.log('Error estimate gas', e)
+      return res.json({
+        result: {
+          error: {
+            code: -32000,
+            message: "gas required exceeds allowance or always failing transaction"
+          }
+        }
+      })
+    }
+  })
+
   shardus.registerExternalGet('tx/:hash', async (req, res) => {
     if (trySpendServicePoints(ShardeumFlags.ServicePoints['tx/:hash'], req, 'tx') === false) {
       return res.json({ error: 'node busy' })
@@ -2359,6 +2391,156 @@ const getOrCreateBlockFromTimestamp = (timestamp: number, scheduleNextBlock = fa
   }
   pruneOldBlocks()
   return block
+}
+
+
+function wrapTransaction(transaction: Transaction, impl: () => Address): Transaction {
+  return new Proxy(transaction, {
+    get: function(target, prop, receiver): any {
+      if (prop === 'getSenderAddress') {
+        return impl;
+      }
+      return Reflect.get(target, prop, receiver);
+    }
+  });
+}
+
+async function estimateGas(
+  injectedTx: {from: string, maxFeePerGas: string, gas: number} & TxData
+): Promise<{estimateGas: string}> {
+  const maxUint256 = (new BN(2)).pow(new BN(256)).sub(new BN(1));
+  if (ShardeumFlags.VerboseLogs) console.log('injectedTx', injectedTx)
+  const blockForTx = blocks[latestBlock];
+  const MAX_GASLIMIT = new BN(30_000_000)
+
+  if (injectedTx.gas == null) {
+    // If no gas limit is specified use the last block gas limit as an upper bound.
+    // injectedTx.gas = blockForTx.header.gasLimit.div(new BN(10).pow(new BN(8))) as any
+    // injectedTx.gasLimit = blockForTx.header.gasLimit.div(new BN(10).pow(new BN(8))) as any
+    injectedTx.gasLimit = blockForTx.header.gasLimit
+  } else {
+    injectedTx.gasLimit = new BN(injectedTx.gas)
+  }
+
+  // we set this max gasLimit to prevent DDOS attacks with high gasLimits
+  if (injectedTx.gasLimit.gt(MAX_GASLIMIT)) {
+    injectedTx.gasLimit = MAX_GASLIMIT
+  }
+
+  // todo: shardeum does not support EIP-1559 maxFeePerGas or baseFeePerGas
+  // if (injectedTx.gasPrice == null && injectedTx.maxFeePerGas == null) {
+  //   // If no gas price or maxFeePerGas provided, use current block base fee for gas estimates
+  //   if (injectedTx.type !== undefined && parseInt(injectedTx.type as any) === 2) {
+  //     injectedTx.maxFeePerGas = '0x' + blockForTx.header.baseFeePerGas?.toString(16)
+  //   } else if (blockForTx.header.baseFeePerGas !== undefined) {
+  //     injectedTx.gasPrice = '0x' + blockForTx.header.baseFeePerGas?.toString(16)
+  //   }
+  // }
+
+  const txData = {
+    ...injectedTx,
+    gasLimit: injectedTx.gasLimit ? injectedTx.gasLimit : blockForTx.header.gasLimit,
+  }
+
+
+  let transaction: Transaction | AccessListEIP2930Transaction = Transaction.fromTxData(txData)
+  if (ShardeumFlags.VerboseLogs) console.log(`parsed tx`, transaction)
+
+  const from =
+    injectedTx.from !== undefined ? Address.fromString(injectedTx.from) : Address.zero()
+  transaction = wrapTransaction(transaction, (): Address => {
+    return from
+  });
+
+  const caShardusAddress = transaction.to
+    ? toShardusAddress(transaction.to.toString(), AccountType.Account)
+    : null
+
+  if (caShardusAddress != null) {
+
+    const accountIsRemote = shardus.isAccountRemote(caShardusAddress)
+
+    if (accountIsRemote) {
+      const consensusNode = shardus.getRandomConsensusNodeForAccount(caShardusAddress)
+      /* prettier-ignore */
+      if (consensusNode != null) {
+        if (ShardeumFlags.VerboseLogs) console.log(`Node is in remote shard: requesting estimateGas ${consensusNode?.externalIp}:${consensusNode?.externalPort}`)
+
+        const postResp = await _internalHackPostWithResp(
+          `${consensusNode.externalIp}:${consensusNode.externalPort}/contract/estimateGas`,
+          injectedTx
+        )
+        if (ShardeumFlags.VerboseLogs)
+          console.log('EstimateGas response from node', consensusNode.externalPort, postResp.body)
+        if (postResp.body != null && postResp.body != '' && postResp.body.estimatedGas != null) {
+          /* prettier-ignore */
+          if (ShardeumFlags.VerboseLogs) console.log(`Node is in remote shard: gotResp:${JSON.stringify(postResp.body)}`)
+          if (typeof postResp.body.estimatedGas === 'number') {
+            return postResp.body.estimatedGas;
+          } else {
+            return {estimateGas: maxUint256.toString(16)}
+          }
+        }
+      } else {
+        return {estimateGas: maxUint256.toString(16)}
+      }
+    } else {
+      if (ShardeumFlags.VerboseLogs) console.log(`Node is in remote shard: false`)
+    }
+  }
+
+  const txId = crypto.hashObj(transaction)
+  const preRunTxState = getPreRunTXState(txId)
+  const callerEVMAddress = transaction.getSenderAddress().toString()
+  const callerShardusAddress = toShardusAddress(callerEVMAddress, AccountType.Account)
+  let callerAccount = await AccountsStorage.getAccount(callerShardusAddress)
+  // callerAccount.account.balance = oneSHM.mul(new BN(100)) // 100 SHM. In case someone estimates gas with 0 balance
+  console.log('BALANCE: ', callerAccount?.account?.balance)
+  console.log('CALLER: ', JSON.stringify(callerAccount))
+
+  const fakeAccountData = {
+    nonce: 0,
+    balance: oneSHM.mul(new BN(100)), // 100 SHM.  This is a temporary account that will never exist.
+  }
+  const fakeAccount = Account.fromAccountData(fakeAccountData)
+  if (callerAccount == null) {
+    const remoteCallerAccount = await shardus.getLocalOrRemoteAccount(callerShardusAddress)
+    if (remoteCallerAccount) {
+      callerAccount = remoteCallerAccount.data as WrappedEVMAccount
+      fixDeserializedWrappedEVMAccount(callerAccount)
+    }
+  }
+  if (callerAccount == null) {
+    console.log(
+      `Unable to find caller account: ${callerShardusAddress} while estimating gas. Using a fake account to estimate gas`
+    )
+  }
+
+  preRunTxState._transactionState.insertFirstAccountReads(
+    transaction.getSenderAddress(),
+    callerAccount ? callerAccount.account : fakeAccount
+  )
+
+  EVM.stateManager = null
+  EVM.stateManager = preRunTxState
+
+  const runTxResult = await EVM.runTx({
+    block: blocks[latestBlock],
+    tx: transaction,
+    skipNonce: true,
+    skipBalance: true,
+    networkAccount: AccountsStorage.cachedNetworkAccount,
+  })
+  if (ShardeumFlags.VerboseLogs) console.log('Predicted gasUsed', runTxResult.gasUsed)
+
+  if (runTxResult.execResult.exceptionError) {
+    if (ShardeumFlags.VerboseLogs) console.log('Execution Error:', runTxResult.execResult.exceptionError)
+    throw new Error(runTxResult.execResult.exceptionError)
+  }
+  // For the estimate, we add the gasRefund to the gasUsed because gasRefund is subtracted after execution.
+  // That can lead to higher gasUsed during execution than the actual gasUsed
+  const estimate = runTxResult.gasUsed.add(runTxResult.execResult.gasRefund ?? new BN(0))
+  return {estimateGas: estimate.toString(16)}
 }
 
 async function generateAccessList(
@@ -5700,7 +5882,7 @@ const shardusSetup = (): void => {
         /* eslint-disable security/detect-object-injection */
         const networkAccount: NetworkAccount = account.data
         const listOfChanges = account.data.listOfChanges
-        
+
         const configsMap = new Map()
         const keepAliveCount = shardusConfig.stateManager.configChangeMaxChangesToKeep
         for (let i = listOfChanges.length - 1; i >= 0; i--) {
@@ -5886,17 +6068,17 @@ export let shardusConfig: ShardusTypes.ServerConfiguration
   let configToLoad
   try {
 
-    
+
     // Attempt to get and patch config. Error if unable to get config.
     const networkAccount = await fetchNetworkAccountFromArchiver()
 
     configToLoad = await updateConfigFromNetworkAccount(config, networkAccount)
-    
+
     console.log( `Using patched configs: ${JSON.stringify(configToLoad)}`)
 
   } catch (error) {
     console.log(`Error getting network account: ${error} \nUsing default configs`)
- 
+
     configToLoad = config;
   }
 
