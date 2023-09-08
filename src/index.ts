@@ -84,8 +84,6 @@ import {
   isWithinRange
 } from './utils'
 import config, { Config } from './config'
-import { RunTxResult } from '@ethereumjs/vm/dist/runTx'
-import { RunState } from '@ethereumjs/vm/dist/evm/interpreter'
 import Wallet from 'ethereumjs-wallet'
 import { Block } from '@ethereumjs/block'
 import { ShardeumBlock } from './block/blockchain'
@@ -2704,7 +2702,7 @@ const shardusSetup = (): void => {
     //also appdata and wrapped accounts should be passed in?
     validateTransaction: validateTransaction(shardus),
     validateTxnFields: validateTxnFields(shardus, debugAppdata),
-    async apply(timestampedTx: ShardusTypes.OpaqueTransaction, wrappedStates, appData) {
+    async apply(timestampedTx: ShardusTypes.OpaqueTransaction, wrappedStates, originalAppData) {
       //@ts-ignore
       const { tx } = timestampedTx
       const txTimestamp = getInjectedOrGeneratedTimestamp(timestampedTx)
@@ -3753,19 +3751,19 @@ const shardusSetup = (): void => {
 
             if (ShardeumFlags.looseNonceCheck) {
               if (isWithinRange(txNonce, perfectCount, ShardeumFlags.nonceCheckRange)) {
-                /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`precrack nonce pass: txNonce:${txNonce} is within +/- ${ShardeumFlags.nonceCheckRange} of perfect nonce ${perfectCount}.    current nonce:${appData.nonce}  queueCount:${appData.queueCount} txHash: ${transaction.hash().toString('hex')} `)
+                /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`precrack nonce pass: txNonce:${txNonce} is within +/- ${ShardeumFlags.nonceCheckRange} of perfect nonce ${perfectCount}.    current nonce:${appData.nonce}  queueCount:${appData.queueCount} txHash: ${transaction.hash().toString()} `)
               } else {
                 success = false
-                /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`precrack nonce fail: txNonce:${txNonce} is not within +/- ${ShardeumFlags.nonceCheckRange} of perfect nonce ${perfectCount}.    current nonce:${appData.nonce}  queueCount:${appData.queueCount} txHash: ${transaction.hash().toString('hex')} `)
+                /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`precrack nonce fail: txNonce:${txNonce} is not within +/- ${ShardeumFlags.nonceCheckRange} of perfect nonce ${perfectCount}.    current nonce:${appData.nonce}  queueCount:${appData.queueCount} txHash: ${transaction.hash().toString()} `)
                 nestedCountersInstance.countEvent('shardeum', 'precrack - nonce fail')
               }
             } else {
               if (txNonce != perfectCount) {
                 success = false
-                /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`precrack nonce fail: perfectCount:${perfectCount} != ${txNonce}.    current nonce:${appData.nonce}  queueCount:${appData.queueCount} txHash: ${transaction.hash().toString('hex')} `)
+                /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`precrack nonce fail: perfectCount:${perfectCount} != ${txNonce}.    current nonce:${appData.nonce}  queueCount:${appData.queueCount} txHash: ${transaction.hash().toString()} `)
                 nestedCountersInstance.countEvent('shardeum', 'precrack - nonce fail')
               } else {
-                /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`precrack nonce pass: perfectCount:${perfectCount} == ${txNonce}.    current nonce:${appData.nonce}  queueCount:${appData.queueCount}  txHash: ${transaction.hash().toString('hex')}`)
+                /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`precrack nonce pass: perfectCount:${perfectCount} == ${txNonce}.    current nonce:${appData.nonce}  queueCount:${appData.queueCount}  txHash: ${transaction.hash().toString()}`)
               }
             }
           }
@@ -5622,7 +5620,7 @@ const shardusSetup = (): void => {
         /* eslint-disable security/detect-object-injection */
         const networkAccount: NetworkAccount = account.data
         const listOfChanges = account.data.listOfChanges
-        
+
         const configsMap = new Map()
         const keepAliveCount = shardusConfig.stateManager.configChangeMaxChangesToKeep
         for (let i = listOfChanges.length - 1; i >= 0; i--) {
@@ -5808,17 +5806,17 @@ export let shardusConfig: ShardusTypes.ServerConfiguration
   let configToLoad
   try {
 
-    
+
     // Attempt to get and patch config. Error if unable to get config.
     const networkAccount = await fetchNetworkAccountFromArchiver()
 
     configToLoad = await updateConfigFromNetworkAccount(config, networkAccount)
-    
+
     console.log( `Using patched configs: ${JSON.stringify(configToLoad)}`)
 
   } catch (error) {
     console.log(`Error getting network account: ${error} \nUsing default configs`)
- 
+
     configToLoad = config;
   }
 

@@ -1,5 +1,3 @@
-import { Chain, Hardfork, Common as CommonFactory } from '@ethereumjs/common'
-import Common from '@ethereumjs/common'
 import { Shardus, ShardusTypes } from '@shardus/core'
 import { Account, Address } from '@ethereumjs/util'
 import config from '../config'
@@ -11,7 +9,8 @@ import { AccountType, DevAccount, InternalTXType, WrappedEVMAccount } from '../s
 import * as WrappedEVMAccountFunctions from '../shardeum/wrappedEVMAccountFunctions'
 import { ShardeumState, TransactionState } from '../state'
 import * as AccountsStorage from '../storage/accountStorage'
-import { sleep, nestedConvertBigIntToString } from '../utils'
+import {SerializeToJsonString} from '../utils'
+import { sleep } from '../utils'
 // import { StateManager } from '../vm/state'
 import { DefaultStateManager } from '@ethereumjs/statemanager'
 
@@ -99,7 +98,10 @@ export const sync = (shardus: Shardus, evmCommon: any) => async (): Promise<void
         }
         await shardus.debugCommitAccountCopies(accountCopies)
         if (ShardeumFlags.forwardGenesisAccounts) {
-          accountCopies = nestedConvertBigIntToString(accountCopies)
+          accountCopies = accountCopies.map(account => {
+            // thant: check if it works out
+            return JSON.parse(SerializeToJsonString(account))
+          })
           await shardus.forwardAccounts({ accounts: accountCopies, receipts: [] })
         }
       }

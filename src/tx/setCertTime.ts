@@ -17,7 +17,7 @@ import {
 import * as WrappedEVMAccountFunctions from '../shardeum/wrappedEVMAccountFunctions'
 import { fixDeserializedWrappedEVMAccount } from '../shardeum/wrappedEVMAccountFunctions'
 import * as AccountsStorage from '../storage/accountStorage'
-import { getRandom, scaleByStabilityFactor, _base16BNParser, _readableSHM, generateTxId } from '../utils'
+import { getRandom, scaleByStabilityFactor, _base16BNParser, _readableSHM, generateTxId,stringify } from '../utils'
 import { hashSignedObj } from '../setup/helpers'
 import { createInternalTxReceipt } from '..'
 import {isValidAddress} from "@ethereumjs/util";

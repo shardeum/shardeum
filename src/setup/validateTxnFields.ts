@@ -169,21 +169,21 @@ export const validateTxnFields =
 
         if (ShardeumFlags.looseNonceCheck) {
           if (isWithinRange(txNonce, perfectCount, ShardeumFlags.nonceCheckRange)) {
-            /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`nonce pass: txNonce:${txNonce} is within +/- ${ShardeumFlags.nonceCheckRange} of perfectCount:${perfectCount}.    accountNonce:${appData.nonce}  queueCount:${appData.queueCount}  txHash: ${txObj.hash().toString('hex')}`)
+            /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`nonce pass: txNonce:${txNonce} is within +/- ${ShardeumFlags.nonceCheckRange} of perfectCount:${perfectCount}.    accountNonce:${appData.nonce}  queueCount:${appData.queueCount}  txHash: ${transaction.hash().toString()}`)
           } else {
             success = false
             reason = `Transaction nonce is not within +/- ${ShardeumFlags.nonceCheckRange} of perfectCount ${perfectCount}  txNonce:${txNonce} accountNonce:${appData.nonce} queueCount:${appData.queueCount}`
-            /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`nonce fail: txNonce:${txNonce} is not within +/- ${ShardeumFlags.nonceCheckRange} of perfectCount:${perfectCount}.    accountNonce:${appData.nonce}  queueCount:${appData.queueCount} txHash: ${txObj.hash().toString('hex')} `)
+            /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`nonce fail: txNonce:${txNonce} is not within +/- ${ShardeumFlags.nonceCheckRange} of perfectCount:${perfectCount}.    accountNonce:${appData.nonce}  queueCount:${appData.queueCount} txHash: ${transaction.hash().toString()} `)
             nestedCountersInstance.countEvent('shardeum', 'validate - nonce fail')
           }
         } else {
           if (txNonce != perfectCount) {
             success = false
             reason = `Transaction nonce != ${perfectCount}  txNonce:${txNonce} accountNonce:${appData.nonce} queueCount:${appData.queueCount}`
-            /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`nonce fail: expectedNonce:${perfectCount} != txNonce:${txNonce}.    accountNonce:${appData.nonce}  queueCount:${appData.queueCount} txHash: ${txObj.hash().toString('hex')} `)
+            /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`nonce fail: expectedNonce:${perfectCount} != txNonce:${txNonce}.    accountNonce:${appData.nonce}  queueCount:${appData.queueCount} txHash: ${transaction.hash().toString()} `)
             nestedCountersInstance.countEvent('shardeum', 'validate - nonce fail')
           } else {
-            /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`nonce pass: expectedNonce:${perfectCount} == txNonce:${txNonce}.    accountNonce:${appData.nonce}  queueCount:${appData.queueCount}  txHash: ${txObj.hash().toString('hex')}`)
+            /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`nonce pass: expectedNonce:${perfectCount} == txNonce:${txNonce}.    accountNonce:${appData.nonce}  queueCount:${appData.queueCount}  txHash: ${transaction.hash().toString()}`)
           }
         }
 
