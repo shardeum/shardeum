@@ -12,6 +12,7 @@ import {
   short,
 } from '@ethereumjs/util'
 import debugDefault from 'debug'
+import {ShardeumFlags} from "../shardeum/shardeumFlags";
 const { chargeConstantTxFee, constantTxFeeUsd, baselineTxGasUsage, baselineTxFee } = ShardeumFlags
 
 import { Bloom } from './bloom/index.js'
@@ -35,7 +36,6 @@ import type {
   TypedTransaction,
 } from '@ethereumjs/tx'
 import {calculateGasPrice, scaleByStabilityFactor} from "../utils";
-import {ShardeumFlags} from "../shardeum/shardeumFlags";
 const { debug: createDebugLogger } = debugDefault
 
 const debug = createDebugLogger('vm:tx')

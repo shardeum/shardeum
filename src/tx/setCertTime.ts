@@ -17,7 +17,7 @@ import {
 import * as WrappedEVMAccountFunctions from '../shardeum/wrappedEVMAccountFunctions'
 import { fixDeserializedWrappedEVMAccount } from '../shardeum/wrappedEVMAccountFunctions'
 import * as AccountsStorage from '../storage/accountStorage'
-import { getRandom, scaleByStabilityFactor, _base16BNParser, _readableSHM, generateTxId } from '../utils'
+import { getRandom, scaleByStabilityFactor, _base16BNParser, _readableSHM, generateTxId,stringify } from '../utils'
 import { hashSignedObj } from '../setup/helpers'
 import { createInternalTxReceipt } from '..'
 import {isValidAddress} from "@ethereumjs/util";
@@ -121,6 +121,7 @@ export function validateSetCertTimeState(
     operatorEVMAccount = acct
   }
   fixDeserializedWrappedEVMAccount(operatorEVMAccount)
+  console.log('validateSetCertTimeState', tx, operatorEVMAccount)
   if (operatorEVMAccount == undefined) {
     /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`setCertTime validate state: found no wrapped state for operator account ${tx.nominator}`)
     if (ShardeumFlags.fixCertExpTiming) return {
@@ -135,7 +136,7 @@ export function validateSetCertTimeState(
         /* prettier-ignore */ nestedCountersInstance.countEvent('shardeum-staking', 'validateSetCertTimeState' + ' stake failed to parse')
         return {
           result: 'fail',
-          reason: `stake failed to parse: ${JSON.stringify(
+          reason: `stake failed to parse: ${stringify(
             operatorEVMAccount.operatorAccountInfo.stake
           )} er:${er.message}`,
         }
@@ -144,7 +145,7 @@ export function validateSetCertTimeState(
       /* prettier-ignore */ nestedCountersInstance.countEvent('shardeum-staking', 'validateSetCertTimeState' + ' Operator account info is null')
       return {
         result: 'fail',
-        reason: `Operator account info is null: ${JSON.stringify(operatorEVMAccount)}`,
+        reason: `Operator account info is null: ${stringify(operatorEVMAccount)}`,
       }
     }
   }
@@ -181,7 +182,7 @@ export function applySetCertTimeTx(
   applyResponse: ShardusTypes.ApplyResponse
 ): void {
   if (ShardeumFlags.VerboseLogs) {
-    console.log(`applySetCertTimeTx txTimestamp:${txTimestamp}   tx.timestamp:${tx.timestamp}`)
+    console.log(`applySetCertTimeTx txTimestamp:${txTimestamp}   tx.timestamp:${tx.timestamp}`, tx)
   }
 
   //TODO this is failing with a warning like this:

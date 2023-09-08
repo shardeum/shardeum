@@ -1,3 +1,5 @@
+import { bigIntToHex } from '@ethereumjs/util'
+
 const objToString = Object.prototype.toString
 const objKeys =
   Object.keys ||
@@ -13,6 +15,10 @@ export interface StringifierOptions {
   bufferEncoding: 'base64' | 'hex' | 'none'
 }
 
+const defaultStringifierOptions: StringifierOptions = {
+  bufferEncoding: 'base64',
+}
+
 function isBufferValue(toStr, val: Record<string, unknown>): boolean {
   return (
     toStr === '[object Object]' &&
@@ -22,14 +28,26 @@ function isBufferValue(toStr, val: Record<string, unknown>): boolean {
   )
 }
 
+function isUnit8Array(value: unknown): boolean {
+  return value instanceof Uint8Array
+}
+
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-function stringifier(val: any, isArrayProp: boolean, options: StringifierOptions): string | null | undefined {
+function stringifier(
+  val: any,
+  isArrayProp: boolean,
+  options: StringifierOptions = defaultStringifierOptions
+): string | null | undefined {
+  if (options == null) options = defaultStringifierOptions
   let i, max, str, keys, key, propVal, toStr
   if (val === true) {
     return 'true'
   }
   if (val === false) {
     return 'false'
+  }
+  if (isUnit8Array(val)) {
+    val = Buffer.from(val)
   }
   /* eslint-disable security/detect-object-injection */
   switch (typeof val) {
@@ -90,13 +108,17 @@ function stringifier(val: any, isArrayProp: boolean, options: StringifierOptions
       return isArrayProp ? null : undefined
     case 'string':
       return JSON.stringify(val)
+    case 'bigint':
+      // Add some special identifier for bigint
+      // return JSON.stringify({__BigInt__: val.toString()})
+      return JSON.stringify(bigIntToHex(val).slice(2))
     default:
       return isFinite(val) ? val : null
   }
   /* eslint-enable security/detect-object-injection */
 }
 
-export function stringify(val: unknown, options: StringifierOptions): string {
+export function stringify(val: unknown, options: StringifierOptions = defaultStringifierOptions): string {
   const returnVal = stringifier(val, false, options)
   if (returnVal !== undefined) {
     return '' + returnVal

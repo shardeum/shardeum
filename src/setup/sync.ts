@@ -1,5 +1,3 @@
-import { Chain, Hardfork, Common as CommonFactory } from '@ethereumjs/common'
-import Common from '@ethereumjs/common'
 import { Shardus, ShardusTypes } from '@shardus/core'
 import { Account, Address } from '@ethereumjs/util'
 import config from '../config'
@@ -11,6 +9,7 @@ import { AccountType, DevAccount, InternalTXType, WrappedEVMAccount } from '../s
 import * as WrappedEVMAccountFunctions from '../shardeum/wrappedEVMAccountFunctions'
 import { ShardeumState, TransactionState } from '../state'
 import * as AccountsStorage from '../storage/accountStorage'
+import {SerializeToJsonString} from '../utils'
 import { sleep } from '../utils'
 // import { StateManager } from '../vm/state'
 import { DefaultStateManager } from '@ethereumjs/statemanager'
@@ -53,7 +52,7 @@ export const sync = (shardus: Shardus, evmCommon: any) => async (): Promise<void
       shardus.log(`node ${nodeId} GENERATED_A_NEW_NETWORK_ACCOUNT: `)
       if (ShardeumFlags.SetupGenesisAccount) {
         let skippedAccountCount = 0
-        const accountCopies = []
+        let accountCopies = []
         for (const address in genesis) {
           const amount = BigInt(genesis[address].wei) // eslint-disable-line security/detect-object-injection
 
@@ -99,6 +98,10 @@ export const sync = (shardus: Shardus, evmCommon: any) => async (): Promise<void
         }
         await shardus.debugCommitAccountCopies(accountCopies)
         if (ShardeumFlags.forwardGenesisAccounts) {
+          accountCopies = accountCopies.map(account => {
+            // thant: check if it works out
+            return JSON.parse(SerializeToJsonString(account))
+          })
           await shardus.forwardAccounts({ accounts: accountCopies, receipts: [] })
         }
       }
@@ -261,7 +264,7 @@ async function createAccount(
 
   const account = Account.fromAccountData(acctData)
   await stateManager.putAccount(accountAddress, account)
-  const updatedAccount = await stateManager.getAccount(accountAddress)
+  const updatedAccount: Account = await stateManager.getAccount(accountAddress)
 
   const wrappedEVMAccount = {
     timestamp: 0,

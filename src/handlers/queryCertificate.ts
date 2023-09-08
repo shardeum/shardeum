@@ -13,7 +13,7 @@ import {
 } from '../shardeum/shardeumTypes'
 import { fixDeserializedWrappedEVMAccount, isWrappedEVMAccount } from '../shardeum/wrappedEVMAccountFunctions'
 import { setCertTimeTx } from '../tx/setCertTime'
-import { getRandom } from '../utils'
+import { getRandom, fixBigIntLiteralsToBigInt } from '../utils'
 import { shardusGetFromNode, shardusPostToNode, shardusPutToNode } from '../utils/requests'
 
 // constants
@@ -135,6 +135,7 @@ export async function getCertSignatures(
   if (!signedAppData.success) {
     return {
       success: false,
+      signedStakeCert: null
     }
   }
   certData.signs = signedAppData.signatures
@@ -246,7 +247,8 @@ export async function queryCertificateHandler(
     )
     return { success: false, reason: 'Failed to fetch operator account state' }
   }
-  const nodeAccount = await shardus.getLocalOrRemoteAccount(queryCertReq.nominee)
+  let nodeAccount = await shardus.getLocalOrRemoteAccount(queryCertReq.nominee)
+  nodeAccount = fixBigIntLiteralsToBigInt(nodeAccount)
   if (!nodeAccount) {
     nestedCountersInstance.countEvent(
       'shardeum-staking',

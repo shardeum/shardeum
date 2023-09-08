@@ -31,7 +31,7 @@ type JournalDiffItem = [Set<AddressString>, Map<AddressString, Set<SlotString>>,
 type JournalHeight = number
 
 export class Journal {
-  private stateManager: EVMStateManagerInterface
+  public stateManager: EVMStateManagerInterface
   private common: Common
   private DEBUG: boolean
   private _debug: Debugger
