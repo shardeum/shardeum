@@ -1,5 +1,5 @@
-import { AccessListEIP2930Transaction, Transaction } from '@ethereumjs/tx'
-import { Account, Address, BN } from 'ethereumjs-util'
+import { AccessListEIP2930Transaction, LegacyTransaction, Transaction, TransactionType } from '@ethereumjs/tx'
+import { Account, Address } from '@ethereumjs/util'
 import { oneSHM } from '../../shardeum/shardeumConstants'
 import { ShardeumState } from '../state'
 import { networkAccount } from '../evmSetup'
@@ -8,7 +8,7 @@ import { AccountType, WrappedEVMAccount } from '../../shardeum/shardeumTypes'
 import { fixDeserializedWrappedEVMAccount } from '../../shardeum/wrappedEVMAccountFunctions'
 import * as AccountsStorage from '../db'
 
-function wrapTransaction(transaction: Transaction, impl: () => Address): Transaction {
+function wrapTransaction(transaction: LegacyTransaction, impl: () => Address): LegacyTransaction {
   return new Proxy(transaction, {
     get: function (target, prop, receiver): any {
       if (prop === 'getSenderAddress') {
@@ -25,7 +25,7 @@ export async function estimateGas(
   wrappedStates: Map<string, WrappedEVMAccount>,
   EVM
 ): Promise<void> {
-  let transaction: Transaction | AccessListEIP2930Transaction = Transaction.fromTxData(txData)
+  let transaction: LegacyTransaction | AccessListEIP2930Transaction = LegacyTransaction.fromTxData(txData)
   const from = txData.from !== undefined ? Address.fromString(txData.from) : Address.zero()
   transaction = wrapTransaction(transaction, (): Address => {
     return from
@@ -58,7 +58,7 @@ export async function estimateGas(
 
   const fakeAccountData = {
     nonce: 0,
-    balance: oneSHM.mul(new BN(100)), // 100 SHM.  This is a temporary account that will never exist.
+    balance: oneSHM * BigInt(100), // 100 SHM.  This is a temporary account that will never exist.
   }
   const fakeAccount = Account.fromAccountData(fakeAccountData)
   preRunTxState._transactionState.insertFirstAccountReads(
@@ -77,9 +77,10 @@ export async function estimateGas(
     skipNonce: true,
     networkAccount: networkAccount.data,
   })
-  const estimatedGasRequired = new BN(runTxResult.gasUsed)
+  let estimatedGasRequired = BigInt(runTxResult.gasUsed)
   if (runTxResult.execResult.gasRefund) {
-    estimatedGasRequired.iadd(runTxResult.execResult.gasRefund)
+    const gasRefund = BigInt(runTxResult.execResult.gasRefund)
+    estimatedGasRequired += gasRefund
   }
   console.log(`0x${estimatedGasRequired.toString(16)}`)
 }

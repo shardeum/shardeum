@@ -1,8 +1,8 @@
 import fs from 'fs'
 import { getInjectedOrGeneratedTimestamp, getTransactionObj, hashSignedObj } from '../setup/helpers'
-import { AccessListEIP2930Transaction, Transaction } from '@ethereumjs/tx'
-import type { InterpreterStep } from '@ethereumjs/vm/dist/evm/interpreter'
-import { Address, bufferToHex, Account, BN } from 'ethereumjs-util'
+import { AccessListEIP2930Transaction, LegacyTransaction } from '@ethereumjs/tx'
+import type { InterpreterStep } from '@ethereumjs/evm'
+import { Address, bytesToHex, Account } from '@ethereumjs/util'
 import { toShardusAddressWithKey, toShardusAddress } from '../shardeum/evmAddress'
 import { AccountType, OperatorAccountInfo, WrappedEVMAccount } from '../shardeum/shardeumTypes'
 import { ShardeumState, TransactionState } from './state'
@@ -18,13 +18,13 @@ import { TraceStorageMap } from './trace/traceStorageMap'
 import { TraceDataFactory, ITraceData } from './trace/traceDataFactory'
 import * as AccountsStorage from './db'
 import * as WrappedEVMAccountFunctions from '../shardeum/wrappedEVMAccountFunctions'
-import { StateManager } from '@ethereumjs/vm/dist/state'
 import { estimateGas } from './estimateGas/estimateGas'
+import { EVMStateManagerInterface } from '@ethereumjs/common'
 
 export async function createAccount(
   addressStr: string,
-  stateManager: StateManager,
-  balance: BN = new BN(0)
+  stateManager: EVMStateManagerInterface,
+  balance = BigInt(0)
 ): Promise<WrappedEVMAccount> {
   // if (ShardeumFlags.VerboseLogs) console.log('Creating new account', addressStr)
 
@@ -151,8 +151,8 @@ const runTransaction = async (
   }
   const tx = txJson
   const txTimestamp = getInjectedOrGeneratedTimestamp({ tx: tx })
-  const transaction: Transaction | AccessListEIP2930Transaction = getTransactionObj(tx)
-  const ethTxId = bufferToHex(transaction.hash())
+  const transaction: LegacyTransaction | AccessListEIP2930Transaction = getTransactionObj(tx)
+  const ethTxId = bytesToHex(transaction.hash())
   const shardusReceiptAddress = toShardusAddressWithKey(ethTxId, '', AccountType.Receipt)
   const txId = hashSignedObj(tx)
   const shardeumState = getApplyTXState(txId, estimateOnly)
@@ -214,9 +214,14 @@ const runTransaction = async (
   const blockForTx = getOrCreateBlockFromTimestamp(txTimestamp)
 
   EVM.stateManager = null
-  EVM.stateManager = shardeumState
+  EVM.evm.stateManager = null
+  EVM.evm.journal.stateManager = null
 
-  let gas = 0
+  EVM.stateManager = shardeumState
+  EVM.evm.stateManager = shardeumState
+  EVM.evm.journal.stateManager = shardeumState
+
+  let gas = BigInt(0)
   const structLogs = []
   const TraceData = TraceDataFactory()
   const options = {
@@ -231,8 +236,7 @@ const runTransaction = async (
     event: InterpreterStep,
     next: (error?: Error | null, cb?: () => void) => void
   ): Promise<void> => {
-    const gasLeft = event.gasLeft.toNumber()
-    const totalGasUsedAfterThisStep = transaction.gasLimit.toNumber() - gasLeft
+    const totalGasUsedAfterThisStep = transaction.gasLimit - event.gasLeft
     const gasUsedPreviousStep = totalGasUsedAfterThisStep - gas
     gas += gasUsedPreviousStep
 
@@ -251,14 +255,14 @@ const runTransaction = async (
     const stack: ITraceData[] = []
     if (options.disableStack !== true) {
       for (const stackItem of event.stack) {
-        stack.push(TraceData.from(stackItem.toArrayLike(Buffer)))
+        stack.push(TraceData.from(Buffer.from(stackItem.toString())))
       }
     }
 
     const structLog = {
       depth: event.depth + 1,
       error: '',
-      gas: gasLeft,
+      gas: event.gasLeft,
       gasCost: 0,
       memory,
       op: event.opcode.name,
@@ -330,7 +334,7 @@ const runTransaction = async (
     }
   }
 
-  EVM.on('step', stepListener)
+  EVM.evm.common.events.on('step', stepListener)
   await EVM.runTx({
     block: blockForTx,
     tx: transaction,
