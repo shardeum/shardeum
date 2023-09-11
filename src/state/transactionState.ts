@@ -1,15 +1,23 @@
-import {Account, Address, bytesToHex, equalsBytes, hexToBytes, KECCAK256_NULL, unpadBytes} from '@ethereumjs/util'
-import {ShardeumState} from '.'
-import {ShardeumFlags} from '../shardeum/shardeumFlags'
-import {zeroAddressAccount, zeroAddressStr} from '../utils'
+import {
+  Account,
+  Address,
+  bytesToHex,
+  equalsBytes,
+  hexToBytes,
+  KECCAK256_NULL,
+  unpadBytes,
+} from '@ethereumjs/util'
+import { ShardeumState } from '.'
+import { ShardeumFlags } from '../shardeum/shardeumFlags'
+import { zeroAddressAccount, zeroAddressStr } from '../utils'
 import * as AccountsStorage from '../storage/accountStorage'
-import {AccountType, WrappedEVMAccount} from '../shardeum/shardeumTypes'
-import {toShardusAddress, toShardusAddressWithKey} from '../shardeum/evmAddress'
-import {fixDeserializedWrappedEVMAccount} from '../shardeum/wrappedEVMAccountFunctions'
-import {Trie} from "@ethereumjs/trie";
-import {keccak256} from "ethereum-cryptography/keccak.js";
-import {RLP} from '@ethereumjs/rlp'
-import {stringify} from '../utils/stringify'
+import { AccountType, WrappedEVMAccount } from '../shardeum/shardeumTypes'
+import { toShardusAddress, toShardusAddressWithKey } from '../shardeum/evmAddress'
+import { fixDeserializedWrappedEVMAccount } from '../shardeum/wrappedEVMAccountFunctions'
+import { Trie } from '@ethereumjs/trie'
+import { keccak256 } from 'ethereum-cryptography/keccak.js'
+import { RLP } from '@ethereumjs/rlp'
+import { stringify } from '../utils/stringify'
 
 export type accountEvent = (transactionState: TransactionState, address: string) => Promise<boolean>
 export type contractStorageEvent = (
@@ -138,10 +146,10 @@ export default class TransactionState {
   }
 
   private static fixAccountUint8Arrays(account): void {
-    if (account.storageRoot.data) {
+    if (account.storageRoot?.data) {
       account.storageRoot = Uint8Array.from(account.storageRoot.data)
     }
-    if (account.codeHash.data) {
+    if (account.codeHash?.data) {
       account.codeHash = Uint8Array.from(account.codeHash.data)
     }
   }
@@ -269,13 +277,15 @@ export default class TransactionState {
     return {
       accounts: this.committedAccountWrites,
       contractStorages: this.allContractStorageWrites,
-      contractBytes: ShardeumFlags.fixContractBytes ? this.allContractBytesWritesByAddress : this.allContractBytesWrites
+      contractBytes: ShardeumFlags.fixContractBytes
+        ? this.allContractBytesWritesByAddress
+        : this.allContractBytesWrites,
     }
   }
 
   getTransferBlob(): { accounts: Map<string, Uint8Array>; kvPairs: Map<string, Map<string, Uint8Array>> } {
     //this is the data needed to start computation on another shard
-    return {accounts: this.firstAccountReads, kvPairs: this.firstContractStorageReads}
+    return { accounts: this.firstAccountReads, kvPairs: this.firstContractStorageReads }
   }
 
   /**
@@ -372,7 +382,11 @@ export default class TransactionState {
    * @param codeHash
    * @param contractByte
    */
-  async commitContractBytes(contractAddress: string, codeHash: Uint8Array, contractByte: Uint8Array): Promise<void> {
+  async commitContractBytes(
+    contractAddress: string,
+    codeHash: Uint8Array,
+    contractByte: Uint8Array
+  ): Promise<void> {
     const codeHashStr = bytesToHex(codeHash)
     if (ShardeumFlags.SaveEVMTries) {
       //only put this in the pending commit structure. we will do the real commit when updating the account
@@ -390,7 +404,7 @@ export default class TransactionState {
         }
       } else {
         const contractBytesCommit = new Map()
-        contractBytesCommit.set(codeHashStr, {codeHash, codeByte: contractByte})
+        contractBytesCommit.set(codeHashStr, { codeHash, codeByte: contractByte })
         this.pendingContractBytesCommits.set(contractAddress, contractBytesCommit)
       }
 
@@ -604,8 +618,7 @@ export default class TransactionState {
     const accountObj = Account.fromAccountData(account)
     const storedRlp = accountObj.serialize()
 
-    if (this.debugTrace)
-      this.debugTraceLog(`putAccount: addr:${addressString} v:${stringify(accountObj)}`)
+    if (this.debugTrace) this.debugTraceLog(`putAccount: addr:${addressString} v:${stringify(accountObj)}`)
 
     //this.allAccountWrites.set(addressString, storedRlp)
 
@@ -775,7 +788,9 @@ export default class TransactionState {
 
     if (this.debugTrace)
       this.debugTraceLog(
-        `putContractCode: addr:${addressString} codeHash:${codeHashStr} v:${bytesToHex(contractByteWrite.contractByte)}`
+        `putContractCode: addr:${addressString} codeHash:${codeHashStr} v:${bytesToHex(
+          contractByteWrite.contractByte
+        )}`
       )
 
     this.allContractBytesWrites.set(codeHashStr, contractByteWrite)
@@ -796,7 +811,7 @@ export default class TransactionState {
     if (equalsBytes(codeHash, KECCAK256_NULL)) {
       return
     }
-    this.firstContractBytesReads.set(codeHashStr, {codeHash, contractByte: codeByte, contractAddress})
+    this.firstContractBytesReads.set(codeHashStr, { codeHash, contractByte: codeByte, contractAddress })
     this.touchedCAs.add(addressString)
   }
 
@@ -815,10 +830,14 @@ export default class TransactionState {
         const contractStorageWrites = this.allContractStorageWrites.get(addressString)
         if (contractStorageWrites.has(keyString)) {
           const storedRlp = contractStorageWrites.get(keyString)
-          const returnValue = storedRlp ? RLP.decode(storedRlp ?? new Uint8Array(0)) as Uint8Array : undefined
+          const returnValue = storedRlp
+            ? (RLP.decode(storedRlp ?? new Uint8Array(0)) as Uint8Array)
+            : undefined
           if (this.debugTrace)
             this.debugTraceLog(
-              `getContractStorage: (contractStorageWrites) addr:${addressString} key:${keyString} v:${returnValue ? bytesToHex(returnValue) : undefined}`
+              `getContractStorage: (contractStorageWrites) addr:${addressString} key:${keyString} v:${
+                returnValue ? bytesToHex(returnValue) : undefined
+              }`
             )
           return returnValue
         }
@@ -828,10 +847,12 @@ export default class TransactionState {
       const contractStorageReads = this.firstContractStorageReads.get(addressString)
       if (contractStorageReads.has(keyString)) {
         const storedRlp = contractStorageReads.get(keyString)
-        const returnValue = storedRlp ? RLP.decode(storedRlp ?? new Uint8Array(0)) as Uint8Array : undefined
+        const returnValue = storedRlp ? (RLP.decode(storedRlp ?? new Uint8Array(0)) as Uint8Array) : undefined
         if (this.debugTrace)
           this.debugTraceLog(
-            `getContractStorage: (contractStorageReads) addr:${addressString} key:${keyString} v:${returnValue ? bytesToHex(returnValue) : undefined}}`
+            `getContractStorage: (contractStorageReads) addr:${addressString} key:${keyString} v:${
+              returnValue ? bytesToHex(returnValue) : undefined
+            }}`
           )
         return returnValue
       }
@@ -906,7 +927,9 @@ export default class TransactionState {
 
     if (this.debugTrace)
       this.debugTraceLog(
-        `getContractStorage: addr:${addressString} key:${keyString} v:${storedValue ? bytesToHex(storedValue) : undefined}`
+        `getContractStorage: addr:${addressString} key:${keyString} v:${
+          storedValue ? bytesToHex(storedValue) : undefined
+        }`
       )
 
     return storedValue
@@ -933,7 +956,9 @@ export default class TransactionState {
 
     if (this.debugTrace)
       this.debugTraceLog(
-        `putContractStorage: addr:${addressString} key:${keyString} v:${value ? bytesToHex(value) : undefined}`
+        `putContractStorage: addr:${addressString} key:${keyString} v:${
+          value ? bytesToHex(value) : undefined
+        }`
       )
 
     //here is our take on things:
