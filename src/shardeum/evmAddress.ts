@@ -11,52 +11,48 @@ import { ShardeumFlags } from './shardeumFlags'
  * @returns
  */
 export function getAccountShardusAddress(account: WrappedEVMAccount | InternalAccount): string {
-    if (isWrappedEVMAccount(account)) {
-        const addressSource = account.ethAddress
-        if (account.accountType === AccountType.ContractStorage) {
-            //addressSource = account.key
-            const shardusAddress = toShardusAddressWithKey(
-                account.ethAddress,
-                account.key,
-                account.accountType
-            )
-            return shardusAddress
-        }
-        if (account.accountType === AccountType.ContractCode) {
-            //in this case ethAddress is the code hash which is what we want for the key
-            //account.codeHash.toString()
-            const shardusAddress = toShardusAddressWithKey(
-                account.contractAddress,
-                account.ethAddress,
-                account.accountType
-            )
-            return shardusAddress
-        }
-        if (
-            account.accountType === AccountType.Receipt ||
-            account.accountType === AccountType.StakeReceipt ||
-            account.accountType === AccountType.UnstakeReceipt ||
-            account.accountType === AccountType.InternalTxReceipt
-        ) {
-            //We use the whole eth address for the receipt (non siloed)
-            const shardusAddress = toShardusAddress(addressSource, account.accountType)
-            return shardusAddress
-        }
-        if (account.accountType === AccountType.NodeRewardReceipt) {
-            return account.ethAddress
-        }
-        const shardusAddress = toShardusAddress(addressSource, account.accountType)
-        return shardusAddress
-    } else if (isInternalAccount(account)) {
-        if (
-            account.accountType === AccountType.NetworkAccount ||
-            account.accountType === AccountType.NodeAccount ||
-            account.accountType === AccountType.NodeAccount2 ||
-            account.accountType === AccountType.DevAccount
-        ) {
-            return (account as unknown as NetworkAccount).id
-        }
+  if (isWrappedEVMAccount(account)) {
+    const addressSource = account.ethAddress
+    if (account.accountType === AccountType.ContractStorage) {
+      //addressSource = account.key
+      const shardusAddress = toShardusAddressWithKey(account.ethAddress, account.key, account.accountType)
+      return shardusAddress
     }
+    if (account.accountType === AccountType.ContractCode) {
+      //in this case ethAddress is the code hash which is what we want for the key
+      //account.codeHash.toString()
+      const shardusAddress = toShardusAddressWithKey(
+        account.contractAddress,
+        account.ethAddress,
+        account.accountType
+      )
+      return shardusAddress
+    }
+    if (
+      account.accountType === AccountType.Receipt ||
+      account.accountType === AccountType.StakeReceipt ||
+      account.accountType === AccountType.UnstakeReceipt ||
+      account.accountType === AccountType.InternalTxReceipt
+    ) {
+      //We use the whole eth address for the receipt (non siloed)
+      const shardusAddress = toShardusAddress(addressSource, account.accountType)
+      return shardusAddress
+    }
+    if (account.accountType === AccountType.NodeRewardReceipt) {
+      return account.ethAddress
+    }
+    const shardusAddress = toShardusAddress(addressSource, account.accountType)
+    return shardusAddress
+  } else if (isInternalAccount(account)) {
+    if (
+      account.accountType === AccountType.NetworkAccount ||
+      account.accountType === AccountType.NodeAccount ||
+      account.accountType === AccountType.NodeAccount2 ||
+      account.accountType === AccountType.DevAccount
+    ) {
+      return (account as unknown as NetworkAccount).id
+    }
+  }
 }
 
 export function toShardusAddressWithKey(
@@ -66,7 +62,9 @@ export function toShardusAddressWithKey(
 ): string {
   if (accountType === AccountType.Account) {
     if (addressStr.length != 42) {
-      throw new Error(`must pass in a 42 character hex addressStr for AccountType of Account. addressStr: ${addressStr}`)
+      throw new Error(
+        `must pass in a 42 character hex addressStr for AccountType of Account. addressStr: ${addressStr}`
+      )
     }
 
     //change this:0x665eab3be2472e83e3100b4233952a16eed20c76
@@ -96,7 +94,9 @@ export function toShardusAddressWithKey(
     const prefix = addressStr.slice(2, numPrefixChars + 2)
 
     if (addressStr.length != 42) {
-      throw new Error('must pass in a 42 character hex address for Account type ContractStorage or ContractCode.')
+      throw new Error(
+        'must pass in a 42 character hex address for Account type ContractStorage or ContractCode.'
+      )
     }
     if (secondaryAddressStr.length === 66) {
       secondaryAddressStr = secondaryAddressStr.slice(2)
@@ -157,7 +157,9 @@ export function toShardusAddressWithKey(
 }
 
 export function toShardusAddress(addressStr: string, accountType: AccountType): string {
-  console.log(`Running toShardusAddress`, typeof addressStr, addressStr, accountType)
+  if (ShardeumFlags.VerboseLogs) {
+    console.log(`Running toShardusAddress`, typeof addressStr, addressStr, accountType)
+  }
   if (accountType === AccountType.ContractStorage || accountType === AccountType.ContractCode) {
     throw new Error(
       `toShardusAddress does not work anymore with type ContractStorage, use toShardusAddressWithKey instead`
@@ -166,7 +168,9 @@ export function toShardusAddress(addressStr: string, accountType: AccountType): 
 
   if (accountType === AccountType.Account || accountType === AccountType.Debug) {
     if (addressStr.length != 42) {
-      throw new Error(`must pass in a 42 character hex address for Account type of Account or Debug. addressStr: ${addressStr} ${addressStr.length}}`)
+      throw new Error(
+        `must pass in a 42 character hex address for Account type of Account or Debug. addressStr: ${addressStr} ${addressStr.length}}`
+      )
     }
     //change this:0x665eab3be2472e83e3100b4233952a16eed20c76
     //    to this:  665eab3be2472e83e3100b4233952a16eed20c76000000000000000000000000
