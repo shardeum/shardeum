@@ -1,11 +1,11 @@
-import {Account, bigIntToBytes, generateAddress} from '@ethereumjs/util'
+import { Account, bigIntToBytes, generateAddress } from '@ethereumjs/util'
 
 import { ShardusTypes } from '@shardus/core'
 import * as crypto from '@shardus/crypto-utils'
 import { TransactionState } from '../state'
 import { getAccountShardusAddress } from './evmAddress'
 import { AccountType, InternalAccount, WrappedEVMAccount } from './shardeumTypes'
-import {fixBigIntLiteralsToBigInt} from '../utils'
+import { fixBigIntLiteralsToBigInt } from '../utils'
 
 // type guard
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -16,7 +16,7 @@ export function isWrappedEVMAccount(obj: any): obj is WrappedEVMAccount {
 // type guard
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function isInternalAccount(obj: any): obj is InternalAccount {
-    return 'id' in obj
+  return 'id' in obj
 }
 
 export function accountSpecificHash(account: WrappedEVMAccount | InternalAccount): string {
@@ -62,7 +62,9 @@ export function _calculateAccountHash(account: WrappedEVMAccount | InternalAccou
   return accountSpecificHash(account)
 }
 
-export function _shardusWrappedAccount(wrappedEVMAccount: WrappedEVMAccount | InternalAccount): ShardusTypes.WrappedData {
+export function _shardusWrappedAccount(
+  wrappedEVMAccount: WrappedEVMAccount | InternalAccount
+): ShardusTypes.WrappedData {
   const wrappedChangedAccount = {
     accountId: getAccountShardusAddress(wrappedEVMAccount),
     stateId: _calculateAccountHash(wrappedEVMAccount),
@@ -80,7 +82,8 @@ export function fixDeserializedWrappedEVMAccount(wrappedEVMAccount: WrappedEVMAc
   if (wrappedEVMAccount.accountType === AccountType.Account) {
     TransactionState.fixAccountFields(wrappedEVMAccount.account)
     wrappedEVMAccount.account = Account.fromAccountData(wrappedEVMAccount.account)
-    if (wrappedEVMAccount.operatorAccountInfo) wrappedEVMAccount.operatorAccountInfo = fixBigIntLiteralsToBigInt(wrappedEVMAccount.operatorAccountInfo)
+    if (wrappedEVMAccount.operatorAccountInfo)
+      wrappedEVMAccount.operatorAccountInfo = fixBigIntLiteralsToBigInt(wrappedEVMAccount.operatorAccountInfo)
   }
   fixWrappedEVMAccountBuffers(wrappedEVMAccount)
   // for (const key in wrappedEVMAccount) {
@@ -99,7 +102,7 @@ function fixWrappedEVMAccountBuffers(wrappedEVMAccount: WrappedEVMAccount): void
   }
 }
 
-export function predictContractAddress(wrappedEVMAccount: WrappedEVMAccount): Uint8Array {
+export function predictContractAddress(wrappedEVMAccount: WrappedEVMAccount): Buffer {
   if (wrappedEVMAccount.accountType != AccountType.Account) {
     throw new Error('predictContractAddress requires AccountType.Account')
   }

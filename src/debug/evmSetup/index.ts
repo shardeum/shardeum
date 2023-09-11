@@ -1,12 +1,11 @@
-import Common from '@ethereumjs/common'
+import { Common, Hardfork } from '@ethereumjs/common'
 import { ShardeumFlags } from '../../shardeum/shardeumFlags'
-import { BN } from 'ethereumjs-util'
 import { ShardeumBlock } from '../block/blockchain'
-import VM from '@ethereumjs/vm'
-import ShardeumVM from '../../vm'
+import { VM } from '../../vm_v7/vm'
 import { ShardeumState } from '../state'
 import { EVMAccountInfo } from '../../shardeum/shardeumTypes'
 import { ShardusTypes } from '@shardus/core'
+import { EVM as EthereumVirtualMachine } from '../../evm_v2'
 
 let shardeumBlock: ShardeumBlock
 export let evmCommon: Common
@@ -49,67 +48,36 @@ export const networkAccount: ShardusTypes.WrappedData = {
 }
 
 export async function initEVMSingletons(): Promise<void> {
-  const chainIDBN = new BN(ShardeumFlags.ChainID)
+  const chainIDBN = BigInt(ShardeumFlags.ChainID)
 
   // setting up only to 'istanbul' hardfork for now
   // https://github.com/ethereumjs/ethereumjs-monorepo/blob/master/packages/common/src/chains/mainnet.json
-  evmCommon = Common.custom({
-    hardforks: [
-      {
-        name: 'chainstart',
-        block: 0,
-      },
-      {
-        name: 'homestead',
-        block: 0,
-      },
-      {
-        name: 'tangerineWhistle',
-        block: 0,
-      },
-      {
-        name: 'spuriousDragon',
-        block: 0,
-      },
-      {
-        name: 'byzantium',
-        block: 0,
-      },
-      {
-        name: 'constantinople',
-        block: 0,
-      },
-      {
-        name: 'petersburg',
-        block: 0,
-      },
-      {
-        name: 'istanbul',
-        block: 0,
-      },
-    ],
-  })
+  evmCommon = new Common({ chain: 'mainnet', hardfork: Hardfork.Istanbul, eips: [3855] })
 
   //hack override this function.  perhaps a nice thing would be to use forCustomChain to create a custom common object
-  evmCommon.chainIdBN = (): BN => {
-    return chainIDBN
+  evmCommon.chainId = (): bigint => {
+    return BigInt(chainIDBN.toString(10))
   }
 
   //let shardeumStateManager = new ShardeumState({ common }) //as StateManager
   //shardeumStateManager.temporaryParallelOldMode = ShardeumFlags.temporaryParallelOldMode //could probably refactor to use ShardeumFlags in the state manager
 
-  shardeumBlock = (await ShardeumBlock.create({ common: evmCommon })) as ShardeumBlock
-
+  shardeumBlock = new ShardeumBlock({ common: evmCommon })
   //let EVM = new VM({ common, stateManager: shardeumStateManager, blockchain: shardeumBlock })
 
   if (ShardeumFlags.useShardeumVM) {
-    EVM = new ShardeumVM({
+    const customEVM = new EthereumVirtualMachine({
       common: evmCommon,
       stateManager: undefined,
-      blockchain: shardeumBlock,
-    }) as ShardeumVM
+    })
+    EVM = await VM.create({
+      common: evmCommon,
+      stateManager: undefined,
+      evm: customEVM,
+      // blockchain: shardeumBlock,
+    })
   } else {
-    EVM = new VM({ common: evmCommon, stateManager: undefined, blockchain: shardeumBlock }) as VM
+    // EVM = VM.create({ common: evmCommon, stateManager: undefined, blockchain: shardeumBlock })
   }
 
   // console.log('EVM_common', JSON.stringify(EVM._common, null, 4))
