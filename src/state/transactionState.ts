@@ -146,7 +146,11 @@ export default class TransactionState {
   }
 
   private static fixAccountUint8Arrays(account): void {
-    if (account.storageRoot?.data) {
+    // for old data
+    if (account.stateRoot && account.stateRoot.data) {
+      account.storageRoot = Uint8Array.from(account.stateRoot.data)
+    }
+      if (account.storageRoot && account.storageRoot.data) {
       account.storageRoot = Uint8Array.from(account.storageRoot.data)
     }
     if (account.codeHash?.data) {
