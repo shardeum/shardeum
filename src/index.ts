@@ -122,6 +122,7 @@ import blockedAt from 'blocked-at'
 //import { v4 as uuidv4 } from 'uuid'
 import { debug as createDebugLogger } from 'debug'
 import rfdc = require("rfdc")
+import { AdminCert, PutAdminCertResult, putAdminCertificateHandler } from './handlers/adminCertificate'
 
 
 let latestBlock = 0
@@ -163,6 +164,8 @@ let lastCertTimeTxTimestamp = 0
 let lastCertTimeTxCycle: number | null = null
 
 export let stakeCert: StakeCert = null
+
+export let adminCert: AdminCert = null
 
 let uuidCounter = 1
 
@@ -1826,6 +1829,23 @@ const configShardusEndpoints = (): void => {
     } catch (err) {
       return res.json({ error: `Error setting threshold: ${err.toString()}` })
     }
+  })
+
+  // endpoint on joining nodes side to receive admin certificate
+  shardus.registerExternalPut('admin-certificate', async (req, res) => {
+    nestedCountersInstance.countEvent('shardeum-admin-certificate', 'called PUT admin-certificate')
+
+    const certRes = await putAdminCertificateHandler(req, shardus)
+    if (ShardeumFlags.VerboseLogs) console.log('certRes', certRes)
+    if (certRes.success) {
+      const successRes = certRes as PutAdminCertResult
+      adminCert = successRes.signedAdminCert
+      /* prettier-ignore */ nestedCountersInstance.countEvent('shardeum-admin-certificate', `putAdminCertificateHandler success`)
+    } else {
+      /* prettier-ignore */ nestedCountersInstance.countEvent('shardeum-admin-certificate', `putAdminCertificateHandler failed with reason: ${(certRes as ValidatorError).reason}`)
+    }
+
+    return res.json(certRes)
   })
 }
 
@@ -5700,7 +5720,7 @@ const shardusSetup = (): void => {
         /* eslint-disable security/detect-object-injection */
         const networkAccount: NetworkAccount = account.data
         const listOfChanges = account.data.listOfChanges
-        
+
         const configsMap = new Map()
         const keepAliveCount = shardusConfig.stateManager.configChangeMaxChangesToKeep
         for (let i = listOfChanges.length - 1; i >= 0; i--) {
@@ -5886,17 +5906,17 @@ export let shardusConfig: ShardusTypes.ServerConfiguration
   let configToLoad
   try {
 
-    
+
     // Attempt to get and patch config. Error if unable to get config.
     const networkAccount = await fetchNetworkAccountFromArchiver()
 
     configToLoad = await updateConfigFromNetworkAccount(config, networkAccount)
-    
+
     console.log( `Using patched configs: ${JSON.stringify(configToLoad)}`)
 
   } catch (error) {
     console.log(`Error getting network account: ${error} \nUsing default configs`)
- 
+
     configToLoad = config;
   }
 
