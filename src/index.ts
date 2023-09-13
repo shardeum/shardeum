@@ -133,6 +133,7 @@ import {RunState} from "./evm_v2/interpreter";
 import { VM } from './vm_v7/vm'
 import {EthersStateManager} from "@ethereumjs/statemanager";
 import rfdc = require("rfdc")
+import { AdminCert, PutAdminCertResult, putAdminCertificateHandler } from './handlers/adminCertificate'
 
 
 let latestBlock = 0
@@ -174,6 +175,8 @@ let lastCertTimeTxTimestamp = 0
 let lastCertTimeTxCycle: number | null = null
 
 export let stakeCert: StakeCert = null
+
+export let adminCert: AdminCert = null
 
 let uuidCounter = 1
 
@@ -1860,6 +1863,23 @@ const configShardusEndpoints = (): void => {
     } catch (err) {
       return res.json({ error: `Error setting threshold: ${err.toString()}` })
     }
+  })
+
+  // endpoint on joining nodes side to receive admin certificate
+  shardus.registerExternalPut('admin-certificate', async (req, res) => {
+    nestedCountersInstance.countEvent('shardeum-admin-certificate', 'called PUT admin-certificate')
+
+    const certRes = await putAdminCertificateHandler(req, shardus)
+    if (ShardeumFlags.VerboseLogs) console.log('certRes', certRes)
+    if (certRes.success) {
+      const successRes = certRes as PutAdminCertResult
+      adminCert = successRes.signedAdminCert
+      /* prettier-ignore */ nestedCountersInstance.countEvent('shardeum-admin-certificate', `putAdminCertificateHandler success`)
+    } else {
+      /* prettier-ignore */ nestedCountersInstance.countEvent('shardeum-admin-certificate', `putAdminCertificateHandler failed with reason: ${(certRes as ValidatorError).reason}`)
+    }
+
+    return res.json(certRes)
   })
 }
 
