@@ -1625,6 +1625,10 @@ const configShardusEndpoints = (): void => {
       return res.json({ result: null, error: 'node busy' })
     }
 
+    if (ShardeumFlags.supportEstimateGas === false) {
+      return res.json({ result: null, error: 'estimateGas not supported' })
+    }
+
     try {
       const injectedTx = req.body
       if (ShardeumFlags.VerboseLogs) console.log('EstimateGas endpoint injectedTx', injectedTx)
@@ -2427,21 +2431,10 @@ async function estimateGas(
     injectedTx.gasLimit = MAX_GASLIMIT
   }
 
-  // todo: shardeum does not support EIP-1559 maxFeePerGas or baseFeePerGas
-  // if (injectedTx.gasPrice == null && injectedTx.maxFeePerGas == null) {
-  //   // If no gas price or maxFeePerGas provided, use current block base fee for gas estimates
-  //   if (injectedTx.type !== undefined && parseInt(injectedTx.type as any) === 2) {
-  //     injectedTx.maxFeePerGas = '0x' + blockForTx.header.baseFeePerGas?.toString(16)
-  //   } else if (blockForTx.header.baseFeePerGas !== undefined) {
-  //     injectedTx.gasPrice = '0x' + blockForTx.header.baseFeePerGas?.toString(16)
-  //   }
-  // }
-
   const txData = {
     ...injectedTx,
     gasLimit: injectedTx.gasLimit ? injectedTx.gasLimit : blockForTx.header.gasLimit,
   }
-
 
   let transaction: Transaction | AccessListEIP2930Transaction = Transaction.fromTxData(txData)
   if (ShardeumFlags.VerboseLogs) console.log(`parsed tx`, transaction)
@@ -2495,8 +2488,10 @@ async function estimateGas(
   const callerShardusAddress = toShardusAddress(callerEVMAddress, AccountType.Account)
   let callerAccount = await AccountsStorage.getAccount(callerShardusAddress)
   // callerAccount.account.balance = oneSHM.mul(new BN(100)) // 100 SHM. In case someone estimates gas with 0 balance
-  console.log('BALANCE: ', callerAccount?.account?.balance)
-  console.log('CALLER: ', JSON.stringify(callerAccount))
+  if (ShardeumFlags.VerboseLogs) {
+    console.log('BALANCE: ', callerAccount?.account?.balance)
+    console.log('CALLER: ', JSON.stringify(callerAccount))
+  }
 
   const fakeAccountData = {
     nonce: 0,

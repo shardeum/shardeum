@@ -94,6 +94,7 @@ interface ShardeumFlags {
   accesslistNonceFix: boolean
   nonceCheckRange: number
   looseNonceCheck: boolean
+  supportEstimateGas: boolean
 }
 
 export const ShardeumFlags: ShardeumFlags = {
@@ -203,7 +204,10 @@ export const ShardeumFlags: ShardeumFlags = {
 
   // 1.5.5 migration
   nonceCheckRange: 3,
-  looseNonceCheck: false
+  looseNonceCheck: false,
+
+  // 1.5.7 migration
+  supportEstimateGas: false
 }
 
 export function updateShardeumFlag(key: string, value: string | number | boolean): void {
