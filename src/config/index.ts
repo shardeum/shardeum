@@ -144,6 +144,8 @@ config = merge(config, {
       uniqueRemovedIdsUpdate: true, // To enable on 1.4.1
       instantForwardReceipts: true, // To enable on 1.5.3
       validateArchiverAppData: false, // To enable this on new reset network
+      useSyncProtocolV2: true,
+      writeSyncProtocolV2: true,
     },
   },
 })

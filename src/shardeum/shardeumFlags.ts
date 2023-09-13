@@ -198,7 +198,7 @@ export const ShardeumFlags: ShardeumFlags = {
 
   // 1.5.5 migration
   nonceCheckRange: 3,
-  looseNonceCheck: false
+  looseNonceCheck: true,
 }
 
 export function updateShardeumFlag(key: string, value: string | number | boolean): void {
