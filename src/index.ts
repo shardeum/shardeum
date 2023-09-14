@@ -11,7 +11,14 @@ import {
   toAscii, toBytes,
 } from '@ethereumjs/util'
 import { ShardeumFlags, updateServicePoints, updateShardeumFlag } from './shardeum/shardeumFlags'
-import { AccessListEIP2930Transaction, Transaction, TransactionFactory, TransactionType } from '@ethereumjs/tx'
+import {
+  AccessListEIP2930Transaction,
+  LegacyTransaction,
+  LegacyTxData,
+  Transaction,
+  TransactionFactory,
+  TransactionType,
+} from '@ethereumjs/tx'
 import { Common, Chain, Hardfork } from '@ethereumjs/common'
 import {Blockchain, BlockchainOptions} from '@ethereumjs/blockchain'
 import {RunTxResult, ShardeumVM} from './vm_v7'
@@ -2381,9 +2388,9 @@ const getOrCreateBlockFromTimestamp = (timestamp: number, scheduleNextBlock = fa
 }
 
 
-function wrapTransaction(transaction: Transaction, impl: () => Address): Transaction {
+function wrapTransaction(transaction: LegacyTransaction | AccessListEIP2930Transaction, impl: () => Address): LegacyTransaction | AccessListEIP2930Transaction {
   return new Proxy(transaction, {
-    get: function(target, prop, receiver): any {
+    get: function (target, prop, receiver): any {
       if (prop === 'getSenderAddress') {
         return impl;
       }
@@ -2393,12 +2400,12 @@ function wrapTransaction(transaction: Transaction, impl: () => Address): Transac
 }
 
 async function estimateGas(
-  injectedTx: {from: string, maxFeePerGas: string, gas: number} & TxData
+  injectedTx: {from: string, maxFeePerGas: string, gas: number} & LegacyTxData
 ): Promise<{estimateGas: string}> {
-  const maxUint256 = (new BN(2)).pow(new BN(256)).sub(new BN(1));
+  const maxUint256 = BigInt(2) ** BigInt(256) - (BigInt(1));
   if (ShardeumFlags.VerboseLogs) console.log('injectedTx', injectedTx)
   const blockForTx = blocks[latestBlock];
-  const MAX_GASLIMIT = new BN(30_000_000)
+  const MAX_GASLIMIT = BigInt(30_000_000)
 
   if (injectedTx.gas == null) {
     // If no gas limit is specified use the last block gas limit as an upper bound.
@@ -2406,11 +2413,11 @@ async function estimateGas(
     // injectedTx.gasLimit = blockForTx.header.gasLimit.div(new BN(10).pow(new BN(8))) as any
     injectedTx.gasLimit = blockForTx.header.gasLimit
   } else {
-    injectedTx.gasLimit = new BN(injectedTx.gas)
+    injectedTx.gasLimit = BigInt(injectedTx.gas)
   }
 
   // we set this max gasLimit to prevent DDOS attacks with high gasLimits
-  if (injectedTx.gasLimit.gt(MAX_GASLIMIT)) {
+  if (injectedTx.gasLimit > MAX_GASLIMIT) {
     injectedTx.gasLimit = MAX_GASLIMIT
   }
 
@@ -2419,7 +2426,7 @@ async function estimateGas(
     gasLimit: injectedTx.gasLimit ? injectedTx.gasLimit : blockForTx.header.gasLimit,
   }
 
-  let transaction: Transaction | AccessListEIP2930Transaction = Transaction.fromTxData(txData)
+  let transaction: LegacyTransaction | AccessListEIP2930Transaction = TransactionFactory.fromTxData<TransactionType.Legacy>(txData)
   if (ShardeumFlags.VerboseLogs) console.log(`parsed tx`, transaction)
 
   const from =
@@ -2478,7 +2485,7 @@ async function estimateGas(
 
   const fakeAccountData = {
     nonce: 0,
-    balance: oneSHM.mul(new BN(100)), // 100 SHM.  This is a temporary account that will never exist.
+    balance: oneSHM * BigInt(100), // 100 SHM.  This is a temporary account that will never exist.
   }
   const fakeAccount = Account.fromAccountData(fakeAccountData)
   if (callerAccount == null) {
@@ -2517,7 +2524,7 @@ async function estimateGas(
   }
   // For the estimate, we add the gasRefund to the gasUsed because gasRefund is subtracted after execution.
   // That can lead to higher gasUsed during execution than the actual gasUsed
-  const estimate = runTxResult.gasUsed.add(runTxResult.execResult.gasRefund ?? new BN(0))
+  const estimate = runTxResult.gasUsed.add(runTxResult.execResult.gasRefund ?? BigInt(0))
   return {estimateGas: estimate.toString(16)}
 }
 
