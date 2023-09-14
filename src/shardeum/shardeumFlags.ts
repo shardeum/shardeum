@@ -25,6 +25,10 @@ interface ShardeumFlags {
     ['contract/accesslist']: {
       endpoint: number
       direct: number
+    },
+    ['contract/estimateGas']: {
+      endpoint: number
+      direct: number
     }
     ['tx/:hash']: number
   }
@@ -90,6 +94,7 @@ interface ShardeumFlags {
   accesslistNonceFix: boolean
   nonceCheckRange: number
   looseNonceCheck: boolean
+  supportEstimateGas: boolean
 }
 
 export const ShardeumFlags: ShardeumFlags = {
@@ -140,6 +145,7 @@ export const ShardeumFlags: ShardeumFlags = {
     ['account/:address']: 5,
     ['contract/call']: { endpoint: 5, direct: 20 },
     ['contract/accesslist']: { endpoint: 5, direct: 20 },
+    ['contract/estimateGas']: { endpoint: 5, direct: 20 },
     ['tx/:hash']: 5,
   },
   generateMemoryPatternData: true,
@@ -198,7 +204,10 @@ export const ShardeumFlags: ShardeumFlags = {
 
   // 1.5.5 migration
   nonceCheckRange: 3,
-  looseNonceCheck: false
+  looseNonceCheck: false,
+
+  // 1.5.7 migration
+  supportEstimateGas: false
 }
 
 export function updateShardeumFlag(key: string, value: string | number | boolean): void {
