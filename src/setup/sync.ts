@@ -99,7 +99,6 @@ export const sync = (shardus: Shardus, evmCommon: any) => async (): Promise<void
         await shardus.debugCommitAccountCopies(accountCopies)
         if (ShardeumFlags.forwardGenesisAccounts) {
           accountCopies = accountCopies.map(account => {
-            // thant: check if it works out
             return JSON.parse(SerializeToJsonString(account))
           })
           await shardus.forwardAccounts({ accounts: accountCopies, receipts: [] })

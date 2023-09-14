@@ -118,8 +118,77 @@ function stringifier(
   /* eslint-enable security/detect-object-injection */
 }
 
+/* cryptoStringifier is a close version of default fast-stringify-json that works with BigInts */
+function cryptoStringifier(val, isArrayProp): string {
+  var i, max, str, keys, key, propVal, toStr;
+  if (val === true) {
+    return "true";
+  }
+  if (val === false) {
+    return "false";
+  }
+  switch (typeof val) {
+    case "object":
+      if (val === null) {
+        return null;
+      } else if (val.toJSON && typeof val.toJSON === "function") {
+        return cryptoStringifier(val.toJSON(), isArrayProp);
+      } else {
+        toStr = objToString.call(val);
+        if (toStr === "[object Array]") {
+          str = '[';
+          max = val.length - 1;
+          for(i = 0; i < max; i++) {
+            str += cryptoStringifier(val[i], true) + ',';
+          }
+          if (max > -1) {
+            str += cryptoStringifier(val[i], true);
+          }
+          return str + ']';
+        } else if (toStr === "[object Object]") {
+          // only object is left
+          keys = objKeys(val).sort();
+          max = keys.length;
+          str = "";
+          i = 0;
+          while (i < max) {
+            key = keys[i];
+            propVal = cryptoStringifier(val[key], false);
+            if (propVal !== undefined) {
+              if (str) {
+                str += ',';
+              }
+              str += JSON.stringify(key) + ':' + propVal;
+            }
+            i++;
+          }
+          return '{' + str + '}';
+        } else {
+          return JSON.stringify(val);
+        }
+      }
+    case "function":
+    case "undefined":
+      return isArrayProp ? null : undefined;
+    case "string":
+      return JSON.stringify(val);
+    case 'bigint':
+      return JSON.stringify(bigIntToHex(val).slice(2))
+    default:
+      return isFinite(val) ? val : null;
+  }
+}
+
 export function stringify(val: unknown, options: StringifierOptions = defaultStringifierOptions): string {
   const returnVal = stringifier(val, false, options)
+  if (returnVal !== undefined) {
+    return '' + returnVal
+  }
+  return ''
+}
+
+export function cryptoStringify(val: unknown, isArrayProp = false): string {
+  const returnVal = cryptoStringifier(val, isArrayProp)
   if (returnVal !== undefined) {
     return '' + returnVal
   }
