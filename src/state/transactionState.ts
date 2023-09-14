@@ -123,14 +123,7 @@ export default class TransactionState {
    * @param account
    */
   static fixAccountFields(account): void {
-    //hmm some hacks to fix data after getting copied around..
-    // if (typeof account.nonce && account.nonce.__BigInt__) {
-    //   account.nonce = BigInt(account.nonce.__BigInt__)
-    // }
-    // if (typeof account.balance && account.balance.__BigInt__) {
-    //   account.balance = BigInt(account.balance.__BigInt__)
-    // }
-    //hmm some hacks to fix data after getting copied around..
+
     if (typeof account.nonce === 'string') {
       if (account.nonce.startsWith('0x') === false) {
         account.nonce = '0x' + account.nonce
@@ -146,15 +139,17 @@ export default class TransactionState {
   }
 
   private static fixAccountUint8Arrays(account): void {
-    // for old data
-    if (account.stateRoot && account.stateRoot.data) {
-      account.storageRoot = Uint8Array.from(account.stateRoot.data)
-    }
-      if (account.storageRoot && account.storageRoot.data) {
+    if (account.storageRoot && account.storageRoot.data) {
       account.storageRoot = Uint8Array.from(account.storageRoot.data)
     }
     if (account.codeHash?.data) {
       account.codeHash = Uint8Array.from(account.codeHash.data)
+    }
+    if (Buffer.isBuffer(account.storageRoot) === false && typeof account.storageRoot === 'object') {
+      account.storageRoot = Uint8Array.from(Object.values(account.storageRoot))
+    }
+    if (Buffer.isBuffer(account.codeHash) === false && typeof account.codeHash === 'object') {
+      account.codeHash = Uint8Array.from(Object.values(account.codeHash))
     }
   }
 
