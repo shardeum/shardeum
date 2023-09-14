@@ -33,8 +33,6 @@
   "author": "",
   "dependencies": {
     "@mapbox/node-pre-gyp": "1.0.10",
-    "@ethereumjs/vm": "5.8.0",
-    "@shardus/archiver-discovery": "1.1.0",
     "@shardus/core": "2.10.12",
     "@shardus/crypto-utils": "4.1.1",
     "@types/sqlite3": "3.1.8",
