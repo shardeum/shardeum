@@ -93,13 +93,23 @@ export function fixDeserializedWrappedEVMAccount(wrappedEVMAccount: WrappedEVMAc
 
 function fixWrappedEVMAccountBuffers(wrappedEVMAccount: WrappedEVMAccount): void {
   if (wrappedEVMAccount.accountType === AccountType.ContractCode) {
-    wrappedEVMAccount.codeHash = Buffer.from(wrappedEVMAccount.codeHash)
-    wrappedEVMAccount.codeByte = Buffer.from(wrappedEVMAccount.codeByte)
+    if (!(wrappedEVMAccount.codeHash instanceof Uint8Array) && typeof wrappedEVMAccount.codeHash === 'object' && Object.values(wrappedEVMAccount.codeHash).length === 32) {
+      wrappedEVMAccount.codeHash = Uint8Array.from(Object.values(wrappedEVMAccount.codeHash))
+      wrappedEVMAccount.codeByte = Uint8Array.from(Object.values(wrappedEVMAccount.codeByte))
+    } else {
+      wrappedEVMAccount.codeHash = Uint8Array.from(wrappedEVMAccount.codeHash)
+      wrappedEVMAccount.codeByte = Uint8Array.from(wrappedEVMAccount.codeByte)
+    }
   }
 
   if (wrappedEVMAccount.accountType === AccountType.ContractStorage) {
-    wrappedEVMAccount.value = Buffer.from(wrappedEVMAccount.value)
+    if (!(wrappedEVMAccount.value instanceof Uint8Array) && typeof wrappedEVMAccount.value === 'object') {
+      wrappedEVMAccount.value = Uint8Array.from(Object.values(wrappedEVMAccount.value))
+    } else {
+      wrappedEVMAccount.value = Uint8Array.from(wrappedEVMAccount.value)
+    }
   }
+
 }
 
 export function predictContractAddress(wrappedEVMAccount: WrappedEVMAccount): Buffer {
