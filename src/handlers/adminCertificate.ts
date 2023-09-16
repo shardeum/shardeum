@@ -6,6 +6,7 @@ import { Request } from 'express'
 
 export interface AdminCert {
   nominee: string
+  certCreation: number
   certExp: number
   sign: ShardusTypes.Sign
 }
