@@ -3,6 +3,7 @@ import { ShardusTypes } from '@shardus/core'
 import { Block } from '@ethereumjs/block'
 import { StakeCert } from '../handlers/queryCertificate'
 import { TxReceipt } from '../vm_v7/types'
+import { AdminCert } from '../handlers/adminCertificate'
 
 export enum AccountType {
   Account = 0, //  EOA or CA
@@ -441,4 +442,5 @@ export type DecimalString = string
 export interface AppJoinData {
   version: string
   stakeCert: StakeCert
+  adminCert: AdminCert
 }
