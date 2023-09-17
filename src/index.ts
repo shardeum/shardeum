@@ -123,6 +123,7 @@ import blockedAt from 'blocked-at'
 import { debug as createDebugLogger } from 'debug'
 import rfdc = require("rfdc")
 import { AdminCert, PutAdminCertResult, putAdminCertificateHandler } from './handlers/adminCertificate'
+import { P2P } from '@shardus/types'
 
 
 let latestBlock = 0
@@ -5164,10 +5165,11 @@ const shardusSetup = (): void => {
       const joinData: AppJoinData = {
         version,
         stakeCert,
+        adminCert
       }
       return joinData
     },
-    validateJoinRequest(data) {
+    validateJoinRequest(data, mode: P2P.ModesTypes.Record['mode'] | null)  {
       try {
         /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`validateJoinRequest ${JSON.stringify(data)}`)
         if (!data.appJoinData) {
@@ -5206,13 +5208,60 @@ const shardusSetup = (): void => {
           }
         }
 
+        // if none of this triggers it'll go past the staking checks and return true...
+        if (ShardeumFlags.ModeEnabled === true && mode !== 'processing') {
+          const admin_cert: AdminCert = appJoinData.adminCert
+          const nodeAcc = data.sign.owner
+          nestedCountersInstance.countEvent('shardeum-mode', 'validateJoinRequest mode enabled')
+
+          if (ShardeumFlags.VerboseLogs) console.log(`validateJoinRequest ${JSON.stringify(adminCert)}`)
+          
+          // check for adminCert
+          if (!admin_cert) {
+            if (ShardeumFlags.VerboseLogs)
+              console.log(`validateJoinRequest fail because adminCert not present: ${admin_cert}`)
+            return {
+              success: false,
+              reason: `Join request node doesn't provide the admin certificate.`,
+              fatal: true,
+            }
+          }
+
+          // check for adminCert nominee
+          if (nodeAcc !== admin_cert.nominee) {
+            return {
+              success: false,
+              reason: 'Nominator mismatch',
+              fatal: true,
+            }
+          }
+          
+          // check adminCert for expired
+          const currentTimestamp = Date.now()
+          if (admin_cert.certExp < currentTimestamp) {
+            return { success: false, reason: 'AdminCert expired', fatal: true }
+          }
+
+          // check for invalid signature for AdminCert
+          if (!shardus.crypto.verify(admin_cert, ShardeumFlags.devPublicKey)) {
+            return { 
+              success: false, 
+              reason: 'Invalid signature for AdminCert', 
+              fatal: true 
+            }
+          }
+        }
+
         const activeNodes = shardus.stateManager.currentCycleShardData.activeNodes
 
         // Staking is only enabled when flag is on and
         const stakingEnabled =
           ShardeumFlags.StakingEnabled && activeNodes.length >= ShardeumFlags.minActiveNodesForStaking
 
-        if (stakingEnabled) {
+        if (
+          (ShardeumFlags.ModeEnabled === true && mode === 'processing' && stakingEnabled) ||
+          (ShardeumFlags.ModeEnabled === false && stakingEnabled)
+        ) {
           nestedCountersInstance.countEvent(
             'shardeum-staking',
             'validating join request with staking enabled'
@@ -5364,7 +5413,7 @@ const shardusSetup = (): void => {
       }
     },
     // Update the activeNodes type here; We can import from P2P.P2PTypes.Node from '@shardus/type' lib but seems it's not installed yet
-    async isReadyToJoin(latestCycle: ShardusTypes.Cycle, publicKey: string, activeNodes: []) {
+    async isReadyToJoin(latestCycle: ShardusTypes.Cycle, publicKey: string, activeNodes: P2P.P2PTypes.Node[], mode:P2P.ModesTypes.Record['mode']): Promise<boolean> {
       isReadyToJoinLatestValue = false
 
       if (ShardeumFlags.StakingEnabled === false) {
@@ -5372,15 +5421,40 @@ const shardusSetup = (): void => {
         return true
       }
 
+      // Checks if enough nodes are active and if not allow join request to go through
       if (activeNodes.length + latestCycle.syncing < ShardeumFlags.minActiveNodesForStaking) {
         isReadyToJoinLatestValue = true
         return true
       }
+      // check for ShardeumFlags for mode + check if mode is not equal to processing...
+      if (ShardeumFlags.ModeEnabled === true && mode !== 'processing') {
+        if (ShardeumFlags.VerboseLogs) console.log(`checkAdminCert ${JSON.stringify(adminCert)}`)
+        if (!adminCert) {
+          if (ShardeumFlags.VerboseLogs)
+            console.log(`checkAdminCert fail because adminCert not present: ${adminCert}`)
+          return false
+        }
 
+        // Check if adminCert has expired
+        const currentTimestampInMillis = Date.now()
+        if (adminCert.certExp < currentTimestampInMillis) {
+          nestedCountersInstance.countEvent(
+            'shardeum-admin-certificate',
+            'validateJoinRequest: Admin certificate has expired',
+            currentTimestampInMillis
+          )
+          if (ShardeumFlags.VerboseLogs)
+            console.log(`checkAdminCert fail because adminCert expired: ${adminCert}`)
+          return false
+        }
+
+        isReadyToJoinLatestValue = true
+        return true
+      }
       if (ShardeumFlags.VerboseLogs) {
         console.log(`Running isReadyToJoin cycle:${latestCycle.counter} publicKey: ${publicKey}`)
       }
-
+      // handle first time staking setup
       if (lastCertTimeTxTimestamp === 0) {
         // inject setCertTimeTx for the first time
         nestedCountersInstance.countEvent(
@@ -5536,7 +5610,7 @@ const shardusSetup = (): void => {
         const expiredPercentage = (Date.now() - certStartTimestamp) / (certEndTimestamp - certStartTimestamp)
         const isNewCertExpiringSoon = expiredPercentage >= 0.7
         /* prettier-ignore */ console.log(`stakeCert received. remainingValidTime: ${remainingValidTime} expiredPercent: ${expiredPercentage}, isNewCertExpiringSoon: ${isNewCertExpiringSoon}`)
-
+        
         // if queried cert is going to expire soon, inject a new setCertTimeTx
         if (isNewCertExpiringSoon) {
           nestedCountersInstance.countEvent(
@@ -5858,9 +5932,6 @@ function patchObject(
   existingObject: Config,
   changeObj: Partial<WrappedAccount>
 ): void {
-  //remove after testing
-  console.log(`TESTING existingObject: ${JSON.stringify(existingObject, null, 2)}`)
-  console.log(`TESTING changeObj: ${JSON.stringify(changeObj, null, 2)}`)
   for (const changeKey in changeObj) {
     if (changeObj[changeKey] && existingObject.server[changeKey]) {
       const targetObject = existingObject.server[changeKey]

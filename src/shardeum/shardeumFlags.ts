@@ -54,6 +54,7 @@ interface ShardeumFlags {
   cacheMaxItemPerTopic: number
   generateMemoryPatternData: boolean
   StakingEnabled: boolean
+  ModeEnabled: boolean
   minActiveNodesForStaking: number
   MinStakeCertSig: number
   FullCertChecksEnabled: boolean // do we run all of the cert checks when signing.  This config may go away soon after testing.
@@ -144,6 +145,7 @@ export const ShardeumFlags: ShardeumFlags = {
   },
   generateMemoryPatternData: true,
   StakingEnabled: true,
+  ModeEnabled: true,
   minActiveNodesForStaking: 5,
   MinStakeCertSig: 1, // this is the minimum amount of signature required for stake certification. will move to network param in future.
   FullCertChecksEnabled: true,
