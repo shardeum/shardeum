@@ -6,6 +6,7 @@ import {
   Account,
   Address,
   bytesToHex,
+  bigIntToHex,
   //fromAscii,
   isValidAddress,
   toAscii, toBytes,
@@ -729,10 +730,10 @@ function getTransactionObj(tx): Transaction[TransactionType.Legacy] | Transactio
   } else throw Error('tx obj fail')
 }
 
-async function getReadableAccountInfo(account: any): Promise<{
+async function getReadableAccountInfo(account: WrappedEVMAccount): Promise<{
   nonce: string
   balance: string
-  stateRoot: string
+  storageRoot: string
   codeHash: string
   operatorAccountInfo: unknown
 }> {
@@ -741,7 +742,7 @@ async function getReadableAccountInfo(account: any): Promise<{
     return {
       nonce: account.account.nonce.toString(),
       balance: account.account.balance.toString(),
-      stateRoot: bytesToHex(account.account.stateRoot),
+      storageRoot: bytesToHex(account.account.storageRoot),
       codeHash: bytesToHex(account.account.codeHash),
       operatorAccountInfo: account.operatorAccountInfo ? JSON.parse(stringify(account.operatorAccountInfo)) : null,
     }
@@ -1279,8 +1280,8 @@ const configShardusEndpoints = (): void => {
         if (!account) {
           return res.json({ account: null })
         }
-        const data = account.data
-        fixDeserializedWrappedEVMAccount(data as WrappedEVMAccount)
+        const data = account.data as WrappedEVMAccount
+        fixDeserializedWrappedEVMAccount(data)
         const readableAccount = await getReadableAccountInfo(data)
         if (readableAccount) return res.json({ account: readableAccount })
         else res.json({ account: data })
@@ -2146,7 +2147,7 @@ export const createInternalTxReceipt = (
     transactionIndex: '0x1',
     // eslint-disable-next-line security/detect-object-injection
     blockNumber: readableBlocks[blockNumberForTx]?.number,
-    nonce: '0',
+    nonce: '0x0',
     blockHash: readableBlocks[blockNumberForTx]?.hash, // eslint-disable-line security/detect-object-injection
     cumulativeGasUsed: '0x0',
     gasUsed: '0x0',
@@ -3077,7 +3078,7 @@ const shardusSetup = (): void => {
           transactionIndex: '0x1',
           // eslint-disable-next-line security/detect-object-injection
           blockNumber: '0x' + blocks[blockNumberForTx].header.number.toString(),
-          nonce: transaction.nonce.toString(),
+          nonce: bigIntToHex(transaction.nonce),
           blockHash: readableBlocks[blockNumberForTx].hash, // eslint-disable-line security/detect-object-injection
           cumulativeGasUsed:
             '0x' +
@@ -3302,7 +3303,7 @@ const shardusSetup = (): void => {
           transactionIndex: '0x1',
           // eslint-disable-next-line security/detect-object-injection
           blockNumber: '0x' + blocks[blockNumberForTx].header.number.toString(),
-          nonce: transaction.nonce.toString(),
+          nonce: bigIntToHex(transaction.nonce),
           // eslint-disable-next-line security/detect-object-injection
           blockHash: readableBlocks[blockNumberForTx].hash,
           cumulativeGasUsed:
@@ -3486,7 +3487,7 @@ const shardusSetup = (): void => {
           transactionHash: ethTxId,
           transactionIndex: '0x1',
           blockNumber: readableBlocks[blockForTx.header.number.toString(10)].number,
-          nonce: transaction.nonce.toString(),
+          nonce: bigIntToHex(transaction.nonce),
           blockHash: readableBlocks[blockForTx.header.number.toString(10)].hash,
           cumulativeGasUsed: '0x',
           logs: null,
@@ -3703,7 +3704,7 @@ const shardusSetup = (): void => {
           transactionHash: ethTxId,
           transactionIndex: '0x1',
           blockNumber: readableBlocks[blockForTx.header.number.toString()].number,
-          nonce: transaction.nonce.toString(),
+          nonce: bigIntToHex(transaction.nonce),
           blockHash: readableBlocks[blockForTx.header.number.toString()].hash,
           cumulativeGasUsed: '0x' + runTxResult.totalGasSpent.toString(),
           gasUsed: '0x' + runTxResult.totalGasSpent.toString(),
