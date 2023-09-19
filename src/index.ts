@@ -309,10 +309,10 @@ function convertToReadableBlock(block: Block): ShardeumBlockOverride {
     transactionsRoot: '0x0000000000000000000000000000000000000000000000000000000000000000',
     uncles: [],
   }
-  defaultBlock.number = '0x' + block.header.number.toString()
-  defaultBlock.timestamp = '0x' + block.header.timestamp.toString()
+  defaultBlock.number = bigIntToHex(block.header.number)
+  defaultBlock.timestamp = bigIntToHex(block.header.timestamp)
   defaultBlock.hash = bytesToHex(block.header.hash())
-  const previousBlockNumber = String(parseInt(block.header.number.toString()) - 1)
+  const previousBlockNumber = String(block.header.number - BigInt(1))
   const previousBlock = readableBlocks[previousBlockNumber] // eslint-disable-line security/detect-object-injection
   if (previousBlock) defaultBlock.parentHash = previousBlock.hash
   // Todo: The Block type is being effectively overridden here. Ideally this should be a type of it's own in the
@@ -2151,6 +2151,7 @@ export const createInternalTxReceipt = (
     blockHash: readableBlocks[blockNumberForTx]?.hash, // eslint-disable-line security/detect-object-injection
     cumulativeGasUsed: '0x0',
     gasUsed: '0x0',
+    gasRefund: '0x0',
     logs: [],
     logsBloom: '',
     contractAddress: null,
@@ -2517,7 +2518,7 @@ async function estimateGas(
     skipBalance: true,
     networkAccount: AccountsStorage.cachedNetworkAccount,
   })
-  if (ShardeumFlags.VerboseLogs) console.log('Predicted gasUsed', runTxResult.gasUsed)
+  if (ShardeumFlags.VerboseLogs) console.log('Predicted gasUsed', runTxResult.totalGasSpent)
 
   if (runTxResult.execResult.exceptionError) {
     if (ShardeumFlags.VerboseLogs) console.log('Execution Error:', runTxResult.execResult.exceptionError)
@@ -2525,7 +2526,7 @@ async function estimateGas(
   }
   // For the estimate, we add the gasRefund to the gasUsed because gasRefund is subtracted after execution.
   // That can lead to higher gasUsed during execution than the actual gasUsed
-  const estimate = runTxResult.gasUsed.add(runTxResult.execResult.gasRefund ?? BigInt(0))
+  const estimate = runTxResult.totalGasSpent + (runTxResult.execResult.gasRefund ?? BigInt(0))
   return {estimateGas: estimate.toString(16)}
 }
 
@@ -3077,21 +3078,22 @@ const shardusSetup = (): void => {
           transactionHash: ethTxId,
           transactionIndex: '0x1',
           // eslint-disable-next-line security/detect-object-injection
-          blockNumber: '0x' + blocks[blockNumberForTx].header.number.toString(),
+          blockNumber: bigIntToHex(blocks[blockNumberForTx].header.number),
           nonce: bigIntToHex(transaction.nonce),
           blockHash: readableBlocks[blockNumberForTx].hash, // eslint-disable-line security/detect-object-injection
           cumulativeGasUsed:
-            '0x' +
+            bigIntToHex(
             scaleByStabilityFactor(
               BigInt(ShardeumFlags.constantTxFeeUsd),
               AccountsStorage.cachedNetworkAccount
-            ).toString(),
+            )),
           gasUsed:
-            '0x' +
+            bigIntToHex(
             scaleByStabilityFactor(
               BigInt(ShardeumFlags.constantTxFeeUsd),
               AccountsStorage.cachedNetworkAccount
-            ).toString(),
+            )),
+          gasRefund: '0x0',
           logs: [],
           logsBloom: '',
           contractAddress: null,
@@ -3102,7 +3104,7 @@ const shardusSetup = (): void => {
             stake: stakeCoinsTx.stake,
             totalStakeAmount: operatorEVMAccount.operatorAccountInfo.stake,
           },
-          value: transaction.value.toString(),
+          value: bigIntToHex(transaction.value),
           data: bytesToHex(transaction.data),
         }
 
@@ -3111,7 +3113,7 @@ const shardusSetup = (): void => {
           ethAddress: ethTxId,
           hash: '',
           readableReceipt,
-          amountSpent: txFee.toString(),
+          amountSpent: bigIntToHex(txFee),
           txId,
           accountType: AccountType.StakeReceipt,
           txFrom: stakeCoinsTx.nominator,
@@ -3302,30 +3304,31 @@ const shardusSetup = (): void => {
           transactionHash: ethTxId,
           transactionIndex: '0x1',
           // eslint-disable-next-line security/detect-object-injection
-          blockNumber: '0x' + blocks[blockNumberForTx].header.number.toString(),
+          blockNumber: bigIntToHex(blocks[blockNumberForTx].header.number),
           nonce: bigIntToHex(transaction.nonce),
           // eslint-disable-next-line security/detect-object-injection
           blockHash: readableBlocks[blockNumberForTx].hash,
           cumulativeGasUsed:
-            '0x' +
+            bigIntToHex(
             scaleByStabilityFactor(
               BigInt(ShardeumFlags.constantTxFeeUsd),
               AccountsStorage.cachedNetworkAccount
-            ).toString(),
+            )),
           gasUsed:
-            '0x' +
+            bigIntToHex(
             scaleByStabilityFactor(
               BigInt(ShardeumFlags.constantTxFeeUsd),
               AccountsStorage.cachedNetworkAccount
-            ).toString(),
+            )),
+          gasRefund: '0x0',
           logs: [],
           logsBloom: '',
           contractAddress: null,
           from: transaction.getSenderAddress().toString(),
           to: transaction.to ? transaction.to.toString() : null,
           stakeInfo,
-          value: transaction.value.toString(),
-          data: '0x' + transaction.data.toString(),
+          value: bigIntToHex(transaction.value),
+          data: bytesToHex(transaction.data),
         }
 
         const wrappedReceiptAccount = {
@@ -3333,7 +3336,7 @@ const shardusSetup = (): void => {
           ethAddress: ethTxId,
           hash: '',
           readableReceipt,
-          amountSpent: txFee.toString(),
+          amountSpent: bigIntToHex(txFee),
           txId,
           accountType: AccountType.UnstakeReceipt,
           txFrom: unstakeCoinsTX.nominator,
@@ -3493,10 +3496,11 @@ const shardusSetup = (): void => {
           logs: null,
           logsBloom: null,
           gasUsed: '0x',
+          gasRefund: '0x0',
           contractAddress: caAddr,
           from: transaction.getSenderAddress().toString(),
           to: transaction.to ? transaction.to.toString() : null,
-          value: transaction.value.toString(),
+          value: bigIntToHex(transaction.value),
           data: '0x',
           reason: e.toString(),
         }
@@ -3542,7 +3546,7 @@ const shardusSetup = (): void => {
         appliedTxs[ethTxId] = {
           txId: ethTxId,
           injected: tx,
-          receipt: { ...runTxResult, nonce: transaction.nonce.toString(), status: 1 },
+          receipt: { ...runTxResult, nonce: bigIntToHex(transaction.nonce), status: 1 },
         }
       }
 
@@ -3706,14 +3710,15 @@ const shardusSetup = (): void => {
           blockNumber: readableBlocks[blockForTx.header.number.toString()].number,
           nonce: bigIntToHex(transaction.nonce),
           blockHash: readableBlocks[blockForTx.header.number.toString()].hash,
-          cumulativeGasUsed: '0x' + runTxResult.totalGasSpent.toString(),
-          gasUsed: '0x' + runTxResult.totalGasSpent.toString(),
+          cumulativeGasUsed: bigIntToHex(runTxResult.totalGasSpent),
+          gasUsed: bigIntToHex(runTxResult.totalGasSpent),
+          gasRefund: bigIntToHex(runTxResult.execResult.gasRefund ?? BigInt(0)),
           logs: logs,
           logsBloom: bytesToHex(runTxResult.receipt.bitvector),
           contractAddress: runTxResult.createdAddress ? runTxResult.createdAddress.toString() : null,
           from: transaction.getSenderAddress().toString(),
           to: transaction.to ? transaction.to.toString() : null,
-          value: transaction.value.toString(),
+          value: bigIntToHex(transaction.value),
           data: bytesToHex(transaction.data),
         }
         if (runTxResult.execResult.exceptionError) {
@@ -3725,7 +3730,7 @@ const shardusSetup = (): void => {
           hash: '',
           receipt: runTxResult.receipt as any,
           readableReceipt,
-          amountSpent: runTxResult.amountSpent.toString(),
+          amountSpent: bigIntToHex(runTxResult.amountSpent),
           txId,
           accountType: AccountType.Receipt,
           txFrom: txSenderEvmAddr,
@@ -3957,9 +3962,9 @@ const shardusSetup = (): void => {
             const callObj = {
               from: await transaction.getSenderAddress().toString(),
               to: transaction.to ? transaction.to.toString() : null,
-              value: '0x' + transaction.value.toString(),
+              value: bigIntToHex(transaction.value),
               data: bytesToHex(transaction.data),
-              gasLimit: '0x' + transaction.gasLimit.toString(),
+              gasLimit: bigIntToHex(transaction.gasLimit),
               newContractAddress: appData.newCAAddr,
             }
 

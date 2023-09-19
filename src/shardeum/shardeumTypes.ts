@@ -250,6 +250,7 @@ export interface ReadableReceipt {
   blockHash: string
   cumulativeGasUsed: string
   gasUsed: string
+  gasRefund: string
   logs: string[]
   logsBloom: string
   contractAddress: string | null
