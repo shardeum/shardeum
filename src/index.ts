@@ -2482,7 +2482,7 @@ async function estimateGas(
   // callerAccount.account.balance = oneSHM.mul(new BN(100)) // 100 SHM. In case someone estimates gas with 0 balance
   if (ShardeumFlags.VerboseLogs) {
     console.log('BALANCE: ', callerAccount?.account?.balance)
-    console.log('CALLER: ', JSON.stringify(callerAccount))
+    console.log('CALLER: ', stringify(callerAccount))
   }
 
   const fakeAccountData = {
@@ -2509,7 +2509,12 @@ async function estimateGas(
   )
 
   EVM.stateManager = null
+  EVM.evm.stateManager = null
+  EVM.evm.journal.stateManager = null
+
   EVM.stateManager = preRunTxState
+  EVM.evm.stateManager = preRunTxState
+  EVM.evm.journal.stateManager = preRunTxState
 
   const runTxResult = await EVM.runTx({
     block: blocks[latestBlock],
@@ -2527,7 +2532,7 @@ async function estimateGas(
   // For the estimate, we add the gasRefund to the gasUsed because gasRefund is subtracted after execution.
   // That can lead to higher gasUsed during execution than the actual gasUsed
   const estimate = runTxResult.totalGasSpent + (runTxResult.execResult.gasRefund ?? BigInt(0))
-  return {estimateGas: estimate.toString(16)}
+  return {estimateGas: bigIntToHex(estimate)}
 }
 
 async function generateAccessList(
