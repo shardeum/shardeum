@@ -5210,43 +5210,37 @@ const shardusSetup = (): void => {
 
         // if condition true and if none of this triggers it'll go past the staking checks and return true...
         if (ShardeumFlags.AdminCertEnabled === true && mode !== 'processing') {
-          const admin_cert: AdminCert = appJoinData.adminCert
-          const nodeAcc = data.sign.owner
-          nestedCountersInstance.countEvent('shardeum-mode', 'validateJoinRequest mode enabled')
+          const adminCert: AdminCert = appJoinData.adminCert
+          /* prettier-ignore */ nestedCountersInstance.countEvent('shardeum-mode', 'validateJoinRequest mode enabled AdminCertEnabled enabled')
 
-          /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`validateJoinRequest ${JSON.stringify(adminCert)}`)
-          
-          // check for adminCert
-          if (!admin_cert) {
-            /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`validateJoinRequest fail because adminCert not present: ${admin_cert}`)
-            return {
-              success: false,
-              reason: `Join request node doesn't provide the admin certificate.`,
-              fatal: true,
-            }
-          }
-
-          // check for adminCert nominee
-          if (nodeAcc !== admin_cert.nominee) {
-            return {
-              success: false,
-              reason: 'Nominator mismatch',
-              fatal: true,
-            }
-          }
-          
-          // check adminCert for expired
           const currentTimestamp = Date.now()
-          if (admin_cert.certExp < currentTimestamp) {
-            return { success: false, reason: 'AdminCert expired', fatal: true }
-          }
+          if (adminCert && adminCert.certExp > currentTimestamp) { // if adminCert is not existent or expired do nothing and follow the ususal flow
+            /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`validateJoinRequest adminCert:${JSON.stringify(adminCert)}`)
 
-          // check for invalid signature for AdminCert
-          if (!shardus.crypto.verify(admin_cert, ShardeumFlags.devPublicKey)) {
-            return { 
-              success: false, 
-              reason: 'Invalid signature for AdminCert', 
-              fatal: true 
+            // check for adminCert nominee
+            const nodeAcc = data.sign.owner
+            if (nodeAcc !== adminCert.nominee) {
+              return {
+                success: false,
+                reason: 'Nominator mismatch',
+                fatal: true,
+              }
+            }
+
+            // check for invalid signature for AdminCert
+            if (!shardus.crypto.verify(adminCert, ShardeumFlags.devPublicKey)) {
+              return {
+                success: false,
+                reason: 'Invalid signature for AdminCert',
+                fatal: true,
+              }
+            }
+            /* prettier-ignore */ nestedCountersInstance.countEvent('shardeum-mode', 'validateJoinRequest success: adminCert')
+            /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log('validateJoinRequest success: adminCert')
+            return {
+              success: true,
+              reason: 'Join Request validated',
+              fatal: false,
             }
           }
         }
@@ -5261,10 +5255,7 @@ const shardusSetup = (): void => {
           (ShardeumFlags.ModeEnabled === true && mode === 'processing' && stakingEnabled) ||
           (ShardeumFlags.ModeEnabled === false && stakingEnabled)
         ) {
-          nestedCountersInstance.countEvent(
-            'shardeum-staking',
-            'validating join request with staking enabled'
-          )
+          /* prettier-ignore */ nestedCountersInstance.countEvent('shardeum-staking', 'validating join request with staking enabled')
 
           const nodeAcc = data.sign.owner
           const stake_cert: StakeCert = appJoinData.stakeCert
@@ -5425,26 +5416,14 @@ const shardusSetup = (): void => {
         isReadyToJoinLatestValue = true
         return true
       }
-      // check for ShardeumFlags for mode + check if mode is not equal to processing...
-      if (ShardeumFlags.AdminCertEnabled === true && mode !== 'processing') {
+      // check for ShardeumFlags for mode + check if mode is not equal to processing and validate adminCert
+      if (
+        ShardeumFlags.AdminCertEnabled === true &&
+        mode !== 'processing' &&
+        adminCert &&
+        adminCert.certExp > Date.now()
+      ) {
         /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`checkAdminCert ${JSON.stringify(adminCert)}`)
-        // check for adminCert
-        if (!adminCert) {
-          /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`checkAdminCert fail because adminCert not present: ${adminCert}`)
-          return false
-        }
-
-        // Check if adminCert has expired
-        const currentTimestampInMillis = Date.now()
-        if (adminCert.certExp < currentTimestampInMillis) {
-          nestedCountersInstance.countEvent(
-            'shardeum-admin-certificate',
-            'validateJoinRequest: Admin certificate has expired',
-            currentTimestampInMillis
-          )
-          /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`checkAdminCert fail because adminCert expired: ${adminCert}`)
-          return false
-        }
 
         isReadyToJoinLatestValue = true
         return true
@@ -5606,7 +5585,7 @@ const shardusSetup = (): void => {
         const expiredPercentage = (Date.now() - certStartTimestamp) / (certEndTimestamp - certStartTimestamp)
         const isNewCertExpiringSoon = expiredPercentage >= 0.7
         /* prettier-ignore */ console.log(`stakeCert received. remainingValidTime: ${remainingValidTime} expiredPercent: ${expiredPercentage}, isNewCertExpiringSoon: ${isNewCertExpiringSoon}`)
-        
+
         // if queried cert is going to expire soon, inject a new setCertTimeTx
         if (isNewCertExpiringSoon) {
           nestedCountersInstance.countEvent(
