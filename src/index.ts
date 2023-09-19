@@ -90,7 +90,7 @@ import {
   getRandom,
   findMajorityResult,
   generateTxId,
-  isWithinRange
+  isWithinRange,
 } from './utils'
 import config, { Config } from './config'
 import Wallet from 'ethereumjs-wallet'
@@ -132,10 +132,9 @@ import { debug as createDebugLogger } from 'debug'
 import { RunState } from "./evm_v2/interpreter";
 import { VM } from './vm_v7/vm'
 import { EthersStateManager } from "@ethereumjs/statemanager";
-import rfdc = require("rfdc")
+import rfdc = require('rfdc')
 import { AdminCert, PutAdminCertResult, putAdminCertificateHandler } from './handlers/adminCertificate'
 import { P2P } from '@shardus/types'
-
 
 let latestBlock = 0
 export const blocks: BlockMap = {}
@@ -2821,7 +2820,10 @@ async function generateAccessList(
 
     if (runTxResult.execResult.exceptionError) {
       if (ShardeumFlags.VerboseLogs) console.log('Execution Error:', runTxResult.execResult.exceptionError)
-      nestedCountersInstance.countEvent('accesslist', `Fail with error: CA ${transaction.to && ShardeumFlags.VerboseLogs ? transaction.to.toString() : ''}`)
+      nestedCountersInstance.countEvent(
+        'accesslist',
+        `Fail with error: CA ${transaction.to && ShardeumFlags.VerboseLogs ? transaction.to.toString() : ''}`
+      )
       return { accessList: [], shardusMemoryPatterns: null }
     }
     return { accessList, shardusMemoryPatterns }
@@ -2948,7 +2950,11 @@ const shardusSetup = (): void => {
       // it is an EVM tx
       const rawSerializedTx = tx.raw
       if (rawSerializedTx == null) {
-        throw new Error(`Invalid evm transaction, reason: unable to extract raw tx from the transaction object, tx: ${JSON.stringify(tx)}`)
+        throw new Error(
+          `Invalid evm transaction, reason: unable to extract raw tx from the transaction object, tx: ${JSON.stringify(
+            tx
+          )}`
+        )
       }
 
       const transaction = getTransactionObj(tx)
@@ -5538,7 +5544,7 @@ const shardusSetup = (): void => {
             fatal: true,
           }
         }
-         /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`validateArchiverJoinRequest() Successful!`)
+        /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`validateArchiverJoinRequest() Successful!`)
         return {
           success: true,
           reason: 'Archiver-Join Request Validated!',
@@ -5893,23 +5899,37 @@ const shardusSetup = (): void => {
         }
       }
     },
-    async updateNetworkChangeQueue(account: WrappedAccount, appData) {
+    async updateNetworkChangeQueue(account: WrappedAccount, appData: any) {
+      /* eslint-disable security/detect-object-injection */
       if (account.accountId === networkAccount) {
-        /* eslint-disable security/detect-object-injection */
         const networkAccount: NetworkAccount = account.data
-        for (const key in appData) {
-          if (key === 'activeVersion') {
-            await onActiveVersionChange(appData[key])
-          }
-
-          networkAccount.current[key] = appData[key]
-        }
+        await this.patchAndUpdate(networkAccount.current, appData)
         account.timestamp = Date.now()
         networkAccount.hash = WrappedEVMAccountFunctions._calculateAccountHash(networkAccount)
         account.stateId = networkAccount.hash
         return [account]
-        /* eslint-enable security/detect-object-injection */
       }
+      /* eslint-enable security/detect-object-injection */
+    },
+    async patchAndUpdate(existingObject: any, changeObj: any, parentPath: '') {
+      /* eslint-disable security/detect-object-injection */
+      for (const [key, value] of Object.entries(changeObj)) {
+        if (existingObject[key] != null) {
+          if (typeof value === 'object') {
+            await this.patchAndUpdate(
+              existingObject[key],
+              value,
+              (parentPath === '' ? '' : parentPath + '.') + key
+            )
+          } else {
+            if (key === 'activeVersion') {
+              await onActiveVersionChange(value as string)
+            }
+            existingObject[key] = value
+          }
+        }
+      }
+      /* eslint-enable security/detect-object-injection */
     },
     async pruneNetworkChangeQueue(account: WrappedAccount, currentCycle: number) {
       if (account.accountId === networkAccount) {
@@ -5925,15 +5945,9 @@ const shardusSetup = (): void => {
 
           let shardeumConfigs = []
           if (thisChange.appData) {
-            shardeumConfigs = Object.keys(thisChange.appData).map((configPath) => configPath = "appdata." + configPath)
+            shardeumConfigs = this.generatePathKeys(thisChange.appData, 'appdata.')
           }
-
-          const shardusConfigs = []
-          for (const category of Object.keys(thisChange.change)) {
-            for (const config of Object.keys(thisChange.change[category]).map((configPath) => configPath = category + "." + configPath)) {
-              shardusConfigs.push(config);
-            }
-          }
+          const shardusConfigs: string[] = this.generatePathKeys(thisChange.change)
 
           const allConfigs = shardeumConfigs.concat(shardusConfigs)
 
@@ -5947,14 +5961,13 @@ const shardusSetup = (): void => {
             }
           }
 
-          if ((currentCycle - thisChange.cycle) <= shardusConfig.stateManager.configChangeMaxCyclesToKeep) {
+          if (currentCycle - thisChange.cycle <= shardusConfig.stateManager.configChangeMaxCyclesToKeep) {
             keepAlive = true
           }
 
           if (keepAlive == false) {
             listOfChanges.splice(i, 1)
           }
-
         }
 
         account.timestamp = Date.now()
@@ -5963,6 +5976,25 @@ const shardusSetup = (): void => {
         return [account]
         /* eslint-enable security/detect-object-injection */
       }
+    },
+    generatePathKeys(obj: any, prefix = ''): string[] {
+      /* eslint-disable security/detect-object-injection */
+      let paths: string[] = []
+
+      // Loop over each key in the object
+      for (const key of Object.keys(obj)) {
+        // If the value corresponding to this key is an object (and not an array or null),
+        // then recurse into it.
+        if (obj[key] !== null && typeof obj[key] === 'object' && !Array.isArray(obj[key])) {
+          paths = paths.concat(this.generatePathKeys(obj[key], prefix + key + '.'))
+        } else {
+          // Otherwise, just append this key to the path.
+          paths.push(prefix + key)
+        }
+      }
+
+      return paths
+      /* eslint-enable security/detect-object-injection */
     },
     beforeStateAccountFilter(account: WrappedAccount) {
       if (account.data.accountType === 1) {
@@ -6029,10 +6061,7 @@ async function fetchNetworkAccountFromArchiver(): Promise<WrappedAccount> {
   return res.data
 }
 
-async function updateConfigFromNetworkAccount(
-  inputConfig: Config,
-  account: WrappedAccount
-): Promise<Config> {
+async function updateConfigFromNetworkAccount(inputConfig: Config, account: WrappedAccount): Promise<Config> {
   // Clone config with rfdc
   const config = rfdc()(inputConfig)
 
@@ -6059,10 +6088,10 @@ async function updateConfigFromNetworkAccount(
   return config
 }
 
-function patchObject(
-  existingObject: Config,
-  changeObj: Partial<WrappedAccount>
-): void {
+function patchObject(existingObject: Config, changeObj: Partial<WrappedAccount>): void {
+  //remove after testing
+  console.log(`TESTING existingObject: ${JSON.stringify(existingObject, null, 2)}`)
+  console.log(`TESTING changeObj: ${JSON.stringify(changeObj, null, 2)}`)
   for (const changeKey in changeObj) {
     if (changeObj[changeKey] && existingObject.server[changeKey]) {
       const targetObject = existingObject.server[changeKey]
@@ -6076,7 +6105,6 @@ function patchObject(
     }
   }
 }
-
 
 export let shardusConfig: ShardusTypes.ServerConfiguration
 
