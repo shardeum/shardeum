@@ -77,8 +77,9 @@ export async function estimateGas(
     skipNonce: true,
     networkAccount: networkAccount.data,
   })
-  const estimatedGasRequired = BigInt(runTxResult.totalGasSpent)
+  let estimatedGasRequired = BigInt(runTxResult.totalGasSpent)
   const gasRefund = runTxResult.execResult.gasRefund ? BigInt(runTxResult.execResult.gasRefund) : BigInt(0)
+  // Add gasRefund to estimatedGasRequired
+  estimatedGasRequired += gasRefund
   console.log(`0x${estimatedGasRequired.toString(16)}`)
-  console.log(`0x${gasRefund.toString(16)}`)
 }
