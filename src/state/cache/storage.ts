@@ -51,7 +51,7 @@ export class StorageCache extends Cache {
     }
   }
 
-  _saveCachePreState(addressHex: string, keyHex: string) {
+  _saveCachePreState(addressHex: string, keyHex: string): void {
     const addressStoragePreState = this._diffCache[this._checkpoints].get(addressHex)
     let diffStorageMap: DiffStorageCacheMap
     if (addressStoragePreState === undefined) {
@@ -314,7 +314,7 @@ export class StorageCache extends Cache {
    * Returns the size of the cache
    * @returns
    */
-  size() {
+  size(): number {
     if (this._lruCache) {
       return this._lruCache!.size
     } else {
@@ -326,7 +326,7 @@ export class StorageCache extends Cache {
    * Returns a dict with cache stats
    * @param reset
    */
-  stats(reset = true) {
+  stats(reset = true): { hits: number; size: number; dels: number; reads: number; writes: number } {
     const stats = { ...this._stats }
     stats.size = this.size()
     if (reset) {

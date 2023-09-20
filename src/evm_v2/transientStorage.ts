@@ -50,7 +50,7 @@ export class TransientStorage implements TransientStorageInterface {
    * @param key the slot to set for the address
    * @param value the new value of the transient storage slot to set
    */
-  public put(addr: Address, key: Uint8Array, value: Uint8Array) {
+  public put(addr: Address, key: Uint8Array, value: Uint8Array): void {
     if (key.length !== 32) {
       throw new Error('Transient storage key must be 32 bytes long')
     }
@@ -96,7 +96,7 @@ export class TransientStorage implements TransientStorageInterface {
   /**
    * Revert transient storage to the last checkpoint
    */
-  public revert() {
+  public revert(): void {
     const lastCheckpoint = this._indices.pop()
     if (typeof lastCheckpoint === 'undefined') throw new Error('Nothing to revert')
 

@@ -48,7 +48,7 @@ export class AccountCache extends Cache {
     this._debug = createDebugLogger('statemanager:cache:account')
   }
 
-  _saveCachePreState(cacheKeyHex: string) {
+  _saveCachePreState(cacheKeyHex: string): void {
     const it = this._diffCache[this._checkpoints].get(cacheKeyHex)
     if (it === undefined) {
       let oldElem: AccountCacheElement | undefined
@@ -223,7 +223,7 @@ export class AccountCache extends Cache {
    * Returns the size of the cache
    * @returns
    */
-  size() {
+  size(): number {
     if (this._lruCache) {
       return this._lruCache!.size
     } else {
@@ -235,7 +235,7 @@ export class AccountCache extends Cache {
    * Returns a dict with cache stats
    * @param reset
    */
-  stats(reset = true) {
+  stats(reset = true): { hits: number; size: number; dels: number; reads: number; writes: number } {
     const stats = { ...this._stats }
     stats.size = this.size()
     if (reset) {

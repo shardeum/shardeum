@@ -18,7 +18,7 @@ export function updateSstoreGasEIP1283(
   originalStorage: Uint8Array,
   value: Uint8Array,
   common: Common
-) {
+): bigint {
   if (equalsBytes(currentStorage, value)) {
     // If current value equals new value (this is a no-op), 200 gas is deducted.
     return common.param('gasPrices', 'netSstoreNoopGas')

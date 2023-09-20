@@ -109,11 +109,11 @@ export class EVM implements EVMInterface {
 
   protected readonly _optsCached: EVMOpts
 
-  public get precompiles() {
+  public get precompiles(): Map<string, PrecompileFunc> {
     return this._precompiles
   }
 
-  public get opcodes() {
+  public get opcodes(): OpcodeList {
     return this._opcodes
   }
 
@@ -221,8 +221,8 @@ export class EVM implements EVMInterface {
       try {
 
         if (ShardeumFlags.VerboseLogs) {
-          let to = message.to ? message.to.toString() : ''
-          let value = message.value ? message.value.toString() : 0
+          const to = message.to ? message.to.toString() : ''
+          const value = message.value ? message.value.toString() : 0
           console.log(`reduce balance: ${to} ${value} skip: ${message.value <= 0}`)
         }
         if (message.value > 0) {
@@ -247,8 +247,8 @@ export class EVM implements EVMInterface {
         //TODO: need to review if this breaks functionality of createing an EOA via 0 balance transfer...
         //if it did break that would it matter?
         if (ShardeumFlags.VerboseLogs) {
-          let to = message.to ? message.to.toString() : ''
-          let value = message.value ? message.value.toString() : 0
+          const to = message.to ? message.to.toString() : ''
+          const value = message.value ? message.value.toString() : 0
           console.log(`add balance: ${to} ${value} skip: ${message.value <= 0}`)
         }
         if(message.value > 0){
@@ -885,7 +885,7 @@ export class EVM implements EVMInterface {
   /**
    * Once the interpreter has finished depth 0, a post-message cleanup should be done
    */
-  private postMessageCleanup() {
+  private postMessageCleanup(): void {
     if (this.common.isActivatedEIP(1153)) this.transientStorage.clear()
   }
 

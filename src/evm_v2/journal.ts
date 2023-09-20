@@ -65,16 +65,16 @@ export class Journal {
    * Clears the internal `accessList` map, and mark this journal to start reporting
    * which addresses and storages have been accessed
    */
-  startReportingAccessList() {
+  startReportingAccessList(): void {
     this.accessList = new Map()
   }
 
-  async putAccount(address: Address, account: Account | undefined) {
+  async putAccount(address: Address, account: Account | undefined): Promise<void> {
     this.touchAddress(address)
     return this.stateManager.putAccount(address, account)
   }
 
-  async deleteAccount(address: Address) {
+  async deleteAccount(address: Address): Promise<void> {
     this.touchAddress(address)
     await this.stateManager.deleteAccount(address)
   }
@@ -84,26 +84,26 @@ export class Journal {
     this.touchAccount(str)
   }
 
-  private touchAccount(address: string) {
+  private touchAccount(address: string): void {
     if (!this.touched.has(address)) {
       this.touched.add(address)
       const diffArr = this.journalDiff[this.journalDiff.length - 1][1]
       diffArr[2].add(address)
     }
   }
-  async commit() {
+  async commit(): Promise<void> {
     this.journalHeight--
     this.journalDiff.push([this.journalHeight, [new Set(), new Map(), new Set()]])
     await this.stateManager.commit()
   }
 
-  async checkpoint() {
+  async checkpoint(): Promise<void> {
     this.journalHeight++
     this.journalDiff.push([this.journalHeight, [new Set(), new Map(), new Set()]])
     await this.stateManager.checkpoint()
   }
 
-  async revert() {
+  async revert(): Promise<void> {
     // Loop backwards over the journal diff and stop if we are at a lower height than current journal height
     // During this process, delete all items.
     // TODO check this logic, if there is this array: height [4,3,4] and we revert height 4, then the final
@@ -155,7 +155,7 @@ export class Journal {
     await this.stateManager.revert()
   }
 
-  public cleanJournal() {
+  public cleanJournal(): void {
     this.journalHeight = 0
     this.journal = new Map()
     this.alwaysWarmJournal = new Map()
@@ -185,7 +185,7 @@ export class Journal {
     delete this.accessList
   }
 
-  addAlwaysWarmAddress(addressStr: string, addToAccessList: boolean = false) {
+  addAlwaysWarmAddress(addressStr: string, addToAccessList = false): void {
     const address = stripHexPrefix(addressStr)
     if (!this.alwaysWarmJournal.has(address)) {
       this.alwaysWarmJournal.set(address, new Set())
@@ -197,7 +197,7 @@ export class Journal {
     }
   }
 
-  addAlwaysWarmSlot(addressStr: string, slotStr: string, addToAccessList: boolean = false) {
+  addAlwaysWarmSlot(addressStr: string, slotStr: string, addToAccessList = false): void {
     const address = stripHexPrefix(addressStr)
     this.addAlwaysWarmAddress(address, addToAccessList)
     const slotsSet = this.alwaysWarmJournal.get(address)!

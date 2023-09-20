@@ -235,7 +235,7 @@ export async function runBlock(this: VM, opts: RunBlockOpts): Promise<RunBlockRe
  * @param {Block} block
  * @param {RunBlockOpts} opts
  */
-async function applyBlock(this: VM, block: Block, opts: RunBlockOpts) {
+async function applyBlock(this: VM, block: Block, opts: RunBlockOpts): Promise<{ bloom: Bloom, gasUsed: bigint, receiptsRoot: Uint8Array, receipts: any[], results: any[] }> {
   // Validate block
   if (opts.skipBlockValidation !== true) {
     if (block.header.gasLimit >= BigInt('0x8000000000000000')) {
@@ -287,7 +287,7 @@ export async function accumulateParentBeaconBlockRoot(
   this: VM,
   root: Uint8Array,
   timestamp: bigint
-) {
+): Promise<void> {
   // Save the parentBeaconBlockRoot to the beaconroot stateful precompile ring buffers
   const historicalRootsLength = BigInt(this.common.param('vm', 'historicalRootsLength'))
   const timestampIndex = timestamp % historicalRootsLength
@@ -323,7 +323,7 @@ export async function accumulateParentBeaconBlockRoot(
  * @param {Block} block
  * @param {RunBlockOpts} opts
  */
-async function applyTransactions(this: VM, block: Block, opts: RunBlockOpts) {
+async function applyTransactions(this: VM, block: Block, opts: RunBlockOpts): Promise<{ receipts: any[]; gasUsed: bigint; receiptsRoot: Uint8Array; bloom: Bloom; results: any[] }> {
   const bloom = new Bloom()
   // the total amount of gas used processing these transactions
   let gasUsed = BigInt(0)
@@ -465,7 +465,7 @@ export async function rewardAccount(
 /**
  * Returns the encoded tx receipt.
  */
-export function encodeReceipt(receipt: TxReceipt, txType: TransactionType) {
+export function encodeReceipt(receipt: TxReceipt, txType: TransactionType): Uint8Array {
   const encoded = RLP.encode([
     (receipt as PreByzantiumTxReceipt).stateRoot ??
       ((receipt as PostByzantiumTxReceipt).status === 0 ? Uint8Array.from([]) : hexToBytes('0x01')),
@@ -486,7 +486,7 @@ export function encodeReceipt(receipt: TxReceipt, txType: TransactionType) {
 /**
  * Apply the DAO fork changes to the VM
  */
-async function _applyDAOHardfork(evm: EVMInterface) {
+async function _applyDAOHardfork(evm: EVMInterface): Promise<void> {
   const state = evm.stateManager
 
   /* DAO account list */
@@ -519,7 +519,7 @@ async function _applyDAOHardfork(evm: EVMInterface) {
   await evm.journal.putAccount(DAORefundContractAddress, DAORefundAccount)
 }
 
-async function _genTxTrie(block: Block) {
+async function _genTxTrie(block: Block): Promise<Uint8Array> {
   const trie = new Trie()
   for (const [i, tx] of block.transactions.entries()) {
     await trie.put(RLP.encode(i), tx.serialize())
@@ -533,7 +533,7 @@ async function _genTxTrie(block: Block) {
  * @param msg Base error message
  * @hidden
  */
-function _errorMsg(msg: string, vm: VM, block: Block) {
+function _errorMsg(msg: string, vm: VM, block: Block): string {
   const blockErrorStr = 'errorStr' in block ? block.errorStr() : 'block'
 
   const errorMsg = `${msg} (${vm.errorStr()} -> ${blockErrorStr})`

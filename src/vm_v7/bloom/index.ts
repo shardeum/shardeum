@@ -22,7 +22,7 @@ export class Bloom {
    * Adds an element to a bit vector of a 64 byte bloom filter.
    * @param e - The element to add
    */
-  add(e: Uint8Array) {
+  add(e: Uint8Array): void {
     e = keccak256(e)
     const mask = 2047 // binary 11111111111
 
@@ -66,7 +66,7 @@ export class Bloom {
   /**
    * Bitwise or blooms together.
    */
-  or(bloom: Bloom) {
+  or(bloom: Bloom): void {
     for (let i = 0; i <= BYTE_SIZE; i++) {
       this.bitvector[i] = this.bitvector[i] | bloom.bitvector[i]
     }

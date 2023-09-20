@@ -24,7 +24,7 @@ export function updateSstoreGasEIP2200(
   value: Uint8Array,
   key: Uint8Array,
   common: Common
-) {
+): bigint {
   // Fail if not enough gas is left
   if (runState.interpreter.getGasLeft() <= common.param('gasPrices', 'sstoreSentryGasEIP2200')) {
     trap(ERROR.OUT_OF_GAS)

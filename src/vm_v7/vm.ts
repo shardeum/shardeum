@@ -50,7 +50,7 @@ export class VM {
   readonly evm: any
 
   protected readonly _opts: VMOpts
-  protected _isInitialized: boolean = false
+  protected _isInitialized = false
 
   protected readonly _setHardfork: boolean | BigIntLike
 

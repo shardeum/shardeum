@@ -26,7 +26,7 @@ export class Memory {
    * Extends the memory given an offset and size. Rounds extended
    * memory to word-size.
    */
-  extend(offset: number, size: number) {
+  extend(offset: number, size: number): void {
     if (size === 0) {
       return
     }
@@ -47,7 +47,7 @@ export class Memory {
    * @param size - How many bytes to write
    * @param value - Value
    */
-  write(offset: number, size: number, value: Uint8Array) {
+  write(offset: number, size: number, value: Uint8Array): void {
     if (size === 0) {
       return
     }

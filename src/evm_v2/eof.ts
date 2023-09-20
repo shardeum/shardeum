@@ -12,7 +12,7 @@ export const VERSION = 0x01
  *
  * Note: See https://eips.ethereum.org/EIPS/eip-3540 for further details
  */
-export const codeAnalysis = (container: Uint8Array) => {
+export const codeAnalysis = (container: Uint8Array): { code: number; data: number } => {
   const secCode = 0x01
   const secData = 0x02
   const secTerminator = 0x00
@@ -62,7 +62,7 @@ export const codeAnalysis = (container: Uint8Array) => {
   return sectionSizes
 }
 
-export const validOpcodes = (code: Uint8Array) => {
+export const validOpcodes = (code: Uint8Array): boolean => {
   // EIP-3670 - validate all opcodes
   const opcodes = new Set(handlers.keys())
   opcodes.add(0xfe) // Add INVALID opcode to set
@@ -92,7 +92,7 @@ export const validOpcodes = (code: Uint8Array) => {
   return true
 }
 
-export const getEOFCode = (code: Uint8Array) => {
+export const getEOFCode = (code: Uint8Array): Uint8Array => {
   const sectionSizes = codeAnalysis(code)
   if (sectionSizes === undefined) {
     return code

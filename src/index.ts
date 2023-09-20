@@ -2464,11 +2464,11 @@ async function estimateGas(
         )
         if (ShardeumFlags.VerboseLogs)
           console.log('EstimateGas response from node', consensusNode.externalPort, postResp.body)
-        if (postResp.body != null && postResp.body != '' && postResp.body.estimatedGas != null) {
+        if (postResp.body != null && postResp.body != '' && postResp.body.estimateGas != null) {
           /* prettier-ignore */
           if (ShardeumFlags.VerboseLogs) console.log(`Node is in remote shard: gotResp:${JSON.stringify(postResp.body)}`)
-          if (typeof postResp.body.estimatedGas === 'number') {
-            return postResp.body.estimatedGas;
+          if (typeof postResp.body.estimateGas === 'number') {
+            return postResp.body.estimateGas;
           } else {
             return {estimateGas: maxUint256.toString(16)}
           }

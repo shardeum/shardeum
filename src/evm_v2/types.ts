@@ -351,14 +351,14 @@ export interface Blockchain {
 }
 
 export class DefaultBlockchain implements Blockchain {
-  async getBlock() {
+  async getBlock(): Promise<MockBlock> {
     return {
-      hash() {
+      hash(): Uint8Array {
         return zeros(32)
       },
     }
   }
-  shallowCopy() {
+  shallowCopy(): this {
     return this
   }
 }

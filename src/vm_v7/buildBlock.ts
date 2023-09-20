@@ -21,7 +21,14 @@ import {
   rewardAccount,
 } from './runBlock.js'
 
-import type { BuildBlockOpts, BuilderOpts, RunTxResult, SealBlockOpts } from './types.js'
+import type {
+  BuildBlockOpts,
+  BuilderOpts, EIP4844BlobTxReceipt,
+  PostByzantiumTxReceipt,
+  PreByzantiumTxReceipt,
+  RunTxResult,
+  SealBlockOpts
+} from './types.js'
 import type { VM } from './vm.js'
 import type { HeaderData } from '@ethereumjs/block'
 import type { TypedTransaction } from '@ethereumjs/tx'
@@ -60,11 +67,11 @@ export class BlockBuilder {
   private checkpointed = false
   private blockStatus: BlockStatus = { status: BuildStatus.Pending }
 
-  get transactionReceipts() {
+  get transactionReceipts(): (PreByzantiumTxReceipt | PostByzantiumTxReceipt | EIP4844BlobTxReceipt)[] {
     return this.transactionResults.map((result) => result.receipt)
   }
 
-  get minerValue() {
+  get minerValue(): bigint {
     return this._minerValue
   }
 
@@ -99,7 +106,7 @@ export class BlockBuilder {
   /**
    * Throws if the block has already been built or reverted.
    */
-  private checkStatus() {
+  private checkStatus(): void {
     if (this.blockStatus.status === BuildStatus.Build) {
       throw new Error('Block has already been built')
     }
@@ -115,14 +122,14 @@ export class BlockBuilder {
   /**
    * Calculates and returns the transactionsTrie for the block.
    */
-  public async transactionsTrie() {
+  public async transactionsTrie(): Promise<Uint8Array> {
     return Block.genTransactionsTrieRoot(this.transactions)
   }
 
   /**
    * Calculates and returns the logs bloom for the block.
    */
-  public logsBloom() {
+  public logsBloom(): Uint8Array {
     const bloom = new Bloom()
     for (const txResult of this.transactionResults) {
       // Combine blooms via bitwise OR
@@ -134,7 +141,7 @@ export class BlockBuilder {
   /**
    * Calculates and returns the receiptTrie for the block.
    */
-  public async receiptTrie() {
+  public async receiptTrie(): Promise<Uint8Array> {
     const receiptTrie = new Trie()
     for (const [i, txResult] of this.transactionResults.entries()) {
       const tx = this.transactions[i]
@@ -147,7 +154,7 @@ export class BlockBuilder {
   /**
    * Adds the block miner reward to the coinbase account.
    */
-  private async rewardMiner() {
+  private async rewardMiner(): Promise<void> {
     const minerReward = this.vm.common.param('pow', 'minerReward')
     const reward = calculateMinerReward(minerReward, 0)
     const coinbase =
@@ -160,7 +167,7 @@ export class BlockBuilder {
   /**
    * Adds the withdrawal amount to the withdrawal address
    */
-  private async processWithdrawals() {
+  private async processWithdrawals(): Promise<void> {
     for (const withdrawal of this.withdrawals ?? []) {
       const { address, amount } = withdrawal
       // If there is no amount to add, skip touching the account
@@ -183,7 +190,7 @@ export class BlockBuilder {
   async addTransaction(
     tx: TypedTransaction,
     { skipHardForkValidation }: { skipHardForkValidation?: boolean } = {}
-  ) {
+  ): Promise<RunTxResult> {
     this.checkStatus()
 
     if (!this.checkpointed) {
@@ -251,7 +258,7 @@ export class BlockBuilder {
   /**
    * Reverts the checkpoint on the StateManager to reset the state from any transactions that have been run.
    */
-  async revert() {
+  async revert(): Promise<void> {
     if (this.checkpointed) {
       await this.vm.evm.journal.revert()
       this.checkpointed = false
@@ -270,7 +277,7 @@ export class BlockBuilder {
    * For PoA, please pass `blockOption.cliqueSigner` into the buildBlock constructor,
    * as the signer will be awarded the txs amount spent on gas as they are added.
    */
-  async build(sealOpts?: SealBlockOpts) {
+  async build(sealOpts?: SealBlockOpts): Promise<Block> {
     this.checkStatus()
     const blockOpts = this.blockOpts
     const consensusType = this.vm.common.consensusType()
@@ -334,7 +341,7 @@ export class BlockBuilder {
     return block
   }
 
-  async initState() {
+  async initState(): Promise<void> {
     if (this.vm.common.isActivatedEIP(4788)) {
       if (!this.checkpointed) {
         await this.vm.evm.journal.checkpoint()

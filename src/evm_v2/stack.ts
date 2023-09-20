@@ -14,11 +14,11 @@ export class Stack {
     this._maxHeight = maxHeight ?? 1024
   }
 
-  get length() {
+  get length(): number {
     return this._store.length
   }
 
-  push(value: bigint) {
+  push(value: bigint): void {
     if (typeof value !== 'bigint') {
       throw new EvmError(ERROR.INTERNAL_ERROR)
     }
@@ -48,7 +48,7 @@ export class Stack {
    * in returned array.
    * @param num - Number of items to pop
    */
-  popN(num: number = 1): bigint[] {
+  popN(num = 1): bigint[] {
     if (this._store.length < num) {
       throw new EvmError(ERROR.STACK_UNDERFLOW)
     }
@@ -65,7 +65,7 @@ export class Stack {
    * @param num Number of items to return
    * @throws {@link ERROR.STACK_UNDERFLOW}
    */
-  peek(num: number = 1): bigint[] {
+  peek(num = 1): bigint[] {
     const peekArray: bigint[] = []
 
     for (let peek = 1; peek <= num; peek++) {
@@ -82,7 +82,7 @@ export class Stack {
    * Swap top of stack with an item in the stack.
    * @param position - Index of item from top of the stack (0-indexed)
    */
-  swap(position: number) {
+  swap(position: number): void {
     if (this._store.length <= position) {
       throw new EvmError(ERROR.STACK_UNDERFLOW)
     }
@@ -103,7 +103,7 @@ export class Stack {
   // since you can't copy a primitive data type
   // Nevertheless not sure if we "loose" something here?
   // Will keep commented out for now
-  dup(position: number) {
+  dup(position: number): void {
     if (this._store.length < position) {
       throw new EvmError(ERROR.STACK_UNDERFLOW)
     }

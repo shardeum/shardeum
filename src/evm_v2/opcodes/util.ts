@@ -21,7 +21,7 @@ const MASK_160 = (BigInt(1) << BigInt(160)) - BigInt(1)
  * length Uint8Array in case the Uint8Array is full of zeros.
  * @param value Uint8Array which we want to pad
  */
-export function setLengthLeftStorage(value: Uint8Array) {
+export function setLengthLeftStorage(value: Uint8Array): Uint8Array {
   if (equalsBytes(value, new Uint8Array(value.length))) {
     // return the empty Uint8Array (the value is zero)
     return new Uint8Array(0)
@@ -33,7 +33,7 @@ export function setLengthLeftStorage(value: Uint8Array) {
 /**
  * Wraps error message as EvmError
  */
-export function trap(err: string) {
+export function trap(err: string): void {
   // TODO: facilitate extra data along with errors
   throw new EvmError(err as ERROR)
 }
@@ -41,7 +41,7 @@ export function trap(err: string) {
 /**
  * Converts bigint address (they're stored like this on the stack) to Uint8Array address
  */
-export function addresstoBytes(address: bigint | Uint8Array) {
+export function addresstoBytes(address: bigint | Uint8Array): Uint8Array {
   if (address instanceof Uint8Array) return address
   return setLengthLeft(bigIntToBytes(address & MASK_160), 20)
 }
@@ -160,7 +160,7 @@ export function maxCallGas(
 /**
  * Subtracts the amount needed for memory usage from `runState.gasLeft`
  */
-export function subMemUsage(runState: RunState, offset: bigint, length: bigint, common: Common) {
+export function subMemUsage(runState: RunState, offset: bigint, length: bigint, common: Common): bigint {
   // YP (225): access with zero length will not extend the memory
   if (length === BigInt(0)) return BigInt(0)
 
@@ -187,7 +187,7 @@ export function subMemUsage(runState: RunState, offset: bigint, length: bigint, 
 /**
  * Writes data returned by evm.call* methods to memory
  */
-export function writeCallOutput(runState: RunState, outOffset: bigint, outLength: bigint) {
+export function writeCallOutput(runState: RunState, outOffset: bigint, outLength: bigint): void {
   const returnData = runState.interpreter.getReturnData()
   if (returnData.length > 0) {
     const memOffset = Number(outOffset)
@@ -232,7 +232,7 @@ export function updateSstoreGas(
   }
 }
 
-export function mod(a: bigint, b: bigint) {
+export function mod(a: bigint, b: bigint): bigint {
   let r = a % b
   if (r < BigInt(0)) {
     r = b + r
@@ -240,15 +240,15 @@ export function mod(a: bigint, b: bigint) {
   return r
 }
 
-export function fromTwos(a: bigint) {
+export function fromTwos(a: bigint): bigint {
   return BigInt.asIntN(256, a)
 }
 
-export function toTwos(a: bigint) {
+export function toTwos(a: bigint): bigint {
   return BigInt.asUintN(256, a)
 }
 
-export function abs(a: bigint) {
+export function abs(a: bigint): bigint {
   if (a > 0) {
     return a
   }
@@ -256,7 +256,7 @@ export function abs(a: bigint) {
 }
 
 const N = BigInt(115792089237316195423570985008687907853269984665640564039457584007913129639936)
-export function exponentiation(bas: bigint, exp: bigint) {
+export function exponentiation(bas: bigint, exp: bigint): bigint {
   let t = BigInt(1)
   while (exp > BigInt(0)) {
     if (exp % BigInt(2) !== BigInt(0)) {

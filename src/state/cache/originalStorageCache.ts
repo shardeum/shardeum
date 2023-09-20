@@ -27,7 +27,7 @@ export class OriginalStorageCache {
     return value
   }
 
-  put(address: Address, key: Uint8Array, value: Uint8Array) {
+  put(address: Address, key: Uint8Array, value: Uint8Array): void {
     const addressHex = bytesToUnprefixedHex(address.bytes)
     let map = this.map.get(addressHex)
     if (map === undefined) {

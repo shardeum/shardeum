@@ -386,7 +386,7 @@ export class Interpreter {
   }
 
   // Returns all valid jump and jumpsub destinations.
-  _getValidJumpDests(code: Uint8Array) {
+  _getValidJumpDests(code: Uint8Array): Uint8Array {
     const jumps = new Uint8Array(code.length).fill(0)
 
     for (let i = 0; i < code.length; i++) {
@@ -1101,7 +1101,7 @@ export class Interpreter {
     this._result.logs.push(log)
   }
 
-  private _getReturnCode(results: EVMResult) {
+  private _getReturnCode(results: EVMResult): bigint {
     if (results.execResult.exceptionError) {
       return BigInt(0)
     } else {

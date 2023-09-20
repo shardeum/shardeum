@@ -19,7 +19,7 @@ import type { PrecompileInput } from './types.js'
 // 64-bit unsigned addition
 // Sets v[a,a+1] += v[b,b+1]
 // v should be a Uint32Array
-function ADD64AA(v: Uint32Array, a: number, b: number) {
+function ADD64AA(v: Uint32Array, a: number, b: number): void {
   const o0 = v[a] + v[b]
   let o1 = v[a + 1] + v[b + 1]
   if (o0 >= 0x100000000) {
@@ -32,7 +32,7 @@ function ADD64AA(v: Uint32Array, a: number, b: number) {
 // 64-bit unsigned addition
 // Sets v[a,a+1] += b
 // b0 is the low 32 bits of b, b1 represents the high 32 bits
-function ADD64AC(v: Uint32Array, a: number, b0: number, b1: number) {
+function ADD64AC(v: Uint32Array, a: number, b0: number, b1: number): void {
   let o0 = v[a] + b0
   if (b0 < 0) {
     o0 += 0x100000000
@@ -56,7 +56,7 @@ function B2B_G(
   d: number,
   ix: number,
   iy: number
-) {
+): void {
   const x0 = mw[ix]
   const x1 = mw[ix + 1]
   const y0 = mw[iy]
@@ -113,7 +113,7 @@ const SIGMA82 = new Uint8Array(
   })
 )
 
-export function F(h: Uint32Array, m: Uint32Array, t: Uint32Array, f: boolean, rounds: number) {
+export function F(h: Uint32Array, m: Uint32Array, t: Uint32Array, f: boolean, rounds: number): void {
   const v = new Uint32Array(32)
   let i = 0
 

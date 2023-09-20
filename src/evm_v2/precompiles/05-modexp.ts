@@ -70,7 +70,7 @@ function getAdjustedExponentLength(data: Uint8Array): bigint {
   return adjustedExpLen
 }
 
-export function expmod(a: bigint, power: bigint, modulo: bigint) {
+export function expmod(a: bigint, power: bigint, modulo: bigint): bigint {
   if (power === BigInt(0)) {
     return BigInt(1) % modulo
   }

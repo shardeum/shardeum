@@ -120,7 +120,7 @@ function stringifier(
 
 /* cryptoStringifier is a close version of default fast-stringify-json that works with BigInts */
 function cryptoStringifier(val, isArrayProp): string {
-  var i, max, str, keys, key, propVal, toStr;
+  let i, max, str, keys, key, propVal, toStr;
   if (val === true) {
     return "true";
   }

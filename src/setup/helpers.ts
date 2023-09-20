@@ -8,7 +8,6 @@ import {stringify, cryptoStringify} from '../utils/stringify'
 // console.log(crypto.)
 
 crypto.init('69fa4195670576c0160d660c3be36556ff8d504725be8a59b5a96509e0c994bc')
-// @ts-ignore
 crypto.setCustomStringifier(cryptoStringify, 'shardeum_crypto_stringify')
 export { crypto }
 
