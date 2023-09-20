@@ -5169,7 +5169,22 @@ const shardusSetup = (): void => {
       }
       return joinData
     },
-    validateJoinRequest(data, mode: P2P.ModesTypes.Record['mode'] | null)  {
+    validateJoinRequest(data, mode: P2P.ModesTypes.Record['mode'] | null, latestCycle: ShardusTypes.Cycle, minNodes:  number)  {
+      if (ShardeumFlags.VerboseLogs) console.log(`minNodes: ${minNodes}, active: ${latestCycle.active}, syncing ${latestCycle.syncing}, mode: ${mode}, flag: ${ShardeumFlags.AdminCertEnabled}`)
+      if (ShardeumFlags.AdminCertEnabled === true && 
+        mode !== 'processing' &&
+        latestCycle.active + latestCycle.syncing >= minNodes &&
+        latestCycle.active + latestCycle.syncing < ShardeumFlags.minActiveNodesForStaking
+      ) {
+        /* prettier-ignore */ nestedCountersInstance.countEvent('shardeum-mode', 'node is about to enter processing and does not provide stake certificate')
+        /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`node is about to enter processing and does not provide stake certificate`)
+        return {
+          success: false,
+          reason: `Join request node is about to enter processing and requires a stake certificate`,
+          fatal: false,
+        }
+      }
+      console.log("mode inside validateJoinRequest: ", mode)
       try {
         /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`validateJoinRequest ${JSON.stringify(data)}`)
         if (!data.appJoinData) {
@@ -5416,18 +5431,25 @@ const shardusSetup = (): void => {
         isReadyToJoinLatestValue = true
         return true
       }
+      console.log(`active: ${latestCycle.active}, syncing: ${latestCycle.syncing}, flag: ${ShardeumFlags.AdminCertEnabled}`)
       // check for ShardeumFlags for mode + check if mode is not equal to processing and validate adminCert
       if (
         ShardeumFlags.AdminCertEnabled === true &&
-        mode !== 'processing' &&
-        adminCert &&
-        adminCert.certExp > Date.now()
+        mode !== 'processing'
       ) {
-        /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`checkAdminCert ${JSON.stringify(adminCert)}`)
+        console.log("entered admin cert conditon")
+        if (adminCert && adminCert.certExp > Date.now()) {
+          console.dir(`admin cert: ${adminCert}`, { depth: null} )
+          /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`checkAdminCert ${JSON.stringify(adminCert)}`)
 
-        isReadyToJoinLatestValue = true
-        return true
+          isReadyToJoinLatestValue = true
+          console.log("1 return")
+          return true
+        }
+        console.log("2 return")
+        return false
       }
+
       /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`Running isReadyToJoin cycle:${latestCycle.counter} publicKey: ${publicKey}`)
       // handle first time staking setup
       if (lastCertTimeTxTimestamp === 0) {
