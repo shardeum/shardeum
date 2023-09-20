@@ -1308,15 +1308,21 @@ const configShardusEndpoints = (): void => {
       const address = req.query.address as string
       const shardusAddress = toShardusAddress(address, AccountType.Account)
       const account = await shardus.getLocalOrRemoteAccount(shardusAddress)
-      if (!account) {
+      if (!account || !account.data) {
         return res.json({ contractCode: '0x' })
       }
+      const wrappedEVMAccount = account.data as WrappedEVMAccount
 
-      const codeHashHex = Buffer.from((account.data as WrappedEVMAccount).account.codeHash).toString()
+      fixDeserializedWrappedEVMAccount(wrappedEVMAccount)
+
+      const codeHashHex = bytesToHex(wrappedEVMAccount.account.codeHash)
       const codeAddress = toShardusAddressWithKey(address, codeHashHex, AccountType.ContractCode)
       const codeAccount = await shardus.getLocalOrRemoteAccount(codeAddress)
-      const contractCode = codeAccount
-        ? `0x${Buffer.from((codeAccount.data as WrappedEVMAccount).codeByte).toString()}`
+
+      const wrappedCodeAccount = codeAccount.data as WrappedEVMAccount
+      fixDeserializedWrappedEVMAccount(wrappedCodeAccount)
+      const contractCode = wrappedCodeAccount
+        ? bytesToHex(wrappedCodeAccount.codeByte)
         : '0x'
       return res.json({ contractCode })
     } catch (error) {
@@ -2404,8 +2410,9 @@ function wrapTransaction(transaction: LegacyTransaction | AccessListEIP2930Trans
 async function estimateGas(
   injectedTx: {from: string, maxFeePerGas: string, gas: number} & LegacyTxData
 ): Promise<{estimateGas: string}> {
+  const originalInjectedTx = {...injectedTx}
   const maxUint256 = BigInt(2) ** BigInt(256) - (BigInt(1));
-  if (ShardeumFlags.VerboseLogs) console.log('injectedTx', injectedTx)
+  if (ShardeumFlags.VerboseLogs) console.log('injectedTx to estimateGas', injectedTx)
   const blockForTx = blocks[latestBlock];
   const MAX_GASLIMIT = BigInt(30_000_000)
 
@@ -2449,11 +2456,11 @@ async function estimateGas(
       const consensusNode = shardus.getRandomConsensusNodeForAccount(caShardusAddress)
       /* prettier-ignore */
       if (consensusNode != null) {
-        if (ShardeumFlags.VerboseLogs) console.log(`Node is in remote shard: requesting estimateGas ${consensusNode?.externalIp}:${consensusNode?.externalPort}`)
+        if (ShardeumFlags.VerboseLogs) console.log(`Node is in remote shard: requesting estimateGas ${consensusNode?.externalIp}:${consensusNode?.externalPort}`, injectedTx, originalInjectedTx)
 
         const postResp = await _internalHackPostWithResp(
           `${consensusNode.externalIp}:${consensusNode.externalPort}/contract/estimateGas`,
-          injectedTx
+          originalInjectedTx
         )
         if (ShardeumFlags.VerboseLogs)
           console.log('EstimateGas response from node', consensusNode.externalPort, postResp.body)
