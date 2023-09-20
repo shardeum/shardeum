@@ -1873,7 +1873,7 @@ const configShardusEndpoints = (): void => {
     nestedCountersInstance.countEvent('shardeum-admin-certificate', 'called PUT admin-certificate')
 
     const certRes = await putAdminCertificateHandler(req, shardus)
-    if (ShardeumFlags.VerboseLogs) console.log('certRes', certRes)
+    /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log('certRes', certRes)
     if (certRes.success) {
       const successRes = certRes as PutAdminCertResult
       adminCert = successRes.signedAdminCert
@@ -5296,7 +5296,7 @@ const shardusSetup = (): void => {
       return joinData
     },
     validateJoinRequest(data, mode: P2P.ModesTypes.Record['mode'] | null, latestCycle: ShardusTypes.Cycle, minNodes:  number)  {
-      if (ShardeumFlags.VerboseLogs) console.log(`validateJoinRequest minNodes: ${minNodes}, active: ${latestCycle.active}, syncing ${latestCycle.syncing}, mode: ${mode}, flag: ${ShardeumFlags.AdminCertEnabled}`)
+      /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`validateJoinRequest minNodes: ${minNodes}, active: ${latestCycle.active}, syncing ${latestCycle.syncing}, mode: ${mode}, flag: ${ShardeumFlags.AdminCertEnabled}`)
 
       try {
         /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`validateJoinRequest ${stringify(data)}`)
@@ -5350,21 +5350,23 @@ const shardusSetup = (): void => {
           latestCycle.active + latestCycle.syncing < minNodes //if node is about to enter processing check for stake as expected not admin cert
         ) {
           const adminCert: AdminCert = appJoinData.adminCert
-          /* prettier-ignore */ nestedCountersInstance.countEvent('shardeum-mode', 'validateJoinRequest mode enabled AdminCertEnabled enabled')
+          /* prettier-ignore */ nestedCountersInstance.countEvent('shardeum-mode', 'validateJoinRequest: mode is not processing, AdminCertEnabled enabled, node about to enter processing check')
 
           const currentTimestamp = Date.now()
           if (!adminCert || adminCert.certExp < currentTimestamp) {
+            /* prettier-ignore */ nestedCountersInstance.countEvent('shardeum-mode', 'validateJoinRequest fail: !adminCert || adminCert.certExp < currentTimestamp')
             return {
               success: false,
               reason: 'No admin cert found in mode: ' + mode,
               fatal: false,
             }
           }
-          /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`validateJoinRequest adminCert:${JSON.stringify(adminCert)}`)
+          /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`validateJoinRequest: adminCert ${JSON.stringify(adminCert)}`)
 
           // check for adminCert nominee
           const nodeAcc = data.sign.owner
           if (nodeAcc !== adminCert.nominee) {
+            /* prettier-ignore */ nestedCountersInstance.countEvent('shardeum-mode', 'validateJoinRequest fail: nodeAcc !== adminCert.nominee')
             return {
               success: false,
               reason: 'Nominator mismatch',
@@ -5374,6 +5376,7 @@ const shardusSetup = (): void => {
 
           // check for invalid signature for AdminCert
           if (!shardus.crypto.verify(adminCert, ShardeumFlags.devPublicKey)) {
+            /* prettier-ignore */ nestedCountersInstance.countEvent('shardeum-mode', 'validateJoinRequest fail: !shardus.crypto.verify(adminCert, ShardeumFlags.devPublicKey)')
             return {
               success: false,
               reason: 'Invalid signature for AdminCert',
@@ -5396,6 +5399,7 @@ const shardusSetup = (): void => {
           /* prettier-ignore */ nestedCountersInstance.countEvent('shardeum-staking', 'validating join request with staking enabled')
 
           if (appJoinData.mustUseAdminCert) {
+            /* prettier-ignore */ nestedCountersInstance.countEvent('shardeum-staking', 'validateJoinRequest fail: appJoinData.mustUseAdminCert')
             return {
               success: false,
               reason: 'Join Request wont have a stake certificate',
@@ -5571,7 +5575,6 @@ const shardusSetup = (): void => {
       ) {
         console.log("entered admin cert conditon mode:"+mode)
         if (adminCert && adminCert.certExp > Date.now()) {
-          console.dir(`admin cert: ${adminCert}`, { depth: null} )
           /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`checkAdminCert ${JSON.stringify(adminCert)}`)
 
           isReadyToJoinLatestValue = true
@@ -5635,11 +5638,10 @@ const shardusSetup = (): void => {
 
       //if we have stakeCert, check its time
       if (stakeCert != null) {
-        nestedCountersInstance.countEvent('shardeum-staking', 'stakeCert != null')
+        nestedCountersInstance.countEvent('shardeum-staking', `stakeCert is not null`)
 
         const remainingValidTime = stakeCert.certExp - Date.now()
-        const certStartTimestamp =
-          stakeCert.certExp - getCertCycleDuration() * ONE_SECOND * latestCycle.duration
+        const certStartTimestamp = stakeCert.certExp - getCertCycleDuration() * ONE_SECOND * latestCycle.duration
         const certEndTimestamp = stakeCert.certExp
         const expiredPercentage = (Date.now() - certStartTimestamp) / (certEndTimestamp - certStartTimestamp)
         const isExpiringSoon = expiredPercentage >= (ShardeumFlags.fixCertExpTiming ? 0.7 : 0.9) // only renew
@@ -5677,9 +5679,7 @@ const shardusSetup = (): void => {
           }
 
           nestedCountersInstance.countEvent('shardeum-staking', 'valid cert, isReadyToJoin = true')
-          if (ShardeumFlags.VerboseLogs) {
-            console.log('valid cert, isReadyToJoin = true ', stakeCert)
-          }
+          /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) {console.log('valid cert, isReadyToJoin = true ', stakeCert)}
 
           isReadyToJoinLatestValue = true
           return true
@@ -5706,10 +5706,7 @@ const shardusSetup = (): void => {
             }
           }
 
-          nestedCountersInstance.countEvent(
-            'shardeum-staking',
-            `call to queryCertificate failed with reason: ${(res as ValidatorError).reason}`
-          )
+          nestedCountersInstance.countEvent( 'shardeum-staking', `call to queryCertificate failed with reason: ${(res as ValidatorError).reason}`)
 
           if (ShardeumFlags.fixCertExpTiming) {
             // if we injected setCertTimeTx more than 3 cycles ago but still cannot get new cert, we need to inject it again
@@ -5717,10 +5714,7 @@ const shardusSetup = (): void => {
               latestCycle.counter - lastCertTimeTxCycle > 3 ||
               Date.now() - lastCertTimeTxTimestamp > 3 * ONE_SECOND * latestCycle.duration
             ) {
-              nestedCountersInstance.countEvent(
-                'shardeum-staking',
-                `call to queryCertificate failed for 3 consecutive cycles, will inject setCertTimeTx again`
-              )
+              /* prettier-ignore */ nestedCountersInstance.countEvent('shardeum-staking',`call to queryCertificate failed for 3 consecutive cycles, will inject setCertTimeTx again`)
               lastCertTimeTxTimestamp = 0
             }
           }
@@ -5729,7 +5723,7 @@ const shardusSetup = (): void => {
         }
         const signedStakeCert = (res as CertSignaturesResult).signedStakeCert
         if (signedStakeCert == null) {
-          nestedCountersInstance.countEvent('shardeum-staking', `signedStakeCert is null`)
+          /* prettier-ignore */ nestedCountersInstance.countEvent('shardeum-staking', `signedStakeCert is null`)
           return false
         }
         const remainingValidTime = signedStakeCert.certExp - Date.now()
@@ -5743,10 +5737,7 @@ const shardusSetup = (): void => {
 
         // if queried cert is going to expire soon, inject a new setCertTimeTx
         if (isNewCertExpiringSoon) {
-          nestedCountersInstance.countEvent(
-            'shardeum-staking',
-            'new stakeCert is expiring soon. will inject' + ' setCertTimeTx again'
-          )
+          /* prettier-ignore */ nestedCountersInstance.countEvent('shardeum-staking','new stakeCert is expiring soon. will inject' + ' setCertTimeTx again')
 
           stakeCert = null //clear stake cert, so we will know to query for it again
           const response = await injectSetCertTimeTx(shardus, publicKey, activeNodes)
