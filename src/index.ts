@@ -1141,7 +1141,7 @@ const configShardusEndpoints = (): void => {
       const stakeRequiredUsd = AccountsStorage.cachedNetworkAccount.current.stakeRequiredUsd
       const stakeRequired = scaleByStabilityFactor(stakeRequiredUsd, AccountsStorage.cachedNetworkAccount)
       if (ShardeumFlags.VerboseLogs) console.log('Req: stake requirement', _readableSHM(stakeRequired))
-      return res.json(stringify({ stakeRequired, stakeRequiredUsd }))
+      return res.json(JSON.parse(stringify({ stakeRequired, stakeRequiredUsd })))
     } catch (e) {
       if (ShardeumFlags.VerboseLogs) console.log(`Error /stake`, e)
       return res.status(500).send(e.message)
@@ -1285,7 +1285,7 @@ const configShardusEndpoints = (): void => {
         fixDeserializedWrappedEVMAccount(data)
         const readableAccount = await getReadableAccountInfo(data)
         if (readableAccount) return res.json({ account: readableAccount })
-        else res.json({ account: data })
+        else res.json({ account: JSON.parse(stringify(data)) })
       } else {
         let accountType: number
         if (typeof req.query.type === 'string') accountType = parseInt(req.query.type)
