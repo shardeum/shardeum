@@ -7,6 +7,7 @@ import {
   Address,
   bytesToHex,
   bigIntToHex,
+  isHexPrefixed,
   //fromAscii,
   isValidAddress,
   toAscii, toBytes,
@@ -2465,16 +2466,17 @@ async function estimateGas(
         if (ShardeumFlags.VerboseLogs)
           console.log('EstimateGas response from node', consensusNode.externalPort, postResp.body)
         if (postResp.body != null && postResp.body != '' && postResp.body.estimateGas != null) {
+          const estimateResultFromNode = postResp.body.estimateGas
           /* prettier-ignore */
-          if (ShardeumFlags.VerboseLogs) console.log(`Node is in remote shard: gotResp:${JSON.stringify(postResp.body)}`)
-          if (typeof postResp.body.estimateGas === 'number') {
+          if (ShardeumFlags.VerboseLogs) console.log(`Node is in remote shard: gotResp:`, estimateResultFromNode)
+          if (isHexPrefixed(estimateResultFromNode) && estimateResultFromNode !== '0x' && estimateResultFromNode !== '0x0') {
             return postResp.body.estimateGas;
           } else {
-            return {estimateGas: maxUint256.toString(16)}
+            return {estimateGas: bigIntToHex(maxUint256)}
           }
         }
       } else {
-        return {estimateGas: maxUint256.toString(16)}
+        return {estimateGas: bigIntToHex(maxUint256)}
       }
     } else {
       if (ShardeumFlags.VerboseLogs) console.log(`Node is in remote shard: false`)
