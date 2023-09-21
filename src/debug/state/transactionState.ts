@@ -291,152 +291,48 @@ export default class TransactionState {
 
   /**
    * Call this from dapp.updateAccountFull / updateAccountPartial to commit changes to the EVM trie
+   * EVM trie is gone, this is a no-op.  todo remove later
    * @param addressString
    * @param account
    */
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   async commitAccount(addressString: string, account: Account): Promise<void> {
     //store all writes to the persistant trie.
-    const address = Address.fromString(addressString)
-
-    if (ShardeumFlags.Virtual0Address && addressString === zeroAddressStr) {
-      if (this.debugTrace) this.debugTraceLog(`commitAccount: addr:${addressString} } is neglected`)
-      return
-    }
-
-    if (ShardeumFlags.SaveEVMTries) {
-      this.shardeumState._trie.checkpoint()
-
-      //IFF this is a contract account we need to update any pending contract storage values!!
-      if (this.pendingContractStorageCommits.has(addressString)) {
-        const contractStorageCommits = this.pendingContractStorageCommits.get(addressString)
-
-        const storageTrie = await this.shardeumState._getStorageTrie(address, account)
-        //what if storage trie was just created?
-        storageTrie.checkpoint()
-        //walk through all of these
-        for (const entry of contractStorageCommits.entries()) {
-          const keyString = entry[0]
-          const value = entry[1] // need to check wrapping.  Does this need one more layer of toUint8Array?/rlp?
-          const keyUint8Array = hexToBytes(keyString)
-          await storageTrie.put(keyUint8Array, value)
-
-          if (this.debugTrace)
-            this.debugTraceLog(
-              `commitAccount:contractStorage: addr:${addressString} key:${keyString} v:${bytesToHex(value)}`
-            )
-        }
-        await storageTrie.commit()
-
-        //update the accounts state root!
-        account.storageRoot = storageTrie.root()
-        //TODO:  handle key deletion
-      }
-      if (this.pendingContractBytesCommits.has(addressString)) {
-        const contractBytesCommits = this.pendingContractBytesCommits.get(addressString)
-
-        for (const [, contractByteWrite] of contractBytesCommits) {
-          const codeHash = contractByteWrite.codeHash
-          const codeByte = contractByteWrite.codeByte
-          if (ShardeumFlags.VerboseLogs)
-            console.log(`Storing contract code for ${address.toString()}`, codeHash, codeByte)
-
-          //decided to move this back to commit. since codebytes are global we need to be able to commit them without changing a contract account
-          //push codeByte to the worldStateTrie.db
-          //await this.shardeumState._trie.db.put(codeHash, codeByte)
-          //account.codeHash = codeHash
-
-          account.codeHash = contractByteWrite.codeHash
-
-          if (this.debugTrace)
-            this.debugTraceLog(
-              `commitAccount:contractCode: addr:${addressString} codeHash:${bytesToHex(codeHash)} v:${
-                codeByte.length
-              }`
-            )
-        }
-      }
-
-      TransactionState.fixAccountFields(account)
-
-      account.storageRoot = Uint8Array.from(account.storageRoot)
-
-      const accountObj = Account.fromAccountData(account)
-      const accountRlp = accountObj.serialize()
-      const accountKeyBuf = address.bytes
-      await this.shardeumState._trie.put(accountKeyBuf, accountRlp)
-
-      await this.shardeumState._trie.commit()
-
-      if (this.debugTrace)
-        this.debugTraceLog(`commitAccount: addr:${addressString} v:${stringify(accountObj)}`)
-
-      //TODO:  handle account deletion, if account is null. This is not a shardus concept yet
-      //await this._trie.del(keyBuf)
-    } else {
-      //save to accounts
-    }
+    //const address = Address.fromString(addressString)
+    // if (ShardeumFlags.Virtual0Address && addressString === zeroAddressStr) {
+    //   if (this.debugTrace) this.debugTraceLog(`commitAccount: addr:${addressString} } is neglected`)
+    //   return
+    // }
+    //save to accounts
   }
 
   /**
    * Call this from dapp.updateAccountFull / updateAccountPartial to commit changes to the EVM trie
+   *  EVM trie is gone, this is a no-op.  todo remove later
    * @param contractAddress
    * @param codeHash
    * @param contractByte
    */
   async commitContractBytes(
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     contractAddress: string,
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     codeHash: Uint8Array,
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     contractByte: Uint8Array
   ): Promise<void> {
-    const codeHashStr = bytesToHex(codeHash)
-    if (ShardeumFlags.SaveEVMTries) {
-      //only put this in the pending commit structure. we will do the real commit when updating the account
-      if (this.pendingContractBytesCommits.has(contractAddress)) {
-        const contractBytesCommit = this.pendingContractBytesCommits.get(contractAddress)
-        if (contractBytesCommit.has(codeHashStr)) {
-          contractBytesCommit.set(codeHashStr, {
-            codeHash,
-            codeByte: contractByte,
-            ethAddress: '',
-            hash: '',
-            timestamp: 0,
-            accountType: AccountType.Account,
-          })
-        }
-      } else {
-        const contractBytesCommit = new Map()
-        contractBytesCommit.set(codeHashStr, { codeHash, codeByte: contractByte })
-        this.pendingContractBytesCommits.set(contractAddress, contractBytesCommit)
-      }
-
-      //Update the trie right away.  This used to be queued and only committed at the same time as the CA
-      //Since CA bytes are global we must commit them right away because there will not be CA being updated in the same transaction any more
-      this.shardeumState._trie.checkpoint()
-      await this.shardeumState._trie.put(codeHash, contractByte)
-      await this.shardeumState._trie.commit()
-
-      if (this.debugTrace)
-        this.debugTraceLog(
-          `commitContractBytes:contractCode codeHash:${codeHashStr} v:${bytesToHex(contractByte)}`
-        )
-    }
+    //const codeHashStr = bytesToHex(codeHash)
   }
 
+  /**
+   * EVM trie is gone, this is a no-op.  todo remove later
+   * @param contractAddress
+   * @param keyString
+   * @param value
+   */
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   async commitContractStorage(contractAddress: string, keyString: string, value: Uint8Array): Promise<void> {
     //store all writes to the persistant trie.
-    if (ShardeumFlags.SaveEVMTries) {
-      //only put this in the pending commit structure. we will do the real commit when updating the account
-      if (this.pendingContractStorageCommits.has(contractAddress)) {
-        const contractStorageCommits = this.pendingContractStorageCommits.get(contractAddress)
-        if (!contractStorageCommits.has(keyString)) {
-          contractStorageCommits.set(keyString, value)
-        }
-      } else {
-        const contractStorageCommits = new Map()
-        contractStorageCommits.set(keyString, value)
-        this.pendingContractStorageCommits.set(contractAddress, contractStorageCommits)
-      }
-    }
   }
 
   async getAccount(
@@ -512,32 +408,26 @@ export default class TransactionState {
 
     let storedRlp: Uint8Array
 
-    if (ShardeumFlags.SaveEVMTries) {
-      //see if we can get it from the storage trie.
-      storedRlp = await worldStateTrie.get(address.bytes)
-      account = storedRlp ? Account.fromRlpSerializedAccount(storedRlp) : undefined
-    } else {
-      //get from accounts
-      //throw new Error('get from accounts db')
+    //get from accounts
+    //throw new Error('get from accounts db')
 
-      //figure out if addres to string is ok...
-      //also what about RLP format... need to do the extra conversions now, but plan on the best conversion.
-      const accountShardusAddress = toShardusAddress(address.toString(), AccountType.Account)
-      const wrappedAccount = await AccountsStorage.getAccount(accountShardusAddress)
-      if (wrappedAccount != null) {
-        fixDeserializedWrappedEVMAccount(wrappedAccount)
-        account = Account.fromAccountData(wrappedAccount.account)
-      }
-
-      if (account != null) {
-        storedRlp = account.serialize()
-      }
-
-      if (this.debugTrace)
-        this.debugTraceLog(
-          `getAccount:(AccountsStorage) addr:${addressString} balance:${account?.balance} nonce:${account?.nonce}`
-        )
+    //figure out if addres to string is ok...
+    //also what about RLP format... need to do the extra conversions now, but plan on the best conversion.
+    const accountShardusAddress = toShardusAddress(address.toString(), AccountType.Account)
+    const wrappedAccount = await AccountsStorage.getAccount(accountShardusAddress)
+    if (wrappedAccount != null) {
+      fixDeserializedWrappedEVMAccount(wrappedAccount)
+      account = Account.fromAccountData(wrappedAccount.account)
     }
+
+    if (account != null) {
+      storedRlp = account.serialize()
+    }
+
+    if (this.debugTrace)
+      this.debugTraceLog(
+        `getAccount:(AccountsStorage) addr:${addressString} balance:${account?.balance} nonce:${account?.nonce}`
+      )
 
     //attempt to get data from tryGetRemoteAccountCB
     //this can be a long wait only suitable in some cases
@@ -700,26 +590,17 @@ export default class TransactionState {
 
     let storedCodeByte: Uint8Array
     let codeBytes: Uint8Array
-    if (ShardeumFlags.SaveEVMTries) {
-      //see if we can get it from the worldStateTrie.db
-      storedCodeByte = await worldStateTrie.get(codeHash)
-      codeBytes = storedCodeByte // seems to be no conversio needed for codebytes.
-    } else {
-      //get from accounts db
-      //throw new Error('get from accounts db')
 
-      //need: contract address,  code hash  for toShardusAddressWithKey
-      const bytesShardusAddress = toShardusAddressWithKey(
-        addressString,
-        codeHashStr,
-        AccountType.ContractCode
-      )
-      const wrappedAccount = await AccountsStorage.getAccount(bytesShardusAddress)
-      if (wrappedAccount != null) {
-        fixDeserializedWrappedEVMAccount(wrappedAccount)
-        storedCodeByte = wrappedAccount.codeByte
-        codeBytes = storedCodeByte
-      }
+    //get from accounts db
+    //throw new Error('get from accounts db')
+
+    //need: contract address,  code hash  for toShardusAddressWithKey
+    const bytesShardusAddress = toShardusAddressWithKey(addressString, codeHashStr, AccountType.ContractCode)
+    const wrappedAccount = await AccountsStorage.getAccount(bytesShardusAddress)
+    if (wrappedAccount != null) {
+      fixDeserializedWrappedEVMAccount(wrappedAccount)
+      storedCodeByte = wrappedAccount.codeByte
+      codeBytes = storedCodeByte
     }
 
     //attempt to get data from tryGetRemoteAccountCB
@@ -867,26 +748,20 @@ export default class TransactionState {
 
     let storedRlp
     let storedValue
-    if (ShardeumFlags.SaveEVMTries) {
-      //see if we can get it from the storage trie.
-      storedRlp = await storage.get(key)
+
+    //get from accounts db
+    //throw new Error('get from accounts db')
+    // toShardusAddressWithKey.. use contract address followed by key
+    const storageShardusAddress = toShardusAddressWithKey(
+      addressString,
+      keyString,
+      AccountType.ContractStorage
+    )
+    const wrappedAccount = await AccountsStorage.getAccount(storageShardusAddress)
+    if (wrappedAccount != null) {
+      fixDeserializedWrappedEVMAccount(wrappedAccount)
+      storedRlp = wrappedAccount.value
       storedValue = storedRlp ? RLP.decode(storedRlp) : undefined
-      if (ShardeumFlags.VerboseLogs) console.log(`storedValue for ${keyString}`, storedValue)
-    } else {
-      //get from accounts db
-      //throw new Error('get from accounts db')
-      // toShardusAddressWithKey.. use contract address followed by key
-      const storageShardusAddress = toShardusAddressWithKey(
-        addressString,
-        keyString,
-        AccountType.ContractStorage
-      )
-      const wrappedAccount = await AccountsStorage.getAccount(storageShardusAddress)
-      if (wrappedAccount != null) {
-        fixDeserializedWrappedEVMAccount(wrappedAccount)
-        storedRlp = wrappedAccount.value
-        storedValue = storedRlp ? RLP.decode(storedRlp) : undefined
-      }
     }
 
     //attempt to get data from tryGetRemoteAccountCB

@@ -106,7 +106,7 @@ export default class ShardeumState implements EVMStateManagerInterface {
   temporaryParallelOldMode: boolean
 
   //TODO remvoe this once SaveEVMTries option goes away
-  _trie: Trie
+  //_trie: Trie
 
   // protected _storageTries: { [key: string]: Trie }
   // protected _codeCache: { [key: string]: Uint8Array }
@@ -203,13 +203,9 @@ export default class ShardeumState implements EVMStateManagerInterface {
     let testAccount
     //side run system on the side for now
     if (this._transactionState != null) {
-      if (ShardeumFlags.SaveEVMTries) {
-        throw new Error('getAccount SaveEVMTries=true not supported')
-      } else {
-        testAccount = await this._transactionState.getAccount(null, address, false, false)
-        if (this.temporaryParallelOldMode === false) {
-          return testAccount
-        }
+      testAccount = await this._transactionState.getAccount(null, address, false, false)
+      if (this.temporaryParallelOldMode === false) {
+        return testAccount
       }
     }
 
@@ -250,12 +246,9 @@ export default class ShardeumState implements EVMStateManagerInterface {
     if (this.DEBUG) {
       debug(`Delete account ${address}`)
     }
-    if (ShardeumFlags.SaveEVMTries === false) {
-      return // I think we can just return and ignore this for now
-      // need to actually create a plan for deleting data
-    }
-    throw new Error('deleteAccount SaveEVMTries=true not supported')
-    //this.touchAccount(address)
+
+    return // I think we can just return and ignore this for now
+    // need to actually create a plan for deleting data
   }
 
   /**
@@ -300,13 +293,9 @@ export default class ShardeumState implements EVMStateManagerInterface {
   async getContractCode(address: Address): Promise<Uint8Array> {
     //side run system on the side for now
     if (this._transactionState != null) {
-      if (ShardeumFlags.SaveEVMTries) {
-        throw new Error('getContractCode SaveEVMTries=true not supported')
-      } else {
-        const testAccount = await this._transactionState.getContractCode(null, address, false, false)
-        if (this.temporaryParallelOldMode === false) {
-          return testAccount
-        }
+      const testAccount = await this._transactionState.getContractCode(null, address, false, false)
+      if (this.temporaryParallelOldMode === false) {
+        return testAccount
       }
     }
 
@@ -340,21 +329,9 @@ export default class ShardeumState implements EVMStateManagerInterface {
   async getContractStorage(address: Address, key: Uint8Array, originOnly = false): Promise<Buffer> {
     let testAccount
     if (this._transactionState != null) {
-      if (ShardeumFlags.SaveEVMTries) {
-        const account = await this.getAccount(address)
-        if (!account) {
-          throw new Error('getContractStorage() called on non-existing account')
-        }
-        const storageTrie = await this._getStorageTrie(address, account)
-        testAccount = await this._transactionState.getContractStorage(storageTrie, address, key, originOnly, false)
-        if (this.temporaryParallelOldMode === false) {
-          return testAccount
-        }
-      } else {
-        testAccount = await this._transactionState.getContractStorage(null, address, key, false, false)
-        if (this.temporaryParallelOldMode === false) {
-          return testAccount
-        }
+      testAccount = await this._transactionState.getContractStorage(null, address, key, false, false)
+      if (this.temporaryParallelOldMode === false) {
+        return testAccount
       }
     }
     if (this.temporaryParallelOldMode === false) {
@@ -374,27 +351,9 @@ export default class ShardeumState implements EVMStateManagerInterface {
    */
   async getOriginalContractStorage(address: Address, key: Buffer): Promise<Uint8Array> {
     if (this._transactionState != null) {
-      if (ShardeumFlags.SaveEVMTries) {
-        const account = await this.getAccount(address)
-        if (!account) {
-          throw new Error('getContractStorage() called on non-existing account')
-        }
-        const storageTrie = await this._getStorageTrie(address, account)
-        const testAccount = await this._transactionState.getContractStorage(
-          storageTrie,
-          address,
-          key,
-          true,
-          false
-        )
-        if (this.temporaryParallelOldMode === false) {
-          return testAccount
-        }
-      } else {
-        const testAccount = await this._transactionState.getContractStorage(null, address, key, true, false)
-        if (this.temporaryParallelOldMode === false) {
-          return testAccount
-        }
+      const testAccount = await this._transactionState.getContractStorage(null, address, key, true, false)
+      if (this.temporaryParallelOldMode === false) {
+        return testAccount
       }
     }
     if (this.temporaryParallelOldMode === false) {
@@ -598,14 +557,10 @@ export default class ShardeumState implements EVMStateManagerInterface {
    * @returns {Promise<Buffer>} - Returns the state-root of the `StateManager`
    */
   async getStateRoot(): Promise<Buffer> {
-    if (ShardeumFlags.SaveEVMTries === false) {
-      //may not need to do anything. but we need to trace where this is used
-      //looks like just Pre-Byzantium paths use this in a receipt
-      //throw new Error('todo implement update to getStateRoot ')
-      return Buffer.from([])
-    }
-
-    return undefined
+    //may not need to do anything. but we need to trace where this is used
+    //looks like just Pre-Byzantium paths use this in a receipt
+    //throw new Error('todo implement update to getStateRoot ')
+    return Buffer.from([])
   }
 
   /**
@@ -630,11 +585,9 @@ export default class ShardeumState implements EVMStateManagerInterface {
    * Both are represented as hex strings without the `0x` prefix.
    */
   async dumpStorage(): Promise<StorageDump> {
-    if (ShardeumFlags.SaveEVMTries === false) {
-      // this was kinda nice. looks like we are loosing a way to find all of the storage for a single contract.
-      //    ...would that be crazy to add to a relational DB.  After all this is just debugging stuff here
-      return { result: 'no storage when SaveEVMTries === false' }
-    }
+    // this was kinda nice. looks like we are loosing a way to find all of the storage for a single contract.
+    //    ...would that be crazy to add to a relational DB.  After all this is just debugging stuff here
+    return { result: 'no storage when SaveEVMTries === false' }
   }
 
   async dumpStorageRange(address: Address, startKey: bigint, limit: number): Promise<StorageRange> {
@@ -817,13 +770,6 @@ export default class ShardeumState implements EVMStateManagerInterface {
    * @param address - Address to check
    */
   async accountIsEmpty(address: Address): Promise<boolean> {
-    // if(ShardeumFlags.SaveEVMTries === false){
-    //   // todo, how can shardeum handle 'empty' accounts..
-    //   let accountShardusAddress = toShardusAddress(address.toString(), AccountType.Account)
-    //   let exists = await AccountsStorage.accountExists(accountShardusAddress)
-    //   return exists === false
-    // }
-
     const account = await this.getAccount(address)
     return account == null || account.isEmpty()
   }
@@ -834,16 +780,12 @@ export default class ShardeumState implements EVMStateManagerInterface {
    * @param address - Address of the `account` to check
    */
   async accountExists(address: Address): Promise<boolean> {
-    if (ShardeumFlags.SaveEVMTries === false) {
-      // let accountShardusAddress = toShardusAddress(address.toString(), AccountType.Account)
-      // let exists = await AccountsStorage.accountExists(accountShardusAddress)
-      // return exists
+    // let accountShardusAddress = toShardusAddress(address.toString(), AccountType.Account)
+    // let exists = await AccountsStorage.accountExists(accountShardusAddress)
+    // return exists
 
-      const account = await this.getAccount(address)
-      return account != null //&& account.isEmpty() === false
-    }
-
-    throw new Error('accountExists SaveEVMTries true not supported')
+    const account = await this.getAccount(address)
+    return account != null //&& account.isEmpty() === false
   }
 
   /**
@@ -930,11 +872,10 @@ export default class ShardeumState implements EVMStateManagerInterface {
    */
   async cleanupTouchedAccounts(): Promise<void> {
     this._touched.clear()
-    if (ShardeumFlags.SaveEVMTries === false) {
-      // not sure yet if we need to implement this..
-      //throw new Error('cleanupTouchedAccounts not implemented yet when SaveEVMTries === false')
-      return
-    }
+
+    // not sure yet if we need to implement this..
+    //throw new Error('cleanupTouchedAccounts not implemented yet when SaveEVMTries === false')
+    return
 
     // TODO do we need to bring back some of this functionality?
 

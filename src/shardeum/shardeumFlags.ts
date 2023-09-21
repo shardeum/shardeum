@@ -25,7 +25,7 @@ interface ShardeumFlags {
     ['contract/accesslist']: {
       endpoint: number
       direct: number
-    },
+    }
     ['contract/estimateGas']: {
       endpoint: number
       direct: number
@@ -41,7 +41,7 @@ interface ShardeumFlags {
   forwardGenesisAccounts: boolean // To send accounts from consensor rather than pulling from archiver
   UseDBForAccounts: boolean //Use Sql to store in memory accounts instead of simple accounts object map
   AppliedTxsMaps: boolean
-  SaveEVMTries: boolean
+  SaveEVMTries: boolean //deprecated.  this was an old option to save evm tries
   ChainID: number // The EVM chain ID.  used by CHAINID opcode.
   CheckpointRevertSupport: boolean
   UseTXPreCrack: boolean
@@ -207,7 +207,7 @@ export const ShardeumFlags: ShardeumFlags = {
   looseNonceCheck: false,
 
   // 1.5.7 migration
-  supportEstimateGas: false
+  supportEstimateGas: false,
 }
 
 export function updateShardeumFlag(key: string, value: string | number | boolean): void {
