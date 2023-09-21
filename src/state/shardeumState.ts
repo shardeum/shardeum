@@ -332,11 +332,12 @@ export default class ShardeumState implements EVMStateManagerInterface {
    * the shortest representation of the stored value.
    * @param address -  Address of the account to get the storage for
    * @param key - Key in the account's storage to get the value for. Must be 32 bytes long.
+   * @param originOnly
    * @returns {Promise<Buffer>} - The storage value for the account
    * corresponding to the provided address at the provided key.
    * If this does not exist an empty `Buffer` is returned.
    */
-  async getContractStorage(address: Address, key: Uint8Array): Promise<Buffer> {
+  async getContractStorage(address: Address, key: Uint8Array, originOnly = false): Promise<Buffer> {
     let testAccount
     if (this._transactionState != null) {
       if (ShardeumFlags.SaveEVMTries) {
@@ -345,7 +346,7 @@ export default class ShardeumState implements EVMStateManagerInterface {
           throw new Error('getContractStorage() called on non-existing account')
         }
         const storageTrie = await this._getStorageTrie(address, account)
-        testAccount = await this._transactionState.getContractStorage(storageTrie, address, key, false, false)
+        testAccount = await this._transactionState.getContractStorage(storageTrie, address, key, originOnly, false)
         if (this.temporaryParallelOldMode === false) {
           return testAccount
         }
