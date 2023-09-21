@@ -325,10 +325,10 @@ export default class ShardeumState implements EVMStateManagerInterface {
    * corresponding to the provided address at the provided key.
    * If this does not exist an empty `Buffer` is returned.
    */
-  async getContractStorage(address: Address, key: Uint8Array): Promise<Buffer> {
+  async getContractStorage(address: Address, key: Uint8Array, originalOnly = false): Promise<Buffer> {
     let testAccount
     if (this._transactionState != null) {
-      testAccount = await this._transactionState.getContractStorage(null, address, key, false, false)
+      testAccount = await this._transactionState.getContractStorage(null, address, key, originalOnly, false)
       if (this.temporaryParallelOldMode === false) {
         return testAccount
       }

@@ -106,7 +106,7 @@ export default class ShardeumState implements EVMStateManagerInterface {
   temporaryParallelOldMode: boolean
 
   //TODO remvoe this once SaveEVMTries option goes away
-  //_trie: Trie
+  _trie: Trie
 
   // protected _storageTries: { [key: string]: Trie }
   // protected _codeCache: { [key: string]: Uint8Array }
@@ -326,10 +326,10 @@ export default class ShardeumState implements EVMStateManagerInterface {
    * corresponding to the provided address at the provided key.
    * If this does not exist an empty `Buffer` is returned.
    */
-  async getContractStorage(address: Address, key: Uint8Array, originOnly = false): Promise<Buffer> {
+  async getContractStorage(address: Address, key: Uint8Array, originalOnly = false): Promise<Buffer> {
     let testAccount
     if (this._transactionState != null) {
-      testAccount = await this._transactionState.getContractStorage(null, address, key, false, false)
+      testAccount = await this._transactionState.getContractStorage(null, address, key, originalOnly, false)
       if (this.temporaryParallelOldMode === false) {
         return testAccount
       }
@@ -571,10 +571,8 @@ export default class ShardeumState implements EVMStateManagerInterface {
    * @param stateRoot - The state-root to reset the instance to
    */
   async setStateRoot(): Promise<void> {
-    if (ShardeumFlags.SaveEVMTries === false) {
-      //should not need this when we use runTX and no blocks
-      return
-    }
+    //should not need this when we use runTX and no blocks
+    return
   }
 
   /**
