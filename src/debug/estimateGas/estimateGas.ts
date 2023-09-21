@@ -67,7 +67,12 @@ export async function estimateGas(
   )
 
   EVM.stateManager = null
+  EVM.evm.stateManager = null
+  EVM.evm.journal.stateManager = null
+
   EVM.stateManager = preRunTxState
+  EVM.evm.stateManager = preRunTxState
+  EVM.evm.journal.stateManager = preRunTxState
 
   const blockForTx = getOrCreateBlockFromTimestamp(0)
 
