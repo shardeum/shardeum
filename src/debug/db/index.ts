@@ -47,6 +47,33 @@ export function loadStatesFromJson(fileName: string): boolean {
   const fileContent = fs.readFileSync(fileName, 'utf8')
   const stateArray: jsonState[] = JSON.parse(fileContent)
 
+  // Iterate through all states in stateArray
+  // eslint-disable-next-line security/detect-object-injection
+  stateArray.forEach((state) => {
+    const properties = ['codeHash', 'storageRoot', 'stateRoot']
+    properties.forEach((property) => {
+      // Check if property exists
+      // eslint-disable-next-line security/detect-object-injection
+      if (!state.data?.account?.[property]) return
+
+      // eslint-disable-next-line security/detect-object-injection
+      if (state.data.account[property]['type'] === 'Buffer') {
+        return
+      }
+
+      // eslint-disable-next-line security/detect-object-injection
+      if (typeof state.data.account[property] === 'object') {
+        const arr: number[] = Object.keys(state.data.account.codeHash).map(
+          // eslint-disable-next-line security/detect-object-injection
+          (key) => state.data.account[property][key]
+        )
+
+        // eslint-disable-next-line security/detect-object-injection
+        state.data.account[property] = Uint8Array.from(arr)
+      }
+    })
+  })
+
   beforeStates.concat(stateArray).forEach((state) => accounts.set(state.accountId, state.data))
   return estimateOnly
 }
