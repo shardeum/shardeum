@@ -1141,7 +1141,7 @@ const configShardusEndpoints = (): void => {
       const stakeRequiredUsd = AccountsStorage.cachedNetworkAccount.current.stakeRequiredUsd
       const stakeRequired = scaleByStabilityFactor(stakeRequiredUsd, AccountsStorage.cachedNetworkAccount)
       if (ShardeumFlags.VerboseLogs) console.log('Req: stake requirement', _readableSHM(stakeRequired))
-      return res.json({ stakeRequired, stakeRequiredUsd })
+      return res.json(stringify({ stakeRequired, stakeRequiredUsd }))
     } catch (e) {
       if (ShardeumFlags.VerboseLogs) console.log(`Error /stake`, e)
       return res.status(500).send(e.message)
