@@ -77,8 +77,8 @@ export default class ShardeumState implements EVMStateManagerInterface {
   common: Common
 
   protected _debug: Debugger
-  protected _accountCache?: AccountCache
-  protected _storageCache?: StorageCache
+  // protected _accountCache?: AccountCache
+  // protected _storageCache?: StorageCache
 
   originalStorageCache: OriginalStorageCache
 
@@ -108,12 +108,12 @@ export default class ShardeumState implements EVMStateManagerInterface {
   //TODO remvoe this once SaveEVMTries option goes away
   _trie: Trie
 
-  protected _storageTries: { [key: string]: Trie }
-  protected _codeCache: { [key: string]: Uint8Array }
+  // protected _storageTries: { [key: string]: Trie }
+  // protected _codeCache: { [key: string]: Uint8Array }
 
-  protected readonly _prefixCodeHashes: boolean
-  protected readonly _accountCacheSettings: CacheSettings
-  protected readonly _storageCacheSettings: CacheSettings
+  // protected readonly _prefixCodeHashes: boolean
+  // protected readonly _accountCacheSettings: CacheSettings
+  // protected readonly _storageCacheSettings: CacheSettings
 
   /**
    * StateManager is run in DEBUG mode (default: false)
@@ -137,7 +137,7 @@ export default class ShardeumState implements EVMStateManagerInterface {
 
     this.temporaryParallelOldMode = false
 
-    this.originalStorageCache = new OriginalStorageCache(this.getContractStorage.bind(this))
+    // this.originalStorageCache = new OriginalStorageCache(this.getContractStorage.bind(this))
 
     //this._cache = new Cache(this._trie)
     this._touched = new Set()
@@ -147,7 +147,7 @@ export default class ShardeumState implements EVMStateManagerInterface {
     this._accessedStorage = [new Map()]
     this._accessedStorageReverted = [new Map()]
 
-    this._storageTries = {}
+    // this._storageTries = {}
 
     // Safeguard if "process" is not available (browser)
     if (process !== undefined && process.env.DEBUG) {
@@ -428,52 +428,52 @@ export default class ShardeumState implements EVMStateManagerInterface {
    * @param address -  Address of the account whose storage is to be modified
    * @param modifyTrie - Function to modify the storage trie of the account
    */
-  protected async _modifyContractStorage(
-    address: Address,
-    account: Account,
-    // eslint-disable-next-line @typescript-eslint/ban-types
-    modifyTrie: (storageTrie: Trie, done: Function) => void
-  ): Promise<void> {
-    // eslint-disable-next-line no-async-promise-executor
-    return new Promise(async (resolve) => {
-      const storageTrie = await this._getStorageTrie(address, account)
+  // protected async _modifyContractStorage(
+  //   address: Address,
+  //   account: Account,
+  //   // eslint-disable-next-line @typescript-eslint/ban-types
+  //   modifyTrie: (storageTrie: Trie, done: Function) => void
+  // ): Promise<void> {
+  //   // eslint-disable-next-line no-async-promise-executor
+  //   return new Promise(async (resolve) => {
+  //     const storageTrie = await this._getStorageTrie(address, account)
 
-      modifyTrie(storageTrie, async () => {
-        // update storage cache
-        const addressHex = bytesToUnprefixedHex(address.bytes)
-        this._storageTries[addressHex] = storageTrie
+  //     modifyTrie(storageTrie, async () => {
+  //       // update storage cache
+  //       const addressHex = bytesToUnprefixedHex(address.bytes)
+  //       this._storageTries[addressHex] = storageTrie
 
-        // update contract storageRoot
-        account.storageRoot = storageTrie.root()
-        await this.putAccount(address, account)
-        resolve()
-      })
-    })
-  }
-  protected async _writeContractStorage(
-    address: Address,
-    account: Account,
-    key: Uint8Array,
-    value: Uint8Array
-  ): Promise<void> {
-    await this._modifyContractStorage(address, account, async (storageTrie, done) => {
-      if (value instanceof Uint8Array && value.length) {
-        // format input
-        const encodedValue = RLP.encode(value)
-        if (this.DEBUG) {
-          this._debug(`Update contract storage for account ${address} to ${short(value)}`)
-        }
-        await storageTrie.put(key, encodedValue)
-      } else {
-        // deleting a value
-        if (this.DEBUG) {
-          this._debug(`Delete contract storage for account`)
-        }
-        await storageTrie.del(key)
-      }
-      done()
-    })
-  }
+  //       // update contract storageRoot
+  //       account.storageRoot = storageTrie.root()
+  //       await this.putAccount(address, account)
+  //       resolve()
+  //     })
+  //   })
+  // }
+  // protected async _writeContractStorage(
+  //   address: Address,
+  //   account: Account,
+  //   key: Uint8Array,
+  //   value: Uint8Array
+  // ): Promise<void> {
+  //   await this._modifyContractStorage(address, account, async (storageTrie, done) => {
+  //     if (value instanceof Uint8Array && value.length) {
+  //       // format input
+  //       const encodedValue = RLP.encode(value)
+  //       if (this.DEBUG) {
+  //         this._debug(`Update contract storage for account ${address} to ${short(value)}`)
+  //       }
+  //       await storageTrie.put(key, encodedValue)
+  //     } else {
+  //       // deleting a value
+  //       if (this.DEBUG) {
+  //         this._debug(`Delete contract storage for account`)
+  //       }
+  //       await storageTrie.del(key)
+  //     }
+  //     done()
+  //   })
+  // }
 
   /**
    * Adds value to the state trie for the `account`
@@ -741,37 +741,41 @@ export default class ShardeumState implements EVMStateManagerInterface {
   }
 
   async flush(): Promise<void> {
-    if (!this._storageCacheSettings.deactivate) {
-      const items = this._storageCache!.flush()
-      for (const item of items) {
-        const address = Address.fromString(`0x${item[0]}`)
-        const keyHex = item[1]
-        const keyBytes = unprefixedHexToBytes(keyHex)
-        const value = item[2]
-
-        const decoded = RLP.decode(value ?? new Uint8Array(0)) as Uint8Array
-        const account = await this.getAccount(address)
-        if (account) {
-          await this._writeContractStorage(address, account, keyBytes, decoded)
-        }
-      }
-    }
-    if (!this._accountCacheSettings.deactivate) {
-      const items = this._accountCache!.flush()
-      for (const item of items) {
-        const addressHex = item[0]
-        const addressBytes = unprefixedHexToBytes(addressHex)
-        const elem = item[1]
-        if (elem.accountRLP === undefined) {
-          const trie = this._trie
-          await trie.del(addressBytes)
-        } else {
-          const trie = this._trie
-          await trie.put(addressBytes, elem.accountRLP)
-        }
-      }
-    }
+    throw new Error('flush is not valid for ShardeumState')
   }
+
+  // async flush(): Promise<void> {
+  //   if (!this._storageCacheSettings.deactivate) {
+  //     const items = this._storageCache!.flush()
+  //     for (const item of items) {
+  //       const address = Address.fromString(`0x${item[0]}`)
+  //       const keyHex = item[1]
+  //       const keyBytes = unprefixedHexToBytes(keyHex)
+  //       const value = item[2]
+
+  //       const decoded = RLP.decode(value ?? new Uint8Array(0)) as Uint8Array
+  //       const account = await this.getAccount(address)
+  //       if (account) {
+  //         await this._writeContractStorage(address, account, keyBytes, decoded)
+  //       }
+  //     }
+  //   }
+  //   if (!this._accountCacheSettings.deactivate) {
+  //     const items = this._accountCache!.flush()
+  //     for (const item of items) {
+  //       const addressHex = item[0]
+  //       const addressBytes = unprefixedHexToBytes(addressHex)
+  //       const elem = item[1]
+  //       if (elem.accountRLP === undefined) {
+  //         const trie = this._trie
+  //         await trie.del(addressBytes)
+  //       } else {
+  //         const trie = this._trie
+  //         await trie.put(addressBytes, elem.accountRLP)
+  //       }
+  //     }
+  //   }
+  // }
 
   /**
    * Checks whether the current instance has the canonical genesis state
@@ -1027,7 +1031,7 @@ export default class ShardeumState implements EVMStateManagerInterface {
 
   shallowCopy(): EVMStateManagerInterface {
     // todo: flesh this out
-    const trie = this._trie.shallowCopy()
+    // const trie = this._trie.shallowCopy()
     return this
   }
 
@@ -1038,15 +1042,16 @@ export default class ShardeumState implements EVMStateManagerInterface {
    */
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   async _getStorageTrie(address: Address, account: Account): Promise<Trie> {
-    const addressHex = bytesToUnprefixedHex(address.bytes)
-    const storageTrie = this._storageTries[addressHex]
-    if (storageTrie === undefined) {
-      const storageTrie = this._trie.shallowCopy(false)
-      storageTrie.root(account.storageRoot)
-      storageTrie.flushCheckpoints()
-      this._storageTries[addressHex] = storageTrie
-      return storageTrie
-    }
-    return storageTrie
+    throw new Error('_getStorageTrie not valid for ShardeumState')
+    // const addressHex = bytesToUnprefixedHex(address.bytes)
+    // const storageTrie = this._storageTries[addressHex]
+    // if (storageTrie === undefined) {
+    //   const storageTrie = this._trie.shallowCopy(false)
+    //   storageTrie.root(account.storageRoot)
+    //   storageTrie.flushCheckpoints()
+    //   this._storageTries[addressHex] = storageTrie
+    //   return storageTrie
+    // }
+    // return storageTrie
   }
 }
