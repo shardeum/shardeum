@@ -33,7 +33,7 @@
   "author": "",
   "dependencies": {
     "@mapbox/node-pre-gyp": "1.0.10",
-    "@shardus/core": "2.10.15",
+    "@shardus/core": "2.10.16",
     "@shardus/crypto-utils": "4.1.2",
     "@shardus/types": "1.2.1",
     "@types/sqlite3": "3.1.8",
