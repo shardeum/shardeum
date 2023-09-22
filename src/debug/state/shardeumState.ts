@@ -137,7 +137,7 @@ export default class ShardeumState implements EVMStateManagerInterface {
 
     this.temporaryParallelOldMode = false
 
-    // this.originalStorageCache = new OriginalStorageCache(this.getContractStorage.bind(this))
+    this.originalStorageCache = new OriginalStorageCache(this.getContractStorage.bind(this))
 
     //this._cache = new Cache(this._trie)
     this._touched = new Set()
@@ -293,7 +293,7 @@ export default class ShardeumState implements EVMStateManagerInterface {
   async getContractCode(address: Address): Promise<Uint8Array> {
     //side run system on the side for now
     if (this._transactionState != null) {
-        const testAccount = await this._transactionState.getContractCode(null, address, false, true)
+      const testAccount = await this._transactionState.getContractCode(null, address, false, true)
       if (this.temporaryParallelOldMode === false) {
         return testAccount
       }
