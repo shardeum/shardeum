@@ -50,7 +50,7 @@ export function loadStatesFromJson(fileName: string): boolean {
   // Iterate through all states in stateArray
   // eslint-disable-next-line security/detect-object-injection
   stateArray.forEach((state) => {
-    const properties = ['codeHash', 'storageRoot', 'stateRoot']
+    const properties = ['codeHash', 'storageRoot', 'stateRoot', 'codeByte']
     properties.forEach((property) => {
       // Check if property exists
       // eslint-disable-next-line security/detect-object-injection

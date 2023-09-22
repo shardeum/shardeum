@@ -5,8 +5,13 @@ import { ShardeumState } from '../state'
 import { networkAccount } from '../evmSetup'
 import { getOrCreateBlockFromTimestamp } from '../block/blockchain'
 import { AccountType, WrappedEVMAccount } from '../../shardeum/shardeumTypes'
-import { fixDeserializedWrappedEVMAccount } from '../../shardeum/wrappedEVMAccountFunctions'
+import {
+  fixDeserializedWrappedEVMAccount,
+  predictContractAddress,
+} from '../../shardeum/wrappedEVMAccountFunctions'
 import * as AccountsStorage from '../db'
+import { toShardusAddress } from '../../shardeum/evmAddress'
+import { createAccount } from '../replayTX'
 
 function wrapTransaction(transaction: LegacyTransaction, impl: () => Address): LegacyTransaction {
   return new Proxy(transaction, {
@@ -49,6 +54,24 @@ export async function estimateGas(
         address,
         wrappedEVMAccount.key,
         wrappedEVMAccount.value
+      )
+    }
+  }
+
+  if (transaction.to == null) {
+    // console.log(JSON.stringify({ status: true, message: `creating new account`, wrappedStates }))
+    const senderEvmAddress = transaction.getSenderAddress().toString()
+    const senderShardusAddress = toShardusAddress(senderEvmAddress, AccountType.Account)
+    const senderWrappedEVMAccount = AccountsStorage.getAccount(senderShardusAddress) as WrappedEVMAccount
+    if (senderWrappedEVMAccount) {
+      fixDeserializedWrappedEVMAccount(senderWrappedEVMAccount)
+      const predictedContractAddressString =
+        '0x' + predictContractAddress(senderWrappedEVMAccount).toString('hex')
+      const createdAccount: WrappedEVMAccount = await createAccount(predictedContractAddressString)
+      AccountsStorage.addCreatedAccount(predictedContractAddressString, createdAccount)
+      preRunTxState._transactionState.insertFirstAccountReads(
+        Address.fromString(predictedContractAddressString),
+        createdAccount.account
       )
     }
   }

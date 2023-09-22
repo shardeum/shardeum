@@ -21,11 +21,7 @@ import * as WrappedEVMAccountFunctions from '../shardeum/wrappedEVMAccountFuncti
 import { estimateGas } from './estimateGas/estimateGas'
 import { EVMStateManagerInterface } from '@ethereumjs/common'
 
-export async function createAccount(
-  addressStr: string,
-  stateManager: EVMStateManagerInterface,
-  balance = BigInt(0)
-): Promise<WrappedEVMAccount> {
+export async function createAccount(addressStr: string, balance = BigInt(0)): Promise<WrappedEVMAccount> {
   // if (ShardeumFlags.VerboseLogs) console.log('Creating new account', addressStr)
 
   const acctData = {
@@ -199,10 +195,7 @@ const runTransaction = async (
       fixDeserializedWrappedEVMAccount(senderWrappedEVMAccount)
       const predictedContractAddressString =
         '0x' + predictContractAddress(senderWrappedEVMAccount).toString('hex')
-      const createdAccount: WrappedEVMAccount = await createAccount(
-        predictedContractAddressString,
-        shardeumState
-      )
+      const createdAccount: WrappedEVMAccount = await createAccount(predictedContractAddressString)
       shardeumState._transactionState.insertFirstAccountReads(
         Address.fromString(predictedContractAddressString),
         createdAccount.account
