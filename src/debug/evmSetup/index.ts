@@ -60,7 +60,6 @@ export async function initEVMSingletons(): Promise<void> {
   }
 
   //let shardeumStateManager = new ShardeumState({ common }) //as StateManager
-  //shardeumStateManager.temporaryParallelOldMode = ShardeumFlags.temporaryParallelOldMode //could probably refactor to use ShardeumFlags in the state manager
 
   shardeumBlock = new ShardeumBlock({ common: evmCommon })
   //let EVM = new VM({ common, stateManager: shardeumStateManager, blockchain: shardeumBlock })

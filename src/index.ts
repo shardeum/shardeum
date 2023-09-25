@@ -22,11 +22,11 @@ import {
   TransactionType,
 } from '@ethereumjs/tx'
 import { Common, Chain, Hardfork } from '@ethereumjs/common'
-import {Blockchain, BlockchainOptions} from '@ethereumjs/blockchain'
-import {RunTxResult, ShardeumVM} from './vm_v7'
+import { Blockchain, BlockchainOptions } from '@ethereumjs/blockchain'
+import { RunTxResult, ShardeumVM } from './vm_v7'
 // import { EVM as EthereumVirtualMachine, getActivePrecompiles } from '@ethereumjs/evm'
 import { EVM as EthereumVirtualMachine, getActivePrecompiles } from './evm_v2'
-import {EVMResult} from './evm_v2/types'
+import { EVMResult } from './evm_v2/types'
 import { parse as parseUrl } from 'url'
 import got from 'got'
 import 'dotenv/config'
@@ -129,9 +129,9 @@ import axios from 'axios'
 import blockedAt from 'blocked-at'
 //import { v4 as uuidv4 } from 'uuid'
 import { debug as createDebugLogger } from 'debug'
-import {RunState} from "./evm_v2/interpreter";
+import { RunState } from "./evm_v2/interpreter";
 import { VM } from './vm_v7/vm'
-import {EthersStateManager} from "@ethereumjs/statemanager";
+import { EthersStateManager } from "@ethereumjs/statemanager";
 import rfdc = require("rfdc")
 import { AdminCert, PutAdminCertResult, putAdminCertificateHandler } from './handlers/adminCertificate'
 import { P2P } from '@shardus/types'
@@ -411,7 +411,7 @@ async function initEVMSingletons(): Promise<void> {
 
   // setting up only to 'istanbul' hardfork for now
   // https://github.com/ethereumjs/ethereumjs-monorepo/blob/master/packages/common/src/chains/mainnet.json
-  evmCommon = new Common({chain: 'mainnet', hardfork: Hardfork.Istanbul, eips: [3855]})
+  evmCommon = new Common({ chain: 'mainnet', hardfork: Hardfork.Istanbul, eips: [3855] })
 
   //hack override this function.  perhaps a nice thing would be to use forCustomChain to create a custom common object
   evmCommon.chainId = (): bigint => {
@@ -419,7 +419,6 @@ async function initEVMSingletons(): Promise<void> {
   }
 
   //let shardeumStateManager = new ShardeumState({ common }) //as StateManager
-  //shardeumStateManager.temporaryParallelOldMode = ShardeumFlags.temporaryParallelOldMode //could probably refactor to use ShardeumFlags in the state manager
 
   shardeumBlock = new ShardeumBlock({ common: evmCommon })
 
@@ -2401,7 +2400,7 @@ const getOrCreateBlockFromTimestamp = (timestamp: number, scheduleNextBlock = fa
     cycle.start +
     cycle.duration +
     (blockNumber - ShardeumFlags.initialBlockNumber - (cycle.counter + 1) * 10) *
-      ShardeumFlags.blockProductionRate
+    ShardeumFlags.blockProductionRate
   const newBlockTimestamp = newBlockTimestampInSecond * 1000
   if (ShardeumFlags.VerboseLogs) {
     console.log('Cycle counter vs derived blockNumber', cycle.counter, blockNumber)
@@ -2432,9 +2431,9 @@ function wrapTransaction(transaction: LegacyTransaction | AccessListEIP2930Trans
 }
 
 async function estimateGas(
-  injectedTx: {from: string, maxFeePerGas: string, gas: number} & LegacyTxData
-): Promise<{estimateGas: string}> {
-  const originalInjectedTx = {...injectedTx}
+  injectedTx: { from: string, maxFeePerGas: string, gas: number } & LegacyTxData
+): Promise<{ estimateGas: string }> {
+  const originalInjectedTx = { ...injectedTx }
   const maxUint256 = BigInt(2) ** BigInt(256) - (BigInt(1));
   if (ShardeumFlags.VerboseLogs) console.log('injectedTx to estimateGas', injectedTx)
   const blockForTx = blocks[latestBlock];
@@ -2495,11 +2494,11 @@ async function estimateGas(
           if (isHexPrefixed(estimateResultFromNode) && estimateResultFromNode !== '0x' && estimateResultFromNode !== '0x0') {
             return postResp.body.estimateGas;
           } else {
-            return {estimateGas: bigIntToHex(maxUint256)}
+            return { estimateGas: bigIntToHex(maxUint256) }
           }
         }
       } else {
-        return {estimateGas: bigIntToHex(maxUint256)}
+        return { estimateGas: bigIntToHex(maxUint256) }
       }
     } else {
       if (ShardeumFlags.VerboseLogs) console.log(`Node is in remote shard: false`)
@@ -2564,7 +2563,7 @@ async function estimateGas(
   // For the estimate, we add the gasRefund to the gasUsed because gasRefund is subtracted after execution.
   // That can lead to higher gasUsed during execution than the actual gasUsed
   const estimate = runTxResult.totalGasSpent + (runTxResult.execResult.gasRefund ?? BigInt(0))
-  return {estimateGas: bigIntToHex(estimate)}
+  return { estimateGas: bigIntToHex(estimate) }
 }
 
 async function generateAccessList(
@@ -3120,16 +3119,16 @@ const shardusSetup = (): void => {
           blockHash: readableBlocks[blockNumberForTx].hash, // eslint-disable-line security/detect-object-injection
           cumulativeGasUsed:
             bigIntToHex(
-            scaleByStabilityFactor(
-              BigInt(ShardeumFlags.constantTxFeeUsd),
-              AccountsStorage.cachedNetworkAccount
-            )),
+              scaleByStabilityFactor(
+                BigInt(ShardeumFlags.constantTxFeeUsd),
+                AccountsStorage.cachedNetworkAccount
+              )),
           gasUsed:
             bigIntToHex(
-            scaleByStabilityFactor(
-              BigInt(ShardeumFlags.constantTxFeeUsd),
-              AccountsStorage.cachedNetworkAccount
-            )),
+              scaleByStabilityFactor(
+                BigInt(ShardeumFlags.constantTxFeeUsd),
+                AccountsStorage.cachedNetworkAccount
+              )),
           gasRefund: '0x0',
           logs: [],
           logsBloom: '',
@@ -3347,16 +3346,16 @@ const shardusSetup = (): void => {
           blockHash: readableBlocks[blockNumberForTx].hash,
           cumulativeGasUsed:
             bigIntToHex(
-            scaleByStabilityFactor(
-              BigInt(ShardeumFlags.constantTxFeeUsd),
-              AccountsStorage.cachedNetworkAccount
-            )),
+              scaleByStabilityFactor(
+                BigInt(ShardeumFlags.constantTxFeeUsd),
+                AccountsStorage.cachedNetworkAccount
+              )),
           gasUsed:
             bigIntToHex(
-            scaleByStabilityFactor(
-              BigInt(ShardeumFlags.constantTxFeeUsd),
-              AccountsStorage.cachedNetworkAccount
-            )),
+              scaleByStabilityFactor(
+                BigInt(ShardeumFlags.constantTxFeeUsd),
+                AccountsStorage.cachedNetworkAccount
+              )),
           gasRefund: '0x0',
           logs: [],
           logsBloom: '',
@@ -4044,8 +4043,7 @@ const shardusSetup = (): void => {
         }
         if (ShardeumFlags.VerboseLogs)
           console.log(
-            `txPreCrackData final result: txNonce: ${appData.txNonce}, currentNonce: ${
-              appData.nonce
+            `txPreCrackData final result: txNonce: ${appData.txNonce}, currentNonce: ${appData.nonce
             }, queueCount: ${appData.queueCount}, appData ${stringify(appData)}`
           )
       }
@@ -5295,7 +5293,7 @@ const shardusSetup = (): void => {
       }
       return joinData
     },
-    validateJoinRequest(data, mode: P2P.ModesTypes.Record['mode'] | null, latestCycle: ShardusTypes.Cycle, minNodes:  number)  {
+    validateJoinRequest(data, mode: P2P.ModesTypes.Record['mode'] | null, latestCycle: ShardusTypes.Cycle, minNodes: number) {
       /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`validateJoinRequest minNodes: ${minNodes}, active: ${latestCycle.active}, syncing ${latestCycle.syncing}, mode: ${mode}, flag: ${ShardeumFlags.AdminCertEnabled}`)
 
       try {
@@ -5538,7 +5536,7 @@ const shardusSetup = (): void => {
           }
         }
          /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`validateArchiverJoinRequest() Successful!`)
-         return {
+        return {
           success: true,
           reason: 'Archiver-Join Request Validated!',
           fatal: false,
@@ -5553,7 +5551,7 @@ const shardusSetup = (): void => {
       }
     },
     // Update the activeNodes type here; We can import from P2P.P2PTypes.Node from '@shardus/type' lib but seems it's not installed yet
-    async isReadyToJoin(latestCycle: ShardusTypes.Cycle, publicKey: string, activeNodes: P2P.P2PTypes.Node[], mode:P2P.ModesTypes.Record['mode']): Promise<boolean> {
+    async isReadyToJoin(latestCycle: ShardusTypes.Cycle, publicKey: string, activeNodes: P2P.P2PTypes.Node[], mode: P2P.ModesTypes.Record['mode']): Promise<boolean> {
       isReadyToJoinLatestValue = false
       mustUseAdminCert = false
 
@@ -5573,7 +5571,7 @@ const shardusSetup = (): void => {
         ShardeumFlags.AdminCertEnabled === true &&
         mode !== 'processing'
       ) {
-        console.log("entered admin cert conditon mode:"+mode)
+        console.log("entered admin cert conditon mode:" + mode)
         if (adminCert && adminCert.certExp > Date.now()) {
           /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`checkAdminCert ${JSON.stringify(adminCert)}`)
 
@@ -5679,7 +5677,7 @@ const shardusSetup = (): void => {
           }
 
           nestedCountersInstance.countEvent('shardeum-staking', 'valid cert, isReadyToJoin = true')
-          /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) {console.log('valid cert, isReadyToJoin = true ', stakeCert)}
+          /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) { console.log('valid cert, isReadyToJoin = true ', stakeCert) }
 
           isReadyToJoinLatestValue = true
           return true
@@ -5706,7 +5704,7 @@ const shardusSetup = (): void => {
             }
           }
 
-          nestedCountersInstance.countEvent( 'shardeum-staking', `call to queryCertificate failed with reason: ${(res as ValidatorError).reason}`)
+          nestedCountersInstance.countEvent('shardeum-staking', `call to queryCertificate failed with reason: ${(res as ValidatorError).reason}`)
 
           if (ShardeumFlags.fixCertExpTiming) {
             // if we injected setCertTimeTx more than 3 cycles ago but still cannot get new cert, we need to inject it again
@@ -5714,7 +5712,7 @@ const shardusSetup = (): void => {
               latestCycle.counter - lastCertTimeTxCycle > 3 ||
               Date.now() - lastCertTimeTxTimestamp > 3 * ONE_SECOND * latestCycle.duration
             ) {
-              /* prettier-ignore */ nestedCountersInstance.countEvent('shardeum-staking',`call to queryCertificate failed for 3 consecutive cycles, will inject setCertTimeTx again`)
+              /* prettier-ignore */ nestedCountersInstance.countEvent('shardeum-staking', `call to queryCertificate failed for 3 consecutive cycles, will inject setCertTimeTx again`)
               lastCertTimeTxTimestamp = 0
             }
           }
@@ -5737,7 +5735,7 @@ const shardusSetup = (): void => {
 
         // if queried cert is going to expire soon, inject a new setCertTimeTx
         if (isNewCertExpiringSoon) {
-          /* prettier-ignore */ nestedCountersInstance.countEvent('shardeum-staking','new stakeCert is expiring soon. will inject' + ' setCertTimeTx again')
+          /* prettier-ignore */ nestedCountersInstance.countEvent('shardeum-staking', 'new stakeCert is expiring soon. will inject' + ' setCertTimeTx again')
 
           stakeCert = null //clear stake cert, so we will know to query for it again
           const response = await injectSetCertTimeTx(shardus, publicKey, activeNodes)
@@ -5923,13 +5921,13 @@ const shardusSetup = (): void => {
           let keepAlive = false
 
           let shardeumConfigs = []
-          if(thisChange.appData) {
+          if (thisChange.appData) {
             shardeumConfigs = Object.keys(thisChange.appData).map((configPath) => configPath = "appdata." + configPath)
           }
 
           const shardusConfigs = []
           for (const category of Object.keys(thisChange.change)) {
-            for(const config of Object.keys(thisChange.change[category]).map((configPath) => configPath = category + "." + configPath)) {
+            for (const config of Object.keys(thisChange.change[category]).map((configPath) => configPath = category + "." + configPath)) {
               shardusConfigs.push(config);
             }
           }
@@ -5937,20 +5935,20 @@ const shardusSetup = (): void => {
           const allConfigs = shardeumConfigs.concat(shardusConfigs)
 
           for (const config of allConfigs) {
-            if(!configsMap.has(config)) {
+            if (!configsMap.has(config)) {
               configsMap.set(config, 1)
               keepAlive = true
-            } else if(configsMap.get(config) < keepAliveCount) {
+            } else if (configsMap.get(config) < keepAliveCount) {
               configsMap.set(config, configsMap.get(config) + 1)
               keepAlive = true
             }
           }
 
-          if((currentCycle - thisChange.cycle) <= shardusConfig.stateManager.configChangeMaxCyclesToKeep) {
+          if ((currentCycle - thisChange.cycle) <= shardusConfig.stateManager.configChangeMaxCyclesToKeep) {
             keepAlive = true
           }
 
-          if(keepAlive == false) {
+          if (keepAlive == false) {
             listOfChanges.splice(i, 1)
           }
 
@@ -6073,150 +6071,150 @@ export let shardusConfig: ShardusTypes.ServerConfiguration
   /**
    * Shardus start
    */
-;(async (): Promise<void> => {
-  setTimeout(periodicMemoryCleanup, 60000)
+  ; (async (): Promise<void> => {
+    setTimeout(periodicMemoryCleanup, 60000)
 
-  await setupArchiverDiscovery({
-    customArchiverList: config.server.p2p?.existingArchivers,
-  })
+    await setupArchiverDiscovery({
+      customArchiverList: config.server.p2p?.existingArchivers,
+    })
 
-  config.server.p2p.existingArchivers = getFinalArchiverList()
+    config.server.p2p.existingArchivers = getFinalArchiverList()
 
-  /** Standby nodes will sync network config very early here */
+    /** Standby nodes will sync network config very early here */
 
-  //this networkAccount will only be used to help build/update a config and will not be stored as a local account
-  //later when a node joins it can get the network account as part of the normal sync process
-  //   intially  use    someactivenode:<externalPort>/account/0x00000000...  to get the network account
-  //   would have to get a list active nodes from the archiver so we can know of one to ask.
-  //const networkAccount = await getTrustlessNetworkAccount()
+    //this networkAccount will only be used to help build/update a config and will not be stored as a local account
+    //later when a node joins it can get the network account as part of the normal sync process
+    //   intially  use    someactivenode:<externalPort>/account/0x00000000...  to get the network account
+    //   would have to get a list active nodes from the archiver so we can know of one to ask.
+    //const networkAccount = await getTrustlessNetworkAccount()
 
-  // this needs the logic to patch a config
-  // it will also have to call its own function:
-  //const patchedConfig = updateConfigFromNetworkAccount(config, networkAccount)
-  //use patchedConfig instead of config below
+    // this needs the logic to patch a config
+    // it will also have to call its own function:
+    //const patchedConfig = updateConfigFromNetworkAccount(config, networkAccount)
+    //use patchedConfig instead of config below
 
-  let configToLoad
-  try {
+    let configToLoad
+    try {
 
 
-    // Attempt to get and patch config. Error if unable to get config.
-    const networkAccount = await fetchNetworkAccountFromArchiver()
+      // Attempt to get and patch config. Error if unable to get config.
+      const networkAccount = await fetchNetworkAccountFromArchiver()
 
-    configToLoad = await updateConfigFromNetworkAccount(config, networkAccount)
+      configToLoad = await updateConfigFromNetworkAccount(config, networkAccount)
 
-    console.log( `Using patched configs: ${JSON.stringify(configToLoad)}`)
+      console.log(`Using patched configs: ${JSON.stringify(configToLoad)}`)
 
-  } catch (error) {
-    console.log(`Error getting network account: ${error} \nUsing default configs`)
+    } catch (error) {
+      console.log(`Error getting network account: ${error} \nUsing default configs`)
 
-    configToLoad = config;
-  }
+      configToLoad = config;
+    }
 
-  // this code is only excuted when starting or setting up the network***
-  // shardus factory for nodes joining later in the network.
-  shardus = shardusFactory(configToLoad, {
-    customStringifier: SerializeToJsonString,
-  })
+    // this code is only excuted when starting or setting up the network***
+    // shardus factory for nodes joining later in the network.
+    shardus = shardusFactory(configToLoad, {
+      customStringifier: SerializeToJsonString,
+    })
 
-  console.log('Shardus Server Config:')
-  /** This is just the ServerConfiguration part of the shardus core configuration*/
-  shardusConfig = shardus.config
-  console.log(JSON.stringify(shardusConfig, null, 2))
+    console.log('Shardus Server Config:')
+    /** This is just the ServerConfiguration part of the shardus core configuration*/
+    shardusConfig = shardus.config
+    console.log(JSON.stringify(shardusConfig, null, 2))
 
-  profilerInstance = shardus.getShardusProfiler()
-  configShardusEndpoints()
-  shardusSetup()
+    profilerInstance = shardus.getShardusProfiler()
+    configShardusEndpoints()
+    shardusSetup()
 
-  if (ShardeumFlags.GlobalNetworkAccount) {
-    // CODE THAT GETS EXECUTED WHEN NODES START
-    ;(async (): Promise<void> => {
-      const serverConfig = config.server
-      const cycleInterval = serverConfig.p2p.cycleDuration * ONE_SECOND
+    if (ShardeumFlags.GlobalNetworkAccount) {
+      // CODE THAT GETS EXECUTED WHEN NODES START
+      ; (async (): Promise<void> => {
+        const serverConfig = config.server
+        const cycleInterval = serverConfig.p2p.cycleDuration * ONE_SECOND
 
-      let node
-      let nodeId: string
-      let nodeAddress: string
-      let expected = Date.now() + cycleInterval
-      let drift: number
-      await shardus.start()
+        let node
+        let nodeId: string
+        let nodeAddress: string
+        let expected = Date.now() + cycleInterval
+        let drift: number
+        await shardus.start()
 
-      // THIS CODE IS CALLED ON EVERY NODE ON EVERY CYCLE
-      async function networkMaintenance(): Promise<NodeJS.Timeout> {
-        shardus.log('New maintainence cycle has started')
-        drift = Date.now() - expected
+        // THIS CODE IS CALLED ON EVERY NODE ON EVERY CYCLE
+        async function networkMaintenance(): Promise<NodeJS.Timeout> {
+          shardus.log('New maintainence cycle has started')
+          drift = Date.now() - expected
 
-        try {
-          nodeId = shardus.getNodeId()
-          node = shardus.getNode(nodeId)
-          nodeAddress = node.address
+          try {
+            nodeId = shardus.getNodeId()
+            node = shardus.getNode(nodeId)
+            nodeAddress = node.address
 
-          // wait for rewards
+            // wait for rewards
+            const latestCycles = shardus.getLatestCycles()
+            if (
+              latestCycles != null &&
+              latestCycles.length > 0 &&
+              latestCycles[0].counter < ShardeumFlags.FirstNodeRewardCycle
+            ) {
+              shardus.log(
+                `Too early for node reward: ${latestCycles[0].counter}.  first reward:${ShardeumFlags.FirstNodeRewardCycle}`
+              )
+              shardus.log('Maintenance cycle has ended')
+              expected += cycleInterval
+              return setTimeout(networkMaintenance, Math.max(100, cycleInterval - drift))
+            }
+          } catch (err) {
+            shardus.log('ERR: ', err)
+            console.log('ERR: ', err)
+            return setTimeout(networkMaintenance, 5000) // wait 5s before trying again
+          }
+
+          shardus.log('nodeId: ', nodeId)
+          shardus.log('nodeAddress: ', nodeAddress)
+
+          shardus.log('Maintainence cycle has ended')
+          expected += cycleInterval
+          return setTimeout(networkMaintenance, Math.max(100, cycleInterval - drift))
+        }
+
+        shardus.on('active', async (): Promise<NodeJS.Timeout> => {
           const latestCycles = shardus.getLatestCycles()
-          if (
-            latestCycles != null &&
-            latestCycles.length > 0 &&
-            latestCycles[0].counter < ShardeumFlags.FirstNodeRewardCycle
-          ) {
-            shardus.log(
-              `Too early for node reward: ${latestCycles[0].counter}.  first reward:${ShardeumFlags.FirstNodeRewardCycle}`
-            )
-            shardus.log('Maintenance cycle has ended')
-            expected += cycleInterval
-            return setTimeout(networkMaintenance, Math.max(100, cycleInterval - drift))
-          }
-        } catch (err) {
-          shardus.log('ERR: ', err)
-          console.log('ERR: ', err)
-          return setTimeout(networkMaintenance, 5000) // wait 5s before trying again
-        }
+          if (latestCycles != null && latestCycles.length > 0) {
+            const latestCycle = latestCycles[0]
+            const now = Date.now()
+            const currentCycleStart = (latestCycle.start + latestCycle.duration) * 1000
+            const timeElapsed = now - currentCycleStart
+            const blockProductionRateInSeconds = ShardeumFlags.blockProductionRate * 1000
+            const nextUpdateQuarter = Math.floor(timeElapsed / blockProductionRateInSeconds) + 1
+            const nextUpdateTimestamp = currentCycleStart + nextUpdateQuarter * blockProductionRateInSeconds
+            const waitTime = nextUpdateTimestamp - now
 
-        shardus.log('nodeId: ', nodeId)
-        shardus.log('nodeAddress: ', nodeAddress)
+            if (ShardeumFlags.VerboseLogs) {
+              console.log('Active timestamp', now)
+              console.log('timeElapsed from cycle start', timeElapsed)
+              console.log('nextUpdateQuarter', nextUpdateQuarter)
+              console.log('nextUpdateTimestamp', nextUpdateTimestamp)
+              console.log('waitTime', waitTime)
+            }
 
-        shardus.log('Maintainence cycle has ended')
-        expected += cycleInterval
-        return setTimeout(networkMaintenance, Math.max(100, cycleInterval - drift))
-      }
-
-      shardus.on('active', async (): Promise<NodeJS.Timeout> => {
-        const latestCycles = shardus.getLatestCycles()
-        if (latestCycles != null && latestCycles.length > 0) {
-          const latestCycle = latestCycles[0]
-          const now = Date.now()
-          const currentCycleStart = (latestCycle.start + latestCycle.duration) * 1000
-          const timeElapsed = now - currentCycleStart
-          const blockProductionRateInSeconds = ShardeumFlags.blockProductionRate * 1000
-          const nextUpdateQuarter = Math.floor(timeElapsed / blockProductionRateInSeconds) + 1
-          const nextUpdateTimestamp = currentCycleStart + nextUpdateQuarter * blockProductionRateInSeconds
-          const waitTime = nextUpdateTimestamp - now
-
-          if (ShardeumFlags.VerboseLogs) {
-            console.log('Active timestamp', now)
-            console.log('timeElapsed from cycle start', timeElapsed)
-            console.log('nextUpdateQuarter', nextUpdateQuarter)
-            console.log('nextUpdateTimestamp', nextUpdateTimestamp)
-            console.log('waitTime', waitTime)
+            setTimeout(() => {
+              getOrCreateBlockFromTimestamp(nextUpdateTimestamp, true)
+            }, waitTime)
           }
 
-          setTimeout(() => {
-            getOrCreateBlockFromTimestamp(nextUpdateTimestamp, true)
-          }, waitTime)
-        }
+          if (shardus.p2p.isFirstSeed) {
+            await sleep(cycleInterval * 2)
+          }
 
-        if (shardus.p2p.isFirstSeed) {
-          await sleep(cycleInterval * 2)
-        }
+          shardus.registerCacheTopic(
+            'receipt',
+            ShardeumFlags.cacheMaxCycleAge,
+            ShardeumFlags.cacheMaxItemPerTopic
+          )
 
-        shardus.registerCacheTopic(
-          'receipt',
-          ShardeumFlags.cacheMaxCycleAge,
-          ShardeumFlags.cacheMaxItemPerTopic
-        )
-
-        return setTimeout(networkMaintenance, cycleInterval)
-      })
-    })()
-  } else {
-    shardus.start()
-  }
-})()
+          return setTimeout(networkMaintenance, cycleInterval)
+        })
+      })()
+    } else {
+      shardus.start()
+    }
+  })()

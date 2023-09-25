@@ -103,8 +103,6 @@ export default class ShardeumState implements EVMStateManagerInterface {
 
   _transactionState: TransactionState
 
-  temporaryParallelOldMode: boolean
-
   //TODO remvoe this once SaveEVMTries option goes away
   _trie: Trie
 
@@ -134,8 +132,6 @@ export default class ShardeumState implements EVMStateManagerInterface {
       common = new Common({ chain: Chain.Mainnet, hardfork: Hardfork.Istanbul })
     }
     this.common = common
-
-    this.temporaryParallelOldMode = false
 
     this.originalStorageCache = new OriginalStorageCache(this.getContractStorage.bind(this))
 
@@ -204,20 +200,11 @@ export default class ShardeumState implements EVMStateManagerInterface {
     //side run system on the side for now
     if (this._transactionState != null) {
       testAccount = await this._transactionState.getAccount(null, address, false, false)
-      if (this.temporaryParallelOldMode === false) {
-        return testAccount
-      }
+      return testAccount
     }
 
     if (ShardeumFlags.VerboseLogs) console.log('Unable to find transactionState', address)
-    if (this.temporaryParallelOldMode === false) {
-      return // the code below will be irrelevant post SGS upgrade
-    }
-
-    throw new Error('getAccount should never get here')
-    // // Original implementation:
-    // const account = await this._cache.getOrLoad(address)
-    // return account
+    return
   }
 
   /**
@@ -230,12 +217,7 @@ export default class ShardeumState implements EVMStateManagerInterface {
       //side run system on the side for now
       this._transactionState.putAccount(address, account)
     }
-
-    if (this.temporaryParallelOldMode === false) {
-      return // the code below will be irrelevant post SGS upgrade
-    }
-
-    throw new Error('putAccount should never get here')
+    return
   }
 
   /**
@@ -276,12 +258,7 @@ export default class ShardeumState implements EVMStateManagerInterface {
       //side run system on the side for now
       this._transactionState.putContractCode(address, value)
     }
-
-    if (this.temporaryParallelOldMode === false) {
-      return // the code below will be irrelevant post SGS upgrade
-    }
-
-    throw new Error('putContractCode should never get here')
+    return
   }
 
   /**
@@ -294,16 +271,10 @@ export default class ShardeumState implements EVMStateManagerInterface {
     //side run system on the side for now
     if (this._transactionState != null) {
       const testAccount = await this._transactionState.getContractCode(null, address, false, false)
-      if (this.temporaryParallelOldMode === false) {
-        return testAccount
-      }
+      return testAccount
     }
-
-    if (this.temporaryParallelOldMode === false) {
-      return // the code below will be irrelevant post SGS upgrade
-    }
-
-    throw new Error('getContractCode should never get here')
+    if (ShardeumFlags.VerboseLogs) console.log('Unable to find transactionState', address)
+    return
   }
 
   /**
@@ -330,15 +301,10 @@ export default class ShardeumState implements EVMStateManagerInterface {
     let testAccount
     if (this._transactionState != null) {
       testAccount = await this._transactionState.getContractStorage(null, address, key, originalOnly, false)
-      if (this.temporaryParallelOldMode === false) {
-        return testAccount
-      }
+      return testAccount
     }
-    if (this.temporaryParallelOldMode === false) {
-      return // the code below will be irrelevant post SGS upgrade
-    }
-
-    throw new Error('getContractStorage should never get here')
+    if (ShardeumFlags.VerboseLogs) console.log('Unable to find transactionState', address)
+    return
   }
 
   /**
@@ -352,15 +318,11 @@ export default class ShardeumState implements EVMStateManagerInterface {
   async getOriginalContractStorage(address: Address, key: Buffer): Promise<Uint8Array> {
     if (this._transactionState != null) {
       const testAccount = await this._transactionState.getContractStorage(null, address, key, true, false)
-      if (this.temporaryParallelOldMode === false) {
-        return testAccount
-      }
-    }
-    if (this.temporaryParallelOldMode === false) {
-      return // the code below will be irrelevant post SGS upgrade
-    }
+      return testAccount
 
-    throw new Error('getOriginalContractStorage should never get here')
+    }
+    if (ShardeumFlags.VerboseLogs) console.log('Unable to find transactionState', address)
+    return
   }
 
   /**
@@ -455,12 +417,7 @@ export default class ShardeumState implements EVMStateManagerInterface {
       //side run system on the side for now
       this._transactionState.putContractStorage(address, key, value)
     }
-
-    if (this.temporaryParallelOldMode === false) {
-      return // the code below will be irrelevant post SGS upgrade
-    }
-
-    throw new Error('putContractStorage should never get here')
+    return
   }
 
   /**
@@ -482,14 +439,7 @@ export default class ShardeumState implements EVMStateManagerInterface {
     if (this._transactionState != null) {
       this._transactionState.checkpoint()
     }
-
-    //side run: shardeum will no-op this in the future
-    //  investigate: will it be a problem that EVM may call this for failed functions, or does that all bubble up anyhow?
-    if (this.temporaryParallelOldMode === false) {
-      return // the code below will be irrelevant post SGS upgrade
-    }
-
-    throw new Error('checkpoint should never get here')
+    return
   }
 
   /**
@@ -499,17 +449,10 @@ export default class ShardeumState implements EVMStateManagerInterface {
   async commit(): Promise<void> {
     this._touchedStack.pop()
 
-    //side run: shardeum will no-op this in the future
-    //  investigate: will it be a problem that EVM may call this for failed functions, or does that all bubble up anyhow?
-    if (this.temporaryParallelOldMode === false) {
-      if (this._transactionState != null) {
-        this._transactionState.commit()
-      }
-
-      return // the code below will be irrelevant post SGS upgrade
+    if (this._transactionState != null) {
+      this._transactionState.commit()
     }
-
-    throw new Error('commit should never get here')
+    return
   }
 
   /**
@@ -541,13 +484,7 @@ export default class ShardeumState implements EVMStateManagerInterface {
     if (this._transactionState != null) {
       this._transactionState.revert()
     }
-
-    //side run: shardeum will no-op this in the future
-    //  investigate: will it be a problem that EVM may call this for failed functions, or does that all bubble up anyhow?
-    if (this.temporaryParallelOldMode === false) {
-      return // the code below will be irrelevant post SGS upgrade
-    }
-    throw new Error('revert should never get here')
+    return
   }
 
   /**
