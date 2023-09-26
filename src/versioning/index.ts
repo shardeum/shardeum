@@ -18,25 +18,6 @@ const appliedMigrations = new Set<string>()
 export const onActiveVersionChange = async (newActiveVersion: string) => {
   // For future migrations, add a file under ./migrations and add the version here
   const migrations = [
-    '1.1.1',
-    '1.1.2',
-    '1.1.3',
-    '1.1.4',
-    '1.1.5',
-    '1.1.6',
-    '1.1.7',
-    '1.1.8',
-    '1.1.9',
-    '1.2.3',
-    '1.3.1',
-    '1.4.1',
-    '1.4.2',
-    '1.5.2',
-    '1.5.3',
-    '1.5.4',
-    '1.5.5',
-    '1.5.6',
-    '1.5.7',
     '1.6.0',
   ]
 

@@ -135,15 +135,31 @@ config = merge(config, {
       maxScaleReqs: 250, // todo: this will become a variable config but this should work for a 500 node demo
       forceBogonFilteringOn: true,
       //these are new feature in 1.3.0, we can make them default:true in shardus-core later
-      validateActiveRequests: true, //new logic to prevent already active nodes from submitting active requests
+
+      // 1.2.3 migration starts
+      validateActiveRequests: true, //new logic to prevent already active nodes from submitting active requests 
       continueOnException: true, //Allow nodes to contineue on unhandled exceptions if the network is low on nodes
       useSignaturesForAuth: true, //This is a major performance upgrade for p2p tell
+      // 1.2.3 migration ends
+
       uniqueRemovedIds: true, //1.3.1 migration. enabled by default in 1.4.0
       useLruCacheForSocketMgmt: true,
       lruCacheSizeForSocketMgmt: 500,
       uniqueRemovedIdsUpdate: true, // To enable on 1.4.1
       instantForwardReceipts: true, // To enable on 1.5.3
       validateArchiverAppData: false, // To enable this on new reset network
+
+      // 1.5.5 migration
+      /*
+        Notes: 
+        // todo this flag needs to be implemented:
+        //it should activate nodes writing the new hashes to the cycle record , but the
+        //full logic will be enabled in 1.5.6
+      */
+      writeSyncProtocolV2: true,
+
+      // 1.5.6 migration
+      useSyncProtocolV2: true,
     },
   },
 })
@@ -183,7 +199,7 @@ config = merge(config, {
     },
     stateManager: {
       accountBucketSize: 200, // todo: we need to re-test with higher numbers after some recent improvements
-      includeBeforeStatesInReceipts: false,
+      includeBeforeStatesInReceipts: false, // 1.5.3 migration
     },
   },
 })

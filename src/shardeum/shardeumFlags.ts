@@ -177,7 +177,7 @@ export const ShardeumFlags: ShardeumFlags = {
   supportInternalTxReceipt: true,
   totalUnstakeAmount: true,
   txHashingFix: true,
-  addInternalTxReceiptAccount: true,
+  addInternalTxReceiptAccount: true, // This setting is not part of 1.1.3 migration
 
   // 1.1.6 migration
   fixSetCertTimeTxApply: true,
@@ -188,30 +188,34 @@ export const ShardeumFlags: ShardeumFlags = {
   // 1.2.3 migration
   fixContractBytes: true,
   fixCertExpTiming: true,
-  shardeumVMPrecompiledFix: true,
+  shardeumVMPrecompiledFix: true, // This setting is not part of 1.2.3 migration
 
   // 1.3.1 migration
   chargeConstantTxFee: false, //true is the old way.  and false is to activate the variable TXs
+
+  // These two setting is not part of 1.3.1 migration
   baselineTxGasUsage: '36655',
   baselineTxFee: '10000000000000000', // $0.01 * 10 ^ 18
 
   // 1.4.1 migration
   removeTokenBalanceCache: true,
   enableNodeSlashing: true,
+
+  //  This setting is not part of 1.4.1 migration
   penaltyPercent: 0.2, //this is just a setting and does not need to be adjusted for migration
 
   // 1.5.2 migration
-  receiptLogIndexFix: false,
+  receiptLogIndexFix: true,
 
   // 1.5.4 migration
-  accesslistNonceFix: false,
+  accesslistNonceFix: true,
 
   // 1.5.5 migration
-  nonceCheckRange: 3,
-  looseNonceCheck: false,
+  nonceCheckRange: 3, //  This setting is not part of 1.5.5 migration
+  looseNonceCheck: true,
 
   // 1.5.7 migration
-  supportEstimateGas: false,
+  supportEstimateGas: true,
 }
 
 export function updateShardeumFlag(key: string, value: string | number | boolean): void {
