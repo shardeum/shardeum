@@ -138,7 +138,8 @@ config = merge(config, {
 
       // 1.2.3 migration starts
       validateActiveRequests: true, //new logic to prevent already active nodes from submitting active requests
-      continueOnException: true, //Allow nodes to contineue on unhandled exceptions if the network is low on nodes
+      // set back to false in 1.6.0
+      //continueOnException: true, //Allow nodes to contineue on unhandled exceptions if the network is low on nodes
       useSignaturesForAuth: true, //This is a major performance upgrade for p2p tell
       // 1.2.3 migration ends
 
@@ -158,6 +159,9 @@ config = merge(config, {
 
       // 1.5.6 migration
       useSyncProtocolV2: true,
+
+      //1.6.0 migration
+      continueOnException: false,
     },
   },
 })
