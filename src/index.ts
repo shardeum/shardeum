@@ -6002,7 +6002,8 @@ async function fetchNetworkAccountFromArchiver(): Promise<WrappedAccount> {
       `http://${archiver.ip}:${archiver.port}/get-network-account?hash=true`
     )
     if (!res.data) {
-      throw new Error(`get-network-account from archiver pk:${archiver.publicKey} returned null`)
+      /* prettier-ignore */ nestedCountersInstance.countEvent('network-config-operation', 'failure: did not get network account from archiver private key. Use default configs.')
+      throw new Error(`fetchNetworkAccountFromArchiver() from pk:${archiver.publicKey} returned null`)
     }
 
     values.push({
@@ -6014,6 +6015,7 @@ async function fetchNetworkAccountFromArchiver(): Promise<WrappedAccount> {
   //make sure there was a majority winner for the hash
   const majorityValue = findMajorityResult(values, (v) => v.hash)
   if (!majorityValue) {
+    /* prettier-ignore */ nestedCountersInstance.countEvent('network-config-operation', 'failure: no majority found for archivers get-network-account result. Use default configs.')
     throw new Error(`no majority found for archivers get-network-account result `)
   }
 
@@ -6021,6 +6023,7 @@ async function fetchNetworkAccountFromArchiver(): Promise<WrappedAccount> {
     `http://${majorityValue.archiver.ip}:${majorityValue.archiver.port}/get-network-account?hash=false`
   )
   if (!res.data) {
+    /* prettier-ignore */ nestedCountersInstance.countEvent('network-config-operation', 'failure: did not get network account from archiver private key, returned null. Use default configs.')
     throw new Error(`get-network-account from archiver pk:${majorityValue.archiver.publicKey} returned null`)
   }
   return res.data
@@ -6038,6 +6041,8 @@ async function updateConfigFromNetworkAccount(
 
   // Validate changes
   if (!changes || !Array.isArray(changes)) {
+    /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log('updateConfigFromNetworkAccount(): No changes to apply to the config.')
+    /* prettier-ignore */ nestedCountersInstance.countEvent('network-config-operation', 'success: no changes because no changes to apply to the config.')
     return config
   }
 
@@ -6046,6 +6051,10 @@ async function updateConfigFromNetworkAccount(
     // Apply changes using patchObject function
     patchObject(config, change.change)
   }
+
+  /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log('updateConfigFromNetworkAccount(): Successfully applied changes to the config.')
+  /* prettier-ignore */ nestedCountersInstance.countEvent('network-config-operation', 'success: applied changes to config')
+
   // Return the patched config
   return config
 }
@@ -6098,19 +6107,16 @@ export let shardusConfig: ShardusTypes.ServerConfiguration
 
     let configToLoad
     try {
-
-
       // Attempt to get and patch config. Error if unable to get config.
       const networkAccount = await fetchNetworkAccountFromArchiver()
 
       configToLoad = await updateConfigFromNetworkAccount(config, networkAccount)
 
-      console.log(`Using patched configs: ${JSON.stringify(configToLoad)}`)
-
     } catch (error) {
-      console.log(`Error getting network account: ${error} \nUsing default configs`)
-
-      configToLoad = config;
+      configToLoad = config
+      /* prettier-ignore */ nestedCountersInstance.countEvent('network-config-operation', 'Error: Use default configs.')
+      /* prettier-ignore */ console.log(`Error: ${error} \nUsing default configs`)
+      
     }
 
     // this code is only excuted when starting or setting up the network***
