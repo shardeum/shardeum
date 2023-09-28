@@ -195,8 +195,8 @@ export class VM {
    *
    * @param {RunTxOpts} opts
    */
-  async runTx(opts: RunTxOpts): Promise<RunTxResult> {
-    return runTx.bind(this)(opts)
+  async runTx(opts: RunTxOpts, evm: any = null): Promise<RunTxResult> {
+    return runTx.bind(this)(opts, evm)
   }
 
   /**

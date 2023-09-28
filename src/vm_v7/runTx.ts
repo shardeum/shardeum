@@ -14,6 +14,7 @@ import {
 import debugDefault from 'debug'
 import {ShardeumFlags} from "../shardeum/shardeumFlags";
 const { chargeConstantTxFee, constantTxFeeUsd, baselineTxGasUsage, baselineTxFee } = ShardeumFlags
+import { EVM as EthereumVirtualMachine, EVMInterface, getActivePrecompiles } from '../evm_v2'
 
 import { Bloom } from './bloom/index.js'
 
@@ -61,7 +62,8 @@ function execHardfork(
 /**
  * @ignore
  */
-export async function runTx(this: VM, opts: RunTxOpts): Promise<RunTxResult> {
+export async function runTx(this: VM, opts: RunTxOpts, evm: EthereumVirtualMachine): Promise<RunTxResult> {
+  if (evm == null) evm = this.evm
   // create a reasonable default if no block is given
   opts.block = opts.block ?? Block.fromBlockData({}, { common: this.common })
 
@@ -95,13 +97,13 @@ export async function runTx(this: VM, opts: RunTxOpts): Promise<RunTxResult> {
   }
 
   // Ensure we start with a clear warmed accounts Map
-  await this.evm.journal.cleanup()
+  await evm.journal.cleanup()
 
   if (opts.reportAccessList === true) {
-    this.evm.journal.startReportingAccessList()
+    evm.journal.startReportingAccessList()
   }
 
-  await this.evm.journal.checkpoint()
+  await evm.journal.checkpoint()
   if (this.DEBUG) {
     debug('-'.repeat(100))
     debug(`tx checkpoint`)
@@ -114,7 +116,7 @@ export async function runTx(this: VM, opts: RunTxOpts): Promise<RunTxResult> {
   ) {
     // Is it an Access List transaction?
     if (this.common.isActivatedEIP(2930) === false) {
-      await this.evm.journal.revert()
+      await evm.journal.revert()
       const msg = _errorMsg(
         'Cannot run transaction: EIP 2930 is not activated.',
         this,
@@ -127,7 +129,7 @@ export async function runTx(this: VM, opts: RunTxOpts): Promise<RunTxResult> {
       opts.tx.supports(Capability.EIP1559FeeMarket) &&
       this.common.isActivatedEIP(1559) === false
     ) {
-      await this.evm.journal.revert()
+      await evm.journal.revert()
       const msg = _errorMsg(
         'Cannot run transaction: EIP 1559 is not activated.',
         this,
@@ -140,36 +142,37 @@ export async function runTx(this: VM, opts: RunTxOpts): Promise<RunTxResult> {
     const castedTx = <AccessListEIP2930Transaction>opts.tx
 
     for (const accessListItem of castedTx.AccessListJSON) {
-      this.evm.journal.addAlwaysWarmAddress(accessListItem.address, true)
+      evm.journal.addAlwaysWarmAddress(accessListItem.address, true)
       for (const storageKey of accessListItem.storageKeys) {
-        this.evm.journal.addAlwaysWarmSlot(accessListItem.address, storageKey, true)
+        evm.journal.addAlwaysWarmSlot(accessListItem.address, storageKey, true)
       }
     }
   }
 
   try {
-    const result = await _runTx.bind(this)(opts)
-    await this.evm.journal.commit()
+    const result = await _runTx.bind(this)(opts, evm)
+    await evm.journal.commit()
     if (this.DEBUG) {
       debug(`tx checkpoint committed`)
     }
     return result
   } catch (e: any) {
-    await this.evm.journal.revert()
+    await evm.journal.revert()
     if (this.DEBUG) {
       debug(`tx checkpoint reverted`)
     }
     throw e
   } finally {
     if (this.common.isActivatedEIP(2929) === true) {
-      this.evm.journal.cleanJournal()
+      evm.journal.cleanJournal()
     }
-    this.evm.stateManager.originalStorageCache.clear()
+    evm.stateManager.originalStorageCache.clear()
   }
 }
 
-async function _runTx(this: VM, opts: RunTxOpts): Promise<RunTxResult> {
+async function _runTx(this: VM, opts: RunTxOpts, evm: any): Promise<RunTxResult> {
   const state = this.stateManager
+  if (evm == null) evm = this.evm
 
   const { tx, block } = opts
 
@@ -197,17 +200,17 @@ async function _runTx(this: VM, opts: RunTxOpts): Promise<RunTxResult> {
 
   if (this.common.isActivatedEIP(2929) === true) {
     // Add origin and precompiles to warm addresses
-    const activePrecompiles = this.evm.precompiles
+    const activePrecompiles = evm.precompiles
     for (const [addressStr] of activePrecompiles.entries()) {
-      this.evm.journal.addAlwaysWarmAddress(addressStr)
+      evm.journal.addAlwaysWarmAddress(addressStr)
     }
-    this.evm.journal.addAlwaysWarmAddress(caller.toString())
+    evm.journal.addAlwaysWarmAddress(caller.toString())
     if (tx.to !== undefined) {
       // Note: in case we create a contract, we do this in EVMs `_executeCreate` (this is also correct in inner calls, per the EIP)
-      this.evm.journal.addAlwaysWarmAddress(bytesToUnprefixedHex(tx.to.bytes))
+      evm.journal.addAlwaysWarmAddress(bytesToUnprefixedHex(tx.to.bytes))
     }
     if (this.common.isActivatedEIP(3651) === true) {
-      this.evm.journal.addAlwaysWarmAddress(bytesToUnprefixedHex(block.header.coinbase.bytes))
+      evm.journal.addAlwaysWarmAddress(bytesToUnprefixedHex(block.header.coinbase.bytes))
     }
   }
 
@@ -265,7 +268,7 @@ async function _runTx(this: VM, opts: RunTxOpts): Promise<RunTxResult> {
       if (tx.supports(Capability.EIP1559FeeMarket) === false) {
         // if skipBalance and not EIP1559 transaction, ensure caller balance is enough to run transaction
         fromAccount.balance = upFrontCost
-        await this.evm.journal.putAccount(caller, fromAccount)
+        await evm.journal.putAccount(caller, fromAccount)
       }
     } else {
       const msg = _errorMsg(
@@ -327,7 +330,7 @@ async function _runTx(this: VM, opts: RunTxOpts): Promise<RunTxResult> {
     if (opts.skipBalance === true && fromAccount.balance < maxCost) {
       // if skipBalance, ensure caller balance is enough to run transaction
       fromAccount.balance = maxCost
-      await this.evm.journal.putAccount(caller, fromAccount)
+      await evm.journal.putAccount(caller, fromAccount)
     } else {
       const msg = _errorMsg(
         `sender doesn't have enough funds to send tx. The max cost is: ${maxCost} and the sender's account (${caller}) only has: ${balance}`,
@@ -392,7 +395,7 @@ async function _runTx(this: VM, opts: RunTxOpts): Promise<RunTxResult> {
   if (opts.skipBalance === true && fromAccount.balance < BigInt(0)) {
     fromAccount.balance = BigInt(0)
   }
-  await this.evm.journal.putAccount(caller, fromAccount)
+  await evm.journal.putAccount(caller, fromAccount)
   if (this.DEBUG) {
     debug(`Update fromAccount (caller) balance (-> ${fromAccount.balance}))`)
   }
@@ -412,7 +415,7 @@ async function _runTx(this: VM, opts: RunTxOpts): Promise<RunTxResult> {
     )
   }
 
-  const results = (await this.evm.runCall({
+  const results = (await evm.runCall({
     block,
     gasPrice,
     caller,
@@ -490,7 +493,7 @@ async function _runTx(this: VM, opts: RunTxOpts): Promise<RunTxResult> {
   }
   const txCostDiff = txCost - actualTxCost
   fromAccount.balance += txCostDiff
-  await this.evm.journal.putAccount(caller, fromAccount)
+  await evm.journal.putAccount(caller, fromAccount)
   if (this.DEBUG) {
     debug(
       `Refunded txCostDiff (${txCostDiff}) to fromAccount (caller) balance (-> ${fromAccount.balance})`
@@ -519,7 +522,7 @@ async function _runTx(this: VM, opts: RunTxOpts): Promise<RunTxResult> {
   // Put the miner account into the state. If the balance of the miner account remains zero, note that
   // the state.putAccount function puts this into the "touched" accounts. This will thus be removed when
   // we clean the touched accounts below in case we are in a fork >= SpuriousDragon
-  await this.evm.journal.putAccount(miner, minerAccount)
+  await evm.journal.putAccount(miner, minerAccount)
   if (this.DEBUG) {
     debug(`tx update miner account (${miner}) balance (-> ${minerAccount.balance})`)
   }
@@ -536,7 +539,7 @@ async function _runTx(this: VM, opts: RunTxOpts): Promise<RunTxResult> {
           continue
         }
       }
-      await this.evm.journal.deleteAccount(address)
+      await evm.journal.deleteAccount(address)
       if (this.DEBUG) {
         debug(`tx selfdestruct on address=${address}`)
       }
@@ -546,7 +549,7 @@ async function _runTx(this: VM, opts: RunTxOpts): Promise<RunTxResult> {
   if (opts.reportAccessList === true && this.common.isActivatedEIP(2930)) {
     // Convert the Map to the desired type
     const accessList: AccessList = []
-    for (const [address, set] of this.evm.journal.accessList!) {
+    for (const [address, set] of evm.journal.accessList!) {
       const addressPrefixed = '0x' + address
       const item: AccessListItem = {
         address: addressPrefixed,
@@ -562,7 +565,7 @@ async function _runTx(this: VM, opts: RunTxOpts): Promise<RunTxResult> {
     results.accessList = accessList
   }
 
-  await this.evm.journal.cleanup()
+  await evm.journal.cleanup()
   state.originalStorageCache.clear()
 
   // Generate the tx receipt

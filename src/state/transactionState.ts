@@ -399,7 +399,7 @@ export default class TransactionState {
     }
 
     if (this.accountInvolvedCB(this, addressString, true) === false) {
-      throw new Error('unable to proceed, cant involve account')
+      throw new Error(`unable to proceed, cant involve account for txId ${this.linkedTX}`)
     }
 
     let storedRlp: Uint8Array
@@ -498,7 +498,7 @@ export default class TransactionState {
     }
 
     if (this.accountInvolvedCB(this, addressString, false) === false) {
-      throw new Error('unable to proceed, cant involve account')
+      throw new Error(`unable to proceed, cant involve account for txId ${this.linkedTX}`)
     }
     TransactionState.fixAccountFields(account)
 
@@ -523,7 +523,7 @@ export default class TransactionState {
     const addressString = address.toString()
 
     if (this.accountInvolvedCB(this, addressString, false) === false) {
-      throw new Error('unable to proceed, cant involve account')
+      throw new Error(`unable to proceed, cant involve account for txId ${this.linkedTX}`)
     }
 
     TransactionState.fixAccountFields(account)
@@ -579,7 +579,7 @@ export default class TransactionState {
     }
 
     if (this.accountInvolvedCB(this, addressString, true) === false) {
-      throw new Error('unable to proceed, cant involve contract bytes')
+      throw new Error(`unable to proceed, cant involve contract bytes account for txId ${this.linkedTX}`)
     }
 
     let storedCodeByte: Uint8Array
@@ -649,7 +649,7 @@ export default class TransactionState {
     const addressString = contractAddress.toString()
 
     if (this.accountInvolvedCB(this, addressString, false) === false) {
-      throw new Error('unable to proceed, cant involve contract storage')
+      throw new Error(`unable to proceed, cant involve contract code account for txId ${this.linkedTX}`)
     }
 
     const codeHash = keccak256(codeByte)
@@ -681,7 +681,7 @@ export default class TransactionState {
     const addressString = contractAddress.toString()
 
     if (this.accountInvolvedCB(this, addressString, false) === false) {
-      throw new Error('unable to proceed, cant involve contract storage')
+      throw new Error(`unable to proceed, cant involve contract storage account for txId ${this.linkedTX}`)
     }
 
     const codeHash = keccak256(codeByte)

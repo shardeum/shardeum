@@ -1546,15 +1546,12 @@ const configShardusEndpoints = (): void => {
 
       opt['block'] = blocks[latestBlock] // eslint-disable-line security/detect-object-injection
 
-      EVM.stateManager = null
-      EVM.evm.stateManager = null
-      EVM.evm.journal.stateManager = null
+      const customEVM = new EthereumVirtualMachine({
+        common: evmCommon,
+        stateManager: callTxState,
+      })
 
-      EVM.stateManager = callTxState
-      EVM.evm.stateManager = callTxState
-      EVM.evm.journal.stateManager = callTxState
-
-      const callResult: EVMResult = await EVM.evm.runCall(opt)
+      const callResult: EVMResult = await customEVM.runCall(opt)
       let returnedValue = bytesToHex(callResult.execResult.returnValue)
       if (returnedValue && returnedValue.indexOf('0x') === 0) {
         returnedValue = returnedValue.slice(2)
@@ -2539,13 +2536,18 @@ async function estimateGas(
     callerAccount ? callerAccount.account : fakeAccount
   )
 
+  const customEVM = new EthereumVirtualMachine({
+    common: evmCommon,
+    stateManager: preRunTxState,
+  })
+
   EVM.stateManager = null
-  EVM.evm.stateManager = null
-  EVM.evm.journal.stateManager = null
+  // EVM.evm.stateManager = null
+  // EVM.evm.journal.stateManager = null
 
   EVM.stateManager = preRunTxState
-  EVM.evm.stateManager = preRunTxState
-  EVM.evm.journal.stateManager = preRunTxState
+  // EVM.evm.stateManager = preRunTxState
+  // EVM.evm.journal.stateManager = preRunTxState
 
   const runTxResult = await EVM.runTx({
     block: blocks[latestBlock],
@@ -2553,7 +2555,7 @@ async function estimateGas(
     skipNonce: true,
     skipBalance: true,
     networkAccount: AccountsStorage.cachedNetworkAccount,
-  })
+  }, customEVM)
   if (ShardeumFlags.VerboseLogs) console.log('Predicted gasUsed', runTxResult.totalGasSpent)
 
   if (runTxResult.execResult.exceptionError) {
@@ -2650,13 +2652,13 @@ async function generateAccessList(
       callerAccount ? callerAccount.account : fakeAccount // todo: using fake account may not work in new ethereumJS
     )
 
-    EVM.stateManager = null
-    EVM.evm.stateManager = null
-    EVM.evm.journal.stateManager = null
+    const customEVM = new EthereumVirtualMachine({
+      common: evmCommon,
+      stateManager: preRunTxState,
+    })
 
+    EVM.stateManager = null
     EVM.stateManager = preRunTxState
-    EVM.evm.stateManager = preRunTxState
-    EVM.evm.journal.stateManager = preRunTxState
 
     if (transaction == null) {
       return { accessList: [], shardusMemoryPatterns: null }
@@ -2669,7 +2671,7 @@ async function generateAccessList(
       skipNonce: true,
       skipBalance: true,
       networkAccount: AccountsStorage.cachedNetworkAccount,
-    })
+    }, customEVM)
 
     const readAccounts = preRunTxState._transactionState.getReadAccounts()
     const writtenAccounts = preRunTxState._transactionState.getWrittenAccounts()
@@ -3481,21 +3483,20 @@ const shardusSetup = (): void => {
       )
       /* prettier-ignore */ shardus.setDebugSetLastAppAwait(`apply():getLocalOrRemoteAccount(${networkAccount})`, DebugComplete.Completed)
       try {
+        const customEVM = new EthereumVirtualMachine({
+          common: evmCommon,
+          stateManager: shardeumState,
+        })
         // if checkNonce is true, we're not gonna skip the nonce
         EVM.stateManager = null
-        EVM.evm.stateManager = null
-        EVM.evm.journal.stateManager = null
-
         EVM.stateManager = shardeumState
-        EVM.evm.stateManager = shardeumState
-        EVM.evm.journal.stateManager = shardeumState
         shardus.setDebugSetLastAppAwait(`apply():runTx`)
         runTxResult = await EVM.runTx({
           block: blockForTx,
           tx: transaction,
           skipNonce: !ShardeumFlags.CheckNonce,
           networkAccount: wrappedNetworkAccount.data,
-        })
+        }, customEVM)
         shardus.setDebugSetLastAppAwait(`apply():runTx`, DebugComplete.Completed)
         if (ShardeumFlags.VerboseLogs) console.log('runTxResult', txId, runTxResult)
 
