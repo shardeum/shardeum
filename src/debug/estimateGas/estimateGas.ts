@@ -1,8 +1,9 @@
-import { AccessListEIP2930Transaction, LegacyTransaction, Transaction, TransactionType } from '@ethereumjs/tx'
+import { AccessListEIP2930Transaction, LegacyTransaction } from '@ethereumjs/tx'
 import { Account, Address } from '@ethereumjs/util'
 import { oneSHM } from '../../shardeum/shardeumConstants'
 import { ShardeumState } from '../state'
-import { networkAccount } from '../evmSetup'
+import { evmCommon, networkAccount } from '../evmSetup'
+import { EVM as EthereumVirtualMachine } from '../../evm_v2'
 import { getOrCreateBlockFromTimestamp } from '../block/blockchain'
 import { AccountType, WrappedEVMAccount } from '../../shardeum/shardeumTypes'
 import {
@@ -89,22 +90,31 @@ export async function estimateGas(
     callerAccount ? callerAccount.account : fakeAccount
   )
 
+  const customEVM = new EthereumVirtualMachine({
+    common: evmCommon,
+    stateManager: preRunTxState,
+  })
+
   EVM.stateManager = null
-  EVM.evm.stateManager = null
-  EVM.evm.journal.stateManager = null
+  // EVM.evm.stateManager = null
+  // EVM.evm.journal.stateManager = null
 
   EVM.stateManager = preRunTxState
-  EVM.evm.stateManager = preRunTxState
-  EVM.evm.journal.stateManager = preRunTxState
+  // EVM.evm.stateManager = preRunTxState
+  // EVM.evm.journal.stateManager = preRunTxState
 
   const blockForTx = getOrCreateBlockFromTimestamp(0)
 
-  const runTxResult = await EVM.runTx({
-    block: blockForTx,
-    tx: transaction,
-    skipNonce: true,
-    networkAccount: networkAccount.data,
-  })
+  const runTxResult = await EVM.runTx(
+    {
+      block: blockForTx,
+      tx: transaction,
+      skipNonce: true,
+      skipBalance: true,
+      networkAccount: networkAccount.data,
+    },
+    customEVM
+  )
   let estimatedGasRequired = BigInt(runTxResult.totalGasSpent)
   const gasRefund = runTxResult.execResult.gasRefund ? BigInt(runTxResult.execResult.gasRefund) : BigInt(0)
   // Add gasRefund to estimatedGasRequired
