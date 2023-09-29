@@ -3210,6 +3210,8 @@ const shardusSetup = (): void => {
           throw new Error(
             `Unable to apply Unstake tx because operator account info does not exist for ${unstakeCoinsTX.nominator}`
           )
+        } else {
+          operatorEVMAccount.operatorAccountInfo = fixBigIntLiteralsToBigInt(operatorEVMAccount.operatorAccountInfo)
         }
         fixDeserializedWrappedEVMAccount(operatorEVMAccount)
 
