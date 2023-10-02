@@ -295,6 +295,9 @@ export const validateTxnFields =
           } else if (nodeAccount.nominator !== unstakeCoinsTX.nominator) {
             success = false
             reason = `This node is staked by another account. You can't unstake it!`
+          } else if (shardus.isOnStandbyList(appData.nomineeAccount) === true) {
+            success = false
+            reason = `This node is in the network's Standby list. You can unstake only after the node leaves the Standby list!`
           } else if (shardus.isNodeActiveByPubKey(appData.nomineeAccount) === true) {
             success = false
             reason = `This node is still active in the network. You can unstake only after the node leaves the network!`
