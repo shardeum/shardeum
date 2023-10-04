@@ -127,7 +127,7 @@ config = merge(config, {
       maxSyncingPerCycle: 10,
       maxRotatedPerCycle: process.env.maxRotatedPerCycle ? parseInt(process.env.maxRotatedPerCycle) : 1,
       firstCycleJoin: 0,
-      maxSyncTimeFloor: 18000,
+      maxSyncTimeFloor: 1200, // 20 minutes.  If the network lives a long time we may have to bump this up
       syncBoostEnabled: false,
       amountToGrow: 30,
       amountToShrink: 5,
