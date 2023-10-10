@@ -19,7 +19,7 @@ import { TraceDataFactory, ITraceData } from './trace/traceDataFactory'
 import * as AccountsStorage from './db'
 import * as WrappedEVMAccountFunctions from '../shardeum/wrappedEVMAccountFunctions'
 import { estimateGas } from './estimateGas/estimateGas'
-import { EVMStateManagerInterface } from '@ethereumjs/common'
+import { EVM as EthereumVirtualMachine } from '../evm_v2'
 
 export async function createAccount(addressStr: string, balance = BigInt(0)): Promise<WrappedEVMAccount> {
   // if (ShardeumFlags.VerboseLogs) console.log('Creating new account', addressStr)
@@ -206,13 +206,18 @@ const runTransaction = async (
 
   const blockForTx = getOrCreateBlockFromTimestamp(txTimestamp)
 
+  const customEVM = new EthereumVirtualMachine({
+    common: evmCommon,
+    stateManager: shardeumState,
+  })
+
   EVM.stateManager = null
-  EVM.evm.stateManager = null
-  EVM.evm.journal.stateManager = null
+  // EVM.evm.stateManager = null
+  // EVM.evm.journal.stateManager = null
 
   EVM.stateManager = shardeumState
-  EVM.evm.stateManager = shardeumState
-  EVM.evm.journal.stateManager = shardeumState
+  // EVM.evm.stateManager = shardeumState
+  // EVM.evm.journal.stateManager = shardeumState
 
   let gas = BigInt(0)
   const structLogs = []
@@ -327,13 +332,16 @@ const runTransaction = async (
     }
   }
 
-  EVM.evm.common.events.on('step', stepListener)
-  await EVM.runTx({
-    block: blockForTx,
-    tx: transaction,
-    skipNonce: false,
-    networkAccount: networkAccount.data,
-  })
+  customEVM.common.events.on('step', stepListener)
+  await EVM.runTx(
+    {
+      block: blockForTx,
+      tx: transaction,
+      skipNonce: false,
+      networkAccount: networkAccount.data,
+    },
+    customEVM
+  )
   if (execOptions.structLogs) {
     console.log(JSON.stringify(structLogs))
   }

@@ -912,7 +912,7 @@ export default class TransactionState {
   //}
 
   debugTraceLog(message: string): void {
-    if (ShardeumFlags.VerboseLogs) console.log(`DBG-Trace: ${this.linkedTX} msg:${message}`)
+    console.log(`DBG-Trace: ${this.linkedTX} msg:${message}`)
   }
 
   checkpoint(): void {
