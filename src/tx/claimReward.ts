@@ -294,6 +294,15 @@ export async function applyClaimRewardTx(
   const shardeumState = getApplyTXState(txId)
   shardeumState._transactionState.appData = {}
 
+  if (operatorAccount?.operatorAccountInfo == null) {
+    nestedCountersInstance.countEvent('shardeum-staking', 'claiming reward on account with no `operatorAccountInfo`')
+    shardus.applyResponseSetFailed(
+      applyResponse,
+      'applyClaimReward failed because `operatorAccountInfo` is null'
+    )
+    return
+  }
+
   // update the operator historical stats
   operatorAccount.operatorAccountInfo.operatorStats.history.push({
     b: nodeAccount.rewardStartTime,
