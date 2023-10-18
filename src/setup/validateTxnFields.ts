@@ -62,6 +62,22 @@ export const validateTxnFields =
         }
       }
 
+      // Disable all application transactions if the network is not in the processing mode
+      const networkMode = shardus.getNetworkMode()
+      if (ShardeumFlags.allowAppTxsOnlyOnProcessingMode && networkMode !== 'processing') {
+        const exceptionTxs = [InternalTXType.InitNetwork]
+        let rejectTx = true
+        if (isInternalTx(tx)) {
+          if (exceptionTxs.includes(tx.internalTXType)) rejectTx = false
+        }
+        if (rejectTx)
+          return {
+            success: false,
+            reason: 'Transaction is not allowed. Network is not in the processing mode.',
+            txnTimestamp,
+          }
+      }
+
       if (isSetCertTimeTx(tx)) {
         const setCertTimeTx = tx as SetCertTime
         const result = validateSetCertTimeTx(setCertTimeTx)

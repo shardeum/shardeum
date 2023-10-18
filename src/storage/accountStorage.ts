@@ -117,6 +117,10 @@ export async function setAccount(address: string, account: WrappedEVMAccount): P
   }
 }
 
+export const setCachedNetworkAccount = (account: NetworkAccount): void => {
+  cachedNetworkAccount = account
+}
+
 export async function debugGetAllAccounts(): Promise<WrappedEVMAccount[]> {
   if (ShardeumFlags.UseDBForAccounts === true) {
     return (await storage.debugSelectAllAccountsEntry()) as unknown as WrappedEVMAccount[]

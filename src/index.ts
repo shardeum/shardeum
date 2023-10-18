@@ -1046,6 +1046,16 @@ const configShardusEndpoints = (): void => {
 
     let numActiveNodes = 0
     try {
+      // Disable all application transactions if the network is not in the processing mode
+      const networkMode: P2P.ModesTypes.Record['mode'] = shardus.getNetworkMode()
+      if (ShardeumFlags.allowAppTxsOnlyOnProcessingMode && networkMode !== 'processing') {
+        return res.json({
+          success: false,
+          reason: 'Transaction is not allowed. Network is not in the processing mode.',
+          status: 500,
+        })
+      }
+
       // Reject transaction if network is paused
       const networkAccount = AccountsStorage.cachedNetworkAccount
       if (networkAccount == null || networkAccount.current == null) {
@@ -5391,11 +5401,12 @@ const shardusSetup = (): void => {
           }
         }
 
-        const activeNodes = shardus.stateManager.currentCycleShardData.activeNodes
+        const numActiveNodes = latestCycle.active
+        const numTotalNodes = latestCycle.active + latestCycle.syncing // total number of nodes in the network
 
         // Staking is only enabled when flag is on and
         const stakingEnabled =
-          ShardeumFlags.StakingEnabled && activeNodes.length >= ShardeumFlags.minActiveNodesForStaking
+          ShardeumFlags.StakingEnabled && numActiveNodes >= ShardeumFlags.minActiveNodesForStaking
 
         //Checks for golden ticket
         if (appJoinData.adminCert?.goldenTicket === true && appJoinData.mustUseAdminCert === true) {
@@ -5447,7 +5458,7 @@ const shardusSetup = (): void => {
           stakingEnabled &&
           ShardeumFlags.AdminCertEnabled === true &&
           mode !== 'processing' &&
-          latestCycle.active + latestCycle.syncing < minNodes //if node is about to enter processing check for stake as expected not admin cert
+          numTotalNodes < minNodes //if node is about to enter processing check for stake as expected not admin cert
         ) {
           const adminCert: AdminCert = appJoinData.adminCert
           /* prettier-ignore */ nestedCountersInstance.countEvent('shardeum-mode', 'validateJoinRequest: mode is not processing, AdminCertEnabled enabled, node about to enter processing check')
@@ -5675,8 +5686,8 @@ const shardusSetup = (): void => {
         return true
       }
 
-      // Checks if enough nodes are active and if not allow join request to go through
-      if (activeNodes.length + latestCycle.syncing < ShardeumFlags.minActiveNodesForStaking) {
+      const numTotalNodes = latestCycle.active + latestCycle.syncing // total number of nodes in the network
+      if (numTotalNodes < ShardeumFlags.minActiveNodesForStaking) {
         isReadyToJoinLatestValue = true
         return true
       }
@@ -6197,6 +6208,7 @@ async function fetchNetworkAccountFromArchiver(): Promise<WrappedAccount> {
     /* prettier-ignore */ nestedCountersInstance.countEvent('network-config-operation', 'failure: did not get network account from archiver private key, returned null. Use default configs.')
     throw new Error(`get-network-account from archiver pk:${majorityValue.archiver.publicKey} returned null`)
   }
+
   return res.data
 }
 
@@ -6284,6 +6296,8 @@ export function shardeumGetTime(): number {
   try {
     // Attempt to get and patch config. Error if unable to get config.
     const networkAccount = await fetchNetworkAccountFromArchiver()
+    console.log('Network Account', networkAccount)
+    AccountsStorage.setCachedNetworkAccount(networkAccount.data)
 
     configToLoad = await updateConfigFromNetworkAccount(config, networkAccount)
   } catch (error) {

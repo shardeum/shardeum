@@ -97,6 +97,7 @@ interface ShardeumFlags {
   nonceCheckRange: number
   looseNonceCheck: boolean
   supportEstimateGas: boolean
+  allowAppTxsOnlyOnProcessingMode: boolean // Limit processing application transactions only when the network is in processing mode
   startInServiceMode: boolean
   allowedEndpointsInServiceMode: string[]
 }
@@ -158,8 +159,8 @@ export const ShardeumFlags: ShardeumFlags = {
   generateMemoryPatternData: true,
   StakingEnabled: true,
   ModeEnabled: true,
-  AdminCertEnabled: false,
-  minActiveNodesForStaking: 5,
+  AdminCertEnabled: true,
+  minActiveNodesForStaking: 1,
   MinStakeCertSig: 1, // this is the minimum amount of signature required for stake certification. will move to network param in future.
   FullCertChecksEnabled: true,
   extraTxTime: 8, // This is to predict the cycleNumber from the tx timestamp + 8s
@@ -231,6 +232,7 @@ export const ShardeumFlags: ShardeumFlags = {
     'GET /account/*',
     'GET /eth_getCode',
   ],
+  allowAppTxsOnlyOnProcessingMode: true,
 }
 
 export function updateShardeumFlag(key: string, value: string | number | boolean): void {
