@@ -12,7 +12,7 @@ import {
   short,
 } from '@ethereumjs/util'
 import debugDefault from 'debug'
-import {ShardeumFlags} from "../shardeum/shardeumFlags";
+import { ShardeumFlags } from '../shardeum/shardeumFlags'
 const { chargeConstantTxFee, constantTxFeeUsd, baselineTxGasUsage, baselineTxFee } = ShardeumFlags
 import { EVM as EthereumVirtualMachine, EVMInterface, getActivePrecompiles } from '../evm_v2'
 
@@ -36,7 +36,7 @@ import type {
   LegacyTransaction,
   TypedTransaction,
 } from '@ethereumjs/tx'
-import {calculateGasPrice, scaleByStabilityFactor} from "../utils";
+import { calculateGasPrice, scaleByStabilityFactor } from '../utils'
 const { debug: createDebugLogger } = debugDefault
 
 const debug = createDebugLogger('vm:tx')
@@ -52,10 +52,7 @@ const debugGas = createDebugLogger('vm:tx:gas')
  *
  * @returns Hardfork name
  */
-function execHardfork(
-  hardfork: Hardfork | string,
-  preMergeHf: Hardfork | string
-): string | Hardfork {
+function execHardfork(hardfork: Hardfork | string, preMergeHf: Hardfork | string): string | Hardfork {
   return hardfork !== Hardfork.Paris ? hardfork : preMergeHf
 }
 
@@ -110,32 +107,16 @@ export async function runTx(this: VM, opts: RunTxOpts, evm: EthereumVirtualMachi
   }
 
   // Typed transaction specific setup tasks
-  if (
-    opts.tx.supports(Capability.EIP2718TypedTransaction) &&
-    this.common.isActivatedEIP(2718) === true
-  ) {
+  if (opts.tx.supports(Capability.EIP2718TypedTransaction) && this.common.isActivatedEIP(2718) === true) {
     // Is it an Access List transaction?
     if (this.common.isActivatedEIP(2930) === false) {
       await evm.journal.revert()
-      const msg = _errorMsg(
-        'Cannot run transaction: EIP 2930 is not activated.',
-        this,
-        opts.block,
-        opts.tx
-      )
+      const msg = _errorMsg('Cannot run transaction: EIP 2930 is not activated.', this, opts.block, opts.tx)
       throw new Error(msg)
     }
-    if (
-      opts.tx.supports(Capability.EIP1559FeeMarket) &&
-      this.common.isActivatedEIP(1559) === false
-    ) {
+    if (opts.tx.supports(Capability.EIP1559FeeMarket) && this.common.isActivatedEIP(1559) === false) {
       await evm.journal.revert()
-      const msg = _errorMsg(
-        'Cannot run transaction: EIP 1559 is not activated.',
-        this,
-        opts.block,
-        opts.tx
-      )
+      const msg = _errorMsg('Cannot run transaction: EIP 1559 is not activated.', this, opts.block, opts.tx)
       throw new Error(msg)
     }
 
@@ -191,11 +172,7 @@ async function _runTx(this: VM, opts: RunTxOpts, evm: any): Promise<RunTxResult>
 
   const caller = tx.getSenderAddress()
   if (this.DEBUG) {
-    debug(
-      `New tx run hash=${
-        opts.tx.isSigned() ? bytesToHex(opts.tx.hash()) : 'unsigned'
-      } sender=${caller}`
-    )
+    debug(`New tx run hash=${opts.tx.isSigned() ? bytesToHex(opts.tx.hash()) : 'unsigned'} sender=${caller}`)
   }
 
   if (this.common.isActivatedEIP(2929) === true) {
@@ -253,10 +230,7 @@ async function _runTx(this: VM, opts: RunTxOpts, evm: any): Promise<RunTxResult>
     debug(`Sender's pre-tx balance is ${balance}`)
   }
   // EIP-3607: Reject transactions from senders with deployed code
-  if (
-    this.common.isActivatedEIP(3607) === true &&
-    !equalsBytes(fromAccount.codeHash, KECCAK256_NULL)
-  ) {
+  if (this.common.isActivatedEIP(3607) === true && !equalsBytes(fromAccount.codeHash, KECCAK256_NULL)) {
     const msg = _errorMsg('invalid sender address, address is not EOA (EIP-3607)', this, block, tx)
     throw new Error(msg)
   }
@@ -306,12 +280,7 @@ async function _runTx(this: VM, opts: RunTxOpts, evm: any): Promise<RunTxResult>
 
     // 4844 minimum blobGas price check
     if (opts.block === undefined) {
-      const msg = _errorMsg(
-        `Block option must be supplied to compute blob gas price`,
-        this,
-        block,
-        tx
-      )
+      const msg = _errorMsg(`Block option must be supplied to compute blob gas price`, this, block, tx)
       throw new Error(msg)
     }
     blobGasPrice = opts.block.header.getBlobGasPrice()
@@ -409,9 +378,9 @@ async function _runTx(this: VM, opts: RunTxOpts, evm: any): Promise<RunTxResult>
     debug(
       `Running tx=${
         tx.isSigned() ? bytesToHex(tx.hash()) : 'unsigned'
-      } with caller=${caller} gasLimit=${gasLimit} to=${
-        to?.toString() ?? 'none'
-      } value=${value} data=${short(data)}`
+      } with caller=${caller} gasLimit=${gasLimit} to=${to?.toString() ?? 'none'} value=${value} data=${short(
+        data
+      )}`
     )
   }
 
@@ -495,9 +464,7 @@ async function _runTx(this: VM, opts: RunTxOpts, evm: any): Promise<RunTxResult>
   fromAccount.balance += txCostDiff
   await evm.journal.putAccount(caller, fromAccount)
   if (this.DEBUG) {
-    debug(
-      `Refunded txCostDiff (${txCostDiff}) to fromAccount (caller) balance (-> ${fromAccount.balance})`
-    )
+    debug(`Refunded txCostDiff (${txCostDiff}) to fromAccount (caller) balance (-> ${fromAccount.balance})`)
   }
 
   // Update miner's balance
@@ -590,9 +557,7 @@ async function _runTx(this: VM, opts: RunTxOpts, evm: any): Promise<RunTxResult>
   await this._emit('afterTx', event)
   if (this.DEBUG) {
     debug(
-      `tx run finished hash=${
-        opts.tx.isSigned() ? bytesToHex(opts.tx.hash()) : 'unsigned'
-      } sender=${caller}`
+      `tx run finished hash=${opts.tx.isSigned() ? bytesToHex(opts.tx.hash()) : 'unsigned'} sender=${caller}`
     )
   }
 

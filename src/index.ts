@@ -1122,6 +1122,10 @@ const configShardusEndpoints = (): void => {
       blockNumber = req.query.blockNumber
     }
     if (blockNumber === 'latest') blockNumber = latestBlock
+    if (blockNumber === 'earliest') {
+      const readableBlockValues = Object.values(readableBlocks)
+      return res.json({ block: readableBlockValues[0] }) // eslint-disable-line security/detect-object-injection
+    }
     if (ShardeumFlags.VerboseLogs) console.log('Req: eth_getBlockByNumber', blockNumber)
     if (blockNumber == null) {
       return res.json({ error: 'Invalid block number' })
@@ -1137,6 +1141,39 @@ const configShardusEndpoints = (): void => {
     let blockNumber: number
     if (typeof blockHash === 'string') blockNumber = blocksByHash[blockHash]
     return res.json({ block: readableBlocks[blockNumber] })
+    /* eslint-enable security/detect-object-injection */
+  })
+
+  shardus.registerExternalGet('eth_getEarliestBlockHash', async (req, res) => {
+    /* eslint-disable security/detect-object-injection */
+    const readableBlockValues = Object.values(readableBlocks)
+    if (ShardeumFlags.VerboseLogs) console.log('Req: eth_getEarliestBlockHash', readableBlockValues[0].hash)
+    return res.json({ earliestBlockHash: readableBlockValues[0].hash })
+    /* eslint-enable security/detect-object-injection */
+  })
+
+  shardus.registerExternalGet('eth_getEarliestBlockNumber', async (req, res) => {
+    /* eslint-disable security/detect-object-injection */
+    const readableBlockValues = Object.values(readableBlocks)
+    if (ShardeumFlags.VerboseLogs)
+      console.log('Req: eth_getEarliestBlockNumber', readableBlockValues[0].number)
+    return res.json({ earliestBlockNumber: readableBlockValues[0].number })
+    /* eslint-enable security/detect-object-injection */
+  })
+
+  shardus.registerExternalGet('eth_getLatestBlockHash', async (req, res) => {
+    /* eslint-disable security/detect-object-injection */
+    if (ShardeumFlags.VerboseLogs)
+      console.log('Req: eth_getLatestBlockHash', readableBlocks[latestBlock].hash)
+    return res.json({ latestBlockHash: readableBlocks[latestBlock].hash })
+    /* eslint-enable security/detect-object-injection */
+  })
+
+  shardus.registerExternalGet('eth_getLatestBlockNumber', async (req, res) => {
+    /* eslint-disable security/detect-object-injection */
+    if (ShardeumFlags.VerboseLogs)
+      console.log('Req: eth_getLatestBlockNumber', readableBlocks[latestBlock].number)
+    return res.json({ latestBlockNumber: readableBlocks[latestBlock].number })
     /* eslint-enable security/detect-object-injection */
   })
 
@@ -3138,18 +3175,27 @@ const shardusSetup = (): void => {
                 AccountsStorage.cachedNetworkAccount
               )),
           gasRefund: '0x0',
+          gasPrice: bigIntToHex(transaction.gasPrice),
+          gasLimit: bigIntToHex(transaction.gasLimit),
+          maxFeePerGas: undefined,
+          maxPriorityFeePerGas: undefined,
           logs: [],
           logsBloom: '',
           contractAddress: null,
           from: transaction.getSenderAddress().toString(),
           to: transaction.to ? transaction.to.toString() : null,
+          chainId: '0x' + ShardeumFlags.ChainID.toString(16),
           stakeInfo: {
             nominee: nomineeNodeAccount2Address,
             stake: stakeCoinsTx.stake,
             totalStakeAmount: operatorEVMAccount.operatorAccountInfo.stake,
           },
           value: bigIntToHex(transaction.value),
+          type: '0x' + transaction.type.toString(16),
           data: bytesToHex(transaction.data),
+          v: bigIntToHex(transaction.v),
+          r: bigIntToHex(transaction.r),
+          s: bigIntToHex(transaction.s),
         }
 
         const wrappedReceiptAccount: WrappedEVMAccount = {
@@ -3367,14 +3413,23 @@ const shardusSetup = (): void => {
                 AccountsStorage.cachedNetworkAccount
               )),
           gasRefund: '0x0',
+          gasPrice: bigIntToHex(transaction.gasPrice),
+          gasLimit: bigIntToHex(transaction.gasLimit),
+          maxFeePerGas: undefined,
+          maxPriorityFeePerGas: undefined,
           logs: [],
           logsBloom: '',
           contractAddress: null,
           from: transaction.getSenderAddress().toString(),
           to: transaction.to ? transaction.to.toString() : null,
+          chainId: '0x' + ShardeumFlags.ChainID.toString(16),
           stakeInfo,
           value: bigIntToHex(transaction.value),
+          type: '0x' + transaction.type.toString(16),
           data: bytesToHex(transaction.data),
+          v: bigIntToHex(transaction.v),
+          r: bigIntToHex(transaction.r),
+          s: bigIntToHex(transaction.s),
         }
 
         const wrappedReceiptAccount = {
@@ -3542,12 +3597,21 @@ const shardusSetup = (): void => {
           logsBloom: null,
           gasUsed: '0x',
           gasRefund: '0x0',
+          gasPrice: bigIntToHex(transaction.gasPrice),
+          gasLimit: bigIntToHex(transaction.gasLimit),
+          maxFeePerGas: undefined,
+          maxPriorityFeePerGas: undefined,
           contractAddress: caAddr,
           from: transaction.getSenderAddress().toString(),
           to: transaction.to ? transaction.to.toString() : null,
+          chainId: '0x' + ShardeumFlags.ChainID.toString(16),
           value: bigIntToHex(transaction.value),
+          type: '0x' + transaction.type.toString(16),
           data: '0x',
           reason: e.toString(),
+          v: bigIntToHex(transaction.v),
+          r: bigIntToHex(transaction.r),
+          s: bigIntToHex(transaction.s),
         }
         wrappedReceiptAccount = {
           timestamp: txTimestamp,
@@ -3747,7 +3811,6 @@ const shardusSetup = (): void => {
             }
           })
         }
-
         const readableReceipt: ReadableReceipt = {
           status: runTxResult.receipt['status'],
           transactionHash: ethTxId,
@@ -3758,13 +3821,22 @@ const shardusSetup = (): void => {
           cumulativeGasUsed: bigIntToHex(runTxResult.totalGasSpent),
           gasUsed: bigIntToHex(runTxResult.totalGasSpent),
           gasRefund: bigIntToHex(runTxResult.execResult.gasRefund ?? BigInt(0)),
+          gasPrice: bigIntToHex(transaction.gasPrice),
+          gasLimit: bigIntToHex(transaction.gasLimit),
+          maxFeePerGas: undefined,
+          maxPriorityFeePerGas: undefined,
           logs: logs,
           logsBloom: bytesToHex(runTxResult.receipt.bitvector),
           contractAddress: runTxResult.createdAddress ? runTxResult.createdAddress.toString() : null,
           from: transaction.getSenderAddress().toString(),
           to: transaction.to ? transaction.to.toString() : null,
+          chainId: '0x' + ShardeumFlags.ChainID.toString(16),
           value: bigIntToHex(transaction.value),
+          type: '0x' + transaction.type.toString(16),
           data: bytesToHex(transaction.data),
+          v: bigIntToHex(transaction.v),
+          r: bigIntToHex(transaction.r),
+          s: bigIntToHex(transaction.s),
         }
         if (runTxResult.execResult.exceptionError) {
           readableReceipt.reason = runTxResult.execResult.exceptionError.error
