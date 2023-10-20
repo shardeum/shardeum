@@ -44,7 +44,7 @@
     "@ethereumjs/vm": "7.0.0",
     "@mapbox/node-pre-gyp": "1.0.10",
     "@shardus/archiver-discovery": "1.1.0",
-    "@shardus/core": "2.10.22",
+    "@shardus/core": "2.10.23",
     "@shardus/crypto-utils": "4.1.2",
     "@shardus/types": "1.2.3",
     "@types/sqlite3": "3.1.8",
