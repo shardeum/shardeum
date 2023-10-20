@@ -1859,7 +1859,7 @@ const configShardusEndpoints = (): void => {
         return res.json({ error: `Invalid threshold: ${req.query.threshold}` })
       }
 
-      startBlockedCheck(threshold)
+      //startBlockedCheck(threshold)
       return res.json({ success: `Threshold set to ${threshold}ms` })
     } catch (err) {
       return res.json({ error: `Error setting threshold: ${err.toString()}` })
