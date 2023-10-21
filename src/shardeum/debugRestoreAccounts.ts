@@ -1,5 +1,5 @@
 import * as fs from 'fs'
-import { setGenesisAccounts } from '..'
+import { logFlags, setGenesisAccounts } from '..'
 import { networkAccount } from '../shardeum/shardeumConstants'
 import { ShardeumFlags } from '../shardeum/shardeumFlags'
 import * as Path from 'path'
@@ -30,7 +30,7 @@ export async function loadAccountDataFromDB(shardus: Shardus, options: LoadOptio
 
   const logVerbose = ShardeumFlags.VerboseLogs //shardus.getLogFlags().verbose
 
-  if (logVerbose) shardus.log(`loadAccountDataFromDB`)
+  /* prettier-ignore */ if (logFlags.dapp_verbose) shardus.log(`loadAccountDataFromDB`)
   try {
     let path = options.file
 
@@ -39,7 +39,7 @@ export async function loadAccountDataFromDB(shardus: Shardus, options: LoadOptio
     // ./account-export.json from ShardeumFlags.ts
     // eslint-disable-next-line security/detect-non-literal-fs-filename
     if (fs.existsSync(path) === false) {
-      console.log(`loadAccountDataFromDB: ${path}  does not exist`)
+      /* prettier-ignore */ if (logFlags.dapp_verbose) console.log(`loadAccountDataFromDB: ${path}  does not exist`)
       return report
     }
 
@@ -71,7 +71,7 @@ export async function loadAccountDataFromDB(shardus: Shardus, options: LoadOptio
               rl.resume()
             }
           } catch (ex) {
-            console.log('Error in parsing the line', line, ex)
+            /* prettier-ignore */ if (logFlags.error) console.log('Error in parsing the line', line, ex)
           }
         }
       })
@@ -80,7 +80,7 @@ export async function loadAccountDataFromDB(shardus: Shardus, options: LoadOptio
         await processAccountsData(shardus, report, accountArray)
         accountArray = []
       }
-      if (logVerbose) shardus.log(`loadAccountDataFromDB ${totalAccounts}`)
+      /* prettier-ignore */ if (logFlags.dapp_verbose) shardus.log(`loadAccountDataFromDB ${totalAccounts}`)
       console.log(`loadAccountDataFromDB: ${totalAccounts}`)
       return report
     } else {

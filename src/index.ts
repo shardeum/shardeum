@@ -1965,8 +1965,8 @@ async function applyInternalTx(
         txId
       )
     }
-    console.log(`init_network NETWORK_ACCOUNT: ${stringify(network)}`)
-    shardus.log('Applied init_network transaction', network)
+    /* prettier-ignore */ if (logFlags.important_as_error) console.log(`init_network NETWORK_ACCOUNT: ${stringify(network)}`)
+    /* prettier-ignore */ if (logFlags.important_as_error) shardus.log('Applied init_network transaction', network)
   }
   if (internalTx.internalTXType === InternalTXType.ChangeConfig) {
     /* eslint-disable security/detect-object-injection */
@@ -2540,9 +2540,8 @@ async function estimateGas(
     }
   }
   if (callerAccount == null) {
-    console.log(
-      `Unable to find caller account: ${callerShardusAddress} while estimating gas. Using a fake account to estimate gas`
-    )
+    /* prettier-ignore */ nestedCountersInstance.countEvent( 'shardeum-endpoints', `Unable to find caller account while estimating gas. Using a fake account to estimate gas` )
+    /* prettier-ignore */ if (logFlags.dapp_verbose) console.log( `Unable to find caller account: ${callerShardusAddress} while estimating gas. Using a fake account to estimate gas` )
   }
 
   preRunTxState._transactionState.insertFirstAccountReads(
@@ -2653,9 +2652,8 @@ async function generateAccessList(
       }
     }
     if (callerAccount == null) {
-      console.log(
-        `Unable to find caller account: ${callerShardusAddress} while generating accessList. Using a fake account to generate accessList`
-      )
+      /* prettier-ignore */ nestedCountersInstance.countEvent( 'shardeum-endpoints', `Unable to find caller account while generating accessList. Using a fake account to estimate gas` )
+      /* prettier-ignore */ if (logFlags.dapp_verbose) console.log( `Unable to find caller account: ${callerShardusAddress} while generating accessList. Using a fake account to generate accessList` )
     }
     // temporarily set caller account's nonce same as tx's nonce
     if (ShardeumFlags.accesslistNonceFix && callerAccount && callerAccount.account) {
@@ -2983,8 +2981,7 @@ const shardusSetup = (): void => {
       const shardusReceiptAddress = toShardusAddressWithKey(ethTxId, '', AccountType.Receipt)
       const txId = generateTxId(tx)
       // Create an applyResponse which will be used to tell Shardus that the tx has been applied
-      if (ShardeumFlags.VerboseLogs)
-        console.log('DBG', new Date(), 'attempting to apply tx', txId, ethTxId, tx, wrappedStates, appData)
+      /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log('DBG', new Date(), 'attempting to apply tx', txId, ethTxId, tx, wrappedStates, appData)
       const applyResponse = shardus.createApplyResponse(txId, txTimestamp)
 
       //Now we need to get a transaction state object.  For single sharded networks this will be a new object.
@@ -3095,16 +3092,16 @@ const shardusSetup = (): void => {
         if (ShardeumFlags.useAccountWrites) {
           // for operator evm account
           const { accounts: accountWrites } = shardeumState._transactionState.getWrittenAccounts()
-          console.log('\nAccount Writes: ', accountWrites)
+          /* prettier-ignore */ if (logFlags.dapp_verbose) console.log('\nAccount Writes: ', accountWrites)
           for (const account of accountWrites.entries()) {
             const addressStr = account[0]
             if (ShardeumFlags.Virtual0Address && addressStr === zeroAddressStr) {
               continue
             }
             const accountObj = Account.fromRlpSerializedAccount(account[1])
-            console.log('\nWritten Account Object: ', accountObj)
+            /* prettier-ignore */ if (logFlags.dapp_verbose) console.log('\nWritten Account Object: ', accountObj)
 
-            console.log('written account Obj', accountObj)
+            /* prettier-ignore */ if (logFlags.dapp_verbose) console.log('written account Obj', accountObj)
 
             const wrappedEVMAccount: WrappedEVMAccount = { ...operatorEVMAccount, account: accountObj }
 
@@ -3264,13 +3261,12 @@ const shardusSetup = (): void => {
         const penalty = BigInt(nodeAccount2.penalty)
         const txFeeUsd = BigInt(ShardeumFlags.constantTxFeeUsd)
         const txFee = scaleByStabilityFactor(txFeeUsd, AccountsStorage.cachedNetworkAccount)
-        if (ShardeumFlags.VerboseLogs)
-          console.log('calculating new balance after unstake', currentBalance, stake, reward, penalty, txFee)
+        /* prettier-ignore */ if (logFlags.dapp_verbose) console.log('calculating new balance after unstake', currentBalance, stake, reward, penalty, txFee)
         if (nodeAccount2.rewardEndTime === 0 && nodeAccount2.rewardStartTime > 0) {
           // This block will only be reached if the node is inactive and the force unstake flag has been set
           reward = BigInt(0)
 
-          if (ShardeumFlags.VerboseLogs) console.log('discarding staking rewards due to zero rewardEndTime')
+          /* prettier-ignore */ if (logFlags.dapp_verbose) console.log('discarding staking rewards due to zero rewardEndTime')
         }
         const newBalance = currentBalance + stake + reward - penalty - txFee
         operatorEVMAccount.account.balance = newBalance
@@ -3327,16 +3323,16 @@ const shardusSetup = (): void => {
         if (ShardeumFlags.useAccountWrites) {
           // for operator evm account
           const { accounts: accountWrites } = shardeumState._transactionState.getWrittenAccounts()
-          console.log('\nAccount Writes: ', accountWrites)
+          /* prettier-ignore */ if (logFlags.dapp_verbose) console.log('\nAccount Writes: ', accountWrites)
           for (const account of accountWrites.entries()) {
             const addressStr = account[0]
             if (ShardeumFlags.Virtual0Address && addressStr === zeroAddressStr) {
               continue
             }
             const accountObj = Account.fromRlpSerializedAccount(account[1])
-            console.log('\nWritten Account Object: ', accountObj)
+            /* prettier-ignore */ if (logFlags.dapp_verbose) console.log('\nWritten Account Object: ', accountObj)
 
-            console.log('written account Obj', accountObj)
+            /* prettier-ignore */ if (logFlags.dapp_verbose) console.log('written account Obj', accountObj)
 
             const wrappedEVMAccount: WrappedEVMAccount = { ...operatorEVMAccount, account: accountObj }
             updateEthAccountHash(wrappedEVMAccount)
@@ -3505,8 +3501,7 @@ const shardusSetup = (): void => {
       // Apply the tx
       // const runTxResult = await EVM.runTx({tx: transaction, skipNonce: !ShardeumFlags.CheckNonce, skipBlockGasLimitValidation: true})
       const blockForTx = getOrCreateBlockFromTimestamp(txTimestamp)
-      if (ShardeumFlags.VerboseLogs)
-        console.log(`Block for tx ${ethTxId}`, blockForTx.header.number.toString(10))
+      /* prettier-ignore */ if (logFlags.dapp_verbose) console.log(`Block for tx ${ethTxId}`, blockForTx.header.number.toString(10))
       let runTxResult: RunTxResult
       let wrappedReceiptAccount: WrappedEVMAccount
       /* prettier-ignore */ shardus.setDebugSetLastAppAwait(`apply():getLocalOrRemoteAccount(${networkAccount})`)
@@ -3602,8 +3597,8 @@ const shardusSetup = (): void => {
         //   return applyResponse //return rather than throw exception
         // }
         // }
-        shardus.log('Unable to apply transaction', e)
-        if (ShardeumFlags.VerboseLogs) console.log('Unable to apply transaction', txId, e)
+        /* prettier-ignore */ if (logFlags.error) shardus.log('Unable to apply transaction', e)
+        //if (logFlags.dapp_verbose ) console.log('Unable to apply transaction', txId, e)
         // throw new Error(e)
       }
       if (ShardeumFlags.VerboseLogs) console.log('DBG', 'applied tx', txId, runTxResult)
@@ -4074,15 +4069,10 @@ const shardusSetup = (): void => {
             if (nodeAccount) appData.nomineeAccount = nodeAccount.data
             appData.nominatorAccount = remoteShardusAccount ? remoteShardusAccount.data : null
           } catch (e) {
-            console.log('Error: while doing preCrack for stake related tx', e)
+            /* prettier-ignore */ if (logFlags.error) console.log('Error: while doing preCrack for stake related tx', e)
           }
         }
-        if (ShardeumFlags.VerboseLogs)
-          console.log(
-            `txPreCrackData final result: txNonce: ${appData.txNonce}, currentNonce: ${
-              appData.nonce
-            }, queueCount: ${appData.queueCount}, appData ${stringify(appData)}`
-          )
+        /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log( `txPreCrackData final result: txNonce: ${appData.txNonce}, currentNonce: ${ appData.nonce }, queueCount: ${appData.queueCount}, appData ${stringify(appData)}` )
       }
     },
 
@@ -4407,7 +4397,7 @@ const shardusSetup = (): void => {
     },
 
     async setAccountData(accountRecords) {
-      console.log(`Running setAccountData`, accountRecords)
+      /* prettier-ignore */ if (logFlags.dapp_verbose) console.log(`Running setAccountData`, accountRecords)
       // update our in memory accounts map
       for (const account of accountRecords) {
         const wrappedEVMAccount = account as WrappedEVMAccount
@@ -4560,7 +4550,7 @@ const shardusSetup = (): void => {
           } as WrappedEVMAccount
           WrappedEVMAccountFunctions.updateEthAccountHash(wrappedEVMAccount)
           //accounts[accountId] = wrappedEVMAccount  //getRelevantData must never modify accounts[]
-          console.log('Created new debug account', wrappedEVMAccount)
+          /* prettier-ignore */ if (logFlags.dapp_verbose) console.log('Created new debug account', wrappedEVMAccount)
           accountCreated = true
         }
 
@@ -4600,9 +4590,8 @@ const shardusSetup = (): void => {
               const nodeAccount: NodeAccount2 = createNodeAccount2(accountId)
               accountCreated = true
               nestedCountersInstance.countEvent('shardeum-staking', 'created new node account')
-              if (ShardeumFlags.VerboseLogs) console.log('Created new node account', nodeAccount)
-              if (ShardeumFlags.VerboseLogs)
-                console.log('Running getRelevantData for stake/unstake tx', nodeAccount)
+              /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log('Created new node account', nodeAccount)
+              /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log('Running getRelevantData for stake/unstake tx', nodeAccount)
               return shardus.createWrappedResponse(
                 accountId,
                 accountCreated,
@@ -4619,8 +4608,7 @@ const shardusSetup = (): void => {
               }
               accountCreated = true
               WrappedEVMAccountFunctions.updateEthAccountHash(stakeReceipt)
-              if (ShardeumFlags.VerboseLogs)
-                console.log('Running getRelevantData for stake/unstake tx', stakeReceipt)
+              /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log('Running getRelevantData for stake/unstake tx', stakeReceipt)
               return shardus.createWrappedResponse(
                 accountId,
                 accountCreated,
@@ -4645,8 +4633,7 @@ const shardusSetup = (): void => {
               }
               accountCreated = true
               WrappedEVMAccountFunctions.updateEthAccountHash(unstakeReceipt)
-              if (ShardeumFlags.VerboseLogs)
-                console.log('Running getRelevantData for stake/unstake tx', unstakeReceipt)
+              /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log('Running getRelevantData for stake/unstake tx', unstakeReceipt)
               return shardus.createWrappedResponse(
                 accountId,
                 accountCreated,
@@ -4741,12 +4728,7 @@ const shardusSetup = (): void => {
           // attach OperatorAccountInfo if it is a staking tx
           if (isStakeRelatedTx) {
             const stakeCoinsTx: StakeCoinsTX = appData.internalTx
-            if (ShardeumFlags.VerboseLogs)
-              console.log(
-                'Adding operator account info to wrappedEVMAccount',
-                evmAccountID,
-                stakeCoinsTx.nominator
-              )
+            /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log( 'Adding operator account info to wrappedEVMAccount', evmAccountID, stakeCoinsTx.nominator )
             if (evmAccountID === stakeCoinsTx.nominator) {
               wrappedEVMAccount.operatorAccountInfo = {
                 stake: BigInt(0),
@@ -4782,8 +4764,7 @@ const shardusSetup = (): void => {
         // accounts[accountId] = wrappedEVMAccount //getRelevantData must never modify accounts[]
         accountCreated = true
       }
-      if (ShardeumFlags.VerboseLogs)
-        console.log('Running getRelevantData final result for EOA', wrappedEVMAccount)
+      /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log('Running getRelevantData final result for EOA', wrappedEVMAccount)
       // Wrap it for Shardus
       return shardus.createWrappedResponse(
         accountId,
@@ -5073,16 +5054,7 @@ const shardusSetup = (): void => {
         }
       }
 
-      shardus.log(
-        `getAccountDataByRange: extra:${extra} ${stringify({
-          accountStart,
-          accountEnd,
-          tsStart,
-          tsEnd,
-          maxRecords,
-          offset,
-        })}`
-      )
+      /* prettier-ignore */ if (logFlags.dapp_verbose) shardus.log( `getAccountDataByRange: extra:${extra} ${stringify({ accountStart, accountEnd, tsStart, tsEnd, maxRecords, offset, })}` )
 
       for (const wrappedEVMAccount of cappedResults) {
         // Process and add to finalResults
@@ -5143,7 +5115,7 @@ const shardusSetup = (): void => {
       const appData = fixBigIntLiteralsToBigInt(originalAppData)
       const fail: ShardusTypes.SignAppDataResult = { success: false, signature: null }
       try {
-        console.log('Running signAppData', type, hash, nodesToSign, appData)
+        /* prettier-ignore */ if (logFlags.dapp_verbose) console.log('Running signAppData', type, hash, nodesToSign, appData)
 
         if (type === 'sign-stake-cert') {
           if (nodesToSign != 5) return fail
@@ -5266,7 +5238,7 @@ const shardusSetup = (): void => {
       } catch (e) {
         //@ts-ignore
         const { tx } = timestampedTx
-        console.log(`getSimpleTxDebugValue failed: ${stringify(e)}  tx:${stringify(tx)}`)
+        /* prettier-ignore */ if (logFlags.error) console.log(`getSimpleTxDebugValue failed: ${formatErrorMessage(e)}  tx:${stringify(tx)}`)
       }
     },
     close: async (): Promise<void> => {
@@ -5610,32 +5582,27 @@ const shardusSetup = (): void => {
         isReadyToJoinLatestValue = true
         return true
       }
-      console.log(
-        `active: ${latestCycle.active}, syncing: ${latestCycle.syncing}, flag: ${ShardeumFlags.AdminCertEnabled}`
-      )
+      /* prettier-ignore */ if (logFlags.important_as_error) console.log( `active: ${latestCycle.active}, syncing: ${latestCycle.syncing}, flag: ${ShardeumFlags.AdminCertEnabled}` )
       // check for ShardeumFlags for mode + check if mode is not equal to processing and validate adminCert
       if (ShardeumFlags.AdminCertEnabled === true && mode !== 'processing') {
-        console.log('entered admin cert conditon mode:' + mode)
+        /* prettier-ignore */ if (logFlags.important_as_error) console.log('entered admin cert conditon mode:' + mode)
         if (adminCert && adminCert.certExp > Date.now()) {
           /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`checkAdminCert ${JSON.stringify(adminCert)}`)
 
           isReadyToJoinLatestValue = true
-          console.log('1 return')
+          /* prettier-ignore */ if (logFlags.important_as_error) console.log('1 return')
           mustUseAdminCert = true
           return true
         }
-        console.log('2 return')
+        /* prettier-ignore */ if (logFlags.important_as_error) console.log('2 return')
         return false
       }
 
-      /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`Running isReadyToJoin cycle:${latestCycle.counter} publicKey: ${publicKey}`)
+      /* prettier-ignore */ if (logFlags.important_as_error) console.log(`Running isReadyToJoin cycle:${latestCycle.counter} publicKey: ${publicKey}`)
       // handle first time staking setup
       if (lastCertTimeTxTimestamp === 0) {
         // inject setCertTimeTx for the first time
-        nestedCountersInstance.countEvent(
-          'shardeum-staking',
-          'lastCertTimeTxTimestamp === 0 first time or expired'
-        )
+        /* prettier-ignore */ nestedCountersInstance.countEvent( 'shardeum-staking', 'lastCertTimeTxTimestamp === 0 first time or expired' )
 
         const response = await injectSetCertTimeTx(shardus, publicKey, activeNodes)
         if (response == null) {
@@ -5689,9 +5656,8 @@ const shardusSetup = (): void => {
         const expiredPercentage = (Date.now() - certStartTimestamp) / (certEndTimestamp - certStartTimestamp)
         const isExpiringSoon = expiredPercentage >= (ShardeumFlags.fixCertExpTiming ? 0.7 : 0.9) // only renew
         // if the cert is expired 70% or more
-        if (ShardeumFlags.VerboseLogs) {
-          /* prettier-ignore */ console.log(`cert != null, remainingValidTime: ${remainingValidTime}, expiredPercentage: ${expiredPercentage}, isExpiringSoon: ${isExpiringSoon}`)
-        }
+        /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`cert != null, remainingValidTime: ${remainingValidTime}, expiredPercentage: ${expiredPercentage}, isExpiringSoon: ${isExpiringSoon}`)
+
         if (isExpiringSoon) {
           nestedCountersInstance.countEvent('shardeum-staking', 'stakeCert is expired or expiring soon')
           if (ShardeumFlags.fixSetCertTimeTxApply === false) {
@@ -5722,7 +5688,7 @@ const shardusSetup = (): void => {
           }
 
           nestedCountersInstance.countEvent('shardeum-staking', 'valid cert, isReadyToJoin = true')
-          /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) { console.log('valid cert, isReadyToJoin = true ', stakeCert) }
+          /* prettier-ignore */ if (logFlags.important_as_error) { console.log('valid cert, isReadyToJoin = true ', stakeCert) }
 
           isReadyToJoinLatestValue = true
           return true
@@ -5733,7 +5699,7 @@ const shardusSetup = (): void => {
         // we have already submitted setCertTime
         // query the certificate from the network
         const res = await queryCertificate(shardus, publicKey, activeNodes)
-        if (ShardeumFlags.VerboseLogs) console.log('queryCertificate', res)
+        /* prettier-ignore */ if (logFlags.important_as_error) console.log('queryCertificate', res)
         if (!res.success) {
           if (ShardeumFlags.fixSetCertTimeTxApply === false) {
             //old logic
@@ -5749,10 +5715,7 @@ const shardusSetup = (): void => {
             }
           }
 
-          nestedCountersInstance.countEvent(
-            'shardeum-staking',
-            `call to queryCertificate failed with reason: ${(res as ValidatorError).reason}`
-          )
+          /* prettier-ignore */ nestedCountersInstance.countEvent( 'shardeum-staking', `call to queryCertificate failed with reason: ${(res as ValidatorError).reason}` )
 
           if (ShardeumFlags.fixCertExpTiming) {
             // if we injected setCertTimeTx more than 3 cycles ago but still cannot get new cert, we need to inject it again
@@ -5779,7 +5742,7 @@ const shardusSetup = (): void => {
         const certEndTimestamp = signedStakeCert.certExp
         const expiredPercentage = (Date.now() - certStartTimestamp) / (certEndTimestamp - certStartTimestamp)
         const isNewCertExpiringSoon = expiredPercentage >= 0.7
-        /* prettier-ignore */ console.log(`stakeCert received. remainingValidTime: ${remainingValidTime} expiredPercent: ${expiredPercentage}, isNewCertExpiringSoon: ${isNewCertExpiringSoon}`)
+        /* prettier-ignore */ if (logFlags.important_as_error) console.log(`stakeCert received. remainingValidTime: ${remainingValidTime} expiredPercent: ${expiredPercentage}, isNewCertExpiringSoon: ${isNewCertExpiringSoon}`)
 
         // if queried cert is going to expire soon, inject a new setCertTimeTx
         if (isNewCertExpiringSoon) {
@@ -5811,9 +5774,7 @@ const shardusSetup = (): void => {
           stakeCert = signedStakeCert
 
           nestedCountersInstance.countEvent('shardeum-staking', 'valid cert, isReadyToJoin = true')
-          if (ShardeumFlags.VerboseLogs) {
-            console.log('valid cert, isReadyToJoin = true ', stakeCert)
-          }
+          /* prettier-ignore */ if (logFlags.important_as_error) console.log('valid cert, isReadyToJoin = true ', stakeCert)
 
           isReadyToJoinLatestValue = true
           return true
@@ -5866,7 +5827,7 @@ const shardusSetup = (): void => {
       }
 
       if (node.status !== 'active') {
-        console.log('This node is not active yet')
+        /* prettier-ignore */ if (logFlags.dapp_verbose) console.log('This node is not active yet')
         return
       }
 
@@ -5877,7 +5838,7 @@ const shardusSetup = (): void => {
       const latestCycles: ShardusTypes.Cycle[] = shardus.getLatestCycles(10)
       const currentCycle = latestCycles[0]
       if (!currentCycle) {
-        console.log('No cycle records found', latestCycles)
+        /* prettier-ignore */ if (logFlags.error) console.log('No cycle records found', latestCycles)
         return
       }
 
@@ -5904,11 +5865,11 @@ const shardusSetup = (): void => {
           nestedCountersInstance.countEvent('shardeum-staking', `node-activated: injectInitRewardTimesTx`)
           //TODO need retry on this also
           const result = await InitRewardTimesTx.injectInitRewardTimesTx(shardus, data)
-          console.log('INJECTED_INIT_REWARD_TIMES_TX', result)
+          /* prettier-ignore */ if (logFlags.dapp_verbose) console.log('INJECTED_INIT_REWARD_TIMES_TX', result)
         } else if (eventType === 'node-deactivated') {
           nestedCountersInstance.countEvent('shardeum-staking', `node-deactivated: injectClaimRewardTx`)
           const result = await injectClaimRewardTxWithRetry(shardus, data)
-          console.log('INJECTED_CLAIM_REWARD_TX', result)
+          /* prettier-ignore */ if (logFlags.dapp_verbose) console.log('INJECTED_CLAIM_REWARD_TX', result)
         } else if (eventType === 'node-left-early' && ShardeumFlags.enableNodeSlashing === true) {
           let nodeLostCycle
           let nodeDroppedCycle
@@ -5929,11 +5890,10 @@ const shardusSetup = (): void => {
             }
             nestedCountersInstance.countEvent('shardeum-staking', `node-left-early: injectClaimRewardTx`)
             const result = await PenaltyTx.injectPenaltyTX(shardus, data, violationData)
-            console.log('INJECTED_PENALTY_TX', result)
+            /* prettier-ignore */ if (logFlags.dapp_verbose) console.log('INJECTED_PENALTY_TX', result)
           } else {
             nestedCountersInstance.countEvent('shardeum-staking', `node-left-early: event skipped`)
-            if (ShardeumFlags.VerboseLogs)
-              console.log(`Shardeum node-left-early event skipped`, data, nodeLostCycle, nodeDroppedCycle)
+            /* prettier-ignore */ if (logFlags.dapp_verbose) console.log(`Shardeum node-left-early event skipped`, data, nodeLostCycle, nodeDroppedCycle)
           }
         }
       }
@@ -6129,8 +6089,8 @@ async function updateConfigFromNetworkAccount(inputConfig: Config, account: Wrap
 
 function patchObject(existingObject: Config, changeObj: Partial<WrappedAccount>): void {
   //remove after testing
-  console.log(`TESTING existingObject: ${JSON.stringify(existingObject, null, 2)}`)
-  console.log(`TESTING changeObj: ${JSON.stringify(changeObj, null, 2)}`)
+  /* prettier-ignore */ if (logFlags.dapp_verbose) console.log(`TESTING existingObject: ${JSON.stringify(existingObject, null, 2)}`)
+  /* prettier-ignore */ if (logFlags.dapp_verbose) console.log(`TESTING changeObj: ${JSON.stringify(changeObj, null, 2)}`)
   for (const changeKey in changeObj) {
     if (changeObj[changeKey] && existingObject.server[changeKey]) {
       const targetObject = existingObject.server[changeKey]
@@ -6181,7 +6141,7 @@ export let shardusConfig: ShardusTypes.ServerConfiguration
   } catch (error) {
     configToLoad = config
     /* prettier-ignore */ nestedCountersInstance.countEvent('network-config-operation', 'Error: Use default configs.')
-    /* prettier-ignore */ console.log(`Error: ${error} \nUsing default configs`)
+    console.log(`Error: ${formatErrorMessage(error)} \nUsing default configs`)
   }
 
   // this code is only excuted when starting or setting up the network***
@@ -6192,7 +6152,7 @@ export let shardusConfig: ShardusTypes.ServerConfiguration
 
   //@ts-ignore
   logFlags = shardus.getLogFlags()
-
+  //do not need to have log levels for these flags:
   console.log('Shardus Server Config:')
   /** This is just the ServerConfiguration part of the shardus core configuration*/
   shardusConfig = shardus.config
@@ -6217,7 +6177,7 @@ export let shardusConfig: ShardusTypes.ServerConfiguration
 
       // THIS CODE IS CALLED ON EVERY NODE ON EVERY CYCLE
       async function networkMaintenance(): Promise<NodeJS.Timeout> {
-        shardus.log('New maintainence cycle has started')
+        /* prettier-ignore */ if (logFlags.dapp_verbose) shardus.log('New maintainence cycle has started')
         drift = Date.now() - expected
 
         try {
@@ -6232,16 +6192,14 @@ export let shardusConfig: ShardusTypes.ServerConfiguration
             latestCycles.length > 0 &&
             latestCycles[0].counter < ShardeumFlags.FirstNodeRewardCycle
           ) {
-            shardus.log(
-              `Too early for node reward: ${latestCycles[0].counter}.  first reward:${ShardeumFlags.FirstNodeRewardCycle}`
-            )
-            shardus.log('Maintenance cycle has ended')
+            /* prettier-ignore */ if (logFlags.dapp_verbose) shardus.log( `Too early for node reward: ${latestCycles[0].counter}.  first reward:${ShardeumFlags.FirstNodeRewardCycle}` )
+            /* prettier-ignore */ if (logFlags.dapp_verbose) shardus.log('Maintenance cycle has ended')
             expected += cycleInterval
             return setTimeout(networkMaintenance, Math.max(100, cycleInterval - drift))
           }
         } catch (err) {
-          shardus.log('ERR: ', err)
-          console.log('ERR: ', err)
+          /* prettier-ignore */ if (logFlags.error) shardus.log('ERR: ', err)
+          /* prettier-ignore */ if (logFlags.error) console.log('ERR: ', err)
           return setTimeout(networkMaintenance, 5000) // wait 5s before trying again
         }
 
