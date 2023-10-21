@@ -136,6 +136,7 @@ import { EthersStateManager } from '@ethereumjs/statemanager'
 import rfdc = require('rfdc')
 import { AdminCert, PutAdminCertResult, putAdminCertificateHandler } from './handlers/adminCertificate'
 import { P2P } from '@shardus/types'
+import { util } from 'prettier'
 
 let latestBlock = 0
 export const blocks: BlockMap = {}
@@ -153,6 +154,16 @@ const ERC20_BALANCEOF_CODE = '0x70a08231'
 
 let shardus: Shardus
 let profilerInstance
+
+//   next shardus core will export the correct type
+export let logFlags = {
+  verbose: false,
+  dapp_verbose: false,
+  error: true,
+  fatal: true,
+  important_as_error: true,
+  important_as_fatal: true,
+}
 
 // Read the CLI and GUI versions and save them in memory
 readOperatorVersions()
@@ -284,7 +295,7 @@ function pruneOldBlocks(): void {
           delete readableBlocks[block]
           /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log('Lengths of blocks after pruning', Object.keys(blocksByHash).length, Object.keys(readableBlocks).length)
         } catch (e) {
-          console.log('Error: pruneOldBlocks', e)
+          /* prettier-ignore */ if (logFlags.error) console.log('Error: pruneOldBlocks', e)
         }
       }
     }
@@ -673,7 +684,7 @@ function getStakeTxBlobFromEVMTx(
   transaction: Transaction[TransactionType.Legacy] | Transaction[TransactionType.AccessListEIP2930]
 ): unknown {
   const stakeTxString = toAscii(bytesToHex(transaction.data))
-  console.log(`stakeTxString`, stakeTxString)
+  /* prettier-ignore */ if (logFlags.verbose) console.log(`stakeTxString`, stakeTxString)
   return JSON.parse(stakeTxString)
 }
 
@@ -1091,7 +1102,7 @@ const configShardusEndpoints = (): void => {
           status: 500,
         })
       } catch (e) {
-        console.log('Failed to respond to inject tx: ', e)
+        /* prettier-ignore */ if (logFlags.error) console.log('Failed to respond to inject tx: ', e)
       }
     }
   })
@@ -1222,7 +1233,7 @@ const configShardusEndpoints = (): void => {
     try {
       return res.json({ ShardeumFlags })
     } catch (e) {
-      console.log(e)
+      /* prettier-ignore */ if (logFlags.error) console.log(e)
       return { error: e.message }
     }
   })
@@ -1265,7 +1276,7 @@ const configShardusEndpoints = (): void => {
         return res.json(`debug-set-service-point: ${value} == null`)
       }
       if (Number.isNaN(Number(value))) {
-        console.log(`Invalid service point`, value)
+        /* prettier-ignore */ if (logFlags.error) console.log(`Invalid service point`, value)
         return res.json({ error: `Invalid service point` })
       }
 
@@ -1336,7 +1347,7 @@ const configShardusEndpoints = (): void => {
       const contractCode = wrappedCodeAccount ? bytesToHex(wrappedCodeAccount.codeByte) : '0x'
       return res.json({ contractCode })
     } catch (error) {
-      console.log(error)
+      /* prettier-ignore */ if (logFlags.dapp_verbose) console.log('eth_getCode: ' + formatErrorMessage(error))
       res.json({ error })
     }
   })
@@ -1354,7 +1365,7 @@ const configShardusEndpoints = (): void => {
       )
       return res.json({ result: `0x${result.toString(16)}` })
     } catch (error) {
-      console.log(error)
+      /* prettier-ignore */ if (logFlags.dapp_verbose) console.log('eth_gasPrice: ' + formatErrorMessage(error))
       res.json({ error })
     }
   })
@@ -1666,11 +1677,12 @@ const configShardusEndpoints = (): void => {
           const receipt = cachedAppData.appData as ShardusTypes.WrappedData
           return res.json({ account: JSON.parse(stringify(receipt.data)) })
         } else {
-          console.log(`Unable to find tx receipt for ${txHash}`)
+          //may tune this down soon
+          /* prettier-ignore */ if (logFlags.error) console.log(`Unable to find tx receipt for ${txHash}`)
         }
         return res.json({ account: null })
-      } catch (e) {
-        console.log('Unable to get tx receipt', e)
+      } catch (error) {
+        /* prettier-ignore */ if (logFlags.dapp_verbose) console.log('Unable to get tx receipt: ' + formatErrorMessage(error))
         return res.json({ account: null })
       }
     } else {
@@ -1690,7 +1702,7 @@ const configShardusEndpoints = (): void => {
         fixDeserializedWrappedEVMAccount(data as WrappedEVMAccount)
         res.json({ account: data })
       } catch (error) {
-        console.log(error)
+        /* prettier-ignore */ if (logFlags.dapp_verbose) console.log('tx/:hash: ' + formatErrorMessage(error))
         res.json({ error })
       }
     }
@@ -2027,8 +2039,8 @@ async function applyInternalTx(
         txId
       )
     }
-    console.log('Applied change_config tx')
-    shardus.log('Applied change_config tx')
+    /* prettier-ignore */ if (logFlags.important_as_error) console.log('Applied change_config tx')
+    /* prettier-ignore */ if (logFlags.important_as_error) shardus.log('Applied change_config tx')
   }
   if (internalTx.internalTXType === InternalTXType.ApplyChangeConfig) {
     // eslint-disable-next-line security/detect-object-injection
@@ -2050,8 +2062,8 @@ async function applyInternalTx(
       network.timestamp = txTimestamp
       network.listOfChanges.push(internalTx.change)
     }
-    console.log(`Applied CHANGE_CONFIG GLOBAL transaction: ${stringify(network)}`)
-    shardus.log('Applied CHANGE_CONFIG GLOBAL transaction', stringify(network))
+    /* prettier-ignore */ if (logFlags.important_as_error) console.log(`Applied CHANGE_CONFIG GLOBAL transaction: ${stringify(network)}`)
+    /* prettier-ignore */ if (logFlags.important_as_error) shardus.log('Applied CHANGE_CONFIG GLOBAL transaction', stringify(network))
     if (ShardeumFlags.supportInternalTxReceipt) {
       createInternalTxReceipt(
         shardus,
@@ -2101,8 +2113,8 @@ async function applyInternalTx(
         txId
       )
     }
-    console.log('Applied change_network_param tx')
-    shardus.log('Applied change_network_param tx')
+    /* prettier-ignore */ if (logFlags.important_as_error) console.log('Applied change_network_param tx')
+    /* prettier-ignore */ if (logFlags.important_as_error) shardus.log('Applied change_network_param tx')
   }
   if (internalTx.internalTXType === InternalTXType.ApplyNetworkParam) {
     // eslint-disable-next-line security/detect-object-injection
@@ -2135,8 +2147,8 @@ async function applyInternalTx(
         txId
       )
     }
-    console.log(`Applied CHANGE_NETWORK_PARAM GLOBAL transaction: ${stringify(network)}`)
-    shardus.log('Applied CHANGE_NETWORK_PARAM GLOBAL transaction', stringify(network))
+    /* prettier-ignore */ if (logFlags.important_as_error) console.log(`Applied CHANGE_NETWORK_PARAM GLOBAL transaction: ${stringify(network)}`)
+    /* prettier-ignore */ if (logFlags.important_as_error) shardus.log('Applied CHANGE_NETWORK_PARAM GLOBAL transaction', stringify(network))
   }
   if (internalTx.internalTXType === InternalTXType.SetCertTime) {
     const setCertTimeTx = internalTx as SetCertTime
@@ -2340,7 +2352,7 @@ const createNetworkAccount = async (accountId: string): Promise<NetworkAccount> 
     timestamp: 0,
   }
   account.hash = WrappedEVMAccountFunctions._calculateAccountHash(account)
-  console.log('INITIAL_HASH: ', account.hash)
+  /* prettier-ignore */ if (logFlags.important_as_error) console.log('INITIAL_HASH: ', account.hash)
   return account
 }
 
@@ -2479,18 +2491,17 @@ async function estimateGas(
       const consensusNode = shardus.getRandomConsensusNodeForAccount(caShardusAddress)
       /* prettier-ignore */
       if (consensusNode != null) {
-        if (ShardeumFlags.VerboseLogs) console.log(`Node is in remote shard: requesting estimateGas ${consensusNode?.externalIp}:${consensusNode?.externalPort}`, injectedTx, originalInjectedTx)
+        /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`Node is in remote shard: requesting estimateGas ${consensusNode?.externalIp}:${consensusNode?.externalPort}`, injectedTx, originalInjectedTx)
 
         const postResp = await _internalHackPostWithResp(
           `${consensusNode.externalIp}:${consensusNode.externalPort}/contract/estimateGas`,
           originalInjectedTx
         )
-        if (ShardeumFlags.VerboseLogs)
-          console.log('EstimateGas response from node', consensusNode.externalPort, postResp.body)
+        /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log('EstimateGas response from node', consensusNode.externalPort, postResp.body)
         if (postResp.body != null && postResp.body != '' && postResp.body.estimateGas != null) {
           const estimateResultFromNode = postResp.body.estimateGas
-          /* prettier-ignore */
-          if (ShardeumFlags.VerboseLogs) console.log(`Node is in remote shard: gotResp:`, estimateResultFromNode)
+          
+          /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`Node is in remote shard: gotResp:`, estimateResultFromNode)
           if (isHexPrefixed(estimateResultFromNode) && estimateResultFromNode !== '0x' && estimateResultFromNode !== '0x0') {
             return postResp.body.estimateGas;
           } else {
@@ -2501,7 +2512,7 @@ async function estimateGas(
         return { estimateGas: bigIntToHex(maxUint256) }
       }
     } else {
-      if (ShardeumFlags.VerboseLogs) console.log(`Node is in remote shard: false`)
+      /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`Node is in remote shard: false`)
     }
   }
 
@@ -6178,6 +6189,8 @@ export let shardusConfig: ShardusTypes.ServerConfiguration
   shardus = shardusFactory(configToLoad, {
     customStringifier: SerializeToJsonString,
   })
+
+  logFlags = shardus.getLogFlags()
 
   console.log('Shardus Server Config:')
   /** This is just the ServerConfiguration part of the shardus core configuration*/
