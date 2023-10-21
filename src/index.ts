@@ -6190,6 +6190,7 @@ export let shardusConfig: ShardusTypes.ServerConfiguration
     customStringifier: SerializeToJsonString,
   })
 
+  //@ts-ignore
   logFlags = shardus.getLogFlags()
 
   console.log('Shardus Server Config:')
