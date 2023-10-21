@@ -261,7 +261,6 @@ export interface ReadableReceipt {
   to: string
   value: string
   data: string
-  type?: string
   chainId?: string
   reason?: string // Added this to add the evm error reason
   stakeInfo?: StakeInfo
@@ -269,7 +268,6 @@ export interface ReadableReceipt {
   internalTx?: InternalTx
   maxFeePerGas?: string
   maxPriorityFeePerGas?: string
-  accessList?: []
   v?: string
   r?: string
   s?: string
