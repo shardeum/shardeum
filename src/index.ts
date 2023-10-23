@@ -6203,10 +6203,10 @@ export let shardusConfig: ShardusTypes.ServerConfiguration
           return setTimeout(networkMaintenance, 5000) // wait 5s before trying again
         }
 
-        shardus.log('nodeId: ', nodeId)
-        shardus.log('nodeAddress: ', nodeAddress)
+        /* prettier-ignore */ if (logFlags.dapp_verbose) shardus.log('nodeId: ', nodeId)
+        /* prettier-ignore */ if (logFlags.dapp_verbose) shardus.log('nodeAddress: ', nodeAddress)
 
-        shardus.log('Maintainence cycle has ended')
+        /* prettier-ignore */ if (logFlags.dapp_verbose) shardus.log('Maintainence cycle has ended')
         expected += cycleInterval
         return setTimeout(networkMaintenance, Math.max(100, cycleInterval - drift))
       }

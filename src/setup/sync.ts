@@ -9,11 +9,11 @@ import { AccountType, DevAccount, InternalTXType, WrappedEVMAccount } from '../s
 import * as WrappedEVMAccountFunctions from '../shardeum/wrappedEVMAccountFunctions'
 import { ShardeumState, TransactionState } from '../state'
 import * as AccountsStorage from '../storage/accountStorage'
-import {SerializeToJsonString} from '../utils'
+import { SerializeToJsonString } from '../utils'
 import { sleep } from '../utils'
 // import { StateManager } from '../vm/state'
 import { DefaultStateManager } from '@ethereumjs/statemanager'
-
+import { logFlags } from '..'
 
 function isDebugMode(): boolean {
   // eslint-disable-next-line @typescript-eslint/ban-ts-comment
@@ -45,11 +45,11 @@ export const sync = (shardus: Shardus, evmCommon: any) => async (): Promise<void
           file: ShardeumFlags.DebugRestoreFile,
         }
         const report = await loadAccountDataFromDB(shardus, loadOptions)
-        console.log('loadAccountDataFromDB:' + JSON.stringify(report))
+        /* prettier-ignore */ if (logFlags.important_as_error) console.log('loadAccountDataFromDB:' + JSON.stringify(report))
       }
 
       //create genesis accounts before network account since nodes will wait for the network account
-      shardus.log(`node ${nodeId} GENERATED_A_NEW_NETWORK_ACCOUNT: `)
+      /* prettier-ignore */ if (logFlags.important_as_error) shardus.log(`node ${nodeId} GENERATED_A_NEW_NETWORK_ACCOUNT: `)
       if (ShardeumFlags.SetupGenesisAccount) {
         let skippedAccountCount = 0
         let accountCopies = []
@@ -79,9 +79,9 @@ export const sync = (shardus: Shardus, evmCommon: any) => async (): Promise<void
             timestamp: wrappedEVMAccount.timestamp,
           }
           accountCopies.push(accountCopy)
-          shardus.log(`node ${nodeId} SETUP GENESIS ACCOUNT: ${address}  amt: ${amount}`)
+          /* prettier-ignore */ if (logFlags.important_as_error) shardus.log(`node ${nodeId} SETUP GENESIS ACCOUNT: ${address}  amt: ${amount}`)
         }
-        console.log(`Skipped ${skippedAccountCount} genesis accounts`)
+        /* prettier-ignore */ if (logFlags.important_as_error) console.log(`Skipped ${skippedAccountCount} genesis accounts`)
         if (ShardeumFlags.devPublicKey) {
           const { account, cycle } = createDevAccount(ShardeumFlags.devPublicKey, shardus.getLatestCycles())
           const devAccount: any = account // eslint-disable-line @typescript-eslint/no-explicit-any
@@ -98,7 +98,7 @@ export const sync = (shardus: Shardus, evmCommon: any) => async (): Promise<void
         }
         await shardus.debugCommitAccountCopies(accountCopies)
         if (ShardeumFlags.forwardGenesisAccounts) {
-          accountCopies = accountCopies.map(account => {
+          accountCopies = accountCopies.map((account) => {
             return JSON.parse(SerializeToJsonString(account))
           })
           await shardus.forwardAccounts({ accounts: accountCopies, receipts: [] })
@@ -109,7 +109,7 @@ export const sync = (shardus: Shardus, evmCommon: any) => async (): Promise<void
       const when = Date.now()
       const existingNetworkAccount = await shardus.getLocalOrRemoteAccount(networkAccount)
       if (existingNetworkAccount) {
-        shardus.log('NETWORK_ACCOUNT ALREADY EXISTED: ', existingNetworkAccount)
+        /* prettier-ignore */ if (logFlags.important_as_error) shardus.log('NETWORK_ACCOUNT ALREADY EXISTED: ', existingNetworkAccount)
         await sleep(ONE_SECOND * 5)
       } else {
         const value = {
@@ -122,7 +122,7 @@ export const sync = (shardus: Shardus, evmCommon: any) => async (): Promise<void
       }
     } else {
       while (!(await shardus.getLocalOrRemoteAccount(networkAccount))) {
-        console.log('waiting..')
+        /* prettier-ignore */ if (logFlags.important_as_error) console.log('waiting..')
         await sleep(1000)
       }
     }
@@ -176,7 +176,7 @@ async function manuallyCreateAccount(
   let cycleStart = 0
   if (latestCycles != null && latestCycles.length > 0) {
     cycleStart = latestCycles[0].start * 1000
-    console.log('Tester account created time: ', cycleStart)
+    /* prettier-ignore */ if (logFlags.important_as_error) console.log('Tester account created time: ', cycleStart)
   }
 
   const wrappedEVMAccount = {
@@ -195,7 +195,7 @@ const createDevAccount = (accountId: string, latestCycles: any): { account: DevA
   let cycleStart = 0
   if (latestCycles != null && latestCycles.length > 0) {
     cycleStart = latestCycles[0].start * 1000
-    console.log('dev account created time: ', cycleStart)
+    /* prettier-ignore */ if (logFlags.dapp_verbose) console.log('dev account created time: ', cycleStart)
   }
   const account: DevAccount = {
     id: accountId,
