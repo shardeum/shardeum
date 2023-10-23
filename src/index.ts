@@ -2586,7 +2586,7 @@ async function estimateGas(
 
 async function generateAccessList(
   injectedTx: ShardusTypes.OpaqueTransaction,
-  appData: ShardusTypes.AppData
+  appData: any
 ): Promise<{ accessList: unknown[]; shardusMemoryPatterns: unknown }> {
   try {
     //const transaction = getTransactionObj(injectedTx)
