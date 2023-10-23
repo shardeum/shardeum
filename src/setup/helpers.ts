@@ -1,9 +1,14 @@
-import { AccessListEIP2930Transaction, Transaction, TransactionFactory, TransactionType } from '@ethereumjs/tx'
+import {
+  AccessListEIP2930Transaction,
+  Transaction,
+  TransactionFactory,
+  TransactionType,
+} from '@ethereumjs/tx'
 import * as crypto from '@shardus/crypto-utils'
 import { toBuffer } from 'ethereumjs-util'
 import { ShardeumFlags } from '../shardeum/shardeumFlags'
 import { InternalTx, InternalTXType } from '../shardeum/shardeumTypes'
-import {stringify, cryptoStringify} from '../utils/stringify'
+import { stringify, cryptoStringify } from '../utils/stringify'
 
 // console.log(crypto.)
 
@@ -42,7 +47,9 @@ export function isDebugTx(tx: any): boolean {
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-export function getTransactionObj(tx) :Transaction[TransactionType.Legacy] | Transaction[TransactionType.AccessListEIP2930] {
+export function getTransactionObj(
+  tx
+): Transaction[TransactionType.Legacy] | Transaction[TransactionType.AccessListEIP2930] {
   if (!tx.raw) throw Error('fail')
   let transactionObj
   const serializedInput = toBuffer(tx.raw)
@@ -53,13 +60,15 @@ export function getTransactionObj(tx) :Transaction[TransactionType.Legacy] | Tra
   }
   if (!transactionObj) {
     try {
-      transactionObj = TransactionFactory.fromSerializedData<TransactionType.AccessListEIP2930>(serializedInput)
+      transactionObj =
+        TransactionFactory.fromSerializedData<TransactionType.AccessListEIP2930>(serializedInput)
     } catch (e) {
       if (ShardeumFlags.VerboseLogs) console.log('Unable to get transaction obj', e)
     }
   }
 
   if (transactionObj) {
+    Object.freeze(transactionObj)
     return transactionObj
   } else throw Error('tx obj fail')
 }
