@@ -1618,7 +1618,7 @@ const configShardusEndpoints = (): void => {
       const injectedTx = req.body
       if (ShardeumFlags.VerboseLogs) console.log('AccessList endpoint injectedTx', injectedTx)
 
-      const result = await generateAccessList(injectedTx)
+      const result = await generateAccessList(injectedTx, null)
 
       res.json(result)
     } catch (e) {
@@ -2585,10 +2585,15 @@ async function estimateGas(
 }
 
 async function generateAccessList(
-  injectedTx: ShardusTypes.OpaqueTransaction
+  injectedTx: ShardusTypes.OpaqueTransaction,
+  appData: ShardusTypes.AppData
 ): Promise<{ accessList: unknown[]; shardusMemoryPatterns: unknown }> {
   try {
-    const transaction = getTransactionObj(injectedTx)
+    //const transaction = getTransactionObj(injectedTx)
+
+    let transaction = appData?.localTxCache
+    transaction ??= getTransactionObj(injectedTx)
+
     const caShardusAddress = transaction.to
       ? toShardusAddress(transaction.to.toString(), AccountType.Account)
       : null
@@ -2952,7 +2957,7 @@ const shardusSetup = (): void => {
       const txTimestamp = getInjectedOrGeneratedTimestamp(timestampedTx)
       const appData = fixBigIntLiteralsToBigInt(originalAppData)
       // Validate the tx
-      const { result, reason } = this.validateTransaction(tx)
+      const { result, reason } = this.validateTransaction(tx, originalAppData)
       if (result !== 'pass') {
         throw new Error(`invalid transaction, reason: ${reason}. tx: ${stringify(tx)}`)
       }
@@ -2976,7 +2981,8 @@ const shardusSetup = (): void => {
         )
       }
 
-      const transaction = getTransactionObj(tx)
+      let transaction = originalAppData.localTxCache
+      transaction ??= getTransactionObj(tx)
       const ethTxId = bytesToHex(transaction.hash())
       const shardusReceiptAddress = toShardusAddressWithKey(ethTxId, '', AccountType.Receipt)
       const txId = generateTxId(tx)
@@ -3857,7 +3863,13 @@ const shardusSetup = (): void => {
       }
 
       if (isInternalTx(tx) === false && isDebugTx(tx) === false) {
-        const transaction = getTransactionObj(tx)
+        //const transaction = getTransactionObj(tx)
+        let transaction = appData?.localTxCache
+        if (transaction == null) {
+          transaction = getTransactionObj(tx)
+          appData.localTxCache = transaction
+        }
+
         const shardusTxId = generateTxId(tx)
         const ethTxId = bytesToHex(transaction.hash())
         if (ShardeumFlags.VerboseLogs) {
@@ -4036,7 +4048,10 @@ const shardusSetup = (): void => {
             }
 
             profilerInstance.scopedProfileSectionStart('accesslist-generate')
-            const { accessList: generatedAccessList, shardusMemoryPatterns } = await generateAccessList(tx)
+            const { accessList: generatedAccessList, shardusMemoryPatterns } = await generateAccessList(
+              tx,
+              appData
+            )
             profilerInstance.scopedProfileSectionEnd('accesslist-generate')
 
             appData.accessList = generatedAccessList ? generatedAccessList : null
@@ -4220,7 +4235,12 @@ const shardusSetup = (): void => {
       }
       const txId = generateTxId(tx)
 
-      const transaction = getTransactionObj(tx)
+      let transaction = appData?.localTxCache
+      if (transaction == null) {
+        transaction = getTransactionObj(tx)
+        appData.localTxCache = transaction
+      }
+      //const transaction = getTransactionObj(tx)
       const result = {
         sourceKeys: [],
         targetKeys: [],
@@ -4568,7 +4588,13 @@ const shardusSetup = (): void => {
       // todo: create new accounts for staking
 
       // check if it a stake tx
-      const transaction = getTransactionObj(tx)
+      //const transaction = getTransactionObj(tx)
+      let transaction = appData?.localTxCache
+      if (transaction == null) {
+        transaction = getTransactionObj(tx)
+        appData.localTxCache = transaction
+      }
+
       const isStakeRelatedTx: boolean = isStakingEVMTx(transaction)
 
       if (isStakeRelatedTx) {
@@ -4696,7 +4722,12 @@ const shardusSetup = (): void => {
           accountType = evmAccountInfo.type
         }
 
-        const transaction = getTransactionObj(tx)
+        let transaction = appData?.localTxCache
+        if (transaction == null) {
+          transaction = getTransactionObj(tx)
+          appData.localTxCache = transaction
+        }
+        //const transaction = getTransactionObj(tx)
         const txHash = bytesToHex(transaction.hash())
         const shardusReceiptAddress = toShardusAddressWithKey(txHash, '', AccountType.Receipt)
         if (shardusReceiptAddress === accountId) {

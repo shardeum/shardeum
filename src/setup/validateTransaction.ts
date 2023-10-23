@@ -13,7 +13,7 @@ type Response = {
 export const validateTransaction =
   (shardus: Shardus) =>
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  (tx: any): Response => {
+  (tx: any, originalAppData): Response => {
     if (isInternalTx(tx)) {
       const internalTx = tx as InternalTx
 
@@ -60,7 +60,12 @@ export const validateTransaction =
       return { result: 'pass', reason: 'all_allowed' }
     }
 
-    const txObj = getTransactionObj(tx)
+    //const txObj = getTransactionObj(tx)
+    let txObj = originalAppData?.localTxCache
+    if (txObj == null) {
+      txObj = getTransactionObj(tx)
+      originalAppData.localTxCache = txObj
+    }
 
     const response = {
       result: 'fail',
