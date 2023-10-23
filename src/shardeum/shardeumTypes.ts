@@ -260,6 +260,7 @@ export interface ReadableReceipt {
   from: string
   to: string
   value: string
+  type?: string
   data: string
   chainId?: string
   reason?: string // Added this to add the evm error reason
