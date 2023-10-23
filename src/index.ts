@@ -1149,19 +1149,17 @@ const configShardusEndpoints = (): void => {
 
   shardus.registerExternalGet('eth_getLatestBlockHash', async (req, res) => {
     /* eslint-disable security/detect-object-injection */
-    let blockHash = req.query.blockHash
-    if (blockHash === 'latest') blockHash = readableBlocks[latestBlock].hash
-    if (ShardeumFlags.VerboseLogs) console.log('Req: eth_getLatestBlockHash', blockHash)
-    return res.json({ latestBlockHash: blockHash })
+    if (ShardeumFlags.VerboseLogs)
+      console.log('Req: eth_getLatestBlockHash', readableBlocks[latestBlock].hash)
+    return res.json({ latestBlockHash: readableBlocks[latestBlock].hash })
     /* eslint-enable security/detect-object-injection */
   })
 
   shardus.registerExternalGet('eth_getLatestBlockNumber', async (req, res) => {
     /* eslint-disable security/detect-object-injection */
-    let blockNumber = req.query.blockNumber
-    if (blockNumber === 'latest') blockNumber = readableBlocks[latestBlock].number
-    if (ShardeumFlags.VerboseLogs) console.log('Req: eth_getLatestBlockNumber', blockNumber)
-    return res.json({ latestBlockNumber: blockNumber })
+    if (ShardeumFlags.VerboseLogs)
+      console.log('Req: eth_getLatestBlockNumber', readableBlocks[latestBlock].number)
+    return res.json({ latestBlockNumber: readableBlocks[latestBlock].number })
     /* eslint-enable security/detect-object-injection */
   })
 
