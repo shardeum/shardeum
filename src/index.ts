@@ -739,8 +739,6 @@ function getTransactionObj(
   }
 
   if (transactionObj) {
-    console.log(`TESTING: transactionObj:`)
-    console.dir(transactionObj, { depth: null })
     return transactionObj
   } else throw Error('tx obj fail')
 }
@@ -3222,10 +3220,6 @@ const shardusSetup = (): void => {
         } else {
           const receiptShardusAccount =
             WrappedEVMAccountFunctions._shardusWrappedAccount(wrappedReceiptAccount)
-          console.log(`TESTING: applyResponse`)
-          console.dir(applyResponse, { depth: null })
-          console.log(`TESTING: receiptShardusAccount`)
-          console.dir(receiptShardusAccount, { depth: null })
           shardus.applyResponseAddReceiptData(
             applyResponse,
             receiptShardusAccount,
@@ -3811,12 +3805,6 @@ const shardusSetup = (): void => {
             }
           })
         }
-
-        console.log('TESTING: transaction where i want it')
-        console.dir(transaction, { depth: null })
-        console.log(`gasLimit is ${transaction.gasLimit}`)
-        console.log(`gasPrice is ${transaction.gasPrice}`)
-
         const readableReceipt: ReadableReceipt = {
           status: runTxResult.receipt['status'],
           transactionHash: ethTxId,
