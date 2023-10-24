@@ -2,7 +2,7 @@ import { nestedCountersInstance, ShardusTypes } from '@shardus/core'
 import * as crypto from '@shardus/crypto-utils'
 import { Address } from '@ethereumjs/util'
 import { networkAccount } from '../shardeum/shardeumConstants'
-import { createInternalTxReceipt, getApplyTXState } from '../index'
+import { createInternalTxReceipt, getApplyTXState, logFlags } from '../index'
 import { hashSignedObj } from '../setup/helpers'
 import { toShardusAddress } from '../shardeum/evmAddress'
 import { ShardeumFlags } from '../shardeum/shardeumFlags'
@@ -213,7 +213,7 @@ export async function applyClaimRewardTx(
   const isValidRequest = validateClaimRewardState(tx, shardus)
   if (isValidRequest.result === 'fail') {
     /* prettier-ignore */
-    console.log(`Invalid claimRewardTx, nominee ${tx.nominee}, reason: ${isValidRequest.reason}`)
+    /* prettier-ignore */ if (logFlags.dapp_verbose) console.log(`Invalid claimRewardTx, nominee ${tx.nominee}, reason: ${isValidRequest.reason}`)
     nestedCountersInstance.countEvent('shardeum-staking', `applyClaimRewardTx fail `)
     // throw new Error(
     //   `applyClaimReward failed validateClaimRewardState nominee ${tx.nominee} ${isValidRequest.reason}`
@@ -275,19 +275,20 @@ export async function applyClaimRewardTx(
   nodeAccount.rewardEndTime = tx.nodeDeactivatedTime
 
   //we multiply fist then devide to preserve precision
-  let totalReward = nodeRewardAmount * (BigInt(durationInNetwork * 1000)) // Convert from seconds to milliseconds
+  let totalReward = nodeRewardAmount * BigInt(durationInNetwork * 1000) // Convert from seconds to milliseconds
   //update total reward var so it can be logged
-  totalReward = totalReward / (nodeRewardInterval)
+  totalReward = totalReward / nodeRewardInterval
   //re-parse reward since it was saved as hex
   nodeAccount.reward = _base16BNParser(nodeAccount.reward)
   //add the reward because nodes can cycle without unstaking
-  nodeAccount.reward = nodeAccount.reward + (totalReward)
+  nodeAccount.reward = nodeAccount.reward + totalReward
   nodeAccount.timestamp = txTimestamp
 
   nodeAccount.rewarded = true
 
   // update the node account historical stats
-  nodeAccount.nodeAccountStats.totalReward = _base16BNParser(nodeAccount.nodeAccountStats.totalReward) + nodeAccount.reward
+  nodeAccount.nodeAccountStats.totalReward =
+    _base16BNParser(nodeAccount.nodeAccountStats.totalReward) + nodeAccount.reward
   nodeAccount.nodeAccountStats.history.push({ b: nodeAccount.rewardStartTime, e: nodeAccount.rewardEndTime })
 
   const txId = generateTxId(tx)
@@ -295,7 +296,10 @@ export async function applyClaimRewardTx(
   shardeumState._transactionState.appData = {}
 
   if (operatorAccount?.operatorAccountInfo == null) {
-    nestedCountersInstance.countEvent('shardeum-staking', 'claiming reward on account with no `operatorAccountInfo`')
+    nestedCountersInstance.countEvent(
+      'shardeum-staking',
+      'claiming reward on account with no `operatorAccountInfo`'
+    )
     shardus.applyResponseSetFailed(
       applyResponse,
       'applyClaimReward failed because `operatorAccountInfo` is null'
@@ -308,9 +312,8 @@ export async function applyClaimRewardTx(
     b: nodeAccount.rewardStartTime,
     e: nodeAccount.rewardEndTime,
   })
-  operatorAccount.operatorAccountInfo.operatorStats.totalNodeReward = _base16BNParser(
-    operatorAccount.operatorAccountInfo.operatorStats.totalNodeReward
-  ) + (nodeAccount.reward)
+  operatorAccount.operatorAccountInfo.operatorStats.totalNodeReward =
+    _base16BNParser(operatorAccount.operatorAccountInfo.operatorStats.totalNodeReward) + nodeAccount.reward
   operatorAccount.operatorAccountInfo.operatorStats.totalNodeTime += durationInNetwork
 
   operatorAccount.operatorAccountInfo.operatorStats.lastStakedNodeKey =
@@ -359,5 +362,5 @@ export async function applyClaimRewardTx(
   }
 
   /* prettier-ignore */ nestedCountersInstance.countEvent('shardeum-staking', `Applied ClaimRewardTX`)
-  console.log('Applied ClaimRewardTX', tx.nominee)
+  /* prettier-ignore */ if (logFlags.dapp_verbose) console.log('Applied ClaimRewardTX', tx.nominee)
 }

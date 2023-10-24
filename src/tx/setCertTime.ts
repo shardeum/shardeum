@@ -17,10 +17,17 @@ import {
 import * as WrappedEVMAccountFunctions from '../shardeum/wrappedEVMAccountFunctions'
 import { fixDeserializedWrappedEVMAccount } from '../shardeum/wrappedEVMAccountFunctions'
 import * as AccountsStorage from '../storage/accountStorage'
-import { getRandom, scaleByStabilityFactor, _base16BNParser, _readableSHM, generateTxId,stringify } from '../utils'
+import {
+  getRandom,
+  scaleByStabilityFactor,
+  _base16BNParser,
+  _readableSHM,
+  generateTxId,
+  stringify,
+} from '../utils'
 import { hashSignedObj } from '../setup/helpers'
-import { createInternalTxReceipt } from '..'
-import {isValidAddress} from "@ethereumjs/util";
+import { createInternalTxReceipt, logFlags } from '..'
+import { isValidAddress } from '@ethereumjs/util'
 
 export function isSetCertTimeTx(tx): boolean {
   if (tx.isInternalTx && tx.internalTXType === InternalTXType.SetCertTime) {
@@ -61,7 +68,7 @@ export async function injectSetCertTimeTx(
   const nominator = nodeAccountQueryResponse.nodeAccount?.nominator
 
   if (!nominator) {
-    console.log(`Nominator for this node account ${publicKey} is not found!`)
+    /* prettier-ignore */ if (logFlags.dapp_verbose) console.log(`Nominator for this node account ${publicKey} is not found!`)
     return { success: false, reason: `Nominator for this node account ${publicKey} is not found!` }
   }
   // TODO: I think we can add another validation here that checks that nominator stakeAmount has enough for minStakeRequired in the network
@@ -78,7 +85,7 @@ export async function injectSetCertTimeTx(
   }
   tx = shardus.signAsNode(tx)
   const result = await InjectTxToConsensor(randomConsensusNode, tx)
-  console.log('INJECTED_SET_CERT_TIME_TX', result, tx)
+  /* prettier-ignore */ if (logFlags.dapp_verbose) console.log('INJECTED_SET_CERT_TIME_TX', result, tx)
   return result
 }
 
@@ -121,13 +128,14 @@ export function validateSetCertTimeState(
     operatorEVMAccount = acct
   }
   fixDeserializedWrappedEVMAccount(operatorEVMAccount)
-  console.log('validateSetCertTimeState', tx, operatorEVMAccount)
+  /* prettier-ignore */ if (logFlags.dapp_verbose) console.log('validateSetCertTimeState', tx, operatorEVMAccount)
   if (operatorEVMAccount == undefined) {
-    /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`setCertTime validate state: found no wrapped state for operator account ${tx.nominator}`)
-    if (ShardeumFlags.fixCertExpTiming) return {
-      result: 'fail',
-      reason: `Found no wrapped state for operator account ${tx.nominator}`,
-    }
+    /* prettier-ignore */ if (logFlags.dapp_verbose) console.log(`setCertTime validate state: found no wrapped state for operator account ${tx.nominator}`)
+    if (ShardeumFlags.fixCertExpTiming)
+      return {
+        result: 'fail',
+        reason: `Found no wrapped state for operator account ${tx.nominator}`,
+      }
   } else {
     if (operatorEVMAccount && operatorEVMAccount.operatorAccountInfo) {
       try {
@@ -136,9 +144,9 @@ export function validateSetCertTimeState(
         /* prettier-ignore */ nestedCountersInstance.countEvent('shardeum-staking', 'validateSetCertTimeState' + ' stake failed to parse')
         return {
           result: 'fail',
-          reason: `stake failed to parse: ${stringify(
-            operatorEVMAccount.operatorAccountInfo.stake
-          )} er:${er.message}`,
+          reason: `stake failed to parse: ${stringify(operatorEVMAccount.operatorAccountInfo.stake)} er:${
+            er.message
+          }`,
         }
       }
     } else if (operatorEVMAccount && operatorEVMAccount.operatorAccountInfo == null) {
@@ -181,9 +189,7 @@ export function applySetCertTimeTx(
   txTimestamp: number,
   applyResponse: ShardusTypes.ApplyResponse
 ): void {
-  if (ShardeumFlags.VerboseLogs) {
-    console.log(`applySetCertTimeTx txTimestamp:${txTimestamp}   tx.timestamp:${tx.timestamp}`, tx)
-  }
+  /* prettier-ignore */ if (logFlags.dapp_verbose) console.log(`applySetCertTimeTx txTimestamp:${txTimestamp}   tx.timestamp:${tx.timestamp}`, tx)
 
   //TODO this is failing with a warning like this:
   //Invalid SetCertTimeTx state, operator account 0x0950c3ecc7d1c4dd093c9652f335f9391d83ee99, reason: Operator has not staked the required amount
@@ -191,7 +197,7 @@ export function applySetCertTimeTx(
   //we can fail the TX if it has failed validation
   const isValidRequest = validateSetCertTimeState(tx, wrappedStates)
   if (isValidRequest.result === 'fail') {
-    /* prettier-ignore */ console.log(`Invalid SetCertTimeTx state, operator account ${tx.nominator}, reason: ${isValidRequest.reason}`)
+    /* prettier-ignore */ if (logFlags.dapp_verbose) console.log(`Invalid SetCertTimeTx state, operator account ${tx.nominator}, reason: ${isValidRequest.reason}`)
     shardus.applyResponseSetFailed(
       applyResponse,
       `Invalid SetCertTimeTx state, operator account ${tx.nominator}, reason: ${isValidRequest.reason}`
@@ -209,9 +215,7 @@ export function applySetCertTimeTx(
   operatorEVMAccount.timestamp = txTimestamp
   fixDeserializedWrappedEVMAccount(operatorEVMAccount)
 
-  if (ShardeumFlags.VerboseLogs) {
-    console.log('operatorEVMAccount Before', operatorEVMAccount)
-  }
+  /* prettier-ignore */ if (logFlags.dapp_verbose) console.log('operatorEVMAccount Before', operatorEVMAccount)
 
   // Update state
   const serverConfig = config.server
@@ -230,11 +234,10 @@ export function applySetCertTimeTx(
       expiredPercentage = (Date.now() - certStartTimestamp) / (certExp - certStartTimestamp)
     }
 
-    if (ShardeumFlags.VerboseLogs) {
-      console.log(`applySetCertTimeTx expiredPercentage: ${expiredPercentage}`)
-    }
+    /* prettier-ignore */ if (logFlags.dapp_verbose) console.log(`applySetCertTimeTx expiredPercentage: ${expiredPercentage}`)
 
-    if (expiredPercentage >= ShardeumFlags.fixCertExpTiming ? 0.5 : 0.8) { // don't charge gas after 50% of the cert has
+    if (expiredPercentage >= ShardeumFlags.fixCertExpTiming ? 0.5 : 0.8) {
+      // don't charge gas after 50% of the cert has
       // expired
       shouldChargeTxFee = false
       /* prettier-ignore */ nestedCountersInstance.countEvent('shardeum-staking', 'applySetCertTimeTx' + ' renew' +
@@ -261,9 +264,8 @@ export function applySetCertTimeTx(
     txTimestamp + serverConfig.p2p.cycleDuration * ONE_SECOND * duration
 
   // deduct tx fee if certExp is not set yet or far from expiration
-  if (ShardeumFlags.VerboseLogs) {
-    console.log(`applySetCertTimeTx shouldChargeTxFee: ${shouldChargeTxFee}`)
-  }
+  /* prettier-ignore */ if (logFlags.dapp_verbose) console.log(`applySetCertTimeTx shouldChargeTxFee: ${shouldChargeTxFee}`)
+
   let amountSpent = BigInt(0).toString()
   if (shouldChargeTxFee) {
     const costTxFee = scaleByStabilityFactor(
@@ -274,9 +276,7 @@ export function applySetCertTimeTx(
     amountSpent = costTxFee.toString()
   }
 
-  if (ShardeumFlags.VerboseLogs) {
-    console.log('operatorEVMAccount After', operatorEVMAccount)
-  }
+  /* prettier-ignore */ if (logFlags.dapp_verbose) console.log('operatorEVMAccount After', operatorEVMAccount)
 
   // Apply state
   const txId = generateTxId(tx)

@@ -2,6 +2,7 @@ import { PenaltyTX, ViolationType } from '../../shardeum/shardeumTypes'
 import { ShardeumFlags } from '../../shardeum/shardeumFlags'
 import { _base16BNParser } from '../../utils'
 import { nestedCountersInstance } from '@shardus/core'
+import { logFlags } from '../..'
 
 export function getPenaltyForViolation(tx: PenaltyTX, stakeLock: bigint): bigint {
   //can remove this will crash part after fix confirmed
@@ -15,7 +16,7 @@ export function getPenaltyForViolation(tx: PenaltyTX, stakeLock: bigint): bigint
 
   // Check if stakeLock is not a BigInt, should never happen again due to the above fix
   if (typeof stakeLock !== 'bigint') {
-    console.error(`stakeLock is not a BigInt. Type: ${typeof stakeLock}, Value: ${stakeLock}`)
+    /* prettier-ignore */ if (logFlags.dapp_verbose) console.error(`stakeLock is not a BigInt. Type: ${typeof stakeLock}, Value: ${stakeLock}`)
     throw new Error(`stakeLock is not a BigInt. Type: ${typeof stakeLock}, Value: ${stakeLock}`)
   } else if (willCrash) {
     nestedCountersInstance.countEvent('shardeum', `getPenaltyForViolation crash fixed: ${typeof stakeLock}`)

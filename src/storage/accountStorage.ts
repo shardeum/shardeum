@@ -4,6 +4,7 @@ import { ShardeumFlags } from '../shardeum/shardeumFlags'
 import Storage from '../storage/storage'
 import { DeSerializeFromJsonString, fixBigIntLiteralsToBigInt, _base16BNParser } from '../utils'
 import { networkAccount } from '../shardeum/shardeumConstants'
+import { logFlags } from '..'
 
 //WrappedEVMAccount
 export let accounts: WrappedEVMAccountMap = {}
@@ -103,7 +104,7 @@ export async function setAccount(address: string, account: WrappedEVMAccount): P
       accounts[address] = account
     }
   } catch (e) {
-    console.log(`Error: while trying to set account`, e.message)
+    /* prettier-ignore */ if (logFlags.important_as_fatal) console.log(`Error: while trying to set account`, e.message)
   }
 }
 

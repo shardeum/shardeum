@@ -15,6 +15,7 @@ import { fixDeserializedWrappedEVMAccount, isWrappedEVMAccount } from '../sharde
 import { setCertTimeTx } from '../tx/setCertTime'
 import { getRandom, fixBigIntLiteralsToBigInt } from '../utils'
 import { shardusGetFromNode, shardusPostToNode, shardusPutToNode } from '../utils/requests'
+import { logFlags } from '..'
 
 // constants
 
@@ -135,7 +136,7 @@ export async function getCertSignatures(
   if (!signedAppData.success) {
     return {
       success: false,
-      signedStakeCert: null
+      signedStakeCert: null,
     }
   }
   certData.signs = signedAppData.signatures
@@ -200,9 +201,7 @@ export async function queryCertificate(
   }
   const signedCertRequest: QueryCertRequest = shardus.signAsNode(certRequest)
 
-  if (ShardeumFlags.VerboseLogs) {
-    console.log('signedCertRequest', signedCertRequest)
-  }
+  /* prettier-ignore */ if (logFlags.dapp_verbose) console.log('signedCertRequest', signedCertRequest)
 
   return await callQueryCertificate(signedCertRequest)
 }

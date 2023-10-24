@@ -28,6 +28,7 @@ import TransactionState from './transactionState'
 import { ShardeumFlags } from '../shardeum/shardeumFlags'
 import { Trie } from '@ethereumjs/trie'
 import type { Debugger } from 'debug'
+import { logFlags } from '..'
 
 const debug = createDebugLogger('vm:state')
 
@@ -155,20 +156,19 @@ export default class ShardeumState implements EVMStateManagerInterface {
 
   //critical to function
   setTransactionState(transactionState: TransactionState): void {
-    if (ShardeumFlags.VerboseLogs) console.log('Setting new transactionState', transactionState.linkedTX)
+    /* prettier-ignore */ if (logFlags.dapp_verbose) console.log('Setting new transactionState', transactionState.linkedTX)
     if (this._transactionState) {
       /* prettier-ignore */
-      if (ShardeumFlags.VerboseLogs) console.log(`Try to set new transaction state ${transactionState.linkedTX}. But found existing transaction state ${this._transactionState.linkedTX}`)
+      /* prettier-ignore */ if (logFlags.dapp_verbose) console.log(`Try to set new transaction state ${transactionState.linkedTX}. But found existing transaction state ${this._transactionState.linkedTX}`)
       // TODO: we should find a way handle this condition
     }
     this._transactionState = transactionState
   }
 
   unsetTransactionState(txId: string): void {
-    if (ShardeumFlags.VerboseLogs)
-      console.log('Running unsetTransactionState', this._transactionState.linkedTX)
+    /* prettier-ignore */ if (logFlags.dapp_verbose) console.log('Running unsetTransactionState', this._transactionState.linkedTX)
     if (this._transactionState.linkedTX !== txId) {
-      if (ShardeumFlags.VerboseLogs) console.log('Unable to unset transaction with different txId')
+      /* prettier-ignore */ if (logFlags.dapp_verbose) console.log('Unable to unset transaction with different txId')
       // TODO: we should find a way handle this condition
     }
     this._transactionState = null
@@ -319,7 +319,6 @@ export default class ShardeumState implements EVMStateManagerInterface {
     if (this._transactionState != null) {
       const testAccount = await this._transactionState.getContractStorage(null, address, key, true, false)
       return testAccount
-
     }
     if (ShardeumFlags.VerboseLogs) console.log('Unable to find transactionState', address)
     return

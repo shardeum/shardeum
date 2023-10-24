@@ -2594,28 +2594,24 @@ async function generateAccessList(
       : null
 
     if (caShardusAddress != null) {
-      if (ShardeumFlags.VerboseLogs)
-        console.log('Generating accessList to ', transaction.to.toString(), caShardusAddress)
+      /* prettier-ignore */ if (logFlags.dapp_verbose) console.log('Generating accessList to ', transaction.to.toString(), caShardusAddress)
 
       const address = caShardusAddress
       const accountIsRemote = shardus.isAccountRemote(address)
 
       if (accountIsRemote) {
         const consensusNode = shardus.getRandomConsensusNodeForAccount(address)
-        /* prettier-ignore */
-        if (ShardeumFlags.VerboseLogs) console.log(`Node is in remote shard: ${consensusNode?.externalIp}:${consensusNode?.externalPort}`)
+        /* prettier-ignore */ if (logFlags.dapp_verbose) console.log(`Node is in remote shard: ${consensusNode?.externalIp}:${consensusNode?.externalPort}`)
         if (consensusNode != null) {
-          if (ShardeumFlags.VerboseLogs) console.log(`Node is in remote shard: requesting`)
+          /* prettier-ignore */ if (logFlags.dapp_verbose) console.log(`Node is in remote shard: requesting`)
 
           const postResp = await _internalHackPostWithResp(
             `${consensusNode.externalIp}:${consensusNode.externalPort}/contract/accesslist`,
             injectedTx
           )
-          if (ShardeumFlags.VerboseLogs)
-            console.log('Accesslist response from node', consensusNode.externalPort, postResp.body)
+          /* prettier-ignore */ if (logFlags.dapp_verbose) console.log('Accesslist response from node', consensusNode.externalPort, postResp.body)
           if (postResp.body != null && postResp.body != '' && postResp.body.accessList != null) {
-            /* prettier-ignore */
-            if (ShardeumFlags.VerboseLogs) console.log(`Node is in remote shard: gotResp:${stringify(postResp.body)}`)
+            /* prettier-ignore */ if (logFlags.dapp_verbose) console.log(`Node is in remote shard: gotResp:${stringify(postResp.body)}`)
             if (Array.isArray(postResp.body.accessList) && postResp.body.accessList.length) {
               return {
                 accessList: postResp.body.accessList,
@@ -2626,11 +2622,11 @@ async function generateAccessList(
             }
           }
         } else {
-          if (ShardeumFlags.VerboseLogs) console.log(`Node is in remote shard: consensusNode = null`)
+          /* prettier-ignore */ if (logFlags.dapp_verbose) console.log(`Node is in remote shard: consensusNode = null`)
           return { accessList: [], shardusMemoryPatterns: null }
         }
       } else {
-        if (ShardeumFlags.VerboseLogs) console.log(`Node is in remote shard: false`)
+        /* prettier-ignore */ if (logFlags.dapp_verbose) console.log(`Node is in remote shard: false`)
       }
     }
 
@@ -6109,6 +6105,7 @@ export let shardusConfig: ShardusTypes.ServerConfiguration
 
   /**
    * Shardus start
+   * Ok to log things without a verbose check here as this is a startup function
    */
 ;(async (): Promise<void> => {
   setTimeout(periodicMemoryCleanup, 60000)

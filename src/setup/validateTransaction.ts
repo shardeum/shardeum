@@ -4,6 +4,7 @@ import { InitRewardTimes, InternalTx, InternalTXType } from '../shardeum/shardeu
 import { crypto, getTransactionObj, isDebugTx, isInternalTx, isInternalTXGlobal, verify } from './helpers'
 import * as InitRewardTimesTx from '../tx/initRewardTimes'
 import * as AccountsStorage from '../storage/accountStorage'
+import { logFlags } from '..'
 
 type Response = {
   result: string
@@ -24,7 +25,7 @@ export const validateTransaction =
 
         if (devPublicKey) {
           const isValid = verify(tx, devPublicKey)
-          console.log('isValid', isValid)
+          /* prettier-ignore */ if (logFlags.dapp_verbose) console.log('isValid', isValid)
 
           if (isValid) {
             return { result: 'pass', reason: 'valid' }
