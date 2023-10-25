@@ -23,6 +23,7 @@ import {
   getInjectedOrGeneratedTimestamp,
   getTransactionObj,
   isInternalTx,
+  isDebugTx,
   isInternalTXGlobal,
   verify,
 } from './helpers'
@@ -54,7 +55,39 @@ export const validateTxnFields =
       const txnTimestamp: number = getInjectedOrGeneratedTimestamp(timestampedTx)
       const appData = fixBigIntLiteralsToBigInt(originalAppData)
 
-      if (!txnTimestamp) {
+    if (!txnTimestamp) {
+      return {
+        success: false,
+        reason: 'Invalid transaction timestamp',
+        txnTimestamp,
+      }
+    }
+
+    if (isDebugTx(tx)) {
+      return {
+        success: true,
+        reason: 'debug tx is always valid',
+        txnTimestamp,
+      }
+    }
+
+    if (isSetCertTimeTx(tx)) {
+      const setCertTimeTx = tx as SetCertTime
+      const result = validateSetCertTimeTx(setCertTimeTx)
+      return {
+        success: result.isValid,
+        reason: result.reason,
+        txnTimestamp,
+      }
+    }
+
+    if (isInternalTx(tx)) {
+      const internalTX = tx as InternalTx
+      let success = false
+      let reason = ''
+
+      // validate internal TX
+      if (isInternalTXGlobal(internalTX) === true) {
         return {
           success: false,
           reason: 'Invalid transaction timestamp',
