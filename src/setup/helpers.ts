@@ -68,7 +68,7 @@ export function getTransactionObj(
   }
 
   if (transactionObj) {
-    Object.freeze(transactionObj)
+    //Object.freeze(transactionObj)
     return transactionObj
   } else throw Error('tx obj fail')
 }
