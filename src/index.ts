@@ -1129,6 +1129,10 @@ const configShardusEndpoints = (): void => {
       blockNumber = req.query.blockNumber
     }
     if (blockNumber === 'latest') blockNumber = latestBlock
+    if (blockNumber === 'earliest') {
+      const readableBlockValues = Object.values(readableBlocks)
+      return res.json({ block: readableBlockValues[0] }) // eslint-disable-line security/detect-object-injection
+    }
     if (ShardeumFlags.VerboseLogs) console.log('Req: eth_getBlockByNumber', blockNumber)
     if (blockNumber == null) {
       return res.json({ error: 'Invalid block number' })
@@ -1144,6 +1148,23 @@ const configShardusEndpoints = (): void => {
     let blockNumber: number
     if (typeof blockHash === 'string') blockNumber = blocksByHash[blockHash]
     return res.json({ block: readableBlocks[blockNumber] })
+    /* eslint-enable security/detect-object-injection */
+  })
+
+  shardus.registerExternalGet('eth_getEarliestBlockHash', async (req, res) => {
+    /* eslint-disable security/detect-object-injection */
+    const readableBlockValues = Object.values(readableBlocks)
+    if (ShardeumFlags.VerboseLogs) console.log('Req: eth_getEarliestBlockHash', readableBlockValues[0].hash)
+    return res.json({ earliestBlockHash: readableBlockValues[0].hash })
+    /* eslint-enable security/detect-object-injection */
+  })
+
+  shardus.registerExternalGet('eth_getEarliestBlockNumber', async (req, res) => {
+    /* eslint-disable security/detect-object-injection */
+    const readableBlockValues = Object.values(readableBlocks)
+    if (ShardeumFlags.VerboseLogs)
+      console.log('Req: eth_getEarliestBlockNumber', readableBlockValues[0].number)
+    return res.json({ earliestBlockNumber: readableBlockValues[0].number })
     /* eslint-enable security/detect-object-injection */
   })
 
