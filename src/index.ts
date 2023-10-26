@@ -1047,14 +1047,14 @@ const configShardusEndpoints = (): void => {
     let numActiveNodes = 0
     try {
       // Disable all application transactions if the network is not in the processing mode
-      const networkMode: P2P.ModesTypes.Record['mode'] = shardus.getNetworkMode()
-      if (ShardeumFlags.allowAppTxsOnlyOnProcessingMode && networkMode !== 'processing') {
-        return res.json({
-          success: false,
-          reason: 'Transaction is not allowed. Network is not in the processing mode.',
-          status: 500,
-        })
-      }
+      // const networkMode: P2P.ModesTypes.Record['mode'] = shardus.getNetworkMode()
+      // if (!isInternalTx(tx) && networkMode !== 'processing') {
+      //   return res.json({
+      //     success: false,
+      //     reason: 'Transaction is not allowed. Network is not in the processing mode.',
+      //     status: 500,
+      //   })
+      // }
 
       // Reject transaction if network is paused
       const networkAccount = AccountsStorage.cachedNetworkAccount
@@ -2966,6 +2966,7 @@ const shardusSetup = (): void => {
     //also appdata and wrapped accounts should be passed in?
     validateTransaction: validateTransaction(shardus),
     validateTxnFields: validateTxnFields(shardus, debugAppdata),
+    isInternalTx, 
     async apply(timestampedTx: ShardusTypes.OpaqueTransaction, wrappedStates, originalAppData) {
       //@ts-ignore
       const { tx } = timestampedTx

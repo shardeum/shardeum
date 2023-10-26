@@ -16,6 +16,7 @@ export interface Config {
         port: number
         publicKey: string
       }>
+      initShutdown: boolean
     }
     baseDir: string
     mode?: 'debug' | 'release'
@@ -63,6 +64,7 @@ if (process.env.APP_SEEDLIST) {
                 '758b1c119412298802cd28dbfa394cdfeecc4074492d60844cc192d632d84de3',
             },
           ],
+          initShutdown: false,
         },
       },
     },
