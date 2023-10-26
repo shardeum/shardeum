@@ -19,9 +19,9 @@ export const initialNetworkParamters: NetworkParameters = {
   activeVersion: '1.7.0',
   latestVersion: '1.7.0',
   archiver: {
-    minVersion: '3.3.8',
-    activeVersion: '3.3.8',
-    latestVersion: '3.3.8',
+    minVersion: '3.3.9',
+    activeVersion: '3.3.9',
+    latestVersion: '3.3.9',
   },
   stabilityScaleMul: 1000,
   stabilityScaleDiv: 1000,
