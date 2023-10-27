@@ -190,7 +190,8 @@ export let stakeCert: StakeCert = null
 
 export let adminCert: AdminCert = null
 
-let uuidCounter = 1
+// commenting out as this causes linting error; value is never used anyway
+// let uuidCounter = 1
 
 function isDebugMode(): boolean {
   return config.server.mode === 'debug'
