@@ -1,6 +1,7 @@
 import fs from 'fs'
 import path from 'path'
 import merge from 'deepmerge'
+import { ShardeumFlags } from '../shardeum/shardeumFlags'
 
 const overwriteMerge = (target: any[], source: any[]): any[] => source // eslint-disable-line @typescript-eslint/no-explicit-any
 
@@ -214,6 +215,7 @@ config = merge(config, {
       fixHomeNodeCheckForTXGroupChanges: true,
       //1.1.4
       archiverDataSubscriptionsUpdate: true,
+      startInServiceMode: ShardeumFlags.startInServiceMode,
     },
   },
 })

@@ -97,6 +97,8 @@ interface ShardeumFlags {
   nonceCheckRange: number
   looseNonceCheck: boolean
   supportEstimateGas: boolean
+  startInServiceMode: boolean
+  allowedEndpointsInServiceMode: string[]
 }
 
 export const ShardeumFlags: ShardeumFlags = {
@@ -219,6 +221,16 @@ export const ShardeumFlags: ShardeumFlags = {
 
   // 1.5.7 migration
   supportEstimateGas: true,
+
+  startInServiceMode: false,
+  allowedEndpointsInServiceMode: [
+    'POST /contract/estimateGas',
+    'POST /contract/call',
+    'POST /contract/accesslist',
+    'GET /eth_gasPrice',
+    'GET /account/*',
+    'GET /eth_getCode',
+  ],
 }
 
 export function updateShardeumFlag(key: string, value: string | number | boolean): void {
