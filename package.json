@@ -64,7 +64,7 @@
     "typescript": "4.5.2"
   },
   "devDependencies": {
-    "@shardus/archiver": "3.3.8",
+    "@shardus/archiver": "3.3.9",
     "@shardus/monitor-server": "2.6.0",
     "@types/decimal.js": "7.4.0",
     "@types/express": "4.17.2",
