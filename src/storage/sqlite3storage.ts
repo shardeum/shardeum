@@ -8,8 +8,9 @@ import { isObject, SerializeToJsonString } from '../utils'
 
 const Op = Sequelize.Op
 //const sqlite3 = require('sqlite3').verbose()
-import { Database } from 'sqlite3'
+import { Database, OPEN_READONLY } from 'sqlite3'
 import config from '../config'
+import { isServiceMode } from '..'
 
 interface Sqlite3Storage {
   baseDir: string
@@ -163,24 +164,28 @@ class Sqlite3Storage {
 
       if (this.memoryFile) {
         this.db = new Database(':memory:')
+      } else if (isServiceMode()) {
+        this.db = new Database(this.dbPath, OPEN_READONLY)
       } else {
         this.db = new Database(this.dbPath)
       }
 
-      await this.run('PRAGMA synchronous = OFF')
-      console.log('PRAGMA synchronous = OFF')
+      if (!isServiceMode()) {
+        await this.run('PRAGMA synchronous = OFF')
+        console.log('PRAGMA synchronous = OFF')
 
-      if (config?.storage?.options?.walMode === true) {
-        await this.run('PRAGMA journal_mode = WAL')
-        console.log('PRAGMA journal_mode = WAL')
-      } else {
-        await this.run('PRAGMA journal_mode = MEMORY')
-        console.log('PRAGMA journal_mode = MEMORY')
-      }
+        if (config?.storage?.options?.walMode === true) {
+          await this.run('PRAGMA journal_mode = WAL')
+          console.log('PRAGMA journal_mode = WAL')
+        } else {
+          await this.run('PRAGMA journal_mode = MEMORY')
+          console.log('PRAGMA journal_mode = MEMORY')
+        }
 
-      if (config?.storage?.options?.exclusiveLockMode === true) {
-        await this.run('PRAGMA locking_mode = EXCLUSIVE')
-        console.log('PRAGMA locking_mode = EXCLUSIVE')
+        if (config?.storage?.options?.exclusiveLockMode === true) {
+          await this.run('PRAGMA locking_mode = EXCLUSIVE')
+          console.log('PRAGMA locking_mode = EXCLUSIVE')
+        }
       }
     } catch (e) {
       throw new Error('shardeum storage init error ' + e.name + ': ' + e.message + ' at ' + e.stack)

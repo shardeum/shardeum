@@ -26,3 +26,5 @@ consensorAccounts.json
 archiverAccounts.json
 .DS_Store
 .direnv/
+db/
+secrets*

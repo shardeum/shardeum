@@ -5,6 +5,7 @@ import { WrappedEVMAccount } from '../shardeum/shardeumTypes'
 import { ShardeumFlags } from '../shardeum/shardeumFlags'
 import Sqlite3Storage from './sqlite3storage'
 import * as Sequelize from 'sequelize'
+import { isServiceMode } from '..'
 const Op = Sequelize.Op
 
 interface AccountsEntry {
@@ -43,14 +44,17 @@ class Storage {
     await this.storage.init()
     console.log('shardeum storage init complete:')
 
-    //would be neat if this wasn't needed here (refactor so storage stays more generic?)
-    await this.storage.runCreate(
-      'CREATE TABLE if not exists `accountsEntry` (`accountId` VARCHAR(255) NOT NULL, `timestamp` BIGINT NOT NULL, `data` JSON NOT NULL, PRIMARY KEY (`accountId`))'
-    )
 
-    if (ShardeumFlags.NewStorageIndex) {
-      //add index to timestamp
-      await this.storage.run('CREATE INDEX IF NOT EXISTS timestamp1 ON accountsEntry(timestamp)')
+    if (!isServiceMode()) {
+      //would be neat if this wasn't needed here (refactor so storage stays more generic?)
+      await this.storage.runCreate(
+        'CREATE TABLE if not exists `accountsEntry` (`accountId` VARCHAR(255) NOT NULL, `timestamp` BIGINT NOT NULL, `data` JSON NOT NULL, PRIMARY KEY (`accountId`))'
+      )
+
+      if (ShardeumFlags.NewStorageIndex) {
+        //add index to timestamp
+        await this.storage.run('CREATE INDEX IF NOT EXISTS timestamp1 ON accountsEntry(timestamp)')
+      }
     }
 
     // get models and helper methods from the storage class we just initializaed.

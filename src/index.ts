@@ -137,6 +137,8 @@ import rfdc = require('rfdc')
 import { AdminCert, PutAdminCertResult, putAdminCertificateHandler } from './handlers/adminCertificate'
 import { P2P } from '@shardus/types'
 import { util } from 'prettier'
+import { getExternalApiMiddleware } from './middleware/externalApiMiddleware'
+
 
 let latestBlock = 0
 export const blocks: BlockMap = {}
@@ -197,6 +199,10 @@ function isDebugMode(): boolean {
   return config.server.mode === 'debug'
 }
 
+export function isServiceMode(): boolean {
+  return ShardeumFlags.startInServiceMode === true
+}
+
 // grab this
 const pointsAverageInterval = 2 // seconds
 
@@ -222,6 +228,7 @@ let mustUseAdminCert = false
  * @returns
  */
 function trySpendServicePoints(points: number, req, key: string): boolean {
+  if (isServiceMode()) return true
   const nowTs = shardeumGetTime()
   const maxAge = 1000 * pointsAverageInterval
   const maxAllowedPoints = ShardeumFlags.ServicePointsPerSecond * pointsAverageInterval
@@ -376,6 +383,7 @@ export function setGenesisAccounts(accounts = []): void {
 
 if (ShardeumFlags.UseDBForAccounts === true) {
   AccountsStorage.init(config.server.baseDir, 'db/shardeum.sqlite')
+  if (isServiceMode) AccountsStorage.lazyInit()
 }
 
 //let accounts: WrappedEVMAccountMap = {} //relocated
@@ -944,6 +952,7 @@ function logAccessList(message: string, appData): void {
  */
 const configShardusEndpoints = (): void => {
   const debugMiddleware = shardus.getDebugModeMiddleware()
+  const externalApiMiddleware = getExternalApiMiddleware()
 
   //TODO request needs a signature and a timestamp.  or make it a real TX from a faucet account..
   //?id=<accountID>
@@ -1031,7 +1040,7 @@ const configShardusEndpoints = (): void => {
     return res.json(`point spenders cleared. totalSpendActions: ${totalSpends} `)
   })
 
-  shardus.registerExternalPost('inject', async (req, res) => {
+  shardus.registerExternalPost('inject', externalApiMiddleware, async (req, res) => {
     const tx = req.body
     if (ShardeumFlags.VerboseLogs) console.log('Transaction injected:', new Date(), tx)
 
@@ -1108,12 +1117,12 @@ const configShardusEndpoints = (): void => {
     }
   })
 
-  shardus.registerExternalGet('eth_blockNumber', async (req, res) => {
+  shardus.registerExternalGet('eth_blockNumber', externalApiMiddleware, async (req, res) => {
     if (ShardeumFlags.VerboseLogs) console.log('Req: eth_blockNumber')
     return res.json({ blockNumber: latestBlock ? '0x' + latestBlock.toString(16) : '0x0' })
   })
 
-  shardus.registerExternalGet('eth_getBlockHashes', async (req, res) => {
+  shardus.registerExternalGet('eth_getBlockHashes', externalApiMiddleware, async (req, res) => {
     let fromBlock: any = req.query.fromBlock
     let toBlock: any = req.query.toBlock
 
@@ -1135,7 +1144,7 @@ const configShardusEndpoints = (): void => {
     return res.json({ blockHashes, fromBlock, toBlock })
   })
 
-  shardus.registerExternalGet('eth_getBlockByNumber', async (req, res) => {
+  shardus.registerExternalGet('eth_getBlockByNumber', externalApiMiddleware, async (req, res) => {
     let blockNumber: number | string
     if (typeof req.query.blockNumber === 'string' || typeof req.query.blockNumber === 'number') {
       blockNumber = req.query.blockNumber
@@ -1152,7 +1161,7 @@ const configShardusEndpoints = (): void => {
     return res.json({ block: readableBlocks[blockNumber] }) // eslint-disable-line security/detect-object-injection
   })
 
-  shardus.registerExternalGet('eth_getBlockByHash', async (req, res) => {
+  shardus.registerExternalGet('eth_getBlockByHash', externalApiMiddleware, async (req, res) => {
     /* eslint-disable security/detect-object-injection */
     let blockHash = req.query.blockHash
     if (blockHash === 'latest') blockHash = readableBlocks[latestBlock].hash
@@ -1163,7 +1172,7 @@ const configShardusEndpoints = (): void => {
     /* eslint-enable security/detect-object-injection */
   })
 
-  shardus.registerExternalGet('eth_getEarliestBlockHash', async (req, res) => {
+  shardus.registerExternalGet('eth_getEarliestBlockHash', externalApiMiddleware, async (req, res) => {
     /* eslint-disable security/detect-object-injection */
     const readableBlockValues = Object.values(readableBlocks)
     if (ShardeumFlags.VerboseLogs) console.log('Req: eth_getEarliestBlockHash', readableBlockValues[0].hash)
@@ -1171,7 +1180,7 @@ const configShardusEndpoints = (): void => {
     /* eslint-enable security/detect-object-injection */
   })
 
-  shardus.registerExternalGet('eth_getEarliestBlockNumber', async (req, res) => {
+  shardus.registerExternalGet('eth_getEarliestBlockNumber', externalApiMiddleware, async (req, res) => {
     /* eslint-disable security/detect-object-injection */
     const readableBlockValues = Object.values(readableBlocks)
     if (ShardeumFlags.VerboseLogs)
@@ -1180,7 +1189,7 @@ const configShardusEndpoints = (): void => {
     /* eslint-enable security/detect-object-injection */
   })
 
-  shardus.registerExternalGet('eth_getLatestBlockHash', async (req, res) => {
+  shardus.registerExternalGet('eth_getLatestBlockHash', externalApiMiddleware, async (req, res) => {
     /* eslint-disable security/detect-object-injection */
     if (ShardeumFlags.VerboseLogs)
       console.log('Req: eth_getLatestBlockHash', readableBlocks[latestBlock].hash)
@@ -1188,7 +1197,7 @@ const configShardusEndpoints = (): void => {
     /* eslint-enable security/detect-object-injection */
   })
 
-  shardus.registerExternalGet('eth_getLatestBlockNumber', async (req, res) => {
+  shardus.registerExternalGet('eth_getLatestBlockNumber', externalApiMiddleware, async (req, res) => {
     /* eslint-disable security/detect-object-injection */
     if (ShardeumFlags.VerboseLogs)
       console.log('Req: eth_getLatestBlockNumber', readableBlocks[latestBlock].number)
@@ -1328,7 +1337,7 @@ const configShardusEndpoints = (): void => {
     }
   })
 
-  shardus.registerExternalGet('account/:address', async (req, res) => {
+  shardus.registerExternalGet('account/:address', externalApiMiddleware, async (req, res) => {
     if (trySpendServicePoints(ShardeumFlags.ServicePoints['account/:address'], req, 'account') === false) {
       return res.json({ error: 'node busy' })
     }
@@ -1360,7 +1369,7 @@ const configShardusEndpoints = (): void => {
     }
   })
 
-  shardus.registerExternalGet('eth_getCode', async (req, res) => {
+  shardus.registerExternalGet('eth_getCode', externalApiMiddleware, async (req, res) => {
     if (trySpendServicePoints(ShardeumFlags.ServicePoints['eth_getCode'], req, 'account') === false) {
       return res.json({ error: 'node busy' })
     }
@@ -1390,7 +1399,7 @@ const configShardusEndpoints = (): void => {
     }
   })
 
-  shardus.registerExternalGet('eth_gasPrice', async (req, res) => {
+  shardus.registerExternalGet('eth_gasPrice', externalApiMiddleware, async (req, res) => {
     if (trySpendServicePoints(ShardeumFlags.ServicePoints['eth_gasPrice'], req, 'account') === false) {
       return res.json({ error: 'node busy' })
     }
@@ -1399,7 +1408,7 @@ const configShardusEndpoints = (): void => {
       const result = calculateGasPrice(
         ShardeumFlags.baselineTxFee,
         ShardeumFlags.baselineTxGasUsage,
-        AccountsStorage.cachedNetworkAccount
+        await AccountsStorage.getCachedNetworkAccount()
       )
       return res.json({ result: `0x${result.toString(16)}` })
     } catch (error) {
@@ -1478,7 +1487,7 @@ const configShardusEndpoints = (): void => {
   //   }
   // })
 
-  shardus.registerExternalPost('contract/call', async (req, res) => {
+  shardus.registerExternalPost('contract/call', externalApiMiddleware, async (req, res) => {
     // if(isDebugMode()){
     //   return res.json(`endpoint not available`)
     // }
@@ -1541,7 +1550,7 @@ const configShardusEndpoints = (): void => {
 
         //Overly techincal, should be ported back into SGS as a utility
         const address = caShardusAddress
-        const accountIsRemote = shardus.isAccountRemote(address)
+        const accountIsRemote = isServiceMode() ? false : shardus.isAccountRemote(address)
 
         if (accountIsRemote) {
           const consensusNode = shardus.getRandomConsensusNodeForAccount(address)
@@ -1641,7 +1650,7 @@ const configShardusEndpoints = (): void => {
     }
   })
 
-  shardus.registerExternalPost('contract/accesslist', async (req, res) => {
+  shardus.registerExternalPost('contract/accesslist', externalApiMiddleware, async (req, res) => {
     if (
       trySpendServicePoints(
         ShardeumFlags.ServicePoints['contract/accesslist'].endpoint,
@@ -1665,7 +1674,7 @@ const configShardusEndpoints = (): void => {
     }
   })
 
-  shardus.registerExternalPost('contract/estimateGas', async (req, res) => {
+  shardus.registerExternalPost('contract/estimateGas', externalApiMiddleware, async (req, res) => {
     if (
       trySpendServicePoints(
         ShardeumFlags.ServicePoints['contract/estimateGas'].endpoint,
@@ -1700,7 +1709,7 @@ const configShardusEndpoints = (): void => {
     }
   })
 
-  shardus.registerExternalGet('tx/:hash', async (req, res) => {
+  shardus.registerExternalGet('tx/:hash', externalApiMiddleware, async (req, res) => {
     if (trySpendServicePoints(ShardeumFlags.ServicePoints['tx/:hash'], req, 'tx') === false) {
       return res.json({ error: 'node busy' })
     }
@@ -1838,7 +1847,7 @@ const configShardusEndpoints = (): void => {
     res.json({ accounts: sorted })
   })
 
-  shardus.registerExternalGet('genesis_accounts', async (req, res) => {
+  shardus.registerExternalGet('genesis_accounts', externalApiMiddleware, async (req, res) => {
     const { start } = req.query
     if (!start) {
       return res.json({ success: false, reason: 'start value is not defined!' })
@@ -1856,7 +1865,7 @@ const configShardusEndpoints = (): void => {
   })
 
   // Returns the hardware-spec of the server running the validator
-  shardus.registerExternalGet('system-info', async (req, res) => {
+  shardus.registerExternalGet('system-info', externalApiMiddleware, async (req, res) => {
     let result = {
       platform: platform(),
       arch: arch(),
@@ -1877,7 +1886,7 @@ const configShardusEndpoints = (): void => {
     })
   })
 
-  shardus.registerExternalPut('query-certificate', async (req: Request, res: Response) => {
+  shardus.registerExternalPut('query-certificate', externalApiMiddleware, async (req: Request, res: Response) => {
     nestedCountersInstance.countEvent('shardeum-staking', 'called query-certificate')
 
     const queryCertRes = await queryCertificateHandler(req, shardus)
@@ -1917,7 +1926,7 @@ const configShardusEndpoints = (): void => {
   })
 
   // endpoint on joining nodes side to receive admin certificate
-  shardus.registerExternalPut('admin-certificate', async (req, res) => {
+  shardus.registerExternalPut('admin-certificate', externalApiMiddleware, async (req, res) => {
     nestedCountersInstance.countEvent('shardeum-admin-certificate', 'called PUT admin-certificate')
 
     const certRes = await putAdminCertificateHandler(req, shardus)
@@ -2523,7 +2532,7 @@ async function estimateGas(
     : null
 
   if (caShardusAddress != null) {
-    const accountIsRemote = shardus.isAccountRemote(caShardusAddress)
+    const accountIsRemote = isServiceMode() ? false : shardus.isAccountRemote(caShardusAddress)
 
     if (accountIsRemote) {
       const consensusNode = shardus.getRandomConsensusNodeForAccount(caShardusAddress)
@@ -2635,7 +2644,7 @@ async function generateAccessList(
       /* prettier-ignore */ if (logFlags.dapp_verbose) console.log('Generating accessList to ', transaction.to.toString(), caShardusAddress)
 
       const address = caShardusAddress
-      const accountIsRemote = shardus.isAccountRemote(address)
+      const accountIsRemote = isServiceMode() ? false : shardus.isAccountRemote(address)
 
       if (accountIsRemote) {
         const consensusNode = shardus.getRandomConsensusNodeForAccount(address)
@@ -2720,7 +2729,7 @@ async function generateAccessList(
         // skipNonce: !ShardeumFlags.CheckNonce,
         skipNonce: true,
         skipBalance: true,
-        networkAccount: AccountsStorage.cachedNetworkAccount,
+        networkAccount: await AccountsStorage.getCachedNetworkAccount(),
       },
       customEVM
     )
@@ -4462,7 +4471,7 @@ const shardusSetup = (): void => {
 
     async deleteLocalAccountData() {
       //accounts = {}
-      await AccountsStorage.clearAccounts()
+      if (!isServiceMode()) await AccountsStorage.clearAccounts()
     },
 
     async setAccountData(accountRecords) {
@@ -6330,9 +6339,11 @@ export function shardeumGetTime(): number {
   shardusConfig = shardus.config
   console.log(JSON.stringify(shardusConfig, null, 2))
 
-  profilerInstance = shardus.getShardusProfiler()
-  configShardusEndpoints()
-  shardusSetup()
+    profilerInstance = shardus.getShardusProfiler()
+    configShardusEndpoints()
+    if (isServiceMode())
+      AccountsStorage.setAccount(networkAccount, await AccountsStorage.getAccount(networkAccount))
+    shardusSetup()
 
   if (ShardeumFlags.GlobalNetworkAccount) {
     // CODE THAT GETS EXECUTED WHEN NODES START

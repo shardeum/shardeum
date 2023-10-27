@@ -4,6 +4,7 @@ import { ShardeumFlags } from '../shardeum/shardeumFlags'
 import Storage from '../storage/storage'
 import { DeSerializeFromJsonString, fixBigIntLiteralsToBigInt, _base16BNParser } from '../utils'
 import { networkAccount } from '../shardeum/shardeumConstants'
+import { isServiceMode } from '..'
 import { logFlags } from '..'
 
 //WrappedEVMAccount
@@ -66,6 +67,14 @@ export async function accountExists(address: string): Promise<boolean> {
 }
 
 export let cachedNetworkAccount: NetworkAccount // an actual obj
+
+export async function getCachedNetworkAccount(): Promise<NetworkAccount> {
+  if (isServiceMode()) {
+    return (await getAccount(networkAccount)) as unknown as NetworkAccount
+  }
+  return cachedNetworkAccount
+}
+
 export async function setAccount(address: string, account: WrappedEVMAccount): Promise<void> {
   try {
     if (ShardeumFlags.UseDBForAccounts === true) {
