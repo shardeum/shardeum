@@ -1172,39 +1172,6 @@ const configShardusEndpoints = (): void => {
     /* eslint-enable security/detect-object-injection */
   })
 
-  shardus.registerExternalGet('eth_getEarliestBlockHash', externalApiMiddleware, async (req, res) => {
-    /* eslint-disable security/detect-object-injection */
-    const readableBlockValues = Object.values(readableBlocks)
-    if (ShardeumFlags.VerboseLogs) console.log('Req: eth_getEarliestBlockHash', readableBlockValues[0].hash)
-    return res.json({ earliestBlockHash: readableBlockValues[0].hash })
-    /* eslint-enable security/detect-object-injection */
-  })
-
-  shardus.registerExternalGet('eth_getEarliestBlockNumber', externalApiMiddleware, async (req, res) => {
-    /* eslint-disable security/detect-object-injection */
-    const readableBlockValues = Object.values(readableBlocks)
-    if (ShardeumFlags.VerboseLogs)
-      console.log('Req: eth_getEarliestBlockNumber', readableBlockValues[0].number)
-    return res.json({ earliestBlockNumber: readableBlockValues[0].number })
-    /* eslint-enable security/detect-object-injection */
-  })
-
-  shardus.registerExternalGet('eth_getLatestBlockHash', externalApiMiddleware, async (req, res) => {
-    /* eslint-disable security/detect-object-injection */
-    if (ShardeumFlags.VerboseLogs)
-      console.log('Req: eth_getLatestBlockHash', readableBlocks[latestBlock].hash)
-    return res.json({ latestBlockHash: readableBlocks[latestBlock].hash })
-    /* eslint-enable security/detect-object-injection */
-  })
-
-  shardus.registerExternalGet('eth_getLatestBlockNumber', externalApiMiddleware, async (req, res) => {
-    /* eslint-disable security/detect-object-injection */
-    if (ShardeumFlags.VerboseLogs)
-      console.log('Req: eth_getLatestBlockNumber', readableBlocks[latestBlock].number)
-    return res.json({ latestBlockNumber: readableBlocks[latestBlock].number })
-    /* eslint-enable security/detect-object-injection */
-  })
-
   shardus.registerExternalGet('stake', async (req, res) => {
     try {
       const stakeRequiredUsd = AccountsStorage.cachedNetworkAccount.current.stakeRequiredUsd
