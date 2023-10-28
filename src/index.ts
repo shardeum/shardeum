@@ -2910,7 +2910,7 @@ function startBlockedCheck(threshold: number): void {
 }
 
 // Start with a default threshold of 1000ms
-startBlockedCheck(1000)
+// startBlockedCheck(1000)
 
 /***
  *     ######  ##     ##    ###    ########  ########  ##     ##  ######      ######  ######## ######## ##     ## ########
