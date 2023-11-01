@@ -1,0 +1,13 @@
+diff --git a/src/config/index.ts b/src/config/index.ts
+index f62ed3a6d..0fe7dd60e 100644
+--- a/src/config/index.ts
++++ b/src/config/index.ts
+@@ -121,7 +121,7 @@ config = merge(config, {
+     p2p: {
+       cycleDuration: 60,
+       minNodesToAllowTxs: 1, // to allow single node networks
+-      minNodes: process.env.minNodes ? parseInt(process.env.minNodes) : 300,
++      minNodes: process.env.minNodes ? parseInt(process.env.minNodes) : 100,
+       maxNodes: process.env.maxNodes ? parseInt(process.env.maxNodes) : 1100,
+       maxJoinedPerCycle: 10,
+       maxSyncingPerCycle: 10,
