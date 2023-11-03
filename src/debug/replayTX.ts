@@ -3,21 +3,18 @@ import { getInjectedOrGeneratedTimestamp, getTransactionObj, hashSignedObj } fro
 import { AccessListEIP2930Transaction, LegacyTransaction } from '@ethereumjs/tx'
 import type { InterpreterStep } from '@ethereumjs/evm'
 import { Address, bytesToHex, Account } from '@ethereumjs/util'
-import { toShardusAddressWithKey, toShardusAddress } from '../shardeum/evmAddress'
+import { toShardusAddressWithKey, toShardusAddress } from './utils/evmAddress'
 import { AccountType, OperatorAccountInfo, WrappedEVMAccount } from '../shardeum/shardeumTypes'
 import { ShardeumState, TransactionState } from './state'
 import { shardeumStateTXMap, evmCommon, initEVMSingletons, EVM, networkAccount } from '../debug/evmSetup'
 import { loadStatesFromJson, accounts, hasAccount, getKey } from './db'
-import {
-  fixDeserializedWrappedEVMAccount,
-  predictContractAddress,
-} from '../shardeum/wrappedEVMAccountFunctions'
+import { fixDeserializedWrappedEVMAccount, predictContractAddress } from './utils/wrappedEVMAccountFunctions'
 import { getOrCreateBlockFromTimestamp } from './block/blockchain'
 import { ShardeumFlags } from '../shardeum/shardeumFlags'
 import { TraceStorageMap } from './trace/traceStorageMap'
 import { TraceDataFactory, ITraceData } from './trace/traceDataFactory'
 import * as AccountsStorage from './db'
-import * as WrappedEVMAccountFunctions from '../shardeum/wrappedEVMAccountFunctions'
+import * as WrappedEVMAccountFunctions from './utils/wrappedEVMAccountFunctions'
 import { estimateGas } from './estimateGas/estimateGas'
 import { EVM as EthereumVirtualMachine } from '../evm_v2'
 

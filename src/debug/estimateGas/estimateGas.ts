@@ -6,12 +6,9 @@ import { evmCommon, networkAccount } from '../evmSetup'
 import { EVM as EthereumVirtualMachine } from '../../evm_v2'
 import { getOrCreateBlockFromTimestamp } from '../block/blockchain'
 import { AccountType, WrappedEVMAccount } from '../../shardeum/shardeumTypes'
-import {
-  fixDeserializedWrappedEVMAccount,
-  predictContractAddress,
-} from '../../shardeum/wrappedEVMAccountFunctions'
+import { fixDeserializedWrappedEVMAccount, predictContractAddress } from '../utils/wrappedEVMAccountFunctions'
 import * as AccountsStorage from '../db'
-import { toShardusAddress } from '../../shardeum/evmAddress'
+import { toShardusAddress } from '../utils/evmAddress'
 import { createAccount } from '../replayTX'
 
 function wrapTransaction(transaction: LegacyTransaction, impl: () => Address): LegacyTransaction {
