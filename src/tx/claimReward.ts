@@ -2,7 +2,7 @@ import { nestedCountersInstance, ShardusTypes } from '@shardus/core'
 import * as crypto from '@shardus/crypto-utils'
 import { Address } from '@ethereumjs/util'
 import { networkAccount } from '../shardeum/shardeumConstants'
-import { createInternalTxReceipt, getApplyTXState, logFlags } from '../index'
+import { createInternalTxReceipt, getApplyTXState, logFlags, shardeumGetTime } from '../index'
 import { hashSignedObj } from '../setup/helpers'
 import { toShardusAddress } from '../shardeum/evmAddress'
 import { ShardeumFlags } from '../shardeum/shardeumFlags'
@@ -34,7 +34,7 @@ export async function injectClaimRewardTx(
   let tx = {
     nominee: eventData.publicKey,
     nominator: nodeAccount.data.nominator,
-    timestamp: Date.now(),
+    timestamp: shardeumGetTime(),
     deactivatedNodeId: eventData.nodeId,
     nodeDeactivatedTime: eventData.time,
     isInternalTx: true,
@@ -46,10 +46,10 @@ export async function injectClaimRewardTx(
     // we need to make sure that we have a determinstic timestamp
     const cycleEndTime = eventData.time
     let futureTimestamp = cycleEndTime * 1000
-    while (futureTimestamp < Date.now()) {
+    while (futureTimestamp < shardeumGetTime()) {
       futureTimestamp += 30 * 1000
     }
-    const waitTime = futureTimestamp - Date.now()
+    const waitTime = futureTimestamp - shardeumGetTime()
     tx.timestamp = futureTimestamp
     // since we have to pick a future timestamp, we need to wait until it is time to submit the tx
     await sleep(waitTime)

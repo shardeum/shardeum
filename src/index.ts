@@ -221,7 +221,7 @@ let mustUseAdminCert = false
  * @returns
  */
 function trySpendServicePoints(points: number, req, key: string): boolean {
-  const nowTs = Date.now()
+  const nowTs = shardeumGetTime()
   const maxAge = 1000 * pointsAverageInterval
   const maxAllowedPoints = ShardeumFlags.ServicePointsPerSecond * pointsAverageInterval
   let totalPoints = 0
@@ -342,7 +342,7 @@ function createNewBlock(blockNumber: number, timestamp: number): Block {
   /* eslint-disable security/detect-object-injection */
   if (blocks[blockNumber]) return blocks[blockNumber]
   if (!blocks[blockNumber]) {
-    const timestampInSecond = timestamp ? Math.round(timestamp / 1000) : Math.round(Date.now() / 1000)
+    const timestampInSecond = timestamp ? Math.round(timestamp / 1000) : Math.round(shardeumGetTime() / 1000)
     const blockData = {
       header: { number: blockNumber, timestamp: timestampInSecond },
       transactions: [],
@@ -2419,7 +2419,7 @@ const getOrCreateBlockFromTimestamp = (timestamp: number, scheduleNextBlock = fa
   const block = createNewBlock(blockNumber, newBlockTimestamp)
   if (scheduleNextBlock) {
     const nextBlockTimestamp = newBlockTimestamp + ShardeumFlags.blockProductionRate * 1000
-    const waitTime = nextBlockTimestamp - Date.now()
+    const waitTime = nextBlockTimestamp - shardeumGetTime()
     if (ShardeumFlags.VerboseLogs) console.log('Scheduling next block created which will happen in', waitTime)
     setTimeout(() => {
       getOrCreateBlockFromTimestamp(nextBlockTimestamp, true)
@@ -2884,7 +2884,7 @@ function getNodeCountForCertSignatures(): number {
 //       const uuid = uuidCounter++ //uuidv4()
 //       if (ShardeumFlags.blockedAtVerbose) {
 //         // Log the event loop block details
-//         /* prettier-ignore */ console.log(`[event_loop:blocked] request id: ${uuid} timestamp: ${Date.now()} blocked for: ${time}ms by resource type: ${type} resource:${resource}`);
+//         /* prettier-ignore */ console.log(`[event_loop:blocked] request id: ${uuid} timestamp: ${shardeumGetTime()} blocked for: ${time}ms by resource type: ${type} resource:${resource}`);
 
 //         // Extracting info from the stack
 //         const appCodeLine = stack.find((line) => line.includes('\\server\\src\\'))
@@ -4124,7 +4124,7 @@ const shardusSetup = (): void => {
           // tx.timestamp = tempTimestamp
 
           //this was the best one so far
-          // let now = Date.now()
+          // let now = shardeumGetTime()
           // //calculate a time closes to now but rounded to 3 seconds
           // let roundedNow = Math.round(now / 3000) * 3000
           // tx.timestamp = roundedNow
@@ -4148,7 +4148,7 @@ const shardusSetup = (): void => {
           //walk the timestamp close to our window for injecting??
 
           //this was the best one so far
-          // let now = Date.now()
+          // let now = shardeumGetTime()
           // //calculate a time closes to now but rounded to 3 seconds
           // let roundedNow = Math.round(now / 3000) * 3000
           // tx.timestamp = roundedNow
@@ -5121,7 +5121,7 @@ const shardusSetup = (): void => {
             /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`signAppData format failed ${type} ${stringify(stakeCert)} `)
             return fail
           }
-          const currentTimestamp = Date.now()
+          const currentTimestamp = shardeumGetTime()
           if (stakeCert.certExp < currentTimestamp) {
             /* prettier-ignore */ nestedCountersInstance.countEvent('shardeum-staking', 'signAppData cert expired')
             /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`signAppData cert expired ${type} ${stringify(stakeCert)} `)
@@ -5358,7 +5358,7 @@ const shardusSetup = (): void => {
           const adminCert: AdminCert = appJoinData.adminCert
           /* prettier-ignore */ nestedCountersInstance.countEvent('shardeum-mode', 'validateJoinRequest: mode is not processing, AdminCertEnabled enabled, node about to enter processing check')
 
-          const currentTimestamp = Date.now()
+          const currentTimestamp = shardeumGetTime()
           if (!adminCert || adminCert.certExp < currentTimestamp) {
             /* prettier-ignore */ nestedCountersInstance.countEvent('shardeum-mode', 'validateJoinRequest fail: !adminCert || adminCert.certExp < currentTimestamp')
             return {
@@ -5453,9 +5453,9 @@ const shardusSetup = (): void => {
           const two_cycle_ms = serverConfig.p2p.cycleDuration * 2 * 1000
 
           // stake certification should not expired for at least 2 cycle.
-          if (Date.now() + two_cycle_ms > stake_cert.certExp) {
+          if (shardeumGetTime() + two_cycle_ms > stake_cert.certExp) {
             /* prettier-ignore */ nestedCountersInstance.countEvent('shardeum-staking', 'validateJoinRequest fail: cert expires soon')
-            /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`validateJoinRequest fail: cert expires soon ${Date.now() + two_cycle_ms} > ${stake_cert.certExp}`)
+            /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`validateJoinRequest fail: cert expires soon ${shardeumGetTime() + two_cycle_ms} > ${stake_cert.certExp}`)
             return {
               success: false,
               reason: `Certificate will be expired really soon.`,
@@ -5582,7 +5582,7 @@ const shardusSetup = (): void => {
       // check for ShardeumFlags for mode + check if mode is not equal to processing and validate adminCert
       if (ShardeumFlags.AdminCertEnabled === true && mode !== 'processing') {
         /* prettier-ignore */ if (logFlags.important_as_error) console.log('entered admin cert conditon mode:' + mode)
-        if (adminCert && adminCert.certExp > Date.now()) {
+        if (adminCert && adminCert.certExp > shardeumGetTime()) {
           /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`checkAdminCert ${JSON.stringify(adminCert)}`)
 
           isReadyToJoinLatestValue = true
@@ -5611,7 +5611,7 @@ const shardusSetup = (): void => {
         }
 
         // set lastCertTimeTxTimestamp and cycle
-        lastCertTimeTxTimestamp = Date.now()
+        lastCertTimeTxTimestamp = shardeumGetTime()
         lastCertTimeTxCycle = latestCycle.counter
 
         // return false and query/check again in next cycle
@@ -5634,7 +5634,7 @@ const shardusSetup = (): void => {
           }
           stakeCert = null //clear stake cert, so we will know to query for it again
           // set lastCertTimeTxTimestamp and cycle
-          lastCertTimeTxTimestamp = Date.now()
+          lastCertTimeTxTimestamp = shardeumGetTime()
           lastCertTimeTxCycle = latestCycle.counter
           // return false and query/check again in next cycle
           return false
@@ -5645,11 +5645,12 @@ const shardusSetup = (): void => {
       if (stakeCert != null) {
         nestedCountersInstance.countEvent('shardeum-staking', `stakeCert is not null`)
 
-        const remainingValidTime = stakeCert.certExp - Date.now()
+        const remainingValidTime = stakeCert.certExp - shardeumGetTime()
         const certStartTimestamp =
           stakeCert.certExp - getCertCycleDuration() * ONE_SECOND * latestCycle.duration
         const certEndTimestamp = stakeCert.certExp
-        const expiredPercentage = (Date.now() - certStartTimestamp) / (certEndTimestamp - certStartTimestamp)
+        const expiredPercentage =
+          (shardeumGetTime() - certStartTimestamp) / (certEndTimestamp - certStartTimestamp)
         const isExpiringSoon = expiredPercentage >= (ShardeumFlags.fixCertExpTiming ? 0.7 : 0.9) // only renew
         // if the cert is expired 70% or more
         /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`cert != null, remainingValidTime: ${remainingValidTime}, expiredPercentage: ${expiredPercentage}, isExpiringSoon: ${isExpiringSoon}`)
@@ -5671,7 +5672,7 @@ const shardusSetup = (): void => {
           if (ShardeumFlags.fixSetCertTimeTxApply === true) {
             stakeCert = null //clear stake cert, so we will know to query for it again
           }
-          lastCertTimeTxTimestamp = Date.now()
+          lastCertTimeTxTimestamp = shardeumGetTime()
           lastCertTimeTxCycle = latestCycle.counter
           // return false and check again in next cycle
           return false
@@ -5717,7 +5718,7 @@ const shardusSetup = (): void => {
             // if we injected setCertTimeTx more than 3 cycles ago but still cannot get new cert, we need to inject it again
             if (
               latestCycle.counter - lastCertTimeTxCycle > 3 ||
-              Date.now() - lastCertTimeTxTimestamp > 3 * ONE_SECOND * latestCycle.duration
+              shardeumGetTime() - lastCertTimeTxTimestamp > 3 * ONE_SECOND * latestCycle.duration
             ) {
               /* prettier-ignore */ nestedCountersInstance.countEvent('shardeum-staking', `call to queryCertificate failed for 3 consecutive cycles, will inject setCertTimeTx again`)
               lastCertTimeTxTimestamp = 0
@@ -5731,12 +5732,13 @@ const shardusSetup = (): void => {
           /* prettier-ignore */ nestedCountersInstance.countEvent('shardeum-staking', `signedStakeCert is null`)
           return false
         }
-        const remainingValidTime = signedStakeCert.certExp - Date.now()
+        const remainingValidTime = signedStakeCert.certExp - shardeumGetTime()
 
         const certStartTimestamp =
           signedStakeCert.certExp - getCertCycleDuration() * ONE_SECOND * latestCycle.duration
         const certEndTimestamp = signedStakeCert.certExp
-        const expiredPercentage = (Date.now() - certStartTimestamp) / (certEndTimestamp - certStartTimestamp)
+        const expiredPercentage =
+          (shardeumGetTime() - certStartTimestamp) / (certEndTimestamp - certStartTimestamp)
         const isNewCertExpiringSoon = expiredPercentage >= 0.7
         /* prettier-ignore */ if (logFlags.important_as_error) console.log(`stakeCert received. remainingValidTime: ${remainingValidTime} expiredPercent: ${expiredPercentage}, isNewCertExpiringSoon: ${isNewCertExpiringSoon}`)
 
@@ -5755,7 +5757,7 @@ const shardusSetup = (): void => {
             return false
           }
 
-          lastCertTimeTxTimestamp = Date.now()
+          lastCertTimeTxTimestamp = shardeumGetTime()
           lastCertTimeTxCycle = latestCycle.counter
           // return false and check again in next cycle
           return false
@@ -5899,6 +5901,7 @@ const shardusSetup = (): void => {
       if (account.accountId === networkAccount) {
         const networkAccount: NetworkAccount = account.data
         await this.patchAndUpdate(networkAccount.current, appData)
+        //Never ok to use Date.now() or any non consensed time for an account timestamp this needs to be deterministic
         account.timestamp = Date.now()
         networkAccount.hash = WrappedEVMAccountFunctions._calculateAccountHash(networkAccount)
         account.stateId = networkAccount.hash
@@ -5964,7 +5967,7 @@ const shardusSetup = (): void => {
             listOfChanges.splice(i, 1)
           }
         }
-
+        //Never ok to use Date.now() or any non consensed time for an account timestamp this needs to be deterministic
         account.timestamp = Date.now()
         networkAccount.hash = WrappedEVMAccountFunctions._calculateAccountHash(networkAccount)
         account.stateId = networkAccount.hash
@@ -6006,7 +6009,7 @@ const shardusSetup = (): void => {
 function periodicMemoryCleanup(): void {
   const keys = shardeumStateTXMap.keys()
   //todo any provisions needed for TXs that can hop and extend the timer
-  const maxAge = Date.now() - 60000
+  const maxAge = shardeumGetTime() - 60000
   for (const key of keys) {
     const shardeumState = shardeumStateTXMap.get(key)
     if (shardeumState._transactionState.createdTimestamp < maxAge) {
@@ -6103,10 +6106,17 @@ function patchObject(existingObject: Config, changeObj: Partial<WrappedAccount>)
 
 export let shardusConfig: ShardusTypes.ServerConfiguration
 
-  /**
-   * Shardus start
-   * Ok to log things without a verbose check here as this is a startup function
-   */
+export function shardeumGetTime(): number {
+  if (shardus != null) {
+    return shardus.shardusGetTime()
+  }
+  return Date.now()
+}
+
+/**
+ * Shardus start
+ * Ok to log things without a verbose check here as this is a startup function
+ */
 ;(async (): Promise<void> => {
   setTimeout(periodicMemoryCleanup, 60000)
 
@@ -6168,14 +6178,14 @@ export let shardusConfig: ShardusTypes.ServerConfiguration
       let node
       let nodeId: string
       let nodeAddress: string
-      let expected = Date.now() + cycleInterval
+      let expected = shardeumGetTime() + cycleInterval
       let drift: number
       await shardus.start()
 
       // THIS CODE IS CALLED ON EVERY NODE ON EVERY CYCLE
       async function networkMaintenance(): Promise<NodeJS.Timeout> {
         /* prettier-ignore */ if (logFlags.dapp_verbose) shardus.log('New maintainence cycle has started')
-        drift = Date.now() - expected
+        drift = shardeumGetTime() - expected
 
         try {
           nodeId = shardus.getNodeId()
@@ -6212,7 +6222,7 @@ export let shardusConfig: ShardusTypes.ServerConfiguration
         const latestCycles = shardus.getLatestCycles()
         if (latestCycles != null && latestCycles.length > 0) {
           const latestCycle = latestCycles[0]
-          const now = Date.now()
+          const now = shardeumGetTime()
           const currentCycleStart = (latestCycle.start + latestCycle.duration) * 1000
           const timeElapsed = now - currentCycleStart
           const blockProductionRateInSeconds = ShardeumFlags.blockProductionRate * 1000

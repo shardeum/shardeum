@@ -26,7 +26,7 @@ import {
   stringify,
 } from '../utils'
 import { hashSignedObj } from '../setup/helpers'
-import { createInternalTxReceipt, logFlags } from '..'
+import { createInternalTxReceipt, logFlags, shardeumGetTime } from '..'
 import { isValidAddress } from '@ethereumjs/util'
 
 export function isSetCertTimeTx(tx): boolean {
@@ -81,7 +81,7 @@ export async function injectSetCertTimeTx(
     nominee: publicKey,
     nominator,
     duration: getCertCycleDuration(), //temp setting to 20 to make debugging easier
-    timestamp: Date.now(),
+    timestamp: shardeumGetTime(),
   }
   tx = shardus.signAsNode(tx)
   const result = await InjectTxToConsensor(randomConsensusNode, tx)
@@ -231,7 +231,7 @@ export function applySetCertTimeTx(
       expiredPercentage = (txTimestamp - certStartTimestamp) / (certExp - certStartTimestamp)
     } else {
       //old way
-      expiredPercentage = (Date.now() - certStartTimestamp) / (certExp - certStartTimestamp)
+      expiredPercentage = (shardeumGetTime() - certStartTimestamp) / (certExp - certStartTimestamp)
     }
 
     /* prettier-ignore */ if (logFlags.dapp_verbose) console.log(`applySetCertTimeTx expiredPercentage: ${expiredPercentage}`)

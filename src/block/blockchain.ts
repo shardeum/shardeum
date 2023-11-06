@@ -1,11 +1,10 @@
-import {Blockchain, BlockchainOptions} from '@ethereumjs/blockchain'
-import { Block,BlockData } from '@ethereumjs/block'
-import { blocks, evmCommon } from '..'
+import { Blockchain, BlockchainOptions } from '@ethereumjs/blockchain'
+import { Block, BlockData } from '@ethereumjs/block'
+import { blocks, evmCommon, shardeumGetTime } from '..'
 
 export class ShardeumBlock extends Blockchain {
-
   constructor(opts: BlockchainOptions = {}) {
-    super(opts);
+    super(opts)
   }
   /**
    * Gets a block by its hash.
@@ -29,7 +28,7 @@ export class ShardeumBlock extends Blockchain {
 
   createBlock(blockId): Block {
     const blockData: BlockData = {
-      header: { number: blockId, timestamp: Date.now() },
+      header: { number: blockId, timestamp: shardeumGetTime() },
       transactions: [],
       uncleHeaders: [],
     }

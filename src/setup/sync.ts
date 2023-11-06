@@ -13,7 +13,7 @@ import { SerializeToJsonString } from '../utils'
 import { sleep } from '../utils'
 // import { StateManager } from '../vm/state'
 import { DefaultStateManager } from '@ethereumjs/statemanager'
-import { logFlags } from '..'
+import { logFlags, shardeumGetTime } from '..'
 
 function isDebugMode(): boolean {
   // eslint-disable-next-line @typescript-eslint/ban-ts-comment
@@ -106,7 +106,7 @@ export const sync = (shardus: Shardus, evmCommon: any) => async (): Promise<void
       }
       await sleep(ONE_SECOND * 10)
 
-      const when = Date.now()
+      const when = shardeumGetTime()
       const existingNetworkAccount = await shardus.getLocalOrRemoteAccount(networkAccount)
       if (existingNetworkAccount) {
         /* prettier-ignore */ if (logFlags.important_as_error) shardus.log('NETWORK_ACCOUNT ALREADY EXISTED: ', existingNetworkAccount)

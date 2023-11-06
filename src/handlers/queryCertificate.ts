@@ -15,7 +15,7 @@ import { fixDeserializedWrappedEVMAccount, isWrappedEVMAccount } from '../sharde
 import { setCertTimeTx } from '../tx/setCertTime'
 import { getRandom, fixBigIntLiteralsToBigInt } from '../utils'
 import { shardusGetFromNode, shardusPostToNode, shardusPutToNode } from '../utils/requests'
-import { logFlags } from '..'
+import { logFlags, shardeumGetTime } from '..'
 
 // constants
 
@@ -256,7 +256,7 @@ export async function queryCertificateHandler(
     return { success: false, reason: 'Failed to fetch node account state' }
   }
 
-  const currentTimestampInMillis = Date.now()
+  const currentTimestampInMillis = shardeumGetTime()
 
   if (operatorAccount.operatorAccountInfo == null) {
     nestedCountersInstance.countEvent(

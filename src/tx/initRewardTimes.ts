@@ -12,15 +12,18 @@ import {
 } from '../shardeum/shardeumTypes'
 import * as WrappedEVMAccountFunctions from '../shardeum/wrappedEVMAccountFunctions'
 import { sleep, generateTxId } from '../utils'
-import { createInternalTxReceipt } from '..'
+import { createInternalTxReceipt, shardeumGetTime } from '..'
 
-export async function injectInitRewardTimesTx(shardus, eventData: ShardusTypes.ShardusEvent): Promise<unknown> {
+export async function injectInitRewardTimesTx(
+  shardus,
+  eventData: ShardusTypes.ShardusEvent
+): Promise<unknown> {
   let tx = {
     isInternalTx: true,
     internalTXType: InternalTXType.InitRewardTimes,
     nominee: eventData.publicKey,
     nodeActivatedTime: eventData.time,
-    timestamp: Date.now(),
+    timestamp: shardeumGetTime(),
   } as InitRewardTimes
 
   if (ShardeumFlags.txHashingFix) {
@@ -28,10 +31,10 @@ export async function injectInitRewardTimesTx(shardus, eventData: ShardusTypes.S
     // we need to make sure that we have a deterministic timestamp
     const cycleEndTime = eventData.time
     let futureTimestamp = cycleEndTime * 1000
-    while (futureTimestamp < Date.now()) {
+    while (futureTimestamp < shardeumGetTime()) {
       futureTimestamp += 30 * 1000
     }
-    const waitTime = futureTimestamp - Date.now()
+    const waitTime = futureTimestamp - shardeumGetTime()
     tx.timestamp = futureTimestamp
     // since we have to pick a future timestamp, we need to wait until it is time to submit the tx
     await sleep(waitTime)
@@ -57,7 +60,7 @@ export function validateFields(tx: InitRewardTimes, shardus: Shardus): { success
     /* prettier-ignore */ nestedCountersInstance.countEvent('shardeum-staking', `validateFields InitRewardTimes fail nodeActivatedTime missing`)
     return { success: false, reason: 'nodeActivatedTime field is not found in setRewardTimes Tx' }
   }
-  if (tx.nodeActivatedTime < 0 || tx.nodeActivatedTime > Date.now()) {
+  if (tx.nodeActivatedTime < 0 || tx.nodeActivatedTime > shardeumGetTime()) {
     /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log('validateFields InitRewardTimes fail nodeActivatedTime is not correct ', tx)
     /* prettier-ignore */ nestedCountersInstance.countEvent('shardeum-staking', `validateFields InitRewardTimes fail nodeActivatedTime is not correct `)
     return { success: false, reason: 'nodeActivatedTime is not correct in setRewardTimes Tx' }

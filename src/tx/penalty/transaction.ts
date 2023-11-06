@@ -11,7 +11,7 @@ import {
 } from '../../shardeum/shardeumTypes'
 import { ShardeumFlags } from '../../shardeum/shardeumFlags'
 import { crypto, hashSignedObj } from '../../setup/helpers'
-import { createInternalTxReceipt, getApplyTXState, logFlags } from '../..'
+import { createInternalTxReceipt, getApplyTXState, logFlags, shardeumGetTime } from '../..'
 import { toShardusAddress } from '../../shardeum/evmAddress'
 import { getPenaltyForViolation } from './violation'
 import * as WrappedEVMAccountFunctions from '../../shardeum/wrappedEVMAccountFunctions'
@@ -32,7 +32,7 @@ export async function injectPenaltyTX(
     reportedNodeId: eventData.nodeId,
     reportedNodePublickKey: eventData.publicKey,
     operatorEVMAddress: '',
-    timestamp: Date.now(),
+    timestamp: shardeumGetTime(),
     violationType: ViolationType.LeftNetworkEarly,
     violationData,
     isInternalTx: true,
@@ -66,10 +66,10 @@ export async function injectPenaltyTX(
     // we need to make sure that we have a determinstic timestamp
     const cycleEndTime = eventData.time
     let futureTimestamp = cycleEndTime * 1000
-    while (futureTimestamp < Date.now()) {
+    while (futureTimestamp < shardeumGetTime()) {
       futureTimestamp += 30 * 1000
     }
-    const waitTime = futureTimestamp - Date.now()
+    const waitTime = futureTimestamp - shardeumGetTime()
     tx.timestamp = futureTimestamp
     // since we have to pick a future timestamp, we need to wait until it is time to submit the tx
     await sleep(waitTime)
