@@ -53,7 +53,6 @@
     "deepmerge": "4.2.2",
     "dotenv": "16.0.0",
     "ethereum-cryptography": "^2.1.2",
-    "ethereumjs-wallet": "1.0.2",
     "fast-stable-stringify": "1.0.0",
     "functional-red-black-tree": "^1.0.1",
     "got": "9.6.0",

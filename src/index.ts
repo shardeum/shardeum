@@ -94,7 +94,6 @@ import {
   isWithinRange,
 } from './utils'
 import config, { Config } from './config'
-import Wallet from 'ethereumjs-wallet'
 import { Block } from '@ethereumjs/block'
 import { ShardeumBlock } from './block/blockchain'
 import * as AccountsStorage from './storage/accountStorage'
@@ -175,10 +174,7 @@ console.log(`Operator CLI version: ${operatorCLIVersion}`)
 console.log(`Operator GUI version: ${operatorGUIVersion}`)
 
 // const pay_address = '0x50F6D9E5771361Ec8b95D6cfb8aC186342B70120' // testing account for node_reward
-const random_wallet = Wallet.generate()
-const pay_address = random_wallet.getAddressString()
 //TODO need to put a task in to remove the old node rewards
-console.log('old Pay Address (not for new staking/rewards) ', pay_address, isValidAddress(pay_address))
 
 //console.log('Pk',random_wallet.getPublicKey())
 //console.log('pk',random_wallet.getPrivateKey())
