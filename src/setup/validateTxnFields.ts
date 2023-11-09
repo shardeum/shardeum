@@ -23,9 +23,9 @@ import {
   getInjectedOrGeneratedTimestamp,
   getTransactionObj,
   isInternalTx,
-  isDebugTx,
   isInternalTXGlobal,
   verify,
+  isDebugTx
 } from './helpers'
 import { fixBigIntLiteralsToBigInt } from '../utils/serialization'
 import { validatePenaltyTX } from '../tx/penalty/transaction'
@@ -42,7 +42,7 @@ export const validateTxnFields =
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
 
 
-    (shardus: Shardus, debugAppdata: Map<string, unknown>) =>
+  (shardus: Shardus, debugAppdata: Map<string, unknown>) =>
     (
       timestampedTx: any,
       originalAppData: any
@@ -55,42 +55,18 @@ export const validateTxnFields =
       const txnTimestamp: number = getInjectedOrGeneratedTimestamp(timestampedTx)
       const appData = fixBigIntLiteralsToBigInt(originalAppData)
 
-    if (!txnTimestamp) {
-      return {
-        success: false,
-        reason: 'Invalid transaction timestamp',
-        txnTimestamp,
-      }
-    }
-
-    if (isDebugTx(tx)) {
-      return {
-        success: true,
-        reason: 'debug tx is always valid',
-        txnTimestamp,
-      }
-    }
-
-    if (isSetCertTimeTx(tx)) {
-      const setCertTimeTx = tx as SetCertTime
-      const result = validateSetCertTimeTx(setCertTimeTx)
-      return {
-        success: result.isValid,
-        reason: result.reason,
-        txnTimestamp,
-      }
-    }
-
-    if (isInternalTx(tx)) {
-      const internalTX = tx as InternalTx
-      let success = false
-      let reason = ''
-
-      // validate internal TX
-      if (isInternalTXGlobal(internalTX) === true) {
+      if (!txnTimestamp) {
         return {
           success: false,
           reason: 'Invalid transaction timestamp',
+          txnTimestamp,
+        }
+      }
+
+      if (isDebugTx(tx)) {
+        return {
+          success: true,
+          reason: 'always valid',
           txnTimestamp,
         }
       }
