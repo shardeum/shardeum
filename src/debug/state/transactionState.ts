@@ -18,7 +18,6 @@ import { Trie } from '@ethereumjs/trie'
 import { keccak256 } from 'ethereum-cryptography/keccak.js'
 import { RLP } from '@ethereumjs/rlp'
 import { stringify } from '../../utils/stringify'
-import { shardeumGetTime } from '../..'
 
 export type accountEvent = (transactionState: TransactionState, address: string) => Promise<boolean>
 export type contractStorageEvent = (
@@ -188,7 +187,7 @@ export default class TransactionState {
     firstReads: Map<string, Uint8Array>,
     firstContractStorageReads: Map<string, Map<string, Uint8Array>>
   ): void {
-    this.createdTimestamp = shardeumGetTime()
+    this.createdTimestamp = Date.now()
 
     this.linkedTX = linkedTX
 

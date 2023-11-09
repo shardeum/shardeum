@@ -2,7 +2,6 @@ import { Blockchain, BlockchainOptions } from '@ethereumjs/blockchain'
 import { Block, BlockData } from '@ethereumjs/block'
 import { evmCommon } from '../evmSetup'
 import { BlockMap } from '../../shardeum/shardeumTypes'
-import { shardeumGetTime } from '../..'
 
 export const blocks: BlockMap = {}
 let latestBlock = 0
@@ -11,7 +10,7 @@ function createNewBlock(blockNumber: number, timestamp: number): Block {
   /* eslint-disable security/detect-object-injection */
   if (blocks[blockNumber]) return blocks[blockNumber]
   if (!blocks[blockNumber]) {
-    const timestampInSecond = timestamp ? Math.round(timestamp / 1000) : Math.round(shardeumGetTime() / 1000)
+    const timestampInSecond = timestamp ? Math.round(timestamp / 1000) : Math.round(Date.now() / 1000)
     const blockData = {
       header: { number: blockNumber, timestamp: timestampInSecond },
       transactions: [],
@@ -26,7 +25,7 @@ function createNewBlock(blockNumber: number, timestamp: number): Block {
 }
 
 export const getOrCreateBlockFromTimestamp = (timestamp: number): Block => {
-  return createNewBlock(0, shardeumGetTime() / 1000)
+  return createNewBlock(0, Date.now() / 1000)
 }
 
 export class ShardeumBlock extends Blockchain {
@@ -56,7 +55,7 @@ export class ShardeumBlock extends Blockchain {
 
   createBlock(blockId): Block {
     const blockData: BlockData = {
-      header: { number: blockId, timestamp: shardeumGetTime() },
+      header: { number: blockId, timestamp: Date.now() },
       transactions: [],
       uncleHeaders: [],
     }
