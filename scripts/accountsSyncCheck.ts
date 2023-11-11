@@ -82,7 +82,7 @@ export async function queryAccountsFromConsensor() {
 }
 
 export const getAccountsDataFromConsensors = async () => {
-  const res = await axios.get(`http://localhost:4000/full-nodelist`)
+  const res = await axios.get(`http://127.0.0.1:4000/full-nodelist`)
 
   for (let nodeinfo of res.data.nodeList) {
     const node = nodeinfo.port

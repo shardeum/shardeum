@@ -2075,10 +2075,11 @@ async function applyInternalTx(
       const networkAccountCopy = wrappedStates[networkAccount]
       networkAccountCopy.data.timestamp = txTimestamp
       networkAccountCopy.data.listOfChanges.push(internalTx.change)
+      const wrappedChangedAccount = WrappedEVMAccountFunctions._shardusWrappedAccount(networkAccountCopy.data)
       shardus.applyResponseAddChangedAccount(
         applyResponse,
         networkAccount,
-        networkAccountCopy as ShardusTypes.WrappedResponse,
+        wrappedChangedAccount as ShardusTypes.WrappedResponse,
         txId,
         txTimestamp
       )
@@ -2149,10 +2150,11 @@ async function applyInternalTx(
       const networkAccountCopy = wrappedStates[networkAccount]
       networkAccountCopy.data.timestamp = txTimestamp
       networkAccountCopy.data.listOfChanges.push(internalTx.change)
+      const wrappedChangedAccount = WrappedEVMAccountFunctions._shardusWrappedAccount(networkAccountCopy.data)
       shardus.applyResponseAddChangedAccount(
         applyResponse,
         networkAccount,
-        networkAccountCopy as ShardusTypes.WrappedResponse,
+        wrappedChangedAccount as ShardusTypes.WrappedResponse,
         txId,
         txTimestamp
       )
@@ -3126,7 +3128,6 @@ const shardusSetup = (): void => {
 
             const wrappedEVMAccount: WrappedEVMAccount = { ...operatorEVMAccount, account: accountObj }
 
-            updateEthAccountHash(wrappedEVMAccount)
             const wrappedChangedAccount = WrappedEVMAccountFunctions._shardusWrappedAccount(wrappedEVMAccount)
             shardus.applyResponseAddChangedAccount(
               applyResponse,
@@ -3137,14 +3138,14 @@ const shardusSetup = (): void => {
             )
           }
 
-          const wrappedChangedAccount = WrappedEVMAccountFunctions._shardusWrappedAccount(
-            wrappedStates[nomineeNodeAccount2Address].data as WrappedEVMAccount // eslint-disable-line security/detect-object-injection
+          const wrappedChangedNodeAccount = WrappedEVMAccountFunctions._shardusWrappedAccount(
+            wrappedStates[nomineeNodeAccount2Address].data as NodeAccount2
           )
           // for nominee node account
           shardus.applyResponseAddChangedAccount(
             applyResponse,
             nomineeNodeAccount2Address,
-            wrappedChangedAccount as ShardusTypes.WrappedResponse,
+            wrappedChangedNodeAccount as ShardusTypes.WrappedResponse,
             txId,
             txTimestamp
           )
@@ -3365,7 +3366,6 @@ const shardusSetup = (): void => {
             /* prettier-ignore */ if (logFlags.dapp_verbose) console.log('written account Obj', accountObj)
 
             const wrappedEVMAccount: WrappedEVMAccount = { ...operatorEVMAccount, account: accountObj }
-            updateEthAccountHash(wrappedEVMAccount)
             const wrappedChangedAccount = WrappedEVMAccountFunctions._shardusWrappedAccount(wrappedEVMAccount)
             shardus.applyResponseAddChangedAccount(
               applyResponse,
@@ -3376,12 +3376,15 @@ const shardusSetup = (): void => {
             )
           }
 
+          const wrappedChangedNodeAccount = WrappedEVMAccountFunctions._shardusWrappedAccount(
+            wrappedStates[nomineeNodeAccount2Address].data as NodeAccount2
+          )
           // for nominee node account
           shardus.applyResponseAddChangedAccount(
             applyResponse,
             nomineeNodeAccount2Address,
             // eslint-disable-next-line security/detect-object-injection
-            wrappedStates[nomineeNodeAccount2Address] as ShardusTypes.WrappedResponse,
+            wrappedChangedNodeAccount as ShardusTypes.WrappedResponse,
             txId,
             txTimestamp
           )
@@ -3776,8 +3779,6 @@ const shardusSetup = (): void => {
         if (accountToCodeHash.has(addressStr)) {
           accountObj.codeHash = accountToCodeHash.get(addressStr)
         }
-
-        updateEthAccountHash(wrappedEVMAccount)
 
         // I think data is unwrapped too much and we should be using wrappedEVMAccount directly as data
         const wrappedChangedAccount = WrappedEVMAccountFunctions._shardusWrappedAccount(wrappedEVMAccount)
