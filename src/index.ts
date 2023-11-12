@@ -6001,6 +6001,39 @@ const shardusSetup = (): void => {
         return false
       }
     },
+
+    //@ts-ignore
+    canStayOnStandby(joinInfo: any): { canStay: boolean; reason: string } {
+      if (joinInfo) {
+        const appJoinData = joinInfo?.appJoinData
+
+        const minVersion = AccountsStorage.cachedNetworkAccount.current.minVersion
+        if (!isEqualOrNewerVersion(minVersion, appJoinData.version)) {
+          /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`validateJoinRequest fail: old version`)
+          return {
+            canStay: false,
+            reason: `version number is old. Our app version is ${version}. Join request node app version is ${appJoinData.version}`,
+          }
+        }
+
+        const latestVersion = AccountsStorage.cachedNetworkAccount.current.latestVersion
+
+        if (
+          latestVersion &&
+          appJoinData.version &&
+          !isEqualOrOlderVersion(latestVersion, appJoinData.version)
+        ) {
+          /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`validateJoinRequest fail: version number is newer than latest`)
+          return {
+            canStay: false,
+            reason: `version number is newer than latest. The latest allowed app version is ${latestVersion}. Join request node app version is ${appJoinData.version}`,
+            //fatal: true,
+          }
+        }
+      }
+
+      return { canStay: true, reason: '' }
+    },
   })
 
   shardus.registerExceptionHandler()
