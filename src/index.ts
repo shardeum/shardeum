@@ -6182,7 +6182,7 @@ async function fetchNetworkAccountFromArchiver(): Promise<WrappedAccount> {
     archiver: Archiver
   }[] = []
   for (const archiver of archiverList) {
-    const res = await axios.get<string>(
+    const res = await axios.get<{ networkAccountHash: string }>(
       `http://${archiver.ip}:${archiver.port}/get-network-account?hash=true`
     )
     if (!res.data) {
@@ -6191,7 +6191,7 @@ async function fetchNetworkAccountFromArchiver(): Promise<WrappedAccount> {
     }
 
     values.push({
-      hash: res.data,
+      hash: res.data.networkAccountHash as string,
       archiver,
     })
   }
@@ -6203,7 +6203,7 @@ async function fetchNetworkAccountFromArchiver(): Promise<WrappedAccount> {
     throw new Error(`no majority found for archivers get-network-account result `)
   }
 
-  const res = await axios.get<WrappedAccount>(
+  const res = await axios.get<{ networkAccount: WrappedAccount }>(
     `http://${majorityValue.archiver.ip}:${majorityValue.archiver.port}/get-network-account?hash=false`
   )
   if (!res.data) {
@@ -6211,7 +6211,7 @@ async function fetchNetworkAccountFromArchiver(): Promise<WrappedAccount> {
     throw new Error(`get-network-account from archiver pk:${majorityValue.archiver.publicKey} returned null`)
   }
 
-  return res.data
+  return res.data.networkAccount as WrappedAccount
 }
 
 async function updateConfigFromNetworkAccount(inputConfig: Config, account: WrappedAccount): Promise<Config> {
