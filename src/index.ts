@@ -6007,6 +6007,12 @@ const shardusSetup = (): void => {
       if (joinInfo) {
         const appJoinData = joinInfo?.appJoinData
 
+        if (AccountsStorage.cachedNetworkAccount == null) {
+          //We need to enhance the early config getting to also get other values of the global account
+          //so we know what versions the network is.  this is a stopgap!
+          return { canStay: true, reason: 'dont have network account yet. cant boot anything!' }
+        }
+
         const minVersion = AccountsStorage.cachedNetworkAccount.current.minVersion
         if (!isEqualOrNewerVersion(minVersion, appJoinData.version)) {
           /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`validateJoinRequest fail: old version`)
