@@ -5348,6 +5348,55 @@ const shardusSetup = (): void => {
         const stakingEnabled =
           ShardeumFlags.StakingEnabled && activeNodes.length >= ShardeumFlags.minActiveNodesForStaking
 
+        //Checks for golden ticket
+        if (
+          ShardeumFlags.AdminCertEnabled === true &&
+          appJoinData.adminCert?.goldenTicket === true &&
+          appJoinData.mustUseAdminCert === true
+        ) {
+          const adminCert: AdminCert = appJoinData.adminCert
+          /* prettier-ignore */ nestedCountersInstance.countEvent('shardeum-mode', 'validateJoinRequest: mode is not processing, AdminCertEnabled enabled, node about to enter processing check')
+
+          const currentTimestamp = Date.now()
+          if (!adminCert || adminCert.certExp < currentTimestamp) {
+            /* prettier-ignore */ nestedCountersInstance.countEvent('shardeum-mode', 'validateJoinRequest fail: !adminCert || adminCert.certExp < currentTimestamp')
+            return {
+              success: false,
+              reason: 'No admin cert found in mode: ' + mode,
+              fatal: false,
+            }
+          }
+          /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`validateJoinRequest: adminCert ${JSON.stringify(adminCert)}`)
+
+          // check for adminCert nominee
+          const nodeAcc = data.sign.owner
+          if (nodeAcc !== adminCert.nominee) {
+            /* prettier-ignore */ nestedCountersInstance.countEvent('shardeum-mode', 'validateJoinRequest fail: nodeAcc !== adminCert.nominee')
+            return {
+              success: false,
+              reason: 'Nominator mismatch',
+              fatal: true,
+            }
+          }
+
+          // check for invalid signature for AdminCert
+          if (!shardus.crypto.verify(adminCert, ShardeumFlags.devPublicKey)) {
+            /* prettier-ignore */ nestedCountersInstance.countEvent('shardeum-mode', 'validateJoinRequest fail: !shardus.crypto.verify(adminCert, ShardeumFlags.devPublicKey)')
+            return {
+              success: false,
+              reason: 'Invalid signature for AdminCert',
+              fatal: true,
+            }
+          }
+          /* prettier-ignore */ nestedCountersInstance.countEvent('shardeum-mode', 'validateJoinRequest success: adminCert')
+          /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log('validateJoinRequest success: adminCert')
+          return {
+            success: true,
+            reason: 'Join Request validated',
+            fatal: false,
+          }
+        }
+
         // if condition true and if none of this triggers it'll go past the staking checks and return true...
         if (
           stakingEnabled &&
@@ -5567,6 +5616,14 @@ const shardusSetup = (): void => {
     ): Promise<boolean> {
       isReadyToJoinLatestValue = false
       mustUseAdminCert = false
+
+      //process golden ticket first
+      if (adminCert && adminCert.certExp > Date.now() && adminCert?.goldenTicket === true) {
+        /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log('Join req with admincert and golden ticket')
+        isReadyToJoinLatestValue = true
+        mustUseAdminCert = true
+        return true
+      }
 
       if (ShardeumFlags.StakingEnabled === false) {
         isReadyToJoinLatestValue = true

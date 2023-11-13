@@ -9,6 +9,7 @@ export interface AdminCert {
   certCreation: number
   certExp: number
   sign: ShardusTypes.Sign
+  goldenTicket: boolean
 }
 
 export type PutAdminCertRequest = AdminCert
