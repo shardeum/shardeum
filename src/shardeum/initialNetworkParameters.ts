@@ -17,7 +17,7 @@ export const initialNetworkParamters: NetworkParameters = {
   maintenanceFee: 0,
   minVersion: '1.8.0',
   activeVersion: '1.8.0',
-  latestVersion: '1.8.2',
+  latestVersion: '1.8.2', //set back to 1.8.0 before release!
   archiver: {
     minVersion: '3.3.9',
     activeVersion: '3.3.9',
