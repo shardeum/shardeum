@@ -156,7 +156,7 @@ export const ShardeumFlags: ShardeumFlags = {
   generateMemoryPatternData: true,
   StakingEnabled: true,
   ModeEnabled: true,
-  AdminCertEnabled: true,
+  AdminCertEnabled: false,
   minActiveNodesForStaking: 5,
   MinStakeCertSig: 1, // this is the minimum amount of signature required for stake certification. will move to network param in future.
   FullCertChecksEnabled: true,

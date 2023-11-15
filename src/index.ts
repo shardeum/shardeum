@@ -5349,13 +5349,9 @@ const shardusSetup = (): void => {
           ShardeumFlags.StakingEnabled && activeNodes.length >= ShardeumFlags.minActiveNodesForStaking
 
         //Checks for golden ticket
-        if (
-          ShardeumFlags.AdminCertEnabled === true &&
-          appJoinData.adminCert?.goldenTicket === true &&
-          appJoinData.mustUseAdminCert === true
-        ) {
+        if (appJoinData.adminCert?.goldenTicket === true && appJoinData.mustUseAdminCert === true) {
           const adminCert: AdminCert = appJoinData.adminCert
-          /* prettier-ignore */ nestedCountersInstance.countEvent('shardeum-mode', 'validateJoinRequest: mode is not processing, AdminCertEnabled enabled, node about to enter processing check')
+          /* prettier-ignore */ nestedCountersInstance.countEvent('shardeum-mode', 'validateJoinRequest: Golden ticket is enabled, node about to enter processing check')
 
           const currentTimestamp = Date.now()
           if (!adminCert || adminCert.certExp < currentTimestamp) {
