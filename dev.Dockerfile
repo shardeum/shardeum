@@ -10,6 +10,8 @@
 # Node.js LTS 12.x.x from Docker Hub
 FROM node:18.16.1
 
+ARG GL_ACCESS_TOKEN
+
 # Create app directory
 WORKDIR /usr/src/app
 
@@ -22,6 +24,8 @@ RUN apt-get update && apt-get install -y \
     curl
 RUN curl https://sh.rustup.rs -sSf | bash -s -- -y
 ENV PATH="/root/.cargo/bin:${PATH}"
+
+RUN sed -i 's/YOUR_ACCESS_TOKEN/'"${GL_ACCESS_TOKEN}"'/g' package.json
 
 # Install node_modules
 RUN npm install
