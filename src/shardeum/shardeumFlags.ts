@@ -117,7 +117,7 @@ export const ShardeumFlags: ShardeumFlags = {
   DebugRestoreArchiveBatch: 2000,
   CheckNonce: true,
   txNoncePreCheck: true,
-  txBalancePreCheck: false,
+  txBalancePreCheck: true,
   autoGenerateAccessList: true,
   forwardGenesisAccounts: true,
   UseDBForAccounts: true,
@@ -137,9 +137,9 @@ export const ShardeumFlags: ShardeumFlags = {
   // '1000000000000000000' // $1 * 10 ^ 18
   constantTxFeeUsd: '10000000000000000', // $0.01 * 10 ^ 18
   //TODO we need to get rid of this key living in two spots!!!
-  //devPublicKey: '5aab34ddc09a479a835d26d5791dd8f54360cd09c58cd70cd7d818c1af9f8dad', //for production
+  devPublicKey: '5aab34ddc09a479a835d26d5791dd8f54360cd09c58cd70cd7d818c1af9f8dad', //for production
   //devPublicKey: 'fe73383a971bd52be51c660cc9758c13763a7d804ee2062b6f7426698148240c', //old production
-  devPublicKey: '774491f80f47fedb119bb861601490f42bc3ea3b57fc63906c0d08e6d777a592', //for local test
+  //devPublicKey: '774491f80f47fedb119bb861601490f42bc3ea3b57fc63906c0d08e6d777a592', //for local test
   stakeTargetAddress: '0x0000000000000000000000000000000000000001', //dev-relaunch required to change this '0x0000000000000000000000000000000000010000',
   certCycleDuration: 10,
   cacheMaxCycleAge: 5,

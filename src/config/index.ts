@@ -121,7 +121,7 @@ config = merge(config, {
     p2p: {
       cycleDuration: 60,
       minNodesToAllowTxs: 1, // to allow single node networks
-      minNodes: process.env.minNodes ? parseInt(process.env.minNodes) : 10,
+      minNodes: process.env.minNodes ? parseInt(process.env.minNodes) : 300,
       maxNodes: process.env.maxNodes ? parseInt(process.env.maxNodes) : 1100,
       maxJoinedPerCycle: 10,
       maxSyncingPerCycle: 10,
@@ -133,7 +133,7 @@ config = merge(config, {
       amountToShrink: 5,
       maxDesiredMultiplier: 1.2,
       maxScaleReqs: 250, // todo: this will become a variable config but this should work for a 500 node demo
-      forceBogonFilteringOn: false,
+      forceBogonFilteringOn: true,
       //these are new feature in 1.3.0, we can make them default:true in shardus-core later
 
       // 1.2.3 migration starts
@@ -223,7 +223,7 @@ config = merge(
   config,
   {
     server: {
-      mode: 'debug', // todo: must set this to "release" for public networks or get security on endpoints. use "debug"
+      mode: 'release', // todo: must set this to "release" for public networks or get security on endpoints. use "debug"
       // for easier debugging
       debug: {
         startInFatalsLogMode: false, // true setting good for big aws test with nodes joining under stress.
@@ -233,9 +233,9 @@ config = merge(
         disableSnapshots: true, // do not check in if set to false
         countEndpointStart: -1,
         hashedDevAuth: '',
-        //devPublicKey: '5aab34ddc09a479a835d26d5791dd8f54360cd09c58cd70cd7d818c1af9f8dad', //for production
+        devPublicKey: '5aab34ddc09a479a835d26d5791dd8f54360cd09c58cd70cd7d818c1af9f8dad', //for production
         //devPublicKey: 'fe73383a971bd52be51c660cc9758c13763a7d804ee2062b6f7426698148240c', //old production
-        devPublicKey: '774491f80f47fedb119bb861601490f42bc3ea3b57fc63906c0d08e6d777a592', //for local test
+        //devPublicKey: '774491f80f47fedb119bb861601490f42bc3ea3b57fc63906c0d08e6d777a592', //for local test
         checkAddressFormat: false,
       },
     },
