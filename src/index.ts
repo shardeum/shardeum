@@ -2582,7 +2582,7 @@ async function estimateGas(
       tx: transaction,
       skipNonce: true,
       skipBalance: true,
-      networkAccount: AccountsStorage.cachedNetworkAccount,
+      networkAccount: await AccountsStorage.getCachedNetworkAccount(),
     },
     customEVM
   )

@@ -7,6 +7,7 @@ export const getExternalApiMiddleware = () => {
     let isAllowed = true // Default to true
 
     if (ShardeumFlags.startInServiceMode && Array.isArray(ShardeumFlags.allowedEndpointsInServiceMode)) {
+      console.log(`time: ${new Date().toISOString()} - ${method} ${path} - Service mode is enabled`)
       isAllowed = checkIfRequestIsAllowed(path, method, ShardeumFlags.allowedEndpointsInServiceMode)
     }
 
