@@ -137,6 +137,8 @@ import rfdc = require('rfdc')
 import { AdminCert, PutAdminCertResult, putAdminCertificateHandler } from './handlers/adminCertificate'
 import { P2P } from '@shardus/types'
 import { util } from 'prettier'
+import { AccountsEntry } from './storage/storage'
+import { getCachedRIAccount, setCachedRIAccount } from './storage/riAccountsCache'
 
 let latestBlock = 0
 export const blocks: BlockMap = {}
@@ -190,7 +192,7 @@ export let stakeCert: StakeCert = null
 
 export let adminCert: AdminCert = null
 
-let uuidCounter = 1
+const uuidCounter = 1
 
 function isDebugMode(): boolean {
   return config.server.mode === 'debug'
@@ -663,7 +665,9 @@ async function tryGetRemoteAccountCB(
 ): Promise<WrappedEVMAccount> {
   const shardusAddress = toShardusAddressWithKey(address, key, type)
   /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`Trying to get remote account for address: ${address}, type: ${type}, key: ${key}`)
-  const remoteShardusAccount = await shardus.getLocalOrRemoteAccount(shardusAddress)
+  const remoteShardusAccount = await shardus.getLocalOrRemoteAccount(shardusAddress, {
+    useRICache: true,
+  })
   if (remoteShardusAccount == undefined) {
     /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`Found no remote account for address: ${address}, type: ${type}, key: ${key}`)
     return
@@ -1340,7 +1344,9 @@ const configShardusEndpoints = (): void => {
 
       const codeHashHex = bytesToHex(wrappedEVMAccount.account.codeHash)
       const codeAddress = toShardusAddressWithKey(address, codeHashHex, AccountType.ContractCode)
-      const codeAccount = await shardus.getLocalOrRemoteAccount(codeAddress)
+      const codeAccount = await shardus.getLocalOrRemoteAccount(codeAddress, {
+        useRICache: true,
+      })
 
       const wrappedCodeAccount = codeAccount.data as WrappedEVMAccount
       fixDeserializedWrappedEVMAccount(wrappedCodeAccount)
@@ -2697,6 +2703,7 @@ async function generateAccessList(
     const writeSet = new Set()
     //let readOnlySet = new Set()
     const writeOnceSet = new Set()
+    const readImmutableSet = new Set()
 
     //always make the sender rw.  This is because the sender will always spend gas and increment nonce
     if (transaction.getSenderAddress() != null) {
@@ -2734,6 +2741,7 @@ async function generateAccessList(
 
       const shardusKey = toShardusAddressWithKey(contractAddress, codeHash, AccountType.ContractCode)
       readSet.add(shardusKey)
+      readImmutableSet.add(shardusKey)
     }
 
     if (ShardeumFlags.fixContractBytes) {
@@ -2791,6 +2799,7 @@ async function generateAccessList(
         rw: Array.from(readWriteSet),
         wo: Array.from(writeOnlySet),
         on: Array.from(writeOnceSet),
+        ri: Array.from(readImmutableSet),
       }
     }
 
@@ -2798,6 +2807,7 @@ async function generateAccessList(
       console.log('allInvolvedContracts', allInvolvedContracts)
       console.log('Read accounts', readAccounts)
       console.log('Written accounts', writtenAccounts)
+      console.log('Immutable read accounts', readImmutableSet)
     }
 
     for (const address of allInvolvedContracts) {
@@ -5099,6 +5109,36 @@ const shardusSetup = (): void => {
         }
       }
       return results
+    },
+    async getCachedRIAccountData(addressList) {
+      /* prettier-ignore */ if (logFlags.dapp_verbose) console.log('getCachedRIAccountData', addressList)
+      /* prettier-ignore */ nestedCountersInstance.countEvent('cache', 'getCachedRIAccountData')
+
+      const results = []
+      for (const address of addressList) {
+        const wrappedEVMAccount = await getCachedRIAccount(address)
+        if (wrappedEVMAccount) {
+          const wrapped = WrappedEVMAccountFunctions._shardusWrappedAccount(wrappedEVMAccount)
+          results.push(wrapped)
+          /* prettier-ignore */ nestedCountersInstance.countEvent('cache', 'getCachedRIAccountData-hit')
+        }
+      }
+      /* prettier-ignore */ if (logFlags.dapp_verbose) console.log('getCachedRIAccountData results', JSON.stringify(results))
+      return results
+    },
+    async setCachedRIAccountData(accountRecords) {
+      /* prettier-ignore */ if (logFlags.dapp_verbose) console.log('setCachedRIAccountData', accountRecords)
+      /* prettier-ignore */ nestedCountersInstance.countEvent('cache', 'setCachedRIAccountData')
+
+      for (const account of accountRecords) {
+        const decodedAccount = account as AccountsEntry
+        shardus.setDebugSetLastAppAwait(`setCachedRIAccountData(${decodedAccount.accountId})`)
+        await setCachedRIAccount(decodedAccount)
+        shardus.setDebugSetLastAppAwait(
+          `setCachedRIAccountData(${decodedAccount.accountId})`,
+          DebugComplete.Completed
+        )
+      }
     },
     getNetworkAccount,
     async signAppData(

@@ -86,8 +86,8 @@ export function toShardusAddressWithKey(
   }
 
   if (
-    ShardeumFlags.contractStorageKeySilo &&
-    (accountType === AccountType.ContractStorage || accountType === AccountType.ContractCode)
+    (ShardeumFlags.contractStorageKeySilo && accountType === AccountType.ContractStorage) ||
+    (ShardeumFlags.contractCodeKeySilo && accountType === AccountType.ContractCode)
   ) {
     const numPrefixChars = 8
     // remove the 0x and get the first 8 hex characters of the address
@@ -111,8 +111,8 @@ export function toShardusAddressWithKey(
   }
 
   if (
-    ShardeumFlags.contractStorageKeySilo === false &&
-    (accountType === AccountType.ContractStorage || accountType === AccountType.ContractCode)
+    (ShardeumFlags.contractStorageKeySilo === false && accountType === AccountType.ContractStorage) ||
+    (ShardeumFlags.contractCodeKeySilo === false && accountType === AccountType.ContractCode)
   ) {
     if (secondaryAddressStr.length === 64) {
       //unexpected case but lets allow it

@@ -1,10 +1,16 @@
-import { NetworkAccount, WrappedEVMAccount, WrappedEVMAccountMap } from '../shardeum/shardeumTypes'
+import {
+  AccountType,
+  NetworkAccount,
+  WrappedEVMAccount,
+  WrappedEVMAccountMap,
+} from '../shardeum/shardeumTypes'
 
 import { ShardeumFlags } from '../shardeum/shardeumFlags'
 import Storage from '../storage/storage'
 import { DeSerializeFromJsonString, fixBigIntLiteralsToBigInt, _base16BNParser } from '../utils'
 import { networkAccount } from '../shardeum/shardeumConstants'
 import { logFlags } from '..'
+import { setCachedRIAccount } from './riAccountsCache'
 
 //WrappedEVMAccount
 export let accounts: WrappedEVMAccountMap = {}
@@ -34,6 +40,8 @@ export async function getAccount(address: string): Promise<WrappedEVMAccount> {
     if (typeof account.data === 'string') {
       account.data = DeSerializeFromJsonString<WrappedEVMAccount>(account.data)
     }
+
+    await setCachedRIAccount(account)
 
     return account.data
   } else {
@@ -79,6 +87,8 @@ export async function setAccount(address: string, account: WrappedEVMAccount): P
         throw new Error('setAccount timestamp should not be 0')
       }
       await storage.createOrReplaceAccountEntry(accountEntry)
+
+      await setCachedRIAccount(accountEntry)
 
       if (address === networkAccount) {
         cachedNetworkAccount = account as unknown as NetworkAccount
