@@ -2,6 +2,7 @@ import { DecimalString } from './shardeumTypes'
 
 interface ShardeumFlags {
   contractStorageKeySilo: boolean
+  contractCodeKeySilo: boolean
   globalCodeBytes: boolean
   VerboseLogs: boolean
   debugTraceLogs: boolean
@@ -99,10 +100,14 @@ interface ShardeumFlags {
   supportEstimateGas: boolean
   startInServiceMode: boolean
   allowedEndpointsInServiceMode: string[]
+  enableRIAccountsCache: boolean
+  riAccountsCacheSize: number
+  riAccountsDeleteBatchSize: number
 }
 
 export const ShardeumFlags: ShardeumFlags = {
   contractStorageKeySilo: true,
+  contractCodeKeySilo: false,
   globalCodeBytes: false,
   VerboseLogs: false,
   debugTraceLogs: false,
@@ -171,6 +176,9 @@ export const ShardeumFlags: ShardeumFlags = {
   labTest: false,
   lowStakePercent: 0.2,
   blockedAtVerbose: false,
+  enableRIAccountsCache: true,
+  riAccountsCacheSize: 10000,
+  riAccountsDeleteBatchSize: 500,
 
   // 1.1.3 migration
   fixExtraStakeLessThanMin: true,
