@@ -55,12 +55,12 @@ class Storage {
         //add index to timestamp
         await this.storage.run('CREATE INDEX IF NOT EXISTS timestamp1 ON accountsEntry(timestamp)')
       }
-    if (ShardeumFlags.enableRIAccountsCache) {
-      await this.storage.runCreate(
-        'CREATE TABLE if not exists `riAccountsCache` (`accountId` VARCHAR(255) NOT NULL, `timestamp` BIGINT NOT NULL, `data` JSON NOT NULL, PRIMARY KEY (`accountId`))'
-      )
-      await this.storage.run('CREATE INDEX IF NOT EXISTS timestampIdx ON riAccountsCache(timestamp)')
-    }
+      if (ShardeumFlags.enableRIAccountsCache) {
+        await this.storage.runCreate(
+          'CREATE TABLE if not exists `riAccountsCache` (`accountId` VARCHAR(255) NOT NULL, `timestamp` BIGINT NOT NULL, `data` JSON NOT NULL, PRIMARY KEY (`accountId`))'
+        )
+        await this.storage.run('CREATE INDEX IF NOT EXISTS timestampIdx ON riAccountsCache(timestamp)')
+      }
     }
 
     // get models and helper methods from the storage class we just initializaed.
