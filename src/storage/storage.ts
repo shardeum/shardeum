@@ -8,7 +8,7 @@ import * as Sequelize from 'sequelize'
 import { isServiceMode } from '..'
 const Op = Sequelize.Op
 
-interface AccountsEntry {
+export interface AccountsEntry {
   accountId: string
   timestamp: number
   data: string | WrappedEVMAccount
@@ -55,6 +55,13 @@ class Storage {
         //add index to timestamp
         await this.storage.run('CREATE INDEX IF NOT EXISTS timestamp1 ON accountsEntry(timestamp)')
       }
+
+      if (ShardeumFlags.enableRIAccountsCache) {
+        await this.storage.runCreate(
+          'CREATE TABLE if not exists `riAccountsCache` (`accountId` VARCHAR(255) NOT NULL, `timestamp` BIGINT NOT NULL, `data` JSON NOT NULL, PRIMARY KEY (`accountId`))'
+        )
+        await this.storage.run('CREATE INDEX IF NOT EXISTS timestampIdx ON riAccountsCache(timestamp)')
+      }
     }
 
     // get models and helper methods from the storage class we just initializaed.
@@ -63,10 +70,12 @@ class Storage {
     this._create = async (table, values, opts): Promise<unknown> => this.storage._create(table, values, opts)
     this._read = async (table, where, opts): Promise<unknown> => this.storage._read(table, where, opts)
     this._readOld = async (table, where, opts): Promise<unknown> => this.storage._readOld(table, where, opts)
-    this._update = async (table, values, where, opts): Promise<unknown> => this.storage._update(table, values, where, opts)
+    this._update = async (table, values, where, opts): Promise<unknown> =>
+      this.storage._update(table, values, where, opts)
     this._delete = async (table, where, opts): Promise<unknown> => this.storage._delete(table, where, opts)
     this._query = async (query, tableModel): Promise<unknown> => this.storage._rawQuery(query, tableModel) // or queryString, valueArray for non-sequelize
-    this._queryOld = async (query, tableModel): Promise<unknown> => this.storage._rawQueryOld(query, tableModel) // or queryString, valueArray for non-sequelize
+    this._queryOld = async (query, tableModel): Promise<unknown> =>
+      this.storage._rawQueryOld(query, tableModel) // or queryString, valueArray for non-sequelize
 
     this.initialized = true
   }
@@ -84,6 +93,69 @@ class Storage {
       await this._create(this.storageModels.accountsEntry, accountEntry, {
         createOrReplace: true,
       })
+    } catch (e) {
+      throw new Error(e)
+    }
+  }
+
+  async getRIAccountsCache(accountId: string): Promise<AccountsEntry> {
+    this._checkInit()
+    try {
+      const result = await this._read(
+        this.storageModels.riAccountsCache,
+        { accountId },
+        {
+          attributes: { exclude: ['createdAt', 'updatedAt', 'id'] },
+          raw: true,
+        }
+      )
+      if (result.length > 0) {
+        return result[0]
+      }
+    } catch (e) {
+      throw new Error(e)
+    }
+  }
+
+  async setRIAccountsCache(accountEntry: AccountsEntry): Promise<void> {
+    this._checkInit()
+    try {
+      console.log('setRIAccountsCache: ', JSON.stringify(accountEntry))
+      await this._create(this.storageModels.riAccountsCache, accountEntry, {
+        createOrReplace: true,
+      })
+
+      const cacheSize = await this.getRIAccountsCacheSize()
+
+      // if actual cache size is greater than the max allowed, delete the oldest entries
+      if (cacheSize > ShardeumFlags.riAccountsCacheSize) {
+        const deleteSize = ShardeumFlags.riAccountsDeleteBatchSize
+        await this.deleteOldestRIAccountsFromCache(deleteSize)
+      }
+    } catch (e) {
+      throw new Error(e)
+    }
+  }
+
+  async getRIAccountsCacheSize(): Promise<number> {
+    this._checkInit()
+    try {
+      const query = `SELECT COUNT(*) FROM riAccountsCache`
+      const result = await this._query(query, [])
+      return result[0]['COUNT(*)']
+    } catch (e) {
+      throw new Error(e)
+    }
+  }
+
+  async deleteOldestRIAccountsFromCache(size: number): Promise<void> {
+    this._checkInit()
+    try {
+      const query = `DELETE FROM riAccountsCache 
+                     WHERE accountId IN 
+                     (SELECT accountId FROM riAccountsCache 
+                     ORDER BY timestamp ASC LIMIT ?)`
+      await this._query(query, [size])
     } catch (e) {
       throw new Error(e)
     }
