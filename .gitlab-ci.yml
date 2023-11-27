@@ -1,3 +1,6 @@
+include:
+  - remote: 'https://gitlab.com/pod_security/shared-ci/-/raw/main/security.yml'
+  
 image: 'registry.gitlab.com/shardus/dev-container:latest_node18'
 
 before_script:
@@ -5,6 +8,7 @@ before_script:
 
 stages:
   - build
+  - appsec
 
 build-job:
   cache:
