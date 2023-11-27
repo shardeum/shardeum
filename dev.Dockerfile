@@ -12,19 +12,38 @@ FROM node:18.16.1
 
 # Create app directory
 WORKDIR /usr/src/app
+RUN mkdir shardeum
+RUN mkdir core
+WORKDIR /usr/src/app/shardeum
 
 # Bundle app source
 COPY . .
 
 # Install Rust build chain for modules
-RUN apt-get update && apt-get install -y \
+RUN apt-get update
+RUN apt-get install -y \
     build-essential \
     curl
+RUN apt-get update
 RUN curl https://sh.rustup.rs -sSf | bash -s -- -y
 ENV PATH="/root/.cargo/bin:${PATH}"
 
+RUN npm install --ignore-scripts
+
 # Install node_modules
-RUN npm install
+RUN rm -rf shardus-global-server/
+
+WORKDIR /usr/src/app/core/
+COPY ./shardus-global-server .
+RUN npm ci
+RUN npm run build:dev
+RUN npm link
+
+WORKDIR /usr/src/app/shardeum/
+RUN rm -rf node_modules/
+RUN npm ci --ignore-scripts
+RUN npm link @shardus/core
+RUN npm run compile
 
 # Define run command
 CMD [ "node", "dist/src/index.js" ]
