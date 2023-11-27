@@ -21,7 +21,7 @@ export const validateTransaction =
       if (isInternalTXGlobal(internalTx) === true) {
         return { result: 'pass', reason: 'valid' }
       } else if (tx.internalTXType === InternalTXType.ChangeConfig) {
-        const devPublicKey = ShardeumFlags.devPublicKey
+        const devPublicKey = shardus.getDevPublicKeyMaxLevel() //get the highest level pk
 
         if (devPublicKey) {
           const isValid = verify(tx, devPublicKey)

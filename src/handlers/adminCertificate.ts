@@ -3,6 +3,7 @@ import { ValidatorError } from './queryCertificate'
 import { ShardeumFlags } from '../shardeum/shardeumFlags'
 import * as crypto from '@shardus/crypto-utils'
 import { Request } from 'express'
+import { DevSecurityLevel } from '../shardeum/shardeumTypes'
 
 export interface AdminCert {
   nominee: string
@@ -33,8 +34,13 @@ function validatePutAdminCertRequest(req: PutAdminCertRequest, shardus: Shardus)
     return { success: false, reason: 'Invalid signature for QueryCert tx' }
   }
   try {
-    if (!shardus.crypto.verify(req, ShardeumFlags.devPublicKey))
-      return { success: false, reason: 'Invalid signature for AdminCert' }
+    const pkClearance = shardus.getDevPublicKey(req.sign.owner)
+    if (
+      pkClearance &&
+      !shardus.crypto.verify(req, pkClearance) &&
+      shardus.ensureKeySecurity(pkClearance, DevSecurityLevel.High) === true
+    )
+      return { success: false, reason: 'Unauthorized! Please use higher level auth key.' }
   } catch (e) {
     return { success: false, reason: 'Invalid signature for QueryCert tx' }
   }

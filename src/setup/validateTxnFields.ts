@@ -96,7 +96,7 @@ export const validateTxnFields =
         } else if (tx.internalTXType === InternalTXType.ChangeConfig) {
           try {
             // const devPublicKey = shardus.getDevPublicKey() // This have to be reviewed again whether to get from shardus interface or not
-            const devPublicKey = ShardeumFlags.devPublicKey
+            const devPublicKey = shardus.getDevPublicKeyMaxLevel()
             if (devPublicKey) {
               success = verify(tx, devPublicKey)
               if (!success) reason = 'Dev key does not match!'

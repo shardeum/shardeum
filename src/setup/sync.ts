@@ -82,8 +82,11 @@ export const sync = (shardus: Shardus, evmCommon: any) => async (): Promise<void
           /* prettier-ignore */ if (logFlags.important_as_error) shardus.log(`node ${nodeId} SETUP GENESIS ACCOUNT: ${address}  amt: ${amount}`)
         }
         /* prettier-ignore */ if (logFlags.important_as_error) console.log(`Skipped ${skippedAccountCount} genesis accounts`)
-        if (ShardeumFlags.devPublicKey) {
-          const { account, cycle } = createDevAccount(ShardeumFlags.devPublicKey, shardus.getLatestCycles())
+        if (shardus.getDevPublicKeyMaxLevel()) {
+          const { account, cycle } = createDevAccount(
+            shardus.getDevPublicKeyMaxLevel(),
+            shardus.getLatestCycles()
+          )
           const devAccount: any = account // eslint-disable-line @typescript-eslint/no-explicit-any
           await AccountsStorage.setAccount(devAccount.id, devAccount)
           const accountCopy: ShardusTypes.AccountsCopy = {

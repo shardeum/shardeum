@@ -454,3 +454,10 @@ export interface AppJoinData {
   adminCert: AdminCert
   mustUseAdminCert: boolean
 }
+
+export enum DevSecurityLevel {
+  Unauthorized = 0,
+  Low = 1,
+  Medium = 2,
+  High = 3,
+}

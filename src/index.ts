@@ -43,6 +43,7 @@ import {
   ClaimRewardTX,
   DebugTx,
   DebugTXType,
+  DevSecurityLevel,
   //DevAccount,
   EVMAccountInfo,
   InitRewardTimes,
@@ -4576,7 +4577,7 @@ const shardusSetup = (): void => {
             // This is the 0000x00000 account
             if (accountId === networkAccount) {
               throw Error(`Network Account is not found ${accountId}`)
-            } else if (accountId === ShardeumFlags.devPublicKey) {
+            } else if (shardus.getDevPublicKey(accountId)) {
               throw Error(`Dev Account is not found ${accountId}`)
             }
             // I think we don't need it now, the dev Key is checked on the validateTxnFields
@@ -5529,10 +5530,14 @@ const shardusSetup = (): void => {
               fatal: true,
             }
           }
-
+          const pkClearance = shardus.getDevPublicKey(data.sign.owner)
           // check for invalid signature for AdminCert
-          if (!shardus.crypto.verify(adminCert, ShardeumFlags.devPublicKey)) {
-            /* prettier-ignore */ nestedCountersInstance.countEvent('shardeum-mode', 'validateJoinRequest fail: !shardus.crypto.verify(adminCert, ShardeumFlags.devPublicKey)')
+          if (
+            pkClearance &&
+            !shardus.crypto.verify(adminCert, pkClearance) &&
+            shardus.ensureKeySecurity(pkClearance, DevSecurityLevel.High) === true
+          ) {
+            /* prettier-ignore */ nestedCountersInstance.countEvent('shardeum-mode', 'validateJoinRequest fail: !shardus.crypto.verify(adminCert, shardus.getDevPublicKeyMaxLevel())')
             return {
               success: false,
               reason: 'Invalid signature for AdminCert',
@@ -5580,9 +5585,15 @@ const shardusSetup = (): void => {
             }
           }
 
+          const pkClearance = shardus.getDevPublicKey(data.sign.owner)
           // check for invalid signature for AdminCert
-          if (!shardus.crypto.verify(adminCert, ShardeumFlags.devPublicKey)) {
-            /* prettier-ignore */ nestedCountersInstance.countEvent('shardeum-mode', 'validateJoinRequest fail: !shardus.crypto.verify(adminCert, ShardeumFlags.devPublicKey)')
+          if (
+            pkClearance &&
+            !shardus.crypto.verify(adminCert, pkClearance) &&
+            shardus.ensureKeySecurity(pkClearance, DevSecurityLevel.High) === true
+          ) {
+            // check for invalid signature for AdminCert
+            /* prettier-ignore */ nestedCountersInstance.countEvent('shardeum-mode', 'validateJoinRequest fail: !shardus.crypto.verify(adminCert, shardus.getDevPublicKeyMaxLevel())')
             return {
               success: false,
               reason: 'Invalid signature for AdminCert',

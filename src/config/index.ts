@@ -1,7 +1,7 @@
 import fs from 'fs'
 import path from 'path'
 import merge from 'deepmerge'
-import { ShardeumFlags } from '../shardeum/shardeumFlags'
+import { ShardeumFlags, DevSecurityLevel } from '../shardeum/shardeumFlags'
 
 const overwriteMerge = (target: any[], source: any[]): any[] => source // eslint-disable-line @typescript-eslint/no-explicit-any
 
@@ -235,9 +235,12 @@ config = merge(
         disableSnapshots: true, // do not check in if set to false
         countEndpointStart: -1,
         hashedDevAuth: '',
-        devPublicKey: '5aab34ddc09a479a835d26d5791dd8f54360cd09c58cd70cd7d818c1af9f8dad', //for production
-        //devPublicKey: 'fe73383a971bd52be51c660cc9758c13763a7d804ee2062b6f7426698148240c', //old production
-        //devPublicKey: '774491f80f47fedb119bb861601490f42bc3ea3b57fc63906c0d08e6d777a592', //for local test
+        devPublicKeys: {
+          // '': DevSecurityLevel.Unauthorized,
+          '5aab34ddc09a479a835d26d5791dd8f54360cd09c58cd70cd7d818c1af9f8dad': DevSecurityLevel.Low,
+          fe73383a971bd52be51c660cc9758c13763a7d804ee2062b6f7426698148240c: DevSecurityLevel.Medium,
+          '774491f80f47fedb119bb861601490f42bc3ea3b57fc63906c0d08e6d777a592': DevSecurityLevel.High,
+        },
         checkAddressFormat: false,
       },
     },
