@@ -28,10 +28,9 @@ RUN apt-get update
 RUN curl https://sh.rustup.rs -sSf | bash -s -- -y
 ENV PATH="/root/.cargo/bin:${PATH}"
 
-RUN npm install --ignore-scripts
-
 # Install node_modules
 RUN rm -rf shardus-global-server/
+RUN npm ci --ignore-scripts
 
 WORKDIR /usr/src/app/core/
 COPY ./shardus-global-server .
@@ -40,7 +39,6 @@ RUN npm run build:dev
 RUN npm link
 
 WORKDIR /usr/src/app/shardeum/
-RUN rm -rf node_modules/
 RUN npm ci --ignore-scripts
 RUN npm link @shardus/core
 RUN npm run compile
