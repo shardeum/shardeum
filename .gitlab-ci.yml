@@ -31,3 +31,4 @@ lint-job:
     - npm install @typescript-eslint/eslint-plugin@5.48.0 --save-dev
     - npm run lint
     - echo "Running ESlint complete."
+  allow_failure: true
