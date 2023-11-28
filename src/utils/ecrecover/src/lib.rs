@@ -34,7 +34,7 @@ fn ecrecover(mut cx: FunctionContext) -> JsResult<JsBuffer> {
     let result = ecrecover_impl(hash,v,r,s);
     let duration = start.elapsed(); // Time elapsed since `start`
 
-    println!("Time taken: {} seconds", duration.as_millis());
+    println!("Time taken: {} ms", duration.as_millis());
 
     match result {
         Ok(address) => {

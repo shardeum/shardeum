@@ -12,7 +12,8 @@ const s = Buffer.from([
 ])
 
 let totalTime = 0
-const runs = 100
+const runs = 1000
+
 
 for (let i = 0; i < runs; i++) {
   const startTime = process.hrtime()
