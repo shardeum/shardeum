@@ -182,8 +182,8 @@ config = merge(config, {
     },
     loadDetection: {
       queueLimit: 400, // EXSS does the main limiting now queue limit is a secondary limit
-      executeQueueLimit: 100,
-      desiredTxTime: 15, // 15
+      executeQueueLimit: 250,
+      desiredTxTime: 30, // 15
       highThreshold: 0.5,
       lowThreshold: 0.2,
     },
@@ -196,7 +196,7 @@ config = merge(config, {
     sharding: {
       nodesPerConsensusGroup: process.env.nodesPerConsensusGroup
         ? parseInt(process.env.nodesPerConsensusGroup)
-        : 10,
+        : 128,
       nodesPerEdge: process.env.nodesPerEdge ? parseInt(process.env.nodesPerEdge) : 5,
       executeInOneShard: true,
     },
