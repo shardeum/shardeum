@@ -184,8 +184,6 @@ export let stakeCert: StakeCert = null
 
 export let adminCert: AdminCert = null
 
-let uuidCounter = 1
-
 function isDebugMode(): boolean {
   return config.server.mode === 'debug'
 }
@@ -391,12 +389,8 @@ const ERC20TokenBalanceMap: {
 }[] = []
 const ERC20TokenCacheSize = 1000
 
-interface RunStateWithLogs extends RunState {
-  logs?: []
-}
 
 let EVM: { -readonly [P in keyof VM] }
-let shardeumBlock: ShardeumBlock
 //let transactionStateMap:Map<string, TransactionState>
 
 //Per TX or Eth call shardeum State.  Note the key is the shardus transaction id
@@ -425,7 +419,7 @@ async function initEVMSingletons(): Promise<void> {
 
   //let shardeumStateManager = new ShardeumState({ common }) //as StateManager
 
-  shardeumBlock = new ShardeumBlock({ common: evmCommon })
+  new ShardeumBlock({ common: evmCommon })
 
   //let EVM = new VM({ common, stateManager: shardeumStateManager, blockchain: shardeumBlock })
 
@@ -650,7 +644,7 @@ function monitorEventCBNoOp(): void {
 }
 
 async function tryGetRemoteAccountCB(
-  transactionState: TransactionState,
+  _transactionState: TransactionState,
   type: AccountType,
   address: string,
   key: string
@@ -970,7 +964,7 @@ const configShardusEndpoints = (): void => {
   // })
 
   let motdCount = 0
-  shardus.registerExternalGet('motd', async (req, res) => {
+  shardus.registerExternalGet('motd', async (_req, res) => {
     motdCount++
     // let localCount = 0
     // await sleep(1000)
@@ -1005,7 +999,7 @@ const configShardusEndpoints = (): void => {
     )
   })
 
-  shardus.registerExternalGet('debug-point-spenders', debugMiddleware, async (req, res) => {
+  shardus.registerExternalGet('debug-point-spenders', debugMiddleware, async (_req, res) => {
     const debugObj = {
       debugTotalPointRequests: debugTotalServicePointRequests,
       debugServiePointByType: debugServicePointsByType,
@@ -1016,7 +1010,7 @@ const configShardusEndpoints = (): void => {
     return
   })
 
-  shardus.registerExternalGet('debug-point-spenders-clear', debugMiddleware, async (req, res) => {
+  shardus.registerExternalGet('debug-point-spenders-clear', debugMiddleware, async (_req, res) => {
     const totalSpends = debugTotalServicePointRequests
     debugTotalServicePointRequests = 0
     debugServicePointSpendersByType.clear()
@@ -1101,7 +1095,7 @@ const configShardusEndpoints = (): void => {
     }
   })
 
-  shardus.registerExternalGet('eth_blockNumber', async (req, res) => {
+  shardus.registerExternalGet('eth_blockNumber', async (_req, res) => {
     if (ShardeumFlags.VerboseLogs) console.log('Req: eth_blockNumber')
     return res.json({ blockNumber: latestBlock ? '0x' + latestBlock.toString(16) : '0x0' })
   })
@@ -1152,7 +1146,7 @@ const configShardusEndpoints = (): void => {
     /* eslint-enable security/detect-object-injection */
   })
 
-  shardus.registerExternalGet('stake', async (req, res) => {
+  shardus.registerExternalGet('stake', async (_req, res) => {
     try {
       const stakeRequiredUsd = AccountsStorage.cachedNetworkAccount.current.stakeRequiredUsd
       const stakeRequired = scaleByStabilityFactor(stakeRequiredUsd, AccountsStorage.cachedNetworkAccount)
@@ -1188,7 +1182,7 @@ const configShardusEndpoints = (): void => {
     }
   })
 
-  shardus.registerExternalGet('dumpAddressMap', debugMiddleware, async (req, res) => {
+  shardus.registerExternalGet('dumpAddressMap', debugMiddleware, async (_req, res) => {
     // if(isDebugMode()){
     //   return res.json(`endpoint not available`)
     // }
@@ -1206,7 +1200,7 @@ const configShardusEndpoints = (): void => {
     }
   })
 
-  shardus.registerExternalGet('dumpShardeumStateMap', debugMiddleware, async (req, res) => {
+  shardus.registerExternalGet('dumpShardeumStateMap', debugMiddleware, async (_req, res) => {
     // if(isDebugMode()){
     //   return res.json(`endpoint not available`)
     // }
@@ -1223,7 +1217,7 @@ const configShardusEndpoints = (): void => {
     }
   })
 
-  shardus.registerExternalGet('debug-shardeum-flags', debugMiddleware, async (req, res) => {
+  shardus.registerExternalGet('debug-shardeum-flags', debugMiddleware, async (_req, res) => {
     try {
       return res.json({ ShardeumFlags })
     } catch (e) {
@@ -1778,7 +1772,7 @@ const configShardusEndpoints = (): void => {
   //   res.json({ tx: result })
   // })
 
-  shardus.registerExternalGet('accounts', debugMiddleware, async (req, res) => {
+  shardus.registerExternalGet('accounts', debugMiddleware, async (_req, res) => {
     // if(isDebugMode()){
     //   return res.json(`endpoint not available`)
     // }
@@ -1812,7 +1806,7 @@ const configShardusEndpoints = (): void => {
   })
 
   // Returns the hardware-spec of the server running the validator
-  shardus.registerExternalGet('system-info', async (req, res) => {
+  shardus.registerExternalGet('system-info', async (_req, res) => {
     let result = {
       platform: platform(),
       arch: arch(),
@@ -1850,7 +1844,7 @@ const configShardusEndpoints = (): void => {
   })
 
   // Returns the latest value from isReadyToJoin call
-  shardus.registerExternalGet('debug-is-ready-to-join', async (req, res) => {
+  shardus.registerExternalGet('debug-is-ready-to-join', async (_req, res) => {
     const publicKey = shardus.crypto.getPublicKey()
 
     return res.json({ isReady: isReadyToJoinLatestValue, nodePubKey: publicKey })
@@ -2270,9 +2264,9 @@ function setGlobalCodeByteUpdate(
 }
 
 async function _transactionReceiptPass(
-  tx,
+  _tx: ShardusTypes.OpaqueTransaction,
   txId: string,
-  wrappedStates: WrappedStates,
+  _wrappedStates: WrappedStates,
   applyResponse: ShardusTypes.ApplyResponse
 ): Promise<void> {
   if (applyResponse == null) {
@@ -4016,14 +4010,6 @@ const shardusSetup = (): void => {
 
           if (success === true) {
             // generate access list for non EIP 2930 txs
-            const callObj = {
-              from: await transaction.getSenderAddress().toString(),
-              to: transaction.to ? transaction.to.toString() : null,
-              value: bigIntToHex(transaction.value),
-              data: bytesToHex(transaction.data),
-              gasLimit: bigIntToHex(transaction.gasLimit),
-              newContractAddress: appData.newCAAddr,
-            }
 
             profilerInstance.scopedProfileSectionStart('accesslist-generate')
             const { accessList: generatedAccessList, shardusMemoryPatterns } = await generateAccessList(tx)
@@ -4803,7 +4789,7 @@ const shardusSetup = (): void => {
       }
       return results
     },
-    async updateAccountFull(wrappedData, localCache, applyResponse: ShardusTypes.ApplyResponse) {
+    async updateAccountFull(wrappedData, applyResponse: ShardusTypes.ApplyResponse) {
       const accountId = wrappedData.accountId
       const accountCreated = wrappedData.accountCreated
       const updatedEVMAccount: WrappedEVMAccount = wrappedData.data as WrappedEVMAccount
@@ -4924,10 +4910,10 @@ const shardusSetup = (): void => {
         accountCreated
       )
     },
-    async updateAccountPartial(wrappedData, localCache, applyResponse) {
+    async updateAccountPartial(wrappedData, _localCache, applyResponse) {
       //I think we may need to utilize this so that shardus is not oblicated to make temporary copies of large CAs
       //
-      await this.updateAccountFull(wrappedData, localCache, applyResponse)
+      await this.updateAccountFull(wrappedData, applyResponse)
     },
     async getAccountDataByRange(
       accountStart,
