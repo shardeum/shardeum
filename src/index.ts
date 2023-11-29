@@ -22,11 +22,10 @@ import {
   TransactionFactory,
   TransactionType,
 } from '@ethereumjs/tx'
-import { Common, Chain, Hardfork } from '@ethereumjs/common'
-import { Blockchain, BlockchainOptions } from '@ethereumjs/blockchain'
-import { RunTxResult, ShardeumVM } from './vm_v7'
+import { Common, Hardfork } from '@ethereumjs/common'
+import { RunTxResult } from './vm_v7'
 // import { EVM as EthereumVirtualMachine, getActivePrecompiles } from '@ethereumjs/evm'
-import { EVM as EthereumVirtualMachine, getActivePrecompiles } from './evm_v2'
+import { EVM as EthereumVirtualMachine } from './evm_v2'
 import { EVMResult } from './evm_v2/types'
 import { parse as parseUrl } from 'url'
 import got from 'got'
@@ -101,7 +100,7 @@ import * as AccountsStorage from './storage/accountStorage'
 import { sync, validateTransaction, validateTxnFields } from './setup'
 import { applySetCertTimeTx, injectSetCertTimeTx, getCertCycleDuration } from './tx/setCertTime'
 import { applyClaimRewardTx, injectClaimRewardTxWithRetry } from './tx/claimReward'
-import { Request, Response } from 'express'
+import { Response } from 'express'
 import {
   CertSignaturesResult,
   queryCertificate,
@@ -116,7 +115,6 @@ import {
   isInternalTx,
   crypto,
   getInjectedOrGeneratedTimestamp,
-  hashSignedObj,
 } from './setup/helpers'
 import { onActiveVersionChange } from './versioning'
 import { shardusFactory } from '@shardus/core'
@@ -127,16 +125,12 @@ import { applyPenaltyTX } from './tx/penalty/transaction'
 import { getFinalArchiverList, setupArchiverDiscovery } from '@shardus/archiver-discovery'
 import { Archiver } from '@shardus/archiver-discovery/dist/src/types'
 import axios from 'axios'
-//import blockedAt from 'blocked-at'
-//import { v4 as uuidv4 } from 'uuid'
-import { debug as createDebugLogger } from 'debug'
-import { RunState } from './evm_v2/interpreter'
 import { VM } from './vm_v7/vm'
-import { EthersStateManager } from '@ethereumjs/statemanager'
-import rfdc = require('rfdc')
+import rfdc from 'rfdc'
 import { AdminCert, PutAdminCertResult, putAdminCertificateHandler } from './handlers/adminCertificate'
 import { P2P } from '@shardus/types'
-import { util } from 'prettier'
+import Profiler from '@shardus/core/dist/utils/profiler'
+import { Request } from 'express-serve-static-core'
 
 let latestBlock = 0
 export const blocks: BlockMap = {}
@@ -153,7 +147,7 @@ export let genesisAccounts: string[] = []
 const ERC20_BALANCEOF_CODE = '0x70a08231'
 
 let shardus: Shardus
-let profilerInstance
+let profilerInstance: Profiler
 
 //   next shardus core will export the correct type
 export let logFlags = {
