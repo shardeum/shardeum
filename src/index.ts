@@ -212,7 +212,7 @@ let mustUseAdminCert = false
  * @param points
  * @returns
  */
-function trySpendServicePoints(points: number, req, key: string): boolean {
+function trySpendServicePoints(points: number, req: Request, key: string): boolean {
   const nowTs = shardeumGetTime()
   const maxAge = 1000 * pointsAverageInterval
   const maxAllowedPoints = ShardeumFlags.ServicePointsPerSecond * pointsAverageInterval
@@ -400,7 +400,7 @@ let shardeumStateTXMap: Map<string, ShardeumState>
 // const debugShardeumState: ShardeumState = null
 
 let shardusAddressToEVMAccountInfo: Map<string, EVMAccountInfo>
-export let evmCommon
+export let evmCommon: Common
 
 let debugAppdata: Map<string, unknown>
 
@@ -718,10 +718,10 @@ async function createAccount(
 }
 
 function getTransactionObj(
-  tx
+  tx: ShardusTypes.OpaqueTransaction
 ): Transaction[TransactionType.Legacy] | Transaction[TransactionType.AccessListEIP2930] {
-  if (!tx.raw) throw Error('fail')
-  let transactionObj
+  if (!("raw" in tx) || !tx.raw) throw Error('fail')
+  let transactionObj: LegacyTransaction | AccessListEIP2930Transaction
   const serializedInput = toBytes(tx.raw)
   try {
     transactionObj = TransactionFactory.fromSerializedData<TransactionType.Legacy>(serializedInput)
@@ -894,7 +894,7 @@ function _normalizeUrl(url: string): string {
   return normalized
 }
 
-async function _internalHackPostWithResp(url: string, body): Promise<got.Response<any>> {
+async function _internalHackPostWithResp(url: string, body: ShardusTypes.OpaqueTransaction): Promise<got.Response<unknown>> {
   const normalized = _normalizeUrl(url)
   const host = parseUrl(normalized, true)
   try {
@@ -914,8 +914,8 @@ async function _internalHackPostWithResp(url: string, body): Promise<got.Respons
   }
 }
 
-function logAccessList(message: string, appData): void {
-  if (appData != null && appData.accessList != null) {
+function logAccessList(message: string, appData: object): void {
+  if (appData != null && "accessList" in appData && appData.accessList != null) {
     if (ShardeumFlags.VerboseLogs) console.log(`access list for ${message} ${stringify(appData.accessList)}`)
   }
 }
@@ -1163,7 +1163,7 @@ const configShardusEndpoints = (): void => {
     //   return res.json(`endpoint not available`)
     // }
 
-    let id
+    let id: string
     try {
       id = req.query.id as string
       const addr = Address.fromString(id)
@@ -1187,7 +1187,7 @@ const configShardusEndpoints = (): void => {
     //   return res.json(`endpoint not available`)
     // }
 
-    let id
+    let id: any
     try {
       //use a replacer so we get the map:
       const output = JSON.stringify(shardusAddressToEVMAccountInfo, replacer, 4)
@@ -1227,8 +1227,8 @@ const configShardusEndpoints = (): void => {
   })
 
   shardus.registerExternalGet('debug-set-shardeum-flag', debugMiddleware, async (req, res) => {
-    let value
-    let key
+    let value: string
+    let key: string
     try {
       key = req.query.key as string
       value = req.query.value as string
@@ -1253,9 +1253,9 @@ const configShardusEndpoints = (): void => {
     }
   })
   shardus.registerExternalGet('debug-set-service-point', debugMiddleware, async (req, res) => {
-    let value
-    let key1
-    let key2
+    let value: string
+    let key1: string
+    let key2: string
     try {
       key1 = req.query.key1 as string
       key2 = req.query.key2 as string
@@ -1457,9 +1457,9 @@ const configShardusEndpoints = (): void => {
         opt['gasPrice'] = callObj.gasPrice
       }
 
-      let caShardusAddress
+      let caShardusAddress: string
       const methodCode = callObj.data.substr(0, 10)
-      let caAccount
+      let caAccount: WrappedEVMAccount
       if (opt['to']) {
         caShardusAddress = toShardusAddress(callObj.to, AccountType.Account)
         if (!ShardeumFlags.removeTokenBalanceCache && methodCode === ERC20_BALANCEOF_CODE) {
@@ -1962,7 +1962,7 @@ async function applyInternalTx(
     // const devAccount: DevAccount = wrappedStates[internalTx.from].data
     /* eslint-enable security/detect-object-injection */
 
-    let changeOnCycle
+    let changeOnCycle: number
     let cycleData: ShardusTypes.Cycle
 
     //NEED to sign with dev key (probably check this in validate() )
@@ -2065,7 +2065,7 @@ async function applyInternalTx(
     }
   }
   if (internalTx.internalTXType === InternalTXType.ChangeNetworkParam) {
-    let changeOnCycle
+    let changeOnCycle: number
     let cycleData: ShardusTypes.Cycle
 
     if (internalTx.cycle === -1) {
@@ -2158,7 +2158,7 @@ async function applyInternalTx(
 }
 
 export const createInternalTxReceipt = (
-  shardus,
+  shardus: Shardus,
   applyResponse: ShardusTypes.ApplyResponse,
   internalTx: InternalTx,
   from: string,
@@ -3435,7 +3435,7 @@ const shardusSetup = (): void => {
         // eslint-disable-next-line security/detect-object-injection
         const wrappedEVMAccount: WrappedEVMAccount = wrappedStates[accountId].data as WrappedEVMAccount
         fixDeserializedWrappedEVMAccount(wrappedEVMAccount)
-        let address
+        let address: Address
         if (wrappedEVMAccount.accountType === AccountType.ContractCode)
           address = Address.fromString(wrappedEVMAccount.contractAddress)
         else address = Address.fromString(wrappedEVMAccount.ethAddress)
@@ -3740,7 +3740,7 @@ const shardusSetup = (): void => {
         if (runState == null) {
           if (ShardeumFlags.VerboseLogs) console.log(`No runState found in the receipt for ${txId}`)
         } else {
-          logs = runState.logs.map((l: [Buffer, Buffer[], Buffer], index) => {
+          logs = runState.logs.map((l: [Buffer, Buffer[], Buffer], index: { toString: (arg0: number) => string }) => {
             return {
               logIndex: ShardeumFlags.receiptLogIndexFix ? '0x' + index.toString(16) : '0x1',
               blockNumber: readableBlocks[blockForTx.header.number.toString(10)].number,
@@ -3855,7 +3855,7 @@ const shardusSetup = (): void => {
           transaction instanceof AccessListEIP2930Transaction && transaction.AccessListJSON != null
         let isSimpleTransfer = false
 
-        let remoteShardusAccount
+        let remoteShardusAccount: ShardusTypes.WrappedDataFromQueue
 
         //if the TX is a contract deploy, predict the new contract address correctly (needs sender's nonce)
         //remote fetch of sender EOA also allows fast balance and nonce checking (assuming we get some queue hints as well from shardus core)
@@ -4820,7 +4820,7 @@ const shardusSetup = (): void => {
       //   //TODO possibly need a blob to re-init with?
       // }
 
-      let shardeumState
+      let shardeumState: ShardeumState
       if (
         updatedEVMAccount.accountType !== AccountType.Debug &&
         updatedEVMAccount.accountType !== AccountType.NetworkAccount &&
@@ -5902,8 +5902,8 @@ const shardusSetup = (): void => {
           const result = await injectClaimRewardTxWithRetry(shardus, data)
           /* prettier-ignore */ if (logFlags.dapp_verbose) console.log('INJECTED_CLAIM_REWARD_TX', result)
         } else if (eventType === 'node-left-early' && ShardeumFlags.enableNodeSlashing === true) {
-          let nodeLostCycle
-          let nodeDroppedCycle
+          let nodeLostCycle: number
+          let nodeDroppedCycle: number
           for (let i = 0; i < latestCycles.length; i++) {
             const cycle = latestCycles[i]
             if (cycle == null) continue
@@ -6211,7 +6211,7 @@ export function shardeumGetTime(): number {
   //const patchedConfig = updateConfigFromNetworkAccount(config, networkAccount)
   //use patchedConfig instead of config below
 
-  let configToLoad
+  let configToLoad: Config
   try {
     // Attempt to get and patch config. Error if unable to get config.
     const networkAccount = await fetchNetworkAccountFromArchiver()
@@ -6247,7 +6247,7 @@ export function shardeumGetTime(): number {
       const serverConfig = config.server
       const cycleInterval = serverConfig.p2p.cycleDuration * ONE_SECOND
 
-      let node
+      let node: P2P.NodeListTypes.Node
       let nodeId: string
       let nodeAddress: string
       let expected = shardeumGetTime() + cycleInterval

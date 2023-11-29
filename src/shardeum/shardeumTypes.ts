@@ -233,7 +233,7 @@ export interface OurAppDefinedData {
       accountData?: WrappedEVMAccount
       from?: string
       change?: {
-        cycle: ShardusTypes.Cycle
+        cycle: ShardusTypes.Cycle | number
         change: Change
       }
     }

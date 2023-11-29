@@ -107,7 +107,7 @@ export default class TransactionState {
 
   checkpointCount: number
 
-  appData: unknown
+  appData: object
 
   // callbacks
   accountMissCB: accountEvent
