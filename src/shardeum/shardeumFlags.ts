@@ -158,8 +158,8 @@ export const ShardeumFlags: ShardeumFlags = {
   generateMemoryPatternData: true,
   StakingEnabled: true,
   ModeEnabled: true,
-  AdminCertEnabled: true,
-  minActiveNodesForStaking: 1,
+  AdminCertEnabled: false,
+  minActiveNodesForStaking: 5,
   MinStakeCertSig: 1, // this is the minimum amount of signature required for stake certification. will move to network param in future.
   FullCertChecksEnabled: true,
   extraTxTime: 8, // This is to predict the cycleNumber from the tx timestamp + 8s
