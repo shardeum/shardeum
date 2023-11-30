@@ -379,7 +379,7 @@ const shardusTxIdToEthTxId = {} //this appears to only support appliedTxs
 const defaultBalance = isDebugMode() ? oneSHM * BigInt(100) : BigInt(0)
 
 // TODO move this to a db table
-// const transactionFailHashMap: any = {}
+// const transactionFailHashMap = {}
 
 const ERC20TokenBalanceMap: {
   to: string
@@ -1101,8 +1101,8 @@ const configShardusEndpoints = (): void => {
   })
 
   shardus.registerExternalGet('eth_getBlockHashes', async (req, res) => {
-    let fromBlock: any = req.query.fromBlock
-    let toBlock: any = req.query.toBlock
+    let fromBlock: string | number = req.query.fromBlock as string
+    let toBlock: string | number = req.query.toBlock as string
 
     if (fromBlock == null) return res.json({ error: 'Missing fromBlock' })
     if (typeof fromBlock === 'string') fromBlock = parseInt(fromBlock)
@@ -1741,7 +1741,7 @@ const configShardusEndpoints = (): void => {
   //   }
   //
   //   if (runState && runState.logs)
-  //     logs = runState.logs.map((l: any[]) => {
+  //     logs = runState.logs.map((l) => {
   //       return {
   //         logIndex: '0x1', // 1
   //         blockNumber: '0xb', // 436
@@ -2325,8 +2325,8 @@ const createNetworkAccount = async (accountId: string): Promise<NetworkAccount> 
     // @ts-ignore
     listOfChanges = networkAccount.data?.listOfChanges as {
       cycle: number
-      change: any
-      appData: any
+      change: unknown
+      appData: unknown
     }[]
   }
 
@@ -2422,7 +2422,7 @@ function wrapTransaction(
   impl: () => Address
 ): LegacyTransaction | AccessListEIP2930Transaction {
   return new Proxy(transaction, {
-    get: function (target, prop, receiver): any {
+    get: function(target, prop, receiver): unknown {
       if (prop === 'getSenderAddress') {
         return impl
       }
@@ -3735,11 +3735,11 @@ const shardusSetup = (): void => {
       //TODO also create an account for the receipt (nested in the returned runTxResult should be a receipt with a list of logs)
       // We are ready to loop over the receipts and add them
       if (runTxResult) {
-        const runState: any = runTxResult.execResult.runState
+        const runState = runTxResult.execResult.runState
         let logs = []
         if (runState == null) {
           if (ShardeumFlags.VerboseLogs) console.log(`No runState found in the receipt for ${txId}`)
-        } else {
+        } else if ("logs" in runState && Array.isArray(runState.logs)) {
           logs = runState.logs.map((l: [Buffer, Buffer[], Buffer], index: { toString: (arg0: number) => string }) => {
             return {
               logIndex: ShardeumFlags.receiptLogIndexFix ? '0x' + index.toString(16) : '0x1',
@@ -3779,7 +3779,7 @@ const shardusSetup = (): void => {
           timestamp: txTimestamp,
           ethAddress: ethTxId, //.slice(0, 42),  I think the full 32byte TX should be fine now that toShardusAddress understands account type
           hash: '',
-          receipt: runTxResult.receipt as any,
+          receipt: runTxResult.receipt,
           readableReceipt,
           amountSpent: bigIntToHex(runTxResult.amountSpent),
           txId,
@@ -5085,7 +5085,7 @@ const shardusSetup = (): void => {
       type: string,
       hash: string,
       nodesToSign: number,
-      originalAppData: any
+      originalAppData
     ): Promise<ShardusTypes.SignAppDataResult> {
       nestedCountersInstance.countEvent('shardeum-staking', 'calling signAppData')
       const appData = fixBigIntLiteralsToBigInt(originalAppData)
@@ -5929,7 +5929,7 @@ const shardusSetup = (): void => {
         }
       }
     },
-    async updateNetworkChangeQueue(account: WrappedAccount, appData: any) {
+    async updateNetworkChangeQueue(account: WrappedAccount, appData) {
       /* eslint-disable security/detect-object-injection */
       if (account.accountId === networkAccount) {
         const networkAccount: NetworkAccount = account.data
@@ -5942,7 +5942,7 @@ const shardusSetup = (): void => {
       }
       /* eslint-enable security/detect-object-injection */
     },
-    async patchAndUpdate(existingObject: any, changeObj: any, parentPath: '') {
+    async patchAndUpdate(existingObject: { [x: string]: unknown }, changeObj: ArrayLike<unknown> | { [s: string]: unknown }, parentPath: '') {
       /* eslint-disable security/detect-object-injection */
       for (const [key, value] of Object.entries(changeObj)) {
         if (existingObject[key] != null) {
@@ -6008,7 +6008,7 @@ const shardusSetup = (): void => {
         /* eslint-enable security/detect-object-injection */
       }
     },
-    generatePathKeys(obj: any, prefix = ''): string[] {
+    generatePathKeys(obj: { [x: string]: unknown }, prefix = ''): string[] {
       /* eslint-disable security/detect-object-injection */
       let paths: string[] = []
 
@@ -6036,7 +6036,7 @@ const shardusSetup = (): void => {
     },
 
     //@ts-ignore
-    canStayOnStandby(joinInfo: any): { canStay: boolean; reason: string } {
+    canStayOnStandby(joinInfo: { appJoinData: AppJoinData }): { canStay: boolean; reason: string } {
       if (joinInfo) {
         const appJoinData = joinInfo?.appJoinData
 
