@@ -1046,16 +1046,6 @@ const configShardusEndpoints = (): void => {
 
     let numActiveNodes = 0
     try {
-      // Disable all application transactions if the network is not in the processing mode
-      // const networkMode: P2P.ModesTypes.Record['mode'] = shardus.getNetworkMode()
-      // if (!isInternalTx(tx) && networkMode !== 'processing') {
-      //   return res.json({
-      //     success: false,
-      //     reason: 'Transaction is not allowed. Network is not in the processing mode.',
-      //     status: 500,
-      //   })
-      // }
-
       // Reject transaction if network is paused
       const networkAccount = AccountsStorage.cachedNetworkAccount
       if (networkAccount == null || networkAccount.current == null) {

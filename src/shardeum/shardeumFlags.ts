@@ -97,7 +97,6 @@ interface ShardeumFlags {
   nonceCheckRange: number
   looseNonceCheck: boolean
   supportEstimateGas: boolean
-  allowAppTxsOnlyOnProcessingMode: boolean // Limit processing application transactions only when the network is in processing mode
   startInServiceMode: boolean
   allowedEndpointsInServiceMode: string[]
 }
@@ -232,7 +231,6 @@ export const ShardeumFlags: ShardeumFlags = {
     'GET /account/*',
     'GET /eth_getCode',
   ],
-  allowAppTxsOnlyOnProcessingMode: true,
 }
 
 export function updateShardeumFlag(key: string, value: string | number | boolean): void {
