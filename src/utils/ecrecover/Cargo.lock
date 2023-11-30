@@ -60,6 +60,7 @@ name = "ecrecover"
 version = "0.1.0"
 dependencies = [
  "hex",
+ "lazy_static",
  "neon",
  "secp256k1",
  "sha3",
@@ -89,6 +90,12 @@ checksum = "8f6d5ed8676d904364de097082f4e7d240b571b67989ced0240f08b7f966f940"
 dependencies = [
  "cpufeatures",
 ]
+
+[[package]]
+name = "lazy_static"
+version = "1.4.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "e2abad23fbc42b3700f2f279844dc832adb2b2eb069b2df918f455c4e18cc646"
 
 [[package]]
 name = "libc"

@@ -1,16 +1,22 @@
-use std::{convert::TryInto, borrow::BorrowMut};
+use std::{convert::TryInto, borrow::BorrowMut, sync::RwLock};
 
 use neon::{prelude::*, types::buffer::TypedArray};
-use secp256k1::{recovery::{RecoveryId, RecoverableSignature}, Message, Secp256k1};
-use sha3::{Digest, Keccak256};
+use secp256k1::{recovery::{RecoveryId, RecoverableSignature}, Message, Secp256k1, All};
 use std::time::Instant;
 
+#[macro_use]
+extern crate lazy_static;
 
 fn hello(mut cx: FunctionContext) -> JsResult<JsString> {
     Ok(cx.string("hello node"))
 }
 
+lazy_static! {
+    static ref SECP: RwLock<Secp256k1<All>> = RwLock::new(Secp256k1::new());
+}
+
 fn ecrecover(mut cx: FunctionContext) -> JsResult<JsBuffer> {
+    let start = Instant::now(); // Start timing
     // Extract arguments
     let hash: Handle<JsTypedArray<u8>> = cx.argument(0)?;
     let v: Handle<JsNumber> = cx.argument(1)?;
@@ -30,11 +36,7 @@ fn ecrecover(mut cx: FunctionContext) -> JsResult<JsBuffer> {
     let r : &[u8;32] = r[0..32].try_into().unwrap();
     let s : &[u8;32] = s[0..32].try_into().unwrap();
 
-    let start = Instant::now(); // Start timing
     let result = ecrecover_impl(hash,v,r,s);
-    let duration = start.elapsed(); // Time elapsed since `start`
-
-    println!("Time taken: {} ms", duration.as_millis());
 
     match result {
         Ok(address) => {
@@ -48,6 +50,8 @@ fn ecrecover(mut cx: FunctionContext) -> JsResult<JsBuffer> {
                 js_array_guard.as_mut_slice(&mut cx).copy_from_slice(&address);
             }
 
+            let duration = start.elapsed(); // Time elapsed since `start`
+            println!("Time taken inside all rust: {:?}", duration);
             Ok(js_array)
         },
         Err(e) => cx.throw_error(format!("Error: {:?}", e))
@@ -59,8 +63,9 @@ fn ecrecover_impl(hash: &[u8; 32], v: u64, r: &[u8; 32], s: &[u8; 32]) -> Result
     let recovery_id = RecoveryId::from_i32((v as i64 - 27) as i32)?;
     let signature = RecoverableSignature::from_compact(&concat_slices(r, s), recovery_id)?;
     let message = Message::from_slice(hash)?;
-    let secp = Secp256k1::new();
-    let public_key = secp.recover(&message, &signature)?;
+    // TODO error wrapping
+    let secp_read_guard = SECP.read().unwrap();
+    let public_key = secp_read_guard.recover(&message, &signature)?;
     // TODO error wrapping
     let x = convert_slice_to_array(&public_key.serialize_uncompressed()[1..65]).unwrap();
     // let addr = Keccak256::digest(&public_key.serialize_uncompressed()[1..]);
