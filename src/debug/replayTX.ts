@@ -17,6 +17,7 @@ import * as AccountsStorage from './db'
 import * as WrappedEVMAccountFunctions from './utils/wrappedEVMAccountFunctions'
 import { estimateGas } from './estimateGas/estimateGas'
 import { EVM as EthereumVirtualMachine } from '../evm_v2'
+import { stringify} from '../utils/stringify'
 
 export async function createAccount(addressStr: string, balance = BigInt(0)): Promise<WrappedEVMAccount> {
   // if (ShardeumFlags.VerboseLogs) console.log('Creating new account', addressStr)
@@ -67,7 +68,7 @@ function getApplyTXState(txId: string, estimateOnly: boolean): ShardeumState {
           const { found, shardusKey } = hasAccount(address)
           if (!found) {
             console.log(
-              JSON.stringify({
+              stringify({
                 status: 'error',
                 type: AccountType.Account,
                 shardusKey,
@@ -82,7 +83,7 @@ function getApplyTXState(txId: string, estimateOnly: boolean): ShardeumState {
           if (!account) {
             if (estimateOnly) {
               console.log(
-                JSON.stringify({
+                stringify({
                   status: 'error',
                   type: AccountType.ContractStorage,
                   address,
@@ -105,7 +106,7 @@ function getApplyTXState(txId: string, estimateOnly: boolean): ShardeumState {
           const { account, shardusKey } = getKey(address, key, type)
           if (!account && type != AccountType.ContractStorage) {
             console.log(
-              JSON.stringify({
+              stringify({
                 status: 'error',
                 type,
                 address,
@@ -184,7 +185,6 @@ const runTransaction = async (
 
   // Create new CA account if it is a contract deploy tx
   if (transaction.to == null) {
-    // console.log(JSON.stringify({ status: true, message: `creating new account`, wrappedStates }))
     const senderEvmAddress = transaction.getSenderAddress().toString()
     const senderShardusAddress = toShardusAddress(senderEvmAddress, AccountType.Account)
     const senderWrappedEVMAccount = AccountsStorage.getAccount(senderShardusAddress) as WrappedEVMAccount
@@ -231,116 +231,121 @@ const runTransaction = async (
     event: InterpreterStep,
     next: (error?: Error | null, cb?: () => void) => void
   ): Promise<void> => {
-    const totalGasUsedAfterThisStep = transaction.gasLimit - event.gasLeft
-    const gasUsedPreviousStep = totalGasUsedAfterThisStep - gas
-    gas += gasUsedPreviousStep
+    try {
+      const totalGasUsedAfterThisStep = transaction.gasLimit - event.gasLeft
+      const gasUsedPreviousStep = totalGasUsedAfterThisStep - gas
+      gas += gasUsedPreviousStep
 
-    const memory: ITraceData[] = []
-    if (options.disableMemory !== true) {
-      // We get the memory as one large array.
-      // Let's cut it up into 32 byte chunks as required by the spec.
-      let index = 0
-      while (index < event.memory.length) {
-        const slice = event.memory.slice(index, index + 32)
-        memory.push(TraceData.from(Buffer.from(slice)))
-        index += 32
-      }
-    }
-
-    const stack: ITraceData[] = []
-    if (options.disableStack !== true) {
-      for (const stackItem of event.stack) {
-        stack.push(TraceData.from(Buffer.from(stackItem.toString())))
-      }
-    }
-
-    const structLog = {
-      depth: event.depth + 1,
-      error: '',
-      gas: event.gasLeft,
-      gasCost: 0,
-      memory,
-      op: event.opcode.name,
-      pc: event.pc,
-      stack,
-      storage: null,
-    }
-
-    // The gas difference calculated for each step is indicative of gas consumed in
-    // the previous step. Gas consumption in the final step will always be zero.
-    if (structLogs.length) {
-      structLogs[structLogs.length - 1].gasCost = gasUsedPreviousStep
-    }
-
-    if (options.disableStorage === true) {
-      // Add the struct log as is - nothing more to do.
-      structLogs.push(structLog)
-      next()
-    } else {
-      const { depth: eventDepth } = event
-      if (currentDepth > eventDepth) {
-        storageStack.pop()
-      } else if (currentDepth < eventDepth) {
-        storageStack.push(new TraceStorageMap())
-      }
-
-      currentDepth = eventDepth
-
-      switch (event.opcode.name) {
-        case 'SSTORE': {
-          const key = stack[stack.length - 1]
-          const value = stack[stack.length - 2]
-
-          // new TraceStorageMap() here creates a shallow clone, to prevent other steps from overwriting
-          // eslint-disable-next-line security/detect-object-injection
-          structLog.storage = new TraceStorageMap(storageStack[eventDepth])
-
-          // Tell vm to move on to the next instruction. See below.
-          structLogs.push(structLog)
-          next()
-
-          // assign after callback because this storage change actually takes
-          // effect _after_ this opcode executes
-          // eslint-disable-next-line security/detect-object-injection
-          storageStack[eventDepth].set(key, value)
-          break
+      const memory: ITraceData[] = []
+      if (options.disableMemory !== true) {
+        // We get the memory as one large array.
+        // Let's cut it up into 32 byte chunks as required by the spec.
+        let index = 0
+        while (index < event.memory.length) {
+          const slice = event.memory.slice(index, index + 32)
+          memory.push(TraceData.from(Buffer.from(slice)))
+          index += 32
         }
-        case 'SLOAD': {
-          const key = stack[stack.length - 1]
-          const result = await EVM.stateManager.getContractStorage(event.address, key.toBuffer())
-          const value = TraceData.from(result)
-          // eslint-disable-next-line security/detect-object-injection
-          storageStack[eventDepth].set(key, value)
-
-          // new TraceStorageMap() here creates a shallow clone, to prevent other steps from overwriting
-          // eslint-disable-next-line security/detect-object-injection
-          structLog.storage = new TraceStorageMap(storageStack[eventDepth])
-          structLogs.push(structLog)
-          next()
-          break
-        }
-        default:
-          // new TraceStorageMap() here creates a shallow clone, to prevent other steps from overwriting
-          // eslint-disable-next-line security/detect-object-injection
-          structLog.storage = new TraceStorageMap(storageStack[eventDepth])
-          structLogs.push(structLog)
-          next()
       }
+
+      const stack: ITraceData[] = []
+      if (options.disableStack !== true) {
+        for (const stackItem of event.stack) {
+          const traceData = TraceData.from(Buffer.from(stackItem.toString(16), "hex"))
+          stack.push(traceData)
+        }
+      }
+
+      const structLog = {
+        depth: event.depth + 1,
+        error: '',
+        gas: event.gasLeft,
+        gasCost: 0,
+        memory,
+        op: event.opcode.name,
+        pc: event.pc,
+        stack,
+        storage: null,
+      }
+
+      // The gas difference calculated for each step is indicative of gas consumed in
+      // the previous step. Gas consumption in the final step will always be zero.
+      if (structLogs.length) {
+        structLogs[structLogs.length - 1].gasCost = gasUsedPreviousStep
+      }
+
+      if (options.disableStorage === true) {
+        // Add the struct log as is - nothing more to do.
+        structLogs.push(structLog)
+        next()
+      } else {
+        const { depth: eventDepth } = event
+        if (currentDepth > eventDepth) {
+          storageStack.pop()
+        } else if (currentDepth < eventDepth) {
+          storageStack.push(new TraceStorageMap())
+        }
+
+        currentDepth = eventDepth
+
+        switch (event.opcode.name) {
+          case 'SSTORE': {
+            const key = stack[stack.length - 1]
+            const value = stack[stack.length - 2]
+
+            // new TraceStorageMap() here creates a shallow clone, to prevent other steps from overwriting
+            // eslint-disable-next-line security/detect-object-injection
+            structLog.storage = new TraceStorageMap(storageStack[eventDepth])
+
+            // Tell vm to move on to the next instruction. See below.
+            structLogs.push(structLog)
+            next()
+
+            // assign after callback because this storage change actually takes
+            // effect _after_ this opcode executes
+            // eslint-disable-next-line security/detect-object-injection
+            storageStack[eventDepth].set(key, value)
+            break
+          }
+          case 'SLOAD': {
+            const key = stack[stack.length - 1]
+            const result = await EVM.stateManager.getContractStorage(event.address, key.toBuffer())
+            const value = TraceData.from(result)
+            // eslint-disable-next-line security/detect-object-injection
+            storageStack[eventDepth].set(key, value)
+
+            // new TraceStorageMap() here creates a shallow clone, to prevent other steps from overwriting
+            // eslint-disable-next-line security/detect-object-injection
+            structLog.storage = new TraceStorageMap(storageStack[eventDepth])
+            structLogs.push(structLog)
+            next()
+            break
+          }
+          default:
+            // new TraceStorageMap() here creates a shallow clone, to prevent other steps from overwriting
+            // eslint-disable-next-line security/detect-object-injection
+            structLog.storage = new TraceStorageMap(storageStack[eventDepth])
+            structLogs.push(structLog)
+            next()
+        }
+      }
+    } catch (e) {
+      console.log('Error in stepListener', e)
     }
   }
 
-  customEVM.common.events.on('step', stepListener)
+  customEVM.events.on('step', stepListener)
   await EVM.runTx(
     {
       block: blockForTx,
       tx: transaction,
-      skipNonce: false,
+      skipNonce: true,
       networkAccount: networkAccount.data,
     },
     customEVM
   )
   if (execOptions.structLogs) {
-    console.log(JSON.stringify(structLogs))
+    console.log(stringify(structLogs))
   }
 }
 
