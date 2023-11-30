@@ -1187,7 +1187,6 @@ const configShardusEndpoints = (): void => {
     //   return res.json(`endpoint not available`)
     // }
 
-    let id: any
     try {
       //use a replacer so we get the map:
       const output = JSON.stringify(shardusAddressToEVMAccountInfo, replacer, 4)
@@ -1196,7 +1195,7 @@ const configShardusEndpoints = (): void => {
       return
       //return res.json(transactionStateMap)
     } catch (err) {
-      return res.json(`dumpAddressMap: ${id} ${err}`)
+      return res.json(`dumpAddressMap: ${err}`)
     }
   })
 
