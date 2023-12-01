@@ -2,6 +2,7 @@ import { DecimalString } from './shardeumTypes'
 
 interface ShardeumFlags {
   contractStorageKeySilo: boolean
+  contractStoragePrefixBitLength: number
   contractCodeKeySilo: boolean
   globalCodeBytes: boolean
   VerboseLogs: boolean
@@ -107,6 +108,7 @@ interface ShardeumFlags {
 
 export const ShardeumFlags: ShardeumFlags = {
   contractStorageKeySilo: true,
+  contractStoragePrefixBitLength: 3,
   contractCodeKeySilo: false,
   globalCodeBytes: false,
   VerboseLogs: false,
