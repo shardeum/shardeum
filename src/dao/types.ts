@@ -288,16 +288,6 @@ export interface DevTally {
   timestamp: number
 }
 
-interface Vote {
-  type: string
-  from: string
-  issue: string
-  proposal: string
-  amount: number
-  timestamp: number
-  sign: Signature
-}
-
 export interface DevVote {
   type: string
   from: string
