@@ -114,7 +114,7 @@ export interface Friend {
   sign: Signature
 }
 
-interface GossipEmailHash {
+export interface GossipEmailHash {
   type: string
   nodeId: string
   account: string
