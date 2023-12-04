@@ -199,7 +199,7 @@ interface Proposal {
   sign: Signature
 }
 
-interface DevProposal {
+export interface DevProposal {
   type: string
   from: string
   devProposal: string
