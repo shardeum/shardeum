@@ -31,6 +31,7 @@ import { fixBigIntLiteralsToBigInt } from '../utils/serialization'
 import { validatePenaltyTX } from '../tx/penalty/transaction'
 import { bytesToHex } from '@ethereumjs/util'
 import { logFlags } from '..'
+import { validateDaoIssueTx } from '../tx/daoIssue'
 
 /**
  * Checks that Transaction fields are valid
@@ -143,6 +144,10 @@ export const validateTxnFields =
             reason,
             txnTimestamp: txnTimestamp,
           }
+        } else if (tx.internalTXType === InternalTXType.DaoIssue) {
+          const result = validateDaoIssueTx(tx as DaoIssueTx, shardus)
+          success = result.isValid
+          reason = result.reason
         } else {
           try {
             success = crypto.verifyObj(internalTX)
