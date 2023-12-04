@@ -261,7 +261,7 @@ export interface Snapshot {
   sign: Signature
 }
 
-interface Stake {
+export interface Stake {
   type: string
   from: string
   stake: number
