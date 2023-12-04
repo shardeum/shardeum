@@ -11,6 +11,14 @@ import { NodeAccount } from '../accounts/nodeAccount'
 import { ProposalAccount } from '../accounts/proposalAccount'
 import config from '../../config'
 
+export interface CreateIssue {
+  id: string
+  nodeId: crypto.hexstring
+  from: crypto.hexstring
+  issueDescription: string
+  timestamp: number
+}
+
 export interface Issue {
   type: string // TODO: should this be 'issue' or similar?
   nodeId: string
