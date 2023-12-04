@@ -164,7 +164,7 @@ export interface NodeReward {
   timestamp: number
 }
 
-interface Parameters {
+export interface Parameters {
   type: string
   nodeId: string
   from: string
