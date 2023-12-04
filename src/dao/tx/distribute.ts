@@ -2,11 +2,19 @@ import * as crypto from '@shardus/crypto-utils'
 import { Shardus, ShardusTypes } from '@shardus/core'
 import * as utils from '../utils'
 import config from '../../config'
-import { Distribute } from '../types'
 import { TransactionKeys, WrappedStates } from '../../shardeum/shardeumTypes'
 import { UserAccount } from '../accounts/userAccount'
 import { NetworkAccount } from '../accounts/networkAccount'
 import { WrappedResponse } from '@shardus/core/dist/shardus/shardus-types'
+
+export interface Distribute {
+  type: string
+  from: string
+  recipients: string[]
+  amount: number
+  timestamp: number
+  sign: crypto.Signature
+}
 
 export function validateFields(tx: Distribute, response: ShardusTypes.IncomingTransactionResult): ShardusTypes.IncomingTransactionResult {
   if (typeof tx.from !== 'string') {

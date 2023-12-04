@@ -2,13 +2,23 @@ import * as crypto from '@shardus/crypto-utils'
 import { Shardus, ShardusTypes } from '@shardus/core'
 import * as utils from '../utils'
 import config from '../../config'
-import { DevVote } from '../types'
 import { TransactionKeys, WrappedStates } from '../../shardeum/shardeumTypes'
 import { NetworkAccount } from '../accounts/networkAccount'
 import { DevProposalAccount } from '../accounts/devProposalAccount'
 import { DevIssueAccount } from '../accounts/devIssueAccount'
 import { UserAccount } from '../accounts/userAccount'
 import { WrappedResponse } from '@shardus/core/dist/shardus/shardus-types'
+
+export interface DevVote {
+  type: string
+  from: string
+  devIssue: string
+  devProposal: string
+  approve: boolean
+  amount: number
+  timestamp: number
+  sign: crypto.Signature
+}
 
 export function validateFields(tx: DevVote, response: ShardusTypes.IncomingTransactionResult): ShardusTypes.IncomingTransactionResult {
   if (typeof tx.from !== 'string') {

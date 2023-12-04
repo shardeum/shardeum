@@ -3,13 +3,23 @@ import { Shardus, ShardusTypes } from '@shardus/core'
 import * as utils from '../utils'
 import create from '../accounts'
 import config from '../../config'
-import { NetworkParameters, Proposal } from '../types'
+import { NetworkParameters } from '../types'
 import { TransactionKeys, WrappedStates } from '../../shardeum/shardeumTypes'
 import { NetworkAccount } from '../accounts/networkAccount'
 import { IssueAccount } from '../accounts/issueAccount'
 import { UserAccount } from '../accounts/userAccount'
 import { ProposalAccount } from '../accounts/proposalAccount'
 import { WrappedResponse } from '@shardus/core/dist/shardus/shardus-types'
+
+export interface Proposal {
+  type: string
+  from: string
+  proposal: string
+  issue: string
+  parameters: NetworkParameters
+  timestamp: number
+  sign: crypto.Signature
+}
 
 export function validateFields(tx: Proposal, response: ShardusTypes.IncomingTransactionResult): ShardusTypes.IncomingTransactionResult {
   if (typeof tx.from !== 'string') {

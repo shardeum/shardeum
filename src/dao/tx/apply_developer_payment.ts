@@ -1,10 +1,16 @@
 import stringify from 'fast-stable-stringify'
 import { Shardus, ShardusTypes } from '@shardus/core'
 import config from '../../config'
-import { ApplyDevPayment } from '../types'
+import { DeveloperPayment } from '../types'
 import { TransactionKeys, WrappedStates } from '../../shardeum/shardeumTypes'
 import { NetworkAccount } from '../accounts/networkAccount'
 import { WrappedResponse } from '@shardus/core/dist/shardus/shardus-types'
+
+export interface ApplyDevPayment {
+  type: string
+  timestamp: number
+  developerFund: DeveloperPayment[]
+}
 
 export function validate_fields(tx: ApplyDevPayment, response: ShardusTypes.IncomingTransactionResult): ShardusTypes.IncomingTransactionResult {
   if (!Array.isArray(tx.developerFund)) {
