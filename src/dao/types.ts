@@ -380,12 +380,3 @@ type KeyResult = {
   timestamp: number
   keys: TransactionKeys
 }
-
-export interface OurAppDefinedData {
-  globalMsg: {
-    address: string
-    value: any
-    when: number,
-    source: string
-  }
-}

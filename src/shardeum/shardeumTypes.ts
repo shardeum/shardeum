@@ -243,13 +243,13 @@ export interface OurAppDefinedData {
   globalMsg: {
     address: string
     value: {
-      isInternalTx: boolean
-      internalTXType: InternalTXType
+      isInternalTx?: boolean
+      internalTXType?: InternalTXType
       timestamp: number
       accountData?: WrappedEVMAccount
       from?: string
       change?: {
-        cycle: ShardusTypes.Cycle
+        cycle: number | ShardusTypes.Cycle
         change: Change
       }
     }
