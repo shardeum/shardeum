@@ -8,7 +8,7 @@ import { DaoGlobalAccount } from '../accounts/networkAccount'
 import { WrappedResponse } from '@shardus/core/dist/shardus/shardus-types'
 
 export interface Verify {
-  type: string
+  type: 'verify'
   from: string
   code: string
   timestamp: number

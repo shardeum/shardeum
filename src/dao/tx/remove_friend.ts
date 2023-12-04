@@ -6,7 +6,7 @@ import { UserAccount } from '../accounts/userAccount'
 import { WrappedResponse } from '@shardus/core/dist/shardus/shardus-types'
 
 export interface RemoveFriend {
-  type: string
+  type: 'remove_friend'
   from: string
   to: string
   timestamp: number

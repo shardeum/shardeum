@@ -6,7 +6,7 @@ import { UserAccount } from '../accounts/userAccount'
 import { DaoAccounts } from '../types'
 
 export interface Create {
-  type: string
+  type: 'create'
   from: string
   to: string
   amount: number

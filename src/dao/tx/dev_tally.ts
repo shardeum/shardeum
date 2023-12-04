@@ -12,7 +12,7 @@ import { NodeAccount } from '../accounts/nodeAccount'
 import { ApplyResponse, WrappedResponse } from '@shardus/core/dist/shardus/shardus-types'
 
 export interface DevTally {
-  type: string
+  type: 'dev_tally'
   nodeId: string
   from: string
   devIssue: string

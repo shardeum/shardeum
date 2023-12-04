@@ -7,7 +7,7 @@ import { UserAccount } from '../accounts/userAccount'
 import { WrappedResponse } from '@shardus/core/dist/shardus/shardus-types'
 
 export interface Email {
-  type: string
+  type: 'email'
   signedTx: {
     emailHash: string
     from: string

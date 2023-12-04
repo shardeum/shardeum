@@ -7,7 +7,7 @@ import { DaoGlobalAccount } from '../accounts/networkAccount'
 import { UserAccount } from '../accounts/userAccount'
 
 export interface RemoveStakeRequest {
-  type: string
+  type: 'remove_stake_request'
   from: string
   stake: number
   timestamp: number

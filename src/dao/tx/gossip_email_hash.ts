@@ -6,7 +6,7 @@ import { NodeAccount } from '../accounts/nodeAccount'
 import { UserAccount } from '../accounts/userAccount'
 
 export interface GossipEmailHash {
-  type: string
+  type: 'gossip_email_hash'
   nodeId: string
   account: string
   from: string

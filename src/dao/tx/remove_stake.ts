@@ -7,7 +7,7 @@ import { UserAccount } from '../accounts/userAccount'
 import { WrappedResponse } from '@shardus/core/dist/shardus/shardus-types'
 
 export interface RemoveStake {
-  type: string
+  type: 'remove_stake'
   from: string
   stake: number
   timestamp: number
