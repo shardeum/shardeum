@@ -161,6 +161,7 @@ import { getCachedRIAccount, setCachedRIAccount } from './storage/riAccountsCach
 import { isLowStake } from './tx/penalty/penaltyFunctions'
 import { deserializeWrappedEVMAccount, serializeWrappedEVMAccount } from './types/WrappedEVMAccount'
 import { accountDeserializer, accountSerializer, binaryDeserializer, binarySerializer } from './types/Helpers'
+import { apply as applyDaoIssueTx, Issue as DaoIssueTx } from './dao/tx/issue'
 
 let latestBlock = 0
 export const blocks: BlockMap = {}
@@ -2192,8 +2193,9 @@ async function applyInternalTx(
     applyPenaltyTX(shardus, penaltyTx, wrappedStates, txId, txTimestamp, applyResponse)
   }
   if (internalTx.internalTXType === InternalTXType.DaoIssue) {
-    const DaoIssueTx = internalTx as DaoIssueTX
-    applyDaoIssueTx(shardus, penaltyTx, wrappedStates, txTimestamp, applyResponse)
+    // TODO: add DaoIssueTx to InternalTx as a union
+    const daoIssueTx = internalTx as unknown as DaoIssueTx
+    applyDaoIssueTx(daoIssueTx, txTimestamp, wrappedStates, shardus)
   }
   return applyResponse
 }
