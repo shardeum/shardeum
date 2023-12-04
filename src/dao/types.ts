@@ -94,7 +94,7 @@ export interface Distribute {
   sign: Signature
 }
 
-interface Email {
+export interface Email {
   type: string
   signedTx: {
     emailHash: string
