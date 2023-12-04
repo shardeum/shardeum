@@ -19,7 +19,7 @@ export interface Vote {
   sign: crypto.Signature
 }
 
-export function validate_fields(tx: Vote, response: ShardusTypes.IncomingTransactionResult): ShardusTypes.IncomingTransactionResult {
+export function validateFields(tx: Vote, response: ShardusTypes.IncomingTransactionResult): ShardusTypes.IncomingTransactionResult {
   if (typeof tx.from !== 'string') {
     response.success = false
     response.reason = 'tx "from" field must be a string.'

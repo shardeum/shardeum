@@ -8,7 +8,7 @@ import { UserAccount } from '../accounts/userAccount'
 import { CycleRecord } from '@shardus/types/build/src/p2p/CycleCreatorTypes'
 import { NodeAccount } from '../accounts/nodeAccount'
 
-export function validate_fields(tx: ChangeConfig, response: ShardusTypes.IncomingTransactionResult): ShardusTypes.IncomingTransactionResult {
+export function validateFields(tx: ChangeConfig, response: ShardusTypes.IncomingTransactionResult): ShardusTypes.IncomingTransactionResult {
   if (typeof tx.from !== 'string') {
     response.success = false
     response.reason = 'tx "from" field must be a string'
