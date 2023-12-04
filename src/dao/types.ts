@@ -189,7 +189,7 @@ export interface DevParameters {
   timestamp: number
 }
 
-interface Proposal {
+export interface Proposal {
   type: string
   from: string
   proposal: string
