@@ -3,7 +3,7 @@ import { Shardus, ShardusTypes } from '@shardus/core'
 import config from '../../config'
 import { DeveloperPayment } from '../types'
 import { TransactionKeys, WrappedStates } from '../../shardeum/shardeumTypes'
-import { NetworkAccount } from '../accounts/networkAccount'
+import { DaoGlobalAccount } from '../accounts/networkAccount'
 import { WrappedResponse } from '@shardus/core/dist/shardus/shardus-types'
 
 export interface ApplyDevPayment {
@@ -28,7 +28,7 @@ export function validate(response: ShardusTypes.IncomingTransactionResult): Shar
 }
 
 export function apply(tx: ApplyDevPayment, txTimestamp: number, wrappedStates: WrappedStates, dapp: Shardus): void {
-  const network: NetworkAccount = wrappedStates[config.dao.networkAccount].data
+  const network: DaoGlobalAccount = wrappedStates[config.dao.networkAccount].data
   network.developerFund = tx.developerFund
   network.timestamp = txTimestamp
   dapp.log(`=== APPLIED DEV_PAYMENT GLOBAL ${stringify(network)} ===`)
@@ -40,7 +40,7 @@ export function keys(result: TransactionKeys): TransactionKeys {
   return result
 }
 
-export function createRelevantAccount(dapp: Shardus, account: NetworkAccount, accountId: string, accountCreated = false): WrappedResponse {
+export function createRelevantAccount(dapp: Shardus, account: DaoGlobalAccount, accountId: string, accountCreated = false): WrappedResponse {
   if (!account) {
     throw new Error('Network Account must already exist for the apply_developer_payment transaction')
   }

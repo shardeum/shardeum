@@ -3,7 +3,7 @@ import { ChatAccount } from "./accounts/chatAccount"
 import { DevIssueAccount } from "./accounts/devIssueAccount"
 import { DevProposalAccount } from "./accounts/devProposalAccount"
 import { IssueAccount } from "./accounts/issueAccount"
-import { NetworkAccount } from "./accounts/networkAccount"
+import { DaoGlobalAccount } from "./accounts/networkAccount"
 import { NodeAccount } from "./accounts/nodeAccount"
 import { ProposalAccount } from "./accounts/proposalAccount"
 import { UserAccount } from "./accounts/userAccount"
@@ -47,7 +47,7 @@ export interface DeveloperPayment {
   timestamp: number
 }
 
-export type DaoAccounts = NetworkAccount & IssueAccount & DevIssueAccount & UserAccount & AliasAccount & ProposalAccount & DevProposalAccount & NodeAccount & ChatAccount
+export type DaoAccounts = DaoGlobalAccount & IssueAccount & DevIssueAccount & UserAccount & AliasAccount & ProposalAccount & DevProposalAccount & NodeAccount & ChatAccount
 
 /**
  * ---------------------- SDK DATA INTERFACES ----------------------

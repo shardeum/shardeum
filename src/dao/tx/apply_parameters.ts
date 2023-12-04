@@ -3,7 +3,7 @@ import _ from 'lodash'
 import { Shardus, ShardusTypes } from '@shardus/core'
 import config from '../../config'
 import { TransactionKeys, WrappedResponse } from '@shardus/core/dist/shardus/shardus-types'
-import { NetworkAccount } from '../accounts/networkAccount'
+import { DaoGlobalAccount } from '../accounts/networkAccount'
 import { WrappedStates } from '@shardus/core/dist/state-manager/state-manager-types'
 import { NetworkParameters, Windows } from '../types'
 
@@ -118,7 +118,7 @@ export function validate(response: ShardusTypes.IncomingTransactionResult): Shar
 }
 
 export function apply(tx: ApplyParameters, txTimestamp: number, wrappedStates: WrappedStates, dapp: Shardus): void {
-  const network = wrappedStates[config.dao.networkAccount].data as NetworkAccount
+  const network = wrappedStates[config.dao.networkAccount].data as DaoGlobalAccount
   network.current = tx.current
   network.next = tx.next
   network.windows = tx.windows
@@ -134,7 +134,7 @@ export function keys(result: TransactionKeys): TransactionKeys {
   return result
 }
 
-export function createRelevantAccount(dapp: Shardus, account: NetworkAccount, accountId: string, accountCreated = false): WrappedResponse {
+export function createRelevantAccount(dapp: Shardus, account: DaoGlobalAccount, accountId: string, accountCreated = false): WrappedResponse {
   if (!account) {
     throw new Error('Network Account must already exist for the apply_parameters transaction')
   }
