@@ -3,7 +3,15 @@ import path from 'path'
 import merge from 'deepmerge'
 import { ShardeumFlags } from '../shardeum/shardeumFlags'
 import { DevSecurityLevel } from '@shardus/core'
+import { DaoConfig } from './dao'
+
 const overwriteMerge = (target: any[], source: any[]): any[] => source // eslint-disable-line @typescript-eslint/no-explicit-any
+
+// helpful time constants in milliseconds
+export const ONE_SECOND = 1000
+export const ONE_MINUTE = 60 * ONE_SECOND
+export const ONE_HOUR = 60 * ONE_MINUTE
+export const ONE_DAY = 24 * ONE_HOUR
 
 export interface Config {
   storage?: any // eslint-disable-line @typescript-eslint/no-explicit-any
@@ -20,6 +28,7 @@ export interface Config {
     baseDir: string
     mode?: 'debug' | 'release'
   }
+  dao: DaoConfig
 }
 
 //TODO: improve typing here
@@ -28,6 +37,44 @@ let config: Config = {
     globalAccount: '1000000000000000000000000000000000000000000000000000000000000001',
     baseDir: './',
   },
+  dao: {
+    // dev settings
+    TIME_FOR_PROPOSALS: ONE_MINUTE + ONE_SECOND * 30,
+    TIME_FOR_VOTING: ONE_MINUTE + ONE_SECOND * 30,
+    TIME_FOR_GRACE: ONE_MINUTE + ONE_SECOND * 30,
+    TIME_FOR_APPLY: ONE_MINUTE + ONE_SECOND * 30,
+    TIME_FOR_DEV_PROPOSALS: ONE_MINUTE + ONE_SECOND * 30,
+    TIME_FOR_DEV_VOTING: ONE_MINUTE + ONE_SECOND * 30,
+    TIME_FOR_DEV_GRACE: ONE_MINUTE + ONE_SECOND * 30,
+    TIME_FOR_DEV_APPLY: ONE_MINUTE + ONE_SECOND * 30,
+
+    // prod settings
+    // TIME_FOR_PROPOSALS: ONE_DAY,
+    // TIME_FOR_VOTING: 3 * ONE_DAY,
+    // TIME_FOR_GRACE: ONE_DAY,
+    // TIME_FOR_APPLY: 2 * ONE_DAY,
+    // TIME_FOR_DEV_PROPOSALS: ONE_DAY,
+    // TIME_FOR_DEV_VOTING: 3 * ONE_DAY,
+    // TIME_FOR_DEV_GRACE: ONE_DAY,
+    // TIME_FOR_DEV_APPLY: 2 * ONE_DAY,
+
+    INITIAL_PARAMETERS: {
+      title: 'Initial parameters',
+      description: 'These are the initial network parameters liberdus started with',
+      nodeRewardInterval: ONE_HOUR, //ONE_HOUR,
+      nodeRewardAmount: 1,
+      nodePenalty: 10,
+      transactionFee: 0.001,
+      stakeRequired: 5,
+      maintenanceInterval: ONE_DAY,
+      maintenanceFee: 0,
+      proposalFee: 50,
+      devProposalFee: 50,
+      faucetAmount: 10,
+      defaultToll: 1,
+    },
+    networkAccount: '0'.repeat(64),
+  }
 }
 
 if (fs.existsSync(path.join(process.cwd(), 'config.json'))) {
