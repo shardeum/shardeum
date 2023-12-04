@@ -156,7 +156,7 @@ export interface Message {
   sign: Signature
 }
 
-interface NodeReward {
+export interface NodeReward {
   type: string
   nodeId: string
   from: string
