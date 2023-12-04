@@ -2,7 +2,7 @@ import * as crypto from '@shardus/crypto-utils'
 
 export interface AliasAccount {
   id: string
-  type: string
+  type: 'AliasAccount'
   hash: string
   inbox: string
   address: string

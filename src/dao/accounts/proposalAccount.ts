@@ -3,7 +3,7 @@ import { NetworkParameters } from '../types'
 
 export interface ProposalAccount {
   id: string
-  type: string
+  type: 'ProposalAccount'
   power: number
   totalVotes: number
   parameters: NetworkParameters

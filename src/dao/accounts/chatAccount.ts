@@ -2,7 +2,7 @@ import * as crypto from '@shardus/crypto-utils'
 
 export interface ChatAccount {
   id: string
-  type: string
+  type: 'ChatAccount'
   messages: unknown[]
   timestamp: number
   hash: string

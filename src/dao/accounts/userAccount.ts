@@ -14,7 +14,7 @@ export interface UserAccountData {
 
 export interface UserAccount {
   id: string
-  type: string
+  type: 'UserAccount'
   data: UserAccountData
   alias: string | null
   emailHash: string | null
