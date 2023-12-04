@@ -70,11 +70,11 @@ interface ApplyTally {
   nextWindows: Windows
 }
 
-interface ApplyDevTally {
+export interface ApplyDevTally {
   type: string
   timestamp: number
   nextDeveloperFund: DeveloperPayment[]
-  nextDevWindows: Windows
+  nextDevWindows: DevWindows
 }
 
 interface Create {
