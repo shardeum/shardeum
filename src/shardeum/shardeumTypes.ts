@@ -209,13 +209,13 @@ export interface DebugTx {
   accountData?: WrappedEVMAccount
 }
 
-export interface WrappedAccount {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export interface WrappedAccount<A = any> {
   accountId: string
   stateId: string
   // this affects src/index.ts which is being worked on in another branch
   // I don't want to merge this branch until that one is merged
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  data: any //NetworkAccount | NodeAccount2 | WrappedEVMAccount
+  data: A //NetworkAccount | NodeAccount2 | WrappedEVMAccount
   timestamp: number
   accountCreated?: boolean
 }
