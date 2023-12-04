@@ -14,7 +14,7 @@ export interface ApplyDevTally {
   nextDevWindows: DevWindows
 }
 
-export function validate_fields(tx: ApplyDevTally, response: ShardusTypes.IncomingTransactionResult): ShardusTypes.IncomingTransactionResult {
+export function validateFields(tx: ApplyDevTally, response: ShardusTypes.IncomingTransactionResult): ShardusTypes.IncomingTransactionResult {
   if (!Array.isArray(tx.nextDeveloperFund)) {
     response.success = false
     response.reason = 'tx "nextDeveloperFund" field must be an array.'

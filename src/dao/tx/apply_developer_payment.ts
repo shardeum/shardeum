@@ -12,7 +12,7 @@ export interface ApplyDevPayment {
   developerFund: DeveloperPayment[]
 }
 
-export function validate_fields(tx: ApplyDevPayment, response: ShardusTypes.IncomingTransactionResult): ShardusTypes.IncomingTransactionResult {
+export function validateFields(tx: ApplyDevPayment, response: ShardusTypes.IncomingTransactionResult): ShardusTypes.IncomingTransactionResult {
   if (!Array.isArray(tx.developerFund)) {
     response.success = false
     response.reason = 'tx "developerFund" field must be an array.'
