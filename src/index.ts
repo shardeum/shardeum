@@ -197,8 +197,6 @@ export let stakeCert: StakeCert = null
 
 export let adminCert: AdminCert = null
 
-const uuidCounter = 1
-
 function isDebugMode(): boolean {
   return config.server.mode === 'debug'
 }
