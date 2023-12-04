@@ -213,7 +213,7 @@ export interface DevProposal {
   sign: Signature
 }
 
-interface Register {
+export interface Register {
   type: string
   aliasHash: string
   from: string
