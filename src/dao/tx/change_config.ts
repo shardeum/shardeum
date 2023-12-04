@@ -1,9 +1,9 @@
 import { Shardus, ShardusTypes } from '@shardus/core'
 import config from '../../config'
-import create from '../accounts'
+import { create } from '../accounts'
 import { ApplyResponse, TransactionKeys, WrappedResponse } from '@shardus/core/dist/shardus/shardus-types'
 import { ChangeConfig, OurAppDefinedData, WrappedStates } from '../../shardeum/shardeumTypes'
-import { NetworkAccount } from '../accounts/networkAccount'
+import { DaoGlobalAccount } from '../accounts/networkAccount'
 import { UserAccount } from '../accounts/userAccount'
 import { CycleRecord } from '@shardus/types/build/src/p2p/CycleCreatorTypes'
 import { NodeAccount } from '../accounts/nodeAccount'
@@ -28,7 +28,7 @@ export function validateFields(tx: ChangeConfig, response: ShardusTypes.Incoming
 }
 
 export function validate(tx: ChangeConfig, wrappedStates: WrappedStates, response: ShardusTypes.IncomingTransactionResult, dapp: Shardus): ShardusTypes.IncomingTransactionResult {
-  const network: NetworkAccount = wrappedStates[config.dao.networkAccount].data
+  const network: DaoGlobalAccount = wrappedStates[config.dao.networkAccount].data
 
   if (network.id !== config.dao.networkAccount) {
     response.reason = 'To account must be the network account'

@@ -184,6 +184,10 @@ const ERC20_BALANCEOF_CODE = '0x70a08231'
 let shardus: Shardus
 let profilerInstance
 
+export function getShardusAPI(): Shardus {
+  return shardus
+}
+
 //   next shardus core will export the correct type
 export let logFlags = {
   verbose: false,

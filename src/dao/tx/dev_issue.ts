@@ -1,10 +1,10 @@
 import * as crypto from '@shardus/crypto-utils'
 import { Shardus, ShardusTypes } from '@shardus/core'
-import create from '../accounts'
+import { create } from '../accounts'
 import config from '../../config'
 import { DevIssueAccount } from '../accounts/devIssueAccount'
 import { TransactionKeys, WrappedStates } from '../../shardeum/shardeumTypes'
-import { NetworkAccount } from '../accounts/networkAccount'
+import { DaoGlobalAccount } from '../accounts/networkAccount'
 import { NodeAccount } from '../accounts/nodeAccount'
 import { WrappedResponse } from '@shardus/core/dist/shardus/shardus-types'
 
@@ -36,7 +36,7 @@ export function validateFields(tx: DevIssue, response: ShardusTypes.IncomingTran
 }
 
 export function validate(tx: DevIssue, wrappedStates: WrappedStates, response: ShardusTypes.IncomingTransactionResult): ShardusTypes.IncomingTransactionResult {
-  const network: NetworkAccount = wrappedStates[config.dao.networkAccount].data
+  const network: DaoGlobalAccount = wrappedStates[config.dao.networkAccount].data
   const devIssue: DevIssueAccount = wrappedStates[tx.devIssue] && wrappedStates[tx.devIssue].data
   // let nodeInfo
   // try {
@@ -68,7 +68,7 @@ export function validate(tx: DevIssue, wrappedStates: WrappedStates, response: S
 
 export function apply(tx: DevIssue, txTimestamp: number, wrappedStates: WrappedStates, dapp: Shardus): void {
   const from: NodeAccount = wrappedStates[tx.from].data
-  const network: NetworkAccount = wrappedStates[config.dao.networkAccount].data
+  const network: DaoGlobalAccount = wrappedStates[config.dao.networkAccount].data
   const devIssue: DevIssueAccount = wrappedStates[tx.devIssue].data
 
   devIssue.number = network.devIssue

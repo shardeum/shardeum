@@ -3,7 +3,7 @@ import { Shardus, ShardusTypes } from '@shardus/core'
 
 import _ from 'lodash'
 import config from '../../config'
-import { NetworkAccount } from '../accounts/networkAccount'
+import { DaoGlobalAccount } from '../accounts/networkAccount'
 import { TransactionKeys, WrappedStates } from '../../shardeum/shardeumTypes'
 import { WrappedResponse } from '@shardus/core/dist/shardus/shardus-types'
 import { NetworkParameters, Windows } from '../types'
@@ -101,7 +101,7 @@ export function validate(response: ShardusTypes.IncomingTransactionResult): Shar
 }
 
 export function apply(tx: ApplyTally, txTimestamp: number, wrappedStates: WrappedStates, dapp: Shardus): void {
-  const network: NetworkAccount = wrappedStates[config.dao.networkAccount].data
+  const network: DaoGlobalAccount = wrappedStates[config.dao.networkAccount].data
   network.next = tx.next
   network.nextWindows = tx.nextWindows
   network.timestamp = txTimestamp
@@ -114,7 +114,7 @@ export function keys(result: TransactionKeys): TransactionKeys {
   return result
 }
 
-export function createRelevantAccount(dapp: Shardus, account: NetworkAccount, accountId: string, accountCreated = false): WrappedResponse {
+export function createRelevantAccount(dapp: Shardus, account: DaoGlobalAccount, accountId: string, accountCreated = false): WrappedResponse {
   if (!account) {
     throw new Error('Network Account must already exist for the apply_tally transaction')
   }

@@ -1,8 +1,8 @@
 import { Shardus, ShardusTypes } from '@shardus/core'
-import create from '../accounts'
+import { create } from '../accounts'
 import config from '../../config'
 import { TransactionKeys, WrappedStates } from '../../shardeum/shardeumTypes'
-import { NetworkAccount } from '../accounts/networkAccount'
+import { DaoGlobalAccount } from '../accounts/networkAccount'
 import { Node } from '@shardus/types/build/src/p2p/NodeListTypes'
 import { NodeAccount } from '../accounts/nodeAccount'
 import { UserAccount } from '../accounts/userAccount'
@@ -37,7 +37,7 @@ export function validateFields(tx: NodeReward, response: ShardusTypes.IncomingTr
 
 export function validate(tx: NodeReward, wrappedStates: WrappedStates, response: ShardusTypes.IncomingTransactionResult, dapp: Shardus): ShardusTypes.IncomingTransactionResult {
   const from = wrappedStates[tx.from] && wrappedStates[tx.from].data
-  const network: NetworkAccount = wrappedStates[config.dao.networkAccount].data
+  const network: DaoGlobalAccount = wrappedStates[config.dao.networkAccount].data
   let nodeInfo: Node
   try {
     nodeInfo = dapp.getNode(tx.nodeId)
@@ -76,7 +76,7 @@ export function validate(tx: NodeReward, wrappedStates: WrappedStates, response:
 export function apply(tx: NodeReward, txTimestamp: number, wrappedStates: WrappedStates, dapp: Shardus): void {
   const from: NodeAccount = wrappedStates[tx.from].data
   const to: UserAccount = wrappedStates[tx.to].data
-  const network: NetworkAccount = wrappedStates[config.dao.networkAccount].data
+  const network: DaoGlobalAccount = wrappedStates[config.dao.networkAccount].data
   //const nodeAccount: NodeAccount = to
   from.balance += network.current.nodeRewardAmount
   dapp.log(`Reward from ${tx.from} to ${tx.to}`)

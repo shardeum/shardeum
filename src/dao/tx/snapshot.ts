@@ -1,7 +1,7 @@
 import * as crypto from '@shardus/crypto-utils'
 import { Shardus, ShardusTypes } from '@shardus/core'
 import config from '../../config'
-import { NetworkAccount } from '../accounts/networkAccount'
+import { DaoGlobalAccount } from '../accounts/networkAccount'
 import { TransactionKeys, WrappedStates } from '../../shardeum/shardeumTypes'
 import { UserAccount } from '../accounts/userAccount'
 import { WrappedResponse } from '@shardus/core/dist/shardus/shardus-types'
@@ -43,8 +43,8 @@ export function validate(tx: Snapshot, response: ShardusTypes.IncomingTransactio
 }
 
 export function apply(tx: Snapshot, txTimestamp: number, wrappedStates: WrappedStates, dapp: Shardus): void {
-  const network: NetworkAccount = wrappedStates[config.dao.networkAccount].data
-  network.snapshot = tx.snapshot
+  const network: DaoGlobalAccount = wrappedStates[config.dao.networkAccount].data
+  // to-do: network.snapshot = tx.snapshot
   network.timestamp = txTimestamp
   dapp.log('Applied snapshot tx', network)
 }

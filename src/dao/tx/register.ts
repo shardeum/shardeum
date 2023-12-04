@@ -1,6 +1,6 @@
 import * as crypto from '@shardus/crypto-utils'
 import { Shardus, ShardusTypes } from '@shardus/core'
-import create from '../accounts'
+import { create } from '../accounts'
 import { TransactionKeys, WrappedStates } from '../../shardeum/shardeumTypes'
 import { UserAccount } from '../accounts/userAccount'
 import { AliasAccount } from '../accounts/aliasAccount'

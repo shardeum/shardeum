@@ -1,7 +1,7 @@
 import { Shardus, ShardusTypes } from '@shardus/core'
 import { WrappedResponse } from '@shardus/core/dist/shardus/shardus-types'
 import { TransactionKeys, WrappedStates } from '../../shardeum/shardeumTypes'
-import create from '../accounts'
+import { create } from '../accounts'
 import { NodeAccount } from '../accounts/nodeAccount'
 import { UserAccount } from '../accounts/userAccount'
 
