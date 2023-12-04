@@ -230,7 +230,7 @@ export interface RemoveFriend {
   sign: Signature
 }
 
-interface RemoveStakeRequest {
+export interface RemoveStakeRequest {
   type: string
   from: string
   stake: number
