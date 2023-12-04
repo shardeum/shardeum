@@ -25,7 +25,7 @@ interface ValidationResponse {
   reason: string
 }
 
-export const validate_fields = (tx: Issue, response: ShardusTypes.IncomingTransactionResult): ValidationResponse => {
+export function validateFields(tx: Issue, response: ShardusTypes.IncomingTransactionResult): ValidationResponse {
   if (typeof tx.nodeId !== 'string') {
     response.success = false
     response.reason = 'tx "nodeId" field must be a string.'
@@ -49,7 +49,7 @@ export const validate_fields = (tx: Issue, response: ShardusTypes.IncomingTransa
   return response
 }
 
-export const validate = (tx: Issue, wrappedStates: WrappedStates, response: IncomingTransactionResult, _dapp: Shardus): ValidationResponse => {
+export function validate(tx: Issue, wrappedStates: WrappedStates, response: IncomingTransactionResult, _dapp: Shardus): ValidationResponse {
   const network: NetworkAccount = wrappedStates[config.dao.networkAccount].data
   const issue: IssueAccount = wrappedStates[tx.issue] && wrappedStates[tx.issue].data
 
@@ -78,7 +78,7 @@ export const validate = (tx: Issue, wrappedStates: WrappedStates, response: Inco
   return response
 }
 
-export const apply = (tx: Issue, txTimestamp: number, txId: string, wrappedStates: WrappedStates, dapp: Shardus): void => {
+export function apply(tx: Issue, txTimestamp: number, txId: string, wrappedStates: WrappedStates, dapp: Shardus): void {
   const from: NodeAccount = wrappedStates[tx.from].data
 
   const network: NetworkAccount = wrappedStates[config.dao.networkAccount].data
@@ -101,20 +101,20 @@ export const apply = (tx: Issue, txTimestamp: number, txId: string, wrappedState
   dapp.log('Applied issue tx', issue, proposal)
 }
 
-export const keys = (tx: Issue, result: TransactionKeys): TransactionKeys => {
+export function keys(tx: Issue, result: TransactionKeys): TransactionKeys {
   result.sourceKeys = [tx.from]
   result.targetKeys = [tx.issue, tx.proposal, config.dao.networkAccount]
   result.allKeys = [...result.sourceKeys, ...result.targetKeys]
   return result
 }
 
-export const createRelevantAccount = (
+export function createRelevantAccount(
   dapp: Shardus,
   account: NodeAccount | IssueAccount | ProposalAccount,
   accountId: string,
   tx: Issue,
   accountCreated = false,
-): WrappedResponse => {
+): WrappedResponse {
   if (!account) {
     if (accountId === tx.issue) {
       account = create.issueAccount(accountId)
