@@ -278,7 +278,7 @@ interface Tally {
   timestamp: number
 }
 
-interface DevTally {
+export interface DevTally {
   type: string
   nodeId: string
   from: string
