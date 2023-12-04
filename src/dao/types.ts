@@ -333,7 +333,7 @@ export interface DevVote {
   sign: Signature
 }
 
-interface DevPayment {
+export interface DevPayment {
   type: string
   nodeId: string
   from: string
