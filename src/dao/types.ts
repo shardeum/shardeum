@@ -322,7 +322,7 @@ interface Vote {
   sign: Signature
 }
 
-interface DevVote {
+export interface DevVote {
   type: string
   from: string
   devIssue: string
