@@ -246,7 +246,7 @@ export interface RemoveStake {
   sign: Signature
 }
 
-interface SnapshotClaim {
+export interface SnapshotClaim {
   type: string
   from: string
   timestamp: number
