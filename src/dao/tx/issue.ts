@@ -2,13 +2,14 @@ import * as crypto from '@shardus/crypto-utils'
 import _ from 'lodash'
 import { Shardus, ShardusTypes } from '@shardus/core'
 import create from '../accounts'
-import * as config from '../../config'
+
 import { IncomingTransactionResult, WrappedResponse } from '@shardus/core/dist/shardus/shardus-types'
 import { TransactionKeys, WrappedStates } from '../../shardeum/shardeumTypes'
 import { IssueAccount } from '../accounts/issueAccount'
 import { NetworkAccount } from '../accounts/networkAccount'
 import { NodeAccount } from '../accounts/nodeAccount'
 import { ProposalAccount } from '../accounts/proposalAccount'
+import config from '../../config'
 
 export interface Issue {
   type: string
