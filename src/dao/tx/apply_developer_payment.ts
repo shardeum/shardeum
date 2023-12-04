@@ -7,7 +7,7 @@ import { DaoGlobalAccount } from '../accounts/networkAccount'
 import { WrappedResponse } from '@shardus/core/dist/shardus/shardus-types'
 
 export interface ApplyDevPayment {
-  type: string
+  type: 'apply_dev_payment'
   timestamp: number
   developerFund: DeveloperPayment[]
 }

@@ -8,7 +8,7 @@ import { UserAccount } from '../accounts/userAccount'
 import { WrappedResponse } from '@shardus/core/dist/shardus/shardus-types'
 
 export interface Toll {
-  type: string
+  type: 'toll'
   from: string
   toll: number
   timestamp: number

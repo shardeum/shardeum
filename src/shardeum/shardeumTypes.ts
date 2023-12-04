@@ -392,7 +392,7 @@ export interface OperatorStats {
 }
 
 export interface ChangeConfig {
-  type: string
+  type: 'change_config'
   from: string
   cycle: ShardusTypes.Cycle
   config: string
@@ -400,13 +400,13 @@ export interface ChangeConfig {
 }
 
 export interface ApplyChangeConfig {
-  type: string
+  type: 'apply_change_config'
   change: Change
   timestamp: number
 }
 
 export interface ChangeNetworkParam {
-  type: string
+  type: 'change_network_param'
   from: string
   cycle: ShardusTypes.Cycle
   config: string
@@ -414,7 +414,7 @@ export interface ChangeNetworkParam {
 }
 
 export interface ApplyNetworkParam {
-  type: string
+  type: 'apply_network_param'
   change: Change
   timestamp: number
 }

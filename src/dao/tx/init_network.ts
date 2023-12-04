@@ -8,7 +8,7 @@ import { WrappedResponse } from '@shardus/core/dist/shardus/shardus-types'
 import { NodeAccount } from '../accounts/nodeAccount'
 
 export interface InitNetwork {
-  type: string
+  type: 'init_network'
   timestamp: number
 }
 

@@ -8,7 +8,7 @@ import { DaoGlobalAccount } from '../accounts/networkAccount'
 import { NodeAccount } from '../accounts/nodeAccount'
 
 export interface Parameters {
-  type: string
+  type: 'parameters'
   nodeId: string
   from: string
   issue: string

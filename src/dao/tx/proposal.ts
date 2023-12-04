@@ -12,7 +12,7 @@ import { ProposalAccount } from '../accounts/proposalAccount'
 import { WrappedResponse } from '@shardus/core/dist/shardus/shardus-types'
 
 export interface Proposal {
-  type: string
+  type: 'proposal'
   from: string
   proposal: string
   issue: string

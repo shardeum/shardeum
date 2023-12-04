@@ -7,7 +7,7 @@ import { AliasAccount } from '../accounts/aliasAccount'
 import { WrappedResponse } from '@shardus/core/dist/shardus/shardus-types'
 
 export interface Register {
-  type: string
+  type: 'register'
   aliasHash: string
   from: string
   alias: string

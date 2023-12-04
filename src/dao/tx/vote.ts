@@ -10,7 +10,7 @@ import { UserAccount } from '../accounts/userAccount'
 import { WrappedResponse } from '@shardus/core/dist/shardus/shardus-types'
 
 export interface Vote {
-  type: string
+  type: 'vote'
   from: string
   issue: string
   proposal: string

@@ -8,7 +8,7 @@ import { UserAccount } from '../accounts/userAccount'
 import { WrappedResponse } from '@shardus/core/dist/shardus/shardus-types'
 
 export interface Transfer {
-  type: string
+  type: 'transfer'
   from: string
   to: string
   amount: number
