@@ -100,6 +100,7 @@ export enum InternalTXType {
   ChangeNetworkParam = 10,
   ApplyNetworkParam = 11,
   Penalty = 12,
+  DaoIssue = 13,
 }
 
 export enum DebugTXType {

@@ -31,7 +31,13 @@ import { fixBigIntLiteralsToBigInt } from '../utils/serialization'
 import { validatePenaltyTX } from '../tx/penalty/transaction'
 import { bytesToHex } from '@ethereumjs/util'
 import { logFlags } from '..'
-import { validateDaoIssueTx } from '../tx/daoIssue'
+import { validate as validateDaoIssueTx, Issue as DaoIssueTx } from '../dao/tx/issue';
+
+interface ValidationResult {
+  success: boolean
+  reason: string
+  txnTimestamp: number
+}
 
 /**
  * Checks that Transaction fields are valid
@@ -47,11 +53,7 @@ export const validateTxnFields =
     (
       timestampedTx: any,
       originalAppData: any
-    ): {
-      success: boolean
-      reason: string
-      txnTimestamp: number
-    } => {
+    ): ValidationResult => {
       const { tx } = timestampedTx
       const txnTimestamp: number = getInjectedOrGeneratedTimestamp(timestampedTx)
       const appData = fixBigIntLiteralsToBigInt(originalAppData)
@@ -159,8 +161,10 @@ export const validateTxnFields =
             txnTimestamp: txnTimestamp,
           }
         } else if (tx.internalTXType === InternalTXType.DaoIssue) {
-          const result = validateDaoIssueTx(tx as DaoIssueTx, shardus)
-          success = result.isValid
+          // TODO: what to put for `wrappedStates` and `response`? also,
+          // `shardus` is not used in `validateDaoIssueTx`
+          const result = validateDaoIssueTx(tx as DaoIssueTx, null, null, shardus)
+          success = result.success
           reason = result.reason
         } else {
           try {
