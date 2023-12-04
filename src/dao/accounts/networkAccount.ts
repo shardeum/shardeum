@@ -4,7 +4,7 @@ import { DeveloperPayment, DevWindows, NetworkParameters, Windows } from '../typ
 
 export interface NetworkAccount {
   id: string
-  type: string
+  type: 'NetworkAccount'
   listOfChanges: Array<{
     cycle: number
     change: unknown

@@ -2,7 +2,7 @@ import * as crypto from '@shardus/crypto-utils'
 
 export interface NodeAccount {
   id: string
-  type: string
+  type: 'NodeAccount'
   balance: number
   nodeRewardTime: number
   hash: string
