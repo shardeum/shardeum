@@ -8,7 +8,7 @@ import { NetworkAccount, WrappedStates } from '../../shardeum/shardeumTypes'
 import { Change } from '@shardus/types/build/src/p2p/CycleParserTypes'
 
 export interface ApplyChangeConfig {
-  type: string
+  type: 'apply_change_config'
   change: {
     cycle: number
     change: Change

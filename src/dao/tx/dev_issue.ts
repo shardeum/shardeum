@@ -9,7 +9,7 @@ import { NodeAccount } from '../accounts/nodeAccount'
 import { WrappedResponse } from '@shardus/core/dist/shardus/shardus-types'
 
 export interface DevIssue {
-  type: string
+  type: 'dev_issue'
   nodeId: string
   from: string
   devIssue: string

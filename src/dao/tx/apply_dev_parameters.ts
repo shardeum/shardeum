@@ -8,7 +8,7 @@ import { TransactionKeys, WrappedResponse } from '@shardus/core/dist/shardus/sha
 import { WrappedStates } from '@shardus/core/dist/state-manager/state-manager-types';
 
 export interface ApplyDevParameters {
-  type: string
+  type: 'apply_dev_parameters'
   timestamp: number
   devWindows: DevWindows
   nextDevWindows: Record<string, never>

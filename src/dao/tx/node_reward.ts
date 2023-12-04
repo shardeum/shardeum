@@ -9,7 +9,7 @@ import { UserAccount } from '../accounts/userAccount'
 import { WrappedResponse } from '@shardus/core/dist/shardus/shardus-types'
 
 export interface NodeReward {
-  type: string
+  type: 'node_reward'
   nodeId: string
   from: string
   to: string

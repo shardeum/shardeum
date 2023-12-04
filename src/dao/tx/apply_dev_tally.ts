@@ -8,7 +8,7 @@ import { WrappedResponse } from '@shardus/core/dist/shardus/shardus-types'
 import { DeveloperPayment, DevWindows } from '../types'
 
 export interface ApplyDevTally {
-  type: string
+  type: 'apply_dev_tally'
   timestamp: number
   nextDeveloperFund: DeveloperPayment[]
   nextDevWindows: DevWindows

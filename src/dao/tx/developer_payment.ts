@@ -11,7 +11,7 @@ import { ApplyResponse, WrappedResponse } from '@shardus/core/dist/shardus/shard
 import { Signature } from '@shardus/crypto-utils'
 
 export interface DevPayment {
-  type: string
+  type: 'dev_payment'
   nodeId: string
   from: string
   developer: string

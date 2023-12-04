@@ -12,7 +12,7 @@ import { ProposalAccount } from '../accounts/proposalAccount'
 import config from '../../config'
 
 export interface CreateIssue {
-  id: string
+  id: 'create_issue'
   nodeId: crypto.hexstring
   from: crypto.hexstring
   issueDescription: string
@@ -20,7 +20,7 @@ export interface CreateIssue {
 }
 
 export interface Issue {
-  type: string // TODO: should this be 'issue' or similar?
+  type: 'issue'
   nodeId: string
   from: string
   issue: string

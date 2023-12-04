@@ -9,7 +9,7 @@ import { WrappedResponse } from '@shardus/core/dist/shardus/shardus-types'
 import { NetworkParameters, Windows } from '../types'
 
 export interface ApplyTally {
-  type: string
+  type: 'apply_tally'
   timestamp: number
   next: NetworkParameters
   nextWindows: Windows

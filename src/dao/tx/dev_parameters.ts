@@ -10,7 +10,7 @@ import { NodeAccount } from '../accounts/nodeAccount'
 import { UserAccount } from '../accounts/userAccount'
 
 export interface DevParameters {
-  type: string
+  type: 'dev_parameters'
   nodeId: string
   from: string
   devIssue: string

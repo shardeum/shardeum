@@ -8,7 +8,7 @@ import { WrappedStates } from '@shardus/core/dist/state-manager/state-manager-ty
 import { NetworkParameters, Windows } from '../types'
 
 export interface ApplyParameters {
-  type: string
+  type: 'apply_parameters'
   timestamp: number
   current: NetworkParameters
   next: Record<string, never>

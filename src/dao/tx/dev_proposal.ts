@@ -14,7 +14,7 @@ import { DevProposalAccount } from '../accounts/devProposalAccount'
 import { WrappedResponse } from '@shardus/core/dist/shardus/shardus-types'
 
 export interface DevProposal {
-  type: string
+  type: 'dev_proposal'
   from: string
   devProposal: string
   devIssue: string
