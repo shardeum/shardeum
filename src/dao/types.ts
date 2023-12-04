@@ -138,7 +138,7 @@ interface Issue {
   timestamp: number
 }
 
-interface DevIssue {
+export interface DevIssue {
   type: string
   nodeId: string
   from: string
