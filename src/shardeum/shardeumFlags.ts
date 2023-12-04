@@ -54,6 +54,7 @@ interface ShardeumFlags {
   chargeConstantTxFee: boolean
   constantTxFeeUsd: DecimalString
   stakeTargetAddress: string
+  governanceTargetAddress: string
   certCycleDuration: number
   cacheMaxCycleAge: number
   cacheMaxItemPerTopic: number
@@ -132,7 +133,7 @@ export const ShardeumFlags: ShardeumFlags = {
   DebugRestoreArchiveBatch: 2000,
   CheckNonce: true,
   txNoncePreCheck: true,
-  txBalancePreCheck: true,
+  txBalancePreCheck: false,
   autoGenerateAccessList: true,
   forwardGenesisAccounts: true,
   UseDBForAccounts: true,
@@ -152,6 +153,7 @@ export const ShardeumFlags: ShardeumFlags = {
   // '1000000000000000000' // $1 * 10 ^ 18
   constantTxFeeUsd: '10000000000000000', // $0.01 * 10 ^ 18
   stakeTargetAddress: '0x0000000000000000000000000000000000010000',
+  governanceTargetAddress: '0x0000000000000000000000000000000000020000', // DAO
   certCycleDuration: 10,
   cacheMaxCycleAge: 5,
   cacheMaxItemPerTopic: 4500,
