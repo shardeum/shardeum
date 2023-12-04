@@ -1,3 +1,4 @@
+import { Signature } from "@shardus/crypto-utils"
 import { AliasAccount } from "./accounts/aliasAccount"
 import { ChatAccount } from "./accounts/chatAccount"
 import { DevIssueAccount } from "./accounts/devIssueAccount"
@@ -287,14 +288,6 @@ export interface DevTally {
   timestamp: number
 }
 
-interface Toll {
-  type: string
-  from: string
-  toll: number
-  timestamp: number
-  sign: Signature
-}
-
 interface Transfer {
   type: string
   from: string
@@ -341,11 +334,6 @@ export interface DevPayment {
   payment: DeveloperPayment
   timestamp: number
   sign: Signature
-}
-
-interface Signature {
-  owner: string
-  sig: string
 }
 
 export type DaoAccounts = NetworkAccount & IssueAccount & DevIssueAccount & UserAccount & AliasAccount & ProposalAccount & DevProposalAccount & NodeAccount & ChatAccount
