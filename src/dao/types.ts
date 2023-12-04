@@ -253,7 +253,7 @@ interface SnapshotClaim {
   sign: Signature
 }
 
-interface Snapshot {
+export interface Snapshot {
   type: string
   from: string
   snapshot: any
