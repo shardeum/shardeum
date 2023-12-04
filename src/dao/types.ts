@@ -288,15 +288,6 @@ export interface DevTally {
   timestamp: number
 }
 
-interface Transfer {
-  type: string
-  from: string
-  to: string
-  amount: number
-  timestamp: number
-  sign: Signature
-}
-
 interface Verify {
   type: string
   from: string
