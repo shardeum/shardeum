@@ -1,13 +1,20 @@
 import { Shardus, ShardusTypes } from '@shardus/core'
 import create from '../accounts'
 import config from '../../config'
-import { NodeReward } from '../types'
 import { TransactionKeys, WrappedStates } from '../../shardeum/shardeumTypes'
 import { NetworkAccount } from '../accounts/networkAccount'
 import { Node } from '@shardus/types/build/src/p2p/NodeListTypes'
 import { NodeAccount } from '../accounts/nodeAccount'
 import { UserAccount } from '../accounts/userAccount'
 import { WrappedResponse } from '@shardus/core/dist/shardus/shardus-types'
+
+export interface NodeReward {
+  type: string
+  nodeId: string
+  from: string
+  to: string
+  timestamp: number
+}
 
 export function validateFields(tx: NodeReward, response: ShardusTypes.IncomingTransactionResult): ShardusTypes.IncomingTransactionResult {
   if (typeof tx.from !== 'string') {

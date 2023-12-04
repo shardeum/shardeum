@@ -2,11 +2,18 @@ import * as crypto from '@shardus/crypto-utils'
 import { Shardus, ShardusTypes } from '@shardus/core'
 import * as utils from '../utils'
 import config from '../../config'
-import { Stake } from '../types'
 import { TransactionKeys, WrappedStates } from '../../shardeum/shardeumTypes'
 import { NetworkAccount } from '../accounts/networkAccount'
 import { UserAccount } from '../accounts/userAccount'
 import { WrappedResponse } from '@shardus/core/dist/shardus/shardus-types'
+
+export interface Stake {
+  type: string
+  from: string
+  stake: number
+  timestamp: number
+  sign: crypto.Signature
+}
 
 export function validateFields(tx: Stake, response: ShardusTypes.IncomingTransactionResult): ShardusTypes.IncomingTransactionResult {
   if (typeof tx.from !== 'string') {

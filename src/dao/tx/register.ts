@@ -1,11 +1,19 @@
 import * as crypto from '@shardus/crypto-utils'
 import { Shardus, ShardusTypes } from '@shardus/core'
 import create from '../accounts'
-import { Register } from '../types'
 import { TransactionKeys, WrappedStates } from '../../shardeum/shardeumTypes'
 import { UserAccount } from '../accounts/userAccount'
 import { AliasAccount } from '../accounts/aliasAccount'
 import { WrappedResponse } from '@shardus/core/dist/shardus/shardus-types'
+
+export interface Register {
+  type: string
+  aliasHash: string
+  from: string
+  alias: string
+  timestamp: number
+  sign: crypto.Signature
+}
 
 export function validateFields(tx: Register, response: ShardusTypes.IncomingTransactionResult): ShardusTypes.IncomingTransactionResult {
   if (typeof tx.aliasHash !== 'string') {

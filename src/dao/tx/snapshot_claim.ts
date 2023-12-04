@@ -3,9 +3,15 @@ import { Shardus, ShardusTypes } from '@shardus/core'
 import config from '../../config'
 import { UserAccount } from '../accounts/userAccount'
 import { WrappedResponse } from '@shardus/core/dist/shardus/shardus-types'
-import { SnapshotClaim } from '../types'
 import { TransactionKeys, WrappedStates } from '../../shardeum/shardeumTypes'
 import { NetworkAccount } from '../accounts/networkAccount'
+
+export interface SnapshotClaim {
+  type: string
+  from: string
+  timestamp: number
+  sign: crypto.Signature
+}
 
 export function validateFields(tx: SnapshotClaim, response: ShardusTypes.IncomingTransactionResult): ShardusTypes.IncomingTransactionResult {
   if (typeof tx.from !== 'string') {

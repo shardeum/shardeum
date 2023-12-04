@@ -6,7 +6,11 @@ import { TransactionKeys, WrappedStates } from '../../shardeum/shardeumTypes'
 import { NetworkAccount } from '../accounts/networkAccount'
 import { WrappedResponse } from '@shardus/core/dist/shardus/shardus-types'
 import { NodeAccount } from '../accounts/nodeAccount'
-import { InitNetwork } from '../types'
+
+export interface InitNetwork {
+  type: string
+  timestamp: number
+}
 
 export function validateFields(response: ShardusTypes.IncomingTransactionResult): ShardusTypes.IncomingTransactionResult {
   return response
