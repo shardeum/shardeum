@@ -238,7 +238,7 @@ interface RemoveStakeRequest {
   sign: Signature
 }
 
-interface RemoveStake {
+export interface RemoveStake {
   type: string
   from: string
   stake: number
