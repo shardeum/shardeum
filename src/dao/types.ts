@@ -269,7 +269,7 @@ export interface Stake {
   sign: Signature
 }
 
-interface Tally {
+export interface Tally {
   type: string
   nodeId: string
   from: string
