@@ -124,7 +124,7 @@ export interface GossipEmailHash {
   timestamp: number
 }
 
-interface InitNetwork {
+export interface InitNetwork {
   type: string
   timestamp: number
 }
