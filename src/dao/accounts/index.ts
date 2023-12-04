@@ -26,6 +26,6 @@ export interface HasToAddress {
   readonly to?: Address
 }
 
-export function isGovernanceTx(transaction: HasToAddress): boolean {
-  return transaction.to && transaction.to.toString() === ShardeumFlags.governanceTargetAddress
+export function isDAOTx(transaction: HasToAddress): boolean {
+  return transaction.to && transaction.to.toString() === ShardeumFlags.daoTargetAddress
 }
