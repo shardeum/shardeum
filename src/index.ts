@@ -2198,6 +2198,10 @@ async function applyInternalTx(
     const penaltyTx = internalTx as PenaltyTX
     applyPenaltyTX(shardus, penaltyTx, wrappedStates, txTimestamp, applyResponse)
   }
+  if (internalTx.internalTXType === InternalTXType.DaoIssue) {
+    const DaoIssueTx = internalTx as DaoIssueTX
+    applyDaoIssueTx(shardus, penaltyTx, wrappedStates, txTimestamp, applyResponse)
+  }
   return applyResponse
 }
 
