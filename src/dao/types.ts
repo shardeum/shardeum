@@ -222,7 +222,7 @@ export interface Register {
   sign: Signature
 }
 
-interface RemoveFriend {
+export interface RemoveFriend {
   type: string
   from: string
   to: string
