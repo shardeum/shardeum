@@ -63,7 +63,7 @@ export interface ApplyDevPayment {
   developerFund: DeveloperPayment[]
 }
 
-interface ApplyTally {
+export interface ApplyTally {
   type: string
   timestamp: number
   next: NetworkParameters
