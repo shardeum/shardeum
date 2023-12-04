@@ -17,7 +17,7 @@ export interface ApplyParameters {
   issue: number
 }
 
-export function validate_fields(tx: ApplyParameters, response: ShardusTypes.IncomingTransactionResult): ShardusTypes.IncomingTransactionResult {
+export function validateFields(tx: ApplyParameters, response: ShardusTypes.IncomingTransactionResult): ShardusTypes.IncomingTransactionResult {
   if (_.isEmpty(tx.current) || typeof tx.current !== 'object') {
     response.success = false
     response.reason = 'tx "current" field must not be a non empty object'

@@ -17,7 +17,7 @@ export interface ApplyDevParameters {
   devIssue: number
 }
 
-export function validate_fields(tx: ApplyDevParameters, response: ShardusTypes.IncomingTransactionResult): ShardusTypes.IncomingTransactionResult {
+export function validateFields(tx: ApplyDevParameters, response: ShardusTypes.IncomingTransactionResult): ShardusTypes.IncomingTransactionResult {
   if (typeof tx.devIssue !== 'number') {
     response.success = false
     response.reason = 'tx "devIssue" field must be a number.'

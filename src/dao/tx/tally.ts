@@ -19,7 +19,7 @@ export interface Tally {
   timestamp: number
 }
 
-export function validate_fields(tx: Tally, response: ShardusTypes.IncomingTransactionResult): ShardusTypes.IncomingTransactionResult {
+export function validateFields(tx: Tally, response: ShardusTypes.IncomingTransactionResult): ShardusTypes.IncomingTransactionResult {
   if (typeof tx.nodeId !== 'string') {
     response.success = false
     response.reason = 'tx "nodeId" field must be a string.'
