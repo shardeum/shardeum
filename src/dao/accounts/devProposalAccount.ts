@@ -3,7 +3,7 @@ import { DeveloperPayment } from '../types'
 
 export interface DevProposalAccount {
   id: string
-  type: string
+  type: 'DevProposalAccount'
   approve: number
   reject: number
   title: string | null

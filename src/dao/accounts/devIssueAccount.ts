@@ -2,7 +2,7 @@ import * as crypto from '@shardus/crypto-utils'
 
 export interface DevIssueAccount {
   id: string
-  type: string
+  type: 'DevIssueAccount'
   devProposals: string[]
   devProposalCount: number
   winners: string[]

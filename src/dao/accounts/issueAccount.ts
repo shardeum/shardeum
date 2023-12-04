@@ -2,7 +2,7 @@ import * as crypto from '@shardus/crypto-utils'
 
 export interface IssueAccount {
   id: string
-  type: string
+  type: 'IssueAccount'
   active: boolean | null
   proposals: string[]
   proposalCount: number
