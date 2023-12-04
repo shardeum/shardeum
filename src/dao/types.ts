@@ -146,7 +146,7 @@ export interface DevIssue {
   timestamp: number
 }
 
-interface Message {
+export interface Message {
   type: string
   from: string
   to: string
