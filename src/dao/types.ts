@@ -57,7 +57,7 @@ interface ApplyParameters {
   issue: number
 }
 
-interface ApplyDevPayment {
+export interface ApplyDevPayment {
   type: string
   timestamp: number
   developerFund: DeveloperPayment[]
