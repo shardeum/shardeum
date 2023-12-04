@@ -105,7 +105,7 @@ export interface Email {
   timestamp: number
 }
 
-interface Friend {
+export interface Friend {
   type: string
   alias: string
   from: string
