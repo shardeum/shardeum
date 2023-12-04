@@ -47,13 +47,13 @@ export interface DeveloperPayment {
   timestamp: number
 }
 
-interface ApplyParameters {
+export interface ApplyParameters {
   type: string
   timestamp: number
   current: NetworkParameters
-  next: {}
+  next: Record<string, never>
   windows: Windows
-  nextWindows: {}
+  nextWindows: Record<string, never>
   issue: number
 }
 
