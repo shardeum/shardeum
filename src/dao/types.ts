@@ -77,7 +77,7 @@ export interface ApplyDevTally {
   nextDevWindows: DevWindows
 }
 
-interface Create {
+export interface Create {
   type: string
   from: string
   to: string
@@ -348,7 +348,7 @@ interface Signature {
   sig: string
 }
 
-type Accounts = NetworkAccount & IssueAccount & DevIssueAccount & UserAccount & AliasAccount & ProposalAccount & DevProposalAccount & NodeAccount & ChatAccount
+export type DaoAccounts = NetworkAccount & IssueAccount & DevIssueAccount & UserAccount & AliasAccount & ProposalAccount & DevProposalAccount & NodeAccount & ChatAccount
 
 /**
  * ---------------------- SDK DATA INTERFACES ----------------------
@@ -361,15 +361,6 @@ interface TransactionKeys {
   timestamp: number
 }
 
-interface WrappedResponse {
-  accountId: string
-  accountCreated: boolean
-  isPartial: boolean
-  stateId: string
-  timestamp: number
-  data: never
-}
-
 interface ValidationResponse {
   result: string
   reason: string
@@ -379,13 +370,9 @@ interface ValidationResponse {
 interface WrappedAccount {
   accountId: string
   stateId: string
-  data: Accounts
+  data: DaoAccounts
   timestamp: number
   accountCreated?: boolean
-}
-
-interface WrappedStates {
-  [id: string]: WrappedAccount
 }
 
 type KeyResult = {
