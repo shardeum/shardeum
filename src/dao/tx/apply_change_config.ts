@@ -1,6 +1,6 @@
 import stringify from 'fast-stable-stringify'
 import { Shardus, ShardusTypes } from '@shardus/core'
-import create from '../accounts'
+import { create } from '../accounts'
 import config from '../../config'
 import { TransactionKeys, WrappedResponse } from '@shardus/core/dist/shardus/shardus-types'
 import { NodeAccount } from '../accounts/nodeAccount'

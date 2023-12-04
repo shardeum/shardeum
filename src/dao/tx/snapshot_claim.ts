@@ -4,7 +4,7 @@ import config from '../../config'
 import { UserAccount } from '../accounts/userAccount'
 import { WrappedResponse } from '@shardus/core/dist/shardus/shardus-types'
 import { TransactionKeys, WrappedStates } from '../../shardeum/shardeumTypes'
-import { NetworkAccount } from '../accounts/networkAccount'
+import { DaoGlobalAccount } from '../accounts/networkAccount'
 
 export interface SnapshotClaim {
   type: string
@@ -24,7 +24,7 @@ export function validateFields(tx: SnapshotClaim, response: ShardusTypes.Incomin
 
 export function validate(tx: SnapshotClaim, wrappedStates: WrappedStates, response: ShardusTypes.IncomingTransactionResult): ShardusTypes.IncomingTransactionResult {
   const from: UserAccount = wrappedStates[tx.from] && wrappedStates[tx.from].data
-  const network: NetworkAccount = wrappedStates[config.dao.networkAccount] && wrappedStates[config.dao.networkAccount].data
+  const network: DaoGlobalAccount = wrappedStates[config.dao.networkAccount] && wrappedStates[config.dao.networkAccount].data
   if (from === undefined || from === null) {
     response.reason = "from account doesn't exist"
     return response
@@ -45,6 +45,7 @@ export function validate(tx: SnapshotClaim, wrappedStates: WrappedStates, respon
     response.reason = 'Snapshot account does not exist yet, OR wrong snapshot address provided in the "to" field'
     return response
   }
+  /* to-do: per discussion with Andrew, we will likely not port snapshots over as they are no longer used
   if (!network.snapshot) {
     response.reason = 'Snapshot hasnt been taken yet'
     return response
@@ -53,6 +54,7 @@ export function validate(tx: SnapshotClaim, wrappedStates: WrappedStates, respon
     response.reason = 'Your address did not hold any ULT on the Ethereum blockchain during the snapshot'
     return response
   }
+  */
   response.success = true
   response.reason = 'This transaction is valid!'
   return response
@@ -60,9 +62,10 @@ export function validate(tx: SnapshotClaim, wrappedStates: WrappedStates, respon
 
 export function apply(tx: SnapshotClaim, txTimestamp: number, wrappedStates: WrappedStates, dapp: Shardus): void {
   const from: UserAccount = wrappedStates[tx.from].data
-  const network: NetworkAccount = wrappedStates[config.dao.networkAccount].data
-  from.data.balance += network.snapshot[tx.from]
-  network.snapshot[tx.from] = 0
+  const network: DaoGlobalAccount = wrappedStates[config.dao.networkAccount].data
+  // to-do: per discussion with Andrew, we will likely not port snapshots over as they are no longer used
+  // from.data.balance += network.snapshot[tx.from]
+  // network.snapshot[tx.from] = 0
   from.claimedSnapshot = true
   from.timestamp = txTimestamp
   network.timestamp = txTimestamp

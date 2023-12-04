@@ -3,7 +3,7 @@ import { Shardus, ShardusTypes } from '@shardus/core'
 import config from '../../config'
 import { WrappedResponse } from '@shardus/core/dist/shardus/shardus-types'
 import { TransactionKeys, WrappedStates } from '../../shardeum/shardeumTypes'
-import { NetworkAccount } from '../accounts/networkAccount'
+import { DaoGlobalAccount } from '../accounts/networkAccount'
 import { UserAccount } from '../accounts/userAccount'
 
 export interface RemoveStakeRequest {
@@ -30,8 +30,8 @@ export function validateFields(tx: RemoveStakeRequest, response: ShardusTypes.In
 
 export function validate(tx: RemoveStakeRequest, wrappedStates: WrappedStates, response: ShardusTypes.IncomingTransactionResult): ShardusTypes.IncomingTransactionResult {
   const from = wrappedStates[tx.from]?.data
-  const network: NetworkAccount = wrappedStates[config.dao.networkAccount].data
-  if (typeof from === 'undefined' || from === null) {
+  const network: DaoGlobalAccount = wrappedStates[config.dao.networkAccount].data
+  if (from == null) {
     response.reason = 'from account does not exist'
     return response
   }

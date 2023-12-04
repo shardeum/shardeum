@@ -1,7 +1,7 @@
 import * as crypto from '@shardus/crypto-utils'
 import axios from 'axios'
 import { Shardus, ShardusTypes } from '@shardus/core'
-import create from '../accounts'
+import { create } from '../accounts'
 import { TransactionKeys, WrappedStates } from '../../shardeum/shardeumTypes'
 import { UserAccount } from '../accounts/userAccount'
 import { WrappedResponse } from '@shardus/core/dist/shardus/shardus-types'

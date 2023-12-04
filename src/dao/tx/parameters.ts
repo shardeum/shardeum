@@ -2,9 +2,9 @@ import { Shardus, ShardusTypes } from '@shardus/core'
 import { ApplyResponse, WrappedResponse } from '@shardus/core/dist/shardus/shardus-types'
 import config from '../../config'
 import { OurAppDefinedData, TransactionKeys, WrappedStates } from '../../shardeum/shardeumTypes'
-import create from '../accounts'
+import { create } from '../accounts'
 import { IssueAccount } from '../accounts/issueAccount'
-import { NetworkAccount } from '../accounts/networkAccount'
+import { DaoGlobalAccount } from '../accounts/networkAccount'
 import { NodeAccount } from '../accounts/nodeAccount'
 
 export interface Parameters {
@@ -35,7 +35,7 @@ export function validateFields(tx: Parameters, response: ShardusTypes.IncomingTr
 }
 
 export function validate(tx: Parameters, wrappedStates: WrappedStates, response: ShardusTypes.IncomingTransactionResult): ShardusTypes.IncomingTransactionResult {
-  const network: NetworkAccount = wrappedStates[config.dao.networkAccount].data
+  const network: DaoGlobalAccount = wrappedStates[config.dao.networkAccount].data
   const issue: IssueAccount = wrappedStates[tx.issue].data
 
   if (network.id !== config.dao.networkAccount) {
@@ -62,7 +62,7 @@ export function validate(tx: Parameters, wrappedStates: WrappedStates, response:
 export function apply(tx: Parameters, txTimestamp: number, wrappedStates: WrappedStates, dapp: Shardus, applyResponse: ShardusTypes.ApplyResponse): void {
   const from: NodeAccount = wrappedStates[tx.from].data
 
-  const network: NetworkAccount = wrappedStates[config.dao.networkAccount].data
+  const network: DaoGlobalAccount = wrappedStates[config.dao.networkAccount].data
   const issue: IssueAccount = wrappedStates[tx.issue].data
 
   const when = txTimestamp + 1000 * 10

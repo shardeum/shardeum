@@ -19,6 +19,7 @@ export enum AccountType {
   StakeReceipt = 10,
   UnstakeReceipt = 11,
   InternalTxReceipt = 12,
+  DaoAccount = 13,
 }
 
 export interface BaseAccount {
@@ -210,12 +211,12 @@ export interface DebugTx {
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-export interface WrappedAccount<A = any> {
+export interface WrappedAccount<DataType = any> {
   accountId: string
   stateId: string
   // this affects src/index.ts which is being worked on in another branch
   // I don't want to merge this branch until that one is merged
-  data: A //NetworkAccount | NodeAccount2 | WrappedEVMAccount
+  data: DataType //NetworkAccount | NodeAccount2 | WrappedEVMAccount
   timestamp: number
   accountCreated?: boolean
 }
