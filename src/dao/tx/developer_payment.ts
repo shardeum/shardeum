@@ -2,12 +2,23 @@ import { Shardus, ShardusTypes } from '@shardus/core'
 import config from '../../config'
 import stringify from 'fast-stable-stringify'
 import create from '../accounts'
-import { DeveloperPayment, DevPayment } from '../types'
+import { DeveloperPayment } from '../types'
 import { OurAppDefinedData, TransactionKeys, WrappedStates } from '../../shardeum/shardeumTypes'
 import { UserAccount } from '../accounts/userAccount'
 import { NetworkAccount } from '../accounts/networkAccount'
 import { NodeAccount } from '../accounts/nodeAccount'
 import { ApplyResponse, WrappedResponse } from '@shardus/core/dist/shardus/shardus-types'
+import { Signature } from '@shardus/crypto-utils'
+
+export interface DevPayment {
+  type: string
+  nodeId: string
+  from: string
+  developer: string
+  payment: DeveloperPayment
+  timestamp: number
+  sign: Signature
+}
 
 export function validateFields(tx: DevPayment, response: ShardusTypes.IncomingTransactionResult): ShardusTypes.IncomingTransactionResult {
   if (typeof tx.from !== 'string') {

@@ -2,13 +2,22 @@ import * as crypto from '@shardus/crypto-utils'
 import { Shardus, ShardusTypes } from '@shardus/core'
 import config from '../../config'
 import create from '../accounts'
-import { Tally, Windows } from '../types'
+import { Windows } from '../types'
 import { OurAppDefinedData, TransactionKeys, WrappedStates } from '../../shardeum/shardeumTypes'
 import { NetworkAccount } from '../accounts/networkAccount'
 import { IssueAccount } from '../accounts/issueAccount'
 import { ProposalAccount } from '../accounts/proposalAccount'
 import { ApplyResponse, WrappedResponse } from '@shardus/core/dist/shardus/shardus-types'
 import { NodeAccount } from '../accounts/nodeAccount'
+
+export interface Tally {
+  type: string
+  nodeId: string
+  from: string
+  issue: string
+  proposals: string[]
+  timestamp: number
+}
 
 export function validate_fields(tx: Tally, response: ShardusTypes.IncomingTransactionResult): ShardusTypes.IncomingTransactionResult {
   if (typeof tx.nodeId !== 'string') {

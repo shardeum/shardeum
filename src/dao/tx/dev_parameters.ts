@@ -8,7 +8,14 @@ import { DevIssueAccount } from '../accounts/devIssueAccount'
 import { NetworkAccount } from '../accounts/networkAccount'
 import { NodeAccount } from '../accounts/nodeAccount'
 import { UserAccount } from '../accounts/userAccount'
-import { DevParameters } from '../types'
+
+export interface DevParameters {
+  type: string
+  nodeId: string
+  from: string
+  devIssue: string
+  timestamp: number
+}
 
 export function validateFields(tx: DevParameters, response: ShardusTypes.IncomingTransactionResult): ShardusTypes.IncomingTransactionResult {
   if (typeof tx.nodeId !== 'string') {

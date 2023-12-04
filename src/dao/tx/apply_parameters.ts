@@ -4,8 +4,18 @@ import { Shardus, ShardusTypes } from '@shardus/core'
 import config from '../../config'
 import { TransactionKeys, WrappedResponse } from '@shardus/core/dist/shardus/shardus-types'
 import { NetworkAccount } from '../accounts/networkAccount'
-import { ApplyParameters } from '../types'
 import { WrappedStates } from '@shardus/core/dist/state-manager/state-manager-types'
+import { NetworkParameters, Windows } from '../types'
+
+export interface ApplyParameters {
+  type: string
+  timestamp: number
+  current: NetworkParameters
+  next: Record<string, never>
+  windows: Windows
+  nextWindows: Record<string, never>
+  issue: number
+}
 
 export function validate_fields(tx: ApplyParameters, response: ShardusTypes.IncomingTransactionResult): ShardusTypes.IncomingTransactionResult {
   if (_.isEmpty(tx.current) || typeof tx.current !== 'object') {

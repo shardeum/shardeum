@@ -5,8 +5,15 @@ import _ from 'lodash'
 import config from '../../config'
 import { NetworkAccount } from '../accounts/networkAccount'
 import { TransactionKeys, WrappedStates } from '../../shardeum/shardeumTypes'
-import { ApplyTally } from '../types'
 import { WrappedResponse } from '@shardus/core/dist/shardus/shardus-types'
+import { NetworkParameters, Windows } from '../types'
+
+export interface ApplyTally {
+  type: string
+  timestamp: number
+  next: NetworkParameters
+  nextWindows: Windows
+}
 
 export function validate_fields(tx: ApplyTally, response: ShardusTypes.IncomingTransactionResult): ShardusTypes.IncomingTransactionResult {
   if (_.isEmpty(tx.next) || typeof tx.next !== 'object') {

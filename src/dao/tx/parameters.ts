@@ -6,7 +6,14 @@ import create from '../accounts'
 import { IssueAccount } from '../accounts/issueAccount'
 import { NetworkAccount } from '../accounts/networkAccount'
 import { NodeAccount } from '../accounts/nodeAccount'
-import { Parameters } from '../types'
+
+export interface Parameters {
+  type: string
+  nodeId: string
+  from: string
+  issue: string
+  timestamp: number
+}
 
 export function validate_fields(tx: Parameters, response: ShardusTypes.IncomingTransactionResult): ShardusTypes.IncomingTransactionResult {
   if (typeof tx.from !== 'string') {

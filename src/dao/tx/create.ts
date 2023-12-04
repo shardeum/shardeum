@@ -3,7 +3,15 @@ import { WrappedResponse } from '@shardus/core/dist/shardus/shardus-types'
 import { TransactionKeys, WrappedStates } from '../../shardeum/shardeumTypes'
 import create from '../accounts'
 import { UserAccount } from '../accounts/userAccount'
-import { Create, DaoAccounts } from '../types'
+import { DaoAccounts } from '../types'
+
+export interface Create {
+  type: string
+  from: string
+  to: string
+  amount: number
+  timestamp: number
+}
 
 export function validate_fields(tx: Create, response: ShardusTypes.IncomingTransactionResult): ShardusTypes.IncomingTransactionResult {
   if (typeof tx.from !== 'string') {

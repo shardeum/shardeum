@@ -4,7 +4,16 @@ import { TransactionKeys, WrappedStates } from '../../shardeum/shardeumTypes'
 import create from '../accounts'
 import { NodeAccount } from '../accounts/nodeAccount'
 import { UserAccount } from '../accounts/userAccount'
-import { GossipEmailHash } from '../types'
+
+export interface GossipEmailHash {
+  type: string
+  nodeId: string
+  account: string
+  from: string
+  emailHash: string
+  verified: string
+  timestamp: number
+}
 
 export function validate_fields(tx: GossipEmailHash, response: ShardusTypes.IncomingTransactionResult): ShardusTypes.IncomingTransactionResult {
   if (typeof tx.nodeId !== 'string') {
