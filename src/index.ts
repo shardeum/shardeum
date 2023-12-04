@@ -143,6 +143,7 @@ import { util } from 'prettier'
 import { getExternalApiMiddleware } from './middleware/externalApiMiddleware'
 import { AccountsEntry } from './storage/storage'
 import { getCachedRIAccount, setCachedRIAccount } from './storage/riAccountsCache'
+import { apply as applyDaoIssueTx, Issue as DaoIssueTx } from './dao/tx/issue'
 
 let latestBlock = 0
 export const blocks: BlockMap = {}
@@ -2199,8 +2200,9 @@ async function applyInternalTx(
     applyPenaltyTX(shardus, penaltyTx, wrappedStates, txTimestamp, applyResponse)
   }
   if (internalTx.internalTXType === InternalTXType.DaoIssue) {
-    const DaoIssueTx = internalTx as DaoIssueTX
-    applyDaoIssueTx(shardus, penaltyTx, wrappedStates, txTimestamp, applyResponse)
+    // TODO: add DaoIssueTx to InternalTx as a union
+    const daoIssueTx = internalTx as unknown as DaoIssueTx
+    applyDaoIssueTx(daoIssueTx, txTimestamp, wrappedStates, shardus)
   }
   return applyResponse
 }

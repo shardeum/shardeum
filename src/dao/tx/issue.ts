@@ -12,7 +12,7 @@ import { ProposalAccount } from '../accounts/proposalAccount'
 import config from '../../config'
 
 export interface Issue {
-  type: string
+  type: string // TODO: should this be 'issue' or similar?
   nodeId: string
   from: string
   issue: string
@@ -78,7 +78,7 @@ export function validate(tx: Issue, wrappedStates: WrappedStates, response: Inco
   return response
 }
 
-export function apply(tx: Issue, txTimestamp: number, txId: string, wrappedStates: WrappedStates, dapp: Shardus): void {
+export function apply(tx: Issue, txTimestamp: number, wrappedStates: WrappedStates, dapp: Shardus): void {
   const from: NodeAccount = wrappedStates[tx.from].data
 
   const network: NetworkAccount = wrappedStates[config.dao.networkAccount].data
