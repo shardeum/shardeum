@@ -394,7 +394,7 @@ type KeyResult = {
   keys: TransactionKeys
 }
 
-interface OurAppDefinedData {
+export interface OurAppDefinedData {
   globalMsg: {
     address: string
     value: any
