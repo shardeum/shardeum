@@ -1,11 +1,18 @@
 import * as crypto from '@shardus/crypto-utils'
 import { Shardus, ShardusTypes } from '@shardus/core'
 import config from '../../config'
-import { Snapshot } from '../types'
 import { NetworkAccount } from '../accounts/networkAccount'
 import { TransactionKeys, WrappedStates } from '../../shardeum/shardeumTypes'
 import { UserAccount } from '../accounts/userAccount'
 import { WrappedResponse } from '@shardus/core/dist/shardus/shardus-types'
+
+export interface Snapshot {
+  type: string
+  from: string
+  snapshot: object
+  timestamp: number
+  sign: crypto.Signature
+}
 
 export function validateFields(tx: Snapshot, response: ShardusTypes.IncomingTransactionResult): ShardusTypes.IncomingTransactionResult {
   if (typeof tx.from !== 'string') {

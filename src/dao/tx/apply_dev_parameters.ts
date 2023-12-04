@@ -7,7 +7,7 @@ import { NetworkAccount } from '../accounts/networkAccount';
 import { TransactionKeys, WrappedResponse } from '@shardus/core/dist/shardus/shardus-types';
 import { WrappedStates } from '@shardus/core/dist/state-manager/state-manager-types';
 
-interface ApplyDevParameters {
+export interface ApplyDevParameters {
   type: string
   timestamp: number
   devWindows: DevWindows

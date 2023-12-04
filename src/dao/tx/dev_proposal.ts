@@ -5,13 +5,27 @@ import * as utils from '../utils'
 import create from '../accounts'
 import _ from 'lodash'
 import config from '../../config'
-import { DeveloperPayment, DevProposal } from '../types'
+import { DeveloperPayment } from '../types'
 import { TransactionKeys, WrappedStates } from '../../shardeum/shardeumTypes'
 import { NetworkAccount } from '../accounts/networkAccount'
 import { DevIssueAccount } from '../accounts/devIssueAccount'
 import { UserAccount } from '../accounts/userAccount'
 import { DevProposalAccount } from '../accounts/devProposalAccount'
 import { WrappedResponse } from '@shardus/core/dist/shardus/shardus-types'
+
+export interface DevProposal {
+  type: string
+  from: string
+  devProposal: string
+  devIssue: string
+  totalAmount: number
+  payments: DeveloperPayment[]
+  title: string
+  description: string
+  payAddress: string
+  timestamp: number
+  sign: crypto.Signature
+}
 
 export function validateFields(tx: DevProposal, response: ShardusTypes.IncomingTransactionResult): ShardusTypes.IncomingTransactionResult {
   if (typeof tx.devIssue !== 'string') {

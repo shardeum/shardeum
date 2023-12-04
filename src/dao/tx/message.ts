@@ -3,12 +3,21 @@ import { Shardus, ShardusTypes } from '@shardus/core'
 import * as utils from '../utils'
 import create from '../accounts'
 import config from '../../config'
-import { Message } from '../types'
 import { TransactionKeys, WrappedStates } from '../../shardeum/shardeumTypes'
 import { UserAccount } from '../accounts/userAccount'
 import { ChatAccount } from '../accounts/chatAccount'
 import { WrappedResponse } from '@shardus/core/dist/shardus/shardus-types'
 import { NetworkAccount } from '../accounts/networkAccount'
+
+export interface Message {
+  type: string
+  from: string
+  to: string
+  chatId: string
+  message: string
+  timestamp: number
+  sign: crypto.Signature
+}
 
 export function validateFields(tx: Message, response: ShardusTypes.IncomingTransactionResult): ShardusTypes.IncomingTransactionResult {
   if (typeof tx.from !== 'string') {

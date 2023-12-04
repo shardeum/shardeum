@@ -2,10 +2,20 @@ import * as crypto from '@shardus/crypto-utils'
 import axios from 'axios'
 import { Shardus, ShardusTypes } from '@shardus/core'
 import create from '../accounts'
-import { Email } from '../types'
 import { TransactionKeys, WrappedStates } from '../../shardeum/shardeumTypes'
 import { UserAccount } from '../accounts/userAccount'
 import { WrappedResponse } from '@shardus/core/dist/shardus/shardus-types'
+
+export interface Email {
+  type: string
+  signedTx: {
+    emailHash: string
+    from: string
+    sign: crypto.Signature
+  }
+  email: string
+  timestamp: number
+}
 
 export function validateFields(tx: Email, response: ShardusTypes.IncomingTransactionResult): ShardusTypes.IncomingTransactionResult {
   if (typeof tx.signedTx !== 'object') {

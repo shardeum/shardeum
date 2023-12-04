@@ -3,11 +3,18 @@ import { Shardus, ShardusTypes } from '@shardus/core'
 import create from '../accounts'
 import config from '../../config'
 import { DevIssueAccount } from '../accounts/devIssueAccount'
-import { DevIssue } from '../types'
 import { TransactionKeys, WrappedStates } from '../../shardeum/shardeumTypes'
 import { NetworkAccount } from '../accounts/networkAccount'
 import { NodeAccount } from '../accounts/nodeAccount'
 import { WrappedResponse } from '@shardus/core/dist/shardus/shardus-types'
+
+export interface DevIssue {
+  type: string
+  nodeId: string
+  from: string
+  devIssue: string
+  timestamp: number
+}
 
 export function validate_fields(tx: DevIssue, response: ShardusTypes.IncomingTransactionResult): ShardusTypes.IncomingTransactionResult {
   if (typeof tx.nodeId !== 'string') {

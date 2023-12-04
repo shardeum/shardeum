@@ -1,10 +1,17 @@
 import * as crypto from '@shardus/crypto-utils'
 import { Shardus, ShardusTypes } from '@shardus/core'
 import config from '../../config'
-import { RemoveFriend } from '../types'
 import { TransactionKeys, WrappedStates } from '../../shardeum/shardeumTypes'
 import { UserAccount } from '../accounts/userAccount'
 import { WrappedResponse } from '@shardus/core/dist/shardus/shardus-types'
+
+export interface RemoveFriend {
+  type: string
+  from: string
+  to: string
+  timestamp: number
+  sign: crypto.Signature
+}
 
 export function validateFields(tx: RemoveFriend, response: ShardusTypes.IncomingTransactionResult): ShardusTypes.IncomingTransactionResult {
   if (typeof tx.from !== 'string') {

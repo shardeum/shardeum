@@ -3,13 +3,22 @@ import { Shardus, ShardusTypes } from '@shardus/core'
 import config from '../../config'
 import stringify from 'fast-stable-stringify'
 import create from '../accounts'
-import { DeveloperPayment, DevTally, DevWindows } from '../types'
+import { DeveloperPayment, DevWindows } from '../types'
 import { OurAppDefinedData, TransactionKeys, WrappedStates } from '../../shardeum/shardeumTypes'
 import { DevIssueAccount } from '../accounts/devIssueAccount'
 import { DevProposalAccount } from '../accounts/devProposalAccount'
 import { NetworkAccount } from '../accounts/networkAccount'
 import { NodeAccount } from '../accounts/nodeAccount'
 import { ApplyResponse, WrappedResponse } from '@shardus/core/dist/shardus/shardus-types'
+
+export interface DevTally {
+  type: string
+  nodeId: string
+  from: string
+  devIssue: string
+  devProposals: string[]
+  timestamp: number
+}
 
 export function validate_fields(tx: DevTally, response: ShardusTypes.IncomingTransactionResult): ShardusTypes.IncomingTransactionResult {
   if (typeof tx.nodeId !== 'string') {
