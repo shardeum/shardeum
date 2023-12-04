@@ -8,7 +8,7 @@ import { DaoGlobalAccount } from '../accounts/networkAccount'
 import { WrappedResponse } from '@shardus/core/dist/shardus/shardus-types'
 
 export interface Distribute {
-  type: string
+  type: 'distribute'
   from: string
   recipients: string[]
   amount: number

@@ -7,7 +7,7 @@ import { TransactionKeys, WrappedStates } from '../../shardeum/shardeumTypes'
 import { DaoGlobalAccount } from '../accounts/networkAccount'
 
 export interface SnapshotClaim {
-  type: string
+  type: 'snapshot_claim'
   from: string
   timestamp: number
   sign: crypto.Signature

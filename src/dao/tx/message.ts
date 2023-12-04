@@ -10,7 +10,7 @@ import { WrappedResponse } from '@shardus/core/dist/shardus/shardus-types'
 import { DaoGlobalAccount } from '../accounts/networkAccount'
 
 export interface Message {
-  type: string
+  type: 'message'
   from: string
   to: string
   chatId: string

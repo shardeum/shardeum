@@ -7,7 +7,7 @@ import { UserAccount } from '../accounts/userAccount'
 import { WrappedResponse } from '@shardus/core/dist/shardus/shardus-types'
 
 export interface Snapshot {
-  type: string
+  type: 'snapshot'
   from: string
   snapshot: object
   timestamp: number

@@ -11,7 +11,7 @@ import { ApplyResponse, WrappedResponse } from '@shardus/core/dist/shardus/shard
 import { NodeAccount } from '../accounts/nodeAccount'
 
 export interface Tally {
-  type: string
+  type: 'tally'
   nodeId: string
   from: string
   issue: string

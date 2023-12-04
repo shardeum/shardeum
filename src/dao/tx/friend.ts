@@ -8,7 +8,7 @@ import { UserAccount } from '../accounts/userAccount'
 import { WrappedResponse } from '@shardus/core/dist/shardus/shardus-types'
 
 export interface Friend {
-  type: string
+  type: 'friend'
   alias: string
   from: string
   to: string
