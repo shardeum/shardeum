@@ -7,6 +7,8 @@ import { issueAccount } from './issueAccount'
 import { networkAccount } from './networkAccount'
 import { nodeAccount } from './nodeAccount'
 import { proposalAccount } from './proposalAccount'
+import { Address } from 'ethereumjs-util'
+import { ShardeumFlags } from '../../shardeum/shardeumFlags'
 
 export default {
   aliasAccount,
@@ -18,4 +20,12 @@ export default {
   nodeAccount,
   proposalAccount,
   userAccount,
+}
+
+export interface HasToAddress {
+  readonly to?: Address
+}
+
+export function isGovernanceTx(transaction: HasToAddress): boolean {
+  return transaction.to && transaction.to.toString() === ShardeumFlags.governanceTargetAddress
 }
