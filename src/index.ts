@@ -1943,7 +1943,7 @@ async function applyInternalTx(
 ): Promise<ShardusTypes.ApplyResponse> {
   const txId = generateTxId(tx)
   const applyResponse: ShardusTypes.ApplyResponse = shardus.createApplyResponse(txId, txTimestamp)
-  const internalTx = tx as InternalTx
+  const internalTx = tx
   if (internalTx.internalTXType === InternalTXType.SetGlobalCodeBytes) {
     // eslint-disable-next-line security/detect-object-injection
     const wrappedEVMAccount: WrappedEVMAccount = wrappedStates[internalTx.from].data
