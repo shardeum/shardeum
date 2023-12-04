@@ -2,11 +2,10 @@ import { Shardus, ShardusTypes } from '@shardus/core'
 import config from '../../config'
 import create from '../accounts'
 import { ApplyResponse, TransactionKeys, WrappedResponse } from '@shardus/core/dist/shardus/shardus-types'
-import { ChangeConfig, WrappedStates } from '../../shardeum/shardeumTypes'
+import { ChangeConfig, OurAppDefinedData, WrappedStates } from '../../shardeum/shardeumTypes'
 import { NetworkAccount } from '../accounts/networkAccount'
 import { UserAccount } from '../accounts/userAccount'
 import { CycleRecord } from '@shardus/types/build/src/p2p/CycleCreatorTypes'
-import { OurAppDefinedData } from '../types'
 import { NodeAccount } from '../accounts/nodeAccount'
 
 export function validate_fields(tx: ChangeConfig, response: ShardusTypes.IncomingTransactionResult): ShardusTypes.IncomingTransactionResult {
