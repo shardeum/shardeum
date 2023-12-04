@@ -181,7 +181,7 @@ interface ChangeConfig {
 }
 
 
-interface DevParameters {
+export interface DevParameters {
   type: string
   nodeId: string
   from: string
