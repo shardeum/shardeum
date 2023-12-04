@@ -15,7 +15,7 @@ export interface ApplyTally {
   nextWindows: Windows
 }
 
-export function validate_fields(tx: ApplyTally, response: ShardusTypes.IncomingTransactionResult): ShardusTypes.IncomingTransactionResult {
+export function validateFields(tx: ApplyTally, response: ShardusTypes.IncomingTransactionResult): ShardusTypes.IncomingTransactionResult {
   if (_.isEmpty(tx.next) || typeof tx.next !== 'object') {
     response.success = false
     response.reason = 'tx "next" field must be a non empty object'

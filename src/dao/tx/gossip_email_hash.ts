@@ -15,7 +15,7 @@ export interface GossipEmailHash {
   timestamp: number
 }
 
-export function validate_fields(tx: GossipEmailHash, response: ShardusTypes.IncomingTransactionResult): ShardusTypes.IncomingTransactionResult {
+export function validateFields(tx: GossipEmailHash, response: ShardusTypes.IncomingTransactionResult): ShardusTypes.IncomingTransactionResult {
   if (typeof tx.nodeId !== 'string') {
     response.success = false
     response.reason = 'tx "nodeId" field must be a string.'

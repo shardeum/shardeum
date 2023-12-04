@@ -13,7 +13,7 @@ export interface Create {
   timestamp: number
 }
 
-export function validate_fields(tx: Create, response: ShardusTypes.IncomingTransactionResult): ShardusTypes.IncomingTransactionResult {
+export function validateFields(tx: Create, response: ShardusTypes.IncomingTransactionResult): ShardusTypes.IncomingTransactionResult {
   if (typeof tx.from !== 'string') {
     response.success = false
     response.reason = '"From" must be a string.'
