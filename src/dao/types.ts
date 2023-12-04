@@ -85,7 +85,7 @@ export interface Create {
   timestamp: number
 }
 
-interface Distribute {
+export interface Distribute {
   type: string
   from: string
   recipients: string[]
