@@ -1,11 +1,11 @@
 import * as crypto from '@shardus/crypto-utils'
 import { Shardus, ShardusTypes } from '@shardus/core'
 import * as utils from '../utils'
-import create from '../accounts'
+import { create } from '../accounts'
 import config from '../../config'
 import { NetworkParameters } from '../types'
 import { TransactionKeys, WrappedStates } from '../../shardeum/shardeumTypes'
-import { NetworkAccount } from '../accounts/networkAccount'
+import { DaoGlobalAccount } from '../accounts/networkAccount'
 import { IssueAccount } from '../accounts/issueAccount'
 import { UserAccount } from '../accounts/userAccount'
 import { ProposalAccount } from '../accounts/proposalAccount'
@@ -112,7 +112,7 @@ export function validateFields(tx: Proposal, response: ShardusTypes.IncomingTran
 
 export function validate(tx: Proposal, wrappedStates: WrappedStates, response: ShardusTypes.IncomingTransactionResult): ShardusTypes.IncomingTransactionResult {
   const from = wrappedStates[tx.from] && wrappedStates[tx.from].data
-  const network: NetworkAccount = wrappedStates[config.dao.networkAccount].data
+  const network: DaoGlobalAccount = wrappedStates[config.dao.networkAccount].data
   const issue: IssueAccount = wrappedStates[tx.issue] && wrappedStates[tx.issue].data
   const parameters: NetworkParameters = tx.parameters
   if (tx.sign.owner !== tx.from) {
@@ -210,7 +210,7 @@ export function validate(tx: Proposal, wrappedStates: WrappedStates, response: S
 
 export function apply(tx: Proposal, txTimestamp: number, txId: string, wrappedStates: WrappedStates, dapp: Shardus): void {
   const from: UserAccount = wrappedStates[tx.from].data
-  const network: NetworkAccount = wrappedStates[config.dao.networkAccount].data
+  const network: DaoGlobalAccount = wrappedStates[config.dao.networkAccount].data
   const proposal: ProposalAccount = wrappedStates[tx.proposal].data
   const issue: IssueAccount = wrappedStates[tx.issue].data
 

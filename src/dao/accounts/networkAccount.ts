@@ -1,30 +1,43 @@
 import * as crypto from '@shardus/crypto-utils'
 import config from '../../config'
 import { DeveloperPayment, DevWindows, NetworkParameters, Windows } from '../types'
+import { AccountType, BaseAccount } from '../../shardeum/shardeumTypes'
 
-export interface NetworkAccount {
-  id: string
-  type: 'NetworkAccount'
-  listOfChanges: Array<{
-    cycle: number
-    change: unknown
-  }>
+export interface DaoGlobalAccount extends BaseAccount {
+  id: string // to-do: make hexstring or remove this comment
+
   current: NetworkParameters
-  next: NetworkParameters | Record<string, never>
+  next: NetworkParameters | object
+
   windows: Windows
-  nextWindows: Windows | Record<string, never>
+  nextWindows: Windows | object
+  
   devWindows: DevWindows
-  nextDevWindows: DevWindows | Record<string, never>
+  nextDevWindows: DevWindows | object
+  
   issue: number
   devIssue: number
+  
   developerFund: DeveloperPayment[]
   nextDeveloperFund: DeveloperPayment[]
-  hash: string
+
+  hash: string // to-do: make hexstring or remove this comment
   timestamp: number
-  snapshot?: object
 }
 
-export const networkAccount = (accountId: string, timestamp: number): NetworkAccount => {
+export function isDaoGlobalAccount(obj: object | null | undefined): obj is DaoGlobalAccount {
+  if (obj == null) return false
+  // to-do: add or remove
+  // if (!('type' in obj)) return false
+  // if (obj.type !== 'NetworkAccount') return false
+  if (!('id' in obj)) return false
+  if (!('issue' in obj)) return false
+  if (!('hash' in obj)) return false
+  if (!('timestamp' in obj)) return false
+  return true
+}
+
+export const createDaoGlobalAccount = (accountId: string, timestamp: number): DaoGlobalAccount => {
   const proposalWindow = [timestamp, timestamp + config.dao.TIME_FOR_PROPOSALS]
   const votingWindow = [proposalWindow[1], proposalWindow[1] + config.dao.TIME_FOR_VOTING]
   const graceWindow = [votingWindow[1], votingWindow[1] + config.dao.TIME_FOR_GRACE]
@@ -35,9 +48,15 @@ export const networkAccount = (accountId: string, timestamp: number): NetworkAcc
   const devGraceWindow = [devVotingWindow[1], devVotingWindow[1] + config.dao.TIME_FOR_DEV_GRACE]
   const devApplyWindow = [devGraceWindow[1], devGraceWindow[1] + config.dao.TIME_FOR_DEV_APPLY]
 
-  const account: NetworkAccount = {
+  const account: DaoGlobalAccount = {
+    // to-do: There are a lot of hard coded values in the change: value below.
+    //        Can/should they be taken from another source to avoid duplication?
+    accountType: AccountType.DaoAccount,
     id: accountId,
-    type: 'NetworkAccount',
+
+    current : null,
+    next : null,
+    /* to-do: add to type or remove from literal
     listOfChanges: [
       {
         cycle: 1,
@@ -97,8 +116,11 @@ export const networkAccount = (accountId: string, timestamp: number): NetworkAcc
         },
       },
     ],
+    */
+    /* to-do: add to type or remove
     current: config.dao.INITIAL_PARAMETERS,
     next: {},
+    */
     windows: {
       proposalWindow,
       votingWindow,

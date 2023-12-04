@@ -3,7 +3,7 @@ import { Shardus, ShardusTypes } from '@shardus/core'
 import config from '../../config'
 import stringify from 'fast-stable-stringify'
 import { DeveloperPayment, DevWindows } from '../types';
-import { NetworkAccount } from '../accounts/networkAccount';
+import { DaoGlobalAccount } from '../accounts/networkAccount';
 import { TransactionKeys, WrappedResponse } from '@shardus/core/dist/shardus/shardus-types';
 import { WrappedStates } from '@shardus/core/dist/state-manager/state-manager-types';
 
@@ -53,7 +53,7 @@ export function validate(response: ShardusTypes.IncomingTransactionResult): Shar
 }
 
 export function apply(tx: ApplyDevParameters, txTimestamp: number, wrappedStates: WrappedStates, dapp: Shardus): void {
-  const network: NetworkAccount = wrappedStates[config.dao.networkAccount].data as NetworkAccount
+  const network = wrappedStates[config.dao.networkAccount].data as DaoGlobalAccount
   network.devWindows = tx.devWindows
   network.nextDevWindows = tx.nextDevWindows
   network.developerFund = tx.developerFund
@@ -69,9 +69,9 @@ export function keys(tx: ApplyDevParameters, result: TransactionKeys): ShardusTy
   return result
 }
 
-export function createRelevantAccount(dapp: Shardus, account: NetworkAccount, accountId: string, tx: ApplyDevParameters, accountCreated = false): WrappedResponse {
+export function createRelevantAccount(dapp: Shardus, account: DaoGlobalAccount, accountId: string, tx: ApplyDevParameters, accountCreated = false): WrappedResponse {
   if (!account) {
-    throw new Error('Network Account must already exist for the apply_dev_parameters transaction')
+    throw new Error('account must already exist for the apply_dev_parameters transaction')
   }
   return dapp.createWrappedResponse(accountId, accountCreated, account.hash, account.timestamp, account)
 }

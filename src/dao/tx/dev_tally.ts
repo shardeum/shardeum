@@ -2,12 +2,12 @@ import * as crypto from '@shardus/crypto-utils'
 import { Shardus, ShardusTypes } from '@shardus/core'
 import config from '../../config'
 import stringify from 'fast-stable-stringify'
-import create from '../accounts'
+import { create } from '../accounts'
 import { DeveloperPayment, DevWindows } from '../types'
 import { OurAppDefinedData, TransactionKeys, WrappedStates } from '../../shardeum/shardeumTypes'
 import { DevIssueAccount } from '../accounts/devIssueAccount'
 import { DevProposalAccount } from '../accounts/devProposalAccount'
-import { NetworkAccount } from '../accounts/networkAccount'
+import { DaoGlobalAccount } from '../accounts/networkAccount'
 import { NodeAccount } from '../accounts/nodeAccount'
 import { ApplyResponse, WrappedResponse } from '@shardus/core/dist/shardus/shardus-types'
 
@@ -45,7 +45,7 @@ export function validateFields(tx: DevTally, response: ShardusTypes.IncomingTran
 }
 
 export function validate(tx: DevTally, wrappedStates: WrappedStates, response: ShardusTypes.IncomingTransactionResult): ShardusTypes.IncomingTransactionResult {
-  const network: NetworkAccount = wrappedStates[config.dao.networkAccount].data
+  const network: DaoGlobalAccount = wrappedStates[config.dao.networkAccount].data
   const devIssue: DevIssueAccount = wrappedStates[tx.devIssue] && wrappedStates[tx.devIssue].data
   const devProposals: DevProposalAccount[] = tx.devProposals.map((id: string) => wrappedStates[id].data)
 
@@ -94,7 +94,7 @@ export function validate(tx: DevTally, wrappedStates: WrappedStates, response: S
 
 export function apply(tx: DevTally, txTimestamp: number, wrappedStates: WrappedStates, dapp: Shardus, applyResponse: ApplyResponse): void {
   const from: NodeAccount = wrappedStates[tx.from].data
-  const network: NetworkAccount = wrappedStates[config.dao.networkAccount].data
+  const network: DaoGlobalAccount = wrappedStates[config.dao.networkAccount].data
   const devIssue: DevIssueAccount = wrappedStates[tx.devIssue].data
   const devProposals: DevProposalAccount[] = tx.devProposals.map((id: string) => wrappedStates[id].data)
   let nextDeveloperFund: DeveloperPayment[] = []

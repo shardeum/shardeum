@@ -3,14 +3,14 @@ import * as crypto from '@shardus/crypto-utils'
 import config from '../config'
 import { Shardus } from '@shardus/core'
 import { UserAccount } from './accounts/userAccount'
-import { NetworkAccount } from './accounts/networkAccount'
+import { DaoGlobalAccount } from './accounts/networkAccount'
 import { IssueAccount } from './accounts/issueAccount'
 import { DevIssueAccount } from './accounts/devIssueAccount'
 import { DeveloperPayment } from './types'
 import { TimestampReceipt } from '@shardus/core/dist/shardus/shardus-types'
 import { Issue } from './tx/issue'
 
-export const maintenanceAmount = (timestamp: number, account: UserAccount, network: NetworkAccount): number => {
+export const maintenanceAmount = (timestamp: number, account: UserAccount, network: DaoGlobalAccount): number => {
   let amount: number
   if (timestamp - account.lastMaintenance < network.current.maintenanceInterval) {
     amount = 0
@@ -44,7 +44,7 @@ export function nodeReward(address: string, nodeId: string, dapp: Shardus): void
 // ISSUE TRANSACTION FUNCTION
 export async function generateIssue(address: string, nodeId: string, dapp: Shardus): Promise<void> {
   const account = await dapp.getLocalOrRemoteAccount(config.dao.networkAccount)
-  const network = account.data as NetworkAccount
+  const network = account.data as DaoGlobalAccount
   const tx: Issue = {
     type: 'issue',
     nodeId,
@@ -60,7 +60,7 @@ export async function generateIssue(address: string, nodeId: string, dapp: Shard
 // DEV_ISSUE TRANSACTION FUNCTION
 export async function generateDevIssue(address: string, nodeId: string, dapp: Shardus): Promise<void> {
   const account = await dapp.getLocalOrRemoteAccount(config.dao.networkAccount)
-  const network = account.data as NetworkAccount
+  const network = account.data as DaoGlobalAccount
   const tx = {
     type: 'dev_issue',
     nodeId,
@@ -77,7 +77,7 @@ export async function tallyVotes(address: string, nodeId: string, dapp: Shardus)
   console.log(`GOT TO TALLY_VOTES FN ${address} ${nodeId}`)
   try {
     const network = await dapp.getLocalOrRemoteAccount(config.dao.networkAccount)
-    const networkAccount = network.data as NetworkAccount
+    const networkAccount = network.data as DaoGlobalAccount
     const account = await dapp.getLocalOrRemoteAccount(crypto.hash(`issue-${networkAccount.issue}`))
     if (!account) {
       await _sleep(500)
@@ -105,7 +105,7 @@ export async function tallyVotes(address: string, nodeId: string, dapp: Shardus)
 export async function tallyDevVotes(address: string, nodeId: string, dapp: Shardus): Promise<void> {
   try {
     const network = await dapp.getLocalOrRemoteAccount(config.dao.networkAccount)
-    const networkAccount = network.data as NetworkAccount
+    const networkAccount = network.data as DaoGlobalAccount
     const account = await dapp.getLocalOrRemoteAccount(crypto.hash(`dev-issue-${networkAccount.devIssue}`))
     if (!account) {
       await _sleep(500)
@@ -132,7 +132,7 @@ export async function tallyDevVotes(address: string, nodeId: string, dapp: Shard
 // APPLY_PARAMETERS TRANSACTION FUNCTION
 export async function applyParameters(address: string, nodeId: string, dapp: Shardus): Promise<void> {
   const account = await dapp.getLocalOrRemoteAccount(config.dao.networkAccount)
-  const network = account.data as NetworkAccount
+  const network = account.data as DaoGlobalAccount
   const tx = {
     type: 'parameters',
     nodeId,
@@ -147,7 +147,7 @@ export async function applyParameters(address: string, nodeId: string, dapp: Sha
 // APPLY_DEV_PARAMETERS TRANSACTION FUNCTION
 export async function applyDevParameters(address: string, nodeId: string, dapp: Shardus): Promise<void> {
   const account = await dapp.getLocalOrRemoteAccount(config.dao.networkAccount)
-  const network = account.data as NetworkAccount
+  const network = account.data as DaoGlobalAccount
   const tx = {
     type: 'dev_parameters',
     nodeId,

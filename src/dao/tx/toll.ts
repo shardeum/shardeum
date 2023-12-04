@@ -3,7 +3,7 @@ import { Shardus, ShardusTypes } from '@shardus/core'
 import * as utils from '../utils'
 import config from '../../config'
 import { TransactionKeys, WrappedStates } from '../../shardeum/shardeumTypes'
-import { NetworkAccount } from '../accounts/networkAccount'
+import { DaoGlobalAccount } from '../accounts/networkAccount'
 import { UserAccount } from '../accounts/userAccount'
 import { WrappedResponse } from '@shardus/core/dist/shardus/shardus-types'
 
@@ -41,7 +41,7 @@ export function validateFields(tx: Toll, response: ShardusTypes.IncomingTransact
 
 export function validate(tx: Toll, wrappedStates: WrappedStates, response: ShardusTypes.IncomingTransactionResult): ShardusTypes.IncomingTransactionResult {
   const from = wrappedStates[tx.from] && wrappedStates[tx.from].data
-  const network: NetworkAccount = wrappedStates[config.dao.networkAccount].data
+  const network: DaoGlobalAccount = wrappedStates[config.dao.networkAccount].data
   if (tx.sign.owner !== tx.from) {
     response.reason = 'not signed by from account'
     return response
@@ -73,7 +73,7 @@ export function validate(tx: Toll, wrappedStates: WrappedStates, response: Shard
 
 export function apply(tx: Toll, txTimestamp: number, wrappedStates: WrappedStates, dapp: Shardus): void {
   const from: UserAccount = wrappedStates[tx.from].data
-  const network: NetworkAccount = wrappedStates[config.dao.networkAccount].data
+  const network: DaoGlobalAccount = wrappedStates[config.dao.networkAccount].data
   from.data.balance -= network.current.transactionFee
   from.data.balance -= utils.maintenanceAmount(txTimestamp, from, network)
   from.data.toll = tx.toll

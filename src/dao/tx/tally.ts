@@ -1,10 +1,10 @@
 import * as crypto from '@shardus/crypto-utils'
 import { Shardus, ShardusTypes } from '@shardus/core'
 import config from '../../config'
-import create from '../accounts'
+import { create } from '../accounts'
 import { Windows } from '../types'
 import { OurAppDefinedData, TransactionKeys, WrappedStates } from '../../shardeum/shardeumTypes'
-import { NetworkAccount } from '../accounts/networkAccount'
+import { DaoGlobalAccount } from '../accounts/networkAccount'
 import { IssueAccount } from '../accounts/issueAccount'
 import { ProposalAccount } from '../accounts/proposalAccount'
 import { ApplyResponse, WrappedResponse } from '@shardus/core/dist/shardus/shardus-types'
@@ -44,7 +44,7 @@ export function validateFields(tx: Tally, response: ShardusTypes.IncomingTransac
 }
 
 export function validate(tx: Tally, wrappedStates: WrappedStates, response: ShardusTypes.IncomingTransactionResult): ShardusTypes.IncomingTransactionResult {
-  const network: NetworkAccount = wrappedStates[config.dao.networkAccount].data
+  const network: DaoGlobalAccount = wrappedStates[config.dao.networkAccount].data
   const issue: IssueAccount = wrappedStates[tx.issue]?.data
   const proposals: ProposalAccount[] = tx.proposals.map((id: string) => wrappedStates[id].data)
 
@@ -83,7 +83,7 @@ export function validate(tx: Tally, wrappedStates: WrappedStates, response: Shar
 
 export function apply(tx: Tally, txTimestamp: number, wrappedStates: WrappedStates, dapp: Shardus, applyResponse: ApplyResponse): void {
   const from: NodeAccount = wrappedStates[tx.from].data
-  const network: NetworkAccount = wrappedStates[config.dao.networkAccount].data
+  const network: DaoGlobalAccount = wrappedStates[config.dao.networkAccount].data
   const issue: IssueAccount = wrappedStates[tx.issue].data
   const margin = 100 / (2 * (issue.proposalCount + 1)) / 100
 
