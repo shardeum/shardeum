@@ -141,7 +141,6 @@ import { getExternalApiMiddleware } from './middleware/externalApiMiddleware'
 import { AccountsEntry } from './storage/storage'
 import { getCachedRIAccount, setCachedRIAccount } from './storage/riAccountsCache'
 
-
 let latestBlock = 0
 export const blocks: BlockMap = {}
 export const blocksByHash: { [hash: string]: number } = {}
@@ -421,6 +420,7 @@ let shardeumStateTXMap: Map<string, ShardeumState>
 //let shardeumStatePool:ShardeumState[]
 // const debugShardeumState: ShardeumState = null
 
+/** This map is bad and needs to be phased out in favor of data we use in app data */
 let shardusAddressToEVMAccountInfo: Map<string, EVMAccountInfo>
 export let evmCommon
 
@@ -1858,21 +1858,25 @@ const configShardusEndpoints = (): void => {
     })
   })
 
-  shardus.registerExternalPut('query-certificate', externalApiMiddleware, async (req: Request, res: Response) => {
-    nestedCountersInstance.countEvent('shardeum-staking', 'called query-certificate')
+  shardus.registerExternalPut(
+    'query-certificate',
+    externalApiMiddleware,
+    async (req: Request, res: Response) => {
+      nestedCountersInstance.countEvent('shardeum-staking', 'called query-certificate')
 
-    const queryCertRes = await queryCertificateHandler(req, shardus)
-    if (ShardeumFlags.VerboseLogs) console.log('queryCertRes', queryCertRes)
-    if (queryCertRes.success) {
-      const successRes = queryCertRes as CertSignaturesResult
-      stakeCert = successRes.signedStakeCert
-      /* prettier-ignore */ nestedCountersInstance.countEvent('shardeum-staking', `queryCertificateHandler success`)
-    } else {
-      /* prettier-ignore */ nestedCountersInstance.countEvent('shardeum-staking', `queryCertificateHandler failed with reason: ${(queryCertRes as ValidatorError).reason}`)
+      const queryCertRes = await queryCertificateHandler(req, shardus)
+      if (ShardeumFlags.VerboseLogs) console.log('queryCertRes', queryCertRes)
+      if (queryCertRes.success) {
+        const successRes = queryCertRes as CertSignaturesResult
+        stakeCert = successRes.signedStakeCert
+        /* prettier-ignore */ nestedCountersInstance.countEvent('shardeum-staking', `queryCertificateHandler success`)
+      } else {
+        /* prettier-ignore */ nestedCountersInstance.countEvent('shardeum-staking', `queryCertificateHandler failed with reason: ${(queryCertRes as ValidatorError).reason}`)
+      }
+
+      return res.json(JSON.parse(stringify(queryCertRes)))
     }
-
-    return res.json(JSON.parse(stringify(queryCertRes)))
-  })
+  )
 
   // Returns the latest value from isReadyToJoin call
   shardus.registerExternalGet('debug-is-ready-to-join', async (req, res) => {
@@ -2607,7 +2611,7 @@ async function estimateGas(
 
 async function generateAccessList(
   injectedTx: ShardusTypes.OpaqueTransaction
-): Promise<{ accessList: unknown[]; shardusMemoryPatterns: unknown }> {
+): Promise<{ accessList: unknown[]; shardusMemoryPatterns: unknown; codeHashes: string[] }> {
   try {
     const transaction = getTransactionObj(injectedTx)
     const caShardusAddress = transaction.to
@@ -2637,14 +2641,15 @@ async function generateAccessList(
               return {
                 accessList: postResp.body.accessList,
                 shardusMemoryPatterns: postResp.body.shardusMemoryPatterns,
+                codeHashes: postResp.body.codeHashes,
               }
             } else {
-              return { accessList: [], shardusMemoryPatterns: null }
+              return { accessList: [], shardusMemoryPatterns: null, codeHashes: [] }
             }
           }
         } else {
           /* prettier-ignore */ if (logFlags.dapp_verbose) console.log(`Node is in remote shard: consensusNode = null`)
-          return { accessList: [], shardusMemoryPatterns: null }
+          return { accessList: [], shardusMemoryPatterns: null, codeHashes: [] }
         }
       } else {
         /* prettier-ignore */ if (logFlags.dapp_verbose) console.log(`Node is in remote shard: false`)
@@ -2693,7 +2698,7 @@ async function generateAccessList(
     EVM.stateManager = preRunTxState
 
     if (transaction == null) {
-      return { accessList: [], shardusMemoryPatterns: null }
+      return { accessList: [], shardusMemoryPatterns: null, codeHashes: [] }
     }
 
     const runTxResult = await EVM.runTx(
@@ -2825,6 +2830,8 @@ async function generateAccessList(
       console.log('Immutable read accounts', readImmutableSet)
     }
 
+    const allCodeHash = new Set<string>()
+
     for (const address of allInvolvedContracts) {
       const allKeys = new Set()
       const readKeysMap = readAccounts.contractStorages.get(address)
@@ -2841,19 +2848,26 @@ async function generateAccessList(
         }
       }
 
+      //this is moved before we process contract bytes so that only storage accounts are added to the access list
+      const accessListItem = [address, Array.from(allKeys).map((key) => key)]
+      accessList.push(accessListItem)
+
       for (const [codeHash, byteReads] of readAccounts.contractBytes) {
         const contractAddress = byteReads.contractAddress.toString()
         if (contractAddress !== address) continue
-        if (!allKeys.has(codeHash)) allKeys.add(codeHash)
+        //if (!allKeys.has(codeHash)) allKeys.add(codeHash)
+        if (!allCodeHash.has(codeHash)) allCodeHash.add(codeHash)
       }
       for (const [, byteReads] of writtenAccounts.contractBytes) {
         const codeHash = bytesToHex(byteReads.codeHash)
         const contractAddress = byteReads.contractAddress.toString()
         if (contractAddress !== address) continue
-        if (!allKeys.has(codeHash)) allKeys.add(codeHash)
+        //if (!allKeys.has(codeHash)) allKeys.add(codeHash)
+        if (!allCodeHash.has(codeHash)) allCodeHash.add(codeHash)
       }
-      const accessListItem = [address, Array.from(allKeys).map((key) => key)]
-      accessList.push(accessListItem)
+
+      // const accessListItem = [address, Array.from(allKeys).map((key) => key)]
+      // accessList.push(accessListItem)
     }
 
     if (ShardeumFlags.VerboseLogs) console.log('Predicted accessList', accessList)
@@ -2864,13 +2878,13 @@ async function generateAccessList(
         'accesslist',
         `Fail with error: CA ${transaction.to && ShardeumFlags.VerboseLogs ? transaction.to.toString() : ''}`
       )
-      return { accessList: [], shardusMemoryPatterns: null }
+      return { accessList: [], shardusMemoryPatterns: null, codeHashes: [] }
     }
-    return { accessList, shardusMemoryPatterns }
+    return { accessList, shardusMemoryPatterns, codeHashes: Array.from(allCodeHash) }
   } catch (e) {
     console.log(`Error: generateAccessList`, e)
     nestedCountersInstance.countEvent('accesslist', `Fail: unknown`)
-    return { accessList: [], shardusMemoryPatterns: null }
+    return { accessList: [], shardusMemoryPatterns: null, codeHashes: [] }
   }
 }
 
@@ -2967,7 +2981,7 @@ const shardusSetup = (): void => {
     //also appdata and wrapped accounts should be passed in?
     validateTransaction: validateTransaction(shardus),
     validateTxnFields: validateTxnFields(shardus, debugAppdata),
-    isInternalTx, 
+    isInternalTx,
     async apply(timestampedTx: ShardusTypes.OpaqueTransaction, wrappedStates, originalAppData) {
       //@ts-ignore
       const { tx } = timestampedTx
@@ -4092,12 +4106,17 @@ const shardusSetup = (): void => {
             }
 
             profilerInstance.scopedProfileSectionStart('accesslist-generate')
-            const { accessList: generatedAccessList, shardusMemoryPatterns } = await generateAccessList(tx)
+            const {
+              accessList: generatedAccessList,
+              shardusMemoryPatterns,
+              codeHashes,
+            } = await generateAccessList(tx)
             profilerInstance.scopedProfileSectionEnd('accesslist-generate')
 
             appData.accessList = generatedAccessList ? generatedAccessList : null
             appData.requestNewTimestamp = true
             appData.shardusMemoryPatterns = shardusMemoryPatterns
+            appData.codeHashes = codeHashes
             if (appData.accessList && appData.accessList.length > 0) {
               nestedCountersInstance.countEvent(
                 'shardeum',
@@ -4269,6 +4288,8 @@ const shardusSetup = (): void => {
           shardusMemoryPatterns: null,
         }
       }
+      // isDaoTX() { get addresses and return }
+
       // it is an EVM transaction
       const rawSerializedTx = tx.raw
       if (rawSerializedTx == null) {
@@ -4281,6 +4302,7 @@ const shardusSetup = (): void => {
         sourceKeys: [],
         targetKeys: [],
         storageKeys: [],
+        codeHashKeys: [],
         allKeys: [],
         timestamp: timestamp,
       }
@@ -4349,6 +4371,10 @@ const shardusSetup = (): void => {
                 type: AccountType.Account,
               })
               otherAccountKeys.push(shardusAddr)
+
+              //TODO: we need some new logic that can check each account to try loading each CA "early"
+              //and figure so we will at least know the code hash to load
+              //probably should also do some work with memory access patterns too.
             }
             //let storageKeys = accessList.storageKeys.map(key => toShardusAddress(key, AccountType.ContractStorage))
             const storageKeys = []
@@ -4397,6 +4423,22 @@ const shardusSetup = (): void => {
           }
         }
 
+        //set keys for code hashes if we have them on app data
+        if (appData.codeHashes != null && appData.codeHashes.length > 0) {
+          result.codeHashKeys = appData.codeHashes
+          //setting this may be useless seems like we never needed to do anything with codebytes in
+          //getRelevantData before
+          // for (const codeHash of appData.codeHashes) {
+          //   const address = ''
+          //   const shardusAddr = toShardusAddressWithKey(address, codeHash, AccountType.ContractCode)
+          //   shardusAddressToEVMAccountInfo.set(shardusAddr, {
+          //     evmAddress: shardusAddr,
+          //     contractAddress: address,
+          //     type: AccountType.ContractCode,
+          //   })
+          // }
+        }
+
         // make sure the receipt address is in the get keys from transaction..
         // This will technically cause an empty account to get created but this will get overriden with the
         // correct values as a result of apply().  There are several ways we could optimize this in the future
@@ -4419,7 +4461,8 @@ const shardusSetup = (): void => {
           otherAccountKeys,
           result.sourceKeys,
           result.storageKeys,
-          additionalAccounts
+          additionalAccounts,
+          result.codeHashKeys
         )
         if (ShardeumFlags.VerboseLogs) console.log('running getKeyFromTransaction', result)
       } catch (e) {
@@ -4743,6 +4786,8 @@ const shardusSetup = (): void => {
 
         //need a recent map shardus ID to account type and eth address
         //EIP 2930 needs to write to this map as hints
+
+        //codeHashKeys
 
         const evmAccountInfo = shardusAddressToEVMAccountInfo.get(accountId)
         let evmAccountID = null
@@ -6351,11 +6396,11 @@ export function shardeumGetTime(): number {
   shardusConfig = shardus.config
   console.log(JSON.stringify(shardusConfig, null, 2))
 
-    profilerInstance = shardus.getShardusProfiler()
-    configShardusEndpoints()
-    if (isServiceMode())
-      AccountsStorage.setAccount(networkAccount, await AccountsStorage.getAccount(networkAccount))
-    shardusSetup()
+  profilerInstance = shardus.getShardusProfiler()
+  configShardusEndpoints()
+  if (isServiceMode())
+    AccountsStorage.setAccount(networkAccount, await AccountsStorage.getAccount(networkAccount))
+  shardusSetup()
 
   if (ShardeumFlags.GlobalNetworkAccount) {
     // CODE THAT GETS EXECUTED WHEN NODES START
