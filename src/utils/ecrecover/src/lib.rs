@@ -36,14 +36,16 @@ fn ecrecover(mut cx: FunctionContext) -> JsResult<JsBuffer> {
     let r : &[u8;32] = r[0..32].try_into().unwrap();
     let s : &[u8;32] = s[0..32].try_into().unwrap();
 
+    let inside_start = Instant::now(); // Start timing
     let result = ecrecover_impl(hash,v,r,s);
+    let inside_end = inside_start.elapsed(); // Time elapsed since `start`
+    println!("Time taken inside ecrecover: {:?}", inside_end);
 
     match result {
         Ok(address) => {
 
             // Create a new JS TypedArray (Uint8Array) with the same length as the Rust array
             let mut js_array = JsBuffer::new(&mut cx, address.len() as usize)?;
-
             // Copy data from the Rust array into the JS TypedArray
             {
                 let mut js_array_guard = js_array.borrow_mut();
@@ -61,7 +63,9 @@ fn ecrecover(mut cx: FunctionContext) -> JsResult<JsBuffer> {
 fn ecrecover_impl(hash: &[u8; 32], v: u64, r: &[u8; 32], s: &[u8; 32]) -> Result<[u8;64], secp256k1::Error> {
     //assuming no chainID right now.
     let recovery_id = RecoveryId::from_i32((v as i64 - 27) as i32)?;
+    // println!("recovery_id: {:?}", recovery_id);
     let signature = RecoverableSignature::from_compact(&concat_slices(r, s), recovery_id)?;
+    // println!("signature: {:?}", signature);
     let message = Message::from_slice(hash)?;
     // TODO error wrapping
     let secp_read_guard = SECP.read().unwrap();
