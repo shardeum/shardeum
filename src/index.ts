@@ -12,6 +12,7 @@ import {
   isValidAddress,
   toAscii,
   toBytes,
+  hexToBytes
 } from '@ethereumjs/util'
 import { ShardeumFlags, updateServicePoints, updateShardeumFlag } from './shardeum/shardeumFlags'
 import {
@@ -2525,7 +2526,7 @@ async function estimateGas(
         /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log('EstimateGas response from node', consensusNode.externalPort, postResp.body)
         if (postResp.body != null && postResp.body != '' && postResp.body.estimateGas != null) {
           const estimateResultFromNode = postResp.body.estimateGas
-          
+
           /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`Node is in remote shard: gotResp:`, estimateResultFromNode)
           if (isHexPrefixed(estimateResultFromNode) && estimateResultFromNode !== '0x' && estimateResultFromNode !== '0x0') {
             return postResp.body.estimateGas;
@@ -2609,9 +2610,11 @@ async function estimateGas(
   return { estimateGas: bigIntToHex(estimate) }
 }
 
+type CodeHashObj = { codeHash: string; contractAddress: string }
+
 async function generateAccessList(
   injectedTx: ShardusTypes.OpaqueTransaction
-): Promise<{ accessList: unknown[]; shardusMemoryPatterns: unknown; codeHashes: string[] }> {
+): Promise<{ accessList: unknown[]; shardusMemoryPatterns: unknown; codeHashes: CodeHashObj[] }> {
   try {
     const transaction = getTransactionObj(injectedTx)
     const caShardusAddress = transaction.to
@@ -2830,7 +2833,7 @@ async function generateAccessList(
       console.log('Immutable read accounts', readImmutableSet)
     }
 
-    const allCodeHash = new Set<string>()
+    const allCodeHash = new Map<string, CodeHashObj>
 
     for (const address of allInvolvedContracts) {
       const allKeys = new Set()
@@ -2856,14 +2859,14 @@ async function generateAccessList(
         const contractAddress = byteReads.contractAddress.toString()
         if (contractAddress !== address) continue
         //if (!allKeys.has(codeHash)) allKeys.add(codeHash)
-        if (!allCodeHash.has(codeHash)) allCodeHash.add(codeHash)
+        if (!allCodeHash.has(contractAddress)) allCodeHash.set(contractAddress, {codeHash, contractAddress })
       }
       for (const [, byteReads] of writtenAccounts.contractBytes) {
         const codeHash = bytesToHex(byteReads.codeHash)
         const contractAddress = byteReads.contractAddress.toString()
         if (contractAddress !== address) continue
         //if (!allKeys.has(codeHash)) allKeys.add(codeHash)
-        if (!allCodeHash.has(codeHash)) allCodeHash.add(codeHash)
+        if (!allCodeHash.has(contractAddress)) allCodeHash.set(contractAddress, {codeHash, contractAddress })
       }
 
       // const accessListItem = [address, Array.from(allKeys).map((key) => key)]
@@ -2880,7 +2883,7 @@ async function generateAccessList(
       )
       return { accessList: [], shardusMemoryPatterns: null, codeHashes: [] }
     }
-    return { accessList, shardusMemoryPatterns, codeHashes: Array.from(allCodeHash) }
+    return { accessList, shardusMemoryPatterns, codeHashes: Array.from(allCodeHash.values()) }
   } catch (e) {
     console.log(`Error: generateAccessList`, e)
     nestedCountersInstance.countEvent('accesslist', `Fail: unknown`)
@@ -4425,18 +4428,17 @@ const shardusSetup = (): void => {
 
         //set keys for code hashes if we have them on app data
         if (appData.codeHashes != null && appData.codeHashes.length > 0) {
-          result.codeHashKeys = appData.codeHashes
           //setting this may be useless seems like we never needed to do anything with codebytes in
           //getRelevantData before
-          // for (const codeHash of appData.codeHashes) {
-          //   const address = ''
-          //   const shardusAddr = toShardusAddressWithKey(address, codeHash, AccountType.ContractCode)
-          //   shardusAddressToEVMAccountInfo.set(shardusAddr, {
-          //     evmAddress: shardusAddr,
-          //     contractAddress: address,
-          //     type: AccountType.ContractCode,
-          //   })
-          // }
+          for (const codeHashObj of appData.codeHashes) {
+            const shardusAddr = toShardusAddressWithKey(codeHashObj.contractAddress, codeHashObj.codeHash, AccountType.ContractCode)
+            result.codeHashKeys.push(shardusAddr)
+            shardusAddressToEVMAccountInfo.set(shardusAddr, {
+              evmAddress: shardusAddr,
+              contractAddress: codeHashObj.contractAddress,
+              type: AccountType.ContractCode,
+            })
+          }
         }
 
         // make sure the receipt address is in the get keys from transaction..
@@ -4856,6 +4858,17 @@ const shardusSetup = (): void => {
             ethAddress: evmAccountInfo.contractAddress, // storage key
             hash: '',
             accountType: AccountType.ContractStorage,
+          }
+          /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`Creating new contract storage account key:${evmAccountID} in contract address ${wrappedEVMAccount.ethAddress}`)
+        }  else if (accountType === AccountType.ContractCode) {
+          wrappedEVMAccount = {
+            timestamp: 0,
+            codeHash: hexToBytes('0x' + evmAccountInfo.evmAddress),
+            codeByte: Buffer.from([]),
+            ethAddress: evmAccountInfo.evmAddress, // storage key
+            contractAddress: evmAccountInfo.contractAddress, // storage key
+            hash: '',
+            accountType: AccountType.ContractCode,
           }
           /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`Creating new contract storage account key:${evmAccountID} in contract address ${wrappedEVMAccount.ethAddress}`)
         } else {
