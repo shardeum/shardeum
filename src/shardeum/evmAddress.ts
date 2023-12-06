@@ -2,6 +2,7 @@ import { AccountType, NetworkAccount, WrappedEVMAccount, InternalAccount } from 
 import { isWrappedEVMAccount, isInternalAccount } from './wrappedEVMAccountFunctions'
 
 import { ShardeumFlags } from './shardeumFlags'
+import * as crypto from '@shardus/crypto-utils'
 
 /**
  * This will correctly get a shardus address from a WrappedEVMAccount account no matter what type it is.
@@ -85,6 +86,7 @@ export function toShardusAddressWithKey(
     }
   }
 
+  // Post 1.9.0 contractCodeKeySilo will be false by default
   if (ShardeumFlags.contractCodeKeySilo && accountType === AccountType.ContractCode) {
     const numPrefixChars = 8
     // remove the 0x and get the first 8 hex characters of the address
@@ -124,7 +126,10 @@ export function toShardusAddressWithKey(
         (parseInt(secondaryAddressStr[suffixFirstIndex], 16) & 1)
       ).toString(16)
 
-      return (combinedNibble + secondaryAddressStr.slice(suffixFirstIndex + 1)).toLowerCase()
+      //we need to take a hash, to prevent collisions:
+      let hashedAddress = crypto.hash(secondaryAddressStr + addressStr)
+
+      return (combinedNibble + hashedAddress.slice(suffixFirstIndex + 1)).toLowerCase()
     }
 
     const fullHexChars = Math.floor(ShardeumFlags.contractStoragePrefixBitLength / 4)
