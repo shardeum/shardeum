@@ -225,7 +225,7 @@ export function applySetCertTimeTx(
   if (certExp > 0) {
     const certStartTimestamp = certExp - getCertCycleDuration() * ONE_SECOND * serverConfig.p2p.cycleDuration
 
-    let expiredPercentage
+    let expiredPercentage: number
     if (ShardeumFlags.fixSetCertTimeTxApply === true) {
       //use tx timestampe for a deterministic result
       expiredPercentage = (txTimestamp - certStartTimestamp) / (certExp - certStartTimestamp)
@@ -236,7 +236,7 @@ export function applySetCertTimeTx(
 
     /* prettier-ignore */ if (logFlags.dapp_verbose) console.log(`applySetCertTimeTx expiredPercentage: ${expiredPercentage}`)
 
-    if (expiredPercentage >= ShardeumFlags.fixCertExpTiming ? 0.5 : 0.8) {
+    if (expiredPercentage >= (ShardeumFlags.fixCertExpTiming ? 0.5 : 0.8)) {
       // don't charge gas after 50% of the cert has
       // expired
       shouldChargeTxFee = false
