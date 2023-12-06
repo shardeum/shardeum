@@ -3923,6 +3923,9 @@ const shardusSetup = (): void => {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
       } else return Object.prototype.hasOwnProperty.call(tx, 'timestamp') ? (tx as any).timestamp : 0
     },
+    calculateTxId(tx: ShardusTypes.OpaqueTransaction) {
+      return generateTxId(tx)
+    },
     async txPreCrackData(tx, appData) {
       if (ShardeumFlags.VerboseLogs) console.log('Running txPreCrackData', tx, appData)
       if (ShardeumFlags.UseTXPreCrack === false) {
@@ -4415,7 +4418,7 @@ const shardusSetup = (): void => {
                 const shardusAddr = toShardusAddressWithKey(address, storageKey, AccountType.ContractStorage)
 
                 shardusAddressToEVMAccountInfo.set(shardusAddr, {
-                  evmAddress: shardusAddr,
+                  evmAddress: storageKey,
                   contractAddress: address,
                   type: AccountType.ContractStorage,
                 })
@@ -4466,7 +4469,7 @@ const shardusSetup = (): void => {
           additionalAccounts,
           result.codeHashKeys
         )
-        if (ShardeumFlags.VerboseLogs) console.log('running getKeyFromTransaction', result)
+        if (ShardeumFlags.VerboseLogs) console.log('running getKeyFromTransaction', txId, result)
       } catch (e) {
         if (ShardeumFlags.VerboseLogs) console.log('getKeyFromTransaction: Unable to get keys from tx', e)
       }
