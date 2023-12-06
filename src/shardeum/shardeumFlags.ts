@@ -9,6 +9,7 @@ interface ShardeumFlags {
   debugTraceLogs: boolean
   Virtual0Address: boolean
   GlobalNetworkAccount: boolean
+  EnableDaoFeatures: boolean
   FirstNodeRewardCycle: number
   blockProductionRate: number // generate new block every 6s
   initialBlockNumber: number // The initial block number to start the chain at.
@@ -115,6 +116,7 @@ export const ShardeumFlags: ShardeumFlags = {
   debugTraceLogs: false,
   Virtual0Address: true,
   GlobalNetworkAccount: true,
+  EnableDaoFeatures: true,
   FirstNodeRewardCycle: 100,
   blockProductionRate: 6,
   initialBlockNumber: 0,
