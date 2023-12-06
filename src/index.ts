@@ -162,6 +162,8 @@ import { isLowStake } from './tx/penalty/penaltyFunctions'
 import { deserializeWrappedEVMAccount, serializeWrappedEVMAccount } from './types/WrappedEVMAccount'
 import { accountDeserializer, accountSerializer, binaryDeserializer, binarySerializer } from './types/Helpers'
 import { apply as applyDaoIssueTx, Issue as DaoIssueTx } from './dao/tx/issue'
+import { daoAccount } from './dao/config'
+import { applyInitDaoTx, getRelevantDataInitDao } from './dao'
 
 let latestBlock = 0
 export const blocks: BlockMap = {}
@@ -2194,7 +2196,10 @@ async function applyInternalTx(
     const penaltyTx = internalTx as PenaltyTX
     applyPenaltyTX(shardus, penaltyTx, wrappedStates, txId, txTimestamp, applyResponse)
   }
-  if (internalTx.internalTXType === InternalTXType.DaoIssue) {
+  if (internalTx.internalTXType === InternalTXType.InitDao) {
+    applyInitDaoTx(wrappedStates, applyResponse, internalTx, txTimestamp, txId)
+  }
+  if (internalTx.internalTXType === InternalTXType.Dao) {
     // TODO: add DaoIssueTx to InternalTx as a union
     const daoIssueTx = internalTx as unknown as DaoIssueTx
     applyDaoIssueTx(daoIssueTx, txTimestamp, wrappedStates, shardus)
@@ -4339,6 +4344,8 @@ const shardusSetup = (): void => {
         } else if (internalTx.internalTXType === InternalTXType.Penalty) {
           keys.sourceKeys = [tx.reportedNodePublickKey]
           keys.targetKeys = [toShardusAddress(tx.operatorEVMAddress, AccountType.Account), networkAccount]
+        } else if (internalTx.internalTXType === InternalTXType.InitDao) {
+          keys.targetKeys = [daoAccount]
         }
         keys.allKeys = keys.allKeys.concat(keys.sourceKeys, keys.targetKeys, keys.storageKeys)
         // temporary hack for creating a receipt of node reward tx
@@ -4726,6 +4733,9 @@ const shardusSetup = (): void => {
               throw Error(`EVM Account <nominator> is not found ${accountId}`)
             }
           }
+        }
+        if (internalTx.internalTXType === InternalTXType.InitDao) {
+          accountCreated = getRelevantDataInitDao(accountId, wrappedEVMAccount)
         }
         if (!wrappedEVMAccount) {
           throw Error(`Account not found ${accountId}`)
