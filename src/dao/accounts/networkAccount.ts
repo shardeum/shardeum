@@ -4,10 +4,8 @@ import { DeveloperPayment, DevWindows, NetworkParameters, Windows } from '../typ
 import { AccountType, BaseAccount } from '../../shardeum/shardeumTypes'
 
 export interface DaoGlobalAccount extends BaseAccount {
-  id: string // to-do: make hexstring or remove this comment
-
-  current: NetworkParameters
-  next: NetworkParameters | object
+  accountType: AccountType.DaoAccount
+  id: string
 
   windows: Windows
   nextWindows: Windows | object

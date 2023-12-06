@@ -14,6 +14,7 @@ import { sleep } from '../utils'
 // import { StateManager } from '../vm/state'
 import { DefaultStateManager } from '@ethereumjs/statemanager'
 import { logFlags, shardeumGetTime } from '..'
+import { setupDaoAccount } from '../dao'
 
 function isDebugMode(): boolean {
   // eslint-disable-next-line @typescript-eslint/ban-ts-comment
@@ -124,6 +125,9 @@ export const sync = (shardus: Shardus, evmCommon: any) => async (): Promise<void
           network: networkAccount,
         }
         shardus.setGlobal(networkAccount, value, when, networkAccount)
+
+        setupDaoAccount(shardus, when)
+
       }
     } else {
       while (!(await shardus.getLocalOrRemoteAccount(networkAccount))) {

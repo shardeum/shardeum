@@ -146,7 +146,7 @@ export const validateTxnFields =
             reason,
             txnTimestamp: txnTimestamp,
           }
-        } else if (tx.internalTXType === InternalTXType.DaoIssue) {
+        } else if (tx.internalTXType === InternalTXType.Dao) {
           // TODO: what to put for `wrappedStates` and `response`? also,
           // `shardus` is not used in `validateDaoIssueTx`
           const result = validateDaoIssueTx(tx as DaoIssueTx, null, null, shardus)
