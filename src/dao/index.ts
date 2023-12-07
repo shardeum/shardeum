@@ -87,3 +87,49 @@ function createDaoAccount(timestamp = 0): DaoGlobalAccount {
   }
   return account
 }
+
+export function isDaoTx(tx): boolean {
+  /* Got really lazy here, but we need to do our own analysis to determine if the raw evm tx is a dao tx. */
+  return tx.to === daoAccount
+}
+
+export function handleDaoTxCrack(
+  otherAccountKeys,
+  txSenderEvmAddr,
+  txToEvmAddr,
+  transformedSourceKey,
+  result
+): void {
+  /** [TODO]
+   * Liberus txs export a `keys` fn that gets called here
+   */
+  return
+}
+
+export function handleDaoTxGetRelevantData(
+  shardus: Shardus,
+  tx
+): {
+  accountId: any
+  accountCreated: any
+  isPartial: boolean
+  stateId: any
+  timestamp: any
+  data: any
+} {
+  /**
+   * [TODO]
+   * Liberus txs export a `createRelevantAccount` fn that gets called here
+   */
+  return shardus.createWrappedResponse(tx, tx.to, tx.from, tx.value, tx.data, tx.timestamp, tx.hash, tx.id)
+}
+
+export function handleDaoTxApply(shardus: Shardus, tx): void {
+  /**
+   * [TODO]
+   * Got really lazy here, but we need to do our own analysis to determine if the raw evm tx is a dao tx.
+   * 
+   * Liberus txs export a `apply` fn that gets called here
+   */
+  return
+}
