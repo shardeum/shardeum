@@ -384,7 +384,7 @@ export function setGenesisAccounts(accounts = []): void {
 
 if (ShardeumFlags.UseDBForAccounts === true) {
   AccountsStorage.init(config.server.baseDir, 'db/shardeum.sqlite')
-  if (isServiceMode) AccountsStorage.lazyInit()
+  if (isServiceMode()) AccountsStorage.lazyInit()
 }
 
 //let accounts: WrappedEVMAccountMap = {} //relocated
