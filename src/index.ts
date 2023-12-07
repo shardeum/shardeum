@@ -163,7 +163,7 @@ import { deserializeWrappedEVMAccount, serializeWrappedEVMAccount } from './type
 import { accountDeserializer, accountSerializer, binaryDeserializer, binarySerializer } from './types/Helpers'
 import { apply as applyDaoIssueTx, Issue as DaoIssueTx } from './dao/tx/issue'
 import { daoAccount } from './dao/config'
-import { applyInitDaoTx, getRelevantDataInitDao } from './dao'
+import { applyInitDaoTx, getRelevantDataInitDao, handleDaoTxApply, handleDaoTxCrack, handleDaoTxGetRelevantData, isDaoTx } from './dao'
 
 let latestBlock = 0
 export const blocks: BlockMap = {}
@@ -3137,6 +3137,10 @@ const shardusSetup = (): void => {
       const shardeumState = getApplyTXState(txId)
       shardeumState._transactionState.appData = appData
 
+      if (isDaoTx(tx)) {
+        return handleDaoTxApply(shardus, tx)
+      }
+
       if (appData.internalTx && appData.internalTXType === InternalTXType.Stake) {
         if (ShardeumFlags.VerboseLogs) console.log('applying stake tx', wrappedStates, appData)
 
@@ -4425,6 +4429,9 @@ const shardusSetup = (): void => {
         const transformedSourceKey = toShardusAddress(txSenderEvmAddr, AccountType.Account)
         const transformedTargetKey = transaction.to ? toShardusAddress(txToEvmAddr, AccountType.Account) : ''
 
+        if (isDaoTx(transaction)) {
+          handleDaoTxCrack(otherAccountKeys, txSenderEvmAddr, txToEvmAddr, transformedSourceKey, result)
+        } else {
         result.sourceKeys.push(transformedSourceKey)
         shardusAddressToEVMAccountInfo.set(transformedSourceKey, {
           evmAddress: txSenderEvmAddr,
@@ -4456,7 +4463,10 @@ const shardusSetup = (): void => {
             const caAddr = '0x' + caAddrBuf.toString('hex')
             const shardusAddr = toShardusAddress(caAddr, AccountType.Account)
             otherAccountKeys.push(shardusAddr)
-            shardusAddressToEVMAccountInfo.set(shardusAddr, { evmAddress: caAddr, type: AccountType.Account })
+              shardusAddressToEVMAccountInfo.set(shardusAddr, {
+                evmAddress: caAddr,
+                type: AccountType.Account,
+              })
             /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log('getKeyFromTransaction: Predicting new contract account address:', caAddr, shardusAddr)
           } else {
             //use app data!
@@ -4521,7 +4531,11 @@ const shardusSetup = (): void => {
               const storageKeys = []
               for (const storageKey of accessListItem[1]) {
                 //let shardusAddr = toShardusAddress(storageKey, AccountType.ContractStorage)
-                const shardusAddr = toShardusAddressWithKey(address, storageKey, AccountType.ContractStorage)
+                  const shardusAddr = toShardusAddressWithKey(
+                    address,
+                    storageKey,
+                    AccountType.ContractStorage
+                  )
 
                 shardusAddressToEVMAccountInfo.set(shardusAddr, {
                   evmAddress: storageKey,
@@ -4580,6 +4594,7 @@ const shardusSetup = (): void => {
           result.codeHashKeys
         )
         if (ShardeumFlags.VerboseLogs) console.log('running getKeyFromTransaction', txId, result)
+        }
       } catch (e) {
         if (ShardeumFlags.VerboseLogs) console.log('getKeyFromTransaction: Unable to get keys from tx', e)
       }
@@ -4865,6 +4880,10 @@ const shardusSetup = (): void => {
             }
           }
         }
+      }
+
+      if (isDaoTx(transaction)) {
+        return handleDaoTxGetRelevantData(shardus, tx)
       }
 
       //let wrappedEVMAccount = accounts[accountId]
