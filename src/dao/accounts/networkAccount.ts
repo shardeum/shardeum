@@ -51,8 +51,6 @@ export const createDaoGlobalAccount = (accountId: string, timestamp: number): Da
     accountType: AccountType.DaoAccount,
     id: accountId,
 
-    current : null,
-    next : null,
     /* to-do: add to type or remove from literal
     listOfChanges: [
       {
