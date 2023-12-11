@@ -28,12 +28,7 @@ export interface Issue {
   timestamp: number
 }
 
-interface ValidationResponse {
-  success: boolean
-  reason: string
-}
-
-export function validateFields(tx: Issue, response: ShardusTypes.IncomingTransactionResult): ValidationResponse {
+export function validateFields(tx: Issue, response: ShardusTypes.IncomingTransactionResult): ShardusTypes.IncomingTransactionResult {
   if (typeof tx.nodeId !== 'string') {
     response.success = false
     response.reason = 'tx "nodeId" field must be a string.'
@@ -57,7 +52,7 @@ export function validateFields(tx: Issue, response: ShardusTypes.IncomingTransac
   return response
 }
 
-export function validate(tx: Issue, wrappedStates: WrappedStates, response: IncomingTransactionResult, _dapp: Shardus): ValidationResponse {
+export function validate(tx: Issue, wrappedStates: WrappedStates, response: IncomingTransactionResult, _dapp: Shardus): IncomingTransactionResult {
   const network: DaoGlobalAccount = wrappedStates[config.dao.networkAccount].data
   const issue: IssueAccount = wrappedStates[tx.issue] && wrappedStates[tx.issue].data
 
