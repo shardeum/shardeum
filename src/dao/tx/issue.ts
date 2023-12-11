@@ -4,23 +4,16 @@ import { Shardus, ShardusTypes } from '@shardus/core'
 import { create } from '../accounts'
 
 import { IncomingTransactionResult, WrappedResponse } from '@shardus/core/dist/shardus/shardus-types'
-import { TransactionKeys, WrappedStates } from '../../shardeum/shardeumTypes'
+import { WrappedStates } from '../../shardeum/shardeumTypes'
 import { IssueAccount } from '../accounts/issueAccount'
 import { DaoGlobalAccount } from '../accounts/networkAccount'
 import { NodeAccount } from '../accounts/nodeAccount'
 import { ProposalAccount } from '../accounts/proposalAccount'
 import { daoConfig } from '../../config/dao'
+import { DaoTx } from '.'
+import { TransactionKeys } from '@shardus/core/dist/shardus/shardus-types'
 
-export interface CreateIssue {
-  id: 'create_issue'
-  nodeId: crypto.hexstring
-  from: crypto.hexstring
-  issueDescription: string
-  timestamp: number
-}
-
-export interface Issue {
-  type: 'issue'
+export interface IIssue {
   nodeId: string
   from: string
   issue: string
@@ -28,105 +21,120 @@ export interface Issue {
   timestamp: number
 }
 
-export function validateFields(tx: Issue, response: ShardusTypes.IncomingTransactionResult): ShardusTypes.IncomingTransactionResult {
-  if (typeof tx.nodeId !== 'string') {
-    response.success = false
-    response.reason = 'tx "nodeId" field must be a string.'
-    throw new Error(response.reason)
-  }
-  if (typeof tx.from !== 'string') {
-    response.success = false
-    response.reason = 'tx "from field must be a string.'
-    throw new Error(response.reason)
-  }
-  if (typeof tx.issue !== 'string') {
-    response.success = false
-    response.reason = 'tx "issue" field must be a string.'
-    throw new Error(response.reason)
-  }
-  if (typeof tx.proposal !== 'string') {
-    response.success = false
-    response.reason = 'tx "proposal" field must be a string.'
-    throw new Error(response.reason)
-  }
-  return response
-}
+export class Issue implements IIssue, DaoTx<IssueAccount> {
+  nodeId: string
+  from: string
+  issue: string
+  proposal: string
+  timestamp: number
 
-export function validate(tx: Issue, wrappedStates: WrappedStates, response: IncomingTransactionResult, _dapp: Shardus): IncomingTransactionResult {
-  const network: DaoGlobalAccount = wrappedStates[daoConfig.daoAccount].data
-  const issue: IssueAccount = wrappedStates[tx.issue] && wrappedStates[tx.issue].data
-
-  if (issue.active !== null) {
-    response.reason = 'Issue is already active'
-    return response
+  constructor(data: IIssue) {
+    this.nodeId = data.nodeId
+    this.from = data.from
+    this.issue = data.issue
+    this.proposal = data.proposal
+    this.timestamp = data.timestamp
   }
 
-  const networkIssueHash = crypto.hash(`issue-${network.issue}`)
-  if (tx.issue !== networkIssueHash) {
-    response.reason = `issue hash (${tx.issue}) does not match current network issue hash (${networkIssueHash}) --- networkAccount: ${JSON.stringify(network)}`
-    return response
-  }
-  const networkProposalHash = crypto.hash(`issue-${network.issue}-proposal-1`)
-  if (tx.proposal !== networkProposalHash) {
-    response.reason = `proposalHash (${tx.proposal
-      }) does not match the current default network proposal (${networkProposalHash}) --- networkAccount: ${JSON.stringify(network)}`
-    return response
-  }
-  if (tx.timestamp < network.windows.proposalWindow[0] || tx.timestamp > network.windows.proposalWindow[1]) {
-    response.reason = 'Network is not within the time window to generate issues'
-    return response
-  }
-  response.success = true
-  response.reason = 'This transaction is valid!'
-  return response
-}
-
-export function apply(tx: Issue, txTimestamp: number, wrappedStates: WrappedStates, dapp: Shardus): void {
-  const from: NodeAccount = wrappedStates[tx.from].data
-
-  const network: DaoGlobalAccount = wrappedStates[daoConfig.daoAccount].data
-  const issue: IssueAccount = wrappedStates[tx.issue].data
-  const proposal: ProposalAccount = wrappedStates[tx.proposal].data
-
-  proposal.parameters = _.cloneDeep(network.current)
-  proposal.parameters.title = 'Default parameters'
-  proposal.parameters.description = 'Keep the current network parameters as they are'
-  proposal.number = 1
-
-  issue.number = network.issue
-  issue.active = true
-  issue.proposals.push(proposal.id)
-  issue.proposalCount++
-
-  from.timestamp = txTimestamp
-  issue.timestamp = txTimestamp
-  proposal.timestamp = txTimestamp
-  dapp.log('Applied issue tx', issue, proposal)
-}
-
-export function keys(tx: Issue, result: TransactionKeys): TransactionKeys {
-  result.sourceKeys = [tx.from]
-  result.targetKeys = [tx.issue, tx.proposal, daoConfig.daoAccount]
-  result.allKeys = [...result.sourceKeys, ...result.targetKeys]
-  return result
-}
-
-export function createRelevantAccount(
-  dapp: Shardus,
-  account: NodeAccount | IssueAccount | ProposalAccount,
-  accountId: string,
-  tx: Issue,
-  accountCreated = false,
-): WrappedResponse {
-  if (!account) {
-    if (accountId === tx.issue) {
-      account = create.issueAccount(accountId)
-    } else if (accountId === tx.proposal) {
-      account = create.proposalAccount(accountId)
-    } else {
-      account = create.nodeAccount(accountId)
+  validateFields(response: ShardusTypes.IncomingTransactionResult): ShardusTypes.IncomingTransactionResult {
+    if (typeof this.nodeId !== 'string') {
+      response.success = false
+      response.reason = 'tx "nodeId" field must be a string.'
+      throw new Error(response.reason)
     }
-    accountCreated = true
+    if (typeof this.from !== 'string') {
+      response.success = false
+      response.reason = 'tx "from field must be a string.'
+      throw new Error(response.reason)
+    }
+    if (typeof this.issue !== 'string') {
+      response.success = false
+      response.reason = 'tx "issue" field must be a string.'
+      throw new Error(response.reason)
+    }
+    if (typeof this.proposal !== 'string') {
+      response.success = false
+      response.reason = 'tx "proposal" field must be a string.'
+      throw new Error(response.reason)
+    }
+    return response
   }
-  return dapp.createWrappedResponse(accountId, accountCreated, account.hash, account.timestamp, account)
+
+  validate(wrappedStates: WrappedStates, response: IncomingTransactionResult): IncomingTransactionResult {
+    const network: DaoGlobalAccount = wrappedStates[daoConfig.daoAccount].data
+    const issue: IssueAccount = wrappedStates[this.issue]?.data
+
+    if (issue.active !== null) {
+      response.reason = 'Issue is already active'
+      return response
+    }
+
+    const networkIssueHash = crypto.hash(`issue-${network.issue}`)
+    if (this.issue !== networkIssueHash) {
+      response.reason = `issue hash (${this.issue}) does not match current network issue hash (${networkIssueHash}) --- networkAccount: ${JSON.stringify(network)}`
+      return response
+    }
+    const networkProposalHash = crypto.hash(`issue-${network.issue}-proposal-1`)
+    if (this.proposal !== networkProposalHash) {
+      response.reason = `proposalHash (${this.proposal
+        }) does not match the current default network proposal (${networkProposalHash}) --- networkAccount: ${JSON.stringify(network)}`
+      return response
+    }
+    if (this.timestamp < network.windows.proposalWindow[0] || this.timestamp > network.windows.proposalWindow[1]) {
+      response.reason = 'Network is not within the time window to generate issues'
+      return response
+    }
+    response.success = true
+    response.reason = 'This transaction is valid!'
+    return response
+  }
+
+  apply(txTimestamp: number, wrappedStates: WrappedStates, dapp: Shardus): void {
+    const from: NodeAccount = wrappedStates[this.from].data
+
+    const network: DaoGlobalAccount = wrappedStates[daoConfig.daoAccount].data
+    const issue: IssueAccount = wrappedStates[this.issue].data
+    const proposal: ProposalAccount = wrappedStates[this.proposal].data
+
+    proposal.parameters = _.cloneDeep(network.current)
+    proposal.parameters.title = 'Default parameters'
+    proposal.parameters.description = 'Keep the current network parameters as they are'
+    proposal.number = 1
+
+    issue.number = network.issue
+    issue.active = true
+    issue.proposals.push(proposal.id)
+    issue.proposalCount++
+
+    from.timestamp = txTimestamp
+    issue.timestamp = txTimestamp
+    proposal.timestamp = txTimestamp
+    dapp.log('Applied issue tx', issue, proposal)
+  }
+
+  keys(result: TransactionKeys): TransactionKeys {
+    result.sourceKeys = [this.from]
+    result.targetKeys = [this.issue, this.proposal, daoConfig.daoAccount]
+    result.allKeys = [...result.sourceKeys, ...result.targetKeys]
+    return result
+  }
+
+  createRelevantAccount(
+    dapp: Shardus,
+    account: NodeAccount | IssueAccount | ProposalAccount,
+    accountId: string,
+    accountCreated = false,
+  ): WrappedResponse {
+    if (!account) {
+      if (accountId === this.issue) {
+        account = create.issueAccount(accountId)
+      } else if (accountId === this.proposal) {
+        account = create.proposalAccount(accountId)
+      } else {
+        account = create.nodeAccount(accountId)
+      }
+      accountCreated = true
+    }
+    return dapp.createWrappedResponse(accountId, accountCreated, account.hash, account.timestamp, account)
+  }
 }
