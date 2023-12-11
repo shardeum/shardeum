@@ -126,7 +126,7 @@ import { shardusFactory } from '@shardus/core'
 import { unsafeGetClientIp } from './utils/requests'
 import { initialNetworkParamters } from './shardeum/initialNetworkParameters'
 import { oneSHM, networkAccount, ONE_SECOND } from './shardeum/shardeumConstants'
-import { applyPenaltyTX } from './tx/penalty/transaction'
+import { applyPenaltyTX, clearOldPenaltyTxs } from './tx/penalty/transaction'
 import { getFinalArchiverList, setupArchiverDiscovery } from '@shardus/archiver-discovery'
 import { Archiver } from '@shardus/archiver-discovery/dist/src/types'
 import axios from 'axios'
@@ -5419,22 +5419,13 @@ const shardusSetup = (): void => {
       }
     },
     transactionReceiptPass(
-      tx,
+      timestampedTx: ShardusTypes.OpaqueTransaction,
       wrappedStates: { [id: string]: WrappedAccount },
       applyResponse: ShardusTypes.ApplyResponse
     ) {
-      let txId: string
-      //this code may seem equivalent but hashSignedObj will not be "smart" until after txHashingFix is true
-      if (ShardeumFlags.txHashingFix === true) {
-        txId = generateTxId(tx)
-      } else {
-        // @ts-ignore
-        if (!tx.sign) {
-          txId = crypto.hashObj(tx)
-        } else {
-          txId = crypto.hashObj(tx, true) // compute from tx
-        }
-      }
+      //@ts-ignore
+      const { tx } = timestampedTx
+      const txId: string = generateTxId(tx)
 
       //This next log is usefull but very heavy on the output lines:
       //Updating to be on only with verbose logs
@@ -6472,7 +6463,7 @@ export function shardeumGetTime(): number {
 
   if (ShardeumFlags.GlobalNetworkAccount) {
     // CODE THAT GETS EXECUTED WHEN NODES START
-    ;(async (): Promise<void> => {
+    ;await (async (): Promise<void> => {
       const serverConfig = config.server
       const cycleInterval = serverConfig.p2p.cycleDuration * ONE_SECOND
 
@@ -6485,7 +6476,9 @@ export function shardeumGetTime(): number {
 
       // THIS CODE IS CALLED ON EVERY NODE ON EVERY CYCLE
       async function networkMaintenance(): Promise<NodeJS.Timeout> {
-        /* prettier-ignore */ if (logFlags.dapp_verbose) shardus.log('New maintainence cycle has started')
+        /* prettier-ignore */
+        if (logFlags.dapp_verbose) shardus.log('New maintainence cycle has started')
+        clearOldPenaltyTxs(shardus)
         drift = shardeumGetTime() - expected
 
         try {
@@ -6500,21 +6493,28 @@ export function shardeumGetTime(): number {
             latestCycles.length > 0 &&
             latestCycles[0].counter < ShardeumFlags.FirstNodeRewardCycle
           ) {
-            /* prettier-ignore */ if (logFlags.dapp_verbose) shardus.log( `Too early for node reward: ${latestCycles[0].counter}.  first reward:${ShardeumFlags.FirstNodeRewardCycle}` )
-            /* prettier-ignore */ if (logFlags.dapp_verbose) shardus.log('Maintenance cycle has ended')
+            /* prettier-ignore */
+            if (logFlags.dapp_verbose) shardus.log(`Too early for node reward: ${latestCycles[0].counter}.  first reward:${ShardeumFlags.FirstNodeRewardCycle}`)
+            /* prettier-ignore */
+            if (logFlags.dapp_verbose) shardus.log('Maintenance cycle has ended')
             expected += cycleInterval
             return setTimeout(networkMaintenance, Math.max(100, cycleInterval - drift))
           }
         } catch (err) {
-          /* prettier-ignore */ if (logFlags.error) shardus.log('ERR: ', err)
-          /* prettier-ignore */ if (logFlags.error) console.log('ERR: ', err)
+          /* prettier-ignore */
+          if (logFlags.error) shardus.log('ERR: ', err)
+          /* prettier-ignore */
+          if (logFlags.error) console.log('ERR: ', err)
           return setTimeout(networkMaintenance, 5000) // wait 5s before trying again
         }
 
-        /* prettier-ignore */ if (logFlags.dapp_verbose) shardus.log('nodeId: ', nodeId)
-        /* prettier-ignore */ if (logFlags.dapp_verbose) shardus.log('nodeAddress: ', nodeAddress)
+        /* prettier-ignore */
+        if (logFlags.dapp_verbose) shardus.log('nodeId: ', nodeId)
+        /* prettier-ignore */
+        if (logFlags.dapp_verbose) shardus.log('nodeAddress: ', nodeAddress)
 
-        /* prettier-ignore */ if (logFlags.dapp_verbose) shardus.log('Maintainence cycle has ended')
+        /* prettier-ignore */
+        if (logFlags.dapp_verbose) shardus.log('Maintainence cycle has ended')
         expected += cycleInterval
         return setTimeout(networkMaintenance, Math.max(100, cycleInterval - drift))
       }
