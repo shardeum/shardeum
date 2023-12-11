@@ -9,17 +9,17 @@ export interface DaoGlobalAccount extends BaseAccount {
 
   windows: Windows
   nextWindows: Windows | object
-  
+
   devWindows: DevWindows
   nextDevWindows: DevWindows | object
-  
+
   issue: number
   devIssue: number
-  
+
   developerFund: DeveloperPayment[]
   nextDeveloperFund: DeveloperPayment[]
 
-  hash: string // to-do: make hexstring or remove this comment
+  hash: crypto.hexstring
   timestamp: number
 }
 
