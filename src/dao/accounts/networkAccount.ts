@@ -24,15 +24,14 @@ export interface DaoGlobalAccount extends BaseAccount {
 }
 
 export function isDaoGlobalAccount(obj: object | null | undefined): obj is DaoGlobalAccount {
-  if (obj == null) return false
   // to-do: add or remove
-  // if (!('type' in obj)) return false
-  // if (obj.type !== 'NetworkAccount') return false
-  if (!('id' in obj)) return false
-  if (!('issue' in obj)) return false
-  if (!('hash' in obj)) return false
-  if (!('timestamp' in obj)) return false
-  return true
+  // 'type' in obj
+  // obj.type === 'NetworkAccount'
+  return obj != null
+    && 'id' in obj
+    && 'issue' in obj
+    && 'hash' in obj
+    && 'timestamp' in obj
 }
 
 export const createDaoGlobalAccount = (accountId: string, timestamp: number): DaoGlobalAccount => {
