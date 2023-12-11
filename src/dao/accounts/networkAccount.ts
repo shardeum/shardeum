@@ -1,6 +1,6 @@
 import * as crypto from '@shardus/crypto-utils'
 import config from '../../config'
-import { DeveloperPayment, DevWindows, NetworkParameters, Windows } from '../types'
+import { DeveloperPayment, DevWindows, Windows } from '../types'
 import { AccountType, BaseAccount } from '../../shardeum/shardeumTypes'
 
 export interface DaoGlobalAccount extends BaseAccount {
