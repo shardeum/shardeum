@@ -112,10 +112,9 @@ export function toShardusAddressWithKey(
     if (addressStr.length != 42) {
       throw new Error('must pass in a 42 character hex address for Account type ContractStorage.')
     }
-    let suffixFirstIndex = 0
-    if (secondaryAddressStr.length === 66) {
-      suffixFirstIndex = 2
-    }
+
+    //we need to take a hash, to prevent collisions
+    const hashedSuffixKey = crypto.hash(secondaryAddressStr + addressStr)
 
     // Special case for 3-bit prefix. We combine the first nibble of the address with the last nibble of the key.
     // Please refer to the default case for more details. For the special case we use shorthands for optimization.
@@ -123,25 +122,23 @@ export function toShardusAddressWithKey(
       const combinedNibble = (
         (parseInt(addressStr[2], 16) & 14) |
         // eslint-disable-next-line security/detect-object-injection
-        (parseInt(secondaryAddressStr[suffixFirstIndex], 16) & 1)
+        (parseInt(hashedSuffixKey[0], 16) & 1)
       ).toString(16)
 
-      //we need to take a hash, to prevent collisions:
-      let hashedAddress = crypto.hash(secondaryAddressStr + addressStr)
-
-      return (combinedNibble + hashedAddress.slice(suffixFirstIndex + 1)).toLowerCase()
+      return (combinedNibble + hashedSuffixKey.slice(1)).toLowerCase()
     }
 
     const fullHexChars = Math.floor(ShardeumFlags.contractStoragePrefixBitLength / 4)
     const remainingBits = ShardeumFlags.contractStoragePrefixBitLength % 4
 
     let prefix = addressStr.slice(2, 2 + fullHexChars)
-    let suffix = secondaryAddressStr.slice(suffixFirstIndex + fullHexChars)
+    let suffix = hashedSuffixKey.slice(fullHexChars)
 
     // Handle the overlapping byte if there are remaining bits
     if (remainingBits > 0) {
       const prefixLastNibble = parseInt(addressStr[2 + fullHexChars], 16)
-      const suffixFirstNibble = parseInt(secondaryAddressStr[suffixFirstIndex + fullHexChars], 16)
+      // eslint-disable-next-line security/detect-object-injection
+      const suffixFirstNibble = parseInt(hashedSuffixKey[fullHexChars], 16)
 
       // Shift the prefix byte to the left and mask the suffix nibble, then combine them
       const suffixMask = (1 << (4 - remainingBits)) - 1
@@ -153,7 +150,7 @@ export function toShardusAddressWithKey(
 
       prefix += combinedHex
       // Adjust the suffix to remove the processed nibble
-      suffix = secondaryAddressStr.slice(suffixFirstIndex + fullHexChars + 1)
+      suffix = hashedSuffixKey.slice(fullHexChars + 1)
     }
 
     let shardusAddress = prefix + suffix
