@@ -29,13 +29,21 @@ fn get_valid_sender_public_key(mut cx: FunctionContext) -> JsResult<JsBuffer> {
     let v: Handle<JsNumber> = cx.argument(1)?;
     let r: Handle<JsTypedArray<u8>> = cx.argument(2)?;
     let s: Handle<JsTypedArray<u8>> = cx.argument(3)?;
-    let chain_id: Option<Handle<JsValue>> = cx.argument_opt(4);
+    let gas_limit: Handle<JsNumber> = cx.argument(4)?;
+    let data_fee: Handle<JsNumber> = cx.argument(5)?;
+    let tx_creation_fee: Handle<JsNumber> = cx.argument(6)?;
+    let tx_fee: Handle<JsNumber> = cx.argument(7)?;
+    let chain_id: Option<Handle<JsValue>> = cx.argument_opt(8);
 
     // Cast chain_id (Ugly)
     let hash = hash.as_slice(&cx).to_vec();
     let v = v.value(&mut cx) as u64;
     let r = r.as_slice(&cx).to_vec();
     let s = s.as_slice(&cx).to_vec();
+    let gas_limit = gas_limit.value(&mut cx) as u64;
+    let data_fee = data_fee.value(&mut cx) as u64;
+    let tx_creation_fee = tx_creation_fee.value(&mut cx) as u64;
+    let tx_fee = tx_fee.value(&mut cx) as u64;
     let chain_id: Option<u64> = match chain_id {
         Some(chain_id) => {
             let downcast: Result<Handle<'_, JsNumber>, neon::handle::DowncastError<JsValue, _>> =
@@ -54,24 +62,34 @@ fn get_valid_sender_public_key(mut cx: FunctionContext) -> JsResult<JsBuffer> {
     let hash: &[u8; 32] = hash[0..32].try_into().unwrap();
     let r: &[u8; 32] = r[0..32].try_into().unwrap();
     let s: &[u8; 32] = s[0..32].try_into().unwrap();
-    let result = get_valid_sender_public_key_impl(hash, v, r, s, chain_id);
-    match result {
-        Ok(address) => {
-            // Create a new JS TypedArray (Uint8Array) with the same length as the Rust array
-            let mut js_array = JsBuffer::new(&mut cx, address.len() as usize)?;
-            // Copy data from the Rust array into the JS TypedArray
-            {
-                let js_array_guard = js_array.borrow_mut();
-                js_array_guard
-                    .as_mut_slice(&mut cx)
-                    .copy_from_slice(&address);
+    let duration_unwrap = start.elapsed(); // Time elapsed since `start`
+    println!("Time taken to unmarshal Args: {:?}", duration_unwrap);
+    let start_gas_fee = Instant::now(); // Start timing
+    match check_gas_fees_impl(gas_limit, tx_fee, tx_creation_fee, data_fee) {
+        Ok(_) => {
+            let duration_gas_fee = start_gas_fee.elapsed();
+            println!("Time taken to validate gas fees: {:?}", duration_gas_fee);
+            match get_valid_sender_public_key_impl(hash, v, r, s, chain_id) {
+                Ok(address) => {
+                    let start_inside = Instant::now(); // Start timing
+                    let mut js_array = JsBuffer::new(&mut cx, address.len() as usize)?;
+                    // Copy data from the Rust array into the JS TypedArray
+                    {
+                        let js_array_guard = js_array.borrow_mut();
+                        js_array_guard
+                            .as_mut_slice(&mut cx)
+                            .copy_from_slice(&address);
+                    }
+                    let duration_inside = start_inside.elapsed(); // Time elapsed since `start`
+                    println!("Time taken to marshal response: {:?}", duration_inside);
+                    let duration = start.elapsed(); // Time elapsed since `start`
+                    println!("Cumulative time taken inside all rust: {:?}", duration);
+                    Ok(js_array)
+                }
+                Err(e) => cx.throw_error(format!("Error: {:?}", e)),
             }
-
-            let duration = start.elapsed(); // Time elapsed since `start`
-            println!("Time taken inside all rust: {:?}", duration);
-            Ok(js_array)
         }
-        Err(e) => cx.throw_error(format!("Error: {:?}", e)),
+        Err(e) => return cx.throw_error(format!("Error: {:?}", e)),
     }
 }
 
@@ -137,6 +155,20 @@ fn get_valid_sender_public_key_impl(
     }
 }
 
+fn check_gas_fees_impl(
+    gas_limit: u64,
+    tx_fee: u64,
+    tx_creation_fee: u64,
+    data_fee: u64,
+) -> Result<(), anyhow::Error> {
+    let total_fee = tx_fee + tx_creation_fee + data_fee;
+    if total_fee > gas_limit {
+        Err(anyhow!("Total fee is exceeds gas limit"))
+    } else {
+        Ok(())
+    }
+}
+
 fn ecrecover_impl(
     hash: &[u8; 32],
     v: u64,
@@ -144,6 +176,7 @@ fn ecrecover_impl(
     s: &[u8; 32],
     chain_id: Option<u64>,
 ) -> Result<[u8; 64], anyhow::Error> {
+    let start = Instant::now(); // Start timing
     let recovery_id = match chain_id {
         Some(chain_id) => RecoveryId::from_i32((v - (chain_id * 2 + 35)) as i32)?,
         None => RecoveryId::from_i32((v - 27) as i32)?,
@@ -158,6 +191,8 @@ fn ecrecover_impl(
     // TODO error wrapping
     let x = convert_slice_to_array(&public_key.serialize_uncompressed()[1..65]).unwrap();
     // let addr = Keccak256::digest(&public_key.serialize_uncompressed()[1..]);
+    let duration = start.elapsed(); // Time elapsed since `start`
+    println!("Time taken inside ecrecover: {:?}", duration);
     Ok(x)
 }
 
@@ -166,6 +201,7 @@ fn ecrecover_impl(
 fn validate_high_s(s: &[u8; 32]) -> Result<(), anyhow::Error> {
     // Define the SECP256K1 order
     // https://asecuritysite.com/SECP256K1#:~:text=%5Bsecp256k1%20Home%5D%5BHome%5D&text=The%20order%20of%20the%20curve,public%20key%20of%20aG.
+    let start = Instant::now(); // Start timing
     let secp256k1_order = BigUint::parse_bytes(
         b"FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEBAAEDCE6AF48A03BBFD25E8CD0364141",
         16,
@@ -177,44 +213,18 @@ fn validate_high_s(s: &[u8; 32]) -> Result<(), anyhow::Error> {
 
     // Convert s to BigUint
     let s_value = BigUint::from_bytes_be(s);
-
-    // Validate if s is greater than SECP256K1 order divided by 2
+    let duration = start.elapsed(); // Time elapsed since `start`
+                                    // Validate if s is greater than SECP256K1 order divided by 2
     if s_value > secp256k1_order_div_2 {
+        println!("Time taken inside all validate_high_s: {:?}", duration);
         Err(anyhow!(
             "Invalid s value greater than SECP256K1 order divided by 2"
         ))
     } else {
+        println!("Time taken inside all validate_high_s: {:?}", duration);
         Ok(())
     }
 }
-// First pass
-// fn validate_high_s(s: &[u8; 32]) {
-//     let mut s = s.clone();
-//     SECP.write().unwrap().
-//     let half_order = [
-//         0x7f, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xfc, // 2^255 - 218
-//         0xe8, 0x9b, 0x4a, 0x17, 0x75, 0xeb, 0x31, 0x28, // 2^255 - 19
-//         0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, // 2^255 - 1
-//         0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
-//     ];
-//     let mut high_s = false;
-//     if s[0] > half_order[0] {
-//         high_s = true;
-//     } else if s[0] == half_order[0] {
-//         for i in 1..32 {
-//             if s[i] > half_order[i] {
-//                 high_s = true;
-//                 break;
-//             } else if s[i] < half_order[i] {
-//                 break;
-//             }
-//         }
-//     }
-//     if high_s {
-
-//         Error??
-//     }
-// }
 
 fn concat_slices(a: &[u8; 32], b: &[u8; 32]) -> Vec<u8> {
     let mut combined = Vec::with_capacity(64);

@@ -49,8 +49,13 @@ function processFile(filePath) {
 
         if (data.byteLength >= 32 && s.byteLength == 32 && r.byteLength == 32) {
           // TODO move to inside rust as an argument
-          const v = parseInt(v_copy, 16) - (8082 * 2 + 35) + 27
-          transactions.push({ data, v, r, s })
+          //const v = parseInt(v_copy, 16) - (8082 * 2 + 35) + 27
+          const v = parseInt(v_copy, 16)
+          const chainId = 8082
+          transactions.push({ data, v, r, s, chainId })
+          console.log('valid line: ', line)
+        } else {
+          console.log('invalid line: ', line)
         }
       }
     }
@@ -65,9 +70,22 @@ function timeEcrecover(transactions) {
 
   transactions.forEach((tx) => {
     const startTime = process.hrtime()
-    // console.log(tx)
-    const x = rust_ecrecover.ecrecover(tx.data, tx.v, tx.r, tx.s)
-    // console.log(x);
+    const gasLimit = 1000000
+    const dataFee = 0
+    const txCreationFee = 0
+    const txFee = 0
+    const result = rust_ecrecover.getValidSenderPublicKey(
+      tx.data,
+      tx.v,
+      tx.r,
+      tx.s,
+      gasLimit,
+      dataFee,
+      txCreationFee,
+      txFee,
+      tx.chainId
+    )
+    console.log('\n')
     const [seconds, nanoseconds] = process.hrtime(startTime)
     totalTime += seconds * 1000 + nanoseconds / 1e6 // Convert to milliseconds
   })
@@ -79,4 +97,4 @@ const transactions = processFile(filePath)
 const totalTime = timeEcrecover(transactions)
 
 const averageTime = totalTime / transactions.length
-console.log(`Average time per rust run: ${averageTime} ms`)
+console.log(`Average time per run in JS: ${averageTime} ms`)
