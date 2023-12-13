@@ -4437,7 +4437,7 @@ const shardusSetup = (): void => {
             const shardusAddr = toShardusAddressWithKey(codeHashObj.contractAddress, codeHashObj.codeHash, AccountType.ContractCode)
             result.codeHashKeys.push(shardusAddr)
             shardusAddressToEVMAccountInfo.set(shardusAddr, {
-              evmAddress: shardusAddr,
+              evmAddress: codeHashObj.codeHash,
               contractAddress: codeHashObj.contractAddress,
               type: AccountType.ContractCode,
             })
@@ -4864,18 +4864,20 @@ const shardusSetup = (): void => {
           }
           /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`Creating new contract storage account key:${evmAccountID} in contract address ${wrappedEVMAccount.ethAddress}`)
         }  else if (accountType === AccountType.ContractCode) {
-          wrappedEVMAccount = {
-            timestamp: 0,
-            codeHash: hexToBytes('0x' + evmAccountInfo.evmAddress),
-            codeByte: Buffer.from([]),
-            ethAddress: evmAccountInfo.evmAddress, // storage key
-            contractAddress: evmAccountInfo.contractAddress, // storage key
-            hash: '',
-            accountType: AccountType.ContractCode,
-          }
-          /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`Creating new contract storage account key:${evmAccountID} in contract address ${wrappedEVMAccount.ethAddress}`)
+          //if(ShardeumFlags.createCodebytesFix){
+            wrappedEVMAccount = {
+              timestamp: 0,
+              codeHash: hexToBytes('0x' + evmAccountInfo.evmAddress),
+              codeByte: Buffer.from([]),
+              ethAddress: evmAccountInfo.evmAddress, // storage key
+              contractAddress: evmAccountInfo.contractAddress, // storage key
+              hash: '',
+              accountType: AccountType.ContractCode,
+            }     
+            /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`Creating new contract bytes account key:${evmAccountID} in contract address ${wrappedEVMAccount.ethAddress}`)
+          //}
         } else {
-          throw new Error(`getRelevantData: invalid accoun type ${accountType}`)
+          throw new Error(`getRelevantData: invalid account type ${accountType}`)
         }
         WrappedEVMAccountFunctions.updateEthAccountHash(wrappedEVMAccount)
         // accounts[accountId] = wrappedEVMAccount //getRelevantData must never modify accounts[]
