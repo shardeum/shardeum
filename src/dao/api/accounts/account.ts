@@ -1,6 +1,8 @@
+import { Shardus } from '@shardus/core'
+import { Request, Response } from 'express'
 import { getShardusAPI } from '../../../index'
 
-export const account = dapp => async (req, res): Promise<void> => {
+export const account = (dapp: Shardus) => async (req: Request, res: Response): Promise<void> => {
   try {
     const id = req.params['id']
     const account = await getShardusAPI().getLocalOrRemoteAccount(id)
