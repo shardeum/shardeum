@@ -30,10 +30,8 @@ fn get_valid_sender_public_key(mut cx: FunctionContext) -> JsResult<JsBuffer> {
     let r: Handle<JsTypedArray<u8>> = cx.argument(2)?;
     let s: Handle<JsTypedArray<u8>> = cx.argument(3)?;
     let gas_limit: Handle<JsNumber> = cx.argument(4)?;
-    let data_fee: Handle<JsNumber> = cx.argument(5)?;
-    let tx_creation_fee: Handle<JsNumber> = cx.argument(6)?;
-    let tx_fee: Handle<JsNumber> = cx.argument(7)?;
-    let chain_id: Option<Handle<JsValue>> = cx.argument_opt(8);
+    let base_fee: Handle<JsNumber> = cx.argument(5)?;
+    let chain_id: Handle<JsNumber> = cx.argument(6)?;
 
     // Cast chain_id (Ugly)
     let hash = hash.as_slice(&cx).to_vec();
@@ -41,22 +39,8 @@ fn get_valid_sender_public_key(mut cx: FunctionContext) -> JsResult<JsBuffer> {
     let r = r.as_slice(&cx).to_vec();
     let s = s.as_slice(&cx).to_vec();
     let gas_limit = gas_limit.value(&mut cx) as u64;
-    let data_fee = data_fee.value(&mut cx) as u64;
-    let tx_creation_fee = tx_creation_fee.value(&mut cx) as u64;
-    let tx_fee = tx_fee.value(&mut cx) as u64;
-    let chain_id: Option<u64> = match chain_id {
-        Some(chain_id) => {
-            let downcast: Result<Handle<'_, JsNumber>, neon::handle::DowncastError<JsValue, _>> =
-                chain_id.downcast(&mut cx);
-
-            // Current behavior is to return None if the chain_id is not a number
-            match downcast {
-                Ok(chain_id) => Some(chain_id.value(&mut cx) as u64),
-                Err(_) => None,
-            }
-        }
-        None => None,
-    };
+    let base_fee = base_fee.value(&mut cx) as u64;
+    let chain_id = chain_id.value(&mut cx) as u64;
 
     // Call into impl TODO: error handling
     let hash: &[u8; 32] = hash[0..32].try_into().unwrap();
@@ -65,7 +49,7 @@ fn get_valid_sender_public_key(mut cx: FunctionContext) -> JsResult<JsBuffer> {
     let duration_unwrap = start.elapsed(); // Time elapsed since `start`
     println!("Time taken to unmarshal Args: {:?}", duration_unwrap);
     let start_gas_fee = Instant::now(); // Start timing
-    match check_gas_fees_impl(gas_limit, tx_fee, tx_creation_fee, data_fee) {
+    match check_gas_fees_impl(gas_limit, base_fee) {
         Ok(_) => {
             let duration_gas_fee = start_gas_fee.elapsed();
             println!("Time taken to validate gas fees: {:?}", duration_gas_fee);
@@ -147,7 +131,7 @@ fn get_valid_sender_public_key_impl(
     v: u64,
     r: &[u8; 32],
     s: &[u8; 32],
-    chain_id: Option<u64>,
+    chain_id: u64,
 ) -> Result<[u8; 64], anyhow::Error> {
     match validate_high_s(s) {
         Ok(_) => ecrecover_impl(hash, v, r, s, chain_id),
@@ -155,14 +139,8 @@ fn get_valid_sender_public_key_impl(
     }
 }
 
-fn check_gas_fees_impl(
-    gas_limit: u64,
-    tx_fee: u64,
-    tx_creation_fee: u64,
-    data_fee: u64,
-) -> Result<(), anyhow::Error> {
-    let total_fee = tx_fee + tx_creation_fee + data_fee;
-    if total_fee > gas_limit {
+fn check_gas_fees_impl(gas_limit: u64, base_fee: u64) -> Result<(), anyhow::Error> {
+    if base_fee > gas_limit {
         Err(anyhow!("Total fee is exceeds gas limit"))
     } else {
         Ok(())
@@ -174,13 +152,10 @@ fn ecrecover_impl(
     v: u64,
     r: &[u8; 32],
     s: &[u8; 32],
-    chain_id: Option<u64>,
+    chain_id: u64,
 ) -> Result<[u8; 64], anyhow::Error> {
     let start = Instant::now(); // Start timing
-    let recovery_id = match chain_id {
-        Some(chain_id) => RecoveryId::from_i32((v - (chain_id * 2 + 35)) as i32)?,
-        None => RecoveryId::from_i32((v - 27) as i32)?,
-    };
+    let recovery_id = RecoveryId::from_i32((v - (chain_id * 2 + 35)) as i32)?;
     // println!("recovery_id: {:?}", recovery_id);
     let signature = RecoverableSignature::from_compact(&concat_slices(r, s), recovery_id)?;
     // println!("signature: {:?}", signature);

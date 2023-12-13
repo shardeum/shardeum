@@ -28,11 +28,13 @@ function processFile(filePath) {
   lines.forEach((line) => {
     if (line) {
       const jsonLine = JSON.parse(line)
-      const { data, v, r, s } = jsonLine
+      const { data, v, r, s, baseFeeTx, gasLimitTx } = jsonLine
       const d = data
       const v_copy = v
       const r_copy = r
       const s_copy = s
+      const gasLimitCopy = gasLimitTx
+      const baseFeeCopy = baseFeeTx
       const uniqueKey = `${d}-${v}-${r}-${s}`
       // console.log(d, v, r, s)
 
@@ -51,8 +53,10 @@ function processFile(filePath) {
           // TODO move to inside rust as an argument
           //const v = parseInt(v_copy, 16) - (8082 * 2 + 35) + 27
           const v = parseInt(v_copy, 16)
+          const gasLimit = parseInt(gasLimitCopy, 16)
+          const baseFee = parseInt(baseFeeCopy, 16)
           const chainId = 8082
-          transactions.push({ data, v, r, s, chainId })
+          transactions.push({ data, v, r, s, chainId, baseFee, gasLimit })
           console.log('valid line: ', line)
         } else {
           console.log('invalid line: ', line)
@@ -70,19 +74,13 @@ function timeEcrecover(transactions) {
 
   transactions.forEach((tx) => {
     const startTime = process.hrtime()
-    const gasLimit = 1000000
-    const dataFee = 0
-    const txCreationFee = 0
-    const txFee = 0
     const result = rust_ecrecover.getValidSenderPublicKey(
       tx.data,
       tx.v,
       tx.r,
       tx.s,
-      gasLimit,
-      dataFee,
-      txCreationFee,
-      txFee,
+      tx.gasLimit,
+      tx.baseFee,
       tx.chainId
     )
     console.log('\n')
