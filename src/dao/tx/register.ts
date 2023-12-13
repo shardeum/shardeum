@@ -31,7 +31,7 @@ export function validateFields(tx: Register, response: ShardusTypes.IncomingTran
     response.reason = 'tx "alias" field must be a string.'
     throw new Error(response.reason)
   }
-  if (tx.alias.length >= 20) {
+  if (tx.alias.length > 20) {
     response.success = false
     response.reason = 'tx "alias" field must be less than 21 characters (20 max)'
     throw new Error(response.reason)
