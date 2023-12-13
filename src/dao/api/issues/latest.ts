@@ -1,13 +1,10 @@
-import * as configs from '../../../config'
+import { Shardus } from '@shardus/core'
 import * as crypto from '@shardus/crypto-utils'
+import { Request, Response } from 'express'
 import { getShardusAPI } from '../../../index'
 import { networkAccount } from '../../../shardeum/shardeumConstants'
 
-interface HasIssue {
-  issue: any // eslint-disable-line @typescript-eslint/no-explicit-any
-}
-
-export const latest = dapp => async (req, res): Promise<void> => {
+export const latest = (dapp: Shardus) => async (_req: Request, res: Response): Promise<void> => {
   try {
     const network = await getShardusAPI().getLocalOrRemoteAccount(networkAccount)
 
@@ -15,10 +12,10 @@ export const latest = dapp => async (req, res): Promise<void> => {
     if (!network.data) throw new Error('network.data is undefined')
     if (typeof network.data !== 'object') throw new Error('network.data is not an object')
     if (!('issue' in network.data)) throw new Error('issue is not in network.data')
-    const data = network.data as HasIssue
+    const data = network.data
 
     const issue = await getShardusAPI().getLocalOrRemoteAccount(crypto.hash(`issue-${data.issue}`))
-    res.json({ issue: issue && issue.data })
+    res.json({ issue: issue?.data })
   } catch (error) {
     dapp.log(error)
     res.json({ error })
