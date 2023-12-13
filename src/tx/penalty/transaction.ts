@@ -25,18 +25,21 @@ const penaltyTxsMap: Map<string, PenaltyTX> = new Map()
 export async function injectPenaltyTX(
   shardus: Shardus,
   eventData: ShardusTypes.ShardusEvent,
-  violationData: any
+  violationData: LeftNetworkEarlyViolationData | NodeRefutedViolationData
 ): Promise<{
   success: boolean
   reason: string
   status: number
 }> {
+  let violationType: ViolationType
+  if (eventData.type === 'node-left-early') violationType = ViolationType.LeftNetworkEarly
+  else if (eventData.type === 'node-refuted') violationType = ViolationType.NodeRefuted
   const unsignedTx = {
     reportedNodeId: eventData.nodeId,
     reportedNodePublickKey: eventData.publicKey,
     operatorEVMAddress: '',
     timestamp: shardeumGetTime(),
-    violationType: ViolationType.LeftNetworkEarly,
+    violationType,
     violationData,
     isInternalTx: true,
     internalTXType: InternalTXType.Penalty,
@@ -151,7 +154,7 @@ export function validatePenaltyTX(tx: PenaltyTX, shardus: Shardus): { isValid: b
     if (ShardeumFlags.VerboseLogs) console.log(`validatePenaltyTX fail tx.reportedNode operator address invalid`, tx)
     return { isValid: false, reason: 'Invalid reportedNode operator address' }
   }
-  if (tx.violationType < 1000 || tx.violationType > 1002) {
+  if (tx.violationType < 1000 || tx.violationType > 1999) {
     /* prettier-ignore */
     nestedCountersInstance.countEvent('shardeum-penalty', `validatePenaltyTX fail tx.violationType not in range`)
     /* prettier-ignore */
@@ -263,7 +266,7 @@ export async function applyPenaltyTX(
     operatorAccount = wrappedStates[operatorShardusAddress].data as WrappedEVMAccount
   }
 
-  nodeAccount.rewardEndTime = tx.violationData?.nodeDroppedTime || Math.floor(tx.timestamp / 1000)
+  if (tx.violationType === ViolationType.LeftNetworkEarly) nodeAccount.rewardEndTime = tx.violationData?.nodeDroppedTime || Math.floor(tx.timestamp / 1000)
 
   //TODO should we check if it was already penalized?
   const penaltyAmount = getPenaltyForViolation(tx, nodeAccount.stakeLock)
@@ -298,10 +301,8 @@ export async function applyPenaltyTX(
 
     let wrappedChangedOperatorAccount: ShardusTypes.WrappedData
     /* eslint-disable security/detect-object-injection */
-    if (WrappedEVMAccountFunctions.isWrappedEVMAccount(wrappedStates[operatorShardusAddress].data)) {
-      wrappedChangedOperatorAccount = WrappedEVMAccountFunctions._shardusWrappedAccount(
-        wrappedStates[operatorShardusAddress].data as WrappedEVMAccount
-      )
+    if (WrappedEVMAccountFunctions.isWrappedEVMAccount(operatorAccount)) {
+      wrappedChangedOperatorAccount = WrappedEVMAccountFunctions._shardusWrappedAccount(operatorAccount)
     }
     /* eslint-enable security/detect-object-injection */
     shardus.applyResponseAddChangedAccount(

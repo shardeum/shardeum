@@ -6091,13 +6091,6 @@ const shardusSetup = (): void => {
       // skip if this node is also activated in the same cycle
       const currentlyActivatedNode = currentCycle.activated.includes(nodeId)
       if (currentlyActivatedNode) return
-      // Address as the hash of node public Key and current cycle
-      const address = crypto.hashObj({
-        nodePublicKey: data.publicKey,
-        counter: currentCycle.counter,
-      })
-      const closedNodes = shardus.getClosestNodes(address, 5)
-      if (ShardeumFlags.VerboseLogs) console.log('closest closedNodes', closedNodes)
 
       if (eventType === 'node-activated') {
         const activeNodesCount = currentCycle.active
@@ -6127,7 +6120,7 @@ const shardusSetup = (): void => {
           }
         }
         if (nodeLostCycle && nodeDroppedCycle && nodeLostCycle < nodeDroppedCycle) {
-          const violationData = {
+          const violationData: LeftNetworkEarlyViolationData = {
             nodeLostCycle,
             nodeDroppedCycle,
             nodeDroppedTime: data.time,
@@ -6138,6 +6131,27 @@ const shardusSetup = (): void => {
         } else {
           nestedCountersInstance.countEvent('shardeum-staking', `node-left-early: event skipped`)
           /* prettier-ignore */ if (logFlags.dapp_verbose) console.log(`Shardeum node-left-early event skipped`, data, nodeLostCycle, nodeDroppedCycle)
+        }
+      } else if (eventType === 'node-refuted' && ShardeumFlags.enableNodeSlashing === true) {
+        let nodeRefutedCycle
+        for (let i = 0; i < latestCycles.length; i++) {
+          const cycle = latestCycles[i]
+          if (cycle == null) continue
+          if (cycle.refuted.includes(data.nodeId)) {
+            nodeRefutedCycle = cycle.counter
+          }
+        }
+        if (nodeRefutedCycle === data.cycleNumber) {
+          const violationData: NodeRefutedViolationData = {
+            nodeRefutedCycle: nodeRefutedCycle,
+            nodeRefutedTime: data.time,
+          }
+          nestedCountersInstance.countEvent('shardeum-staking', `node-refuted: injectPenaltyTx`)
+          const result = await PenaltyTx.injectPenaltyTX(shardus, data, violationData)
+          /* prettier-ignore */ if (logFlags.dapp_verbose) console.log('INJECTED_PENALTY_TX', result)
+        } else {
+          nestedCountersInstance.countEvent('shardeum-staking', `node-refuted: event skipped`)
+          /* prettier-ignore */ if (logFlags.dapp_verbose) console.log(`Shardeum node-refuted event skipped`, data, nodeRefutedCycle)
         }
       }
     },
