@@ -1,6 +1,6 @@
 import { Shardus } from '@shardus/core'
 import shardus from '@shardus/core/dist/shardus'
-import { ApplyResponse } from '@shardus/core/dist/shardus/shardus-types'
+import { ApplyResponse, OpaqueTransaction } from '@shardus/core/dist/shardus/shardus-types'
 import { createInternalTxReceipt } from '..'
 import { ShardeumFlags } from '../shardeum/shardeumFlags'
 import {
@@ -12,6 +12,10 @@ import {
 } from '../shardeum/shardeumTypes'
 import { DaoGlobalAccount } from './accounts/networkAccount'
 import { daoAccount, daoConfig } from './config'
+import { decodeDaoTxFromEVMTx } from './utils'
+import { Transaction, TransactionType } from '@ethereumjs/tx'
+import transactions from './tx'
+import { Address } from '@ethereumjs/util'
 
 export function setupDaoAccount(shardus: Shardus, when: number): void {
   if (ShardeumFlags.EnableDaoFeatures) {
@@ -88,22 +92,32 @@ function createDaoAccount(timestamp = 0): DaoGlobalAccount {
   return account
 }
 
-export function isDaoTx(tx): boolean {
-  /* Got really lazy here, but we need to do our own analysis to determine if the raw evm tx is a dao tx. */
-  return tx.to === daoAccount
+export function isDaoTx(tx: {to?: Address }): boolean {
+  return tx.to && tx.to.toString() === ShardeumFlags.daoTargetAddress
 }
 
-export function handleDaoTxCrack(
-  otherAccountKeys,
-  txSenderEvmAddr,
-  txToEvmAddr,
-  transformedSourceKey,
-  result
-): void {
-  /** [TODO]
-   * Liberus txs export a `keys` fn that gets called here
-   */
-  return
+/**
+ * Liberus txs export a `keys` fn that gets called here
+ */
+export function handleDaoTxCrack(tx: OpaqueTransaction, result: {
+  sourceKeys: any[];
+  targetKeys: any[];
+  storageKeys: any[];
+  codeHashKeys: any[];
+  allKeys: any[];
+  timestamp: number;
+}): void {
+  // Decode data field of EVM tx to get type of DAO tx
+  if ('data' in tx) {
+    const daoTx: unknown = decodeDaoTxFromEVMTx(tx as Transaction[TransactionType.Legacy] | Transaction[TransactionType.AccessListEIP2930])
+    if (typeof daoTx === 'object' && 'type' in daoTx && typeof daoTx.type === 'string') {
+      const changes = transactions[daoTx.type].keys(daoTx, {})
+      // Combine changes with existing keys
+      result.sourceKeys = result.sourceKeys.concat(changes.sourceKeys)
+      result.targetKeys = result.targetKeys.concat(changes.targetKeys)
+      result.allKeys = result.allKeys.concat(changes.allKeys)
+    }
+  }
 }
 
 export function handleDaoTxGetRelevantData(
@@ -121,7 +135,7 @@ export function handleDaoTxGetRelevantData(
    * [TODO]
    * Liberus txs export a `createRelevantAccount` fn that gets called here
    */
-  return shardus.createWrappedResponse(tx, tx.to, tx.from, tx.value, tx.data, tx.timestamp, tx.hash, tx.id)
+  return shardus.createWrappedResponse(tx, tx.to, tx.from, tx.value, tx.data)
 }
 
 export function handleDaoTxApply(shardus: Shardus, tx): void {
