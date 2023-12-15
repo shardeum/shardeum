@@ -93,7 +93,8 @@ export const validateTxnFields =
             reason: '',
             txnTimestamp,
           }
-        } else if (tx.internalTXType === InternalTXType.ChangeConfig) {
+        } else if (tx.internalTXType === InternalTXType.ChangeConfig ||
+          tx.internalTXType === InternalTXType.ChangeNetworkParam) {
           try {
             // const devPublicKey = shardus.getDevPublicKey() // This have to be reviewed again whether to get from shardus interface or not
             const devPublicKey = shardus.getDevPublicKeyMaxLevel()
@@ -119,6 +120,29 @@ export const validateTxnFields =
           const result = validatePenaltyTX(tx as PenaltyTX, shardus)
           success = result.isValid
           reason = result.reason
+        } else if (tx.internalTXType === InternalTXType.InitNetwork) {
+          const latestCycles = shardus.getLatestCycles()
+          if (latestCycles == null || latestCycles.length === 0) {
+            return {
+              success: false,
+              reason,
+              txnTimestamp: txnTimestamp,
+            }
+          }
+          const cycle = latestCycles[0]          
+          if(cycle.counter > 1){
+            return {
+              success: false,
+              reason,
+              txnTimestamp: txnTimestamp,
+            }
+          }
+          success = crypto.verifyObj(internalTX)
+          return {
+            success,
+            reason,
+            txnTimestamp: txnTimestamp,
+          }
         } else {
           try {
             success = crypto.verifyObj(internalTX)

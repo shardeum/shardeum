@@ -33,7 +33,7 @@ import { parse as parseUrl } from 'url'
 import got from 'got'
 import 'dotenv/config'
 import { ShardeumState, TransactionState } from './state'
-import { __ShardFunctions, nestedCountersInstance, ShardusTypes, DebugComplete, Shardus } from '@shardus/core'
+import { __ShardFunctions, nestedCountersInstance, ShardusTypes, DebugComplete, Shardus, DevSecurityLevel } from '@shardus/core'
 import { ContractByteWrite } from './state/transactionState'
 import { version, devDependencies } from '../package.json'
 import {
@@ -43,7 +43,7 @@ import {
   ClaimRewardTX,
   DebugTx,
   DebugTXType,
-  DevSecurityLevel,
+  //DevSecurityLevel,
   //DevAccount,
   EVMAccountInfo,
   InitRewardTimes,
@@ -958,6 +958,9 @@ function logAccessList(message: string, appData): void {
  */
 const configShardusEndpoints = (): void => {
   const debugMiddleware = shardus.getDebugModeMiddleware()
+  const debugMiddlewareLow = shardus.getDebugModeMiddlewareLow()
+  const debugMiddlewareMedium = shardus.getDebugModeMiddlewareMedium()
+  //const debugMiddlewareHigh = shardus.getDebugModeMiddlewareHigh()
   const externalApiMiddleware = getExternalApiMiddleware()
 
   //TODO request needs a signature and a timestamp.  or make it a real TX from a faucet account..
@@ -1806,7 +1809,7 @@ const configShardusEndpoints = (): void => {
   //   res.json({ tx: result })
   // })
 
-  shardus.registerExternalGet('accounts', debugMiddleware, async (req, res) => {
+  shardus.registerExternalGet('accounts', debugMiddlewareMedium, async (req, res) => {
     // if(isDebugMode()){
     //   return res.json(`endpoint not available`)
     // }
@@ -1840,7 +1843,7 @@ const configShardusEndpoints = (): void => {
   })
 
   // Returns the hardware-spec of the server running the validator
-  shardus.registerExternalGet('system-info', externalApiMiddleware, async (req, res) => {
+  shardus.registerExternalGet('system-info', debugMiddlewareLow, async (req, res) => {
     let result = {
       platform: platform(),
       arch: arch(),
@@ -1882,6 +1885,7 @@ const configShardusEndpoints = (): void => {
   )
 
   // Returns the latest value from isReadyToJoin call
+  // TODO verify if this is used by the node operator
   shardus.registerExternalGet('debug-is-ready-to-join', async (req, res) => {
     const publicKey = shardus.crypto.getPublicKey()
 
@@ -4562,6 +4566,8 @@ const shardusSetup = (): void => {
               //wrappedEVMAccount = createNodeAccount(accountId) as any
             }
             accountCreated = true
+          } else {
+            throw Error(`Dev Account already exists`)
           }
         }
         if (
@@ -4573,10 +4579,9 @@ const shardusSetup = (): void => {
           // probably an array of dev public keys
 
           if (!wrappedEVMAccount) {
-            //if the network account does not exist then throw an error
             // This is the 0000x00000 account
             if (accountId === networkAccount) {
-              throw Error(`Network Account is not found ${accountId}`)
+              throw Error(`Network Account is not allowed to sign this ${accountId}`)
             } else if (shardus.getDevPublicKey(accountId)) {
               throw Error(`Dev Account is not found ${accountId}`)
             }
@@ -5532,6 +5537,13 @@ const shardusSetup = (): void => {
           }
           const pkClearance = shardus.getDevPublicKey(data.sign.owner)
           // check for invalid signature for AdminCert
+          if(pkClearance == null){
+            return {
+              success: false,
+              reason: 'Unauthorized! no getDevPublicKey defined',
+              fatal: true,
+            }
+          }
           if (
             pkClearance &&
             !shardus.crypto.verify(adminCert, pkClearance) &&
@@ -5587,6 +5599,13 @@ const shardusSetup = (): void => {
 
           const pkClearance = shardus.getDevPublicKey(data.sign.owner)
           // check for invalid signature for AdminCert
+          if(pkClearance == null){
+            return {
+              success: false,
+              reason: 'Unauthorized! no getDevPublicKey defined',
+              fatal: true,
+            }
+          }
           if (
             pkClearance &&
             !shardus.crypto.verify(adminCert, pkClearance) &&

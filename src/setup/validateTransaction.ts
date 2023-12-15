@@ -20,7 +20,8 @@ export const validateTransaction =
 
       if (isInternalTXGlobal(internalTx) === true) {
         return { result: 'pass', reason: 'valid' }
-      } else if (tx.internalTXType === InternalTXType.ChangeConfig) {
+      } else if (tx.internalTXType === InternalTXType.ChangeConfig||
+        internalTx.internalTXType === InternalTXType.ChangeNetworkParam) {
         const devPublicKey = shardus.getDevPublicKeyMaxLevel() //get the highest level pk
 
         if (devPublicKey) {

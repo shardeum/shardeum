@@ -82,9 +82,11 @@ export const sync = (shardus: Shardus, evmCommon: any) => async (): Promise<void
           /* prettier-ignore */ if (logFlags.important_as_error) shardus.log(`node ${nodeId} SETUP GENESIS ACCOUNT: ${address}  amt: ${amount}`)
         }
         /* prettier-ignore */ if (logFlags.important_as_error) console.log(`Skipped ${skippedAccountCount} genesis accounts`)
-        if (shardus.getDevPublicKeyMaxLevel()) {
+        //TODO we need to brainstorm a way to allow migration of keys on a live network
+        const maxLevelDevKey = shardus.getDevPublicKeyMaxLevel()
+        if (maxLevelDevKey) {
           const { account, cycle } = createDevAccount(
-            shardus.getDevPublicKeyMaxLevel(),
+            maxLevelDevKey,
             shardus.getLatestCycles()
           )
           const devAccount: any = account // eslint-disable-line @typescript-eslint/no-explicit-any

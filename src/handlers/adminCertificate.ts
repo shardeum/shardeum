@@ -3,7 +3,7 @@ import { ValidatorError } from './queryCertificate'
 import { ShardeumFlags } from '../shardeum/shardeumFlags'
 import * as crypto from '@shardus/crypto-utils'
 import { Request } from 'express'
-import { DevSecurityLevel } from '../shardeum/shardeumTypes'
+import { DevSecurityLevel } from '@shardus/core'
 
 export interface AdminCert {
   nominee: string
@@ -35,6 +35,11 @@ function validatePutAdminCertRequest(req: PutAdminCertRequest, shardus: Shardus)
   }
   try {
     const pkClearance = shardus.getDevPublicKey(req.sign.owner)
+
+    if(pkClearance == null){
+      return { success: false, reason: 'Unauthorized! no getDevPublicKey defined' }
+    }
+
     if (
       pkClearance &&
       !shardus.crypto.verify(req, pkClearance) &&

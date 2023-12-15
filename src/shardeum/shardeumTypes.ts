@@ -87,9 +87,9 @@ export interface EVMAccountInfo {
 }
 
 export enum InternalTXType {
-  SetGlobalCodeBytes = 0,
+  SetGlobalCodeBytes = 0, //Deprecated
   InitNetwork = 1,
-  NodeReward = 2,
+  NodeReward = 2,   //Deprecated
   ChangeConfig = 3,
   ApplyChangeConfig = 4,
   SetCertTime = 5,
@@ -453,11 +453,4 @@ export interface AppJoinData {
   stakeCert: StakeCert
   adminCert: AdminCert
   mustUseAdminCert: boolean
-}
-
-export enum DevSecurityLevel {
-  Unauthorized = 0,
-  Low = 1,
-  Medium = 2,
-  High = 3,
 }
