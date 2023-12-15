@@ -1,15 +1,15 @@
-import * as configs from '../../../config'
+import { Shardus } from '@shardus/core'
+import { Request, Response } from 'express'
 import { getShardusAPI } from '../../../index'
 import { networkAccount } from '../../../shardeum/shardeumConstants'
+import { DaoGlobalAccount } from '../../accounts/networkAccount'
 
-export const current = dapp => async (req, res): Promise<void> => {
+export const current = (dapp: Shardus) => async (_req: Request, res: Response): Promise<void> => {
   try {
     const account = await getShardusAPI().getLocalOrRemoteAccount(networkAccount)
-    const network: NetworkAccount = account.data
+    const network: DaoGlobalAccount = account.data as DaoGlobalAccount
     res.json({
       parameters: {
-        current: network.current,
-        next: network.next,
         developerFund: network.developerFund,
         nextDeveloperFund: network.nextDeveloperFund,
         windows: network.windows,
@@ -18,7 +18,6 @@ export const current = dapp => async (req, res): Promise<void> => {
         nextDevWindows: network.nextDevWindows,
         issue: network.issue,
         devIssue: network.devIssue,
-        listOfChanges: network.listOfChanges,
       },
     })
   } catch (error) {
@@ -27,12 +26,3 @@ export const current = dapp => async (req, res): Promise<void> => {
   }
 }
 
-export const next = dapp => async (req, res): Promise<void> => {
-  try {
-    const network = await getShardusAPI().getLocalOrRemoteAccount(configs.networkAccount)
-    res.json({ parameters: network.data.next })
-  } catch (error) {
-    dapp.log(error)
-    res.json({ error })
-  }
-}
