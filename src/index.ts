@@ -155,6 +155,11 @@ export const blocks: BlockMap = {}
 export const blocksByHash: { [hash: string]: number } = {}
 export const readableBlocks: { [blockNumber: number | string]: ShardeumBlockOverride } = {}
 
+//Cache network account
+let cachedNetworkAccount = null
+let cacheExpirationTimestamp = 0
+const CACHE_DURATION_SECONDS = ShardeumFlags.networkAccountCacheDuration // default 10 minutes
+
 export let genesisAccounts: string[] = []
 
 // Two global variables: at the top of utils/versions.ts
@@ -5835,7 +5840,20 @@ const shardusSetup = (): void => {
       activeNodes: P2P.P2PTypes.Node[],
       mode: P2P.ModesTypes.Record['mode']
     ): Promise<boolean> {
-      const networkAccount = await fetchNetworkAccountFromArchiver()
+      const currentTime = Date.now()
+      let networkAccount = null
+      if (currentTime < cacheExpirationTimestamp && cachedNetworkAccount) {
+        // Use cached result if it's still valid
+        networkAccount = cachedNetworkAccount
+        /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`isReadyToJoin using cached network account ${JSON.stringify(networkAccount)}`)
+      } else {
+        // Fetch new network account data
+        networkAccount = await fetchNetworkAccountFromArchiver()
+        // Update cache with new result
+        cachedNetworkAccount = networkAccount
+        cacheExpirationTimestamp = currentTime + CACHE_DURATION_SECONDS * 1000
+        /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`isReadyToJoin fetched new network account ${JSON.stringify(networkAccount)}`)
+      }
 
       if (initialNetworkParamters && networkAccount) {
         if (
