@@ -4403,7 +4403,6 @@ const shardusSetup = (): void => {
           shardusMemoryPatterns: null,
         }
       }
-      // isDaoTX() { get addresses and return }
 
       // it is an EVM transaction
       const rawSerializedTx = tx.raw
@@ -4429,9 +4428,6 @@ const shardusSetup = (): void => {
         const transformedSourceKey = toShardusAddress(txSenderEvmAddr, AccountType.Account)
         const transformedTargetKey = transaction.to ? toShardusAddress(txToEvmAddr, AccountType.Account) : ''
 
-        if (isDaoTx(transaction)) {
-          handleDaoTxCrack(otherAccountKeys, txSenderEvmAddr, txToEvmAddr, transformedSourceKey, result)
-        } else {
         result.sourceKeys.push(transformedSourceKey)
         shardusAddressToEVMAccountInfo.set(transformedSourceKey, {
           evmAddress: txSenderEvmAddr,
@@ -4593,8 +4589,10 @@ const shardusSetup = (): void => {
           additionalAccounts,
           result.codeHashKeys
         )
+
+        if (isDaoTx(tx)) handleDaoTxCrack(tx, result)
+
         if (ShardeumFlags.VerboseLogs) console.log('running getKeyFromTransaction', txId, result)
-        }
       } catch (e) {
         if (ShardeumFlags.VerboseLogs) console.log('getKeyFromTransaction: Unable to get keys from tx', e)
       }

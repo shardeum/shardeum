@@ -21,11 +21,3 @@ export const create = {
   proposalAccount,
   userAccount,
 }
-
-export interface HasToAddress {
-  readonly to?: Address
-}
-
-export function isDAOTx(transaction: HasToAddress): boolean {
-  return transaction.to && transaction.to.toString() === ShardeumFlags.daoTargetAddress
-}
