@@ -5476,7 +5476,7 @@ const shardusSetup = (): void => {
           /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`validateJoinRequest fail: old version`)
           return {
             success: false,
-            reason: `version number is old. Our app version is ${version}. Join request node app version is ${appJoinData.version}`,
+            reason: `version number is old. minVersion is ${minVersion}. Join request node app version is ${appJoinData.version}`,
             fatal: true,
           }
         }
@@ -6244,7 +6244,7 @@ const shardusSetup = (): void => {
           /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`validateJoinRequest fail: old version`)
           return {
             canStay: false,
-            reason: `version number is old. Our app version is ${version}. Join request node app version is ${appJoinData.version}`,
+            reason: `canStayOnStandby: standby node version: ${appJoinData.version} < minVersion ${minVersion}`,
           }
         }
 
