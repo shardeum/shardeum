@@ -93,6 +93,7 @@ import {
   findMajorityResult,
   generateTxId,
   isWithinRange,
+  isValidVersion,
 } from './utils'
 import config, { Config } from './config'
 import Wallet from 'ethereumjs-wallet'
@@ -5764,6 +5765,24 @@ const shardusSetup = (): void => {
       activeNodes: P2P.P2PTypes.Node[],
       mode: P2P.ModesTypes.Record['mode']
     ): Promise<boolean> {
+      const networkAccount = await fetchNetworkAccountFromArchiver()
+
+      if (initialNetworkParamters && networkAccount) {
+        if (
+          !isValidVersion(
+            networkAccount.data.current.minVersion,
+            networkAccount.data.current.latestVersion,
+            version
+          )
+        ) {
+          const tag = 'version out-of-date; please update and restart'
+          const message =
+            'node version is out-of-date; please update node to latest version'
+          shardus.shutdownFromDapp(tag, message, false)
+          return false
+        }
+      }
+
       isReadyToJoinLatestValue = false
       mustUseAdminCert = false
 
@@ -6387,6 +6406,7 @@ export function shardeumGetTime(): number {
   //use patchedConfig instead of config below
 
   let configToLoad
+
   try {
     // Attempt to get and patch config. Error if unable to get config.
     const networkAccount = await fetchNetworkAccountFromArchiver()
