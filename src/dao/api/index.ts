@@ -3,13 +3,13 @@ import issues from './issues'
 import proposals from './proposals'
 import accounts from './accounts'
 import messages from './messages'
+import { Shardus } from '@shardus/core'
 
-export default (dapp: any): void => { // to-do: type the dapp
+export default (dapp: Shardus): void => {
   dapp.registerExternalGet('dao/network/parameters', network.current(dapp))
-  dapp.registerExternalGet('dao/network/parameters/next', network.next(dapp))
-  dapp.registerExternalGet('dao/network/windows/all', network.windows_all(dapp))
-  dapp.registerExternalGet('dao/network/windows', network.windows(dapp))
-  dapp.registerExternalGet('dao/network/windows/dev', network.windows_dev(dapp))
+  dapp.registerExternalGet('dao/network/windows/all', network.windows_all())
+  dapp.registerExternalGet('dao/network/windows', network.windows())
+  dapp.registerExternalGet('dao/network/windows/dev', network.windows_dev())
 
   dapp.registerExternalGet('dao/issues', issues.all(dapp))
   dapp.registerExternalGet('dao/issues/latest', issues.latest(dapp))
@@ -34,7 +34,6 @@ export default (dapp: any): void => { // to-do: type the dapp
   dapp.registerExternalGet('dao/account/:id/:friendId/toll', accounts.tollOfFriend(dapp))
   dapp.registerExternalGet('dao/account/:id/friends', accounts.friends(dapp))
   dapp.registerExternalGet('dao/account/:id/recentMessages', accounts.recentMessages(dapp))
-  // dapp.registerExternalGet('dao/accounts', accounts.all(dapp))
 
   dapp.registerExternalGet('dao/messages/:chatId', messages(dapp))
 }
