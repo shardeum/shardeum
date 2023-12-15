@@ -1,5 +1,8 @@
 import { ONE_MINUTE, ONE_SECOND, ONE_HOUR, ONE_DAY } from "../config";
 import { NetworkParameters } from "./types";
+import { ShardeumFlags } from '../shardeum/shardeumFlags'
+import { toShardusAddress } from "../shardeum/evmAddress";
+import { AccountType } from "../shardeum/shardeumTypes";
 
 export interface DaoConfig {
     daoAccount: string,
@@ -14,7 +17,7 @@ export interface DaoConfig {
     INITIAL_PARAMETERS: NetworkParameters,
 }
 
-export const daoAccount = '5' + '0'.repeat(63)
+export const daoAccount = toShardusAddress(ShardeumFlags.daoTargetAddress, AccountType.Account)
 
 export const daoConfig: DaoConfig = {
   daoAccount,
