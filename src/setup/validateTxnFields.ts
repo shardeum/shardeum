@@ -1,4 +1,4 @@
-import { nestedCountersInstance, Shardus } from '@shardus/core'
+import { nestedCountersInstance, Shardus, ShardusTypes } from '@shardus/core'
 import { ShardeumFlags } from '../shardeum/shardeumFlags'
 import {
   ClaimRewardTX,
@@ -31,7 +31,7 @@ import { fixBigIntLiteralsToBigInt } from '../utils/serialization'
 import { validatePenaltyTX } from '../tx/penalty/transaction'
 import { bytesToHex } from '@ethereumjs/util'
 import { logFlags } from '..'
-import { validateDaoIssueTx } from '../tx/daoIssue'
+import { validate as validateDaoIssueTx, Issue as DaoIssueTx } from '../dao/tx/issue';
 
 /**
  * Checks that Transaction fields are valid
@@ -40,9 +40,6 @@ import { validateDaoIssueTx } from '../tx/daoIssue'
  * @returns
  */
 export const validateTxnFields =
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-
-
   (shardus: Shardus, debugAppdata: Map<string, unknown>) =>
     (
       timestampedTx: any,
