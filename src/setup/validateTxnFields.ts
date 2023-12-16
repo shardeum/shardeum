@@ -1,4 +1,4 @@
-import { DevSecurityLevel, nestedCountersInstance, Shardus } from '@shardus/core'
+import { DevSecurityLevel, nestedCountersInstance, Shardus, ShardusTypes } from '@shardus/core'
 import { ShardeumFlags } from '../shardeum/shardeumFlags'
 import {
   ClaimRewardTX,
@@ -33,12 +33,6 @@ import { bytesToHex } from '@ethereumjs/util'
 import { logFlags } from '..'
 import { validate as validateDaoIssueTx, Issue as DaoIssueTx } from '../dao/tx/issue';
 
-interface ValidationResult {
-  success: boolean
-  reason: string
-  txnTimestamp: number
-}
-
 /**
  * Checks that Transaction fields are valid
  * @param shardus
@@ -53,7 +47,7 @@ export const validateTxnFields =
     (
       timestampedTx: any,
       originalAppData: any
-    ): ValidationResult => {
+    ): ShardusTypes.IncomingTransactionResult => {
       const { tx } = timestampedTx
       const txnTimestamp: number = getInjectedOrGeneratedTimestamp(timestampedTx)
       const appData = fixBigIntLiteralsToBigInt(originalAppData)
