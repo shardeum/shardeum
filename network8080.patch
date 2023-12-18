@@ -1,5 +1,5 @@
 diff --git a/src/shardeum/shardeumFlags.ts b/src/shardeum/shardeumFlags.ts
-index 59e5ff5..aceb436 100644
+index 59e5ff5..0e77524 100644
 --- a/src/shardeum/shardeumFlags.ts
 +++ b/src/shardeum/shardeumFlags.ts
 @@ -131,7 +131,7 @@ export const ShardeumFlags: ShardeumFlags = {
@@ -7,7 +7,7 @@ index 59e5ff5..aceb436 100644
    AppliedTxsMaps: false,
    SaveEVMTries: false,
 -  ChainID: process.env.CHAIN_ID ? parseInt(process.env.CHAIN_ID) : 8082,
-+  ChainID: process.env.CHAIN_ID ? parseInt(process.env.CHAIN_ID) : 8083,
++  ChainID: process.env.CHAIN_ID ? parseInt(process.env.CHAIN_ID) : 8080,
    CheckpointRevertSupport: true,
    UseTXPreCrack: true,
    NewStorageIndex: true,
