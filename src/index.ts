@@ -4788,8 +4788,8 @@ const shardusSetup = (): void => {
         }
       }
 
-      if (isDaoTx(transaction)) {
-        return handleDaoTxGetRelevantData(shardus, tx)
+      if (isDaoTx(timestampedTx)) {
+        return await handleDaoTxGetRelevantData(accountId, timestampedTx, shardus)
       }
 
       //let wrappedEVMAccount = accounts[accountId]
