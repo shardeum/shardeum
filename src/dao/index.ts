@@ -156,9 +156,9 @@ export async function handleDaoTxGetRelevantData(
     )
     if (typeof daoTx === 'object' && 'type' in daoTx && typeof daoTx.type === 'string') {
       // Try to get the account
-      const account = await AccountsStorage.getAccount(accountId)
+      const existingAccount = await AccountsStorage.getAccount(accountId)
       // Return the wrappedResponse obj created by createRelevantAccount function of the dao tx type
-      return transactions[daoTx.type].createRelevantAccount(shardus, account, accountId, daoTx)
+      return transactions[daoTx.type].createRelevantAccount(shardus, existingAccount, accountId, daoTx)
     }
   }
 }
@@ -166,4 +166,17 @@ export async function handleDaoTxGetRelevantData(
 /**
  * Liberus txs export a `apply` fn that gets called here
  */
-export function handleDaoTxApply(shardus: Shardus, tx): void {}
+export function handleDaoTxApply(tx: OpaqueTransaction, txTimestamp: number, wrappedStates: WrappedStates, dapp: Shardus): void {
+    // Unserialize the EVM tx
+    const unserializedTx = getTransactionObj(tx)
+    // Decode data field of EVM tx to get type of DAO tx
+    if ('data' in unserializedTx) {
+      const daoTx: unknown = decodeDaoTxFromEVMTx(
+        unserializedTx as Transaction[TransactionType.Legacy] | Transaction[TransactionType.AccessListEIP2930]
+      )
+      if (typeof daoTx === 'object' && 'type' in daoTx && typeof daoTx.type === 'string') {
+        // Run the apply function of the dao tx type
+        transactions[daoTx.type].apply(tx, txTimestamp, wrappedStates, dapp)
+      }
+    }
+}
