@@ -3108,6 +3108,11 @@ const shardusSetup = (): void => {
       /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log('DBG', new Date(), 'attempting to apply tx', txId, ethTxId, tx, wrappedStates, appData)
       const applyResponse = shardus.createApplyResponse(txId, txTimestamp)
 
+      if (isDaoTx(tx)) {
+        handleDaoTxApply(tx, txTimestamp, wrappedStates, shardus)
+        return applyResponse
+      }
+
       //Now we need to get a transaction state object.  For single sharded networks this will be a new object.
       //When we have multiple shards we could have some blob data that wrapped up read accounts.  We will read these accounts
       //Into the the transaction state init at some point (possibly not here).  This will allow the EVM to run and not have
@@ -3136,10 +3141,6 @@ const shardusSetup = (): void => {
 
       const shardeumState = getApplyTXState(txId)
       shardeumState._transactionState.appData = appData
-
-      if (isDaoTx(tx)) {
-        return handleDaoTxApply(shardus, tx)
-      }
 
       if (appData.internalTx && appData.internalTXType === InternalTXType.Stake) {
         if (ShardeumFlags.VerboseLogs) console.log('applying stake tx', wrappedStates, appData)
@@ -4880,8 +4881,8 @@ const shardusSetup = (): void => {
         }
       }
 
-      if (isDaoTx(timestampedTx)) {
-        return await handleDaoTxGetRelevantData(accountId, timestampedTx, shardus)
+      if (isDaoTx(tx)) {
+        return await handleDaoTxGetRelevantData(accountId, tx, shardus)
       }
 
       //let wrappedEVMAccount = accounts[accountId]
