@@ -43,7 +43,7 @@ export function validate(tx: Snapshot, response: ShardusTypes.IncomingTransactio
 }
 
 export function apply(tx: Snapshot, txTimestamp: number, wrappedStates: WrappedStates, dapp: Shardus): void {
-  const network: DaoGlobalAccount = wrappedStates[config.dao.networkAccount].data
+  const network: DaoGlobalAccount = wrappedStates[config.dao.daoAccount].data
   // to-do: network.snapshot = tx.snapshot
   network.timestamp = txTimestamp
   dapp.log('Applied snapshot tx', network)
@@ -51,7 +51,7 @@ export function apply(tx: Snapshot, txTimestamp: number, wrappedStates: WrappedS
 
 export function keys(tx: Snapshot, result: TransactionKeys): TransactionKeys {
   result.sourceKeys = [tx.from]
-  result.targetKeys = [config.dao.networkAccount]
+  result.targetKeys = [config.dao.daoAccount]
   result.allKeys = [...result.sourceKeys, ...result.targetKeys]
   return result
 }

@@ -35,10 +35,10 @@ export function validateFields(tx: Parameters, response: ShardusTypes.IncomingTr
 }
 
 export function validate(tx: Parameters, wrappedStates: WrappedStates, response: ShardusTypes.IncomingTransactionResult): ShardusTypes.IncomingTransactionResult {
-  const network: DaoGlobalAccount = wrappedStates[config.dao.networkAccount].data
+  const network: DaoGlobalAccount = wrappedStates[config.dao.daoAccount].data
   const issue: IssueAccount = wrappedStates[tx.issue].data
 
-  if (network.id !== config.dao.networkAccount) {
+  if (network.id !== config.dao.daoAccount) {
     response.reason = 'To account must be the network account'
     return response
   }
@@ -62,14 +62,14 @@ export function validate(tx: Parameters, wrappedStates: WrappedStates, response:
 export function apply(tx: Parameters, txTimestamp: number, wrappedStates: WrappedStates, dapp: Shardus, applyResponse: ShardusTypes.ApplyResponse): void {
   const from: NodeAccount = wrappedStates[tx.from].data
 
-  const network: DaoGlobalAccount = wrappedStates[config.dao.networkAccount].data
+  const network: DaoGlobalAccount = wrappedStates[config.dao.daoAccount].data
   const issue: IssueAccount = wrappedStates[tx.issue].data
 
   const when = txTimestamp + 1000 * 10
   const value = {
     type: 'apply_parameters',
     timestamp: when,
-    network: config.dao.networkAccount,
+    network: config.dao.daoAccount,
     current: network.next,
     next: {},
     windows: network.nextWindows,
@@ -78,7 +78,7 @@ export function apply(tx: Parameters, txTimestamp: number, wrappedStates: Wrappe
   }
 
   const ourAppDefinedData = applyResponse.appDefinedData as OurAppDefinedData
-  ourAppDefinedData.globalMsg = { address: config.dao.networkAccount, value, when, source: config.dao.networkAccount }
+  ourAppDefinedData.globalMsg = { address: config.dao.daoAccount, value, when, source: config.dao.daoAccount }
 
   issue.active = false
 
@@ -95,7 +95,7 @@ export function transactionReceiptPass(dapp: Shardus, applyResponse: ApplyRespon
 
 export function keys(tx: Parameters, result: TransactionKeys): TransactionKeys {
   result.sourceKeys = [tx.from]
-  result.targetKeys = [config.dao.networkAccount, tx.issue]
+  result.targetKeys = [config.dao.daoAccount, tx.issue]
   result.allKeys = [...result.sourceKeys, ...result.targetKeys]
   return result
 }

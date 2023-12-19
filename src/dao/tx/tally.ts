@@ -44,11 +44,11 @@ export function validateFields(tx: Tally, response: ShardusTypes.IncomingTransac
 }
 
 export function validate(tx: Tally, wrappedStates: WrappedStates, response: ShardusTypes.IncomingTransactionResult): ShardusTypes.IncomingTransactionResult {
-  const network: DaoGlobalAccount = wrappedStates[config.dao.networkAccount].data
+  const network: DaoGlobalAccount = wrappedStates[config.dao.daoAccount].data
   const issue: IssueAccount = wrappedStates[tx.issue]?.data
   const proposals: ProposalAccount[] = tx.proposals.map((id: string) => wrappedStates[id].data)
 
-  if (network.id !== config.dao.networkAccount) {
+  if (network.id !== config.dao.daoAccount) {
     response.reason = 'To account must be the network account'
     return response
   }
@@ -83,7 +83,7 @@ export function validate(tx: Tally, wrappedStates: WrappedStates, response: Shar
 
 export function apply(tx: Tally, txTimestamp: number, wrappedStates: WrappedStates, dapp: Shardus, applyResponse: ApplyResponse): void {
   const from: NodeAccount = wrappedStates[tx.from].data
-  const network: DaoGlobalAccount = wrappedStates[config.dao.networkAccount].data
+  const network: DaoGlobalAccount = wrappedStates[config.dao.daoAccount].data
   const issue: IssueAccount = wrappedStates[tx.issue].data
   const margin = 100 / (2 * (issue.proposalCount + 1)) / 100
 
@@ -128,13 +128,13 @@ export function apply(tx: Tally, txTimestamp: number, wrappedStates: WrappedStat
   const value = {
     type: 'apply_tally',
     timestamp: when,
-    network: config.dao.networkAccount,
+    network: config.dao.daoAccount,
     next,
     nextWindows,
   }
 
   const ourAppDefinedData = applyResponse.appDefinedData as OurAppDefinedData
-  ourAppDefinedData.globalMsg = { address: config.dao.networkAccount, value, when, source: config.dao.networkAccount }
+  ourAppDefinedData.globalMsg = { address: config.dao.daoAccount, value, when, source: config.dao.daoAccount }
 
   issue.winnerId = winner.id
 
@@ -156,7 +156,7 @@ export function transactionReceiptPass(tx: Tally, wrappedStates: WrappedStates, 
 
 export function keys(tx: Tally, result: TransactionKeys): TransactionKeys {
   result.sourceKeys = [tx.from]
-  result.targetKeys = [...tx.proposals, tx.issue, config.dao.networkAccount]
+  result.targetKeys = [...tx.proposals, tx.issue, config.dao.daoAccount]
   result.allKeys = [...result.sourceKeys, ...result.targetKeys]
   return result
 }

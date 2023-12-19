@@ -53,7 +53,7 @@ export function validate(response: ShardusTypes.IncomingTransactionResult): Shar
 }
 
 export function apply(tx: ApplyDevParameters, txTimestamp: number, wrappedStates: WrappedStates, dapp: Shardus): void {
-  const network = wrappedStates[config.dao.networkAccount].data as DaoGlobalAccount
+  const network = wrappedStates[config.dao.daoAccount].data as DaoGlobalAccount
   network.devWindows = tx.devWindows
   network.nextDevWindows = tx.nextDevWindows
   network.developerFund = tx.developerFund
@@ -64,7 +64,7 @@ export function apply(tx: ApplyDevParameters, txTimestamp: number, wrappedStates
 }
 
 export function keys(tx: ApplyDevParameters, result: TransactionKeys): ShardusTypes.TransactionKeys {
-  result.targetKeys = [config.dao.networkAccount]
+  result.targetKeys = [config.dao.daoAccount]
   result.allKeys = [...result.sourceKeys, ...result.targetKeys]
   return result
 }

@@ -68,7 +68,7 @@ export function validate(tx: Verify, wrappedStates: WrappedStates, response: Sha
 
 export function apply(tx: Verify, txTimestamp: number, wrappedStates: WrappedStates, dapp: Shardus): void {
   const from: UserAccount = wrappedStates[tx.from].data
-  const network: DaoGlobalAccount = wrappedStates[config.dao.networkAccount].data
+  const network: DaoGlobalAccount = wrappedStates[config.dao.daoAccount].data
   from.verified = true
   from.data.balance += network.current.faucetAmount
   from.timestamp = txTimestamp
@@ -77,7 +77,7 @@ export function apply(tx: Verify, txTimestamp: number, wrappedStates: WrappedSta
 
 export function keys(tx: Verify, result: TransactionKeys): TransactionKeys {
   result.sourceKeys = [tx.from]
-  result.targetKeys = [config.dao.networkAccount]
+  result.targetKeys = [config.dao.daoAccount]
   result.allKeys = [...result.sourceKeys, ...result.targetKeys]
   return result
 }

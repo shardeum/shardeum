@@ -112,7 +112,7 @@ export function validateFields(tx: Proposal, response: ShardusTypes.IncomingTran
 
 export function validate(tx: Proposal, wrappedStates: WrappedStates, response: ShardusTypes.IncomingTransactionResult): ShardusTypes.IncomingTransactionResult {
   const from = wrappedStates[tx.from] && wrappedStates[tx.from].data
-  const network: DaoGlobalAccount = wrappedStates[config.dao.networkAccount].data
+  const network: DaoGlobalAccount = wrappedStates[config.dao.daoAccount].data
   const issue: IssueAccount = wrappedStates[tx.issue] && wrappedStates[tx.issue].data
   const parameters: NetworkParameters = tx.parameters
   if (tx.sign.owner !== tx.from) {
@@ -210,7 +210,7 @@ export function validate(tx: Proposal, wrappedStates: WrappedStates, response: S
 
 export function apply(tx: Proposal, txTimestamp: number, txId: string, wrappedStates: WrappedStates, dapp: Shardus): void {
   const from: UserAccount = wrappedStates[tx.from].data
-  const network: DaoGlobalAccount = wrappedStates[config.dao.networkAccount].data
+  const network: DaoGlobalAccount = wrappedStates[config.dao.daoAccount].data
   const proposal: ProposalAccount = wrappedStates[tx.proposal].data
   const issue: IssueAccount = wrappedStates[tx.issue].data
 
@@ -237,7 +237,7 @@ export function transactionReceiptPass(dapp: Shardus): void {
 
 export function keys(tx: Proposal, result: TransactionKeys): TransactionKeys {
   result.sourceKeys = [tx.from]
-  result.targetKeys = [tx.issue, tx.proposal, config.dao.networkAccount]
+  result.targetKeys = [tx.issue, tx.proposal, config.dao.daoAccount]
   result.allKeys = [...result.sourceKeys, ...result.targetKeys]
   return result
 }

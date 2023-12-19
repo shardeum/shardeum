@@ -28,14 +28,14 @@ export function validate(response: ShardusTypes.IncomingTransactionResult): Shar
 }
 
 export function apply(tx: ApplyDevPayment, txTimestamp: number, wrappedStates: WrappedStates, dapp: Shardus): void {
-  const network: DaoGlobalAccount = wrappedStates[config.dao.networkAccount].data
+  const network: DaoGlobalAccount = wrappedStates[config.dao.daoAccount].data
   network.developerFund = tx.developerFund
   network.timestamp = txTimestamp
   dapp.log(`=== APPLIED DEV_PAYMENT GLOBAL ${stringify(network)} ===`)
 }
 
 export function keys(result: TransactionKeys): TransactionKeys {
-  result.targetKeys = [config.dao.networkAccount]
+  result.targetKeys = [config.dao.daoAccount]
   result.allKeys = [...result.sourceKeys, ...result.targetKeys]
   return result
 }
