@@ -42,8 +42,8 @@ function validatePutAdminCertRequest(req: PutAdminCertRequest, shardus: Shardus)
 
     if (
       pkClearance &&
-      !shardus.crypto.verify(req, pkClearance) &&
-      shardus.ensureKeySecurity(pkClearance, DevSecurityLevel.High) === true
+      (!shardus.crypto.verify(req, pkClearance) ||
+      shardus.ensureKeySecurity(pkClearance, DevSecurityLevel.High) === false)
     )
       return { success: false, reason: 'Unauthorized! Please use higher level auth key.' }
   } catch (e) {
