@@ -144,7 +144,6 @@ import { getExternalApiMiddleware } from './middleware/externalApiMiddleware'
 import { AccountsEntry } from './storage/storage'
 import { getCachedRIAccount, setCachedRIAccount } from './storage/riAccountsCache'
 import { apply as applyDaoIssueTx, Issue as DaoIssueTx } from './dao/tx/issue'
-import { daoAccount } from './dao/config'
 import { applyInitDaoTx, getRelevantDataInitDao, handleDaoTxApply, handleDaoTxCrack, handleDaoTxGetRelevantData, isDaoTx } from './dao'
 
 let latestBlock = 0
@@ -4266,7 +4265,7 @@ const shardusSetup = (): void => {
           keys.sourceKeys = [tx.reportedNodePublickKey]
           keys.targetKeys = [toShardusAddress(tx.operatorEVMAddress, AccountType.Account), networkAccount]
         } else if (internalTx.internalTXType === InternalTXType.InitDao) {
-          keys.targetKeys = [daoAccount]
+          keys.targetKeys = [config.dao.daoAccount]
         }
         keys.allKeys = keys.allKeys.concat(keys.sourceKeys, keys.targetKeys, keys.storageKeys)
         // temporary hack for creating a receipt of node reward tx

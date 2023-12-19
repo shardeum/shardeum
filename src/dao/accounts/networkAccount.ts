@@ -1,7 +1,8 @@
 import * as crypto from '@shardus/crypto-utils'
 import config from '../../config'
 import { DeveloperPayment, DevWindows, Windows } from '../types'
-import { AccountType, BaseAccount } from '../../shardeum/shardeumTypes'
+import { AccountType, BaseAccount, NetworkParameters } from '../../shardeum/shardeumTypes'
+import { initialNetworkParamters } from '../../shardeum/initialNetworkParameters'
 
 export interface DaoGlobalAccount extends BaseAccount {
   accountType: AccountType.DaoAccount
@@ -18,6 +19,9 @@ export interface DaoGlobalAccount extends BaseAccount {
 
   developerFund: DeveloperPayment[]
   nextDeveloperFund: DeveloperPayment[]
+
+  current: NetworkParameters
+  next: NetworkParameters | Record<string, never>
 
   hash: crypto.hexstring
   timestamp: number
@@ -112,10 +116,6 @@ export const createDaoGlobalAccount = (accountId: string, timestamp: number): Da
       },
     ],
     */
-    /* to-do: add to type or remove
-    current: config.dao.INITIAL_PARAMETERS,
-    next: {},
-    */
     windows: {
       proposalWindow,
       votingWindow,
@@ -132,6 +132,8 @@ export const createDaoGlobalAccount = (accountId: string, timestamp: number): Da
     nextDevWindows: {},
     developerFund: [],
     nextDeveloperFund: [],
+    current: initialNetworkParamters,
+    next: {},
     issue: 1,
     devIssue: 1,
     hash: '',
