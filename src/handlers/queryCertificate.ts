@@ -46,6 +46,13 @@ export interface StakeCert {
   sign?: ShardusTypes.Sign //this is use when we need to sign and unsigned cert. signs and sign will not exist yet when sign() is called
 }
 
+export interface RemoveNodeCert {
+  nodePublicKey: string //public key of the node account
+  certExp: number //cert expiration time in seconds
+  signs?: ShardusTypes.Sign[] //this is used when when the cert has a list of valid signatures
+  sign?: ShardusTypes.Sign //this is use when we need to sign and unsigned cert. signs and sign will not exist yet when sign() is called
+}
+
 export interface ValidatorError {
   success: boolean
   reason: string

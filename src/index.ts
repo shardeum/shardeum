@@ -42,6 +42,7 @@ import {
   DebugTx,
   DebugTXType,
   EVMAccountInfo,
+  isNodeAccount2,
   NetworkAccount,
   NodeAccount2,
   NodeInfoAppData,
@@ -98,7 +99,7 @@ import { Request, Response } from 'express'
 import {
   CertSignaturesResult,
   queryCertificate,
-  queryCertificateHandler,
+  queryCertificateHandler, RemoveNodeCert,
   StakeCert,
   ValidatorError,
 } from './handlers/queryCertificate'
@@ -141,9 +142,13 @@ import registerDaoAPI from './dao/api'
 import {
   InternalTx,
   InternalTXType,
+  LeftNetworkEarlyViolationData,
+  NodeRefutedViolationData,
   StakeCoinsTX,
+  SyncingTimeoutViolationData,
   UnstakeCoinsTX,
 } from './shardeum/internalTxs'
+import { isLowStake } from "./tx/penalty/penaltyFunctions";
 
 let latestBlock = 0
 export const blocks: BlockMap = {}
@@ -2292,6 +2297,38 @@ async function _transactionReceiptPass(
       const tx = { address, value, when, source }
       const txHash = generateTxId(tx)
       console.log(`transactionReceiptPass setglobal: ${txHash} ${JSON.stringify(tx)}  `)
+    }
+  }
+  if (tx.internalTXType === InternalTXType.Penalty) {
+    let nodeAccount: NodeAccount2
+    if (isNodeAccount2(wrappedStates[tx.reportedNodePublickKey].data))
+      nodeAccount = wrappedStates[tx.reportedNodePublickKey].data as NodeAccount2
+    const operatorShardusAddress = toShardusAddress(tx.operatorEVMAddress, AccountType.Account)
+    let operatorAccount: WrappedEVMAccount
+    // eslint-disable-next-line security/detect-object-injection
+    if (WrappedEVMAccountFunctions.isWrappedEVMAccount(wrappedStates[operatorShardusAddress].data)) {
+      // eslint-disable-next-line security/detect-object-injection
+      operatorAccount = wrappedStates[operatorShardusAddress].data as WrappedEVMAccount
+    }
+
+    if (isLowStake(nodeAccount)) {
+      const certData: RemoveNodeCert = {
+        nodePublicKey: tx.reportedNodePublickKey,
+        certExp: operatorAccount.operatorAccountInfo.certExp,
+      }
+      const signedAppData = await shardus.getAppDataSignatures(
+        'sign-remove-node-cert',
+        crypto.hashObj(certData),
+        5,
+        certData,
+        2
+      )
+      if (!signedAppData.success) {
+        throw new Error('Unable to get signatures for remove node cert')
+      }
+
+      certData.signs = signedAppData.signatures
+      shardus.removeNodeWithCertificiate(certData)
     }
   }
 }
@@ -5352,6 +5389,74 @@ const shardusSetup = (): void => {
           delete stakeCert.sign
           delete stakeCert.signs
           const signedCert: StakeCert = shardus.signAsNode(stakeCert)
+          const result: ShardusTypes.SignAppDataResult = { success: true, signature: signedCert.sign }
+          if (ShardeumFlags.VerboseLogs) console.log(`signAppData passed ${type} ${stringify(stakeCert)}`)
+          nestedCountersInstance.countEvent('shardeum-staking', 'sign-stake-cert - passed')
+          return result
+        } else if (type === 'sign-remove-node-cert') {
+          if (nodesToSign != 5) return fail
+          const removeNodeCert = appData as RemoveNodeCert
+          if (!removeNodeCert.nodePublicKey || !removeNodeCert.certExp) {
+            nestedCountersInstance.countEvent('shardeum-remove-node', 'signAppData format failed')
+            /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`signAppData format failed ${type} ${stringify(removeNodeCert)} `)
+            return fail
+          }
+          const currentTimestamp = shardeumGetTime()
+          if (removeNodeCert.certExp < currentTimestamp) {
+            /* prettier-ignore */ nestedCountersInstance.countEvent('shardeum-remove-node', 'signAppData cert expired')
+            /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`signAppData cert expired ${type} ${stringify(removeNodeCert)} `)
+            return fail
+          }
+          let minStakeRequiredUsd: bigint
+          let minStakeRequired: bigint
+          let stakeAmount: bigint
+          try {
+            minStakeRequiredUsd = _base16BNParser(
+              AccountsStorage.cachedNetworkAccount.current.stakeRequiredUsd
+            )
+          } catch (e) {
+            /* prettier-ignore */ nestedCountersInstance.countEvent('shardeum-remove-node', 'signAppData' +
+              ' stakeRequiredUsd parse error')
+            /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`signAppData minStakeRequiredUsd parse error ${type} ${stringify(removeNodeCert)}, cachedNetworkAccount: ${stringify(AccountsStorage.cachedNetworkAccount)} `)
+            return fail
+          }
+          try {
+            minStakeRequired = scaleByStabilityFactor(
+              minStakeRequiredUsd,
+              AccountsStorage.cachedNetworkAccount
+            )
+          } catch (e) {
+            /* prettier-ignore */ nestedCountersInstance.countEvent('shardeum-remove-node', 'signAppData' +
+              ' minStakeRequired parse error')
+            /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`signAppData minStakeRequired parse error ${type} ${stringify(removeNodeCert)}, cachedNetworkAccount: ${stringify(AccountsStorage.cachedNetworkAccount)} `)
+            return fail
+          }
+
+          let remoteShardusAccount
+          try {
+            remoteShardusAccount = await shardus.getLocalOrRemoteAccount(removeNodeCert.nodePublicKey)
+            if (!isNodeAccount2(remoteShardusAccount.data)) {
+              /* prettier-ignore */
+              nestedCountersInstance.countEvent('shardeum-remove-node', 'nodePublicKey is not a node account')
+              /* prettier-ignore */
+              if (ShardeumFlags.VerboseLogs) console.log(`nodePublicKey is not a node account ${type} ${stringify(removeNodeCert)}, cachedNetworkAccount: ${stringify(AccountsStorage.cachedNetworkAccount)} `)
+              return fail
+            }
+          } catch (e) {
+            /* prettier-ignore */ nestedCountersInstance.countEvent('shardeum-remove-node', 'signAppData' +
+              ' minStakeRequired parse error')
+            /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`signAppData minStakeRequired parse error ${type} ${stringify(removeNodeCert)}, cachedNetworkAccount: ${stringify(AccountsStorage.cachedNetworkAccount)} `)
+            return fail
+          }
+          const nodeAccount = remoteShardusAccount.data as NodeAccount2
+          // todo: take into consideration the reward amount
+          if (nodeAccount.stakeLock >= minStakeRequired) {
+            /* prettier-ignore */ nestedCountersInstance.countEvent('shardeum-remove-node', 'node locked stake is not below minStakeRequired')
+            /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`node locked stake is not below minStakeRequired ${type} ${stringify(removeNodeCert)}, cachedNetworkAccount: ${stringify(AccountsStorage.cachedNetworkAccount)} `)
+            return fail
+          }
+
+          const signedCert: RemoveNodeCert = shardus.signAsNode(removeNodeCert)
           const result: ShardusTypes.SignAppDataResult = { success: true, signature: signedCert.sign }
           if (ShardeumFlags.VerboseLogs) console.log(`signAppData passed ${type} ${stringify(stakeCert)}`)
           nestedCountersInstance.countEvent('shardeum-staking', 'sign-stake-cert - passed')
