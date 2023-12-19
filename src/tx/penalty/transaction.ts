@@ -1,13 +1,15 @@
-import { nestedCountersInstance, Shardus, ShardusTypes } from '@shardus/core'
+import {nestedCountersInstance, Shardus, ShardusTypes} from '@shardus/core'
 import {
   AccountType,
   InternalTXType,
   isNodeAccount2,
+  LeftNetworkEarlyViolationData,
   NodeAccount2,
+  NodeRefutedViolationData,
   PenaltyTX,
   ViolationType,
   WrappedEVMAccount,
-  WrappedStates,
+  WrappedStates
 } from '../../shardeum/shardeumTypes'
 import { ShardeumFlags } from '../../shardeum/shardeumFlags'
 import { crypto } from '../../setup/helpers'
@@ -99,6 +101,7 @@ export async function injectPenaltyTX(
   for (let i = 0; i < ShardeumFlags.numberOfNodesToInjectPenaltyTx; i++) {
     if (sortedNodeIdsAndRanks[i].nodeId === ourNodeId) {
       isLuckyNode = true
+      break
     }
   }
 
