@@ -1,5 +1,5 @@
 import * as crypto from '@shardus/crypto-utils'
-import { NetworkParameters } from '../types'
+import { NetworkParameters } from '../../shardeum/shardeumTypes'
 
 export interface ProposalAccount {
   id: string

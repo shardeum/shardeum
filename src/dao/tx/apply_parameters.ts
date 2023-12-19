@@ -5,7 +5,8 @@ import config from '../../config'
 import { TransactionKeys, WrappedResponse } from '@shardus/core/dist/shardus/shardus-types'
 import { DaoGlobalAccount } from '../accounts/networkAccount'
 import { WrappedStates } from '@shardus/core/dist/state-manager/state-manager-types'
-import { NetworkParameters, Windows } from '../types'
+import { Windows } from '../types'
+import { NetworkParameters } from '../../shardeum/shardeumTypes'
 
 export interface ApplyParameters {
   type: 'apply_parameters'
