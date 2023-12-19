@@ -50,7 +50,7 @@ export function validateFields(tx: Vote, response: ShardusTypes.IncomingTransact
 
 export function validate(tx: Vote, wrappedStates: WrappedStates, response: ShardusTypes.IncomingTransactionResult): ShardusTypes.IncomingTransactionResult {
   const from = wrappedStates[tx.from] && wrappedStates[tx.from].data
-  const network: DaoGlobalAccount = wrappedStates[config.dao.networkAccount].data
+  const network: DaoGlobalAccount = wrappedStates[config.dao.daoAccount].data
   const proposal: ProposalAccount = wrappedStates[tx.proposal] && wrappedStates[tx.proposal].data
   const issue: IssueAccount = wrappedStates[tx.issue] && wrappedStates[tx.issue].data
 
@@ -97,7 +97,7 @@ export function validate(tx: Vote, wrappedStates: WrappedStates, response: Shard
 
 export function apply(tx: Vote, txTimestamp: number, txId: string, wrappedStates: WrappedStates, dapp: Shardus): void {
   const from: UserAccount = wrappedStates[tx.from].data
-  const network: DaoGlobalAccount = wrappedStates[config.dao.networkAccount].data
+  const network: DaoGlobalAccount = wrappedStates[config.dao.daoAccount].data
   const proposal: ProposalAccount = wrappedStates[tx.proposal].data
   from.data.balance -= tx.amount
   from.data.balance -= network.current.transactionFee
@@ -113,7 +113,7 @@ export function apply(tx: Vote, txTimestamp: number, txId: string, wrappedStates
 
 export function keys(tx: Vote, result: TransactionKeys): TransactionKeys {
   result.sourceKeys = [tx.from]
-  result.targetKeys = [tx.issue, tx.proposal, config.dao.networkAccount]
+  result.targetKeys = [tx.issue, tx.proposal, config.dao.daoAccount]
   result.allKeys = [...result.sourceKeys, ...result.targetKeys]
   return result
 }

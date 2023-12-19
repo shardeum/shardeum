@@ -50,7 +50,7 @@ export function validateFields(tx: Message, response: ShardusTypes.IncomingTrans
 
 export function validate(tx: Message, wrappedStates: WrappedStates, response: ShardusTypes.IncomingTransactionResult): ShardusTypes.IncomingTransactionResult {
   const from = wrappedStates[tx.from] && wrappedStates[tx.from].data
-  const network: DaoGlobalAccount = wrappedStates[config.dao.networkAccount].data
+  const network: DaoGlobalAccount = wrappedStates[config.dao.daoAccount].data
   const to = wrappedStates[tx.to] && wrappedStates[tx.to].data
   if (tx.sign.owner !== tx.from) {
     response.reason = 'not signed by from account'
@@ -95,7 +95,7 @@ export function validate(tx: Message, wrappedStates: WrappedStates, response: Sh
 export function apply(tx: Message, txTimestamp: number, txId: string, wrappedStates: WrappedStates, dapp: Shardus): void {
   const from: UserAccount = wrappedStates[tx.from].data
   const to: UserAccount = wrappedStates[tx.to].data
-  const network: DaoGlobalAccount = wrappedStates[config.dao.networkAccount].data
+  const network: DaoGlobalAccount = wrappedStates[config.dao.daoAccount].data
   const chat = wrappedStates[tx.chatId].data
   from.data.balance -= network.current.transactionFee
   if (!to.data.friends[from.id]) {
@@ -125,7 +125,7 @@ export function apply(tx: Message, txTimestamp: number, txId: string, wrappedSta
 
 export function keys(tx: Message, result: TransactionKeys): TransactionKeys {
   result.sourceKeys = [tx.from]
-  result.targetKeys = [tx.to, tx.chatId, config.dao.networkAccount]
+  result.targetKeys = [tx.to, tx.chatId, config.dao.daoAccount]
   result.allKeys = [...result.sourceKeys, ...result.targetKeys]
   return result
 }

@@ -45,7 +45,7 @@ export function validateFields(tx: DevTally, response: ShardusTypes.IncomingTran
 }
 
 export function validate(tx: DevTally, wrappedStates: WrappedStates, response: ShardusTypes.IncomingTransactionResult): ShardusTypes.IncomingTransactionResult {
-  const network: DaoGlobalAccount = wrappedStates[config.dao.networkAccount].data
+  const network: DaoGlobalAccount = wrappedStates[config.dao.daoAccount].data
   const devIssue: DevIssueAccount = wrappedStates[tx.devIssue] && wrappedStates[tx.devIssue].data
   const devProposals: DevProposalAccount[] = tx.devProposals.map((id: string) => wrappedStates[id].data)
 
@@ -75,7 +75,7 @@ export function validate(tx: DevTally, wrappedStates: WrappedStates, response: S
     response.reason = `The winners for this devIssue has already been determined ${stringify(devIssue.winners)}`
     return response
   }
-  if (network.id !== config.dao.networkAccount) {
+  if (network.id !== config.dao.daoAccount) {
     response.reason = 'To account must be the network account'
     return response
   }
@@ -94,7 +94,7 @@ export function validate(tx: DevTally, wrappedStates: WrappedStates, response: S
 
 export function apply(tx: DevTally, txTimestamp: number, wrappedStates: WrappedStates, dapp: Shardus, applyResponse: ApplyResponse): void {
   const from: NodeAccount = wrappedStates[tx.from].data
-  const network: DaoGlobalAccount = wrappedStates[config.dao.networkAccount].data
+  const network: DaoGlobalAccount = wrappedStates[config.dao.daoAccount].data
   const devIssue: DevIssueAccount = wrappedStates[tx.devIssue].data
   const devProposals: DevProposalAccount[] = tx.devProposals.map((id: string) => wrappedStates[id].data)
   let nextDeveloperFund: DeveloperPayment[] = []
@@ -142,13 +142,13 @@ export function apply(tx: DevTally, txTimestamp: number, wrappedStates: WrappedS
   const value = {
     type: 'apply_dev_tally',
     timestamp: when,
-    network: config.dao.networkAccount,
+    network: config.dao.daoAccount,
     nextDeveloperFund,
     nextDevWindows,
   }
 
   const ourAppDefinedData = applyResponse.appDefinedData as OurAppDefinedData
-  ourAppDefinedData.globalMsg = { address: config.dao.networkAccount, value, when, source: config.dao.networkAccount }
+  ourAppDefinedData.globalMsg = { address: config.dao.daoAccount, value, when, source: config.dao.daoAccount }
 
   from.timestamp = txTimestamp
   devIssue.timestamp = txTimestamp
@@ -163,7 +163,7 @@ export function transactionReceiptPass(dapp: Shardus, applyResponse: ApplyRespon
 
 export function keys(tx: DevTally, result: TransactionKeys): TransactionKeys {
   result.sourceKeys = [tx.from]
-  result.targetKeys = [...tx.devProposals, tx.devIssue, config.dao.networkAccount]
+  result.targetKeys = [...tx.devProposals, tx.devIssue, config.dao.daoAccount]
   result.allKeys = [...result.sourceKeys, ...result.targetKeys]
   return result
 }

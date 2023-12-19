@@ -37,10 +37,10 @@ export function validateFields(tx: DevParameters, response: ShardusTypes.Incomin
 }
 
 export function validate(tx: DevParameters, wrappedStates: WrappedStates, response: ShardusTypes.IncomingTransactionResult): ShardusTypes.IncomingTransactionResult {
-  const network: DaoGlobalAccount = wrappedStates[config.dao.networkAccount].data
+  const network: DaoGlobalAccount = wrappedStates[config.dao.daoAccount].data
   const devIssue: DevIssueAccount = wrappedStates[tx.devIssue].data
 
-  if (network.id !== config.dao.networkAccount) {
+  if (network.id !== config.dao.daoAccount) {
     response.reason = 'To account must be the network account'
     return response
   }
@@ -72,14 +72,14 @@ export function validate(tx: DevParameters, wrappedStates: WrappedStates, respon
 
 export function apply(tx: DevParameters, txTimestamp: number, wrappedStates: WrappedStates, dapp: Shardus, applyResponse: ShardusTypes.ApplyResponse): void {
   const from: UserAccount = wrappedStates[tx.from].data
-  const network: DaoGlobalAccount = wrappedStates[config.dao.networkAccount].data
+  const network: DaoGlobalAccount = wrappedStates[config.dao.daoAccount].data
   const devIssue: DevIssueAccount = wrappedStates[tx.devIssue].data
 
   const when = txTimestamp + 1000 * 10
   const value = {
     type: 'apply_dev_parameters',
     timestamp: when,
-    network: config.dao.networkAccount,
+    network: config.dao.daoAccount,
     devWindows: network.nextDevWindows,
     nextDevWindows: {},
     developerFund: [...network.developerFund, ...network.nextDeveloperFund].sort((a, b) => a.timestamp - b.timestamp),
@@ -88,7 +88,7 @@ export function apply(tx: DevParameters, txTimestamp: number, wrappedStates: Wra
   }
 
   const ourAppDefinedData = applyResponse.appDefinedData as OurAppDefinedData
-  ourAppDefinedData.globalMsg = { address: config.dao.networkAccount, value, when, source: config.dao.networkAccount }
+  ourAppDefinedData.globalMsg = { address: config.dao.daoAccount, value, when, source: config.dao.daoAccount }
 
   devIssue.active = false
 
@@ -105,7 +105,7 @@ export function transactionReceiptPass(dapp: Shardus, applyResponse: ApplyRespon
 
 export function keys(tx: DevParameters, result: TransactionKeys): TransactionKeys {
   result.sourceKeys = [tx.from]
-  result.targetKeys = [tx.devIssue, config.dao.networkAccount]
+  result.targetKeys = [tx.devIssue, config.dao.daoAccount]
   result.allKeys = [...result.sourceKeys, ...result.targetKeys]
   return result
 }
