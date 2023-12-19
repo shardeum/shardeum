@@ -6290,7 +6290,7 @@ const shardusSetup = (): void => {
           nodeLostCycle: data.cycleNumber,
           nodeDroppedTime: data.time,
         }
-        nestedCountersInstance.countEvent('shardeum-penalty', `node-sync-timeout: injectPenaltyTx`)
+        nestedCountersInstance.countEvent('shardeum-staking', `node-sync-timeout: injectPenaltyTx`)
         const result = await PenaltyTx.injectPenaltyTX(shardus, data, violationData)
         /* prettier-ignore */ if (logFlags.dapp_verbose) console.log('INJECTED_PENALTY_TX', result)
       } else if (eventType === 'node-refuted' && ShardeumFlags.enableNodeSlashing === true) {
@@ -6636,7 +6636,7 @@ export function shardeumGetTime(): number {
 
   if (ShardeumFlags.GlobalNetworkAccount) {
     // CODE THAT GETS EXECUTED WHEN NODES START
-    ;await (async (): Promise<void> => {
+    await (async (): Promise<void> => {
       const serverConfig = config.server
       const cycleInterval = serverConfig.p2p.cycleDuration * ONE_SECOND
 
