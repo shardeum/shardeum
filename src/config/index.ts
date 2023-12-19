@@ -3,7 +3,7 @@ import path from 'path'
 import merge from 'deepmerge'
 import { ShardeumFlags } from '../shardeum/shardeumFlags'
 import { DevSecurityLevel } from '@shardus/core'
-import { DaoConfig, daoConfig } from '../dao/config'
+import { daoConfig, DaoConfig } from './dao'
 
 const overwriteMerge = (target: any[], source: any[]): any[] => source // eslint-disable-line @typescript-eslint/no-explicit-any
 

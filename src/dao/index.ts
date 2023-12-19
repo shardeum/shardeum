@@ -11,13 +11,13 @@ import {
   WrappedStates,
 } from '../shardeum/shardeumTypes'
 import { DaoGlobalAccount } from './accounts/networkAccount'
-import { daoAccount, daoConfig } from './config'
 import { decodeDaoTxFromEVMTx } from './utils'
 import { Transaction, TransactionType } from '@ethereumjs/tx'
 import transactions from './tx'
-import { Address } from '@ethereumjs/util'
 import { getTransactionObj } from '../setup/helpers'
 import * as AccountsStorage from '../storage/accountStorage'
+import { daoAccount, daoConfig } from '../config/dao'
+import { initialNetworkParamters } from '../shardeum/initialNetworkParameters'
 
 export function setupDaoAccount(shardus: Shardus, when: number): void {
   if (ShardeumFlags.EnableDaoFeatures) {
@@ -87,6 +87,8 @@ function createDaoAccount(timestamp = 0): DaoGlobalAccount {
     issue: 1,
     devIssue: 1,
     id: daoAccount,
+    current: initialNetworkParamters,
+    next: {},
     hash: '',
     timestamp: 0,
     accountType: AccountType.DaoAccount,
