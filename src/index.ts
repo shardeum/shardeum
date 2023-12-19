@@ -5535,7 +5535,7 @@ const shardusSetup = (): void => {
               fatal: true,
             }
           }
-          const pkClearance = shardus.getDevPublicKey(data.sign.owner)
+          const pkClearance = shardus.getDevPublicKey(adminCert.sign.owner)
           // check for invalid signature for AdminCert
           if(pkClearance == null){
             return {
@@ -5546,8 +5546,8 @@ const shardusSetup = (): void => {
           }
           if (
             pkClearance &&
-            !shardus.crypto.verify(adminCert, pkClearance) &&
-            shardus.ensureKeySecurity(pkClearance, DevSecurityLevel.High) === true
+            (!shardus.crypto.verify(adminCert, pkClearance) ||
+            shardus.ensureKeySecurity(pkClearance, DevSecurityLevel.High) === false)
           ) {
             /* prettier-ignore */ nestedCountersInstance.countEvent('shardeum-mode', 'validateJoinRequest fail: !shardus.crypto.verify(adminCert, shardus.getDevPublicKeyMaxLevel())')
             return {
@@ -5597,7 +5597,7 @@ const shardusSetup = (): void => {
             }
           }
 
-          const pkClearance = shardus.getDevPublicKey(data.sign.owner)
+          const pkClearance = shardus.getDevPublicKey(adminCert.sign.owner)
           // check for invalid signature for AdminCert
           if(pkClearance == null){
             return {
@@ -5608,8 +5608,8 @@ const shardusSetup = (): void => {
           }
           if (
             pkClearance &&
-            !shardus.crypto.verify(adminCert, pkClearance) &&
-            shardus.ensureKeySecurity(pkClearance, DevSecurityLevel.High) === true
+            (!shardus.crypto.verify(adminCert, pkClearance) ||
+            shardus.ensureKeySecurity(pkClearance, DevSecurityLevel.High) === false)
           ) {
             // check for invalid signature for AdminCert
             /* prettier-ignore */ nestedCountersInstance.countEvent('shardeum-mode', 'validateJoinRequest fail: !shardus.crypto.verify(adminCert, shardus.getDevPublicKeyMaxLevel())')
