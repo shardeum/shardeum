@@ -28,9 +28,9 @@ export function validateFields(tx: ChangeConfig, response: ShardusTypes.Incoming
 }
 
 export function validate(tx: ChangeConfig, wrappedStates: WrappedStates, response: ShardusTypes.IncomingTransactionResult, dapp: Shardus): ShardusTypes.IncomingTransactionResult {
-  const network: DaoGlobalAccount = wrappedStates[config.dao.networkAccount].data
+  const network: DaoGlobalAccount = wrappedStates[config.dao.daoAccount].data
 
-  if (network.id !== config.dao.networkAccount) {
+  if (network.id !== config.dao.daoAccount) {
     response.reason = 'To account must be the network account'
     return response
   }
@@ -63,12 +63,12 @@ export function apply(tx: ChangeConfig, txTimestamp: number, wrappedStates: Wrap
   const value = {
     type: 'apply_change_config',
     timestamp: when,
-    network: config.dao.networkAccount,
+    network: config.dao.daoAccount,
     change: { cycle: changeOnCycle, change: JSON.parse(tx.config) },
   }
 
   const ourAppDefinedData = applyResponse.appDefinedData as OurAppDefinedData
-  ourAppDefinedData.globalMsg = { address: config.dao.networkAccount, value, when, source: config.dao.networkAccount }
+  ourAppDefinedData.globalMsg = { address: config.dao.daoAccount, value, when, source: config.dao.daoAccount }
 
   from.timestamp = tx.timestamp
   dapp.log('Applied change_config tx')
@@ -82,7 +82,7 @@ export function transactionReceiptPass(dapp: Shardus, applyResponse: ApplyRespon
 
 export function keys(tx: ChangeConfig, result: TransactionKeys): TransactionKeys {
   result.sourceKeys = [tx.from]
-  result.targetKeys = [config.dao.networkAccount]
+  result.targetKeys = [config.dao.daoAccount]
   result.allKeys = [...result.sourceKeys, ...result.targetKeys]
   return result
 }

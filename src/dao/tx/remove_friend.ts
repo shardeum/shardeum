@@ -61,7 +61,7 @@ export function apply(tx: RemoveFriend, txTimestamp: number, wrappedStates: Wrap
 
 export function keys(tx: RemoveFriend, result: TransactionKeys): TransactionKeys {
   result.sourceKeys = [tx.from]
-  result.targetKeys = [tx.to, config.dao.networkAccount]
+  result.targetKeys = [tx.to, config.dao.daoAccount]
   result.allKeys = [...result.sourceKeys, ...result.targetKeys]
   return result
 }
