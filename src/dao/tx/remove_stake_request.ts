@@ -30,7 +30,7 @@ export function validateFields(tx: RemoveStakeRequest, response: ShardusTypes.In
 
 export function validate(tx: RemoveStakeRequest, wrappedStates: WrappedStates, response: ShardusTypes.IncomingTransactionResult): ShardusTypes.IncomingTransactionResult {
   const from = wrappedStates[tx.from]?.data
-  const network: DaoGlobalAccount = wrappedStates[config.dao.networkAccount].data
+  const network: DaoGlobalAccount = wrappedStates[config.dao.daoAccount].data
   if (from == null) {
     response.reason = 'from account does not exist'
     return response
@@ -64,7 +64,7 @@ export function apply(tx: RemoveStakeRequest, wrappedStates: WrappedStates, dapp
 
 export function keys(tx: RemoveStakeRequest, result: TransactionKeys): TransactionKeys {
   result.sourceKeys = [tx.from]
-  result.targetKeys = [config.dao.networkAccount]
+  result.targetKeys = [config.dao.daoAccount]
   result.allKeys = [...result.sourceKeys, ...result.targetKeys]
   return result
 }

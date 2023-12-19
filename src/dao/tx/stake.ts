@@ -31,7 +31,7 @@ export function validateFields(tx: Stake, response: ShardusTypes.IncomingTransac
 
 export function validate(tx: Stake, wrappedStates: WrappedStates, response: ShardusTypes.IncomingTransactionResult): ShardusTypes.IncomingTransactionResult {
   const from = wrappedStates[tx.from] && wrappedStates[tx.from].data
-  const network: DaoGlobalAccount = wrappedStates[config.dao.networkAccount].data
+  const network: DaoGlobalAccount = wrappedStates[config.dao.daoAccount].data
   if (typeof from === 'undefined' || from === null) {
     response.reason = 'from account does not exist'
     return response
@@ -59,7 +59,7 @@ export function validate(tx: Stake, wrappedStates: WrappedStates, response: Shar
 
 export function apply(tx: Stake, txTimestamp: number, txId: string, wrappedStates: WrappedStates, dapp: Shardus): void {
   const from: UserAccount = wrappedStates[tx.from].data
-  const network: DaoGlobalAccount = wrappedStates[config.dao.networkAccount].data
+  const network: DaoGlobalAccount = wrappedStates[config.dao.daoAccount].data
   from.data.balance -= network.current.stakeRequired
   from.data.balance -= utils.maintenanceAmount(txTimestamp, from, network)
   from.data.stake = network.current.stakeRequired
@@ -70,7 +70,7 @@ export function apply(tx: Stake, txTimestamp: number, txId: string, wrappedState
 
 export function keys(tx: Stake, result: TransactionKeys): TransactionKeys {
   result.sourceKeys = [tx.from]
-  result.targetKeys = [config.dao.networkAccount]
+  result.targetKeys = [config.dao.daoAccount]
   result.allKeys = [...result.sourceKeys, ...result.targetKeys]
   return result
 }

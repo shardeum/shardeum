@@ -37,7 +37,7 @@ export function validateFields(tx: NodeReward, response: ShardusTypes.IncomingTr
 
 export function validate(tx: NodeReward, wrappedStates: WrappedStates, response: ShardusTypes.IncomingTransactionResult, dapp: Shardus): ShardusTypes.IncomingTransactionResult {
   const from = wrappedStates[tx.from] && wrappedStates[tx.from].data
-  const network: DaoGlobalAccount = wrappedStates[config.dao.networkAccount].data
+  const network: DaoGlobalAccount = wrappedStates[config.dao.daoAccount].data
   let nodeInfo: Node
   try {
     nodeInfo = dapp.getNode(tx.nodeId)
@@ -76,7 +76,7 @@ export function validate(tx: NodeReward, wrappedStates: WrappedStates, response:
 export function apply(tx: NodeReward, txTimestamp: number, wrappedStates: WrappedStates, dapp: Shardus): void {
   const from: NodeAccount = wrappedStates[tx.from].data
   const to: UserAccount = wrappedStates[tx.to].data
-  const network: DaoGlobalAccount = wrappedStates[config.dao.networkAccount].data
+  const network: DaoGlobalAccount = wrappedStates[config.dao.daoAccount].data
   //const nodeAccount: NodeAccount = to
   from.balance += network.current.nodeRewardAmount
   dapp.log(`Reward from ${tx.from} to ${tx.to}`)
@@ -99,7 +99,7 @@ export function apply(tx: NodeReward, txTimestamp: number, wrappedStates: Wrappe
 
 export function keys(tx: NodeReward, result: TransactionKeys): TransactionKeys {
   result.sourceKeys = [tx.from]
-  result.targetKeys = [tx.to, config.dao.networkAccount]
+  result.targetKeys = [tx.to, config.dao.daoAccount]
   result.allKeys = [...result.sourceKeys, ...result.targetKeys]
   return result
 }

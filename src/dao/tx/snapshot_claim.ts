@@ -24,7 +24,7 @@ export function validateFields(tx: SnapshotClaim, response: ShardusTypes.Incomin
 
 export function validate(tx: SnapshotClaim, wrappedStates: WrappedStates, response: ShardusTypes.IncomingTransactionResult): ShardusTypes.IncomingTransactionResult {
   const from: UserAccount = wrappedStates[tx.from] && wrappedStates[tx.from].data
-  const network: DaoGlobalAccount = wrappedStates[config.dao.networkAccount] && wrappedStates[config.dao.networkAccount].data
+  const network: DaoGlobalAccount = wrappedStates[config.dao.daoAccount] && wrappedStates[config.dao.daoAccount].data
   if (from === undefined || from === null) {
     response.reason = "from account doesn't exist"
     return response
@@ -62,7 +62,7 @@ export function validate(tx: SnapshotClaim, wrappedStates: WrappedStates, respon
 
 export function apply(tx: SnapshotClaim, txTimestamp: number, wrappedStates: WrappedStates, dapp: Shardus): void {
   const from: UserAccount = wrappedStates[tx.from].data
-  const network: DaoGlobalAccount = wrappedStates[config.dao.networkAccount].data
+  const network: DaoGlobalAccount = wrappedStates[config.dao.daoAccount].data
   // to-do: per discussion with Andrew, we will likely not port snapshots over as they are no longer used
   // from.data.balance += network.snapshot[tx.from]
   // network.snapshot[tx.from] = 0
@@ -74,7 +74,7 @@ export function apply(tx: SnapshotClaim, txTimestamp: number, wrappedStates: Wra
 
 export function keys(tx: SnapshotClaim, result: TransactionKeys): TransactionKeys {
   result.sourceKeys = [tx.from]
-  result.targetKeys = [config.dao.networkAccount]
+  result.targetKeys = [config.dao.daoAccount]
   result.allKeys = [...result.sourceKeys, ...result.targetKeys]
   return result
 }

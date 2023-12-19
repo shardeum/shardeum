@@ -27,14 +27,14 @@ export function validate(response: ShardusTypes.IncomingTransactionResult): Shar
 }
 
 export function apply(tx: ApplyChangeConfig, txTimestamp: number, wrappedStates: WrappedStates, dapp: Shardus): void {
-  const network: NetworkAccount = wrappedStates[config.dao.networkAccount].data
+  const network: NetworkAccount = wrappedStates[config.dao.daoAccount].data
   network.listOfChanges.push(tx.change)
   network.timestamp = txTimestamp
   dapp.log(`=== APPLIED CHANGE_CONFIG GLOBAL ${stringify(network)} ===`)
 }
 
 export function keys(result: TransactionKeys): TransactionKeys {
-  result.targetKeys = [config.dao.networkAccount]
+  result.targetKeys = [config.dao.daoAccount]
   result.allKeys = [...result.sourceKeys, ...result.targetKeys]
   return result
 }
