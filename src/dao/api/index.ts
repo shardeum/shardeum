@@ -11,7 +11,7 @@ export default (dapp: Shardus): void => {
   dapp.registerExternalGet('dao/network/windows', network.windows())
   dapp.registerExternalGet('dao/network/windows/dev', network.windows_dev())
 
-  dapp.registerExternalGet('dao/issues', issues.all(dapp))
+  dapp.registerExternalGet('dao/issues', issues.all)
   dapp.registerExternalGet('dao/issues/latest', issues.latest(dapp))
   dapp.registerExternalGet('dao/issues/count', issues.count(dapp))
   dapp.registerExternalGet('dao/issues/dev', issues.dev_all(dapp))
