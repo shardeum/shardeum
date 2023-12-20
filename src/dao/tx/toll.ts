@@ -41,7 +41,6 @@ export function validateFields(tx: Toll, response: ShardusTypes.IncomingTransact
 
 export function validate(tx: Toll, wrappedStates: WrappedStates, response: ShardusTypes.IncomingTransactionResult): ShardusTypes.IncomingTransactionResult {
   const from = wrappedStates[tx.from] && wrappedStates[tx.from].data
-  const network: DaoGlobalAccount = wrappedStates[config.dao.daoAccount].data
   if (tx.sign.owner !== tx.from) {
     response.reason = 'not signed by from account'
     return response
@@ -52,10 +51,6 @@ export function validate(tx: Toll, wrappedStates: WrappedStates, response: Shard
   }
   if (!from) {
     response.reason = 'from account does not exist'
-    return response
-  }
-  if (from.data.balance < network.current.transactionFee) {
-    response.reason = 'from account does not have sufficient funds to complete toll transaction'
     return response
   }
   if (!tx.toll) {
@@ -74,10 +69,8 @@ export function validate(tx: Toll, wrappedStates: WrappedStates, response: Shard
 export function apply(tx: Toll, txTimestamp: number, wrappedStates: WrappedStates, dapp: Shardus): void {
   const from: UserAccount = wrappedStates[tx.from].data
   const network: DaoGlobalAccount = wrappedStates[config.dao.daoAccount].data
-  from.data.balance -= network.current.transactionFee
   from.data.balance -= utils.maintenanceAmount(txTimestamp, from, network)
   from.data.toll = tx.toll
-  // from.data.transactions.push({ ...tx, txId })
   from.timestamp = txTimestamp
   dapp.log('Applied toll tx', from)
 }

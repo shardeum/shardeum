@@ -78,12 +78,12 @@ export function apply(tx: NodeReward, txTimestamp: number, wrappedStates: Wrappe
   const to: UserAccount = wrappedStates[tx.to].data
   const network: DaoGlobalAccount = wrappedStates[config.dao.daoAccount].data
   //const nodeAccount: NodeAccount = to
-  from.balance += network.current.nodeRewardAmount
+  from.balance += Number(network.current.nodeRewardAmountUsd)
   dapp.log(`Reward from ${tx.from} to ${tx.to}`)
   if (tx.from !== tx.to) {
     dapp.log('Node reward to and from are different.')
     dapp.log('TO ACCOUNT', to.data)
-    if (to.data.stake >= network.current.stakeRequired) {
+    if (to.data.stake >= network.current.stakeRequiredUsd) {
       to.data.balance += from.balance
       if (to.data.remove_stake_request) to.data.remove_stake_request = null
       from.balance = 0

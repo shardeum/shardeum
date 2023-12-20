@@ -49,7 +49,6 @@ export function validateFields(tx: Vote, response: ShardusTypes.IncomingTransact
 }
 
 export function validate(tx: Vote, wrappedStates: WrappedStates, response: ShardusTypes.IncomingTransactionResult): ShardusTypes.IncomingTransactionResult {
-  const from = wrappedStates[tx.from] && wrappedStates[tx.from].data
   const network: DaoGlobalAccount = wrappedStates[config.dao.daoAccount].data
   const proposal: ProposalAccount = wrappedStates[tx.proposal] && wrappedStates[tx.proposal].data
   const issue: IssueAccount = wrappedStates[tx.issue] && wrappedStates[tx.issue].data
@@ -82,10 +81,6 @@ export function validate(tx: Vote, wrappedStates: WrappedStates, response: Shard
     response.reason = 'Must send tokens to vote'
     return response
   }
-  if (from.data.balance < tx.amount + network.current.transactionFee) {
-    response.reason = 'From account has insufficient balance to cover the amount sent in the transaction'
-    return response
-  }
   if (tx.timestamp < network.windows.votingWindow[0] || tx.timestamp > network.windows.votingWindow[1]) {
     response.reason = 'Network is not within the time window to accept votes'
     return response
@@ -100,7 +95,6 @@ export function apply(tx: Vote, txTimestamp: number, txId: string, wrappedStates
   const network: DaoGlobalAccount = wrappedStates[config.dao.daoAccount].data
   const proposal: ProposalAccount = wrappedStates[tx.proposal].data
   from.data.balance -= tx.amount
-  from.data.balance -= network.current.transactionFee
   from.data.balance -= utils.maintenanceAmount(txTimestamp, from, network)
   proposal.power += tx.amount
   proposal.totalVotes++
