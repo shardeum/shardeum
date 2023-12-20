@@ -8,23 +8,6 @@ import { NodeAccount } from "./accounts/nodeAccount"
 import { ProposalAccount } from "./accounts/proposalAccount"
 import { UserAccount } from "./accounts/userAccount"
 
-// TODO: merge this with existing NetworkParameters
-export interface NetworkParameters {
-  title: string
-  description: string
-  nodeRewardInterval: number
-  nodeRewardAmount: number
-  nodePenalty: number
-  transactionFee: number
-  stakeRequired: number
-  maintenanceInterval: number
-  maintenanceFee: number
-  proposalFee: number
-  devProposalFee: number
-  faucetAmount: number
-  defaultToll: number
-}
-
 export interface Windows {
   proposalWindow: number[]
   votingWindow: number[]

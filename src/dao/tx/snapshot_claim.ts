@@ -1,3 +1,7 @@
+/**
+  * TODO: per discussion with Andrew, we will likely not port snapshots over as they are no longer used
+  */
+
 import * as crypto from '@shardus/crypto-utils'
 import { Shardus, ShardusTypes } from '@shardus/core'
 import config from '../../config'
@@ -45,16 +49,6 @@ export function validate(tx: SnapshotClaim, wrappedStates: WrappedStates, respon
     response.reason = 'Snapshot account does not exist yet, OR wrong snapshot address provided in the "to" field'
     return response
   }
-  /* to-do: per discussion with Andrew, we will likely not port snapshots over as they are no longer used
-  if (!network.snapshot) {
-    response.reason = 'Snapshot hasnt been taken yet'
-    return response
-  }
-  if (!network.snapshot[tx.from]) {
-    response.reason = 'Your address did not hold any ULT on the Ethereum blockchain during the snapshot'
-    return response
-  }
-  */
   response.success = true
   response.reason = 'This transaction is valid!'
   return response
@@ -63,9 +57,6 @@ export function validate(tx: SnapshotClaim, wrappedStates: WrappedStates, respon
 export function apply(tx: SnapshotClaim, txTimestamp: number, wrappedStates: WrappedStates, dapp: Shardus): void {
   const from: UserAccount = wrappedStates[tx.from].data
   const network: DaoGlobalAccount = wrappedStates[config.dao.daoAccount].data
-  // to-do: per discussion with Andrew, we will likely not port snapshots over as they are no longer used
-  // from.data.balance += network.snapshot[tx.from]
-  // network.snapshot[tx.from] = 0
   from.claimedSnapshot = true
   from.timestamp = txTimestamp
   network.timestamp = txTimestamp

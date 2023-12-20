@@ -37,7 +37,6 @@ export function validateFields(tx: Distribute, response: ShardusTypes.IncomingTr
 
 export function validate(tx: Distribute, wrappedStates: WrappedStates, response: ShardusTypes.IncomingTransactionResult): ShardusTypes.IncomingTransactionResult {
   const from = wrappedStates[tx.from] && wrappedStates[tx.from].data // type `DaoAccounts`
-  const network: DaoGlobalAccount = wrappedStates[config.dao.daoAccount].data
   const recipients: UserAccount[] = tx.recipients.map((id: string) => wrappedStates[id].data)
 
   if (tx.sign.owner !== tx.from) {
@@ -58,7 +57,7 @@ export function validate(tx: Distribute, wrappedStates: WrappedStates, response:
       return response
     }
   }
-  if (from.data.balance < recipients.length * tx.amount + network.current.transactionFee) {
+  if (from.data.balance < recipients.length * tx.amount) {
     response.reason = "from account doesn't have sufficient balance to cover the transaction"
     return response
   }
@@ -72,7 +71,6 @@ export function apply(tx: Distribute, txTimestamp: number, txId: string, wrapped
   const from: UserAccount = wrappedStates[tx.from].data
   const network: DaoGlobalAccount = wrappedStates[config.dao.daoAccount].data
   const recipients: UserAccount[] = tx.recipients.map((id: string) => wrappedStates[id].data)
-  from.data.balance -= network.current.transactionFee
   from.data.transactions.push({ ...tx, txId })
   for (const user of recipients) {
     from.data.balance -= tx.amount
