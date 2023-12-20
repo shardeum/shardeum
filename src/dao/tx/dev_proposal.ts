@@ -102,7 +102,6 @@ export function validateFields(tx: DevProposal, response: ShardusTypes.IncomingT
 }
 
 export function validate(tx: DevProposal, wrappedStates: WrappedStates, response: ShardusTypes.IncomingTransactionResult): ShardusTypes.IncomingTransactionResult {
-  const from = wrappedStates[tx.from]?.data // type `DaoAccounts`
   const network: DaoGlobalAccount = wrappedStates[config.dao.daoAccount].data
   const devIssue: DevIssueAccount = wrappedStates[tx.devIssue] && wrappedStates[tx.devIssue].data
 
@@ -130,10 +129,6 @@ export function validate(tx: DevProposal, wrappedStates: WrappedStates, response
     response.reason = 'Must give the next devIssue devProposalCount hash'
     return response
   }
-  if (from.data.balance < network.current.devProposalFee + network.current.transactionFee) {
-    response.reason = 'From account has insufficient balance to submit a devProposal'
-    return response
-  }
   if (tx.timestamp < network.devWindows.devProposalWindow[0] || tx.timestamp > network.devWindows.devProposalWindow[1]) {
     response.reason = 'Network is not within the time window to accept developer proposals'
     return response
@@ -153,8 +148,6 @@ export function apply(tx: DevProposal, txTimestamp: number, txId: string, wrappe
   const devIssue: DevIssueAccount = wrappedStates[tx.devIssue].data
   const devProposal: DevProposalAccount = wrappedStates[tx.devProposal].data
 
-  from.data.balance -= network.current.devProposalFee
-  from.data.balance -= network.current.transactionFee
   from.data.balance -= utils.maintenanceAmount(txTimestamp, from, network)
 
   devProposal.totalAmount = tx.totalAmount

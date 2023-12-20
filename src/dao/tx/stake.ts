@@ -44,12 +44,12 @@ export function validate(tx: Stake, wrappedStates: WrappedStates, response: Shar
     response.reason = 'incorrect signing'
     return response
   }
-  if (from.data.balance < network.current.stakeRequired) {
-    response.reason = `From account has insufficient balance, the cost required to receive node rewards is ${network.current.stakeRequired}`
+  if (from.data.balance < network.current.stakeRequiredUsd) {
+    response.reason = `From account has insufficient balance, the cost required to receive node rewards is ${network.current.stakeRequiredUsd}`
     return response
   }
-  if (tx.stake < network.current.stakeRequired) {
-    response.reason = `Stake amount sent: ${tx.stake} is less than the cost required to operate a node: ${network.current.stakeRequired}`
+  if (tx.stake < network.current.stakeRequiredUsd) {
+    response.reason = `Stake amount sent: ${tx.stake} is less than the cost required to operate a node: ${network.current.stakeRequiredUsd}`
     return response
   }
   response.success = true
@@ -60,9 +60,9 @@ export function validate(tx: Stake, wrappedStates: WrappedStates, response: Shar
 export function apply(tx: Stake, txTimestamp: number, txId: string, wrappedStates: WrappedStates, dapp: Shardus): void {
   const from: UserAccount = wrappedStates[tx.from].data
   const network: DaoGlobalAccount = wrappedStates[config.dao.daoAccount].data
-  from.data.balance -= network.current.stakeRequired
+  from.data.balance -= Number(network.current.stakeRequiredUsd)
   from.data.balance -= utils.maintenanceAmount(txTimestamp, from, network)
-  from.data.stake = network.current.stakeRequired
+  from.data.stake = Number(network.current.stakeRequiredUsd)
   from.timestamp = txTimestamp
   from.data.transactions.push({ ...tx, txId })
   dapp.log('Applied stake tx', from)

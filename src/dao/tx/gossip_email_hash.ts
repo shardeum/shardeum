@@ -51,7 +51,6 @@ export function validate(response: ShardusTypes.IncomingTransactionResult): Shar
 }
 
 export function apply(tx: GossipEmailHash, txTimestamp: number, wrappedStates: WrappedStates, dapp: Shardus): void {
-  // const targets = tx.targets.map(target wrappedStates[target].data)
   const account: UserAccount = wrappedStates[tx.account].data
   account.emailHash = tx.emailHash
   account.verified = tx.verified

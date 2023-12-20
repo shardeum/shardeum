@@ -43,16 +43,16 @@ export function validate(tx: RemoveStake, wrappedStates: WrappedStates, response
     response.reason = 'incorrect signing'
     return response
   }
-  if (from.data.stake < network.current.stakeRequired) {
-    response.reason = `From account has insufficient stake ${network.current.stakeRequired}`
+  if (from.data.stake < network.current.stakeRequiredUsd) {
+    response.reason = `From account has insufficient stake ${network.current.stakeRequiredUsd}`
     return response
   }
   if (!from.data.remove_stake_request) {
     response.reason = `Request is not active to remove stake.`
     return response
   }
-  if (tx.stake > network.current.stakeRequired) {
-    response.reason = `Stake amount sent: ${tx.stake} is more than the cost required to operate a node: ${network.current.stakeRequired}`
+  if (tx.stake > network.current.stakeRequiredUsd) {
+    response.reason = `Stake amount sent: ${tx.stake} is more than the cost required to operate a node: ${network.current.stakeRequiredUsd}`
     return response
   }
   response.success = true
@@ -65,7 +65,7 @@ export function apply(tx: RemoveStake, txTimestamp: number, txId: string, wrappe
   const network: DaoGlobalAccount = wrappedStates[config.dao.daoAccount].data
   const shouldRemoveState = from.data.remove_stake_request && from.data.remove_stake_request + 2 * network.current.nodeRewardInterval <= Date.now()
   if (shouldRemoveState) {
-    from.data.balance += network.current.stakeRequired
+    from.data.balance += Number(network.current.stakeRequiredUsd)
     from.data.stake = 0
     from.timestamp = txTimestamp
     from.data.remove_stake_request = null

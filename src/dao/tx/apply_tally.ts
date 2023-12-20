@@ -4,9 +4,9 @@ import { Shardus, ShardusTypes } from '@shardus/core'
 import _ from 'lodash'
 import config from '../../config'
 import { DaoGlobalAccount } from '../accounts/networkAccount'
-import { TransactionKeys, WrappedStates } from '../../shardeum/shardeumTypes'
+import { NetworkParameters, TransactionKeys, WrappedStates } from '../../shardeum/shardeumTypes'
 import { WrappedResponse } from '@shardus/core/dist/shardus/shardus-types'
-import { NetworkParameters, Windows } from '../types'
+import { Windows } from '../types'
 
 export interface ApplyTally {
   type: 'apply_tally'
@@ -41,24 +41,19 @@ export function validateFields(tx: ApplyTally, response: ShardusTypes.IncomingTr
     response.reason = 'tx "next parameter nodeRewardInterval" field must be a number.'
     throw new Error(response.reason)
   }
-  if (typeof tx.next.nodeRewardAmount !== 'number') {
+  if (typeof tx.next.nodeRewardAmountUsd !== 'bigint') {
     response.success = false
-    response.reason = 'tx "next parameter nodeRewardAmount" field must be a number.'
+    response.reason = 'tx "next parameter nodeRewardAmountUsd" field must be a bigint.'
     throw new Error(response.reason)
   }
-  if (typeof tx.next.nodePenalty !== 'number') {
+  if (typeof tx.next.nodePenaltyUsd !== 'bigint') {
     response.success = false
-    response.reason = 'tx "next parameter nodePenalty" field must be a number.'
+    response.reason = 'tx "next parameter nodePenaltyUsd" field must be a bigint.'
     throw new Error(response.reason)
   }
-  if (typeof tx.next.transactionFee !== 'number') {
+  if (typeof tx.next.stakeRequiredUsd !== 'bigint') {
     response.success = false
-    response.reason = 'tx "next parameter transactionFee" field must be a number.'
-    throw new Error(response.reason)
-  }
-  if (typeof tx.next.stakeRequired !== 'number') {
-    response.success = false
-    response.reason = 'tx "next parameter stakeRequired" field must be a number.'
+    response.reason = 'tx "next parameter stakeRequiredUsd" field must be a bigint.'
     throw new Error(response.reason)
   }
   if (typeof tx.next.maintenanceInterval !== 'number') {
@@ -69,26 +64,6 @@ export function validateFields(tx: ApplyTally, response: ShardusTypes.IncomingTr
   if (typeof tx.next.maintenanceFee !== 'number') {
     response.success = false
     response.reason = 'tx "next parameter maintenanceFee" field must be a number.'
-    throw new Error(response.reason)
-  }
-  if (typeof tx.next.proposalFee !== 'number') {
-    response.success = false
-    response.reason = 'tx "next parameter proposalFee" field must be a number.'
-    throw new Error(response.reason)
-  }
-  if (typeof tx.next.devProposalFee !== 'number') {
-    response.success = false
-    response.reason = 'tx "next parameter devProposalFee" field must be a number.'
-    throw new Error(response.reason)
-  }
-  if (typeof tx.next.faucetAmount !== 'number') {
-    response.success = false
-    response.reason = 'tx "next parameter faucetAmount" field must be a number.'
-    throw new Error(response.reason)
-  }
-  if (typeof tx.next.transactionFee !== 'number') {
-    response.success = false
-    response.reason = 'tx "next parameter defaultToll" field must be a number.'
     throw new Error(response.reason)
   }
   return response
