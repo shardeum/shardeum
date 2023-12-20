@@ -1,8 +1,9 @@
 import * as AccountsStorage from '../../../storage/accountStorage'
 import * as crypto from '@shardus/crypto-utils'
 import { getShardusAPI } from '../../../index'
+import { Request, Response } from 'express';
 
-getShardusAPI().registerExternalGet('all', async (_req, res) => {
+export const all = async (_req: Request, res: Response): Promise<void> => {
   try {
     const network = AccountsStorage.cachedNetworkAccount
     const issues = []
@@ -21,4 +22,6 @@ getShardusAPI().registerExternalGet('all', async (_req, res) => {
     getShardusAPI().log(error)
     res.json({ success: false, error })
   }
-})
+};
+
+getShardusAPI().registerExternalGet('all', all)
