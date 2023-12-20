@@ -38,7 +38,6 @@ export function validateFields(tx: Transfer, response: ShardusTypes.IncomingTran
 export function validate(tx: Transfer, wrappedStates: WrappedStates, response: ShardusTypes.IncomingTransactionResult): ShardusTypes.IncomingTransactionResult {
   const from = wrappedStates[tx.from] && wrappedStates[tx.from].data
   const to = wrappedStates[tx.to] && wrappedStates[tx.to].data
-  const network: DaoGlobalAccount = wrappedStates[config.dao.daoAccount].data
   if (tx.sign.owner !== tx.from) {
     response.reason = 'not signed by from account'
     return response
@@ -55,10 +54,6 @@ export function validate(tx: Transfer, wrappedStates: WrappedStates, response: S
     response.reason = "To account doesn't exist"
     return response
   }
-  if (from.data.balance < tx.amount + network.current.transactionFee) {
-    response.reason = "from account doesn't have sufficient balance to cover the transaction"
-    return response
-  }
   response.success = true
   response.reason = 'This transaction is valid!'
   return response
@@ -68,7 +63,6 @@ export function apply(tx: Transfer, txTimestamp: number, txId: string, wrappedSt
   const from = wrappedStates[tx.from].data
   const to: UserAccount = wrappedStates[tx.to].data
   const network: DaoGlobalAccount = wrappedStates[config.dao.daoAccount].data
-  from.data.balance -= tx.amount + network.current.transactionFee
   from.data.balance -= utils.maintenanceAmount(txTimestamp, from, network)
   to.data.balance += tx.amount
   from.data.transactions.push({ ...tx, txId })

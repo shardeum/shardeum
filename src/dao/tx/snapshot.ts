@@ -42,9 +42,8 @@ export function validate(tx: Snapshot, response: ShardusTypes.IncomingTransactio
   return response
 }
 
-export function apply(tx: Snapshot, txTimestamp: number, wrappedStates: WrappedStates, dapp: Shardus): void {
+export function apply(_tx: Snapshot, txTimestamp: number, wrappedStates: WrappedStates, dapp: Shardus): void {
   const network: DaoGlobalAccount = wrappedStates[config.dao.daoAccount].data
-  // to-do: network.snapshot = tx.snapshot
   network.timestamp = txTimestamp
   dapp.log('Applied snapshot tx', network)
 }

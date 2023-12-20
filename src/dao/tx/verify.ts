@@ -4,7 +4,6 @@ import { create } from '../accounts'
 import config from '../../config'
 import { TransactionKeys, WrappedStates } from '../../shardeum/shardeumTypes'
 import { UserAccount } from '../accounts/userAccount'
-import { DaoGlobalAccount } from '../accounts/networkAccount'
 import { WrappedResponse } from '@shardus/core/dist/shardus/shardus-types'
 
 export interface Verify {
@@ -68,9 +67,7 @@ export function validate(tx: Verify, wrappedStates: WrappedStates, response: Sha
 
 export function apply(tx: Verify, txTimestamp: number, wrappedStates: WrappedStates, dapp: Shardus): void {
   const from: UserAccount = wrappedStates[tx.from].data
-  const network: DaoGlobalAccount = wrappedStates[config.dao.daoAccount].data
   from.verified = true
-  from.data.balance += network.current.faucetAmount
   from.timestamp = txTimestamp
   dapp.log('Applied verify tx', from)
 }

@@ -49,16 +49,6 @@ export function validate(tx: DevTally, wrappedStates: WrappedStates, response: S
   const devIssue: DevIssueAccount = wrappedStates[tx.devIssue] && wrappedStates[tx.devIssue].data
   const devProposals: DevProposalAccount[] = tx.devProposals.map((id: string) => wrappedStates[id].data)
 
-  // let nodeInfo
-  // try {
-  //   nodeInfo = dapp.getNode(tx.nodeId)
-  // } catch (err) {
-  //   dapp.log(err)
-  // }
-  // if (!nodeInfo) {
-  //   response.reason = 'no nodeInfo'
-  //   return response
-  // }
   if (!devIssue) {
     response.reason = "devIssue doesn't exist"
     return response

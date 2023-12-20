@@ -43,12 +43,12 @@ export function validate(tx: RemoveStakeRequest, wrappedStates: WrappedStates, r
     response.reason = 'incorrect signing'
     return response
   }
-  if (from.data.stake < network.current.stakeRequired) {
-    response.reason = `From account has insufficient stake ${network.current.stakeRequired}`
+  if (from.data.stake < network.current.stakeRequiredUsd) {
+    response.reason = `From account has insufficient stake ${network.current.stakeRequiredUsd}`
     return response
   }
-  if (tx.stake > network.current.stakeRequired) {
-    response.reason = `Stake amount sent: ${tx.stake} is more than the cost required to operate a node: ${network.current.stakeRequired}`
+  if (tx.stake > network.current.stakeRequiredUsd) {
+    response.reason = `Stake amount sent: ${tx.stake} is more than the cost required to operate a node: ${network.current.stakeRequiredUsd}`
     return response
   }
   response.success = true

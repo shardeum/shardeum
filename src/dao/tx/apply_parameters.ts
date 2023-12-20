@@ -39,24 +39,19 @@ export function validateFields(tx: ApplyParameters, response: ShardusTypes.Incom
     response.reason = 'tx "current parameter nodeRewardInterval" field must be a number.'
     throw new Error(response.reason)
   }
-  if (typeof tx.current.nodeRewardAmount !== 'number') {
+  if (typeof tx.current.nodeRewardAmountUsd !== 'bigint') {
     response.success = false
-    response.reason = 'tx "current parameter nodeRewardAmount" field must be a number.'
+    response.reason = 'tx "current parameter nodeRewardAmountUsd" field must be a bigint.'
     throw new Error(response.reason)
   }
-  if (typeof tx.current.nodePenalty !== 'number') {
+  if (typeof tx.current.nodePenaltyUsd !== 'bigint') {
     response.success = false
-    response.reason = 'tx "current parameter nodePenalty" field must be a number.'
+    response.reason = 'tx "current parameter nodePenaltyUsd" field must be a bigint.'
     throw new Error(response.reason)
   }
-  if (typeof tx.current.transactionFee !== 'number') {
+  if (typeof tx.current.stakeRequiredUsd !== 'bigint') {
     response.success = false
-    response.reason = 'tx "current parameter transactionFee" field must be a number.'
-    throw new Error(response.reason)
-  }
-  if (typeof tx.current.stakeRequired !== 'number') {
-    response.success = false
-    response.reason = 'tx "current parameter stakeRequired" field must be a number.'
+    response.reason = 'tx "current parameter stakeRequiredUsd" field must be a bigint.'
     throw new Error(response.reason)
   }
   if (typeof tx.current.maintenanceInterval !== 'number') {
@@ -67,26 +62,6 @@ export function validateFields(tx: ApplyParameters, response: ShardusTypes.Incom
   if (typeof tx.current.maintenanceFee !== 'number') {
     response.success = false
     response.reason = 'tx "current parameter maintenanceFee" field must be a number.'
-    throw new Error(response.reason)
-  }
-  if (typeof tx.current.proposalFee !== 'number') {
-    response.success = false
-    response.reason = 'tx "current parameter proposalFee" field must be a number.'
-    throw new Error(response.reason)
-  }
-  if (typeof tx.current.devProposalFee !== 'number') {
-    response.success = false
-    response.reason = 'tx "current parameter devProposalFee" field must be a number.'
-    throw new Error(response.reason)
-  }
-  if (typeof tx.current.faucetAmount !== 'number') {
-    response.success = false
-    response.reason = 'tx "current parameter faucetAmount" field must be a number.'
-    throw new Error(response.reason)
-  }
-  if (typeof tx.current.transactionFee !== 'number') {
-    response.success = false
-    response.reason = 'tx "current parameter defaultToll" field must be a number.'
     throw new Error(response.reason)
   }
   if (!_.isEmpty(tx.next) || typeof tx.next !== 'object') {

@@ -3,8 +3,7 @@ import { Shardus, ShardusTypes } from '@shardus/core'
 import * as utils from '../utils'
 import { create } from '../accounts'
 import config from '../../config'
-import { NetworkParameters } from '../types'
-import { TransactionKeys, WrappedStates } from '../../shardeum/shardeumTypes'
+import { NetworkParameters, TransactionKeys, WrappedStates } from '../../shardeum/shardeumTypes'
 import { DaoGlobalAccount } from '../accounts/networkAccount'
 import { IssueAccount } from '../accounts/issueAccount'
 import { UserAccount } from '../accounts/userAccount'
@@ -57,24 +56,19 @@ export function validateFields(tx: Proposal, response: ShardusTypes.IncomingTran
     response.reason = 'tx "parameter nodeRewardInterval" field must be a number.'
     throw new Error(response.reason)
   }
-  if (typeof tx.parameters.nodeRewardAmount !== 'number') {
+  if (typeof tx.parameters.nodeRewardAmountUsd !== 'bigint') {
     response.success = false
-    response.reason = 'tx "parameter nodeRewardAmount" field must be a number.'
+    response.reason = 'tx "parameter nodeRewardAmountUsd" field must be a bigint.'
     throw new Error(response.reason)
   }
-  if (typeof tx.parameters.nodePenalty !== 'number') {
+  if (typeof tx.parameters.nodePenaltyUsd !== 'bigint') {
     response.success = false
-    response.reason = 'tx "parameter nodePenalty" field must be a number.'
+    response.reason = 'tx "parameter nodePenaltyUsd" field must be a bigint.'
     throw new Error(response.reason)
   }
-  if (typeof tx.parameters.transactionFee !== 'number') {
+  if (typeof tx.parameters.stakeRequiredUsd !== 'bigint') {
     response.success = false
-    response.reason = 'tx "parameter transactionFee" field must be a number.'
-    throw new Error(response.reason)
-  }
-  if (typeof tx.parameters.stakeRequired !== 'number') {
-    response.success = false
-    response.reason = 'tx "parameter stakeRequired" field must be a number.'
+    response.reason = 'tx "parameter stakeRequiredUsd" field must be a bigint.'
     throw new Error(response.reason)
   }
   if (typeof tx.parameters.maintenanceInterval !== 'number') {
@@ -87,31 +81,10 @@ export function validateFields(tx: Proposal, response: ShardusTypes.IncomingTran
     response.reason = 'tx "parameter maintenanceFee" field must be a number.'
     throw new Error(response.reason)
   }
-  if (typeof tx.parameters.proposalFee !== 'number') {
-    response.success = false
-    response.reason = 'tx "parameter proposalFee" field must be a number.'
-    throw new Error(response.reason)
-  }
-  if (typeof tx.parameters.devProposalFee !== 'number') {
-    response.success = false
-    response.reason = 'tx "parameter devProposalFee" field must be a number.'
-    throw new Error(response.reason)
-  }
-  if (typeof tx.parameters.faucetAmount !== 'number') {
-    response.success = false
-    response.reason = 'tx "parameter faucetAmount" field must be a number.'
-    throw new Error(response.reason)
-  }
-  if (typeof tx.parameters.transactionFee !== 'number') {
-    response.success = false
-    response.reason = 'tx "parameter defaultToll" field must be a number.'
-    throw new Error(response.reason)
-  }
   return response
 }
 
 export function validate(tx: Proposal, wrappedStates: WrappedStates, response: ShardusTypes.IncomingTransactionResult): ShardusTypes.IncomingTransactionResult {
-  const from = wrappedStates[tx.from] && wrappedStates[tx.from].data
   const network: DaoGlobalAccount = wrappedStates[config.dao.daoAccount].data
   const issue: IssueAccount = wrappedStates[tx.issue] && wrappedStates[tx.issue].data
   const parameters: NetworkParameters = tx.parameters
@@ -139,18 +112,6 @@ export function validate(tx: Proposal, wrappedStates: WrappedStates, response: S
     response.reason = 'Must give the next issue proposalCount hash'
     return response
   }
-  if (from.data.balance < network.current.proposalFee + network.current.transactionFee) {
-    response.reason = 'From account has insufficient balance to submit a proposal'
-    return response
-  }
-  if (parameters.transactionFee < 0) {
-    response.reason = 'Min transaction fee permitted is 0'
-    return response
-  }
-  if (parameters.transactionFee > 10) {
-    response.reason = 'Max transaction fee permitted is 10'
-    return response
-  }
   if (parameters.maintenanceFee > 0.1) {
     response.reason = 'Max maintenanceFee fee permitted is 10%'
     return response
@@ -175,28 +136,12 @@ export function validate(tx: Proposal, wrappedStates: WrappedStates, response: S
     response.reason = 'Max nodeRewardInterval fee permitted is 900000000000'
     return response
   }
-  if (parameters.nodeRewardAmount < 0) {
-    response.reason = 'Min nodeRewardAmount permitted is 0 tokens'
+  if (parameters.nodeRewardAmountUsd < 0) {
+    response.reason = 'Min nodeRewardAmountUsd permitted is 0'
     return response
   }
-  if (parameters.nodeRewardAmount > 1000000000) {
-    response.reason = 'Max nodeRewardAmount permitted is 1000000000'
-    return response
-  }
-  if (parameters.proposalFee < 0) {
-    response.reason = 'Min proposalFee permitted is 0 tokens'
-    return response
-  }
-  if (parameters.proposalFee > 1000000000) {
-    response.reason = 'Max proposalFee permitted is 1000000000 tokens'
-    return response
-  }
-  if (parameters.devProposalFee < 0) {
-    response.reason = 'Min devProposalFee permitted is 0 tokens'
-    return response
-  }
-  if (parameters.devProposalFee > 1000000000) {
-    response.reason = 'Max devProposalFee permitted is 1000000000 tokens'
+  if (parameters.nodeRewardAmountUsd > 1000000000) {
+    response.reason = 'Max nodeRewardAmountUsd permitted is 1000000000'
     return response
   }
   if (tx.timestamp < network.windows.proposalWindow[0] || tx.timestamp > network.windows.proposalWindow[1]) {
@@ -214,8 +159,6 @@ export function apply(tx: Proposal, txTimestamp: number, txId: string, wrappedSt
   const proposal: ProposalAccount = wrappedStates[tx.proposal].data
   const issue: IssueAccount = wrappedStates[tx.issue].data
 
-  from.data.balance -= network.current.proposalFee
-  from.data.balance -= network.current.transactionFee
   from.data.balance -= utils.maintenanceAmount(txTimestamp, from, network)
 
   proposal.parameters = tx.parameters
