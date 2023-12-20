@@ -1,6 +1,5 @@
 import { AccessListEIP2930Transaction, LegacyTransaction } from '@ethereumjs/tx'
 import { Account, Address } from '@ethereumjs/util'
-import { oneSHM } from '../../shardeum/shardeumConstants'
 import { ShardeumState } from '../state'
 import { evmCommon, networkAccount } from '../evmSetup'
 import { EVM as EthereumVirtualMachine } from '../../evm_v2'
@@ -10,6 +9,8 @@ import { fixDeserializedWrappedEVMAccount, predictContractAddress } from '../uti
 import * as AccountsStorage from '../db'
 import { toShardusAddress } from '../utils/evmAddress'
 import { createAccount } from '../replayTX'
+
+export const oneSHM = BigInt(10) ** BigInt(18)
 
 function wrapTransaction(transaction: LegacyTransaction, impl: () => Address): LegacyTransaction {
   return new Proxy(transaction, {
