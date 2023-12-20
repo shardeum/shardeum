@@ -99,7 +99,7 @@ export function apply(tx: Email, wrappedStates: WrappedStates, dapp: Shardus): v
       to: `${tx.email}`,
       subject: 'Verify your email for liberdus',
       message: `Please verify your email address by sending a "verify" transaction with the number: ${verificationNumber}`,
-      secret: 'Liberdus',
+      secret: 'Liberdus', // pragma: allowlist secret
     })
 
     dapp.put({
