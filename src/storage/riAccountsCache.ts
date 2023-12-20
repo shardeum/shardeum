@@ -1,4 +1,4 @@
-import { logFlags } from '..'
+import { isServiceMode, logFlags } from '..'
 import { ShardeumFlags } from '../shardeum/shardeumFlags'
 import { AccountType, WrappedEVMAccount } from '../shardeum/shardeumTypes'
 import { DeSerializeFromJsonString } from '../utils'
@@ -6,7 +6,7 @@ import { accounts, storage } from './accountStorage'
 import { AccountsEntry } from './storage'
 
 export async function getCachedRIAccount(address: string): Promise<WrappedEVMAccount> {
-  if (ShardeumFlags.enableRIAccountsCache === false) return
+  if (ShardeumFlags.enableRIAccountsCache === false || isServiceMode()) return
   try {
     if (ShardeumFlags.UseDBForAccounts === true) {
       const account = await storage.getRIAccountsCache(address)
@@ -26,7 +26,7 @@ export async function getCachedRIAccount(address: string): Promise<WrappedEVMAcc
 }
 
 export async function setCachedRIAccount(account: AccountsEntry): Promise<void> {
-  if (ShardeumFlags.enableRIAccountsCache === false) return
+  if (ShardeumFlags.enableRIAccountsCache === false || isServiceMode()) return
   try {
     if (typeof account.data === 'string') {
       account.data = DeSerializeFromJsonString<WrappedEVMAccount>(account.data)
