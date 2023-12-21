@@ -9,6 +9,7 @@ import {
   InternalTx,
   NetworkAccount,
   WrappedStates,
+  WrappedEVMAccount,
 } from '../shardeum/shardeumTypes'
 import { DaoGlobalAccount } from './accounts/networkAccount'
 import { decodeDaoTxFromEVMTx } from './utils'
@@ -44,7 +45,7 @@ export function applyInitDaoTx(
   }
 }
 
-export function getRelevantDataInitDao(accountId, wrappedEVMAccount): boolean {
+export function getRelevantDataInitDao(accountId: string, wrappedEVMAccount: NetworkAccount | DaoGlobalAccount | WrappedEVMAccount): boolean {
   if (!wrappedEVMAccount) {
     if (accountId === daoAccount) {
       wrappedEVMAccount = createDaoAccount()
