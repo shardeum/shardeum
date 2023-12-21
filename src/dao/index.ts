@@ -100,7 +100,7 @@ function createDaoAccount(timestamp = 0): DaoGlobalAccount {
 export function isDaoTx(tx: OpaqueTransaction): boolean {
   // EVM txs come in as serialized hexstrings
   const transaction = getTransactionObj(tx)
-  return transaction.to && transaction.to.toString() === ShardeumFlags.daoTargetAddress
+  return transaction.to?.toString() === ShardeumFlags.daoTargetAddress
 }
 
 /**
