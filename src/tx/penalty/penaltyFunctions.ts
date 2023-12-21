@@ -31,7 +31,6 @@ export function applyPenalty(
   nodeAccount.stakeLock -= penalty
   nodeAccount.penalty += penalty
   nodeAccount.nodeAccountStats.totalPenalty += penalty
-  nodeAccount.nodeAccountStats.history.push({ b: nodeAccount.rewardStartTime, e: nodeAccount.rewardEndTime })
   return true
 }
 

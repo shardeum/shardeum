@@ -4,7 +4,7 @@ import {
   isNodeAccount2,
   NodeAccount2,
   WrappedEVMAccount,
-  WrappedStates,
+  WrappedStates
 } from '../../shardeum/shardeumTypes'
 import { ShardeumFlags } from '../../shardeum/shardeumFlags'
 import { crypto } from '../../setup/helpers'
@@ -105,6 +105,7 @@ export async function injectPenaltyTX(
   for (let i = 0; i < ShardeumFlags.numberOfNodesToInjectPenaltyTx; i++) {
     if (sortedNodeIdsAndRanks[i].nodeId === ourNodeId) {
       isLuckyNode = true
+      break
     }
   }
 
@@ -273,12 +274,15 @@ export async function applyPenaltyTX(
     operatorAccount = wrappedStates[operatorShardusAddress].data as WrappedEVMAccount
   }
 
-  if (tx.violationType === ViolationType.LeftNetworkEarly)
-    nodeAccount.rewardEndTime = tx.violationData?.nodeDroppedTime || Math.floor(tx.timestamp / 1000)
+
 
   //TODO should we check if it was already penalized?
   const penaltyAmount = getPenaltyForViolation(tx, nodeAccount.stakeLock)
   applyPenalty(nodeAccount, operatorAccount, penaltyAmount)
+  if (tx.violationType === ViolationType.LeftNetworkEarly) {
+    nodeAccount.rewardEndTime = tx.violationData?.nodeDroppedTime || Math.floor(tx.timestamp / 1000)
+    nodeAccount.nodeAccountStats.history.push({ b: nodeAccount.rewardStartTime, e: nodeAccount.rewardEndTime })
+  }
 
   const txId = generateTxId(tx)
   const shardeumState = getApplyTXState(txId)
