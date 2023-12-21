@@ -11,8 +11,9 @@ export const dev_all = (dapp: Shardus) => async (_req: Request, res: Response): 
     const devIssue =
       "data" in network
         && typeof network.data === "object"
+        && network.data
         && "devIssue" in network.data
-        ? network.data.devIssue : 0;
+        ? network.data.devIssue as number : 0;
 
     for (let i = 1; i <= devIssue; i++) {
       const devIssue = await getShardusAPI().getLocalOrRemoteAccount(crypto.hash(`dev-issue-${i}`))

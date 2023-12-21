@@ -7,8 +7,6 @@ import { issueAccount } from './issueAccount'
 import { createDaoGlobalAccount } from './networkAccount'
 import { nodeAccount } from './nodeAccount'
 import { proposalAccount } from './proposalAccount'
-import { Address } from 'ethereumjs-util'
-import { ShardeumFlags } from '../../shardeum/shardeumFlags'
 
 export const create = {
   aliasAccount,
