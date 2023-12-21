@@ -11,8 +11,10 @@ export const toll = (dapp: Shardus) => async (req: Request, res: Response): Prom
       const toll =
         "data" in account
           && typeof account.data === "object"
+          && account.data
           && "data" in account.data
           && typeof account.data.data === "object"
+          && account.data.data
           && "toll" in account.data.data
           ? account.data.data.toll : undefined;
 
@@ -20,16 +22,20 @@ export const toll = (dapp: Shardus) => async (req: Request, res: Response): Prom
         const network = await getShardusAPI().getLocalOrRemoteAccount(config.dao.daoAccount)
         const toll =
           typeof network.data === "object"
+            && network.data
             && "current" in network.data
             && typeof network.data.current === "object"
+            && network.data.current
             && "defaultToll" in network.data.current
             ? network.data.current.defaultToll : undefined;
         res.json({ toll })
       } else {
         const toll =
           typeof account.data === "object"
+            && account.data
             && "data" in account.data
             && typeof account.data.data === "object"
+            && account.data.data
             && "toll" in account.data.data
             ? account.data.data.toll : undefined;
 

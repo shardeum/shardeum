@@ -10,12 +10,14 @@ export const dev_count = (dapp: Shardus) => async (_req: Request, res: Response)
 
     const devIssueNum =
       typeof network.data === "object"
+        && network.data
         && "devIssue" in network.data
         ? network.data.devIssue : 0;
     const devIssue = await getShardusAPI().getLocalOrRemoteAccount(crypto.hash(`dev-issue-${devIssueNum}`))
 
     const devProposalCount =
       typeof devIssue?.data == "object"
+        && devIssue.data
         && "devProposalCount" in devIssue.data
         ? devIssue.data.devProposalCount : 0;
     res.json({ count: devIssue && devProposalCount })

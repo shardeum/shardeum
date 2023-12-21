@@ -9,16 +9,18 @@ export const dev_all = (dapp: Shardus) => async (_req: Request, res: Response): 
     const network = await getShardusAPI().getLocalOrRemoteAccount(networkAccount)
     const devIssue =
       typeof network.data === "object"
+        && network.data
         && "devIssue" in network.data
-        ? network.data.devIssue : 0;
+        ? network.data.devIssue as number : 0;
 
     const devProposals = []
     for (let i = 1; i <= devIssue; i++) {
       const devIssue = await getShardusAPI().getLocalOrRemoteAccount(crypto.hash(`dev-issue-${i}`))
       const devProposalCount =
         typeof devIssue?.data == "object"
+          && devIssue.data
           && "devProposalCount" in devIssue.data
-          ? devIssue.data.devProposalCount : 0;
+          ? devIssue.data.devProposalCount as number : 0;
       for (let j = 1; j <= devProposalCount; j++) {
         const devProposal = await getShardusAPI().getLocalOrRemoteAccount(crypto.hash(`dev-issue-${i}-dev-proposal-${j}`))
         if (devProposal && devProposal.data) {

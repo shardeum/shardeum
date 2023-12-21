@@ -9,6 +9,7 @@ export const address = (dapp: Shardus) => async (req: Request, res: Response): P
     if (
       "data" in account
       && typeof account.data == "object"
+      && account.data
       && "address" in account.data
       && account.data.address
     ) {

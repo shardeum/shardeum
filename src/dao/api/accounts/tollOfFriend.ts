@@ -22,8 +22,10 @@ export const tollOfFriend = (dapp: Shardus) => async (req: Request, res: Respons
       if (
         "data" in account
         && typeof account.data === "object"
+        && account.data
         && "data" in account.data
         && typeof account.data.data === "object"
+        && account.data.data
         && "friends" in account.data.data
         && account.data.data.friends[friendId]
       ) {
@@ -31,8 +33,10 @@ export const tollOfFriend = (dapp: Shardus) => async (req: Request, res: Respons
       } else {
         const accountDataToll = "data" in account
           && typeof account.data === "object"
+          && account.data
           && "data" in account.data
           && typeof account.data.data === "object"
+          && account.data.data
           && "toll" in account.data.data
           ? account.data.data.toll : undefined;
 
@@ -41,8 +45,10 @@ export const tollOfFriend = (dapp: Shardus) => async (req: Request, res: Respons
 
           const toll =
             typeof network.data === "object"
+              && network.data
               && "current" in network.data
               && typeof network.data.current === "object"
+              && network.data.current
               && "defaultToll" in network.data.current
               ? network.data.current.defaultToll : undefined;
 
@@ -50,8 +56,10 @@ export const tollOfFriend = (dapp: Shardus) => async (req: Request, res: Respons
         } else {
           const toll =
             typeof account.data === "object"
+              && account.data
               && "data" in account.data
               && typeof account.data.data === "object"
+              && account.data.data
               && "toll" in account.data.data
               ? account.data.data.toll : undefined;
 
