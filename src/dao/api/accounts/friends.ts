@@ -10,8 +10,10 @@ export const friends = (dapp: Shardus) => async (req: Request, res: Response): P
       const friends =
         "data" in account
           && typeof account.data === "object"
+          && account.data
           && "data" in account.data
           && typeof account.data.data === "object"
+          && account.data.data
           && "friends" in account.data.data
           ? account.data.data.friends : undefined;
       res.json({ friends })

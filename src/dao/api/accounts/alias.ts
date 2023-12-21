@@ -9,6 +9,7 @@ export const alias = (dapp: Shardus) => async (req: Request, res: Response): Pro
     const handle =
       "data" in account
         && typeof account.data == "object"
+        && account.data
         && "alias" in account.data
         ? account.data.alias : undefined;
     res.json({ handle })

@@ -11,10 +11,12 @@ export const recentMessages = (dapp: Shardus) => async (req: Request, res: Respo
       const chats =
         "data" in account
           && typeof account.data === "object"
+          && account.data
           && "data" in account.data
           && typeof account.data.data === "object"
+          && account.data.data
           && "chats" in account.data.data
-          ? account.data.data.chats : undefined;
+          ? account.data.data.chats as Record<string, { messages: object[] }> : {};
 
       Object.values(chats).forEach((chat: { messages: object[] }) => {
         messages.push(...chat.messages)
