@@ -2,11 +2,19 @@ import { Shardus, ShardusTypes } from '@shardus/core'
 import { daoConfig } from '../../config/dao'
 import { create } from '../accounts'
 import { ApplyResponse, TransactionKeys, WrappedResponse } from '@shardus/core/dist/shardus/shardus-types'
-import { ChangeConfig, OurAppDefinedData, WrappedStates } from '../../shardeum/shardeumTypes'
+import { OurAppDefinedData, WrappedStates } from '../../shardeum/shardeumTypes'
 import { DaoGlobalAccount } from '../accounts/networkAccount'
 import { UserAccount } from '../accounts/userAccount'
 import { CycleRecord } from '@shardus/types/build/src/p2p/CycleCreatorTypes'
 import { NodeAccount } from '../accounts/nodeAccount'
+
+export interface ChangeConfig {
+  type: 'change_config'
+  from: string
+  cycle: ShardusTypes.Cycle
+  config: string
+  timestamp: number
+}
 
 export function validateFields(tx: ChangeConfig, response: ShardusTypes.IncomingTransactionResult): ShardusTypes.IncomingTransactionResult {
   if (typeof tx.from !== 'string') {
