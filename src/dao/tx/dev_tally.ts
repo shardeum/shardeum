@@ -97,7 +97,7 @@ export function apply(tx: DevTally, txTimestamp: number, wrappedStates: WrappedS
         payments.push({
           timestamp: txTimestamp + config.dao.TIME_FOR_DEV_GRACE + payment.delay,
           delay: payment.delay,
-          amount: payment.amount * devProposal.totalAmount,
+          amount: payment.amount * (devProposal.totalAmount ?? 0),
           address: devProposal.payAddress,
           id: crypto.hashObj(payment),
         })

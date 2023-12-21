@@ -39,8 +39,8 @@ export function validate(tx: ChangeConfig, wrappedStates: WrappedStates, respons
     dapp.log(parsed)
     console.log(parsed)
   } catch (err) {
-    dapp.log(err.message)
-    response.reason = err.message
+    dapp.log(err instanceof Error && err.message)
+    response.reason = err instanceof Error ? err.message : 'Invalid JSON'
   }
   response.success = true
   response.reason = 'This transaction is valid!'
