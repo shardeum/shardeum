@@ -8,6 +8,7 @@ export const count = (dapp: Shardus) => async (_req: Request, res: Response): Pr
   try {
     const count = "data" in network
       && typeof network.data === "object"
+      && network.data
       && "issue" in network.data
       ? network.data.issue : 0;
 

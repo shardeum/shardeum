@@ -10,16 +10,18 @@ export const all = (dapp: Shardus) => async (_req: Request, res: Response): Prom
 
     const issue = "data" in network
       && typeof network.data === "object"
+      && network.data
       && "issue" in network.data
-      ? network.data.issue : 0;
+      ? network.data.issue as number : 0;
 
     const proposals = []
     for (let i = 1; i <= issue; i++) {
       const issue = await getShardusAPI().getLocalOrRemoteAccount(crypto.hash(`issue-${i}`))
       const proposalCount =
-        typeof issue?.data == "object"
+        issue?.data
+          && typeof issue?.data == "object"
           && "proposalCount" in issue.data
-          ? issue.data.proposalCount : 0;
+          ? issue.data.proposalCount as number : 0;
 
       for (let j = 1; j <= proposalCount; j++) {
         const proposal = await getShardusAPI().getLocalOrRemoteAccount(crypto.hash(`issue-${i}-proposal-${j}`))

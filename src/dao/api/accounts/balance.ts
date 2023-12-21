@@ -10,8 +10,10 @@ export const balance = (dapp: Shardus) => async (req: Request, res: Response): P
       const balance =
         "data" in account
           && typeof account.data == "object"
+          && account.data
           && "data" in account.data
           && typeof account.data.data == "object"
+          && account.data.data
           && "balance" in account.data.data
           ? account.data.data.balance : undefined;
       res.json({ balance })
