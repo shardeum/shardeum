@@ -407,14 +407,6 @@ export interface OperatorStats {
   lastStakedNodeKey: string
 }
 
-export interface ChangeConfig {
-  type: 'change_config'
-  from: string
-  cycle: ShardusTypes.Cycle
-  config: string
-  timestamp: number
-}
-
 export interface ApplyChangeConfig {
   type: 'apply_change_config'
   change: Change
