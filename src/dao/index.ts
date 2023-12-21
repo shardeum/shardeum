@@ -53,8 +53,8 @@ export function getRelevantDataInitDao(accountId: string, wrappedEVMAccount: Net
     } else {
       //wrappedEVMAccount = createNodeAccount(accountId) as any
     }
-    return false
   }
+  return false
 }
 
 function createDaoAccount(timestamp = 0): DaoGlobalAccount {
