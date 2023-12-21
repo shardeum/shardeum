@@ -2379,6 +2379,7 @@ async function _transactionReceiptPass(
     }
 
     if (isLowStake(nodeAccount)) {
+      if (ShardeumFlags.VerboseLogs) console.log(`isLowStake for nodeAccount ${nodeAccount.id}: true`, nodeAccount)
       const certData: RemoveNodeCert = {
         nodePublicKey: tx.reportedNodePublickKey,
         certExp: operatorAccount.operatorAccountInfo.certExp,
@@ -2391,7 +2392,10 @@ async function _transactionReceiptPass(
         2
       )
       if (!signedAppData.success) {
-        throw new Error('Unable to get signatures for remove node cert')
+        nestedCountersInstance.countEvent('shardeum', 'unable to get signs for remove node cert')
+        if (ShardeumFlags.VerboseLogs) console.log(`Unable to get signature for remove node cert`)
+        // todo: find a better way to retry this
+        return
       }
 
       certData.signs = signedAppData.signatures
@@ -5478,8 +5482,9 @@ const shardusSetup = (): void => {
             return fail
           }
           const nodeAccount = remoteShardusAccount.data as NodeAccount2
+          const currentStakeLock = _base16BNParser(nodeAccount.stakeLock)
           // todo: take into consideration the reward amount
-          if (nodeAccount.stakeLock >= minStakeRequired) {
+          if (currentStakeLock >= minStakeRequired) {
             /* prettier-ignore */ nestedCountersInstance.countEvent('shardeum-remove-node', 'node locked stake is not below minStakeRequired')
             /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`node locked stake is not below minStakeRequired ${type} ${stringify(removeNodeCert)}, cachedNetworkAccount: ${stringify(AccountsStorage.cachedNetworkAccount)} `)
             return fail
@@ -5487,7 +5492,7 @@ const shardusSetup = (): void => {
 
           const signedCert: RemoveNodeCert = shardus.signAsNode(removeNodeCert)
           const result: ShardusTypes.SignAppDataResult = { success: true, signature: signedCert.sign }
-          if (ShardeumFlags.VerboseLogs) console.log(`signAppData passed ${type} ${stringify(stakeCert)}`)
+          if (ShardeumFlags.VerboseLogs) console.log(`signAppData passed ${type} ${stringify(removeNodeCert)}`)
           nestedCountersInstance.countEvent('shardeum-staking', 'sign-stake-cert - passed')
           return result
         }
@@ -6294,6 +6299,12 @@ const shardusSetup = (): void => {
           if (cycle.refuted.includes(data.nodeId)) {
             nodeRefutedCycle = cycle.counter
           }
+          nestedCountersInstance.countEvent('shardeum-staking', `node-left-early: injectPenaltyTx`)
+          const result = await PenaltyTx.injectPenaltyTX(shardus, data, violationData)
+          /* prettier-ignore */ if (logFlags.dapp_verbose) console.log('INJECTED_PENALTY_TX', result)
+        } else {
+          nestedCountersInstance.countEvent('shardeum-staking', `node-left-early: event skipped`)
+          /* prettier-ignore */ if (logFlags.dapp_verbose) console.log(`Shardeum node-left-early event skipped`, data, nodeLostCycle, nodeDroppedCycle)
         }
         if (nodeRefutedCycle === data.cycleNumber) {
           const violationData: NodeRefutedViolationData = {
