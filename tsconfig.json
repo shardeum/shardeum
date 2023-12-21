@@ -13,6 +13,6 @@
     "noImplicitReturns": false,
     "typeRoots": ["node_modules/@types"]
   },
-  "include": ["src/**/*", "src/tests"],
+  "include": ["src/**/*", "src/tests", "index.d.ts"],
   "exclude": ["./node_modules", "dist"]
 }
