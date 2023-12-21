@@ -38,7 +38,7 @@ export function validateFields(tx: NodeReward, response: ShardusTypes.IncomingTr
 export function validate(tx: NodeReward, wrappedStates: WrappedStates, response: ShardusTypes.IncomingTransactionResult, dapp: Shardus): ShardusTypes.IncomingTransactionResult {
   const from = wrappedStates[tx.from] && wrappedStates[tx.from].data
   const network: DaoGlobalAccount = wrappedStates[config.dao.daoAccount].data
-  let nodeInfo: Node
+  let nodeInfo: Node | null = null
   try {
     nodeInfo = dapp.getNode(tx.nodeId)
   } catch (err) {
@@ -83,7 +83,7 @@ export function apply(tx: NodeReward, txTimestamp: number, wrappedStates: Wrappe
   if (tx.from !== tx.to) {
     dapp.log('Node reward to and from are different.')
     dapp.log('TO ACCOUNT', to.data)
-    if (to.data.stake >= network.current.stakeRequiredUsd) {
+    if (to.data.stake && to.data.stake >= network.current.stakeRequiredUsd) {
       to.data.balance += from.balance
       if (to.data.remove_stake_request) to.data.remove_stake_request = null
       from.balance = 0
