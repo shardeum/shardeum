@@ -109,11 +109,11 @@ export function isDaoTx(tx: OpaqueTransaction): boolean {
 export function handleDaoTxCrack(
   tx: OpaqueTransaction,
   result: {
-    sourceKeys: any[]
-    targetKeys: any[]
-    storageKeys: any[]
-    codeHashKeys: any[]
-    allKeys: any[]
+    sourceKeys: string[]
+    targetKeys: string[]
+    storageKeys: string[]
+    codeHashKeys: string[]
+    allKeys: string[]
     timestamp: number
   }
 ): void {
@@ -121,10 +121,10 @@ export function handleDaoTxCrack(
   const unserializedTx = getTransactionObj(tx)
   // Decode data field of EVM tx to get type of DAO tx
   if ('data' in unserializedTx) {
-    const daoTx: unknown = decodeDaoTxFromEVMTx(
+    const daoTx = decodeDaoTxFromEVMTx(
       unserializedTx as Transaction[TransactionType.Legacy] | Transaction[TransactionType.AccessListEIP2930]
     )
-    if (typeof daoTx === 'object' && 'type' in daoTx && typeof daoTx.type === 'string') {
+    if (typeof daoTx === 'object' && daoTx && 'type' in daoTx && typeof daoTx.type === 'string') {
       // Call the keys function of the dao tx type
       const changes = transactions[daoTx.type].keys(daoTx, {})
       // Combine changes with existing keys
@@ -143,13 +143,13 @@ export async function handleDaoTxGetRelevantData(
   tx: OpaqueTransaction,
   shardus: Shardus
 ): Promise<{
-  accountId: any
-  accountCreated: any
+  accountId: string
+  accountCreated: boolean
   isPartial: boolean
-  stateId: any
-  timestamp: any
-  data: any
-}> {
+  stateId: unknown
+  timestamp: number
+  data: unknown
+} | null> {
   // Unserialize the EVM tx
   const unserializedTx = getTransactionObj(tx)
   // Decode data field of EVM tx to get type of DAO tx
@@ -157,29 +157,30 @@ export async function handleDaoTxGetRelevantData(
     const daoTx: unknown = decodeDaoTxFromEVMTx(
       unserializedTx as Transaction[TransactionType.Legacy] | Transaction[TransactionType.AccessListEIP2930]
     )
-    if (typeof daoTx === 'object' && 'type' in daoTx && typeof daoTx.type === 'string') {
+    if (typeof daoTx === 'object' && daoTx && 'type' in daoTx && typeof daoTx.type === 'string') {
       // Try to get the account
       const existingAccount = await AccountsStorage.getAccount(accountId)
       // Return the wrappedResponse obj created by createRelevantAccount function of the dao tx type
       return transactions[daoTx.type].createRelevantAccount(shardus, existingAccount, accountId, daoTx)
     }
   }
+  return null
 }
 
 /**
  * Liberus txs export a `apply` fn that gets called here
  */
 export function handleDaoTxApply(tx: OpaqueTransaction, txTimestamp: number, wrappedStates: WrappedStates, dapp: Shardus): void {
-    // Unserialize the EVM tx
-    const unserializedTx = getTransactionObj(tx)
-    // Decode data field of EVM tx to get type of DAO tx
-    if ('data' in unserializedTx) {
-      const daoTx: unknown = decodeDaoTxFromEVMTx(
-        unserializedTx as Transaction[TransactionType.Legacy] | Transaction[TransactionType.AccessListEIP2930]
-      )
-      if (typeof daoTx === 'object' && 'type' in daoTx && typeof daoTx.type === 'string') {
-        // Run the apply function of the dao tx type
-        transactions[daoTx.type].apply(tx, txTimestamp, wrappedStates, dapp)
-      }
+  // Unserialize the EVM tx
+  const unserializedTx = getTransactionObj(tx)
+  // Decode data field of EVM tx to get type of DAO tx
+  if ('data' in unserializedTx) {
+    const daoTx: unknown = decodeDaoTxFromEVMTx(
+      unserializedTx as Transaction[TransactionType.Legacy] | Transaction[TransactionType.AccessListEIP2930]
+    )
+    if (typeof daoTx === 'object' && daoTx && 'type' in daoTx && typeof daoTx.type === 'string') {
+      // Run the apply function of the dao tx type
+      transactions[daoTx.type].apply(tx, txTimestamp, wrappedStates, dapp)
     }
+  }
 }
