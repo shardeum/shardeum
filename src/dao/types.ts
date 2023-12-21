@@ -31,34 +31,3 @@ export interface DeveloperPayment {
 }
 
 export type DaoAccounts = DaoGlobalAccount & IssueAccount & DevIssueAccount & UserAccount & AliasAccount & ProposalAccount & DevProposalAccount & NodeAccount & ChatAccount
-
-/**
- * ---------------------- SDK DATA INTERFACES ----------------------
- */
-
-interface TransactionKeys {
-  sourceKeys: string[]
-  targetKeys: string[]
-  allKeys: string[]
-  timestamp: number
-}
-
-interface ValidationResponse {
-  result: string
-  reason: string
-  txnTimestamp?: number
-}
-
-interface WrappedAccount {
-  accountId: string
-  stateId: string
-  data: DaoAccounts
-  timestamp: number
-  accountCreated?: boolean
-}
-
-type KeyResult = {
-  id: string
-  timestamp: number
-  keys: TransactionKeys
-}
