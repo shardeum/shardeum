@@ -6296,6 +6296,30 @@ const shardusSetup = (): void => {
 
       return { canStay: true, reason: '' }
     },
+
+    binarySerializeObject(identifier: string, obj): Buffer {
+      /* prettier-ignore */ if (logFlags.dapp_verbose) console.log('binarySerializeObject', identifier, JSON.stringify(obj))
+      /* prettier-ignore */ nestedCountersInstance.countEvent('dapp', 'binarySerializeObject')
+
+      switch (identifier) {
+        case 'AppData':
+          console.log('binarySerializeObject', identifier, JSON.stringify(obj))
+          return Buffer.from(JSON.stringify(obj))
+        default:
+          throw new Error(`binarySerializeObject() unknown identifier: ${identifier}`)
+      }
+    },
+    binaryDeserializeObject(identifier: string, buffer: Buffer) {
+      /* prettier-ignore */ if (logFlags.dapp_verbose) console.log('binaryDeserializeObject', identifier)
+      /* prettier-ignore */ nestedCountersInstance.countEvent('dapp', 'binaryDeserializeObject')
+
+      switch (identifier) {
+        case 'AppData':
+          return JSON.parse(buffer.toString())
+        default:
+          throw new Error(`binaryDeserializeObject() unknown identifier: ${identifier}`)
+      }
+    },
   })
 
   shardus.registerExceptionHandler()
