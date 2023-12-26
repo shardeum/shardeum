@@ -35,15 +35,12 @@ export function isInternalTXGlobal(internalTx: InternalTx): boolean {
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function isInternalTx(tx: any): boolean {
-  if (tx.isInternalTx) {
-    return true
-  }
-  return false
+  return !!tx.isInternalTx
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function isDebugTx(tx: any): boolean {
-  return tx.isDebugTx != null
+  return !!tx.isDebugTx
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
