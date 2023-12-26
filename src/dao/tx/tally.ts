@@ -1,6 +1,6 @@
 import * as crypto from '@shardus/crypto-utils'
 import { Shardus, ShardusTypes } from '@shardus/core'
-import config from '../../config'
+import { daoConfig } from '../../config/dao'
 import { create } from '../accounts'
 import { Windows } from '../types'
 import { OurAppDefinedData, TransactionKeys, WrappedStates } from '../../shardeum/shardeumTypes'
@@ -44,11 +44,11 @@ export function validateFields(tx: Tally, response: ShardusTypes.IncomingTransac
 }
 
 export function validate(tx: Tally, wrappedStates: WrappedStates, response: ShardusTypes.IncomingTransactionResult): ShardusTypes.IncomingTransactionResult {
-  const network: DaoGlobalAccount = wrappedStates[config.dao.daoAccount].data
+  const network: DaoGlobalAccount = wrappedStates[daoConfig.daoAccount].data
   const issue: IssueAccount = wrappedStates[tx.issue]?.data
   const proposals: ProposalAccount[] = tx.proposals.map((id: string) => wrappedStates[id].data)
 
-  if (network.id !== config.dao.daoAccount) {
+  if (network.id !== daoConfig.daoAccount) {
     response.reason = 'To account must be the network account'
     return response
   }
@@ -83,7 +83,7 @@ export function validate(tx: Tally, wrappedStates: WrappedStates, response: Shar
 
 export function apply(tx: Tally, txTimestamp: number, wrappedStates: WrappedStates, dapp: Shardus, applyResponse: ApplyResponse): void {
   const from: NodeAccount = wrappedStates[tx.from].data
-  const network: DaoGlobalAccount = wrappedStates[config.dao.daoAccount].data
+  const network: DaoGlobalAccount = wrappedStates[daoConfig.daoAccount].data
   const issue: IssueAccount = wrappedStates[tx.issue].data
   const margin = 100 / (2 * (issue.proposalCount + 1)) / 100
 
@@ -109,18 +109,18 @@ export function apply(tx: Tally, txTimestamp: number, wrappedStates: WrappedStat
   winner.winner = true // CHICKEN DINNER
   const next = winner.parameters
   const nextWindows: Windows = {
-    proposalWindow: [network.windows.applyWindow[1], network.windows.applyWindow[1] + config.dao.TIME_FOR_PROPOSALS],
+    proposalWindow: [network.windows.applyWindow[1], network.windows.applyWindow[1] + daoConfig.TIME_FOR_PROPOSALS],
     votingWindow: [
-      network.windows.applyWindow[1] + config.dao.TIME_FOR_PROPOSALS,
-      network.windows.applyWindow[1] + config.dao.TIME_FOR_PROPOSALS + config.dao.TIME_FOR_VOTING,
+      network.windows.applyWindow[1] + daoConfig.TIME_FOR_PROPOSALS,
+      network.windows.applyWindow[1] + daoConfig.TIME_FOR_PROPOSALS + daoConfig.TIME_FOR_VOTING,
     ],
     graceWindow: [
-      network.windows.applyWindow[1] + config.dao.TIME_FOR_PROPOSALS + config.dao.TIME_FOR_VOTING,
-      network.windows.applyWindow[1] + config.dao.TIME_FOR_PROPOSALS + config.dao.TIME_FOR_VOTING + config.dao.TIME_FOR_GRACE,
+      network.windows.applyWindow[1] + daoConfig.TIME_FOR_PROPOSALS + daoConfig.TIME_FOR_VOTING,
+      network.windows.applyWindow[1] + daoConfig.TIME_FOR_PROPOSALS + daoConfig.TIME_FOR_VOTING + daoConfig.TIME_FOR_GRACE,
     ],
     applyWindow: [
-      network.windows.applyWindow[1] + config.dao.TIME_FOR_PROPOSALS + config.dao.TIME_FOR_VOTING + config.dao.TIME_FOR_GRACE,
-      network.windows.applyWindow[1] + config.dao.TIME_FOR_PROPOSALS + config.dao.TIME_FOR_VOTING + config.dao.TIME_FOR_GRACE + config.dao.TIME_FOR_APPLY,
+      network.windows.applyWindow[1] + daoConfig.TIME_FOR_PROPOSALS + daoConfig.TIME_FOR_VOTING + daoConfig.TIME_FOR_GRACE,
+      network.windows.applyWindow[1] + daoConfig.TIME_FOR_PROPOSALS + daoConfig.TIME_FOR_VOTING + daoConfig.TIME_FOR_GRACE + daoConfig.TIME_FOR_APPLY,
     ],
   }
 
@@ -128,13 +128,13 @@ export function apply(tx: Tally, txTimestamp: number, wrappedStates: WrappedStat
   const value = {
     type: 'apply_tally',
     timestamp: when,
-    network: config.dao.daoAccount,
+    network: daoConfig.daoAccount,
     next,
     nextWindows,
   }
 
   const ourAppDefinedData = applyResponse.appDefinedData as OurAppDefinedData
-  ourAppDefinedData.globalMsg = { address: config.dao.daoAccount, value, when, source: config.dao.daoAccount }
+  ourAppDefinedData.globalMsg = { address: daoConfig.daoAccount, value, when, source: daoConfig.daoAccount }
 
   issue.winnerId = winner.id
 
@@ -156,7 +156,7 @@ export function transactionReceiptPass(tx: Tally, wrappedStates: WrappedStates, 
 
 export function keys(tx: Tally, result: TransactionKeys): TransactionKeys {
   result.sourceKeys = [tx.from]
-  result.targetKeys = [...tx.proposals, tx.issue, config.dao.daoAccount]
+  result.targetKeys = [...tx.proposals, tx.issue, daoConfig.daoAccount]
   result.allKeys = [...result.sourceKeys, ...result.targetKeys]
   return result
 }

@@ -1,7 +1,7 @@
 import * as crypto from '@shardus/crypto-utils'
 import { Shardus, ShardusTypes } from '@shardus/core'
 import * as utils from '../utils'
-import config from '../../config'
+import { daoConfig } from '../../config/dao'
 import { TransactionKeys, WrappedStates } from '../../shardeum/shardeumTypes'
 import { DaoGlobalAccount } from '../accounts/networkAccount'
 import { DevProposalAccount } from '../accounts/devProposalAccount'
@@ -55,7 +55,7 @@ export function validateFields(tx: DevVote, response: ShardusTypes.IncomingTrans
 }
 
 export function validate(tx: DevVote, wrappedStates: WrappedStates, response: ShardusTypes.IncomingTransactionResult): ShardusTypes.IncomingTransactionResult {
-  const network: DaoGlobalAccount = wrappedStates[config.dao.daoAccount].data
+  const network: DaoGlobalAccount = wrappedStates[daoConfig.daoAccount].data
   const devProposal: DevProposalAccount = wrappedStates[tx.devProposal] && wrappedStates[tx.devProposal].data
   const devIssue: DevIssueAccount = wrappedStates[tx.devIssue] && wrappedStates[tx.devIssue].data
 
@@ -98,7 +98,7 @@ export function validate(tx: DevVote, wrappedStates: WrappedStates, response: Sh
 
 export function apply(tx: DevVote, txTimestamp: number, txId: string, wrappedStates: WrappedStates, dapp: Shardus): void {
   const from: UserAccount = wrappedStates[tx.from].data
-  const network: DaoGlobalAccount = wrappedStates[config.dao.daoAccount].data
+  const network: DaoGlobalAccount = wrappedStates[daoConfig.daoAccount].data
   const devProposal: DevProposalAccount = wrappedStates[tx.devProposal].data
 
   from.data.balance -= tx.amount
@@ -119,7 +119,7 @@ export function apply(tx: DevVote, txTimestamp: number, txId: string, wrappedSta
 
 export function keys(tx: DevVote, result: TransactionKeys): TransactionKeys {
   result.sourceKeys = [tx.from]
-  result.targetKeys = [tx.devIssue, tx.devProposal, config.dao.daoAccount]
+  result.targetKeys = [tx.devIssue, tx.devProposal, daoConfig.daoAccount]
   result.allKeys = [...result.sourceKeys, ...result.targetKeys]
   return result
 }

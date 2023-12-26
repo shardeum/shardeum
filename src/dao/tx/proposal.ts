@@ -2,7 +2,7 @@ import * as crypto from '@shardus/crypto-utils'
 import { Shardus, ShardusTypes } from '@shardus/core'
 import * as utils from '../utils'
 import { create } from '../accounts'
-import config from '../../config'
+import { daoConfig } from '../../config/dao'
 import { NetworkParameters, TransactionKeys, WrappedStates } from '../../shardeum/shardeumTypes'
 import { DaoGlobalAccount } from '../accounts/networkAccount'
 import { IssueAccount } from '../accounts/issueAccount'
@@ -85,7 +85,7 @@ export function validateFields(tx: Proposal, response: ShardusTypes.IncomingTran
 }
 
 export function validate(tx: Proposal, wrappedStates: WrappedStates, response: ShardusTypes.IncomingTransactionResult): ShardusTypes.IncomingTransactionResult {
-  const network: DaoGlobalAccount = wrappedStates[config.dao.daoAccount].data
+  const network: DaoGlobalAccount = wrappedStates[daoConfig.daoAccount].data
   const issue: IssueAccount = wrappedStates[tx.issue] && wrappedStates[tx.issue].data
   const parameters: NetworkParameters = tx.parameters
   if (tx.sign.owner !== tx.from) {
@@ -155,7 +155,7 @@ export function validate(tx: Proposal, wrappedStates: WrappedStates, response: S
 
 export function apply(tx: Proposal, txTimestamp: number, txId: string, wrappedStates: WrappedStates, dapp: Shardus): void {
   const from: UserAccount = wrappedStates[tx.from].data
-  const network: DaoGlobalAccount = wrappedStates[config.dao.daoAccount].data
+  const network: DaoGlobalAccount = wrappedStates[daoConfig.daoAccount].data
   const proposal: ProposalAccount = wrappedStates[tx.proposal].data
   const issue: IssueAccount = wrappedStates[tx.issue].data
 
@@ -180,7 +180,7 @@ export function transactionReceiptPass(dapp: Shardus): void {
 
 export function keys(tx: Proposal, result: TransactionKeys): TransactionKeys {
   result.sourceKeys = [tx.from]
-  result.targetKeys = [tx.issue, tx.proposal, config.dao.daoAccount]
+  result.targetKeys = [tx.issue, tx.proposal, daoConfig.daoAccount]
   result.allKeys = [...result.sourceKeys, ...result.targetKeys]
   return result
 }

@@ -1,5 +1,5 @@
 import * as crypto from '@shardus/crypto-utils'
-import config from '../../config'
+import { daoConfig } from '../../config/dao'
 import { DeveloperPayment, DevWindows, Windows } from '../types'
 import { AccountType, BaseAccount, NetworkParameters } from '../../shardeum/shardeumTypes'
 import { initialNetworkParamters } from '../../shardeum/initialNetworkParameters'
@@ -39,15 +39,15 @@ export function isDaoGlobalAccount(obj: object | null | undefined): obj is DaoGl
 }
 
 export const createDaoGlobalAccount = (accountId: string, timestamp: number): DaoGlobalAccount => {
-  const proposalWindow = [timestamp, timestamp + config.dao.TIME_FOR_PROPOSALS]
-  const votingWindow = [proposalWindow[1], proposalWindow[1] + config.dao.TIME_FOR_VOTING]
-  const graceWindow = [votingWindow[1], votingWindow[1] + config.dao.TIME_FOR_GRACE]
-  const applyWindow = [graceWindow[1], graceWindow[1] + config.dao.TIME_FOR_APPLY]
+  const proposalWindow = [timestamp, timestamp + daoConfig.TIME_FOR_PROPOSALS]
+  const votingWindow = [proposalWindow[1], proposalWindow[1] + daoConfig.TIME_FOR_VOTING]
+  const graceWindow = [votingWindow[1], votingWindow[1] + daoConfig.TIME_FOR_GRACE]
+  const applyWindow = [graceWindow[1], graceWindow[1] + daoConfig.TIME_FOR_APPLY]
 
-  const devProposalWindow = [timestamp, timestamp + config.dao.TIME_FOR_DEV_PROPOSALS]
-  const devVotingWindow = [devProposalWindow[1], devProposalWindow[1] + config.dao.TIME_FOR_DEV_VOTING]
-  const devGraceWindow = [devVotingWindow[1], devVotingWindow[1] + config.dao.TIME_FOR_DEV_GRACE]
-  const devApplyWindow = [devGraceWindow[1], devGraceWindow[1] + config.dao.TIME_FOR_DEV_APPLY]
+  const devProposalWindow = [timestamp, timestamp + daoConfig.TIME_FOR_DEV_PROPOSALS]
+  const devVotingWindow = [devProposalWindow[1], devProposalWindow[1] + daoConfig.TIME_FOR_DEV_VOTING]
+  const devGraceWindow = [devVotingWindow[1], devVotingWindow[1] + daoConfig.TIME_FOR_DEV_GRACE]
+  const devApplyWindow = [devGraceWindow[1], devGraceWindow[1] + daoConfig.TIME_FOR_DEV_APPLY]
 
   const account: DaoGlobalAccount = {
     // to-do: There are a lot of hard coded values in the change: value below.

@@ -1,7 +1,7 @@
 import * as crypto from '@shardus/crypto-utils'
 import { Shardus, ShardusTypes } from '@shardus/core'
 import * as utils from '../utils'
-import config from '../../config'
+import { daoConfig } from '../../config/dao'
 import { TransactionKeys, WrappedStates } from '../../shardeum/shardeumTypes'
 import { DaoGlobalAccount } from '../accounts/networkAccount'
 import { UserAccount } from '../accounts/userAccount'
@@ -62,7 +62,7 @@ export function validate(tx: Transfer, wrappedStates: WrappedStates, response: S
 export function apply(tx: Transfer, txTimestamp: number, txId: string, wrappedStates: WrappedStates, dapp: Shardus): void {
   const from = wrappedStates[tx.from].data
   const to: UserAccount = wrappedStates[tx.to].data
-  const network: DaoGlobalAccount = wrappedStates[config.dao.daoAccount].data
+  const network: DaoGlobalAccount = wrappedStates[daoConfig.daoAccount].data
   from.data.balance -= utils.maintenanceAmount(txTimestamp, from, network)
   to.data.balance += tx.amount
   from.data.transactions.push({ ...tx, txId })
@@ -74,7 +74,7 @@ export function apply(tx: Transfer, txTimestamp: number, txId: string, wrappedSt
 
 export function keys(tx: Transfer, result: TransactionKeys): TransactionKeys {
   result.sourceKeys = [tx.from]
-  result.targetKeys = [tx.to, config.dao.daoAccount]
+  result.targetKeys = [tx.to, daoConfig.daoAccount]
   result.allKeys = [...result.sourceKeys, ...result.targetKeys]
   return result
 }
