@@ -164,6 +164,7 @@ export const validateTxnFields =
 
       try {
         const transaction = getTransactionObj(tx)
+        const senderAddress = getTxSenderAddress(transaction)
         const isSigned = transaction.isSigned()
         const txId = generateTxId(tx)
         const senderAddress = getTxSenderAddress(transaction) // ensures that tx is valid
