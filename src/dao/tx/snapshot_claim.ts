@@ -4,7 +4,7 @@
 
 import * as crypto from '@shardus/crypto-utils'
 import { Shardus, ShardusTypes } from '@shardus/core'
-import config from '../../config'
+import { daoConfig } from '../../config/dao'
 import { UserAccount } from '../accounts/userAccount'
 import { WrappedResponse } from '@shardus/core/dist/shardus/shardus-types'
 import { TransactionKeys, WrappedStates } from '../../shardeum/shardeumTypes'
@@ -28,7 +28,7 @@ export function validateFields(tx: SnapshotClaim, response: ShardusTypes.Incomin
 
 export function validate(tx: SnapshotClaim, wrappedStates: WrappedStates, response: ShardusTypes.IncomingTransactionResult): ShardusTypes.IncomingTransactionResult {
   const from: UserAccount = wrappedStates[tx.from] && wrappedStates[tx.from].data
-  const network: DaoGlobalAccount = wrappedStates[config.dao.daoAccount] && wrappedStates[config.dao.daoAccount].data
+  const network: DaoGlobalAccount = wrappedStates[daoConfig.daoAccount] && wrappedStates[daoConfig.daoAccount].data
   if (from === undefined || from === null) {
     response.reason = "from account doesn't exist"
     return response
@@ -56,7 +56,7 @@ export function validate(tx: SnapshotClaim, wrappedStates: WrappedStates, respon
 
 export function apply(tx: SnapshotClaim, txTimestamp: number, wrappedStates: WrappedStates, dapp: Shardus): void {
   const from: UserAccount = wrappedStates[tx.from].data
-  const network: DaoGlobalAccount = wrappedStates[config.dao.daoAccount].data
+  const network: DaoGlobalAccount = wrappedStates[daoConfig.daoAccount].data
   from.claimedSnapshot = true
   from.timestamp = txTimestamp
   network.timestamp = txTimestamp
@@ -65,7 +65,7 @@ export function apply(tx: SnapshotClaim, txTimestamp: number, wrappedStates: Wra
 
 export function keys(tx: SnapshotClaim, result: TransactionKeys): TransactionKeys {
   result.sourceKeys = [tx.from]
-  result.targetKeys = [config.dao.daoAccount]
+  result.targetKeys = [daoConfig.daoAccount]
   result.allKeys = [...result.sourceKeys, ...result.targetKeys]
   return result
 }

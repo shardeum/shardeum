@@ -1,6 +1,6 @@
 import stringify from 'fast-stable-stringify'
 import { Shardus, ShardusTypes } from '@shardus/core'
-import config from '../../config'
+import { daoConfig } from '../../config/dao'
 import { DeveloperPayment } from '../types'
 import { TransactionKeys, WrappedStates } from '../../shardeum/shardeumTypes'
 import { DaoGlobalAccount } from '../accounts/networkAccount'
@@ -28,14 +28,14 @@ export function validate(response: ShardusTypes.IncomingTransactionResult): Shar
 }
 
 export function apply(tx: ApplyDevPayment, txTimestamp: number, wrappedStates: WrappedStates, dapp: Shardus): void {
-  const network: DaoGlobalAccount = wrappedStates[config.dao.daoAccount].data
+  const network: DaoGlobalAccount = wrappedStates[daoConfig.daoAccount].data
   network.developerFund = tx.developerFund
   network.timestamp = txTimestamp
   dapp.log(`=== APPLIED DEV_PAYMENT GLOBAL ${stringify(network)} ===`)
 }
 
 export function keys(result: TransactionKeys): TransactionKeys {
-  result.targetKeys = [config.dao.daoAccount]
+  result.targetKeys = [daoConfig.daoAccount]
   result.allKeys = [...result.sourceKeys, ...result.targetKeys]
   return result
 }

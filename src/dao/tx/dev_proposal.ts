@@ -4,7 +4,7 @@ import Decimal from 'decimal.js'
 import * as utils from '../utils'
 import { create } from '../accounts'
 import _ from 'lodash'
-import config from '../../config'
+import { daoConfig } from '../../config/dao'
 import { DeveloperPayment } from '../types'
 import { TransactionKeys, WrappedStates } from '../../shardeum/shardeumTypes'
 import { DaoGlobalAccount } from '../accounts/networkAccount'
@@ -102,7 +102,7 @@ export function validateFields(tx: DevProposal, response: ShardusTypes.IncomingT
 }
 
 export function validate(tx: DevProposal, wrappedStates: WrappedStates, response: ShardusTypes.IncomingTransactionResult): ShardusTypes.IncomingTransactionResult {
-  const network: DaoGlobalAccount = wrappedStates[config.dao.daoAccount].data
+  const network: DaoGlobalAccount = wrappedStates[daoConfig.daoAccount].data
   const devIssue: DevIssueAccount = wrappedStates[tx.devIssue] && wrappedStates[tx.devIssue].data
 
   if (tx.sign.owner !== tx.from) {
@@ -144,7 +144,7 @@ export function validate(tx: DevProposal, wrappedStates: WrappedStates, response
 
 export function apply(tx: DevProposal, txTimestamp: number, txId: string, wrappedStates: WrappedStates, dapp: Shardus): void {
   const from: UserAccount = wrappedStates[tx.from].data
-  const network: DaoGlobalAccount = wrappedStates[config.dao.daoAccount].data
+  const network: DaoGlobalAccount = wrappedStates[daoConfig.daoAccount].data
   const devIssue: DevIssueAccount = wrappedStates[tx.devIssue].data
   const devProposal: DevProposalAccount = wrappedStates[tx.devProposal].data
 
@@ -168,7 +168,7 @@ export function apply(tx: DevProposal, txTimestamp: number, txId: string, wrappe
 
 export function keys(tx: DevProposal, result: TransactionKeys): TransactionKeys {
   result.sourceKeys = [tx.from]
-  result.targetKeys = [tx.devIssue, tx.devProposal, config.dao.daoAccount]
+  result.targetKeys = [tx.devIssue, tx.devProposal, daoConfig.daoAccount]
   result.allKeys = [...result.sourceKeys, ...result.targetKeys]
   return result
 }
