@@ -9,7 +9,7 @@ import { IssueAccount } from '../accounts/issueAccount'
 import { DaoGlobalAccount } from '../accounts/networkAccount'
 import { NodeAccount } from '../accounts/nodeAccount'
 import { ProposalAccount } from '../accounts/proposalAccount'
-import config from '../../config'
+import { daoConfig } from '../../config/dao'
 
 export interface CreateIssue {
   id: 'create_issue'
@@ -53,7 +53,7 @@ export function validateFields(tx: Issue, response: ShardusTypes.IncomingTransac
 }
 
 export function validate(tx: Issue, wrappedStates: WrappedStates, response: IncomingTransactionResult, _dapp: Shardus): IncomingTransactionResult {
-  const network: DaoGlobalAccount = wrappedStates[config.dao.daoAccount].data
+  const network: DaoGlobalAccount = wrappedStates[daoConfig.daoAccount].data
   const issue: IssueAccount = wrappedStates[tx.issue] && wrappedStates[tx.issue].data
 
   if (issue.active !== null) {
@@ -84,7 +84,7 @@ export function validate(tx: Issue, wrappedStates: WrappedStates, response: Inco
 export function apply(tx: Issue, txTimestamp: number, wrappedStates: WrappedStates, dapp: Shardus): void {
   const from: NodeAccount = wrappedStates[tx.from].data
 
-  const network: DaoGlobalAccount = wrappedStates[config.dao.daoAccount].data
+  const network: DaoGlobalAccount = wrappedStates[daoConfig.daoAccount].data
   const issue: IssueAccount = wrappedStates[tx.issue].data
   const proposal: ProposalAccount = wrappedStates[tx.proposal].data
 
@@ -106,7 +106,7 @@ export function apply(tx: Issue, txTimestamp: number, wrappedStates: WrappedStat
 
 export function keys(tx: Issue, result: TransactionKeys): TransactionKeys {
   result.sourceKeys = [tx.from]
-  result.targetKeys = [tx.issue, tx.proposal, config.dao.daoAccount]
+  result.targetKeys = [tx.issue, tx.proposal, daoConfig.daoAccount]
   result.allKeys = [...result.sourceKeys, ...result.targetKeys]
   return result
 }

@@ -2,7 +2,7 @@ import * as crypto from '@shardus/crypto-utils'
 import { Shardus, ShardusTypes } from '@shardus/core'
 import * as utils from '../utils'
 import { create } from '../accounts'
-import config from '../../config'
+import { daoConfig } from '../../config/dao'
 import { TransactionKeys, WrappedStates } from '../../shardeum/shardeumTypes'
 import { UserAccount } from '../accounts/userAccount'
 import { ChatAccount } from '../accounts/chatAccount'
@@ -83,7 +83,7 @@ export function validate(tx: Message, wrappedStates: WrappedStates, response: Sh
 export function apply(tx: Message, txTimestamp: number, txId: string, wrappedStates: WrappedStates, dapp: Shardus): void {
   const from: UserAccount = wrappedStates[tx.from].data
   const to: UserAccount = wrappedStates[tx.to].data
-  const network: DaoGlobalAccount = wrappedStates[config.dao.daoAccount].data
+  const network: DaoGlobalAccount = wrappedStates[daoConfig.daoAccount].data
   const chat = wrappedStates[tx.chatId].data
   if (!to.data.friends[from.id]) {
     if (to.data.toll != null) {
@@ -109,7 +109,7 @@ export function apply(tx: Message, txTimestamp: number, txId: string, wrappedSta
 
 export function keys(tx: Message, result: TransactionKeys): TransactionKeys {
   result.sourceKeys = [tx.from]
-  result.targetKeys = [tx.to, tx.chatId, config.dao.daoAccount]
+  result.targetKeys = [tx.to, tx.chatId, daoConfig.daoAccount]
   result.allKeys = [...result.sourceKeys, ...result.targetKeys]
   return result
 }

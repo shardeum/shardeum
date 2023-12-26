@@ -97,6 +97,7 @@ import {
   isValidVersion,
 } from './utils'
 import config, { Config } from './config'
+import { daoConfig } from './config/dao'
 import Wallet from 'ethereumjs-wallet'
 import { Block } from '@ethereumjs/block'
 import { ShardeumBlock } from './block/blockchain'
@@ -169,8 +170,8 @@ export function getShardusAPI(): Shardus {
 
 //   next shardus core will export the correct type
 export let logFlags = {
-  verbose: false,
-  dapp_verbose: false,
+  verbose: true,
+  dapp_verbose: true,
   error: true,
   fatal: true,
   important_as_error: true,
@@ -4265,7 +4266,7 @@ const shardusSetup = (): void => {
           keys.sourceKeys = [tx.reportedNodePublickKey]
           keys.targetKeys = [toShardusAddress(tx.operatorEVMAddress, AccountType.Account), networkAccount]
         } else if (internalTx.internalTXType === InternalTXType.InitDao) {
-          keys.targetKeys = [config.dao.daoAccount]
+          keys.targetKeys = [daoConfig.daoAccount]
         }
         keys.allKeys = keys.allKeys.concat(keys.sourceKeys, keys.targetKeys, keys.storageKeys)
         // temporary hack for creating a receipt of node reward tx

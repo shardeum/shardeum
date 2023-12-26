@@ -1,6 +1,6 @@
 import { Shardus } from '@shardus/core'
 import { Request, Response } from 'express'
-import config from '../../../config'
+import { daoConfig } from '../../../config/dao'
 import { getShardusAPI } from '../../../index'
 
 export const toll = (dapp: Shardus) => async (req: Request, res: Response): Promise<void> => {
@@ -19,7 +19,7 @@ export const toll = (dapp: Shardus) => async (req: Request, res: Response): Prom
           ? account.data.data.toll : undefined;
 
       if (toll == null) {
-        const network = await getShardusAPI().getLocalOrRemoteAccount(config.dao.daoAccount)
+        const network = await getShardusAPI().getLocalOrRemoteAccount(daoConfig.daoAccount)
         const toll =
           typeof network.data === "object"
             && network.data

@@ -1,6 +1,6 @@
 import * as crypto from '@shardus/crypto-utils'
 import { Shardus, ShardusTypes } from '@shardus/core'
-import config from '../../config'
+import { daoConfig } from '../../config/dao'
 import stringify from 'fast-stable-stringify'
 import { create } from '../accounts'
 import { DeveloperPayment, DevWindows } from '../types'
@@ -45,7 +45,7 @@ export function validateFields(tx: DevTally, response: ShardusTypes.IncomingTran
 }
 
 export function validate(tx: DevTally, wrappedStates: WrappedStates, response: ShardusTypes.IncomingTransactionResult): ShardusTypes.IncomingTransactionResult {
-  const network: DaoGlobalAccount = wrappedStates[config.dao.daoAccount].data
+  const network: DaoGlobalAccount = wrappedStates[daoConfig.daoAccount].data
   const devIssue: DevIssueAccount = wrappedStates[tx.devIssue] && wrappedStates[tx.devIssue].data
   const devProposals: DevProposalAccount[] = tx.devProposals.map((id: string) => wrappedStates[id].data)
 
@@ -65,7 +65,7 @@ export function validate(tx: DevTally, wrappedStates: WrappedStates, response: S
     response.reason = `The winners for this devIssue has already been determined ${stringify(devIssue.winners)}`
     return response
   }
-  if (network.id !== config.dao.daoAccount) {
+  if (network.id !== daoConfig.daoAccount) {
     response.reason = 'To account must be the network account'
     return response
   }
@@ -84,7 +84,7 @@ export function validate(tx: DevTally, wrappedStates: WrappedStates, response: S
 
 export function apply(tx: DevTally, txTimestamp: number, wrappedStates: WrappedStates, dapp: Shardus, applyResponse: ApplyResponse): void {
   const from: NodeAccount = wrappedStates[tx.from].data
-  const network: DaoGlobalAccount = wrappedStates[config.dao.daoAccount].data
+  const network: DaoGlobalAccount = wrappedStates[daoConfig.daoAccount].data
   const devIssue: DevIssueAccount = wrappedStates[tx.devIssue].data
   const devProposals: DevProposalAccount[] = tx.devProposals.map((id: string) => wrappedStates[id].data)
   let nextDeveloperFund: DeveloperPayment[] = []
@@ -95,7 +95,7 @@ export function apply(tx: DevTally, txTimestamp: number, wrappedStates: WrappedS
       const payments = []
       for (const payment of devProposal.payments) {
         payments.push({
-          timestamp: txTimestamp + config.dao.TIME_FOR_DEV_GRACE + payment.delay,
+          timestamp: txTimestamp + daoConfig.TIME_FOR_DEV_GRACE + payment.delay,
           delay: payment.delay,
           amount: payment.amount * (devProposal.totalAmount ?? 0),
           address: devProposal.payAddress,
@@ -112,18 +112,18 @@ export function apply(tx: DevTally, txTimestamp: number, wrappedStates: WrappedS
   }
 
   const nextDevWindows: DevWindows = {
-    devProposalWindow: [network.devWindows.devApplyWindow[1], network.devWindows.devApplyWindow[1] + config.dao.TIME_FOR_DEV_PROPOSALS],
+    devProposalWindow: [network.devWindows.devApplyWindow[1], network.devWindows.devApplyWindow[1] + daoConfig.TIME_FOR_DEV_PROPOSALS],
     devVotingWindow: [
-      network.devWindows.devApplyWindow[1] + config.dao.TIME_FOR_DEV_PROPOSALS,
-      network.devWindows.devApplyWindow[1] + config.dao.TIME_FOR_DEV_PROPOSALS + config.dao.TIME_FOR_DEV_VOTING,
+      network.devWindows.devApplyWindow[1] + daoConfig.TIME_FOR_DEV_PROPOSALS,
+      network.devWindows.devApplyWindow[1] + daoConfig.TIME_FOR_DEV_PROPOSALS + daoConfig.TIME_FOR_DEV_VOTING,
     ],
     devGraceWindow: [
-      network.devWindows.devApplyWindow[1] + config.dao.TIME_FOR_DEV_PROPOSALS + config.dao.TIME_FOR_DEV_VOTING,
-      network.devWindows.devApplyWindow[1] + config.dao.TIME_FOR_DEV_PROPOSALS + config.dao.TIME_FOR_DEV_VOTING + config.dao.TIME_FOR_DEV_GRACE,
+      network.devWindows.devApplyWindow[1] + daoConfig.TIME_FOR_DEV_PROPOSALS + daoConfig.TIME_FOR_DEV_VOTING,
+      network.devWindows.devApplyWindow[1] + daoConfig.TIME_FOR_DEV_PROPOSALS + daoConfig.TIME_FOR_DEV_VOTING + daoConfig.TIME_FOR_DEV_GRACE,
     ],
     devApplyWindow: [
-      network.devWindows.devApplyWindow[1] + config.dao.TIME_FOR_DEV_PROPOSALS + config.dao.TIME_FOR_DEV_VOTING + config.dao.TIME_FOR_DEV_GRACE,
-      network.devWindows.devApplyWindow[1] + config.dao.TIME_FOR_DEV_PROPOSALS + config.dao.TIME_FOR_DEV_VOTING + config.dao.TIME_FOR_DEV_GRACE + config.dao.TIME_FOR_DEV_APPLY,
+      network.devWindows.devApplyWindow[1] + daoConfig.TIME_FOR_DEV_PROPOSALS + daoConfig.TIME_FOR_DEV_VOTING + daoConfig.TIME_FOR_DEV_GRACE,
+      network.devWindows.devApplyWindow[1] + daoConfig.TIME_FOR_DEV_PROPOSALS + daoConfig.TIME_FOR_DEV_VOTING + daoConfig.TIME_FOR_DEV_GRACE + daoConfig.TIME_FOR_DEV_APPLY,
     ],
   }
 
@@ -132,13 +132,13 @@ export function apply(tx: DevTally, txTimestamp: number, wrappedStates: WrappedS
   const value = {
     type: 'apply_dev_tally',
     timestamp: when,
-    network: config.dao.daoAccount,
+    network: daoConfig.daoAccount,
     nextDeveloperFund,
     nextDevWindows,
   }
 
   const ourAppDefinedData = applyResponse.appDefinedData as OurAppDefinedData
-  ourAppDefinedData.globalMsg = { address: config.dao.daoAccount, value, when, source: config.dao.daoAccount }
+  ourAppDefinedData.globalMsg = { address: daoConfig.daoAccount, value, when, source: daoConfig.daoAccount }
 
   from.timestamp = txTimestamp
   devIssue.timestamp = txTimestamp
@@ -153,7 +153,7 @@ export function transactionReceiptPass(dapp: Shardus, applyResponse: ApplyRespon
 
 export function keys(tx: DevTally, result: TransactionKeys): TransactionKeys {
   result.sourceKeys = [tx.from]
-  result.targetKeys = [...tx.devProposals, tx.devIssue, config.dao.daoAccount]
+  result.targetKeys = [...tx.devProposals, tx.devIssue, daoConfig.daoAccount]
   result.allKeys = [...result.sourceKeys, ...result.targetKeys]
   return result
 }
