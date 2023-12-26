@@ -164,9 +164,9 @@ export const validateTxnFields =
 
       try {
         const transaction = getTransactionObj(tx)
-        const senderAddress = getTxSenderAddress(transaction)
         const isSigned = transaction.isSigned()
-        const isSignatureValid = transaction.isValid()
+        const senderAddress = getTxSenderAddress(transaction) // ensures that tx is valid
+        const isSignatureValid = senderAddress != null ? true : false
         if (ShardeumFlags.VerboseLogs) console.log('validate evm tx', isSigned, isSignatureValid)
 
         //const txId = '0x' + crypto.hashObj(timestampedTx.tx)

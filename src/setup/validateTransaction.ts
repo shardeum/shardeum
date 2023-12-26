@@ -5,6 +5,7 @@ import { crypto, getTransactionObj, isDebugTx, isInternalTx, isInternalTXGlobal,
 import * as InitRewardTimesTx from '../tx/initRewardTimes'
 import * as AccountsStorage from '../storage/accountStorage'
 import { logFlags } from '..'
+import { isTxValid } from '../utils'
 
 type Response = {
   result: string
@@ -20,8 +21,10 @@ export const validateTransaction =
 
       if (isInternalTXGlobal(internalTx) === true) {
         return { result: 'pass', reason: 'valid' }
-      } else if (tx.internalTXType === InternalTXType.ChangeConfig||
-        internalTx.internalTXType === InternalTXType.ChangeNetworkParam) {
+      } else if (
+        tx.internalTXType === InternalTXType.ChangeConfig ||
+        internalTx.internalTXType === InternalTXType.ChangeNetworkParam
+      ) {
         const devPublicKey = shardus.getDevPublicKeyMaxLevel() //get the highest level pk
 
         if (devPublicKey) {
@@ -70,12 +73,13 @@ export const validateTransaction =
     }
     if (!txObj) return response
 
-    if (!txObj.isSigned() || !txObj.isValid()) {
+    if (!txObj.isSigned() || !isTxValid(txObj)) {
       response.reason = 'Transaction is not signed or signature is not valid.'
       return response
     }
 
     try {
+      // FIX: seems like a bug using txObj as senderAddress
       // const senderAddress = txObj.getSenderAddress()
       const senderAddress = txObj
       if (!senderAddress) {
