@@ -1,4 +1,8 @@
-import { hashSignedObj, isDebugTx, isInternalTx } from '../setup/helpers'
+import { TypedTransaction } from '@ethereumjs/tx'
+import { Address } from '@ethereumjs/util'
+import { getSenderAddress } from '@shardus/net'
+import { hashSignedObj } from '../setup/helpers'
+import { logFlags } from '..'
 
 export function generateTxId(tx): string {
   if (tx.raw) {
@@ -17,4 +21,14 @@ export function generateTxId(tx): string {
   // simply hash the tx obj for other types of txs: internal, debug and global
   // This removes the signature when creating the hash
   return hashSignedObj(tx)
+}
+
+export function getTxSenderAddress(tx: TypedTransaction): Address {
+  try {
+    console.log('getTxSenderAddress', getSenderAddress(tx.raw.toString()), tx.raw)
+    return Address.fromString(getSenderAddress(tx.raw.toString()))
+  } catch (e) {
+    if (logFlags.dapp_verbose) console.error('Error getting sender address from tx', e)
+    return null
+  }
 }

@@ -18,6 +18,7 @@ import * as WrappedEVMAccountFunctions from './utils/wrappedEVMAccountFunctions'
 import { estimateGas } from './estimateGas/estimateGas'
 import { EVM as EthereumVirtualMachine } from '../evm_v2'
 import { stringify} from '../utils/stringify'
+import { getTxSenderAddress } from '../utils'
 
 export async function createAccount(addressStr: string, balance = BigInt(0)): Promise<WrappedEVMAccount> {
   // if (ShardeumFlags.VerboseLogs) console.log('Creating new account', addressStr)
@@ -146,6 +147,7 @@ const runTransaction = async (
   const tx = txJson
   const txTimestamp = getInjectedOrGeneratedTimestamp({ tx: tx })
   const transaction: LegacyTransaction | AccessListEIP2930Transaction = getTransactionObj(tx)
+  const senderAddress = getTxSenderAddress(transaction)
   const ethTxId = bytesToHex(transaction.hash())
   const shardusReceiptAddress = toShardusAddressWithKey(ethTxId, '', AccountType.Receipt)
   const txId = hashSignedObj(tx)
@@ -185,7 +187,7 @@ const runTransaction = async (
 
   // Create new CA account if it is a contract deploy tx
   if (transaction.to == null) {
-    const senderEvmAddress = transaction.getSenderAddress().toString()
+    const senderEvmAddress = senderAddress.toString()
     const senderShardusAddress = toShardusAddress(senderEvmAddress, AccountType.Account)
     const senderWrappedEVMAccount = AccountsStorage.getAccount(senderShardusAddress) as WrappedEVMAccount
     if (senderWrappedEVMAccount) {
