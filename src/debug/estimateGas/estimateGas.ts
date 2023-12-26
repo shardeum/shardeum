@@ -9,6 +9,7 @@ import { fixDeserializedWrappedEVMAccount, predictContractAddress } from '../uti
 import * as AccountsStorage from '../db'
 import { toShardusAddress } from '../utils/evmAddress'
 import { createAccount } from '../replayTX'
+import { getTxSenderAddress } from '../../utils'
 
 export const oneSHM = BigInt(10) ** BigInt(18)
 
@@ -30,6 +31,7 @@ export async function estimateGas(
   EVM
 ): Promise<void> {
   let transaction: LegacyTransaction | AccessListEIP2930Transaction = LegacyTransaction.fromTxData(txData)
+  const senderAddress = getTxSenderAddress(transaction)
   const from = txData.from !== undefined ? Address.fromString(txData.from) : Address.zero()
   transaction = wrapTransaction(transaction, (): Address => {
     return from
@@ -59,7 +61,7 @@ export async function estimateGas(
 
   if (transaction.to == null) {
     // console.log(JSON.stringify({ status: true, message: `creating new account`, wrappedStates }))
-    const senderEvmAddress = transaction.getSenderAddress().toString()
+    const senderEvmAddress = senderAddress.toString()
     const senderShardusAddress = toShardusAddress(senderEvmAddress, AccountType.Account)
     const senderWrappedEVMAccount = AccountsStorage.getAccount(senderShardusAddress) as WrappedEVMAccount
     if (senderWrappedEVMAccount) {
@@ -75,7 +77,7 @@ export async function estimateGas(
     }
   }
 
-  const callerEVMAddress = transaction.getSenderAddress().toString()
+  const callerEVMAddress = senderAddress.toString()
   const callerAccount = await AccountsStorage.getAccount(callerEVMAddress)
 
   const fakeAccountData = {
@@ -84,7 +86,7 @@ export async function estimateGas(
   }
   const fakeAccount = Account.fromAccountData(fakeAccountData)
   preRunTxState._transactionState.insertFirstAccountReads(
-    transaction.getSenderAddress(),
+    senderAddress,
     callerAccount ? callerAccount.account : fakeAccount
   )
 
