@@ -95,6 +95,7 @@ import {
   generateTxId,
   isWithinRange,
   isValidVersion,
+  getTxSenderAddress,
 } from './utils'
 import config, { Config } from './config'
 import Wallet from 'ethereumjs-wallet'
@@ -2558,9 +2559,10 @@ async function estimateGas(
     }
   }
 
+  const senderAddress = getTxSenderAddress(transaction)
   const txId = crypto.hashObj(transaction)
   const preRunTxState = getPreRunTXState(txId)
-  const callerEVMAddress = transaction.getSenderAddress().toString()
+  const callerEVMAddress = senderAddress.toString()
   const callerShardusAddress = toShardusAddress(callerEVMAddress, AccountType.Account)
   let callerAccount = await AccountsStorage.getAccount(callerShardusAddress)
   // callerAccount.account.balance = oneSHM.mul(new BN(100)) // 100 SHM. In case someone estimates gas with 0 balance
@@ -2587,7 +2589,7 @@ async function estimateGas(
   }
 
   preRunTxState._transactionState.insertFirstAccountReads(
-    transaction.getSenderAddress(),
+    senderAddress,
     callerAccount ? callerAccount.account : fakeAccount
   )
 
@@ -2675,9 +2677,10 @@ async function generateAccessList(
       }
     }
 
+    const senderAddress = getTxSenderAddress(transaction)
     const txId = crypto.hashObj(transaction)
     const preRunTxState = getPreRunTXState(txId)
-    const callerEVMAddress = transaction.getSenderAddress().toString()
+    const callerEVMAddress = senderAddress.toString()
     const callerShardusAddress = toShardusAddress(callerEVMAddress, AccountType.Account)
     let callerAccount = await AccountsStorage.getAccount(callerShardusAddress)
     const fakeAccountData = {
@@ -2700,8 +2703,6 @@ async function generateAccessList(
     if (ShardeumFlags.accesslistNonceFix && callerAccount && callerAccount.account) {
       callerAccount.account.nonce = BigInt(transaction.nonce.toString())
     }
-
-    const senderAddress = transaction.getSenderAddress()
 
     preRunTxState._transactionState.insertFirstAccountReads(
       senderAddress,
@@ -2745,7 +2746,7 @@ async function generateAccessList(
     const readImmutableSet = new Set()
 
     //always make the sender rw.  This is because the sender will always spend gas and increment nonce
-    if (transaction.getSenderAddress() != null) {
+    if (senderAddress != null) {
       const shardusKey = callerShardusAddress
       writeSet.add(shardusKey)
       readSet.add(shardusKey)
@@ -3032,6 +3033,7 @@ const shardusSetup = (): void => {
       }
 
       const transaction = getTransactionObj(tx)
+      const senderAddress = getTxSenderAddress(transaction)
       const ethTxId = bytesToHex(transaction.hash())
       const shardusReceiptAddress = toShardusAddressWithKey(ethTxId, '', AccountType.Receipt)
       const txId = generateTxId(tx)
@@ -3219,7 +3221,7 @@ const shardusSetup = (): void => {
           logs: [],
           logsBloom: '',
           contractAddress: null,
-          from: transaction.getSenderAddress().toString(),
+          from: senderAddress.toString(),
           to: transaction.to ? transaction.to.toString() : null,
           chainId: '0x' + ShardeumFlags.ChainID.toString(16),
           stakeInfo: {
@@ -3459,7 +3461,7 @@ const shardusSetup = (): void => {
           logs: [],
           logsBloom: '',
           contractAddress: null,
-          from: transaction.getSenderAddress().toString(),
+          from: senderAddress.toString(),
           to: transaction.to ? transaction.to.toString() : null,
           chainId: '0x' + ShardeumFlags.ChainID.toString(16),
           stakeInfo,
@@ -3563,7 +3565,7 @@ const shardusSetup = (): void => {
 
       // this code's got bug
       // if(ShardeumFlags.CheckNonce === true){
-      //   let senderEVMAddrStr = transaction.getSenderAddress().toString()
+      //   let senderEVMAddrStr = senderAddress.toString()
       //   let shardusAddress = toShardusAddress(senderEVMAddrStr,  AccountType.Account)
       //   let senderAccount:WrappedEVMAccount = wrappedStates[shardusAddress]
       //  bug here seem like nonce is undefined even though type def indicate, it does.
@@ -3613,7 +3615,7 @@ const shardusSetup = (): void => {
         // if (!transactionFailHashMap[ethTxId]) {
         let caAddr = null
         if (!transaction.to) {
-          const txSenderEvmAddr = transaction.getSenderAddress().toString()
+          const txSenderEvmAddr = senderAddress.toString()
 
           const hack0Nonce = BigInt(0)
           const caAddrBuf = predictContractAddressDirect(txSenderEvmAddr, hack0Nonce)
@@ -3643,7 +3645,7 @@ const shardusSetup = (): void => {
           maxFeePerGas: undefined,
           maxPriorityFeePerGas: undefined,
           contractAddress: caAddr,
-          from: transaction.getSenderAddress().toString(),
+          from: senderAddress.toString(),
           to: transaction.to ? transaction.to.toString() : null,
           chainId: '0x' + ShardeumFlags.ChainID.toString(16),
           value: bigIntToHex(transaction.value),
@@ -3663,7 +3665,7 @@ const shardusSetup = (): void => {
           amountSpent: BigInt(0).toString(),
           txId,
           accountType: AccountType.Receipt,
-          txFrom: transaction.getSenderAddress().toString(),
+          txFrom: senderAddress.toString(),
         }
         // if (ShardeumFlags.EVMReceiptsAsAccounts) {
         //   transactionFailHashMap[ethTxId] = wrappedFailReceiptAccount
@@ -3828,7 +3830,6 @@ const shardusSetup = (): void => {
         }
       }
 
-      const txSenderEvmAddr = transaction.getSenderAddress().toString()
       //TODO also create an account for the receipt (nested in the returned runTxResult should be a receipt with a list of logs)
       // We are ready to loop over the receipts and add them
       if (runTxResult) {
@@ -3867,7 +3868,7 @@ const shardusSetup = (): void => {
           logs: logs,
           logsBloom: bytesToHex(runTxResult.receipt.bitvector),
           contractAddress: runTxResult.createdAddress ? runTxResult.createdAddress.toString() : null,
-          from: transaction.getSenderAddress().toString(),
+          from: senderAddress.toString(),
           to: transaction.to ? transaction.to.toString() : null,
           chainId: '0x' + ShardeumFlags.ChainID.toString(16),
           value: bigIntToHex(transaction.value),
@@ -3889,7 +3890,7 @@ const shardusSetup = (): void => {
           amountSpent: bigIntToHex(runTxResult.amountSpent),
           txId,
           accountType: AccountType.Receipt,
-          txFrom: txSenderEvmAddr,
+          txFrom: senderAddress.toString(),
         }
         /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`DBG Receipt Account for txId ${ethTxId}`, wrappedReceiptAccount)
       }
@@ -3950,6 +3951,7 @@ const shardusSetup = (): void => {
 
       if (isInternalTx(tx) === false && isDebugTx(tx) === false) {
         const transaction = getTransactionObj(tx)
+        const senderAddress = getTxSenderAddress(transaction)
         const shardusTxId = generateTxId(tx)
         const ethTxId = bytesToHex(transaction.hash())
         if (ShardeumFlags.VerboseLogs) {
@@ -3976,7 +3978,7 @@ const shardusSetup = (): void => {
           let foundSender = false
           let nonce = BigInt(0)
           let balance = BigInt(0).toString()
-          const txSenderEvmAddr = transaction.getSenderAddress().toString()
+          const txSenderEvmAddr = senderAddress.toString()
           const transformedSourceKey = toShardusAddress(txSenderEvmAddr, AccountType.Account)
 
           let queueCountResult = { count: 0, committingAppData: [], account: null }
@@ -4086,10 +4088,10 @@ const shardusSetup = (): void => {
             const accountBalance = BigInt(appData.balance)
             if (accountBalance < minBalance) {
               success = false
-              /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`precrack balance fail: sender ${transaction.getSenderAddress()} does not have enough balance. Min balance: ${minBalance.toString()}, Account balance: ${accountBalance.toString()}`)
+              /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`precrack balance fail: sender ${senderAddress.toString()} does not have enough balance. Min balance: ${minBalance.toString()}, Account balance: ${accountBalance.toString()}`)
               nestedCountersInstance.countEvent('shardeum', 'precrack - insufficient balance')
             } else {
-              /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`precrack balance pass: sender ${transaction.getSenderAddress()} has balance of ${accountBalance.toString()}`)
+              /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`precrack balance pass: sender ${senderAddress.toString()} has balance of ${accountBalance.toString()}`)
             }
           }
 
@@ -4119,7 +4121,7 @@ const shardusSetup = (): void => {
           if (success === true) {
             // generate access list for non EIP 2930 txs
             const callObj = {
-              from: await transaction.getSenderAddress().toString(),
+              from: senderAddress.toString(),
               to: transaction.to ? transaction.to.toString() : null,
               value: bigIntToHex(transaction.value),
               data: bytesToHex(transaction.data),
@@ -4320,6 +4322,7 @@ const shardusSetup = (): void => {
       const txId = generateTxId(tx)
 
       const transaction = getTransactionObj(tx)
+      const senderAddress = getTxSenderAddress(transaction)
       const result = {
         sourceKeys: [],
         targetKeys: [],
@@ -4330,7 +4333,7 @@ const shardusSetup = (): void => {
       }
       try {
         const otherAccountKeys = []
-        const txSenderEvmAddr = transaction.getSenderAddress().toString()
+        const txSenderEvmAddr = senderAddress.toString()
         const txToEvmAddr = transaction.to ? transaction.to.toString() : undefined
         const transformedSourceKey = toShardusAddress(txSenderEvmAddr, AccountType.Account)
         const transformedTargetKey = transaction.to ? toShardusAddress(txToEvmAddr, AccountType.Account) : ''

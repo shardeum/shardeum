@@ -46,6 +46,7 @@
     "@shardus/archiver-discovery": "1.1.0",
     "@shardus/core": "2.10.47",
     "@shardus/crypto-utils": "4.1.2",
+    "@shardus/net": "^1.3.6",
     "@shardus/types": "1.2.6",
     "@types/sqlite3": "3.1.8",
     "cliffy": "2.5.1",
