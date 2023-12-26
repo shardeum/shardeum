@@ -33,13 +33,11 @@ export function isInternalTXGlobal(internalTx: InternalTx): boolean {
   )
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export function isInternalTx(tx: any): boolean {
+export function isInternalTx<T extends { isInternalTx?: unknown }>(tx: T): boolean {
   return !!tx.isInternalTx
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export function isDebugTx(tx: any): boolean {
+export function isDebugTx<T extends { isDebugTx?: unknown }>(tx: T): boolean {
   return !!tx.isDebugTx
 }
 
