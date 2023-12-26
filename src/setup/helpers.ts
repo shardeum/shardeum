@@ -42,7 +42,7 @@ export function isInternalTx(timestampedTx: any): boolean {
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function isDebugTx(tx: any): boolean {
-  return tx.isDebugTx != null
+  return !!tx.isDebugTx
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
