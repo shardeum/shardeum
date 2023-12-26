@@ -158,9 +158,9 @@ export const validateTxnFields =
 
     try {
       const transaction = getTransactionObj(tx)
-        const senderAddress = getTxSenderAddress(transaction)
       const isSigned = transaction.isSigned()
-      const isSignatureValid = transaction.isValid()
+      const senderAddress = getTxSenderAddress(transaction) // ensures that tx is valid
+      const isSignatureValid = senderAddress != null ? true : false
       if (ShardeumFlags.VerboseLogs) console.log('validate evm tx', isSigned, isSignatureValid)
 
       //const txId = '0x' + crypto.hashObj(timestampedTx.tx)
@@ -191,10 +191,10 @@ export const validateTxnFields =
         if (accountBalance < minBalance) {
           success = false
           reason = `Sender does not have enough balance.`
-            /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`balance fail: sender ${senderAddress.toString()} does not have enough balance. Min balance: ${minBalance.toString()}, Account balance: ${accountBalance.toString()}`)
+          /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`balance fail: sender ${senderAddress.toString()} does not have enough balance. Min balance: ${minBalance.toString()}, Account balance: ${accountBalance.toString()}`)
           nestedCountersInstance.countEvent('shardeum', 'validate - insufficient balance')
         } else {
-            /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`balance pass: sender ${senderAddress.toString()} has balance of ${accountBalance.toString()}`)
+          /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`balance pass: sender ${senderAddress.toString()} has balance of ${accountBalance.toString()}`)
         }
       }
 
@@ -232,9 +232,9 @@ export const validateTxnFields =
         if (typeof stakeCoinsTx.stake === 'object') stakeCoinsTx.stake = BigInt(stakeCoinsTx.stake)
         if (
           stakeCoinsTx.nominator == null ||
-            stakeCoinsTx.nominator.toLowerCase() !== senderAddress.toString()
+          stakeCoinsTx.nominator.toLowerCase() !== senderAddress.toString()
         ) {
-            /* prettier-ignore */ if (logFlags.dapp_verbose) console.log(`nominator vs tx signer`, stakeCoinsTx.nominator, senderAddress.toString())
+          /* prettier-ignore */ if (logFlags.dapp_verbose) console.log(`nominator vs tx signer`, stakeCoinsTx.nominator, senderAddress.toString())
           success = false
           reason = `Invalid nominator address in stake coins tx`
         } else if (stakeCoinsTx.nominee == null) {
@@ -298,10 +298,10 @@ export const validateTxnFields =
         const unstakeCoinsTX = appData.internalTx
         if (
           unstakeCoinsTX.nominator == null ||
-            unstakeCoinsTX.nominator.toLowerCase() !== senderAddress.toString()
+          unstakeCoinsTX.nominator.toLowerCase() !== senderAddress.toString()
         ) {
           /* prettier-ignore */ nestedCountersInstance.countEvent('shardeum-unstaking', 'invalid nominator address in stake coins tx')
-            /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log( `nominator vs tx signer`, unstakeCoinsTX.nominator, senderAddress.toString() )
+          /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log( `nominator vs tx signer`, unstakeCoinsTX.nominator, senderAddress.toString() )
           success = false
           reason = `Invalid nominator address in stake coins tx`
         } else if (unstakeCoinsTX.nominee == null) {

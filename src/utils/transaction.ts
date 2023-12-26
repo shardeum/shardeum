@@ -23,12 +23,30 @@ export function generateTxId(tx): string {
   return hashSignedObj(tx)
 }
 
+function toHexString(byteArray: Uint8Array): string {
+  return Array.from(byteArray, (byte) => {
+    return ('0' + (byte & 0xff).toString(16)).slice(-2)
+  }).join('')
+}
+
 export function getTxSenderAddress(tx: TypedTransaction): Address {
   try {
-    console.log('getTxSenderAddress', getSenderAddress(tx.raw.toString()), tx.raw)
-    return Address.fromString(getSenderAddress(tx.raw.toString()))
+    const rawTx = '0x' + toHexString(tx.serialize()) // FIX: find a way to avoid serializing twice (once here and once on the rust side)
+    const senderAddress = getSenderAddress(rawTx)
+    if (logFlags.dapp_verbose) console.log('Sender address retrieved from signed txn', senderAddress)
+    return Address.fromString(senderAddress)
   } catch (e) {
     if (logFlags.dapp_verbose) console.error('Error getting sender address from tx', e)
     return null
+  }
+}
+
+export function isTxValid(tx: TypedTransaction): boolean {
+  try {
+    getTxSenderAddress(tx)
+    return true
+  } catch (e) {
+    if (logFlags.dapp_verbose) console.error('Error verifying signature', e)
+    return false
   }
 }
