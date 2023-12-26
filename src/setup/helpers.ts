@@ -34,6 +34,7 @@ export function isInternalTXGlobal(internalTx: InternalTx): boolean {
 }
 
 export function isInternalTx<T extends { isInternalTx?: unknown }>(tx: T): boolean {
+  console.log("daoLogging: isInternalTx", !!tx.isInternalTx)
   return !!tx.isInternalTx
 }
 

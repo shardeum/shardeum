@@ -1959,7 +1959,11 @@ async function applyInternalTx(
   wrappedStates: WrappedStates,
   txTimestamp: number
 ): Promise<ShardusTypes.ApplyResponse> {
+  console.log("daoLogging: executing applyInternalTx")
+
   const txId = generateTxId(tx)
+  console.log("daoLogging: txId in `applyInternalTx`: ", txId)
+
   const applyResponse: ShardusTypes.ApplyResponse = shardus.createApplyResponse(txId, txTimestamp)
   const internalTx = tx
   if (internalTx.internalTXType === InternalTXType.SetGlobalCodeBytes) {
@@ -2221,6 +2225,7 @@ async function applyInternalTx(
   }
   if (internalTx.internalTXType === InternalTXType.Dao) {
     // TODO: add DaoIssueTx to InternalTx as a union
+    console.log("daoLogging: executing applyDaoIssueTx")
     const daoIssueTx = internalTx as unknown as DaoIssueTx
     applyDaoIssueTx(daoIssueTx, txTimestamp, wrappedStates, shardus)
   }
@@ -3028,9 +3033,13 @@ const shardusSetup = (): void => {
         throw new Error(`invalid transaction, reason: ${reason}. tx: ${stringify(tx)}`)
       }
 
+      console.log('daoLogging: executing apply');
       if (isInternalTx(tx)) {
+        console.log('daoLogging: isInternalTx for apply, calling `applyInternalTx`');
         return applyInternalTx(tx, wrappedStates, txTimestamp)
       }
+
+      console.log('daoLogging: tx passed to apply is not internal, no more logging will be done for this tx in `apply`');
 
       if (isDebugTx(tx)) {
         const debugTx = tx as DebugTx
@@ -3966,6 +3975,7 @@ const shardusSetup = (): void => {
     async txPreCrackData(tx, appData) {
       if (ShardeumFlags.VerboseLogs) console.log('Running txPreCrackData', tx, appData)
       if (ShardeumFlags.UseTXPreCrack === false) {
+        console.log('daoLogging: txPreCrackData is disabled')
         return
       }
 
@@ -4191,11 +4201,15 @@ const shardusSetup = (): void => {
           }
         }
         /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log( `txPreCrackData final result: txNonce: ${appData.txNonce}, currentNonce: ${ appData.nonce }, queueCount: ${appData.queueCount}, appData ${stringify(appData)}` )
+      } else {
+        console.log('daoLogging: txPreCrackData: isInternalTx or isDebugTx; nothing to do')
       }
     },
 
     //@ts-ignore
     crack(timestampedTx, appData) {
+      console.log("daoLogging: executing crack")
+
       if (ShardeumFlags.VerboseLogs) console.log('Running getKeyFromTransaction', timestampedTx)
       //@ts-ignore
       const { tx } = timestampedTx
@@ -4204,6 +4218,7 @@ const shardusSetup = (): void => {
 
       let shardusMemoryPatterns = {}
       if (isInternalTx(tx)) {
+        console.log("daoLogging: isInternalTx is true for crack")
         const customTXhash = null
         const internalTx = tx as InternalTx
         const keys = {
@@ -4213,6 +4228,7 @@ const shardusSetup = (): void => {
           allKeys: [],
           timestamp: timestamp,
         }
+        console.log("daoLogging: internalTx.internalTXType: ", internalTx.internalTXType)
         if (internalTx.internalTXType === InternalTXType.SetGlobalCodeBytes) {
           keys.sourceKeys = [internalTx.from]
         } else if (internalTx.internalTXType === InternalTXType.InitNetwork) {
@@ -4280,6 +4296,8 @@ const shardusSetup = (): void => {
           keys.targetKeys = [toShardusAddress(tx.operatorEVMAddress, AccountType.Account), networkAccount]
         } else if (internalTx.internalTXType === InternalTXType.InitDao) {
           keys.targetKeys = [daoConfig.daoAccount]
+        } else {
+          console.warn("daoLogging: unhandled internalTx.internalTXType: ", internalTx.internalTXType)
         }
         keys.allKeys = keys.allKeys.concat(keys.sourceKeys, keys.targetKeys, keys.storageKeys)
         // temporary hack for creating a receipt of node reward tx
@@ -4289,8 +4307,11 @@ const shardusSetup = (): void => {
         //     keys.allKeys = keys.allKeys.concat([txId]) // For Node Reward Receipt
         //   }
         // }
+        console.log("daoLogging: `keys` after `crack`: ", keys)
 
         const txId = generateTxId(tx)
+        console.log("daoLogging: `txId`: ", txId)
+
         if (ShardeumFlags.VerboseLogs) console.log('crack', { timestamp, keys, id: txId })
         return {
           timestamp,
@@ -4299,6 +4320,7 @@ const shardusSetup = (): void => {
           shardusMemoryPatterns: null,
         }
       }
+      console.log("daoLogging: isInternalTx is false for crack, no more logging will be done in `crack` for this tx")
       if (isDebugTx(tx)) {
         const debugTx = tx as DebugTx
         const txId = generateTxId(tx)
@@ -4575,11 +4597,13 @@ const shardusSetup = (): void => {
       }
     },
     async getRelevantData(accountId, timestampedTx, appData) {
+      console.log("daoLogging: executing getRelevantData")
       if (ShardeumFlags.VerboseLogs) console.log('Running getRelevantData', accountId, timestampedTx, appData)
       //@ts-ignore
       const { tx } = timestampedTx
 
       if (isInternalTx(tx)) {
+        console.log("daoLogging: isInternalTx is true for getRelevantData")
         const internalTx = tx as InternalTx
 
         let accountCreated = false
@@ -4673,7 +4697,9 @@ const shardusSetup = (): void => {
           }
         }
         if (internalTx.internalTXType === InternalTXType.InitDao) {
+          console.log("daoLogging: internalTx.internalTXType === InternalTXType.InitDao, getting relevant data for dao")
           accountCreated = getRelevantDataInitDao(accountId, wrappedEVMAccount)
+          console.log("daoLogging: accountCreated: ", accountCreated)
         }
         if (ShardeumFlags.VerboseLogs) console.log('Running getRelevantData', wrappedEVMAccount)
         return shardus.createWrappedResponse(
@@ -4684,6 +4710,7 @@ const shardusSetup = (): void => {
           wrappedEVMAccount
         )
       }
+      console.log("daoLogging: isInternalTx is false for getRelevantData, no more logging will be done in `getRelevantData` for this tx")
       if (isDebugTx(tx)) {
         let accountCreated = false
         //let wrappedEVMAccount = accounts[accountId]
