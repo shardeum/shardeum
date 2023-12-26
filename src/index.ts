@@ -1070,7 +1070,13 @@ const configShardusEndpoints = (): void => {
         })
       }
 
-      if (networkAccount.current.txPause && !isInternalTx(tx)) {
+      console.log("daoLogging: networkAccount is non-null")
+      console.log("daoLogging: networkAccount.current.txPause is", networkAccount.current.txPause)
+
+      const isInternal = isInternalTx(tx)
+      console.log("daoLogging: isInternalTx is", isInternal)
+
+      if (networkAccount.current.txPause && !isInternal) {
         return res.json({
           success: false,
           reason: `Network will not accept EVM tx until it has at least ${ShardeumFlags.minNodesEVMtx} active node in the network. numActiveNodes: ${numActiveNodes}`,
@@ -1089,21 +1095,27 @@ const configShardusEndpoints = (): void => {
 
       //only run these checks if we are below the limit
       if (belowEVMtxMinNodes) {
-        const isInternal = isInternalTx(tx)
+        console.log("daoLogging: belowEVMtxMinNodes is true")
         let isStaking = false
         let isAllowedInternal = false
         if (isInternal) {
           //todo possibly later limit what internal TXs are allowed
+          console.log("daoLogging: settings isAllowedInternal to true")
           isAllowedInternal = true
         } else {
+          console.log("daoLogging: tx is not internal, determining if staking tx")
           const transaction = getTransactionObj(tx)
           if (transaction != null) {
+            console.log("daoLogging: transaction obj is non-null")
             isStaking = isStakingEVMTx(transaction)
+            console.log("daoLogging: isStaking is", isStaking)
           }
         }
         txRequiresMinNodes = (isStaking || isAllowedInternal) === false
+        console.log("daoLogging: txRequiresMinNodes is", txRequiresMinNodes)
       }
 
+      console.log("daoLogging: checking minimum nodes requirements")
       if (belowEVMtxMinNodes && txRequiresMinNodes) {
         /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`Transaction reject due to min active requirement does not meet , numActiveNodes ${numActiveNodes} < ${ShardeumFlags.minNodesEVMtx} `)
         /* prettier-ignore */ nestedCountersInstance.countEvent('shardeum', `txRejectedDueToMinActiveNodes :${numActiveNodes}`)
@@ -1114,6 +1126,7 @@ const configShardusEndpoints = (): void => {
         })
       } else {
         //normal case, we will put this transaction into the shardus queue
+        console.log("daoLogging: putting tx to shardus")
         const response = await shardus.put(tx)
         res.json(response)
       }
