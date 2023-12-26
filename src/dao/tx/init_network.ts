@@ -1,6 +1,6 @@
 import stringify from 'fast-stable-stringify'
 import { Shardus, ShardusTypes } from '@shardus/core'
-import config from '../../config'
+import { daoConfig } from '../../config/dao'
 import { create } from '../accounts'
 import { TransactionKeys, WrappedStates } from '../../shardeum/shardeumTypes'
 import { DaoGlobalAccount } from '../accounts/networkAccount'
@@ -17,9 +17,9 @@ export function validateFields(response: ShardusTypes.IncomingTransactionResult)
 }
 
 export function validate(wrappedStates: WrappedStates, response: ShardusTypes.IncomingTransactionResult): ShardusTypes.IncomingTransactionResult {
-  const network: DaoGlobalAccount = wrappedStates[config.dao.daoAccount].data
+  const network: DaoGlobalAccount = wrappedStates[daoConfig.daoAccount].data
 
-  if (network.id !== config.dao.daoAccount) {
+  if (network.id !== daoConfig.daoAccount) {
     response.reason = "Network account Id doesn't match the configuration"
     return response
   }
@@ -30,7 +30,7 @@ export function validate(wrappedStates: WrappedStates, response: ShardusTypes.In
 }
 
 export function apply(txTimestamp: number, wrappedStates: WrappedStates, dapp: Shardus): void {
-  const network: DaoGlobalAccount = wrappedStates[config.dao.daoAccount].data
+  const network: DaoGlobalAccount = wrappedStates[daoConfig.daoAccount].data
   network.timestamp = txTimestamp
   console.log(`init_network NETWORK_ACCOUNT: ${stringify(network)}`)
   // from.timestamp = txTimestamp
@@ -39,14 +39,14 @@ export function apply(txTimestamp: number, wrappedStates: WrappedStates, dapp: S
 
 export function keys(result: TransactionKeys): TransactionKeys {
   // result.sourceKeys = [tx.from]
-  result.targetKeys = [config.dao.daoAccount]
+  result.targetKeys = [daoConfig.daoAccount]
   result.allKeys = [...result.sourceKeys, ...result.targetKeys]
   return result
 }
 
 export function createRelevantAccount(dapp: Shardus, account: NodeAccount | DaoGlobalAccount, accountId: string, tx: InitNetwork, accountCreated = false): WrappedResponse {
   if (!account) {
-    if (accountId === config.dao.daoAccount) {
+    if (accountId === daoConfig.daoAccount) {
       account = create.createDaoGlobalAccount(accountId, tx.timestamp)
     } else {
       account = create.nodeAccount(accountId)

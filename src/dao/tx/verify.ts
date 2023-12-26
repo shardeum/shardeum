@@ -1,7 +1,7 @@
 import * as crypto from '@shardus/crypto-utils'
 import { Shardus, ShardusTypes } from '@shardus/core'
 import { create } from '../accounts'
-import config from '../../config'
+import { daoConfig } from '../../config/dao'
 import { TransactionKeys, WrappedStates } from '../../shardeum/shardeumTypes'
 import { UserAccount } from '../accounts/userAccount'
 import { WrappedResponse } from '@shardus/core/dist/shardus/shardus-types'
@@ -74,7 +74,7 @@ export function apply(tx: Verify, txTimestamp: number, wrappedStates: WrappedSta
 
 export function keys(tx: Verify, result: TransactionKeys): TransactionKeys {
   result.sourceKeys = [tx.from]
-  result.targetKeys = [config.dao.daoAccount]
+  result.targetKeys = [daoConfig.daoAccount]
   result.allKeys = [...result.sourceKeys, ...result.targetKeys]
   return result
 }

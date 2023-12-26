@@ -3,7 +3,6 @@ import path from 'path'
 import merge from 'deepmerge'
 import { ShardeumFlags } from '../shardeum/shardeumFlags'
 import { DevSecurityLevel } from '@shardus/core'
-import { daoConfig, DaoConfig } from './dao'
 
 const overwriteMerge = (target: any[], source: any[]): any[] => source // eslint-disable-line @typescript-eslint/no-explicit-any
 
@@ -28,7 +27,6 @@ export interface Config {
     baseDir: string
     mode?: 'debug' | 'release'
   }
-  dao: DaoConfig
 }
 
 //TODO: improve typing here
@@ -37,7 +35,6 @@ let config: Config = {
     globalAccount: '0'.repeat(64), //dev-relaunch required to change this: '1' + '0'.repeat(63),
     baseDir: './',
   },
-  dao: daoConfig
 }
 
 if (fs.existsSync(path.join(process.cwd(), 'config.json'))) {

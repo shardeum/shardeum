@@ -1,5 +1,5 @@
 import { Shardus, ShardusTypes } from '@shardus/core'
-import config from '../../config'
+import { daoConfig } from '../../config/dao'
 import { create } from '../accounts'
 import { ApplyResponse, TransactionKeys, WrappedResponse } from '@shardus/core/dist/shardus/shardus-types'
 import { ChangeConfig, OurAppDefinedData, WrappedStates } from '../../shardeum/shardeumTypes'
@@ -28,9 +28,9 @@ export function validateFields(tx: ChangeConfig, response: ShardusTypes.Incoming
 }
 
 export function validate(tx: ChangeConfig, wrappedStates: WrappedStates, response: ShardusTypes.IncomingTransactionResult, dapp: Shardus): ShardusTypes.IncomingTransactionResult {
-  const network: DaoGlobalAccount = wrappedStates[config.dao.daoAccount].data
+  const network: DaoGlobalAccount = wrappedStates[daoConfig.daoAccount].data
 
-  if (network.id !== config.dao.daoAccount) {
+  if (network.id !== daoConfig.daoAccount) {
     response.reason = 'To account must be the network account'
     return response
   }
@@ -63,12 +63,12 @@ export function apply(tx: ChangeConfig, txTimestamp: number, wrappedStates: Wrap
   const value = {
     type: 'apply_change_config',
     timestamp: when,
-    network: config.dao.daoAccount,
+    network: daoConfig.daoAccount,
     change: { cycle: changeOnCycle, change: JSON.parse(tx.config) },
   }
 
   const ourAppDefinedData = applyResponse.appDefinedData as OurAppDefinedData
-  ourAppDefinedData.globalMsg = { address: config.dao.daoAccount, value, when, source: config.dao.daoAccount }
+  ourAppDefinedData.globalMsg = { address: daoConfig.daoAccount, value, when, source: daoConfig.daoAccount }
 
   from.timestamp = tx.timestamp
   dapp.log('Applied change_config tx')
@@ -82,7 +82,7 @@ export function transactionReceiptPass(dapp: Shardus, applyResponse: ApplyRespon
 
 export function keys(tx: ChangeConfig, result: TransactionKeys): TransactionKeys {
   result.sourceKeys = [tx.from]
-  result.targetKeys = [config.dao.daoAccount]
+  result.targetKeys = [daoConfig.daoAccount]
   result.allKeys = [...result.sourceKeys, ...result.targetKeys]
   return result
 }
