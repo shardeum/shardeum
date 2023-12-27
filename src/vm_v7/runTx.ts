@@ -36,7 +36,7 @@ import type {
   LegacyTransaction,
   TypedTransaction,
 } from '@ethereumjs/tx'
-import { calculateGasPrice, getTxSenderAddress, scaleByStabilityFactor } from '../utils'
+import { calculateGasPrice, getTxValiditySenderAddress, scaleByStabilityFactor } from '../utils'
 const { debug: createDebugLogger } = debugDefault
 
 const debug = createDebugLogger('vm:tx')
@@ -170,7 +170,7 @@ async function _runTx(this: VM, opts: RunTxOpts, evm: any): Promise<RunTxResult>
    */
   await this._emit('beforeTx', tx)
 
-  const caller = getTxSenderAddress(tx)
+  const caller = getTxValiditySenderAddress(tx).address
   if (this.DEBUG) {
     debug(`New tx run hash=${opts.tx.isSigned() ? bytesToHex(opts.tx.hash()) : 'unsigned'} sender=${caller}`)
   }

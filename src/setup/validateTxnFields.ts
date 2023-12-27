@@ -17,7 +17,7 @@ import * as AccountsStorage from '../storage/accountStorage'
 import { validateClaimRewardTx } from '../tx/claimReward'
 import * as InitRewardTimesTx from '../tx/initRewardTimes'
 import { isSetCertTimeTx, validateSetCertTimeTx } from '../tx/setCertTime'
-import { scaleByStabilityFactor, _base16BNParser, isWithinRange, getTxSenderAddress } from '../utils'
+import { scaleByStabilityFactor, _base16BNParser, isWithinRange, getTxValiditySenderAddress } from '../utils'
 import {
   crypto,
   getInjectedOrGeneratedTimestamp,
@@ -165,8 +165,8 @@ export const validateTxnFields =
       try {
         const transaction = getTransactionObj(tx)
         const isSigned = transaction.isSigned()
-        const senderAddress = getTxSenderAddress(transaction) // ensures that tx is valid
-        const isSignatureValid = senderAddress != null ? true : false
+        const { address: senderAddress, isValid } = getTxValiditySenderAddress(transaction) // ensures that tx is valid
+        const isSignatureValid = isValid 
         if (ShardeumFlags.VerboseLogs) console.log('validate evm tx', isSigned, isSignatureValid)
 
         //const txId = '0x' + crypto.hashObj(timestampedTx.tx)

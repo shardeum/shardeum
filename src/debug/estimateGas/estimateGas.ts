@@ -9,7 +9,7 @@ import { fixDeserializedWrappedEVMAccount, predictContractAddress } from '../uti
 import * as AccountsStorage from '../db'
 import { toShardusAddress } from '../utils/evmAddress'
 import { createAccount } from '../replayTX'
-import { getTxSenderAddress } from '../../utils'
+import { getTxValiditySenderAddress } from '../../utils'
 
 export const oneSHM = BigInt(10) ** BigInt(18)
 
@@ -31,7 +31,7 @@ export async function estimateGas(
   EVM
 ): Promise<void> {
   let transaction: LegacyTransaction | AccessListEIP2930Transaction = LegacyTransaction.fromTxData(txData)
-  const senderAddress = getTxSenderAddress(transaction)
+  const senderAddress = getTxValiditySenderAddress(transaction).address
   const from = txData.from !== undefined ? Address.fromString(txData.from) : Address.zero()
   transaction = wrapTransaction(transaction, (): Address => {
     return from
