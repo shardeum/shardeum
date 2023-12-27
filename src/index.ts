@@ -105,7 +105,7 @@ import {
   generateTxId,
   isWithinRange,
   isValidVersion,
-  getTxValiditySenderAddress,
+  getTxSenderAddress,
 } from './utils'
 import config, { Config } from './config'
 import Wallet from 'ethereumjs-wallet'
