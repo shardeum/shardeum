@@ -29,12 +29,12 @@ function toHexString(byteArray: Uint8Array): string {
   }).join('')
 }
 
-export function getTxSenderAddress(tx: TypedTransaction): Address {
+export function getTxValiditySenderAddress(tx: TypedTransaction): { address: Address, isValid: boolean } {
   try {
     const rawTx = '0x' + toHexString(tx.serialize())
-    const senderAddress = getSenderAddress(rawTx)
-    if (logFlags.dapp_verbose) console.log('Sender address retrieved from signed txn', senderAddress)
-    return Address.fromString(senderAddress)
+    const { address, isValid } = getSenderAddress(rawTx)
+    if (logFlags.dapp_verbose) console.log('Sender address retrieved from signed txn', address)
+    return { address: Address.fromString(address), isValid }
   } catch (e) {
     if (logFlags.dapp_verbose) console.error('Error getting sender address from tx', e)
     return null
@@ -43,7 +43,7 @@ export function getTxSenderAddress(tx: TypedTransaction): Address {
 
 export function isTxValid(tx: TypedTransaction): boolean {
   try {
-    getTxSenderAddress(tx)
+    getTxValiditySenderAddress(tx)
     return true
   } catch (e) {
     if (logFlags.dapp_verbose) console.error('Error verifying signature', e)

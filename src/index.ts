@@ -83,7 +83,7 @@ import {
   generateTxId,
   isWithinRange,
   isValidVersion,
-  getTxSenderAddress,
+  getTxValiditySenderAddress,
 } from './utils'
 import config, { Config } from './config'
 import { daoConfig } from './config/dao'
@@ -2498,7 +2498,7 @@ async function estimateGas(
     }
   }
 
-  const senderAddress = getTxSenderAddress(transaction)
+  const { address: senderAddress, isValid }  = getTxValiditySenderAddress(transaction)
   const txId = crypto.hashObj(transaction)
   const preRunTxState = getPreRunTXState(txId)
   const callerEVMAddress = senderAddress.toString()
@@ -2616,7 +2616,7 @@ async function generateAccessList(
       }
     }
 
-    const senderAddress = getTxSenderAddress(transaction)
+    const senderAddress = getTxValiditySenderAddress(transaction).address
     const txId = crypto.hashObj(transaction)
     const preRunTxState = getPreRunTXState(txId)
     const callerEVMAddress = senderAddress.toString()
@@ -2975,7 +2975,7 @@ const shardusSetup = (): void => {
       }
 
       const transaction = getTransactionObj(tx, false)
-      const senderAddress = getTxSenderAddress(transaction)
+      const senderAddress = getTxValiditySenderAddress(transaction)
       const ethTxId = bytesToHex(transaction.hash())
       const shardusReceiptAddress = toShardusAddressWithKey(ethTxId, '', AccountType.Receipt)
       const txId = generateTxId(tx)
@@ -3899,7 +3899,7 @@ const shardusSetup = (): void => {
 
       if (!isInternalTx(tx) && !isDebugTx(tx)) {
         const transaction = getTransactionObj(tx, false)
-        const senderAddress = getTxSenderAddress(transaction)
+        const senderAddress = getTxValiditySenderAddress(transaction)
         const shardusTxId = generateTxId(tx)
         const ethTxId = bytesToHex(transaction.hash())
         if (ShardeumFlags.VerboseLogs) {
@@ -4281,7 +4281,7 @@ const shardusSetup = (): void => {
       const txId = generateTxId(tx)
 
       const transaction = getTransactionObj(tx, false)
-      const senderAddress = getTxSenderAddress(transaction)
+      const senderAddress = getTxValiditySenderAddress(transaction)
       const result = {
         sourceKeys: [],
         targetKeys: [],
