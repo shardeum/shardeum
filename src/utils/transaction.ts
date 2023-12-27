@@ -41,12 +41,3 @@ export function getTxValiditySenderAddress(tx: TypedTransaction): { address: Add
   }
 }
 
-export function isTxValid(tx: TypedTransaction): boolean {
-  try {
-    getTxValiditySenderAddress(tx)
-    return true
-  } catch (e) {
-    if (logFlags.dapp_verbose) console.error('Error verifying signature', e)
-    return false
-  }
-}

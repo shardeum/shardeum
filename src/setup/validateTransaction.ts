@@ -5,7 +5,6 @@ import { crypto, getTransactionObj, isDebugTx, isInternalTx, isInternalTXGlobal,
 import * as InitRewardTimesTx from '../tx/initRewardTimes'
 import * as AccountsStorage from '../storage/accountStorage'
 import { logFlags } from '..'
-import { isTxValid } from '../utils'
 
 type Response = {
   result: string
@@ -72,11 +71,6 @@ export const validateTransaction =
       reason: 'Transaction is not valid. Cannot get txObj.',
     }
     if (!txObj) return response
-
-    if (!txObj.isSigned() || !isTxValid(txObj)) {
-      response.reason = 'Transaction is not signed or signature is not valid.'
-      return response
-    }
 
     try {
       // FIX: seems like a bug using txObj as senderAddress
