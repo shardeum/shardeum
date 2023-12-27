@@ -105,6 +105,7 @@ interface ShardeumFlags {
   enableRIAccountsCache: boolean
   riAccountsCacheSize: number
   riAccountsDeleteBatchSize: number
+  numberOfNodesToInjectPenaltyTx: number
 }
 
 export const ShardeumFlags: ShardeumFlags = {
@@ -240,6 +241,8 @@ export const ShardeumFlags: ShardeumFlags = {
     'GET /account/*',
     'GET /eth_getCode',
   ],
+
+  numberOfNodesToInjectPenaltyTx: 5,
 }
 
 export function updateShardeumFlag(key: string, value: string | number | boolean): void {

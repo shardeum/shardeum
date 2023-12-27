@@ -116,7 +116,7 @@ import { shardusFactory } from '@shardus/core'
 import { unsafeGetClientIp } from './utils/requests'
 import { initialNetworkParamters } from './shardeum/initialNetworkParameters'
 import { oneSHM, networkAccount, ONE_SECOND } from './shardeum/shardeumConstants'
-import { applyPenaltyTX } from './tx/penalty/transaction'
+import { applyPenaltyTX, clearOldPenaltyTxs } from './tx/penalty/transaction'
 import { getFinalArchiverList, setupArchiverDiscovery } from '@shardus/archiver-discovery'
 import { Archiver } from '@shardus/archiver-discovery/dist/src/types'
 import axios from 'axios'
@@ -4869,7 +4869,6 @@ const shardusSetup = (): void => {
           }
           /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`Creating new contract storage account key:${evmAccountID} in contract address ${wrappedEVMAccount.ethAddress}`)
         } else if (accountType === AccountType.ContractCode) {
-          //if(ShardeumFlags.createCodebytesFix){
           wrappedEVMAccount = {
             timestamp: 0,
             codeHash: hexToBytes('0x' + evmAccountInfo.evmAddress),
@@ -4879,8 +4878,7 @@ const shardusSetup = (): void => {
             hash: '',
             accountType: AccountType.ContractCode,
           }
-            /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`Creating new contract bytes account key:${evmAccountID} in contract address ${wrappedEVMAccount.ethAddress}`)
-          //}
+          /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`Creating new contract storage account key:${evmAccountID} in contract address ${wrappedEVMAccount.ethAddress}`)
         } else {
           throw new Error(`getRelevantData: invalid account type ${accountType}`)
         }
@@ -5415,22 +5413,13 @@ const shardusSetup = (): void => {
       }
     },
     transactionReceiptPass(
-      tx,
+      timestampedTx: ShardusTypes.OpaqueTransaction,
       wrappedStates: { [id: string]: WrappedAccount },
       applyResponse: ShardusTypes.ApplyResponse
     ) {
-      let txId: string
-      //this code may seem equivalent but hashSignedObj will not be "smart" until after txHashingFix is true
-      if (ShardeumFlags.txHashingFix === true) {
-        txId = generateTxId(tx)
-      } else {
-        // @ts-ignore
-        if (!tx.sign) {
-          txId = crypto.hashObj(tx)
-        } else {
-          txId = crypto.hashObj(tx, true) // compute from tx
-        }
-      }
+      // @ts-ignore
+      const { tx } = timestampedTx
+      const txId: string = generateTxId(tx)
 
       //This next log is usefull but very heavy on the output lines:
       //Updating to be on only with verbose logs
@@ -6113,55 +6102,75 @@ const shardusSetup = (): void => {
       // skip if this node is also activated in the same cycle
       const currentlyActivatedNode = currentCycle.activated.includes(nodeId)
       if (currentlyActivatedNode) return
-      // Address as the hash of node public Key and current cycle
-      const address = crypto.hashObj({
-        nodePublicKey: data.publicKey,
-        counter: currentCycle.counter,
-      })
-      const nodes = shardus.getClosestNodes(address, 5)
-      if (ShardeumFlags.VerboseLogs) console.log('closest nodes', nodes)
 
-      if (nodes.includes(nodeId)) {
-        if (eventType === 'node-activated') {
-          const activeNodesCount = currentCycle.active
-          const stakingEnabled = activeNodesCount >= ShardeumFlags.minActiveNodesForStaking
-          // Skip initRewardTimes if activeNodesCount is less than minActiveNodesForStaking
-          if (!stakingEnabled) {
-            return
+      if (eventType === 'node-activated') {
+        const activeNodesCount = currentCycle.active
+        const stakingEnabled = activeNodesCount >= ShardeumFlags.minActiveNodesForStaking
+        // Skip initRewardTimes if activeNodesCount is less than minActiveNodesForStaking
+        if (!stakingEnabled) {
+          return
+        }
+        nestedCountersInstance.countEvent('shardeum-staking', `node-activated: injectInitRewardTimesTx`)
+        //TODO need retry on this also
+        const result = await InitRewardTimesTx.injectInitRewardTimesTx(shardus, data)
+        /* prettier-ignore */ if (logFlags.dapp_verbose) console.log('INJECTED_INIT_REWARD_TIMES_TX', result)
+      } else if (eventType === 'node-deactivated') {
+        nestedCountersInstance.countEvent('shardeum-staking', `node-deactivated: injectClaimRewardTx`)
+        const result = await injectClaimRewardTxWithRetry(shardus, data)
+        /* prettier-ignore */ if (logFlags.dapp_verbose) console.log('INJECTED_CLAIM_REWARD_TX', result)
+      } else if (eventType === 'node-left-early' && ShardeumFlags.enableNodeSlashing === true) {
+        let nodeLostCycle
+        let nodeDroppedCycle
+        for (let i = 0; i < latestCycles.length; i++) {
+          const cycle = latestCycles[i]
+          if (cycle == null) continue
+          if (cycle.apoptosized.includes(data.nodeId)) {
+            nodeDroppedCycle = cycle.counter
+          } else if (cycle.lost.includes(data.nodeId)) {
+            nodeLostCycle = cycle.counter
           }
-          nestedCountersInstance.countEvent('shardeum-staking', `node-activated: injectInitRewardTimesTx`)
-          //TODO need retry on this also
-          const result = await InitRewardTimesTx.injectInitRewardTimesTx(shardus, data)
-          /* prettier-ignore */ if (logFlags.dapp_verbose) console.log('INJECTED_INIT_REWARD_TIMES_TX', result)
-        } else if (eventType === 'node-deactivated') {
-          nestedCountersInstance.countEvent('shardeum-staking', `node-deactivated: injectClaimRewardTx`)
-          const result = await injectClaimRewardTxWithRetry(shardus, data)
-          /* prettier-ignore */ if (logFlags.dapp_verbose) console.log('INJECTED_CLAIM_REWARD_TX', result)
-        } else if (eventType === 'node-left-early' && ShardeumFlags.enableNodeSlashing === true) {
-          let nodeLostCycle
-          let nodeDroppedCycle
-          for (let i = 0; i < latestCycles.length; i++) {
-            const cycle = latestCycles[i]
-            if (cycle == null) continue
-            if (cycle.apoptosized.includes(data.nodeId)) {
-              nodeDroppedCycle = cycle.counter
-            } else if (cycle.lost.includes(data.nodeId)) {
-              nodeLostCycle = cycle.counter
-            }
+        }
+        if (nodeLostCycle && nodeDroppedCycle && nodeLostCycle < nodeDroppedCycle) {
+          const violationData: LeftNetworkEarlyViolationData = {
+            nodeLostCycle,
+            nodeDroppedCycle,
+            nodeDroppedTime: data.time,
           }
-          if (nodeLostCycle && nodeDroppedCycle && nodeLostCycle < nodeDroppedCycle) {
-            const violationData = {
-              nodeLostCycle,
-              nodeDroppedCycle,
-              nodeDroppedTime: data.time,
-            }
-            nestedCountersInstance.countEvent('shardeum-staking', `node-left-early: injectClaimRewardTx`)
-            const result = await PenaltyTx.injectPenaltyTX(shardus, data, violationData)
-            /* prettier-ignore */ if (logFlags.dapp_verbose) console.log('INJECTED_PENALTY_TX', result)
-          } else {
-            nestedCountersInstance.countEvent('shardeum-staking', `node-left-early: event skipped`)
-            /* prettier-ignore */ if (logFlags.dapp_verbose) console.log(`Shardeum node-left-early event skipped`, data, nodeLostCycle, nodeDroppedCycle)
+          nestedCountersInstance.countEvent('shardeum-staking', `node-left-early: injectPenaltyTx`)
+          const result = await PenaltyTx.injectPenaltyTX(shardus, data, violationData)
+          /* prettier-ignore */ if (logFlags.dapp_verbose) console.log('INJECTED_PENALTY_TX', result)
+        } else {
+          nestedCountersInstance.countEvent('shardeum-staking', `node-left-early: event skipped`)
+          /* prettier-ignore */ if (logFlags.dapp_verbose) console.log(`Shardeum node-left-early event skipped`, data, nodeLostCycle, nodeDroppedCycle)
+        }
+      } else if (eventType === 'node-sync-timeout' && ShardeumFlags.enableNodeSlashing === true) {
+        const violationData: SyncingTimeoutViolationData = {
+          nodeLostCycle: data.cycleNumber,
+          nodeDroppedTime: data.time,
+        }
+        nestedCountersInstance.countEvent('shardeum-penalty', `node-sync-timeout: injectPenaltyTx`)
+        const result = await PenaltyTx.injectPenaltyTX(shardus, data, violationData)
+        /* prettier-ignore */ if (logFlags.dapp_verbose) console.log('INJECTED_PENALTY_TX', result)
+      } else if (eventType === 'node-refuted' && ShardeumFlags.enableNodeSlashing === true) {
+        let nodeRefutedCycle
+        for (let i = 0; i < latestCycles.length; i++) {
+          const cycle = latestCycles[i]
+          if (cycle == null) continue
+          if (cycle.refuted.includes(data.nodeId)) {
+            nodeRefutedCycle = cycle.counter
           }
+        }
+        if (nodeRefutedCycle === data.cycleNumber) {
+          const violationData: NodeRefutedViolationData = {
+            nodeRefutedCycle: nodeRefutedCycle,
+            nodeRefutedTime: data.time,
+          }
+          nestedCountersInstance.countEvent('shardeum-staking', `node-refuted: injectPenaltyTx`)
+          const result = await PenaltyTx.injectPenaltyTX(shardus, data, violationData)
+          /* prettier-ignore */ if (logFlags.dapp_verbose) console.log('INJECTED_PENALTY_TX', result)
+        } else {
+          nestedCountersInstance.countEvent('shardeum-staking', `node-refuted: event skipped`)
+          /* prettier-ignore */ if (logFlags.dapp_verbose) console.log(`Shardeum node-refuted event skipped`, data, nodeRefutedCycle)
         }
       }
     },
@@ -6485,7 +6494,7 @@ export function shardeumGetTime(): number {
 
   if (ShardeumFlags.GlobalNetworkAccount) {
     // CODE THAT GETS EXECUTED WHEN NODES START
-    ; (async (): Promise<void> => {
+    await (async (): Promise<void> => {
       const serverConfig = config.server
       const cycleInterval = serverConfig.p2p.cycleDuration * ONE_SECOND
 
@@ -6501,6 +6510,7 @@ export function shardeumGetTime(): number {
       // THIS CODE IS CALLED ON EVERY NODE ON EVERY CYCLE
       async function networkMaintenance(): Promise<NodeJS.Timeout> {
         /* prettier-ignore */ if (logFlags.dapp_verbose) shardus.log('New maintainence cycle has started')
+        clearOldPenaltyTxs(shardus)
         drift = shardeumGetTime() - expected
 
         try {
