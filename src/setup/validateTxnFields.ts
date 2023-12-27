@@ -166,7 +166,7 @@ export const validateTxnFields =
         const transaction = getTransactionObj(tx)
         const isSigned = transaction.isSigned()
         const txId = generateTxId(tx)
-        const { address: senderAddress, isValid } = getTxSenderAddress(transaction, txId) // ensures that tx is valid
+        const senderAddress = getTxSenderAddress(transaction) // ensures that tx is valid
         const isSignatureValid = isValid 
         if (ShardeumFlags.VerboseLogs) console.log('validate evm tx', isSigned, isSignatureValid)
 

@@ -9,7 +9,7 @@ import { fixDeserializedWrappedEVMAccount, predictContractAddress } from '../uti
 import * as AccountsStorage from '../db'
 import { toShardusAddress } from '../utils/evmAddress'
 import { createAccount } from '../replayTX'
-import { getTxSenderAddress } from '../../utils'
+import { getTxValiditySenderAddress } from '../../utils'
 
 export const oneSHM = BigInt(10) ** BigInt(18)
 
