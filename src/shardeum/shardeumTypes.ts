@@ -180,13 +180,24 @@ export enum ViolationType {
   LeftNetworkEarly = 1000,
   SyncingTooLong = 1001,
   DoubleVote = 1002,
+  NodeRefuted = 1003,
   //..others tbd
+}
+
+export interface SyncingTimeoutViolationData {
+  nodeLostCycle: number
+  nodeDroppedTime: number
 }
 
 export interface LeftNetworkEarlyViolationData {
   nodeLostCycle: number
   nodeDroppedCycle: number
   nodeDroppedTime: number
+}
+
+export interface NodeRefutedViolationData {
+  nodeRefutedCycle: number
+  nodeRefutedTime: number
 }
 
 export interface PenaltyTX extends InternalTxBase {

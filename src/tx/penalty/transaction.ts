@@ -3,44 +3,54 @@ import {
   AccountType,
   InternalTXType,
   isNodeAccount2,
+  LeftNetworkEarlyViolationData,
   NodeAccount2,
+  NodeRefutedViolationData,
   PenaltyTX,
+  SyncingTimeoutViolationData,
   ViolationType,
   WrappedEVMAccount,
   WrappedStates,
 } from '../../shardeum/shardeumTypes'
 import { ShardeumFlags } from '../../shardeum/shardeumFlags'
-import { crypto, hashSignedObj } from '../../setup/helpers'
+import { crypto } from '../../setup/helpers'
 import { createInternalTxReceipt, getApplyTXState, logFlags, shardeumGetTime } from '../..'
 import { toShardusAddress } from '../../shardeum/evmAddress'
 import { getPenaltyForViolation } from './violation'
 import * as WrappedEVMAccountFunctions from '../../shardeum/wrappedEVMAccountFunctions'
-import { _readableSHM, sleep, generateTxId } from '../../utils'
+import { _readableSHM, generateTxId, sleep } from '../../utils'
 import { Address } from '@ethereumjs/util'
 import { applyPenalty } from './penaltyFunctions'
+import config from '../../config'
+
+const penaltyTxsMap: Map<string, PenaltyTX> = new Map()
 
 export async function injectPenaltyTX(
   shardus: Shardus,
   eventData: ShardusTypes.ShardusEvent,
-  violationData: any
+  violationData: LeftNetworkEarlyViolationData | NodeRefutedViolationData | SyncingTimeoutViolationData
 ): Promise<{
   success: boolean
   reason: string
   status: number
 }> {
-  let tx = {
+  let violationType: ViolationType
+  if (eventData.type === 'node-left-early') violationType = ViolationType.LeftNetworkEarly
+  else if (eventData.type === 'node-refuted') violationType = ViolationType.NodeRefuted
+  else if (eventData.type === 'node-sync-timeout') violationType = ViolationType.SyncingTooLong
+  const unsignedTx = {
     reportedNodeId: eventData.nodeId,
     reportedNodePublickKey: eventData.publicKey,
     operatorEVMAddress: '',
     timestamp: shardeumGetTime(),
-    violationType: ViolationType.LeftNetworkEarly,
+    violationType,
     violationData,
     isInternalTx: true,
     internalTXType: InternalTXType.Penalty,
   }
 
   const wrapeedNodeAccount: ShardusTypes.WrappedDataFromQueue = await shardus.getLocalOrRemoteAccount(
-    tx.reportedNodePublickKey
+    unsignedTx.reportedNodePublickKey
   )
 
   if (!wrapeedNodeAccount) {
@@ -52,7 +62,7 @@ export async function injectPenaltyTX(
   }
 
   if (wrapeedNodeAccount && isNodeAccount2(wrapeedNodeAccount.data)) {
-    tx.operatorEVMAddress = wrapeedNodeAccount.data.nominator
+    unsignedTx.operatorEVMAddress = wrapeedNodeAccount.data.nominator
   } else {
     return {
       success: false,
@@ -61,27 +71,70 @@ export async function injectPenaltyTX(
     }
   }
 
-  if (ShardeumFlags.txHashingFix) {
-    // to make sure that differnt nodes all submit an equivalent tx that is counted as the same tx,
-    // we need to make sure that we have a determinstic timestamp
-    const cycleEndTime = eventData.time
-    let futureTimestamp = cycleEndTime * 1000
-    while (futureTimestamp < shardeumGetTime()) {
-      futureTimestamp += 30 * 1000
+  // to make sure that differnt nodes all submit an equivalent unsignedTx that is counted as the same unsignedTx,
+  // we need to make sure that we have a determinstic timestamp
+  const cycleEndTime = eventData.time
+  let futureTimestamp = cycleEndTime * 1000
+  while (futureTimestamp < shardeumGetTime()) {
+    futureTimestamp += 30 * 1000
+  }
+  const waitTime = futureTimestamp - shardeumGetTime()
+  unsignedTx.timestamp = futureTimestamp
+
+  const signedTx = shardus.signAsNode(unsignedTx) as PenaltyTX
+  const txId = generateTxId(unsignedTx)
+  // store the unsignedTx to local map for later use
+  recordPenaltyTX(txId, signedTx)
+
+  // inject the unsignedTx if we are lucky node
+  const consensusNodes = shardus.getConsenusGroupForAccount(signedTx.reportedNodePublickKey)
+  const consensusNodeIdsAndRanks: { nodeId: string; rank: bigint }[] = consensusNodes.map((n) => {
+    return {
+      nodeId: n.id,
+      rank: shardus.computeNodeRank(n.id, txId, signedTx.timestamp),
     }
-    const waitTime = futureTimestamp - shardeumGetTime()
-    tx.timestamp = futureTimestamp
-    // since we have to pick a future timestamp, we need to wait until it is time to submit the tx
-    await sleep(waitTime)
+  })
+  const sortedNodeIdsAndRanks = consensusNodeIdsAndRanks.sort((a, b): number => {
+    return b.rank > a.rank ? 1 : -1
+  })
+  const ourNodeId = shardus.getNodeId()
+
+  let isLuckyNode = false
+  for (let i = 0; i < ShardeumFlags.numberOfNodesToInjectPenaltyTx; i++) {
+    if (sortedNodeIdsAndRanks[i].nodeId === ourNodeId) {
+      isLuckyNode = true
+    }
   }
 
-  tx = shardus.signAsNode(tx) as PenaltyTX
+  if (!isLuckyNode) {
+    if (ShardeumFlags.VerboseLogs)
+      console.log(`injectPenaltyTX: not lucky node, skipping injection`, signedTx)
+    return
+  }
+  // since we have to pick a future timestamp, we need to wait until it is time to submit the signedTx
+  await sleep(waitTime)
+
   if (ShardeumFlags.VerboseLogs) {
-    const txId = generateTxId(tx)
-    console.log(`injectPenaltyTX: tx.timestamp: ${tx.timestamp} txid: ${txId}`, tx)
+    console.log(`injectPenaltyTX: tx.timestamp: ${signedTx.timestamp} txid: ${txId}`, signedTx)
   }
 
-  return await shardus.put(tx)
+  return await shardus.put(signedTx)
+}
+
+function recordPenaltyTX(txId: string, tx: PenaltyTX): void {
+  if (penaltyTxsMap.has(txId) === false) {
+    penaltyTxsMap.set(txId, tx)
+  }
+}
+
+export function clearOldPenaltyTxs(shardus: Shardus): void {
+  const now = shardus.shardusGetTime()
+  for (const [txId, tx] of penaltyTxsMap.entries()) {
+    const cycleDuration = config.server.p2p.cycleDuration * 1000
+    if (now - tx.timestamp > 5 * cycleDuration) {
+      penaltyTxsMap.delete(txId)
+    }
+  }
 }
 
 export function validatePenaltyTX(tx: PenaltyTX, shardus: Shardus): { isValid: boolean; reason: string } {
@@ -106,7 +159,7 @@ export function validatePenaltyTX(tx: PenaltyTX, shardus: Shardus): { isValid: b
     if (ShardeumFlags.VerboseLogs) console.log(`validatePenaltyTX fail tx.reportedNode operator address invalid`, tx)
     return { isValid: false, reason: 'Invalid reportedNode operator address' }
   }
-  if (tx.violationType < 1000 || tx.violationType > 1002) {
+  if (tx.violationType < 1000 || tx.violationType > 1999) {
     /* prettier-ignore */
     nestedCountersInstance.countEvent('shardeum-penalty', `validatePenaltyTX fail tx.violationType not in range`)
     /* prettier-ignore */
@@ -121,37 +174,46 @@ export function validatePenaltyTX(tx: PenaltyTX, shardus: Shardus): { isValid: b
     if (ShardeumFlags.VerboseLogs) console.log(`validatePenaltyTX fail tx.violationData invalid`, tx)
     return { isValid: false, reason: 'Invalid Violation data ' }
   }
-  // validate node-left-early violation
-  if (tx.violationType === ViolationType.LeftNetworkEarly) {
-    const violationData = tx.violationData
-    const latestCycles = shardus.getLatestCycles(10)
-    const lostCycleRecord = latestCycles.find((record) => record.counter === violationData.nodeLostCycle)
-    const droppedCycleRecord = latestCycles.find(
-      (record) => record.counter === violationData.nodeDroppedCycle
-    )
 
-    if (lostCycleRecord == null || droppedCycleRecord == null) {
-      /* prettier-ignore */
-      nestedCountersInstance.countEvent('shardeum-penalty', `validatePenaltyTX fail tx.violationData lostCycleRecord or droppedCycleRecord not found`)
-      /* prettier-ignore */
-      if (ShardeumFlags.VerboseLogs) console.log(`validatePenaltyTX fail tx.violationData lostCycleRecord or droppedCycleRecord not found`, tx)
-      return { isValid: false, reason: 'Invalid Violation data ' }
-    }
-    if (!lostCycleRecord.lost.includes(tx.reportedNodeId)) {
-      /* prettier-ignore */
-      nestedCountersInstance.countEvent('shardeum-penalty', `validatePenaltyTX fail tx.violationData node not found in lost`)
-      /* prettier-ignore */
-      if (ShardeumFlags.VerboseLogs) console.log(`validatePenaltyTX fail tx.violationData node not found in lost`, tx)
-      return { isValid: false, reason: 'Reported node not found in lost' }
-    }
-    if (!droppedCycleRecord.apoptosized.includes(tx.reportedNodeId)) {
-      /* prettier-ignore */
-      nestedCountersInstance.countEvent('shardeum-penalty', `validatePenaltyTX fail tx.violationData node not found in apoptosized`)
-      /* prettier-ignore */
-      if (ShardeumFlags.VerboseLogs) console.log(`validatePenaltyTX fail tx.violationData node not found in apoptosized`, tx)
-      return { isValid: false, reason: 'Reported node not found in apoptosized' }
-    }
+  // check if we have this penalty tx stored in the Map
+  const txId = generateTxId(tx)
+  const preRecordedfPenaltyTX = penaltyTxsMap.get(txId)
+
+  if (preRecordedfPenaltyTX == null) {
+    return { isValid: false, reason: 'Penalty TX not found in penaltyTxsMap' }
   }
+
+  // validate node-left-early violation
+  // if (tx.violationType === ViolationType.LeftNetworkEarly) {
+  // const violationData = tx.violationData
+  // const latestCycles = shardus.getLatestCycles(10)
+  // const lostCycleRecord = latestCycles.find((record) => record.counter === violationData.nodeLostCycle)
+  // const droppedCycleRecord = latestCycles.find(
+  //   (record) => record.counter === violationData.nodeDroppedCycle
+  // )
+  //
+  // if (lostCycleRecord == null || droppedCycleRecord == null) {
+  //   /* prettier-ignore */
+  //   nestedCountersInstance.countEvent('shardeum-penalty', `validatePenaltyTX fail tx.violationData lostCycleRecord or droppedCycleRecord not found`)
+  //   /* prettier-ignore */
+  //   if (ShardeumFlags.VerboseLogs) console.log(`validatePenaltyTX fail tx.violationData lostCycleRecord or droppedCycleRecord not found`, tx)
+  //   return { isValid: false, reason: 'Invalid Violation data ' }
+  // }
+  // if (!lostCycleRecord.lost.includes(tx.reportedNodeId)) {
+  //   /* prettier-ignore */
+  //   nestedCountersInstance.countEvent('shardeum-penalty', `validatePenaltyTX fail tx.violationData node not found in lost`)
+  //   /* prettier-ignore */
+  //   if (ShardeumFlags.VerboseLogs) console.log(`validatePenaltyTX fail tx.violationData node not found in lost`, tx)
+  //   return { isValid: false, reason: 'Reported node not found in lost' }
+  // }
+  // if (!droppedCycleRecord.apoptosized.includes(tx.reportedNodeId)) {
+  //   /* prettier-ignore */
+  //   nestedCountersInstance.countEvent('shardeum-penalty', `validatePenaltyTX fail tx.violationData node not found in apoptosized`)
+  //   /* prettier-ignore */
+  //   if (ShardeumFlags.VerboseLogs) console.log(`validatePenaltyTX fail tx.violationData node not found in apoptosized`, tx)
+  //   return { isValid: false, reason: 'Reported node not found in apoptosized' }
+  // }
+  // }
   if (tx.timestamp <= 0) {
     /* prettier-ignore */
     nestedCountersInstance.countEvent('shardeum-penalty', `validatePenaltyTX fail tx.timestamp`)
@@ -209,7 +271,8 @@ export async function applyPenaltyTX(
     operatorAccount = wrappedStates[operatorShardusAddress].data as WrappedEVMAccount
   }
 
-  nodeAccount.rewardEndTime = tx.violationData?.nodeDroppedTime || Math.floor(tx.timestamp / 1000)
+  if (tx.violationType === ViolationType.LeftNetworkEarly)
+    nodeAccount.rewardEndTime = tx.violationData?.nodeDroppedTime || Math.floor(tx.timestamp / 1000)
 
   //TODO should we check if it was already penalized?
   const penaltyAmount = getPenaltyForViolation(tx, nodeAccount.stakeLock)
@@ -244,10 +307,8 @@ export async function applyPenaltyTX(
 
     let wrappedChangedOperatorAccount: ShardusTypes.WrappedData
     /* eslint-disable security/detect-object-injection */
-    if (WrappedEVMAccountFunctions.isWrappedEVMAccount(wrappedStates[operatorShardusAddress].data)) {
-      wrappedChangedOperatorAccount = WrappedEVMAccountFunctions._shardusWrappedAccount(
-        wrappedStates[operatorShardusAddress].data as WrappedEVMAccount
-      )
+    if (WrappedEVMAccountFunctions.isWrappedEVMAccount(operatorAccount)) {
+      wrappedChangedOperatorAccount = WrappedEVMAccountFunctions._shardusWrappedAccount(operatorAccount)
     }
     /* eslint-enable security/detect-object-injection */
     shardus.applyResponseAddChangedAccount(
