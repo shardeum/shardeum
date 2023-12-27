@@ -29,7 +29,7 @@ function toHexString(byteArray: Uint8Array): string {
   }).join('')
 }
 
-export function getTxValiditySenderAddress(tx: TypedTransaction): { address: Address, isValid: boolean } {
+export function getTxSenderAddress(tx: TypedTransaction): { address: Address; isValid: boolean } {
   try {
     const rawTx = '0x' + toHexString(tx.serialize())
     const { address, isValid } = getSenderAddress(rawTx)
@@ -37,7 +37,6 @@ export function getTxValiditySenderAddress(tx: TypedTransaction): { address: Add
     return { address: Address.fromString(address), isValid }
   } catch (e) {
     if (logFlags.dapp_verbose) console.error('Error getting sender address from tx', e)
-    return null
+    return { address: null, isValid: false }
   }
 }
-
