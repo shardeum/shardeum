@@ -3033,7 +3033,7 @@ const shardusSetup = (): void => {
       }
 
       const transaction = getTransactionObj(tx)
-      const senderAddress = getTxSenderAddress(transaction)
+      const senderAddress = getTxSenderAddress(transaction).address
       const ethTxId = bytesToHex(transaction.hash())
       const shardusReceiptAddress = toShardusAddressWithKey(ethTxId, '', AccountType.Receipt)
       const txId = generateTxId(tx)
@@ -3951,7 +3951,7 @@ const shardusSetup = (): void => {
 
       if (isInternalTx(tx) === false && isDebugTx(tx) === false) {
         const transaction = getTransactionObj(tx)
-        const senderAddress = getTxSenderAddress(transaction)
+        const senderAddress = getTxSenderAddress(transaction).address
         const shardusTxId = generateTxId(tx)
         const ethTxId = bytesToHex(transaction.hash())
         if (ShardeumFlags.VerboseLogs) {
@@ -4322,7 +4322,7 @@ const shardusSetup = (): void => {
       const txId = generateTxId(tx)
 
       const transaction = getTransactionObj(tx)
-      const senderAddress = getTxSenderAddress(transaction)
+      const senderAddress = getTxSenderAddress(transaction).address
       const result = {
         sourceKeys: [],
         targetKeys: [],
