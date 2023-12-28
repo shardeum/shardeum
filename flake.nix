@@ -46,6 +46,8 @@
 
               shardus-cli.packages.${system}.default
             ]);
+          NODE_ENV = "debug";
+          NODE_OPTIONS = "--inspect";
         };
       });
   in
