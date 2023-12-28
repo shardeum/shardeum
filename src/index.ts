@@ -6301,12 +6301,6 @@ const shardusSetup = (): void => {
           if (cycle.refuted.includes(data.nodeId)) {
             nodeRefutedCycle = cycle.counter
           }
-          nestedCountersInstance.countEvent('shardeum-staking', `node-left-early: injectPenaltyTx`)
-          const result = await PenaltyTx.injectPenaltyTX(shardus, data, violationData)
-          /* prettier-ignore */ if (logFlags.dapp_verbose) console.log('INJECTED_PENALTY_TX', result)
-        } else {
-          nestedCountersInstance.countEvent('shardeum-staking', `node-left-early: event skipped`)
-          /* prettier-ignore */ if (logFlags.dapp_verbose) console.log(`Shardeum node-left-early event skipped`, data, nodeLostCycle, nodeDroppedCycle)
         }
         if (nodeRefutedCycle === data.cycleNumber) {
           const violationData: NodeRefutedViolationData = {
