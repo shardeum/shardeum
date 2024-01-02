@@ -1,5 +1,4 @@
 import { aliasAccount } from './aliasAccount'
-import { chatAccount } from './chatAccount'
 import { devProposalAccount } from './devProposalAccount'
 import { devIssueAccount } from './devIssueAccount'
 import { userAccount } from './userAccount'
@@ -10,7 +9,6 @@ import { proposalAccount } from './proposalAccount'
 
 export const create = {
   aliasAccount,
-  chatAccount,
   devIssueAccount,
   devProposalAccount,
   issueAccount,
