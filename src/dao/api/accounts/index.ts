@@ -3,9 +3,7 @@ import { alias } from './alias'
 import { recentMessages } from './recentMessages'
 import { address } from './address'
 import { balance } from './balance'
-import { friends } from './friends'
 import { toll } from './toll'
-import { tollOfFriend } from './tollOfFriend'
 import { transactions } from './transactions'
 
 export default {
@@ -13,9 +11,7 @@ export default {
   alias,
   address,
   balance,
-  friends,
   toll,
-  tollOfFriend,
   transactions,
   recentMessages,
 }
