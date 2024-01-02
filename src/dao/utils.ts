@@ -191,9 +191,6 @@ export function getAccountType(data): unknown {
   if (data.nodeRewardTime !== undefined) {
     return 'NodeAccount'
   }
-  if (data.messages !== undefined) {
-    return 'ChatAccount'
-  }
   if (data.inbox !== undefined) {
     return 'AliasAccount'
   }
