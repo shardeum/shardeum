@@ -21,11 +21,8 @@ import * as node_reward from './node_reward'
 import * as parameters from './parameters'
 import * as proposal from './proposal'
 import * as register from './register'
-import * as remove_stake from './remove_stake'
-import * as remove_stake_request from './remove_stake_request'
 import * as snapshot from './snapshot'
 import * as snapshot_claim from './snapshot_claim'
-import * as stake from './stake'
 import * as tally from './tally'
 import * as toll from './toll'
 import * as transfer from './transfer'
@@ -43,9 +40,6 @@ export default {
   transfer,
   distribute,
   toll,
-  stake,
-  remove_stake,
-  remove_stake_request,
   node_reward,
   snapshot_claim,
   issue,

@@ -30,5 +30,4 @@ export default (dapp: Shardus): void => {
   dapp.registerExternalGet('dao/account/:id/balance', accounts.balance(dapp))
   dapp.registerExternalGet('dao/account/:id/toll', accounts.toll(dapp))
   dapp.registerExternalGet('dao/address/:name', accounts.address(dapp))
-  dapp.registerExternalGet('dao/account/:id/recentMessages', accounts.recentMessages(dapp))
 }
