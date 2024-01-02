@@ -1,6 +1,5 @@
 import { account } from './account'
 import { alias } from './alias'
-import { recentMessages } from './recentMessages'
 import { address } from './address'
 import { balance } from './balance'
 import { toll } from './toll'
@@ -13,5 +12,4 @@ export default {
   balance,
   toll,
   transactions,
-  recentMessages,
 }

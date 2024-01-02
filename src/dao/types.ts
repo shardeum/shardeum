@@ -1,5 +1,4 @@
 import { AliasAccount } from "./accounts/aliasAccount"
-import { ChatAccount } from "./accounts/chatAccount"
 import { DevIssueAccount } from "./accounts/devIssueAccount"
 import { DevProposalAccount } from "./accounts/devProposalAccount"
 import { IssueAccount } from "./accounts/issueAccount"
@@ -30,4 +29,4 @@ export interface DeveloperPayment {
   timestamp: number
 }
 
-export type DaoAccounts = DaoGlobalAccount & IssueAccount & DevIssueAccount & UserAccount & AliasAccount & ProposalAccount & DevProposalAccount & NodeAccount & ChatAccount
+export type DaoAccounts = DaoGlobalAccount & IssueAccount & DevIssueAccount & UserAccount & AliasAccount & ProposalAccount & DevProposalAccount & NodeAccount
