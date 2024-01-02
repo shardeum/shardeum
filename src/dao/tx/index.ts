@@ -14,16 +14,13 @@ import * as dev_vote from './dev_vote'
 import * as developer_payment from './developer_payment'
 import * as distribute from './distribute'
 import * as email from './email'
-import * as friend from './friend'
 import * as gossip_email_hash from './gossip_email_hash'
 import * as init_network from './init_network'
 import * as issue from './issue'
-import * as message from './message'
 import * as node_reward from './node_reward'
 import * as parameters from './parameters'
 import * as proposal from './proposal'
 import * as register from './register'
-import * as remove_friend from './remove_friend'
 import * as remove_stake from './remove_stake'
 import * as remove_stake_request from './remove_stake_request'
 import * as snapshot from './snapshot'
@@ -45,10 +42,7 @@ export default {
   create,
   transfer,
   distribute,
-  message,
   toll,
-  friend,
-  remove_friend,
   stake,
   remove_stake,
   remove_stake_request,
