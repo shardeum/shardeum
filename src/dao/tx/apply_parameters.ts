@@ -13,8 +13,7 @@ import { Windows } from '../types'
 import { NetworkParameters } from '../../shardeum/shardeumTypes'
 import { DaoTx } from '.'
 
-export interface ApplyParameters {
-  type: 'apply_parameters'
+export interface IApplyParameters {
   timestamp: number
   current: NetworkParameters
   next: Record<string, never>
@@ -23,8 +22,15 @@ export interface ApplyParameters {
   issue: number
 }
 
-export class ApplyParameters implements DaoTx<DaoGlobalAccount> {
-  validateFields(this: ApplyParameters, response: ShardusTypes.IncomingTransactionResult): ShardusTypes.IncomingTransactionResult {
+export class ApplyParameters implements IApplyParameters, DaoTx<DaoGlobalAccount> {
+  timestamp: number
+  current: NetworkParameters
+  next: Record<string, never>
+  windows: Windows
+  nextWindows: Record<string, never>
+  issue: number
+
+  validateFields(response: ShardusTypes.IncomingTransactionResult): ShardusTypes.IncomingTransactionResult {
     if (_.isEmpty(this.current) || typeof this.current !== 'object') {
       response.success = false
       response.reason = 'tx "current" field must not be a non empty object'
@@ -99,7 +105,7 @@ export class ApplyParameters implements DaoTx<DaoGlobalAccount> {
     return response
   }
 
-  apply(this: ApplyParameters, txTimestamp: number, wrappedStates: WrappedStates, dapp: Shardus): void {
+  apply(txTimestamp: number, wrappedStates: WrappedStates, dapp: Shardus): void {
     const network = wrappedStates[daoConfig.daoAccount].data as DaoGlobalAccount
     network.current = this.current
     network.next = this.next
