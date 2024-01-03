@@ -131,21 +131,16 @@ import { applyPenaltyTX } from './tx/penalty/transaction'
 import { getFinalArchiverList, setupArchiverDiscovery } from '@shardus/archiver-discovery'
 import { Archiver } from '@shardus/archiver-discovery/dist/src/types'
 import axios from 'axios'
-//import blockedAt from 'blocked-at'
-//import { v4 as uuidv4 } from 'uuid'
-import { debug as createDebugLogger } from 'debug'
 import { RunState } from './evm_v2/interpreter'
 import { VM } from './vm_v7/vm'
-import { EthersStateManager } from '@ethereumjs/statemanager'
 import rfdc = require('rfdc')
 import { AdminCert, PutAdminCertResult, putAdminCertificateHandler } from './handlers/adminCertificate'
 import { P2P } from '@shardus/types'
-import { util } from 'prettier'
 import { getExternalApiMiddleware } from './middleware/externalApiMiddleware'
 import { AccountsEntry } from './storage/storage'
 import { getCachedRIAccount, setCachedRIAccount } from './storage/riAccountsCache'
-import { apply as applyDaoIssueTx, Issue as DaoIssueTx } from './dao/tx/issue'
 import { applyInitDaoTx, getRelevantDataInitDao, handleDaoTxApply, handleDaoTxCrack, handleDaoTxGetRelevantData, isDaoTx } from './dao'
+import { DaoTx } from './dao/tx'
 
 let latestBlock = 0
 export const blocks: BlockMap = {}
@@ -1954,8 +1949,8 @@ const configShardusEndpoints = (): void => {
  *    #### ##    ##    ##    ######## ##     ## ##    ## ##     ## ########       ##    ##     ##
  */
 
-async function applyInternalTx(
-  tx: InternalTx,
+async function applyInternalTx<A>(
+  tx: InternalTx | DaoTx<A>,
   wrappedStates: WrappedStates,
   txTimestamp: number
 ): Promise<ShardusTypes.ApplyResponse> {
@@ -1966,7 +1961,11 @@ async function applyInternalTx(
 
   const applyResponse: ShardusTypes.ApplyResponse = shardus.createApplyResponse(txId, txTimestamp)
   const internalTx = tx
-  if (internalTx.internalTXType === InternalTXType.SetGlobalCodeBytes) {
+
+  if (internalTx instanceof DaoTx) {
+    console.log("daoLogging: executing apply DaoTx")
+    internalTx.apply(txTimestamp, wrappedStates, shardus);
+  } else if (internalTx.internalTXType === InternalTXType.SetGlobalCodeBytes) {
     // eslint-disable-next-line security/detect-object-injection
     const wrappedEVMAccount: WrappedEVMAccount = wrappedStates[internalTx.from].data
     //just update the timestamp?
@@ -1986,9 +1985,7 @@ async function applyInternalTx(
         txId
       )
     }
-  }
-
-  if (internalTx.internalTXType === InternalTXType.InitNetwork) {
+  } else if (internalTx.internalTXType === InternalTXType.InitNetwork) {
     // eslint-disable-next-line security/detect-object-injection
     const network: NetworkAccount = wrappedStates[networkAccount].data
     if (ShardeumFlags.useAccountWrites) {
@@ -2019,8 +2016,7 @@ async function applyInternalTx(
     }
     /* prettier-ignore */ if (logFlags.important_as_error) console.log(`init_network NETWORK_ACCOUNT: ${stringify(network)}`)
     /* prettier-ignore */ if (logFlags.important_as_error) shardus.log('Applied init_network transaction', network)
-  }
-  if (internalTx.internalTXType === InternalTXType.ChangeConfig) {
+  } else if (internalTx.internalTXType === InternalTXType.ChangeConfig) {
     /* eslint-disable security/detect-object-injection */
     // const network: NetworkAccount = wrappedStates[networkAccount].data
     // const devAccount: DevAccount = wrappedStates[internalTx.from].data
@@ -2093,8 +2089,7 @@ async function applyInternalTx(
     }
     /* prettier-ignore */ if (logFlags.important_as_error) console.log('Applied change_config tx')
     /* prettier-ignore */ if (logFlags.important_as_error) shardus.log('Applied change_config tx')
-  }
-  if (internalTx.internalTXType === InternalTXType.ApplyChangeConfig) {
+  } else if (internalTx.internalTXType === InternalTXType.ApplyChangeConfig) {
     // eslint-disable-next-line security/detect-object-injection
     const network: NetworkAccount = wrappedStates[networkAccount].data
 
@@ -2128,8 +2123,7 @@ async function applyInternalTx(
         txId
       )
     }
-  }
-  if (internalTx.internalTXType === InternalTXType.ChangeNetworkParam) {
+  } else if (internalTx.internalTXType === InternalTXType.ChangeNetworkParam) {
     let changeOnCycle
     let cycleData: ShardusTypes.Cycle
 
@@ -2168,8 +2162,7 @@ async function applyInternalTx(
     }
     /* prettier-ignore */ if (logFlags.important_as_error) console.log('Applied change_network_param tx')
     /* prettier-ignore */ if (logFlags.important_as_error) shardus.log('Applied change_network_param tx')
-  }
-  if (internalTx.internalTXType === InternalTXType.ApplyNetworkParam) {
+  } else if (internalTx.internalTXType === InternalTXType.ApplyNetworkParam) {
     // eslint-disable-next-line security/detect-object-injection
     const network: NetworkAccount = wrappedStates[networkAccount].data
 
@@ -2203,32 +2196,22 @@ async function applyInternalTx(
     }
     /* prettier-ignore */ if (logFlags.important_as_error) console.log(`Applied CHANGE_NETWORK_PARAM GLOBAL transaction: ${stringify(network)}`)
     /* prettier-ignore */ if (logFlags.important_as_error) shardus.log('Applied CHANGE_NETWORK_PARAM GLOBAL transaction', stringify(network))
-  }
-  if (internalTx.internalTXType === InternalTXType.SetCertTime) {
+  } else if (internalTx.internalTXType === InternalTXType.SetCertTime) {
     const setCertTimeTx = internalTx as SetCertTime
     applySetCertTimeTx(shardus, setCertTimeTx, wrappedStates, txTimestamp, applyResponse)
-  }
-  if (internalTx.internalTXType === InternalTXType.InitRewardTimes) {
+  } else if (internalTx.internalTXType === InternalTXType.InitRewardTimes) {
     const rewardTimesTx = internalTx as InitRewardTimes
     InitRewardTimesTx.apply(shardus, rewardTimesTx, txId, txTimestamp, wrappedStates, applyResponse)
-  }
-  if (internalTx.internalTXType === InternalTXType.ClaimReward) {
+  } else if (internalTx.internalTXType === InternalTXType.ClaimReward) {
     const claimRewardTx = internalTx as ClaimRewardTX
     applyClaimRewardTx(shardus, claimRewardTx, wrappedStates, txTimestamp, applyResponse)
-  }
-  if (internalTx.internalTXType === InternalTXType.Penalty) {
+  } else if (internalTx.internalTXType === InternalTXType.Penalty) {
     const penaltyTx = internalTx as PenaltyTX
     applyPenaltyTX(shardus, penaltyTx, wrappedStates, txTimestamp, applyResponse)
-  }
-  if (internalTx.internalTXType === InternalTXType.InitDao) {
+  } else if (internalTx.internalTXType === InternalTXType.InitDao) {
     applyInitDaoTx(wrappedStates, applyResponse, internalTx, txTimestamp, txId)
   }
-  if (internalTx.internalTXType === InternalTXType.Dao) {
-    // TODO: add DaoIssueTx to InternalTx as a union
-    console.log("daoLogging: executing applyDaoIssueTx")
-    const daoIssueTx = internalTx as unknown as DaoIssueTx
-    applyDaoIssueTx(daoIssueTx, txTimestamp, wrappedStates, shardus)
-  }
+
   return applyResponse
 }
 
