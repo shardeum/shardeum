@@ -3,7 +3,6 @@ import { ApplyResponse, WrappedResponse } from '@shardus/core/dist/shardus/shard
 import * as crypto from '@shardus/crypto-utils'
 import { daoConfig } from '../../config/dao'
 import { OurAppDefinedData, TransactionKeys, WrappedStates } from '../../shardeum/shardeumTypes'
-import { create } from '../accounts'
 import { DevIssueAccount } from '../accounts/devIssueAccount'
 import { DaoGlobalAccount } from '../accounts/networkAccount'
 import { NodeAccount } from '../accounts/nodeAccount'
@@ -135,7 +134,7 @@ export function createRelevantAccount(
   accountCreated = false
 ): WrappedResponse {
   if (!account) {
-    account = create.nodeAccount(accountId)
+    account = new NodeAccount(accountId)
     accountCreated = true
   }
   return dapp.createWrappedResponse(accountId, accountCreated, account.hash, account.timestamp, account)

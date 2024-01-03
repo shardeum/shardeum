@@ -1,7 +1,6 @@
 import * as crypto from '@shardus/crypto-utils'
 import { Shardus, ShardusTypes } from '@shardus/core'
 import * as utils from '../utils'
-import { create } from '../accounts'
 import { daoConfig } from '../../config/dao'
 import { NetworkParameters, TransactionKeys, WrappedStates } from '../../shardeum/shardeumTypes'
 import { DaoGlobalAccount } from '../accounts/networkAccount'
@@ -206,9 +205,9 @@ export function createRelevantAccount(
 ): WrappedResponse {
   if (!account) {
     if (accountId === tx.proposal) {
-      account = create.proposalAccount(accountId, tx.parameters)
+      account = new ProposalAccount(accountId, tx.parameters)
     } else {
-      account = create.userAccount(accountId, tx.timestamp)
+      account = new UserAccount(accountId, tx.timestamp)
     }
     accountCreated = true
   }

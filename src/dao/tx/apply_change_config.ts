@@ -1,6 +1,5 @@
 import stringify from 'fast-stable-stringify'
 import { Shardus, ShardusTypes } from '@shardus/core'
-import { create } from '../accounts'
 import { daoConfig } from '../../config/dao'
 import {
   IncomingTransactionResult,
@@ -51,7 +50,7 @@ export class ApplyChangeConfig implements DaoTx<NodeAccount> {
     accountCreated = false
   ): WrappedResponse {
     if (!account) {
-      account = create.nodeAccount(accountId)
+      account = new NodeAccount(accountId)
       accountCreated = true
     }
     return dapp.createWrappedResponse(accountId, accountCreated, account.hash, account.timestamp, account)

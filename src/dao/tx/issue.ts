@@ -1,8 +1,6 @@
 import * as crypto from '@shardus/crypto-utils'
 import _ from 'lodash'
 import { Shardus, ShardusTypes } from '@shardus/core'
-import { create } from '../accounts'
-
 import { IncomingTransactionResult, WrappedResponse } from '@shardus/core/dist/shardus/shardus-types'
 import { WrappedStates } from '../../shardeum/shardeumTypes'
 import { IssueAccount } from '../accounts/issueAccount'
@@ -137,11 +135,11 @@ export class Issue implements IIssue, DaoTx<IssueAccount> {
   ): WrappedResponse {
     if (!account) {
       if (accountId === this.issue) {
-        account = create.issueAccount(accountId)
+        account = new IssueAccount(accountId)
       } else if (accountId === this.proposal) {
-        account = create.proposalAccount(accountId)
+        account = new ProposalAccount(accountId)
       } else {
-        account = create.nodeAccount(accountId)
+        account = new NodeAccount(accountId)
       }
       accountCreated = true
     }

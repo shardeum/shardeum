@@ -107,7 +107,7 @@ export function createRelevantAccount(
     if (accountId === tx.devIssue) {
       account = create.devIssueAccount(accountId)
     } else {
-      account = create.nodeAccount(accountId)
+      account = new NodeAccount(accountId)
     }
     accountCreated = true
   }

@@ -208,7 +208,7 @@ export function createRelevantAccount(
     if (accountId === tx.devProposal) {
       account = create.devProposalAccount(accountId)
     } else {
-      account = create.userAccount(accountId, tx.timestamp)
+      account = new UserAccount(accountId, tx.timestamp)
     }
     accountCreated = true
   }
