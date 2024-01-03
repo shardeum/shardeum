@@ -8,13 +8,20 @@ import { IncomingTransactionResult, WrappedResponse } from '@shardus/core/dist/s
 import { DaoTx } from '.'
 
 export interface ApplyDevPayment {
-  type: 'apply_dev_payment'
   timestamp: number
   developerFund: DeveloperPayment[]
 }
 
-export class ApplyDevPayment implements DaoTx<DaoGlobalAccount> {
-  validateFields(this: ApplyDevPayment, response: ShardusTypes.IncomingTransactionResult): ShardusTypes.IncomingTransactionResult {
+export class ApplyDevPayment implements ApplyDevPayment, DaoTx<DaoGlobalAccount> {
+  timestamp: number
+  developerFund: DeveloperPayment[]
+
+  constructor(data: ApplyDevPayment) {
+    this.timestamp = data.timestamp
+    this.developerFund = data.developerFund
+  }
+
+  validateFields(response: ShardusTypes.IncomingTransactionResult): ShardusTypes.IncomingTransactionResult {
     if (!Array.isArray(this.developerFund)) {
       response.success = false
       response.reason = 'tx "developerFund" field must be an array.'
@@ -29,7 +36,7 @@ export class ApplyDevPayment implements DaoTx<DaoGlobalAccount> {
     return response
   }
 
-  apply(this: ApplyDevPayment, txTimestamp: number, wrappedStates: WrappedStates, dapp: Shardus): void {
+  apply(txTimestamp: number, wrappedStates: WrappedStates, dapp: Shardus): void {
     const network: DaoGlobalAccount = wrappedStates[daoConfig.daoAccount].data
     network.developerFund = this.developerFund
     network.timestamp = txTimestamp
