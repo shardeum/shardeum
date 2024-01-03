@@ -1,11 +1,11 @@
-import { AliasAccount } from "./accounts/aliasAccount"
-import { DevIssueAccount } from "./accounts/devIssueAccount"
-import { DevProposalAccount } from "./accounts/devProposalAccount"
-import { IssueAccount } from "./accounts/issueAccount"
-import { DaoGlobalAccount } from "./accounts/networkAccount"
-import { NodeAccount } from "./accounts/nodeAccount"
-import { ProposalAccount } from "./accounts/proposalAccount"
-import { UserAccount } from "./accounts/userAccount"
+import { AliasAccount } from './accounts/aliasAccount'
+import { DevIssueAccount } from './accounts/devIssueAccount'
+import { DevProposalAccount } from './accounts/devProposalAccount'
+import { IssueAccount } from './accounts/issueAccount'
+import { DaoGlobalAccount } from './accounts/networkAccount'
+import { NodeAccount } from './accounts/nodeAccount'
+import { ProposalAccount } from './accounts/proposalAccount'
+import { UserAccount } from './accounts/userAccount'
 
 export interface Windows {
   proposalWindow: number[]
@@ -29,4 +29,11 @@ export interface DeveloperPayment {
   timestamp: number
 }
 
-export type DaoAccounts = DaoGlobalAccount & IssueAccount & DevIssueAccount & UserAccount & AliasAccount & ProposalAccount & DevProposalAccount & NodeAccount
+export type DaoAccounts = DaoGlobalAccount &
+  IssueAccount &
+  DevIssueAccount &
+  UserAccount &
+  AliasAccount &
+  ProposalAccount &
+  DevProposalAccount &
+  NodeAccount

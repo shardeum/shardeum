@@ -14,7 +14,10 @@ export interface Verify {
   sign: crypto.Signature
 }
 
-export function validateFields(tx: Verify, response: ShardusTypes.IncomingTransactionResult): ShardusTypes.IncomingTransactionResult {
+export function validateFields(
+  tx: Verify,
+  response: ShardusTypes.IncomingTransactionResult
+): ShardusTypes.IncomingTransactionResult {
   if (typeof tx.from !== 'string') {
     response.success = false
     response.reason = 'tx "from" field must be a string.'
@@ -38,7 +41,11 @@ export function validateFields(tx: Verify, response: ShardusTypes.IncomingTransa
   return response
 }
 
-export function validate(tx: Verify, wrappedStates: WrappedStates, response: ShardusTypes.IncomingTransactionResult): ShardusTypes.IncomingTransactionResult {
+export function validate(
+  tx: Verify,
+  wrappedStates: WrappedStates,
+  response: ShardusTypes.IncomingTransactionResult
+): ShardusTypes.IncomingTransactionResult {
   const from = wrappedStates[tx.from] && wrappedStates[tx.from].data
   if (tx.sign.owner !== tx.from) {
     response.reason = 'not signed by from account'
@@ -79,7 +86,13 @@ export function keys(tx: Verify, result: TransactionKeys): TransactionKeys {
   return result
 }
 
-export function createRelevantAccount(dapp: Shardus, account: UserAccount, accountId: string, tx: Verify, accountCreated = false): WrappedResponse {
+export function createRelevantAccount(
+  dapp: Shardus,
+  account: UserAccount,
+  accountId: string,
+  tx: Verify,
+  accountCreated = false
+): WrappedResponse {
   if (!account) {
     account = create.userAccount(accountId, tx.timestamp)
     accountCreated = true

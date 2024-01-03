@@ -14,7 +14,10 @@ export interface Snapshot {
   sign: crypto.Signature
 }
 
-export function validateFields(tx: Snapshot, response: ShardusTypes.IncomingTransactionResult): ShardusTypes.IncomingTransactionResult {
+export function validateFields(
+  tx: Snapshot,
+  response: ShardusTypes.IncomingTransactionResult
+): ShardusTypes.IncomingTransactionResult {
   if (typeof tx.from !== 'string') {
     response.success = false
     response.reason = 'tx "from" field must be a string.'
@@ -28,7 +31,10 @@ export function validateFields(tx: Snapshot, response: ShardusTypes.IncomingTran
   return response
 }
 
-export function validate(tx: Snapshot, response: ShardusTypes.IncomingTransactionResult): ShardusTypes.IncomingTransactionResult {
+export function validate(
+  tx: Snapshot,
+  response: ShardusTypes.IncomingTransactionResult
+): ShardusTypes.IncomingTransactionResult {
   if (tx.sign.owner !== tx.from) {
     response.reason = 'not signed by from account'
     return response
@@ -55,7 +61,12 @@ export function keys(tx: Snapshot, result: TransactionKeys): TransactionKeys {
   return result
 }
 
-export function createRelevantAccount(dapp: Shardus, account: UserAccount, accountId: string, accountCreated = false): WrappedResponse {
+export function createRelevantAccount(
+  dapp: Shardus,
+  account: UserAccount,
+  accountId: string,
+  accountCreated = false
+): WrappedResponse {
   if (!account) {
     throw new Error('Account must already exist for the snapshot transaction')
   }

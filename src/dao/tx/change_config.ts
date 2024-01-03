@@ -16,7 +16,10 @@ export interface ChangeConfig {
   timestamp: number
 }
 
-export function validateFields(tx: ChangeConfig, response: ShardusTypes.IncomingTransactionResult): ShardusTypes.IncomingTransactionResult {
+export function validateFields(
+  tx: ChangeConfig,
+  response: ShardusTypes.IncomingTransactionResult
+): ShardusTypes.IncomingTransactionResult {
   if (typeof tx.from !== 'string') {
     response.success = false
     response.reason = 'tx "from" field must be a string'
@@ -35,7 +38,12 @@ export function validateFields(tx: ChangeConfig, response: ShardusTypes.Incoming
   return response
 }
 
-export function validate(tx: ChangeConfig, wrappedStates: WrappedStates, response: ShardusTypes.IncomingTransactionResult, dapp: Shardus): ShardusTypes.IncomingTransactionResult {
+export function validate(
+  tx: ChangeConfig,
+  wrappedStates: WrappedStates,
+  response: ShardusTypes.IncomingTransactionResult,
+  dapp: Shardus
+): ShardusTypes.IncomingTransactionResult {
   const network: DaoGlobalAccount = wrappedStates[daoConfig.daoAccount].data
 
   if (network.id !== daoConfig.daoAccount) {
@@ -55,12 +63,18 @@ export function validate(tx: ChangeConfig, wrappedStates: WrappedStates, respons
   return response
 }
 
-export function apply(tx: ChangeConfig, txTimestamp: number, wrappedStates: WrappedStates, dapp: Shardus, applyResponse: ShardusTypes.ApplyResponse): void {
+export function apply(
+  tx: ChangeConfig,
+  txTimestamp: number,
+  wrappedStates: WrappedStates,
+  dapp: Shardus,
+  applyResponse: ShardusTypes.ApplyResponse
+): void {
   const from: UserAccount = wrappedStates[tx.from].data
   let changeOnCycle: number | CycleRecord
   let cycleData: ShardusTypes.Cycle
 
-  if (tx.cycle as unknown as number === -1) {
+  if ((tx.cycle as unknown as number) === -1) {
     ;[cycleData] = dapp.getLatestCycles()
     changeOnCycle = cycleData.counter + 3
   } else {
@@ -95,7 +109,12 @@ export function keys(tx: ChangeConfig, result: TransactionKeys): TransactionKeys
   return result
 }
 
-export function createRelevantAccount(dapp: Shardus, account: NodeAccount, accountId: string, accountCreated = false): WrappedResponse {
+export function createRelevantAccount(
+  dapp: Shardus,
+  account: NodeAccount,
+  accountId: string,
+  accountCreated = false
+): WrappedResponse {
   if (!account) {
     account = create.nodeAccount(accountId)
     accountCreated = true

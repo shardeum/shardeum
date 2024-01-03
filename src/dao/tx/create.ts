@@ -13,7 +13,10 @@ export interface Create {
   timestamp: number
 }
 
-export function validateFields(tx: Create, response: ShardusTypes.IncomingTransactionResult): ShardusTypes.IncomingTransactionResult {
+export function validateFields(
+  tx: Create,
+  response: ShardusTypes.IncomingTransactionResult
+): ShardusTypes.IncomingTransactionResult {
   if (typeof tx.from !== 'string') {
     response.success = false
     response.reason = '"From" must be a string.'
@@ -32,7 +35,11 @@ export function validateFields(tx: Create, response: ShardusTypes.IncomingTransa
   return response
 }
 
-export function validate(tx: Create, wrappedStates: WrappedStates, response: ShardusTypes.IncomingTransactionResult): ShardusTypes.IncomingTransactionResult {
+export function validate(
+  tx: Create,
+  wrappedStates: WrappedStates,
+  response: ShardusTypes.IncomingTransactionResult
+): ShardusTypes.IncomingTransactionResult {
   const to: DaoAccounts = wrappedStates[tx.to] && wrappedStates[tx.to].data
   if (to === undefined || to === null) {
     response.reason = "target account doesn't exist"
@@ -62,7 +69,13 @@ export function keys(tx: Create, result: TransactionKeys): TransactionKeys {
   return result
 }
 
-export function createRelevantAccount(dapp: Shardus, account: UserAccount, accountId: string, tx: Create, accountCreated = false): WrappedResponse {
+export function createRelevantAccount(
+  dapp: Shardus,
+  account: UserAccount,
+  accountId: string,
+  tx: Create,
+  accountCreated = false
+): WrappedResponse {
   if (!account) {
     account = create.userAccount(accountId, tx.timestamp)
     accountCreated = true

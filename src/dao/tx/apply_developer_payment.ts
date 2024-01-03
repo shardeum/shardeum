@@ -42,7 +42,12 @@ export class ApplyDevPayment implements DaoTx<DaoGlobalAccount> {
     return result
   }
 
-  createRelevantAccount(dapp: Shardus, account: DaoGlobalAccount, accountId: string, accountCreated = false): WrappedResponse {
+  createRelevantAccount(
+    dapp: Shardus,
+    account: DaoGlobalAccount,
+    accountId: string,
+    accountCreated = false
+  ): WrappedResponse {
     if (!account) {
       throw new Error('Network Account must already exist for the apply_developer_payment transaction')
     }

@@ -140,7 +140,7 @@ export const validateTxnFields =
             }
           }
           const cycle = latestCycles[0]
-          if(cycle.counter > 1){
+          if (cycle.counter > 1) {
             return {
               success: false,
               reason,
@@ -270,7 +270,7 @@ export const validateTxnFields =
             success = false
             reason = 'Invalid nominee address in stake coins tx'
           } else if (stakeCoinsTx.stake !== transaction.value) {
-            /* prettier-ignore */ if (logFlags.dapp_verbose) console.log( `Tx value and stake amount are different`, stakeCoinsTx.stake.toString(), transaction.value.toString() )
+            /* prettier-ignore */ if (logFlags.dapp_verbose) console.log(`Tx value and stake amount are different`, stakeCoinsTx.stake.toString(), transaction.value.toString())
             success = false
             reason = `Tx value and stake amount are different`
           } else if (stakeCoinsTx.stake < minStakeAmount) {
@@ -330,7 +330,7 @@ export const validateTxnFields =
             success = false
             reason = `Invalid nominator address in stake coins tx`
           } else if (unstakeCoinsTX.nominee == null) {
-            /* prettier-ignore */ nestedCountersInstance.countEvent( 'shardeum-unstaking', 'invalid nominee address in stake coins tx' )
+            /* prettier-ignore */ nestedCountersInstance.countEvent('shardeum-unstaking', 'invalid nominee address in stake coins tx')
             success = false
             reason = `Invalid nominee address in stake coins tx`
           }
