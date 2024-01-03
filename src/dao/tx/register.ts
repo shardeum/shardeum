@@ -1,6 +1,5 @@
 import * as crypto from '@shardus/crypto-utils'
 import { Shardus, ShardusTypes } from '@shardus/core'
-import { create } from '../accounts'
 import { TransactionKeys, WrappedStates } from '../../shardeum/shardeumTypes'
 import { UserAccount } from '../accounts/userAccount'
 import { AliasAccount } from '../accounts/aliasAccount'
@@ -113,7 +112,7 @@ export function createRelevantAccount(
 ): WrappedResponse {
   if (!account) {
     if (accountId === tx.aliasHash) {
-      account = create.aliasAccount(accountId)
+      account = new AliasAccount(accountId)
     } else {
       account = new UserAccount(accountId, tx.timestamp)
     }
