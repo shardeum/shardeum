@@ -8,15 +8,24 @@ import { IncomingTransactionResult, WrappedResponse } from '@shardus/core/dist/s
 import { DeveloperPayment, DevWindows } from '../types'
 import { DaoTx } from '.'
 
-export interface ApplyDevTally {
-  type: 'apply_dev_tally'
+export interface IApplyDevTally {
   timestamp: number
   nextDeveloperFund: DeveloperPayment[]
   nextDevWindows: DevWindows
 }
 
-export class ApplyDevTally implements DaoTx<DaoGlobalAccount> {
-  validateFields(this: ApplyDevTally, response: ShardusTypes.IncomingTransactionResult): ShardusTypes.IncomingTransactionResult {
+export class ApplyDevTally implements IApplyDevTally, DaoTx<DaoGlobalAccount> {
+  timestamp: number
+  nextDeveloperFund: DeveloperPayment[]
+  nextDevWindows: DevWindows
+
+  constructor(data: IApplyDevTally) {
+    this.timestamp = data.timestamp
+    this.nextDeveloperFund = data.nextDeveloperFund
+    this.nextDevWindows = data.nextDevWindows
+  }
+
+  validateFields(response: ShardusTypes.IncomingTransactionResult): ShardusTypes.IncomingTransactionResult {
     if (!Array.isArray(this.nextDeveloperFund)) {
       response.success = false
       response.reason = 'tx "nextDeveloperFund" field must be an array.'
@@ -36,7 +45,7 @@ export class ApplyDevTally implements DaoTx<DaoGlobalAccount> {
     return response
   }
 
-  apply(this: ApplyDevTally, txTimestamp: number, wrappedStates: WrappedStates, dapp: Shardus): void {
+  apply(txTimestamp: number, wrappedStates: WrappedStates, dapp: Shardus): void {
     const network: DaoGlobalAccount = wrappedStates[daoConfig.daoAccount].data
     network.nextDeveloperFund = this.nextDeveloperFund
     network.nextDevWindows = this.nextDevWindows
