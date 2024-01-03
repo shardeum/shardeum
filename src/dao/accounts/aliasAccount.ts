@@ -1,23 +1,20 @@
 import * as crypto from '@shardus/crypto-utils'
 
-export interface AliasAccount {
+export class AliasAccount {
   id: string
-  type: 'AliasAccount'
-  hash: string
-  inbox: string
-  address: string
-  timestamp: number
-}
+  inbox = ''
+  address = ''
+  timestamp = 0
 
-export const aliasAccount = (accountId: string): AliasAccount => {
-  const alias: AliasAccount = {
-    id: accountId,
-    type: 'AliasAccount',
-    hash: '',
-    inbox: '',
-    address: '',
-    timestamp: 0,
+  hash: string
+
+  constructor(accountId: string) {
+    this.id = accountId
+    this.hash = crypto.hashObj({
+      id: this.id,
+      inbox: this.inbox,
+      address: this.address,
+      timestamp: this.timestamp,
+    })
   }
-  alias.hash = crypto.hashObj(alias)
-  return alias
 }
