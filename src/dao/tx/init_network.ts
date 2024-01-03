@@ -60,7 +60,7 @@ export function createRelevantAccount(
     if (accountId === daoConfig.daoAccount) {
       account = create.createDaoGlobalAccount(accountId, tx.timestamp)
     } else {
-      account = create.nodeAccount(accountId)
+      account = new NodeAccount(accountId)
     }
     accountCreated = true
   }

@@ -1,5 +1,4 @@
 import { Shardus, ShardusTypes } from '@shardus/core'
-import { create } from '../accounts'
 import { daoConfig } from '../../config/dao'
 import { TransactionKeys, WrappedStates } from '../../shardeum/shardeumTypes'
 import { DaoGlobalAccount } from '../accounts/networkAccount'
@@ -126,7 +125,7 @@ export function createRelevantAccount(
 ): WrappedResponse {
   if (!account) {
     if (accountId === tx.nodeId) {
-      account = create.nodeAccount(accountId)
+      account = new NodeAccount(accountId)
     } else {
       throw new Error('UserAccount must already exist for the node_reward transaction')
     }

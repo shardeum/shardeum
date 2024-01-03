@@ -1,6 +1,5 @@
 import { Shardus, ShardusTypes } from '@shardus/core'
 import { daoConfig } from '../../config/dao'
-import { create } from '../accounts'
 import { ApplyResponse, TransactionKeys, WrappedResponse } from '@shardus/core/dist/shardus/shardus-types'
 import { ChangeConfig, OurAppDefinedData, WrappedStates } from '../../shardeum/shardeumTypes'
 import { DaoGlobalAccount } from '../accounts/networkAccount'
@@ -116,7 +115,7 @@ export function createRelevantAccount(
   accountCreated = false
 ): WrappedResponse {
   if (!account) {
-    account = create.nodeAccount(accountId)
+    account = new NodeAccount(accountId)
     accountCreated = true
   }
   return dapp.createWrappedResponse(accountId, accountCreated, account.hash, account.timestamp, account)

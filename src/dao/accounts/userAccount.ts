@@ -12,41 +12,39 @@ export interface UserAccountData {
   payments: DeveloperPayment[]
 }
 
-export interface UserAccount {
+export class UserAccount {
   id: string
-  type: 'UserAccount'
-  data: UserAccountData
-  alias: string | null
-  emailHash: string | null
-  verified: string | boolean
-  lastMaintenance: number
-  claimedSnapshot: boolean
-  timestamp: number
-  hash: string
-}
-
-export const userAccount = (accountId: string, timestamp: number): UserAccount => {
-  const account: UserAccount = {
-    id: accountId,
-    type: 'UserAccount',
-    data: {
-      balance: 50,
-      stake: 0,
-      remove_stake_request: null,
-      toll: null,
-      chats: {},
-      friends: {},
-      transactions: [],
-      payments: [],
-    },
-    alias: null,
-    emailHash: null,
-    verified: false,
-    hash: '',
-    claimedSnapshot: false,
-    lastMaintenance: timestamp,
-    timestamp: 0,
+  data: UserAccountData = {
+    balance: 50,
+    stake: 0,
+    remove_stake_request: null,
+    toll: null,
+    chats: {},
+    friends: {},
+    transactions: [],
+    payments: [],
   }
-  account.hash = crypto.hashObj(account)
-  return account
+  alias: string | null = null
+  emailHash: string | null = null
+  verified = false
+  lastMaintenance: number
+  claimedSnapshot = false
+  timestamp = 0
+
+  hash: string
+
+  constructor(accountId: string, timestamp: number) {
+    this.id = accountId
+    this.lastMaintenance = timestamp
+    this.hash = crypto.hashObj({
+      id: this.id,
+      data: this.data,
+      alias: this.alias,
+      emailHash: this.emailHash,
+      verified: this.verified,
+      lastMaintenance: this.lastMaintenance,
+      claimedSnapshot: this.claimedSnapshot,
+      timestamp: this.timestamp,
+    })
+  }
 }

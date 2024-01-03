@@ -77,7 +77,7 @@ export function createRelevantAccount(
   accountCreated = false
 ): WrappedResponse {
   if (!account) {
-    account = create.userAccount(accountId, tx.timestamp)
+    account = new UserAccount(accountId, tx.timestamp)
     accountCreated = true
   }
   return dapp.createWrappedResponse(accountId, accountCreated, account.hash, account.timestamp, account)

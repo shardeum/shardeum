@@ -1,23 +1,20 @@
 import * as crypto from '@shardus/crypto-utils'
 
-export interface NodeAccount {
+export class NodeAccount {
   id: string
-  type: 'NodeAccount'
-  balance: number
-  nodeRewardTime: number
-  hash: string
-  timestamp: number
-}
+  balance = 0
+  nodeRewardTime = 0
+  timestamp = 0
 
-export const nodeAccount = (accountId: string): NodeAccount => {
-  const account: NodeAccount = {
-    id: accountId,
-    type: 'NodeAccount',
-    balance: 0,
-    nodeRewardTime: 0,
-    hash: '',
-    timestamp: 0,
+  hash: crypto.hexstring
+
+  constructor(accountId: string) {
+    this.id = accountId
+    this.hash = crypto.hashObj({
+      id: this.id,
+      balance: this.balance,
+      nodeRewardTime: this.nodeRewardTime,
+      timestamp: this.timestamp,
+    })
   }
-  account.hash = crypto.hashObj(account)
-  return account
 }
