@@ -115,7 +115,7 @@ export function createRelevantAccount(
     if (accountId === tx.aliasHash) {
       account = create.aliasAccount(accountId)
     } else {
-      account = create.userAccount(accountId, tx.timestamp)
+      account = new UserAccount(accountId, tx.timestamp)
     }
     accountCreated = true
   }

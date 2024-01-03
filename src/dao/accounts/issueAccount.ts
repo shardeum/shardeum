@@ -1,29 +1,26 @@
 import * as crypto from '@shardus/crypto-utils'
 
-export interface IssueAccount {
+export class IssueAccount {
   id: string
-  type: 'IssueAccount'
-  active: boolean | null
-  proposals: string[]
-  proposalCount: number
-  number: number | null
-  winnerId: string | null
-  hash: string
-  timestamp: number
-}
+  active: boolean | null = null
+  proposals: string[] = []
+  proposalCount = 0
+  number: number | null = null
+  winnerId: string | null = null
+  timestamp = 0
 
-export const issueAccount = (accountId: string): IssueAccount => {
-  const issue: IssueAccount = {
-    id: accountId,
-    type: 'IssueAccount',
-    active: null,
-    proposals: [],
-    proposalCount: 0,
-    number: null,
-    winnerId: null,
-    hash: '',
-    timestamp: 0,
+  hash: crypto.hexstring
+
+  constructor(accountId: string) {
+    this.id = accountId
+    this.hash = crypto.hashObj({
+      id: this.id,
+      active: this.active,
+      proposals: this.proposals,
+      proposalCount: this.proposalCount,
+      number: this.number,
+      winnerId: this.winnerId,
+      timestamp: this.timestamp,
+    })
   }
-  issue.hash = crypto.hashObj(issue)
-  return issue
 }

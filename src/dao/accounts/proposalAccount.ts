@@ -1,30 +1,28 @@
 import * as crypto from '@shardus/crypto-utils'
 import { NetworkParameters } from '../../shardeum/shardeumTypes'
 
-export interface ProposalAccount {
+export class ProposalAccount {
   id: string
-  type: 'ProposalAccount'
-  power: number
-  totalVotes: number
+  power = 0
+  totalVotes = 0
   parameters: NetworkParameters
-  winner: boolean
-  number: number | null
-  hash: string
-  timestamp: number
-}
+  winner = false
+  number = null
+  timestamp = 0
 
-export const proposalAccount = (accountId: string, parameters?: NetworkParameters): ProposalAccount => {
-  const proposal: ProposalAccount = {
-    id: accountId,
-    type: 'ProposalAccount',
-    power: 0,
-    totalVotes: 0,
-    winner: false,
-    parameters,
-    number: null,
-    hash: '',
-    timestamp: 0,
+  hash: string
+
+  constructor(accountId: string, parameters?: NetworkParameters) {
+    this.id = accountId
+    this.parameters = parameters
+    this.hash = crypto.hashObj({
+      id: this.id,
+      power: this.power,
+      totalVotes: this.totalVotes,
+      parameters: this.parameters,
+      winner: this.winner,
+      number: this.number,
+      timestamp: this.timestamp,
+    })
   }
-  proposal.hash = crypto.hashObj(proposal)
-  return proposal
 }

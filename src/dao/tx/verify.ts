@@ -1,6 +1,5 @@
 import * as crypto from '@shardus/crypto-utils'
 import { Shardus, ShardusTypes } from '@shardus/core'
-import { create } from '../accounts'
 import { daoConfig } from '../../config/dao'
 import { TransactionKeys, WrappedStates } from '../../shardeum/shardeumTypes'
 import { UserAccount } from '../accounts/userAccount'
@@ -94,7 +93,7 @@ export function createRelevantAccount(
   accountCreated = false
 ): WrappedResponse {
   if (!account) {
-    account = create.userAccount(accountId, tx.timestamp)
+    account = new UserAccount(accountId, tx.timestamp)
     accountCreated = true
   }
   return dapp.createWrappedResponse(accountId, accountCreated, account.hash, account.timestamp, account)

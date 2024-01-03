@@ -1,7 +1,6 @@
 import { Shardus, ShardusTypes } from '@shardus/core'
 import { WrappedResponse } from '@shardus/core/dist/shardus/shardus-types'
 import { TransactionKeys, WrappedStates } from '../../shardeum/shardeumTypes'
-import { create } from '../accounts'
 import { NodeAccount } from '../accounts/nodeAccount'
 import { UserAccount } from '../accounts/userAccount'
 
@@ -11,7 +10,7 @@ export interface GossipEmailHash {
   account: string
   from: string
   emailHash: string
-  verified: string
+  verified: boolean
   timestamp: number
 }
 
@@ -82,7 +81,7 @@ export function createRelevantAccount(
   accountCreated = false
 ): WrappedResponse {
   if (!account) {
-    account = create.nodeAccount(accountId)
+    account = new NodeAccount(accountId)
     accountCreated = true
   }
   return dapp.createWrappedResponse(accountId, accountCreated, account.hash, account.timestamp, account)
