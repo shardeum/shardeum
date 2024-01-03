@@ -15,7 +15,10 @@ export interface Toll {
   sign: crypto.Signature
 }
 
-export function validateFields(tx: Toll, response: ShardusTypes.IncomingTransactionResult): ShardusTypes.IncomingTransactionResult {
+export function validateFields(
+  tx: Toll,
+  response: ShardusTypes.IncomingTransactionResult
+): ShardusTypes.IncomingTransactionResult {
   if (typeof tx.from !== 'string') {
     response.success = false
     response.reason = 'tx "from" field must be a string.'
@@ -39,7 +42,11 @@ export function validateFields(tx: Toll, response: ShardusTypes.IncomingTransact
   return response
 }
 
-export function validate(tx: Toll, wrappedStates: WrappedStates, response: ShardusTypes.IncomingTransactionResult): ShardusTypes.IncomingTransactionResult {
+export function validate(
+  tx: Toll,
+  wrappedStates: WrappedStates,
+  response: ShardusTypes.IncomingTransactionResult
+): ShardusTypes.IncomingTransactionResult {
   const from = wrappedStates[tx.from] && wrappedStates[tx.from].data
   if (tx.sign.owner !== tx.from) {
     response.reason = 'not signed by from account'
@@ -82,7 +89,12 @@ export function keys(tx: Toll, result: TransactionKeys): TransactionKeys {
   return result
 }
 
-export function createRelevantAccount(dapp: Shardus, account: UserAccount, accountId: string, accountCreated = false): WrappedResponse {
+export function createRelevantAccount(
+  dapp: Shardus,
+  account: UserAccount,
+  accountId: string,
+  accountCreated = false
+): WrappedResponse {
   if (!account) {
     throw new Error('Account must already exist for the toll transaction')
   }

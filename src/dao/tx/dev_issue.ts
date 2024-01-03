@@ -16,7 +16,10 @@ export interface DevIssue {
   timestamp: number
 }
 
-export function validateFields(tx: DevIssue, response: ShardusTypes.IncomingTransactionResult): ShardusTypes.IncomingTransactionResult {
+export function validateFields(
+  tx: DevIssue,
+  response: ShardusTypes.IncomingTransactionResult
+): ShardusTypes.IncomingTransactionResult {
   if (typeof tx.nodeId !== 'string') {
     response.success = false
     response.reason = 'tx "nodeId" field must be a string.'
@@ -35,7 +38,11 @@ export function validateFields(tx: DevIssue, response: ShardusTypes.IncomingTran
   return response
 }
 
-export function validate(tx: DevIssue, wrappedStates: WrappedStates, response: ShardusTypes.IncomingTransactionResult): ShardusTypes.IncomingTransactionResult {
+export function validate(
+  tx: DevIssue,
+  wrappedStates: WrappedStates,
+  response: ShardusTypes.IncomingTransactionResult
+): ShardusTypes.IncomingTransactionResult {
   const network: DaoGlobalAccount = wrappedStates[daoConfig.daoAccount].data
   const devIssue: DevIssueAccount = wrappedStates[tx.devIssue] && wrappedStates[tx.devIssue].data
   // let nodeInfo
@@ -57,7 +64,10 @@ export function validate(tx: DevIssue, wrappedStates: WrappedStates, response: S
     response.reason = `devIssue address (${tx.devIssue}) does not match current network devIssue address (${networkDevIssueHash})`
     return response
   }
-  if (tx.timestamp < network.devWindows.devProposalWindow[0] || tx.timestamp > network.devWindows.devProposalWindow[1]) {
+  if (
+    tx.timestamp < network.devWindows.devProposalWindow[0] ||
+    tx.timestamp > network.devWindows.devProposalWindow[1]
+  ) {
     response.reason = 'Network is not within the time window to generate developer proposal issues'
     return response
   }
@@ -86,7 +96,13 @@ export function keys(tx: DevIssue, result: TransactionKeys): TransactionKeys {
   return result
 }
 
-export function createRelevantAccount(dapp: Shardus, account: NodeAccount | DevIssueAccount, accountId: string, tx: DevIssue, accountCreated = false): WrappedResponse {
+export function createRelevantAccount(
+  dapp: Shardus,
+  account: NodeAccount | DevIssueAccount,
+  accountId: string,
+  tx: DevIssue,
+  accountCreated = false
+): WrappedResponse {
   if (!account) {
     if (accountId === tx.devIssue) {
       account = create.devIssueAccount(accountId)

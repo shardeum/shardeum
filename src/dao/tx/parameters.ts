@@ -15,7 +15,10 @@ export interface Parameters {
   timestamp: number
 }
 
-export function validateFields(tx: Parameters, response: ShardusTypes.IncomingTransactionResult): ShardusTypes.IncomingTransactionResult {
+export function validateFields(
+  tx: Parameters,
+  response: ShardusTypes.IncomingTransactionResult
+): ShardusTypes.IncomingTransactionResult {
   if (typeof tx.from !== 'string') {
     response.success = false
     response.reason = 'tx "from" field must be a string'
@@ -34,7 +37,11 @@ export function validateFields(tx: Parameters, response: ShardusTypes.IncomingTr
   return response
 }
 
-export function validate(tx: Parameters, wrappedStates: WrappedStates, response: ShardusTypes.IncomingTransactionResult): ShardusTypes.IncomingTransactionResult {
+export function validate(
+  tx: Parameters,
+  wrappedStates: WrappedStates,
+  response: ShardusTypes.IncomingTransactionResult
+): ShardusTypes.IncomingTransactionResult {
   const network: DaoGlobalAccount = wrappedStates[daoConfig.daoAccount].data
   const issue: IssueAccount = wrappedStates[tx.issue].data
 
@@ -59,7 +66,13 @@ export function validate(tx: Parameters, wrappedStates: WrappedStates, response:
   return response
 }
 
-export function apply(tx: Parameters, txTimestamp: number, wrappedStates: WrappedStates, dapp: Shardus, applyResponse: ShardusTypes.ApplyResponse): void {
+export function apply(
+  tx: Parameters,
+  txTimestamp: number,
+  wrappedStates: WrappedStates,
+  dapp: Shardus,
+  applyResponse: ShardusTypes.ApplyResponse
+): void {
   const from: NodeAccount = wrappedStates[tx.from].data
 
   const network: DaoGlobalAccount = wrappedStates[daoConfig.daoAccount].data
@@ -100,7 +113,12 @@ export function keys(tx: Parameters, result: TransactionKeys): TransactionKeys {
   return result
 }
 
-export function createRelevantAccount(dapp: Shardus, account: NodeAccount | IssueAccount, accountId: string, accountCreated = false): WrappedResponse {
+export function createRelevantAccount(
+  dapp: Shardus,
+  account: NodeAccount | IssueAccount,
+  accountId: string,
+  accountCreated = false
+): WrappedResponse {
   if (!account) {
     account = create.nodeAccount(accountId)
     accountCreated = true

@@ -2,7 +2,11 @@ import stringify from 'fast-stable-stringify'
 import { Shardus, ShardusTypes } from '@shardus/core'
 import { create } from '../accounts'
 import { daoConfig } from '../../config/dao'
-import { IncomingTransactionResult, TransactionKeys, WrappedResponse } from '@shardus/core/dist/shardus/shardus-types'
+import {
+  IncomingTransactionResult,
+  TransactionKeys,
+  WrappedResponse,
+} from '@shardus/core/dist/shardus/shardus-types'
 import { NodeAccount } from '../accounts/nodeAccount'
 import { NetworkAccount, WrappedStates } from '../../shardeum/shardeumTypes'
 import { Change } from '@shardus/types/build/src/p2p/CycleParserTypes'
@@ -40,7 +44,12 @@ export class ApplyChangeConfig implements DaoTx<NodeAccount> {
     return result
   }
 
-  createRelevantAccount(dapp: Shardus, account: NodeAccount, accountId: string, accountCreated = false): WrappedResponse {
+  createRelevantAccount(
+    dapp: Shardus,
+    account: NodeAccount,
+    accountId: string,
+    accountCreated = false
+  ): WrappedResponse {
     if (!account) {
       account = create.nodeAccount(accountId)
       accountCreated = true

@@ -19,7 +19,10 @@ export interface Vote {
   sign: crypto.Signature
 }
 
-export function validateFields(tx: Vote, response: ShardusTypes.IncomingTransactionResult): ShardusTypes.IncomingTransactionResult {
+export function validateFields(
+  tx: Vote,
+  response: ShardusTypes.IncomingTransactionResult
+): ShardusTypes.IncomingTransactionResult {
   if (typeof tx.from !== 'string') {
     response.success = false
     response.reason = 'tx "from" field must be a string.'
@@ -48,7 +51,11 @@ export function validateFields(tx: Vote, response: ShardusTypes.IncomingTransact
   return response
 }
 
-export function validate(tx: Vote, wrappedStates: WrappedStates, response: ShardusTypes.IncomingTransactionResult): ShardusTypes.IncomingTransactionResult {
+export function validate(
+  tx: Vote,
+  wrappedStates: WrappedStates,
+  response: ShardusTypes.IncomingTransactionResult
+): ShardusTypes.IncomingTransactionResult {
   const network: DaoGlobalAccount = wrappedStates[daoConfig.daoAccount].data
   const proposal: ProposalAccount = wrappedStates[tx.proposal] && wrappedStates[tx.proposal].data
   const issue: IssueAccount = wrappedStates[tx.issue] && wrappedStates[tx.issue].data
@@ -90,7 +97,13 @@ export function validate(tx: Vote, wrappedStates: WrappedStates, response: Shard
   return response
 }
 
-export function apply(tx: Vote, txTimestamp: number, txId: string, wrappedStates: WrappedStates, dapp: Shardus): void {
+export function apply(
+  tx: Vote,
+  txTimestamp: number,
+  txId: string,
+  wrappedStates: WrappedStates,
+  dapp: Shardus
+): void {
   const from: UserAccount = wrappedStates[tx.from].data
   const network: DaoGlobalAccount = wrappedStates[daoConfig.daoAccount].data
   const proposal: ProposalAccount = wrappedStates[tx.proposal].data
@@ -112,7 +125,12 @@ export function keys(tx: Vote, result: TransactionKeys): TransactionKeys {
   return result
 }
 
-export function createRelevantAccount(dapp: Shardus, account: UserAccount, accountId: string, accountCreated = false): WrappedResponse {
+export function createRelevantAccount(
+  dapp: Shardus,
+  account: UserAccount,
+  accountId: string,
+  accountCreated = false
+): WrappedResponse {
   if (!account) {
     throw new Error('Account must already exist for the vote transaction')
   }

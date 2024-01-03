@@ -15,7 +15,10 @@ export interface GossipEmailHash {
   timestamp: number
 }
 
-export function validateFields(tx: GossipEmailHash, response: ShardusTypes.IncomingTransactionResult): ShardusTypes.IncomingTransactionResult {
+export function validateFields(
+  tx: GossipEmailHash,
+  response: ShardusTypes.IncomingTransactionResult
+): ShardusTypes.IncomingTransactionResult {
   if (typeof tx.nodeId !== 'string') {
     response.success = false
     response.reason = 'tx "nodeId" field must be a string.'
@@ -44,13 +47,20 @@ export function validateFields(tx: GossipEmailHash, response: ShardusTypes.Incom
   return response
 }
 
-export function validate(response: ShardusTypes.IncomingTransactionResult): ShardusTypes.IncomingTransactionResult {
+export function validate(
+  response: ShardusTypes.IncomingTransactionResult
+): ShardusTypes.IncomingTransactionResult {
   response.success = true
   response.reason = 'This transaction is valid!'
   return response
 }
 
-export function apply(tx: GossipEmailHash, txTimestamp: number, wrappedStates: WrappedStates, dapp: Shardus): void {
+export function apply(
+  tx: GossipEmailHash,
+  txTimestamp: number,
+  wrappedStates: WrappedStates,
+  dapp: Shardus
+): void {
   const account: UserAccount = wrappedStates[tx.account].data
   account.emailHash = tx.emailHash
   account.verified = tx.verified
@@ -65,7 +75,12 @@ export function keys(tx: GossipEmailHash, result: TransactionKeys): TransactionK
   return result
 }
 
-export function createRelevantAccount(dapp: Shardus, account: NodeAccount, accountId: string, accountCreated = false): WrappedResponse {
+export function createRelevantAccount(
+  dapp: Shardus,
+  account: NodeAccount,
+  accountId: string,
+  accountCreated = false
+): WrappedResponse {
   if (!account) {
     account = create.nodeAccount(accountId)
     accountCreated = true
