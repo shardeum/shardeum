@@ -12,8 +12,7 @@ import {
 import { WrappedStates } from '@shardus/core/dist/state-manager/state-manager-types'
 import { DaoTx } from '.'
 
-export interface ApplyDevParameters {
-  type: 'apply_dev_parameters'
+export interface IApplyDevParameters {
   timestamp: number
   devWindows: DevWindows
   nextDevWindows: Record<string, never>
@@ -22,8 +21,24 @@ export interface ApplyDevParameters {
   devIssue: number
 }
 
-export class ApplyDevParameters implements DaoTx<DaoGlobalAccount> {
-  validateFields(this: ApplyDevParameters, response: ShardusTypes.IncomingTransactionResult): ShardusTypes.IncomingTransactionResult {
+export class ApplyDevParameters implements IApplyDevParameters, DaoTx<DaoGlobalAccount> {
+  timestamp: number
+  devWindows: DevWindows
+  nextDevWindows: Record<string, never>
+  developerFund: DeveloperPayment[]
+  nextDeveloperFund: DeveloperPayment[]
+  devIssue: number
+
+  constructor(data: IApplyDevParameters) {
+    this.timestamp = data.timestamp
+    this.devWindows = data.devWindows
+    this.nextDevWindows = data.nextDevWindows
+    this.developerFund = data.developerFund
+    this.nextDeveloperFund = data.nextDeveloperFund
+    this.devIssue = data.devIssue
+  }
+
+  validateFields(response: ShardusTypes.IncomingTransactionResult): ShardusTypes.IncomingTransactionResult {
     if (typeof this.devIssue !== 'number') {
       response.success = false
       response.reason = 'tx "devIssue" field must be a number.'
@@ -58,7 +73,7 @@ export class ApplyDevParameters implements DaoTx<DaoGlobalAccount> {
     return response
   }
 
-  apply(this: ApplyDevParameters, txTimestamp: number, wrappedStates: WrappedStates, dapp: Shardus): void {
+  apply(txTimestamp: number, wrappedStates: WrappedStates, dapp: Shardus): void {
     const network = wrappedStates[daoConfig.daoAccount].data as DaoGlobalAccount
     network.devWindows = this.devWindows
     network.nextDevWindows = this.nextDevWindows
@@ -69,7 +84,7 @@ export class ApplyDevParameters implements DaoTx<DaoGlobalAccount> {
     dapp.log(`=== APPLIED DEV_PARAMETERS GLOBAL ${stringify(network)} ===`)
   }
 
-  keys(this: ApplyDevParameters, result: TransactionKeys): ShardusTypes.TransactionKeys {
+  keys(result: TransactionKeys): ShardusTypes.TransactionKeys {
     result.targetKeys = [daoConfig.daoAccount]
     result.allKeys = [...result.sourceKeys, ...result.targetKeys]
     return result
