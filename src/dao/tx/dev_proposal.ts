@@ -2,7 +2,6 @@ import * as crypto from '@shardus/crypto-utils'
 import { Shardus, ShardusTypes } from '@shardus/core'
 import Decimal from 'decimal.js'
 import * as utils from '../utils'
-import { create } from '../accounts'
 import _ from 'lodash'
 import { daoConfig } from '../../config/dao'
 import { DeveloperPayment } from '../types'
@@ -206,7 +205,7 @@ export function createRelevantAccount(
 ): WrappedResponse {
   if (!account) {
     if (accountId === tx.devProposal) {
-      account = create.devProposalAccount(accountId)
+      account = new DevProposalAccount(accountId)
     } else {
       account = new UserAccount(accountId, tx.timestamp)
     }
