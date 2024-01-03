@@ -15,7 +15,10 @@ export interface Register {
   sign: crypto.Signature
 }
 
-export function validateFields(tx: Register, response: ShardusTypes.IncomingTransactionResult): ShardusTypes.IncomingTransactionResult {
+export function validateFields(
+  tx: Register,
+  response: ShardusTypes.IncomingTransactionResult
+): ShardusTypes.IncomingTransactionResult {
   if (typeof tx.aliasHash !== 'string') {
     response.success = false
     response.reason = 'tx "aliasHash" field must be a string.'
@@ -44,7 +47,11 @@ export function validateFields(tx: Register, response: ShardusTypes.IncomingTran
   return response
 }
 
-export function validate(tx: Register, wrappedStates: WrappedStates, response: ShardusTypes.IncomingTransactionResult): ShardusTypes.IncomingTransactionResult {
+export function validate(
+  tx: Register,
+  wrappedStates: WrappedStates,
+  response: ShardusTypes.IncomingTransactionResult
+): ShardusTypes.IncomingTransactionResult {
   const from: UserAccount = wrappedStates[tx.from] && wrappedStates[tx.from].data
   const alias: AliasAccount = wrappedStates[tx.aliasHash] && wrappedStates[tx.aliasHash].data
   if (tx.sign.owner !== tx.from) {
@@ -97,7 +104,13 @@ export function keys(tx: Register, result: TransactionKeys): TransactionKeys {
   return result
 }
 
-export function createRelevantAccount(dapp: Shardus, account: UserAccount | AliasAccount, accountId: string, tx: Register, accountCreated = false): WrappedResponse {
+export function createRelevantAccount(
+  dapp: Shardus,
+  account: UserAccount | AliasAccount,
+  accountId: string,
+  tx: Register,
+  accountCreated = false
+): WrappedResponse {
   if (!account) {
     if (accountId === tx.aliasHash) {
       account = create.aliasAccount(accountId)

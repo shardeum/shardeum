@@ -17,7 +17,10 @@ export interface Email {
   timestamp: number
 }
 
-export function validateFields(tx: Email, response: ShardusTypes.IncomingTransactionResult): ShardusTypes.IncomingTransactionResult {
+export function validateFields(
+  tx: Email,
+  response: ShardusTypes.IncomingTransactionResult
+): ShardusTypes.IncomingTransactionResult {
   if (typeof tx.signedTx !== 'object') {
     response.success = false
     response.reason = 'tx "signedTx" field must be an object.'
@@ -61,7 +64,11 @@ export function validateFields(tx: Email, response: ShardusTypes.IncomingTransac
   return response
 }
 
-export function validate(tx: Email, wrappedStates: WrappedStates, response: ShardusTypes.IncomingTransactionResult): ShardusTypes.IncomingTransactionResult {
+export function validate(
+  tx: Email,
+  wrappedStates: WrappedStates,
+  response: ShardusTypes.IncomingTransactionResult
+): ShardusTypes.IncomingTransactionResult {
   const source: UserAccount = wrappedStates[tx.signedTx.from] && wrappedStates[tx.signedTx.from].data
   if (!source) {
     response.reason = 'no account associated with address in signed tx'
@@ -121,7 +128,13 @@ export function keys(tx: Email, result: TransactionKeys): TransactionKeys {
   return result
 }
 
-export function createRelevantAccount(dapp: Shardus, account: UserAccount, accountId: string, tx: Email, accountCreated = false): WrappedResponse {
+export function createRelevantAccount(
+  dapp: Shardus,
+  account: UserAccount,
+  accountId: string,
+  tx: Email,
+  accountCreated = false
+): WrappedResponse {
   if (!account) {
     account = create.userAccount(accountId, tx.timestamp)
     accountCreated = true

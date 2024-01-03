@@ -20,7 +20,10 @@ export interface DevPayment {
   sign: Signature
 }
 
-export function validateFields(tx: DevPayment, response: ShardusTypes.IncomingTransactionResult): ShardusTypes.IncomingTransactionResult {
+export function validateFields(
+  tx: DevPayment,
+  response: ShardusTypes.IncomingTransactionResult
+): ShardusTypes.IncomingTransactionResult {
   if (typeof tx.from !== 'string') {
     response.success = false
     response.reason = 'tx "from" field must be a string.'
@@ -69,7 +72,11 @@ export function validateFields(tx: DevPayment, response: ShardusTypes.IncomingTr
   return response
 }
 
-export function validate(tx: DevPayment, wrappedStates: WrappedStates, response: ShardusTypes.IncomingTransactionResult): ShardusTypes.IncomingTransactionResult {
+export function validate(
+  tx: DevPayment,
+  wrappedStates: WrappedStates,
+  response: ShardusTypes.IncomingTransactionResult
+): ShardusTypes.IncomingTransactionResult {
   const network: DaoGlobalAccount = wrappedStates[daoConfig.daoAccount].data
   const developer: UserAccount = wrappedStates[tx.developer] && wrappedStates[tx.developer].data
 
@@ -93,8 +100,10 @@ export function validate(tx: DevPayment, wrappedStates: WrappedStates, response:
     response.reason = `tx developer ${tx.developer} does not match address in payment ${tx.payment.address}`
     return response
   }
-  if (developer.data.payments.some(payment => payment.id === tx.payment.id)) {
-    response.reason = `This payment ${stringify(tx.payment)} has already been given to the developer ${tx.developer}`
+  if (developer.data.payments.some((payment) => payment.id === tx.payment.id)) {
+    response.reason = `This payment ${stringify(tx.payment)} has already been given to the developer ${
+      tx.developer
+    }`
     return response
   }
   response.success = true
@@ -102,7 +111,14 @@ export function validate(tx: DevPayment, wrappedStates: WrappedStates, response:
   return response
 }
 
-export function apply(tx: DevPayment, txTimestamp: number, txId: string, wrappedStates: WrappedStates, dapp: Shardus, applyResponse: ShardusTypes.ApplyResponse): void {
+export function apply(
+  tx: DevPayment,
+  txTimestamp: number,
+  txId: string,
+  wrappedStates: WrappedStates,
+  dapp: Shardus,
+  applyResponse: ShardusTypes.ApplyResponse
+): void {
   const from: NodeAccount = wrappedStates[tx.from].data
 
   const network: DaoGlobalAccount = wrappedStates[daoConfig.daoAccount].data
@@ -140,7 +156,12 @@ export function keys(tx: DevPayment, result: TransactionKeys): TransactionKeys {
   return result
 }
 
-export function createRelevantAccount(dapp: Shardus, account: NodeAccount, accountId: string, accountCreated = false): WrappedResponse {
+export function createRelevantAccount(
+  dapp: Shardus,
+  account: NodeAccount,
+  accountId: string,
+  accountCreated = false
+): WrappedResponse {
   if (!account) {
     account = create.nodeAccount(accountId)
     accountCreated = true

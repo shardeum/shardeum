@@ -31,11 +31,7 @@ export function isDaoGlobalAccount(obj: object | null | undefined): obj is DaoGl
   // to-do: add or remove
   // 'type' in obj
   // obj.type === 'NetworkAccount'
-  return obj != null
-    && 'id' in obj
-    && 'issue' in obj
-    && 'hash' in obj
-    && 'timestamp' in obj
+  return obj != null && 'id' in obj && 'issue' in obj && 'hash' in obj && 'timestamp' in obj
 }
 
 export const createDaoGlobalAccount = (accountId: string, timestamp: number): DaoGlobalAccount => {

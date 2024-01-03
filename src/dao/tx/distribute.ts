@@ -16,7 +16,10 @@ export interface Distribute {
   sign: crypto.Signature
 }
 
-export function validateFields(tx: Distribute, response: ShardusTypes.IncomingTransactionResult): ShardusTypes.IncomingTransactionResult {
+export function validateFields(
+  tx: Distribute,
+  response: ShardusTypes.IncomingTransactionResult
+): ShardusTypes.IncomingTransactionResult {
   if (typeof tx.from !== 'string') {
     response.success = false
     response.reason = 'tx "from" field must be a string.'
@@ -35,7 +38,11 @@ export function validateFields(tx: Distribute, response: ShardusTypes.IncomingTr
   return response
 }
 
-export function validate(tx: Distribute, wrappedStates: WrappedStates, response: ShardusTypes.IncomingTransactionResult): ShardusTypes.IncomingTransactionResult {
+export function validate(
+  tx: Distribute,
+  wrappedStates: WrappedStates,
+  response: ShardusTypes.IncomingTransactionResult
+): ShardusTypes.IncomingTransactionResult {
   const from = wrappedStates[tx.from] && wrappedStates[tx.from].data // type `DaoAccounts`
   const recipients: UserAccount[] = tx.recipients.map((id: string) => wrappedStates[id].data)
 
@@ -67,7 +74,13 @@ export function validate(tx: Distribute, wrappedStates: WrappedStates, response:
   return response
 }
 
-export function apply(tx: Distribute, txTimestamp: number, txId: string, wrappedStates: WrappedStates, dapp: Shardus): void {
+export function apply(
+  tx: Distribute,
+  txTimestamp: number,
+  txId: string,
+  wrappedStates: WrappedStates,
+  dapp: Shardus
+): void {
   const from: UserAccount = wrappedStates[tx.from].data
   const network: DaoGlobalAccount = wrappedStates[daoConfig.daoAccount].data
   const recipients: UserAccount[] = tx.recipients.map((id: string) => wrappedStates[id].data)
@@ -88,7 +101,12 @@ export function keys(tx: Distribute, result: TransactionKeys): TransactionKeys {
   return result
 }
 
-export function createRelevantAccount(dapp: Shardus, account: UserAccount, accountId: string, accountCreated = false): WrappedResponse {
+export function createRelevantAccount(
+  dapp: Shardus,
+  account: UserAccount,
+  accountId: string,
+  accountCreated = false
+): WrappedResponse {
   if (!account) {
     throw new Error('Account must exist in order to send a distribute transaction')
   }

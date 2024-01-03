@@ -19,7 +19,10 @@ export interface Tally {
   timestamp: number
 }
 
-export function validateFields(tx: Tally, response: ShardusTypes.IncomingTransactionResult): ShardusTypes.IncomingTransactionResult {
+export function validateFields(
+  tx: Tally,
+  response: ShardusTypes.IncomingTransactionResult
+): ShardusTypes.IncomingTransactionResult {
   if (typeof tx.nodeId !== 'string') {
     response.success = false
     response.reason = 'tx "nodeId" field must be a string.'
@@ -43,7 +46,11 @@ export function validateFields(tx: Tally, response: ShardusTypes.IncomingTransac
   return response
 }
 
-export function validate(tx: Tally, wrappedStates: WrappedStates, response: ShardusTypes.IncomingTransactionResult): ShardusTypes.IncomingTransactionResult {
+export function validate(
+  tx: Tally,
+  wrappedStates: WrappedStates,
+  response: ShardusTypes.IncomingTransactionResult
+): ShardusTypes.IncomingTransactionResult {
   const network: DaoGlobalAccount = wrappedStates[daoConfig.daoAccount].data
   const issue: IssueAccount = wrappedStates[tx.issue]?.data
   const proposals: ProposalAccount[] = tx.proposals.map((id: string) => wrappedStates[id].data)
@@ -69,7 +76,8 @@ export function validate(tx: Tally, wrappedStates: WrappedStates, response: Shar
     return response
   }
   if (proposals.length !== issue.proposalCount) {
-    response.reason = 'The number of proposals sent in with the transaction doesnt match the issues proposalCount'
+    response.reason =
+      'The number of proposals sent in with the transaction doesnt match the issues proposalCount'
     return response
   }
   if (tx.timestamp < network.windows.graceWindow[0] || tx.timestamp > network.windows.graceWindow[1]) {
@@ -81,7 +89,13 @@ export function validate(tx: Tally, wrappedStates: WrappedStates, response: Shar
   return response
 }
 
-export function apply(tx: Tally, txTimestamp: number, wrappedStates: WrappedStates, dapp: Shardus, applyResponse: ApplyResponse): void {
+export function apply(
+  tx: Tally,
+  txTimestamp: number,
+  wrappedStates: WrappedStates,
+  dapp: Shardus,
+  applyResponse: ApplyResponse
+): void {
   const from: NodeAccount = wrappedStates[tx.from].data
   const network: DaoGlobalAccount = wrappedStates[daoConfig.daoAccount].data
   const issue: IssueAccount = wrappedStates[tx.issue].data
@@ -109,18 +123,31 @@ export function apply(tx: Tally, txTimestamp: number, wrappedStates: WrappedStat
   winner.winner = true // CHICKEN DINNER
   const next = winner.parameters
   const nextWindows: Windows = {
-    proposalWindow: [network.windows.applyWindow[1], network.windows.applyWindow[1] + daoConfig.TIME_FOR_PROPOSALS],
+    proposalWindow: [
+      network.windows.applyWindow[1],
+      network.windows.applyWindow[1] + daoConfig.TIME_FOR_PROPOSALS,
+    ],
     votingWindow: [
       network.windows.applyWindow[1] + daoConfig.TIME_FOR_PROPOSALS,
       network.windows.applyWindow[1] + daoConfig.TIME_FOR_PROPOSALS + daoConfig.TIME_FOR_VOTING,
     ],
     graceWindow: [
       network.windows.applyWindow[1] + daoConfig.TIME_FOR_PROPOSALS + daoConfig.TIME_FOR_VOTING,
-      network.windows.applyWindow[1] + daoConfig.TIME_FOR_PROPOSALS + daoConfig.TIME_FOR_VOTING + daoConfig.TIME_FOR_GRACE,
+      network.windows.applyWindow[1] +
+        daoConfig.TIME_FOR_PROPOSALS +
+        daoConfig.TIME_FOR_VOTING +
+        daoConfig.TIME_FOR_GRACE,
     ],
     applyWindow: [
-      network.windows.applyWindow[1] + daoConfig.TIME_FOR_PROPOSALS + daoConfig.TIME_FOR_VOTING + daoConfig.TIME_FOR_GRACE,
-      network.windows.applyWindow[1] + daoConfig.TIME_FOR_PROPOSALS + daoConfig.TIME_FOR_VOTING + daoConfig.TIME_FOR_GRACE + daoConfig.TIME_FOR_APPLY,
+      network.windows.applyWindow[1] +
+        daoConfig.TIME_FOR_PROPOSALS +
+        daoConfig.TIME_FOR_VOTING +
+        daoConfig.TIME_FOR_GRACE,
+      network.windows.applyWindow[1] +
+        daoConfig.TIME_FOR_PROPOSALS +
+        daoConfig.TIME_FOR_VOTING +
+        daoConfig.TIME_FOR_GRACE +
+        daoConfig.TIME_FOR_APPLY,
     ],
   }
 
@@ -144,7 +171,12 @@ export function apply(tx: Tally, txTimestamp: number, wrappedStates: WrappedStat
   dapp.log('Applied tally tx', issue, winner)
 }
 
-export function transactionReceiptPass(tx: Tally, wrappedStates: WrappedStates, dapp: Shardus, applyResponse: ApplyResponse): void {
+export function transactionReceiptPass(
+  tx: Tally,
+  wrappedStates: WrappedStates,
+  dapp: Shardus,
+  applyResponse: ApplyResponse
+): void {
   const issue: IssueAccount = wrappedStates[tx.issue].data
   const defaultProposal: ProposalAccount = wrappedStates[crypto.hash(`issue-${issue.number}-proposal-1`)].data
   const winner = defaultProposal
@@ -161,7 +193,12 @@ export function keys(tx: Tally, result: TransactionKeys): TransactionKeys {
   return result
 }
 
-export function createRelevantAccount(dapp: Shardus, account: NodeAccount | IssueAccount, accountId: string, accountCreated = false): WrappedResponse {
+export function createRelevantAccount(
+  dapp: Shardus,
+  account: NodeAccount | IssueAccount,
+  accountId: string,
+  accountCreated = false
+): WrappedResponse {
   if (!account) {
     account = create.nodeAccount(accountId)
     accountCreated = true

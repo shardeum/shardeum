@@ -2,7 +2,11 @@ import stringify from 'fast-stable-stringify'
 import _ from 'lodash'
 import { Shardus, ShardusTypes } from '@shardus/core'
 import { daoConfig } from '../../config/dao'
-import { IncomingTransactionResult, TransactionKeys, WrappedResponse } from '@shardus/core/dist/shardus/shardus-types'
+import {
+  IncomingTransactionResult,
+  TransactionKeys,
+  WrappedResponse,
+} from '@shardus/core/dist/shardus/shardus-types'
 import { DaoGlobalAccount } from '../accounts/networkAccount'
 import { WrappedStates } from '@shardus/core/dist/state-manager/state-manager-types'
 import { Windows } from '../types'
@@ -112,7 +116,12 @@ export class ApplyParameters implements DaoTx<DaoGlobalAccount> {
     return result
   }
 
-  createRelevantAccount(dapp: Shardus, account: DaoGlobalAccount, accountId: string, accountCreated = false): WrappedResponse {
+  createRelevantAccount(
+    dapp: Shardus,
+    account: DaoGlobalAccount,
+    accountId: string,
+    accountCreated = false
+  ): WrappedResponse {
     if (!account) {
       throw new Error('Network Account must already exist for the apply_parameters transaction')
     }

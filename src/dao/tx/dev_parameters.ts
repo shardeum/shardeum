@@ -17,7 +17,10 @@ export interface DevParameters {
   timestamp: number
 }
 
-export function validateFields(tx: DevParameters, response: ShardusTypes.IncomingTransactionResult): ShardusTypes.IncomingTransactionResult {
+export function validateFields(
+  tx: DevParameters,
+  response: ShardusTypes.IncomingTransactionResult
+): ShardusTypes.IncomingTransactionResult {
   if (typeof tx.nodeId !== 'string') {
     response.success = false
     response.reason = 'tx "nodeId" field must be a string.'
@@ -36,7 +39,11 @@ export function validateFields(tx: DevParameters, response: ShardusTypes.Incomin
   return response
 }
 
-export function validate(tx: DevParameters, wrappedStates: WrappedStates, response: ShardusTypes.IncomingTransactionResult): ShardusTypes.IncomingTransactionResult {
+export function validate(
+  tx: DevParameters,
+  wrappedStates: WrappedStates,
+  response: ShardusTypes.IncomingTransactionResult
+): ShardusTypes.IncomingTransactionResult {
   const network: DaoGlobalAccount = wrappedStates[daoConfig.daoAccount].data
   const devIssue: DevIssueAccount = wrappedStates[tx.devIssue].data
 
@@ -61,7 +68,10 @@ export function validate(tx: DevParameters, wrappedStates: WrappedStates, respon
     response.reason = 'This devIssue is no longer active'
     return response
   }
-  if (tx.timestamp < network.devWindows.devApplyWindow[0] || tx.timestamp > network.devWindows.devApplyWindow[1]) {
+  if (
+    tx.timestamp < network.devWindows.devApplyWindow[0] ||
+    tx.timestamp > network.devWindows.devApplyWindow[1]
+  ) {
     response.reason = 'Network is not within the time window to apply developer proposal winners'
     return response
   }
@@ -70,7 +80,13 @@ export function validate(tx: DevParameters, wrappedStates: WrappedStates, respon
   return response
 }
 
-export function apply(tx: DevParameters, txTimestamp: number, wrappedStates: WrappedStates, dapp: Shardus, applyResponse: ShardusTypes.ApplyResponse): void {
+export function apply(
+  tx: DevParameters,
+  txTimestamp: number,
+  wrappedStates: WrappedStates,
+  dapp: Shardus,
+  applyResponse: ShardusTypes.ApplyResponse
+): void {
   const from: UserAccount = wrappedStates[tx.from].data
   const network: DaoGlobalAccount = wrappedStates[daoConfig.daoAccount].data
   const devIssue: DevIssueAccount = wrappedStates[tx.devIssue].data
@@ -82,7 +98,9 @@ export function apply(tx: DevParameters, txTimestamp: number, wrappedStates: Wra
     network: daoConfig.daoAccount,
     devWindows: network.nextDevWindows,
     nextDevWindows: {},
-    developerFund: [...network.developerFund, ...network.nextDeveloperFund].sort((a, b) => a.timestamp - b.timestamp),
+    developerFund: [...network.developerFund, ...network.nextDeveloperFund].sort(
+      (a, b) => a.timestamp - b.timestamp
+    ),
     nextDeveloperFund: [],
     devIssue: network.devIssue + 1,
   }
@@ -110,7 +128,12 @@ export function keys(tx: DevParameters, result: TransactionKeys): TransactionKey
   return result
 }
 
-export function createRelevantAccount(dapp: Shardus, account: NodeAccount, accountId: string, accountCreated = false): WrappedResponse {
+export function createRelevantAccount(
+  dapp: Shardus,
+  account: NodeAccount,
+  accountId: string,
+  accountCreated = false
+): WrappedResponse {
   if (!account) {
     account = create.nodeAccount(accountId)
     accountCreated = true
