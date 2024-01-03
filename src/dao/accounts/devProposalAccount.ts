@@ -1,40 +1,37 @@
 import * as crypto from '@shardus/crypto-utils'
 import { DeveloperPayment } from '../types'
 
-export interface DevProposalAccount {
+export class DevProposalAccount {
   id: string
-  type: 'DevProposalAccount'
-  approve: number
-  reject: number
-  title: string | null
-  description: string | null
-  totalVotes: number
-  totalAmount: number | null
-  payAddress: string
-  payments: DeveloperPayment[]
-  approved: boolean | null
-  number: number | null
-  hash: string
-  timestamp: number
-}
+  approve = 0
+  reject = 0
+  title: string | null = null
+  description: string | null = null
+  totalVotes = 0
+  totalAmount: number | null = null
+  payAddress = ''
+  payments: DeveloperPayment[] = []
+  approved: boolean | null = null
+  number: number | null = null
+  timestamp = 0
 
-export const devProposalAccount = (accountId: string): DevProposalAccount => {
-  const devProposal: DevProposalAccount = {
-    id: accountId,
-    type: 'DevProposalAccount',
-    title: null,
-    description: null,
-    approve: 0,
-    reject: 0,
-    totalVotes: 0,
-    totalAmount: null,
-    payAddress: '',
-    payments: [],
-    approved: null,
-    number: null,
-    hash: '',
-    timestamp: 0,
+  hash: string
+
+  constructor(accountId: string) {
+    this.id = accountId
+    this.hash = crypto.hashObj({
+      id: this.id,
+      title: this.title,
+      description: this.description,
+      approve: this.approve,
+      reject: this.reject,
+      totalVotes: this.totalVotes,
+      totalAmount: this.totalAmount,
+      payAddress: this.payAddress,
+      payments: this.payments,
+      approved: this.approved,
+      number: this.number,
+      timestamp: this.timestamp,
+    })
   }
-  devProposal.hash = crypto.hashObj(devProposal)
-  return devProposal
 }
