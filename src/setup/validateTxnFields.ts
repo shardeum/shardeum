@@ -31,7 +31,6 @@ import { fixBigIntLiteralsToBigInt } from '../utils/serialization'
 import { validatePenaltyTX } from '../tx/penalty/transaction'
 import { bytesToHex } from '@ethereumjs/util'
 import { logFlags } from '..'
-import { validate as validateDaoIssueTx, Issue as DaoIssueTx } from '../dao/tx/issue';
 
 /**
  * Checks that Transaction fields are valid
