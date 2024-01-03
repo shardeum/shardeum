@@ -47,14 +47,13 @@ export function nodeReward(address: string, nodeId: string, dapp: Shardus): void
 export async function generateIssue(address: string, nodeId: string, dapp: Shardus): Promise<void> {
   const account = await dapp.getLocalOrRemoteAccount(daoConfig.daoAccount)
   const network = account.data as DaoGlobalAccount
-  const tx: Issue = {
-    type: 'issue',
+  const tx = new Issue({
     nodeId,
     from: address,
     issue: crypto.hash(`issue-${network.issue}`),
     proposal: crypto.hash(`issue-${network.issue}-proposal-1`),
     timestamp: Date.now(),
-  }
+  })
   dapp.put(tx)
   dapp.log('GENERATED_ISSUE: ', nodeId)
 }
