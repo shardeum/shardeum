@@ -12,13 +12,22 @@ import { Transaction, TransactionType } from '@ethereumjs/tx'
 import { bytesToHex, toAscii } from '@ethereumjs/util'
 import { logFlags } from '..'
 
-export const maintenanceAmount = (timestamp: number, account: UserAccount, network: DaoGlobalAccount): number => {
+export const maintenanceAmount = (
+  timestamp: number,
+  account: UserAccount,
+  network: DaoGlobalAccount
+): number => {
   let amount: number
   if (timestamp - account.lastMaintenance < network.current.maintenanceInterval) {
     amount = 0
   } else {
     amount =
-      account.data.balance * (1 - Math.pow(1 - network.current.maintenanceFee, (timestamp - account.lastMaintenance) / network.current.maintenanceInterval))
+      account.data.balance *
+      (1 -
+        Math.pow(
+          1 - network.current.maintenanceFee,
+          (timestamp - account.lastMaintenance) / network.current.maintenanceInterval
+        ))
     account.lastMaintenance = timestamp
   }
   if (typeof amount === 'number') return amount
@@ -27,7 +36,7 @@ export const maintenanceAmount = (timestamp: number, account: UserAccount, netwo
 
 // HELPER METHOD TO WAIT
 export async function _sleep(ms = 0): Promise<NodeJS.Timeout> {
-  return new Promise(resolve => setTimeout(resolve, ms))
+  return new Promise((resolve) => setTimeout(resolve, ms))
 }
 
 // NODE_REWARD TRANSACTION FUNCTION
@@ -161,7 +170,12 @@ export async function applyDevParameters(address: string, nodeId: string, dapp: 
 }
 
 // RELEASE DEVELOPER FUNDS FOR A PAYMENT
-export function releaseDeveloperFunds(payment: DeveloperPayment, address: string, nodeId: string, dapp: Shardus): void {
+export function releaseDeveloperFunds(
+  payment: DeveloperPayment,
+  address: string,
+  nodeId: string,
+  dapp: Shardus
+): void {
   const tx = {
     type: 'developer_payment',
     nodeId,

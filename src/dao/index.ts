@@ -45,7 +45,10 @@ export function applyInitDaoTx(
   }
 }
 
-export function getRelevantDataInitDao(accountId: string, wrappedEVMAccount: NetworkAccount | DaoGlobalAccount | WrappedEVMAccount): boolean {
+export function getRelevantDataInitDao(
+  accountId: string,
+  wrappedEVMAccount: NetworkAccount | DaoGlobalAccount | WrappedEVMAccount
+): boolean {
   if (!wrappedEVMAccount) {
     if (accountId === daoAccount) {
       wrappedEVMAccount = createDaoAccount()
@@ -170,7 +173,12 @@ export async function handleDaoTxGetRelevantData(
 /**
  * Liberus txs export a `apply` fn that gets called here
  */
-export function handleDaoTxApply(tx: OpaqueTransaction, txTimestamp: number, wrappedStates: WrappedStates, dapp: Shardus): void {
+export function handleDaoTxApply(
+  tx: OpaqueTransaction,
+  txTimestamp: number,
+  wrappedStates: WrappedStates,
+  dapp: Shardus
+): void {
   // Unserialize the EVM tx
   const unserializedTx = getTransactionObj(tx)
   // Decode data field of EVM tx to get type of DAO tx

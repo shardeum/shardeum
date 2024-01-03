@@ -30,14 +30,27 @@ import * as verify from './verify'
 import * as vote from './vote'
 import { Shardus } from '@shardus/core'
 import { WrappedStates } from '@shardus/core/dist/state-manager/state-manager-types'
-import { IncomingTransactionResult, TransactionKeys, WrappedResponse } from '@shardus/core/dist/shardus/shardus-types'
+import {
+  IncomingTransactionResult,
+  TransactionKeys,
+  WrappedResponse,
+} from '@shardus/core/dist/shardus/shardus-types'
 
 export abstract class DaoTx<Account> {
-  abstract validateFields(response: IncomingTransactionResult): IncomingTransactionResult;
-  abstract validate(wrappedStates: WrappedStates, response: IncomingTransactionResult, dapp: Shardus): IncomingTransactionResult;
-  abstract apply(txTimestamp: number, wrappedStates: WrappedStates, dapp: Shardus): void;
-  abstract keys(result: TransactionKeys): TransactionKeys;
-  abstract createRelevantAccount(dapp: Shardus, account: Account, accountId: string, accountCreated: boolean): WrappedResponse;
+  abstract validateFields(response: IncomingTransactionResult): IncomingTransactionResult
+  abstract validate(
+    wrappedStates: WrappedStates,
+    response: IncomingTransactionResult,
+    dapp: Shardus
+  ): IncomingTransactionResult
+  abstract apply(txTimestamp: number, wrappedStates: WrappedStates, dapp: Shardus): void
+  abstract keys(result: TransactionKeys): TransactionKeys
+  abstract createRelevantAccount(
+    dapp: Shardus,
+    account: Account,
+    accountId: string,
+    accountCreated: boolean
+  ): WrappedResponse
 }
 
 export default {

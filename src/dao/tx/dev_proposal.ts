@@ -27,7 +27,10 @@ export interface DevProposal {
   sign: crypto.Signature
 }
 
-export function validateFields(tx: DevProposal, response: ShardusTypes.IncomingTransactionResult): ShardusTypes.IncomingTransactionResult {
+export function validateFields(
+  tx: DevProposal,
+  response: ShardusTypes.IncomingTransactionResult
+): ShardusTypes.IncomingTransactionResult {
   if (typeof tx.devIssue !== 'string') {
     response.success = false
     response.reason = 'tx "devIssue" field must be a string.'
@@ -101,7 +104,11 @@ export function validateFields(tx: DevProposal, response: ShardusTypes.IncomingT
   return response
 }
 
-export function validate(tx: DevProposal, wrappedStates: WrappedStates, response: ShardusTypes.IncomingTransactionResult): ShardusTypes.IncomingTransactionResult {
+export function validate(
+  tx: DevProposal,
+  wrappedStates: WrappedStates,
+  response: ShardusTypes.IncomingTransactionResult
+): ShardusTypes.IncomingTransactionResult {
   const network: DaoGlobalAccount = wrappedStates[daoConfig.daoAccount].data
   const devIssue: DevIssueAccount = wrappedStates[tx.devIssue] && wrappedStates[tx.devIssue].data
 
@@ -125,15 +132,26 @@ export function validate(tx: DevProposal, wrappedStates: WrappedStates, response
     response.reason = 'This devIssue is no longer active'
     return response
   }
-  if (tx.devProposal !== crypto.hash(`dev-issue-${network.devIssue}-dev-proposal-${devIssue.devProposalCount + 1}`)) {
+  if (
+    tx.devProposal !==
+    crypto.hash(`dev-issue-${network.devIssue}-dev-proposal-${devIssue.devProposalCount + 1}`)
+  ) {
     response.reason = 'Must give the next devIssue devProposalCount hash'
     return response
   }
-  if (tx.timestamp < network.devWindows.devProposalWindow[0] || tx.timestamp > network.devWindows.devProposalWindow[1]) {
+  if (
+    tx.timestamp < network.devWindows.devProposalWindow[0] ||
+    tx.timestamp > network.devWindows.devProposalWindow[1]
+  ) {
     response.reason = 'Network is not within the time window to accept developer proposals'
     return response
   }
-  if (tx.payments.reduce<number>((acc: number, payment: DeveloperPayment) => new Decimal(payment.amount).plus(acc).toNumber(), 0) > 1) {
+  if (
+    tx.payments.reduce<number>(
+      (acc: number, payment: DeveloperPayment) => new Decimal(payment.amount).plus(acc).toNumber(),
+      0
+    ) > 1
+  ) {
     response.reason = 'tx payment amounts added up to more than 100%'
     return response
   }
@@ -142,7 +160,13 @@ export function validate(tx: DevProposal, wrappedStates: WrappedStates, response
   return response
 }
 
-export function apply(tx: DevProposal, txTimestamp: number, txId: string, wrappedStates: WrappedStates, dapp: Shardus): void {
+export function apply(
+  tx: DevProposal,
+  txTimestamp: number,
+  txId: string,
+  wrappedStates: WrappedStates,
+  dapp: Shardus
+): void {
   const from: UserAccount = wrappedStates[tx.from].data
   const network: DaoGlobalAccount = wrappedStates[daoConfig.daoAccount].data
   const devIssue: DevIssueAccount = wrappedStates[tx.devIssue].data
@@ -178,7 +202,7 @@ export function createRelevantAccount(
   account: UserAccount | DevProposalAccount,
   accountId: string,
   tx: DevProposal,
-  accountCreated = false,
+  accountCreated = false
 ): WrappedResponse {
   if (!account) {
     if (accountId === tx.devProposal) {

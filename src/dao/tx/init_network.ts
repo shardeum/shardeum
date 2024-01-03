@@ -12,11 +12,16 @@ export interface InitNetwork {
   timestamp: number
 }
 
-export function validateFields(response: ShardusTypes.IncomingTransactionResult): ShardusTypes.IncomingTransactionResult {
+export function validateFields(
+  response: ShardusTypes.IncomingTransactionResult
+): ShardusTypes.IncomingTransactionResult {
   return response
 }
 
-export function validate(wrappedStates: WrappedStates, response: ShardusTypes.IncomingTransactionResult): ShardusTypes.IncomingTransactionResult {
+export function validate(
+  wrappedStates: WrappedStates,
+  response: ShardusTypes.IncomingTransactionResult
+): ShardusTypes.IncomingTransactionResult {
   const network: DaoGlobalAccount = wrappedStates[daoConfig.daoAccount].data
 
   if (network.id !== daoConfig.daoAccount) {
@@ -44,7 +49,13 @@ export function keys(result: TransactionKeys): TransactionKeys {
   return result
 }
 
-export function createRelevantAccount(dapp: Shardus, account: NodeAccount | DaoGlobalAccount, accountId: string, tx: InitNetwork, accountCreated = false): WrappedResponse {
+export function createRelevantAccount(
+  dapp: Shardus,
+  account: NodeAccount | DaoGlobalAccount,
+  accountId: string,
+  tx: InitNetwork,
+  accountCreated = false
+): WrappedResponse {
   if (!account) {
     if (accountId === daoConfig.daoAccount) {
       account = create.createDaoGlobalAccount(accountId, tx.timestamp)

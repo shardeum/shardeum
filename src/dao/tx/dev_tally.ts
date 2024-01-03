@@ -20,7 +20,10 @@ export interface DevTally {
   timestamp: number
 }
 
-export function validateFields(tx: DevTally, response: ShardusTypes.IncomingTransactionResult): ShardusTypes.IncomingTransactionResult {
+export function validateFields(
+  tx: DevTally,
+  response: ShardusTypes.IncomingTransactionResult
+): ShardusTypes.IncomingTransactionResult {
   if (typeof tx.nodeId !== 'string') {
     response.success = false
     response.reason = 'tx "nodeId" field must be a string.'
@@ -44,7 +47,11 @@ export function validateFields(tx: DevTally, response: ShardusTypes.IncomingTran
   return response
 }
 
-export function validate(tx: DevTally, wrappedStates: WrappedStates, response: ShardusTypes.IncomingTransactionResult): ShardusTypes.IncomingTransactionResult {
+export function validate(
+  tx: DevTally,
+  wrappedStates: WrappedStates,
+  response: ShardusTypes.IncomingTransactionResult
+): ShardusTypes.IncomingTransactionResult {
   const network: DaoGlobalAccount = wrappedStates[daoConfig.daoAccount].data
   const devIssue: DevIssueAccount = wrappedStates[tx.devIssue] && wrappedStates[tx.devIssue].data
   const devProposals: DevProposalAccount[] = tx.devProposals.map((id: string) => wrappedStates[id].data)
@@ -62,7 +69,9 @@ export function validate(tx: DevTally, wrappedStates: WrappedStates, response: S
     return response
   }
   if (Array.isArray(devIssue.winners) && devIssue.winners.length > 0) {
-    response.reason = `The winners for this devIssue has already been determined ${stringify(devIssue.winners)}`
+    response.reason = `The winners for this devIssue has already been determined ${stringify(
+      devIssue.winners
+    )}`
     return response
   }
   if (network.id !== daoConfig.daoAccount) {
@@ -73,7 +82,10 @@ export function validate(tx: DevTally, wrappedStates: WrappedStates, response: S
     response.reason = `The number of devProposals sent in with the transaction ${devProposals.length} doesn't match the devIssue proposalCount ${devIssue.devProposalCount}`
     return response
   }
-  if (tx.timestamp < network.devWindows.devGraceWindow[0] || tx.timestamp > network.devWindows.devGraceWindow[1]) {
+  if (
+    tx.timestamp < network.devWindows.devGraceWindow[0] ||
+    tx.timestamp > network.devWindows.devGraceWindow[1]
+  ) {
     response.reason = 'Network is not within the time window to tally votes for developer proposals'
     return response
   }
@@ -82,7 +94,13 @@ export function validate(tx: DevTally, wrappedStates: WrappedStates, response: S
   return response
 }
 
-export function apply(tx: DevTally, txTimestamp: number, wrappedStates: WrappedStates, dapp: Shardus, applyResponse: ApplyResponse): void {
+export function apply(
+  tx: DevTally,
+  txTimestamp: number,
+  wrappedStates: WrappedStates,
+  dapp: Shardus,
+  applyResponse: ApplyResponse
+): void {
   const from: NodeAccount = wrappedStates[tx.from].data
   const network: DaoGlobalAccount = wrappedStates[daoConfig.daoAccount].data
   const devIssue: DevIssueAccount = wrappedStates[tx.devIssue].data
@@ -112,18 +130,31 @@ export function apply(tx: DevTally, txTimestamp: number, wrappedStates: WrappedS
   }
 
   const nextDevWindows: DevWindows = {
-    devProposalWindow: [network.devWindows.devApplyWindow[1], network.devWindows.devApplyWindow[1] + daoConfig.TIME_FOR_DEV_PROPOSALS],
+    devProposalWindow: [
+      network.devWindows.devApplyWindow[1],
+      network.devWindows.devApplyWindow[1] + daoConfig.TIME_FOR_DEV_PROPOSALS,
+    ],
     devVotingWindow: [
       network.devWindows.devApplyWindow[1] + daoConfig.TIME_FOR_DEV_PROPOSALS,
       network.devWindows.devApplyWindow[1] + daoConfig.TIME_FOR_DEV_PROPOSALS + daoConfig.TIME_FOR_DEV_VOTING,
     ],
     devGraceWindow: [
       network.devWindows.devApplyWindow[1] + daoConfig.TIME_FOR_DEV_PROPOSALS + daoConfig.TIME_FOR_DEV_VOTING,
-      network.devWindows.devApplyWindow[1] + daoConfig.TIME_FOR_DEV_PROPOSALS + daoConfig.TIME_FOR_DEV_VOTING + daoConfig.TIME_FOR_DEV_GRACE,
+      network.devWindows.devApplyWindow[1] +
+        daoConfig.TIME_FOR_DEV_PROPOSALS +
+        daoConfig.TIME_FOR_DEV_VOTING +
+        daoConfig.TIME_FOR_DEV_GRACE,
     ],
     devApplyWindow: [
-      network.devWindows.devApplyWindow[1] + daoConfig.TIME_FOR_DEV_PROPOSALS + daoConfig.TIME_FOR_DEV_VOTING + daoConfig.TIME_FOR_DEV_GRACE,
-      network.devWindows.devApplyWindow[1] + daoConfig.TIME_FOR_DEV_PROPOSALS + daoConfig.TIME_FOR_DEV_VOTING + daoConfig.TIME_FOR_DEV_GRACE + daoConfig.TIME_FOR_DEV_APPLY,
+      network.devWindows.devApplyWindow[1] +
+        daoConfig.TIME_FOR_DEV_PROPOSALS +
+        daoConfig.TIME_FOR_DEV_VOTING +
+        daoConfig.TIME_FOR_DEV_GRACE,
+      network.devWindows.devApplyWindow[1] +
+        daoConfig.TIME_FOR_DEV_PROPOSALS +
+        daoConfig.TIME_FOR_DEV_VOTING +
+        daoConfig.TIME_FOR_DEV_GRACE +
+        daoConfig.TIME_FOR_DEV_APPLY,
     ],
   }
 
@@ -158,7 +189,12 @@ export function keys(tx: DevTally, result: TransactionKeys): TransactionKeys {
   return result
 }
 
-export function createRelevantAccount(dapp: Shardus, account: NodeAccount, accountId: string, accountCreated = false): WrappedResponse {
+export function createRelevantAccount(
+  dapp: Shardus,
+  account: NodeAccount,
+  accountId: string,
+  accountCreated = false
+): WrappedResponse {
   if (!account) {
     account = create.nodeAccount(accountId)
     accountCreated = true

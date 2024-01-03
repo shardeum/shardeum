@@ -71,16 +71,26 @@ export class Issue implements IIssue, DaoTx<IssueAccount> {
 
     const networkIssueHash = crypto.hash(`issue-${network.issue}`)
     if (this.issue !== networkIssueHash) {
-      response.reason = `issue hash (${this.issue}) does not match current network issue hash (${networkIssueHash}) --- networkAccount: ${JSON.stringify(network)}`
+      response.reason = `issue hash (${
+        this.issue
+      }) does not match current network issue hash (${networkIssueHash}) --- networkAccount: ${JSON.stringify(
+        network
+      )}`
       return response
     }
     const networkProposalHash = crypto.hash(`issue-${network.issue}-proposal-1`)
     if (this.proposal !== networkProposalHash) {
-      response.reason = `proposalHash (${this.proposal
-        }) does not match the current default network proposal (${networkProposalHash}) --- networkAccount: ${JSON.stringify(network)}`
+      response.reason = `proposalHash (${
+        this.proposal
+      }) does not match the current default network proposal (${networkProposalHash}) --- networkAccount: ${JSON.stringify(
+        network
+      )}`
       return response
     }
-    if (this.timestamp < network.windows.proposalWindow[0] || this.timestamp > network.windows.proposalWindow[1]) {
+    if (
+      this.timestamp < network.windows.proposalWindow[0] ||
+      this.timestamp > network.windows.proposalWindow[1]
+    ) {
       response.reason = 'Network is not within the time window to generate issues'
       return response
     }
@@ -123,7 +133,7 @@ export class Issue implements IIssue, DaoTx<IssueAccount> {
     dapp: Shardus,
     account: NodeAccount | IssueAccount | ProposalAccount,
     accountId: string,
-    accountCreated = false,
+    accountCreated = false
   ): WrappedResponse {
     if (!account) {
       if (accountId === this.issue) {

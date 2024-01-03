@@ -20,7 +20,10 @@ export interface DevVote {
   sign: crypto.Signature
 }
 
-export function validateFields(tx: DevVote, response: ShardusTypes.IncomingTransactionResult): ShardusTypes.IncomingTransactionResult {
+export function validateFields(
+  tx: DevVote,
+  response: ShardusTypes.IncomingTransactionResult
+): ShardusTypes.IncomingTransactionResult {
   if (typeof tx.from !== 'string') {
     response.success = false
     response.reason = 'tx "from" field must be a string.'
@@ -54,7 +57,11 @@ export function validateFields(tx: DevVote, response: ShardusTypes.IncomingTrans
   return response
 }
 
-export function validate(tx: DevVote, wrappedStates: WrappedStates, response: ShardusTypes.IncomingTransactionResult): ShardusTypes.IncomingTransactionResult {
+export function validate(
+  tx: DevVote,
+  wrappedStates: WrappedStates,
+  response: ShardusTypes.IncomingTransactionResult
+): ShardusTypes.IncomingTransactionResult {
   const network: DaoGlobalAccount = wrappedStates[daoConfig.daoAccount].data
   const devProposal: DevProposalAccount = wrappedStates[tx.devProposal] && wrappedStates[tx.devProposal].data
   const devIssue: DevIssueAccount = wrappedStates[tx.devIssue] && wrappedStates[tx.devIssue].data
@@ -87,7 +94,10 @@ export function validate(tx: DevVote, wrappedStates: WrappedStates, response: Sh
     response.reason = 'Must send tokens in order to vote'
     return response
   }
-  if (tx.timestamp < network.devWindows.devVotingWindow[0] || tx.timestamp > network.devWindows.devVotingWindow[1]) {
+  if (
+    tx.timestamp < network.devWindows.devVotingWindow[0] ||
+    tx.timestamp > network.devWindows.devVotingWindow[1]
+  ) {
     response.reason = 'Network is not within the time window to accept votes for developer proposals'
     return response
   }
@@ -96,7 +106,13 @@ export function validate(tx: DevVote, wrappedStates: WrappedStates, response: Sh
   return response
 }
 
-export function apply(tx: DevVote, txTimestamp: number, txId: string, wrappedStates: WrappedStates, dapp: Shardus): void {
+export function apply(
+  tx: DevVote,
+  txTimestamp: number,
+  txId: string,
+  wrappedStates: WrappedStates,
+  dapp: Shardus
+): void {
   const from: UserAccount = wrappedStates[tx.from].data
   const network: DaoGlobalAccount = wrappedStates[daoConfig.daoAccount].data
   const devProposal: DevProposalAccount = wrappedStates[tx.devProposal].data
@@ -124,7 +140,13 @@ export function keys(tx: DevVote, result: TransactionKeys): TransactionKeys {
   return result
 }
 
-export function createRelevantAccount(dapp: Shardus, account: UserAccount | DevProposalAccount, accountId: string, tx: DevVote, accountCreated = false): WrappedResponse {
+export function createRelevantAccount(
+  dapp: Shardus,
+  account: UserAccount | DevProposalAccount,
+  accountId: string,
+  tx: DevVote,
+  accountCreated = false
+): WrappedResponse {
   if (!account) {
     if (accountId === tx.devProposal) {
       throw Error('Dev Proposal Account must already exist for the dev_vote transaction')
