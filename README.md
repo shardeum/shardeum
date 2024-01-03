@@ -32,8 +32,8 @@ $ npm config set python python2.7
 ### Install
 
 ```
-$ npm i -g git+https://gitlab.com/shardus/enterprise/tools/shardus-cli.git
-$ shardus init myApp https://gitlab.com/shardus/enterprise/applications/coin-app-template.git
+$ npm i -g git+https://gitlab.com/shardus/tools/shardus-cli.git
+$ shardus init myApp https://gitlab.com/shardus/applications/coin-app-template.git
 $ cd myApp
 ```
 
