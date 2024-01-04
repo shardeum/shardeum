@@ -1,7 +1,6 @@
 import stringify from 'fast-stable-stringify'
 import { Shardus, ShardusTypes } from '@shardus/core'
 import { daoConfig } from '../../config/dao'
-import { create } from '../accounts'
 import { TransactionKeys, WrappedStates } from '../../shardeum/shardeumTypes'
 import { DaoGlobalAccount } from '../accounts/networkAccount'
 import { WrappedResponse } from '@shardus/core/dist/shardus/shardus-types'
@@ -58,7 +57,7 @@ export function createRelevantAccount(
 ): WrappedResponse {
   if (!account) {
     if (accountId === daoConfig.daoAccount) {
-      account = create.createDaoGlobalAccount(accountId, tx.timestamp)
+      account = new DaoGlobalAccount(accountId, tx.timestamp)
     } else {
       account = new NodeAccount(accountId)
     }
