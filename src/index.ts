@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/ban-ts-comment */
 import { exec } from 'child_process'
 import { arch, cpus, freemem, totalmem, platform } from 'os'
-import { stringify } from './utils/stringify'
+import { cryptoStringify, stringify } from './utils/stringify'
 import {
   Account,
   Address,
@@ -155,6 +155,8 @@ import { getExternalApiMiddleware } from './middleware/externalApiMiddleware'
 import { AccountsEntry } from './storage/storage'
 import { getCachedRIAccount, setCachedRIAccount } from './storage/riAccountsCache'
 import {isLowStake} from "./tx/penalty/penaltyFunctions";
+import { deserializeEVMAppData, serializeEVMAppData } from './types/EVMAppData'
+import { binaryDeserializer, binarySerializer } from './types/Helpers'
 
 let latestBlock = 0
 export const blocks: BlockMap = {}
@@ -6442,6 +6444,26 @@ const shardusSetup = (): void => {
       }
 
       return { canStay: true, reason: '' }
+    },
+    binarySerializeObject(identifier: string, obj): Buffer {
+      nestedCountersInstance.countEvent('binarySerializeObject', identifier)
+      /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log('binarySerializeObject:', identifier, obj)
+      switch (identifier) {
+        case 'AppData':
+          return binarySerializer(obj, serializeEVMAppData).getBuffer()
+        default:
+          return Buffer.from(cryptoStringify(obj), 'utf8')
+      }
+    },
+    binaryDeserializeObject(identifier: string, buffer: Buffer) {
+      nestedCountersInstance.countEvent('binaryDeserializeObject', identifier)
+      /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log('binaryDeserializeObject:', identifier, buffer)
+      switch (identifier) {
+        case 'AppData':
+          return binaryDeserializer(buffer, deserializeEVMAppData)
+        default:
+          return JSON.parse(buffer.toString('utf8'))
+      }
     },
   })
 
