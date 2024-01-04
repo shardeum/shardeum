@@ -9,17 +9,24 @@ import { IncomingTransactionResult, WrappedResponse } from '@shardus/core/dist/s
 import { Windows } from '../types'
 import { DaoTx } from '.'
 
-export interface ApplyTally {
-  type: 'apply_tally'
+export interface IApplyTally {
   timestamp: number
   next: NetworkParameters
   nextWindows: Windows
 }
 
-export class ApplyTally implements DaoTx<DaoGlobalAccount> {
+export class ApplyTally implements IApplyTally, DaoTx<DaoGlobalAccount> {
+  timestamp: number
+  next: NetworkParameters
+  nextWindows: Windows
 
+  constructor(data: IApplyTally) {
+    this.timestamp = data.timestamp
+    this.next = data.next
+    this.nextWindows = data.nextWindows
+  }
 
-  validateFields(this: ApplyTally, response: ShardusTypes.IncomingTransactionResult): ShardusTypes.IncomingTransactionResult {
+  validateFields(response: ShardusTypes.IncomingTransactionResult): ShardusTypes.IncomingTransactionResult {
     if (_.isEmpty(this.next) || typeof this.next !== 'object') {
       response.success = false
       response.reason = 'tx "next" field must be a non empty object'
