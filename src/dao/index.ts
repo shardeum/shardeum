@@ -58,11 +58,10 @@ export function getRelevantDataInitDao(
   return false
 }
 
-
-export function isDaoTx(tx: OpaqueTransaction): boolean {
+export function isDaoTx<A>(tx: OpaqueTransaction | DaoTx<A>): boolean {
   // EVM txs come in as serialized hexstrings
   const transaction = getTransactionObj(tx)
-  return transaction.to?.toString() === ShardeumFlags.daoTargetAddress
+  return tx instanceof DaoTx || transaction.to?.toString() === ShardeumFlags.daoTargetAddress
 }
 
 /**
