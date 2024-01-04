@@ -1,6 +1,5 @@
 import * as crypto from '@shardus/crypto-utils'
 import { Shardus, ShardusTypes } from '@shardus/core'
-import { create } from '../accounts'
 import { daoConfig } from '../../config/dao'
 import { DevIssueAccount } from '../accounts/devIssueAccount'
 import { TransactionKeys, WrappedStates } from '../../shardeum/shardeumTypes'

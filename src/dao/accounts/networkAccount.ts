@@ -4,55 +4,67 @@ import { DeveloperPayment, DevWindows, Windows } from '../types'
 import { AccountType, BaseAccount, NetworkParameters } from '../../shardeum/shardeumTypes'
 import { initialNetworkParamters } from '../../shardeum/initialNetworkParameters'
 
-export interface DaoGlobalAccount extends BaseAccount {
-  accountType: AccountType.DaoAccount
+export class DaoGlobalAccount implements BaseAccount {
+  readonly accountType: AccountType.DaoAccount = AccountType.DaoAccount
   id: string
 
   windows: Windows
-  nextWindows: Windows | object
+  nextWindows: Windows | Record<string, never> = {}
 
   devWindows: DevWindows
-  nextDevWindows: DevWindows | object
+  nextDevWindows: DevWindows | Record<string, never> = {}
 
-  issue: number
-  devIssue: number
+  issue = 1
+  devIssue = 1
 
-  developerFund: DeveloperPayment[]
-  nextDeveloperFund: DeveloperPayment[]
+  developerFund: DeveloperPayment[] = []
+  nextDeveloperFund: DeveloperPayment[] = []
 
   current: NetworkParameters
-  next: NetworkParameters | Record<string, never>
+  next: NetworkParameters | Record<string, never> = {}
+
+  timestamp = 0
 
   hash: crypto.hexstring
-  timestamp: number
-}
 
-export function isDaoGlobalAccount(obj: object | null | undefined): obj is DaoGlobalAccount {
-  // to-do: add or remove
-  // 'type' in obj
-  // obj.type === 'NetworkAccount'
-  return obj != null && 'id' in obj && 'issue' in obj && 'hash' in obj && 'timestamp' in obj
-}
+  constructor(
+    accountId: string,
+    timestamp = 0,
+    windows?: Windows,
+    devWindows?: DevWindows,
+    networkParamters?: NetworkParameters
+  ) {
+    const proposalWindow = [timestamp, timestamp + daoConfig.TIME_FOR_PROPOSALS]
+    const votingWindow = [proposalWindow[1], proposalWindow[1] + daoConfig.TIME_FOR_VOTING]
+    const graceWindow = [votingWindow[1], votingWindow[1] + daoConfig.TIME_FOR_GRACE]
+    const applyWindow = [graceWindow[1], graceWindow[1] + daoConfig.TIME_FOR_APPLY]
 
-export const createDaoGlobalAccount = (accountId: string, timestamp: number): DaoGlobalAccount => {
-  const proposalWindow = [timestamp, timestamp + daoConfig.TIME_FOR_PROPOSALS]
-  const votingWindow = [proposalWindow[1], proposalWindow[1] + daoConfig.TIME_FOR_VOTING]
-  const graceWindow = [votingWindow[1], votingWindow[1] + daoConfig.TIME_FOR_GRACE]
-  const applyWindow = [graceWindow[1], graceWindow[1] + daoConfig.TIME_FOR_APPLY]
+    const devProposalWindow = [timestamp, timestamp + daoConfig.TIME_FOR_DEV_PROPOSALS]
+    const devVotingWindow = [devProposalWindow[1], devProposalWindow[1] + daoConfig.TIME_FOR_DEV_VOTING]
+    const devGraceWindow = [devVotingWindow[1], devVotingWindow[1] + daoConfig.TIME_FOR_DEV_GRACE]
+    const devApplyWindow = [devGraceWindow[1], devGraceWindow[1] + daoConfig.TIME_FOR_DEV_APPLY]
 
-  const devProposalWindow = [timestamp, timestamp + daoConfig.TIME_FOR_DEV_PROPOSALS]
-  const devVotingWindow = [devProposalWindow[1], devProposalWindow[1] + daoConfig.TIME_FOR_DEV_VOTING]
-  const devGraceWindow = [devVotingWindow[1], devVotingWindow[1] + daoConfig.TIME_FOR_DEV_GRACE]
-  const devApplyWindow = [devGraceWindow[1], devGraceWindow[1] + daoConfig.TIME_FOR_DEV_APPLY]
+    this.id = accountId
+    this.windows = windows ?? {
+      proposalWindow,
+      votingWindow,
+      graceWindow,
+      applyWindow,
+    }
+    this.devWindows = devWindows ?? {
+      devProposalWindow,
+      devVotingWindow,
+      devGraceWindow,
+      devApplyWindow,
+    }
+    this.current = networkParamters ?? initialNetworkParamters
+    this.hash = crypto.hashObj(this.getHashable())
+    console.log('INITIAL_HASH: ', this.hash)
 
-  const account: DaoGlobalAccount = {
-    // to-do: There are a lot of hard coded values in the change: value below.
-    //        Can/should they be taken from another source to avoid duplication?
-    accountType: AccountType.DaoAccount,
-    id: accountId,
-
-    /* to-do: add to type or remove from literal
-    listOfChanges: [
+    // TODO: There are a lot of hard coded values in the `change` field below.
+    //       Can/should they be taken from another source to avoid duplication?
+    /* TODO: add to class?
+    this.listOfChanges = [
       {
         cycle: 1,
         change: {
@@ -112,30 +124,22 @@ export const createDaoGlobalAccount = (accountId: string, timestamp: number): Da
       },
     ],
     */
-    windows: {
-      proposalWindow,
-      votingWindow,
-      graceWindow,
-      applyWindow,
-    },
-    nextWindows: {},
-    devWindows: {
-      devProposalWindow,
-      devVotingWindow,
-      devGraceWindow,
-      devApplyWindow,
-    },
-    nextDevWindows: {},
-    developerFund: [],
-    nextDeveloperFund: [],
-    current: initialNetworkParamters,
-    next: {},
-    issue: 1,
-    devIssue: 1,
-    hash: '',
-    timestamp: 0,
   }
-  account.hash = crypto.hashObj(account)
-  console.log('INITIAL_HASH: ', account.hash)
-  return account
+
+  getHashable(): object {
+    return {
+      id: this.id,
+      windows: this.windows,
+      nextWindows: this.nextWindows,
+      devWindows: this.devWindows,
+      nextDevWindows: this.nextDevWindows,
+      issue: this.issue,
+      devIssue: this.devIssue,
+      developerFund: this.developerFund,
+      nextDeveloperFund: this.nextDeveloperFund,
+      current: this.current,
+      next: this.next,
+      timestamp: this.timestamp,
+    }
+  }
 }
