@@ -4,7 +4,6 @@ import { ApplyResponse, OpaqueTransaction } from '@shardus/core/dist/shardus/sha
 import { createInternalTxReceipt } from '..'
 import { ShardeumFlags } from '../shardeum/shardeumFlags'
 import {
-  AccountType,
   InternalTXType,
   InternalTx,
   NetworkAccount,
@@ -14,11 +13,10 @@ import {
 import { DaoGlobalAccount } from './accounts/networkAccount'
 import { decodeDaoTxFromEVMTx } from './utils'
 import { Transaction, TransactionType } from '@ethereumjs/tx'
-import transactions from './tx'
+import transactions, { DaoTx } from './tx'
 import { getTransactionObj } from '../setup/helpers'
 import * as AccountsStorage from '../storage/accountStorage'
-import { daoAccount, daoConfig } from '../config/dao'
-import { initialNetworkParamters } from '../shardeum/initialNetworkParameters'
+import { daoAccount } from '../config/dao'
 
 export function setupDaoAccount(shardus: Shardus, when: number): void {
   if (ShardeumFlags.EnableDaoFeatures) {
@@ -51,7 +49,7 @@ export function getRelevantDataInitDao(
 ): boolean {
   if (!wrappedEVMAccount) {
     if (accountId === daoAccount) {
-      wrappedEVMAccount = createDaoAccount()
+      wrappedEVMAccount = new DaoGlobalAccount(daoAccount)
       return true
     } else {
       //wrappedEVMAccount = createNodeAccount(accountId) as any
@@ -60,45 +58,6 @@ export function getRelevantDataInitDao(
   return false
 }
 
-function createDaoAccount(timestamp = 0): DaoGlobalAccount {
-  const proposalWindow = [timestamp, timestamp + daoConfig.TIME_FOR_PROPOSALS]
-  const votingWindow = [proposalWindow[1], proposalWindow[1] + daoConfig.TIME_FOR_VOTING]
-  const graceWindow = [votingWindow[1], votingWindow[1] + daoConfig.TIME_FOR_GRACE]
-  const applyWindow = [graceWindow[1], graceWindow[1] + daoConfig.TIME_FOR_APPLY]
-
-  const devProposalWindow = [timestamp, timestamp + daoConfig.TIME_FOR_DEV_PROPOSALS]
-  const devVotingWindow = [devProposalWindow[1], devProposalWindow[1] + daoConfig.TIME_FOR_DEV_VOTING]
-  const devGraceWindow = [devVotingWindow[1], devVotingWindow[1] + daoConfig.TIME_FOR_DEV_GRACE]
-  const devApplyWindow = [devGraceWindow[1], devGraceWindow[1] + daoConfig.TIME_FOR_DEV_APPLY]
-
-  const account: DaoGlobalAccount = {
-    windows: {
-      proposalWindow,
-      votingWindow,
-      graceWindow,
-      applyWindow,
-    },
-    nextWindows: {},
-    devWindows: {
-      devProposalWindow,
-      devVotingWindow,
-      devGraceWindow,
-      devApplyWindow,
-    },
-    nextDevWindows: {},
-    developerFund: [],
-    nextDeveloperFund: [],
-    issue: 1,
-    devIssue: 1,
-    id: daoAccount,
-    current: initialNetworkParamters,
-    next: {},
-    hash: '',
-    timestamp: 0,
-    accountType: AccountType.DaoAccount,
-  }
-  return account
-}
 
 export function isDaoTx(tx: OpaqueTransaction): boolean {
   // EVM txs come in as serialized hexstrings
