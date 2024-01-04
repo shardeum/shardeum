@@ -1204,10 +1204,15 @@ const configShardusEndpoints = (): void => {
   })
 
   shardus.registerExternalGet('eth_getBlockByNumber', externalApiMiddleware, async (req, res) => {
+    const blockNumberParam = req.query.blockNumber
     let blockNumber: number | string
-    if (typeof req.query.blockNumber === 'string' || typeof req.query.blockNumber === 'number') {
-      blockNumber = req.query.blockNumber
+
+    if (blockNumberParam === 'latest' || blockNumberParam === 'earliest') {
+      blockNumber = blockNumberParam
+    } else if (typeof blockNumberParam === 'number' && blockNumberParam >= 0) {
+      blockNumber = blockNumberParam
     }
+
     if (blockNumber === 'latest') blockNumber = latestBlock
     if (blockNumber === 'earliest') {
       const readableBlockValues = Object.values(readableBlocks)
