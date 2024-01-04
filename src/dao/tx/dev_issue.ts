@@ -105,7 +105,7 @@ export function createRelevantAccount(
 ): WrappedResponse {
   if (!account) {
     if (accountId === tx.devIssue) {
-      account = create.devIssueAccount(accountId)
+      account = new DevIssueAccount(accountId)
     } else {
       account = new NodeAccount(accountId)
     }
