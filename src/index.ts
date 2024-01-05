@@ -4070,6 +4070,9 @@ const shardusSetup = (): void => {
           if (ShardeumFlags.txBalancePreCheck) {
             appData.balance = balance
           }
+
+          //force all EVM transactions including simple ones to generate a timestamp
+          appData.requestNewTimestamp = true
         }
         let shouldGenerateAccesslist = true
         if (ShardeumFlags.autoGenerateAccessList === false) shouldGenerateAccesslist = false
