@@ -31,7 +31,7 @@ export function serializeEVMAppData(stream: VectorBufferStream, obj: EVMAppData,
   stream.writeUInt32(obj.accountType)
   stream.writeString(obj.ethAddress)
   stream.writeString(obj.hash)
-  stream.writeUInt32(obj.timestamp)
+  stream.writeDouble(obj.timestamp)
 
   // Serialize optional fields with presence flags
   if (obj.account !== undefined) {
@@ -67,7 +67,7 @@ export function deserializeEVMAppData(stream: VectorBufferStream): EVMAppData {
   const accountType = stream.readUInt32()
   const ethAddress = stream.readString()
   const hash = stream.readString()
-  const timestamp = stream.readUInt32()
+  const timestamp = stream.readDouble()
   const account = stream.readUInt8() === 1 ? deserializeEVMAccount(stream) : undefined
   const key = stream.readUInt8() === 1 ? stream.readString() : undefined
   const valueBuffer = stream.readUInt8() === 1 ? stream.readBuffer() : undefined
