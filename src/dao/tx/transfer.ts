@@ -75,7 +75,7 @@ export function apply(
 ): void {
   const from = wrappedStates[tx.from].data
   const to: UserAccount = wrappedStates[tx.to].data
-  const network: DaoGlobalAccount = wrappedStates[daoConfig.daoAccount].data
+  const network: DaoGlobalAccount = wrappedStates[daoConfig.daoAccountAddress].data
   from.data.balance -= utils.maintenanceAmount(txTimestamp, from, network)
   to.data.balance += tx.amount
   from.data.transactions.push({ ...tx, txId })
@@ -87,7 +87,7 @@ export function apply(
 
 export function keys(tx: Transfer, result: TransactionKeys): TransactionKeys {
   result.sourceKeys = [tx.from]
-  result.targetKeys = [tx.to, daoConfig.daoAccount]
+  result.targetKeys = [tx.to, daoConfig.daoAccountAddress]
   result.allKeys = [...result.sourceKeys, ...result.targetKeys]
   return result
 }

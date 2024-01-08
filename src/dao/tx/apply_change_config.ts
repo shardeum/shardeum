@@ -31,14 +31,14 @@ export class ApplyChangeConfig implements DaoTx<NodeAccount> {
   }
 
   apply(txTimestamp: number, wrappedStates: WrappedStates, dapp: Shardus): void {
-    const network: NetworkAccount = wrappedStates[daoConfig.daoAccount].data
+    const network: NetworkAccount = wrappedStates[daoConfig.daoAccountAddress].data
     network.listOfChanges.push(this.change)
     network.timestamp = txTimestamp
     dapp.log(`=== APPLIED CHANGE_CONFIG GLOBAL ${stringify(network)} ===`)
   }
 
   keys(result: TransactionKeys): TransactionKeys {
-    result.targetKeys = [daoConfig.daoAccount]
+    result.targetKeys = [daoConfig.daoAccountAddress]
     result.allKeys = [...result.sourceKeys, ...result.targetKeys]
     return result
   }

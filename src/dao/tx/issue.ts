@@ -59,7 +59,7 @@ export class Issue implements IIssue, DaoTx<IssueAccount> {
   }
 
   validate(wrappedStates: WrappedStates, response: IncomingTransactionResult): IncomingTransactionResult {
-    const network: DaoGlobalAccount = wrappedStates[daoConfig.daoAccount].data
+    const network: DaoGlobalAccount = wrappedStates[daoConfig.daoAccountAddress].data
     const issue: IssueAccount = wrappedStates[this.issue]?.data
 
     if (issue.active !== null) {
@@ -100,7 +100,7 @@ export class Issue implements IIssue, DaoTx<IssueAccount> {
   apply(txTimestamp: number, wrappedStates: WrappedStates, dapp: Shardus): void {
     const from: NodeAccount = wrappedStates[this.from].data
 
-    const network: DaoGlobalAccount = wrappedStates[daoConfig.daoAccount].data
+    const network: DaoGlobalAccount = wrappedStates[daoConfig.daoAccountAddress].data
     const issue: IssueAccount = wrappedStates[this.issue].data
     const proposal: ProposalAccount = wrappedStates[this.proposal].data
 
@@ -122,7 +122,7 @@ export class Issue implements IIssue, DaoTx<IssueAccount> {
 
   keys(result: TransactionKeys): TransactionKeys {
     result.sourceKeys = [this.from]
-    result.targetKeys = [this.issue, this.proposal, daoConfig.daoAccount]
+    result.targetKeys = [this.issue, this.proposal, daoConfig.daoAccountAddress]
     result.allKeys = [...result.sourceKeys, ...result.targetKeys]
     return result
   }

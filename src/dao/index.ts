@@ -1,7 +1,7 @@
 import { Shardus } from '@shardus/core'
 import shardus from '@shardus/core/dist/shardus'
 import { ApplyResponse, OpaqueTransaction } from '@shardus/core/dist/shardus/shardus-types'
-import { createInternalTxReceipt } from '..'
+import { createInternalTxReceipt, logFlags, shardeumGetTime } from '..'
 import { ShardeumFlags } from '../shardeum/shardeumFlags'
 import {
   InternalTXType,
@@ -11,12 +11,14 @@ import {
   WrappedEVMAccount,
 } from '../shardeum/shardeumTypes'
 import { DaoGlobalAccount } from './accounts/networkAccount'
-import { decodeDaoTxFromEVMTx } from './utils'
+import { applyParameters, decodeDaoTxFromEVMTx, generateIssue, tallyVotes } from './utils'
 import { Transaction, TransactionType } from '@ethereumjs/tx'
 import transactions, { DaoTx } from './tx'
 import { getTransactionObj } from '../setup/helpers'
 import * as AccountsStorage from '../storage/accountStorage'
-import { daoAccount } from '../config/dao'
+import { daoAccountAddress } from '../config/dao'
+import { config } from 'dotenv'
+import { ONE_SECOND } from '../config'
 
 export function setupDaoAccount(shardus: Shardus, when: number): void {
   if (ShardeumFlags.EnableDaoFeatures) {
@@ -25,8 +27,13 @@ export function setupDaoAccount(shardus: Shardus, when: number): void {
       internalTXType: InternalTXType.InitDao,
       timestamp: when,
     }
-    shardus.setGlobal(daoAccount, daoValue, when, daoAccount)
+    shardus.setGlobal(daoAccountAddress, daoValue, when, daoAccountAddress)
   }
+}
+
+export async function getDaoAccountObj(shardus: Shardus): Promise<DaoGlobalAccount> {
+  const account = await shardus.getLocalOrRemoteAccount(daoAccountAddress)
+  return account.data as DaoGlobalAccount
 }
 
 export function applyInitDaoTx(
@@ -36,10 +43,10 @@ export function applyInitDaoTx(
   txTimestamp: number,
   txId: string
 ): void {
-  const dao: NetworkAccount = wrappedStates[daoAccount].data
+  const dao: NetworkAccount = wrappedStates[daoAccountAddress].data
   dao.timestamp = txTimestamp
   if (ShardeumFlags.supportInternalTxReceipt) {
-    createInternalTxReceipt(shardus, applyResponse, internalTx, daoAccount, daoAccount, txTimestamp, txId)
+    createInternalTxReceipt(shardus, applyResponse, internalTx, daoAccountAddress, daoAccountAddress, txTimestamp, txId)
   }
 }
 
@@ -48,8 +55,8 @@ export function getRelevantDataInitDao(
   wrappedEVMAccount: NetworkAccount | DaoGlobalAccount | WrappedEVMAccount
 ): boolean {
   if (!wrappedEVMAccount) {
-    if (accountId === daoAccount) {
-      wrappedEVMAccount = new DaoGlobalAccount(daoAccount)
+    if (accountId === daoAccountAddress) {
+      wrappedEVMAccount = new DaoGlobalAccount(daoAccountAddress)
       return true
     } else {
       //wrappedEVMAccount = createNodeAccount(accountId) as any
@@ -149,4 +156,106 @@ export function handleDaoTxApply(
       transactions[daoTx.type].apply(tx, txTimestamp, wrappedStates, dapp)
     }
   }
+}
+
+/**
+ * This function initiates the DAO maintenance cycle and serves as a closure to
+ * hold long-lived variables needed for it.
+ */
+export function startDaoMaintenanceCycle(interval: number, shardus: Shardus): void {
+  /**
+   * This diagram explains how expected, drift, and cycleInterval are used to
+   * consistently realign the daoMaintenance fn to run in sync with some
+   * expected interval (cycleInterval in this case) 
+   * 
+   * now             expected        expected_2      expected_3      expected_4
+   * |               |               |               |               |
+   * | cycleInterval | cycleInterval | cycleInterval | cycleInterval |
+   * |---------------|---------------|---------------|---------------|
+   * |               |
+   * |               |       actual
+   * |               |       |
+   * |               | drift | cycleInterval |
+   * |---------------|-------|-------|-------|
+   * |                       |       |
+   * |                       |       | drift |
+   * |                       |       |-------|
+   * |                       |       |
+   * |                       |       setTimeout(..., cycleInterval - drift)
+   * |                       |       |
+   * |                       |       |         actual_2
+   * |                       |       | drift_2 |
+   * |-----------------------|-------|---------|
+   */
+  let expected = shardeumGetTime() + interval
+  let drift: number
+  let currentTime: number
+
+  // Variables to track generation of issue/tally/apply for this interval
+  let issueGenerated = false
+  let tallyGenerated = false
+  let applyGenerated = false
+
+  /**
+   * The function is called every interval to run DAO maintenance
+   */
+  async function daoMaintenance(): Promise<void> {
+    drift = shardeumGetTime() - expected
+    currentTime = shardeumGetTime()
+
+    try {
+      // Get the dao account and node data needed for issue creation
+      const daoAccountObj = await getDaoAccountObj(shardus)
+      const [cycleData] = shardus.getLatestCycles()
+      const luckyNodes = shardus.getClosestNodes(cycleData.previous, 3)
+      const nodeId = shardus.getNodeId()
+      const node = shardus.getNode(nodeId)
+      const nodeAddress = node.address
+
+      // ISSUE
+      if (currentTime >= daoAccountObj.windows.proposalWindow[0] && currentTime <= daoAccountObj.windows.proposalWindow[1]) {
+        if (!issueGenerated && daoAccountObj.issue > 1) {
+          if (luckyNodes.includes(nodeId)) {
+            await generateIssue(nodeAddress, nodeId, shardus)
+          }
+          issueGenerated = true
+          tallyGenerated = false
+          applyGenerated = false
+        }
+      }
+
+      // TALLY
+      if (currentTime >= daoAccountObj.windows.graceWindow[0] && currentTime <= daoAccountObj.windows.graceWindow[1]) {
+        if (!tallyGenerated) {
+          if (luckyNodes.includes(nodeId)) {
+            await tallyVotes(nodeAddress, nodeId, shardus)
+          }
+          issueGenerated = false
+          tallyGenerated = true
+          applyGenerated = false
+        }
+      }
+
+      // APPLY
+      if (currentTime >= daoAccountObj.windows.applyWindow[0] && currentTime <= daoAccountObj.windows.applyWindow[1]) {
+        if (!applyGenerated) {
+          if (luckyNodes.includes(nodeId)) {
+            await applyParameters(nodeAddress, nodeId, shardus)
+          }
+          issueGenerated = false
+          tallyGenerated = false
+          applyGenerated = true
+        }
+      }
+
+    } catch (err) {
+      /* prettier-ignore */ if (logFlags.error) shardus.log('daoMaintenance ERR: ', err)
+      /* prettier-ignore */ if (logFlags.error) console.log('daoMaintenance ERR: ', err)
+    } 
+
+    expected += interval
+    setTimeout(daoMaintenance, Math.max(100, interval - drift))
+  }
+
+  setTimeout(daoMaintenance, interval)
 }
