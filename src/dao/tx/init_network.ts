@@ -21,9 +21,9 @@ export function validate(
   wrappedStates: WrappedStates,
   response: ShardusTypes.IncomingTransactionResult
 ): ShardusTypes.IncomingTransactionResult {
-  const network: DaoGlobalAccount = wrappedStates[daoConfig.daoAccount].data
+  const network: DaoGlobalAccount = wrappedStates[daoConfig.daoAccountAddress].data
 
-  if (network.id !== daoConfig.daoAccount) {
+  if (network.id !== daoConfig.daoAccountAddress) {
     response.reason = "Network account Id doesn't match the configuration"
     return response
   }
@@ -34,7 +34,7 @@ export function validate(
 }
 
 export function apply(txTimestamp: number, wrappedStates: WrappedStates, dapp: Shardus): void {
-  const network: DaoGlobalAccount = wrappedStates[daoConfig.daoAccount].data
+  const network: DaoGlobalAccount = wrappedStates[daoConfig.daoAccountAddress].data
   network.timestamp = txTimestamp
   console.log(`init_network NETWORK_ACCOUNT: ${stringify(network)}`)
   // from.timestamp = txTimestamp
@@ -43,7 +43,7 @@ export function apply(txTimestamp: number, wrappedStates: WrappedStates, dapp: S
 
 export function keys(result: TransactionKeys): TransactionKeys {
   // result.sourceKeys = [tx.from]
-  result.targetKeys = [daoConfig.daoAccount]
+  result.targetKeys = [daoConfig.daoAccountAddress]
   result.allKeys = [...result.sourceKeys, ...result.targetKeys]
   return result
 }
@@ -56,7 +56,7 @@ export function createRelevantAccount(
   accountCreated = false
 ): WrappedResponse {
   if (!account) {
-    if (accountId === daoConfig.daoAccount) {
+    if (accountId === daoConfig.daoAccountAddress) {
       account = new DaoGlobalAccount(accountId, tx.timestamp)
     } else {
       account = new NodeAccount(accountId)

@@ -82,7 +82,7 @@ export function apply(
   dapp: Shardus
 ): void {
   const from: UserAccount = wrappedStates[tx.from].data
-  const network: DaoGlobalAccount = wrappedStates[daoConfig.daoAccount].data
+  const network: DaoGlobalAccount = wrappedStates[daoConfig.daoAccountAddress].data
   const recipients: UserAccount[] = tx.recipients.map((id: string) => wrappedStates[id].data)
   from.data.transactions.push({ ...tx, txId })
   for (const user of recipients) {
@@ -96,7 +96,7 @@ export function apply(
 
 export function keys(tx: Distribute, result: TransactionKeys): TransactionKeys {
   result.sourceKeys = [tx.from]
-  result.targetKeys = [...tx.recipients, daoConfig.daoAccount]
+  result.targetKeys = [...tx.recipients, daoConfig.daoAccountAddress]
   result.allKeys = [...result.sourceKeys, ...result.targetKeys]
   return result
 }

@@ -139,8 +139,9 @@ import { P2P } from '@shardus/types'
 import { getExternalApiMiddleware } from './middleware/externalApiMiddleware'
 import { AccountsEntry } from './storage/storage'
 import { getCachedRIAccount, setCachedRIAccount } from './storage/riAccountsCache'
-import { applyInitDaoTx, getRelevantDataInitDao, handleDaoTxApply, handleDaoTxCrack, handleDaoTxGetRelevantData, isDaoTx } from './dao'
+import { applyInitDaoTx, getDaoAccountObj, getRelevantDataInitDao, handleDaoTxApply, handleDaoTxCrack, handleDaoTxGetRelevantData, isDaoTx, startDaoMaintenanceCycle } from './dao'
 import { DaoTx } from './dao/tx'
+import { applyParameters, generateIssue, tallyVotes } from './dao/utils'
 
 let latestBlock = 0
 export const blocks: BlockMap = {}
@@ -4278,7 +4279,7 @@ const shardusSetup = (): void => {
           keys.sourceKeys = [tx.reportedNodePublickKey]
           keys.targetKeys = [toShardusAddress(tx.operatorEVMAddress, AccountType.Account), networkAccount]
         } else if (internalTx.internalTXType === InternalTXType.InitDao) {
-          keys.targetKeys = [daoConfig.daoAccount]
+          keys.targetKeys = [daoConfig.daoAccountAddress]
         } else {
           console.warn("daoLogging: unhandled internalTx.internalTXType: ", internalTx.internalTXType)
         }
@@ -6534,6 +6535,8 @@ export function shardeumGetTime(): number {
     ; (async (): Promise<void> => {
       const serverConfig = config.server
       const cycleInterval = serverConfig.p2p.cycleDuration * ONE_SECOND
+
+      startDaoMaintenanceCycle(cycleInterval, shardus)
 
       let node
       let nodeId: string

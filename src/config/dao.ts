@@ -4,7 +4,7 @@ import { toShardusAddress } from "../shardeum/evmAddress";
 import { AccountType } from "../shardeum/shardeumTypes";
 
 export interface DaoConfig {
-    daoAccount: string,
+    daoAccountAddress: string,
     TIME_FOR_PROPOSALS: number,
     TIME_FOR_VOTING: number,
     TIME_FOR_GRACE: number,
@@ -15,10 +15,10 @@ export interface DaoConfig {
     TIME_FOR_DEV_APPLY: number,
 }
 
-export const daoAccount = toShardusAddress(ShardeumFlags.daoTargetAddress, AccountType.Account)
+export const daoAccountAddress = toShardusAddress(ShardeumFlags.daoTargetAddress, AccountType.Account)
 
 export const daoConfig: DaoConfig = {
-  daoAccount,
+  daoAccountAddress: daoAccountAddress,
   // dev settings
   TIME_FOR_PROPOSALS: ONE_MINUTE + ONE_SECOND * 30,
   TIME_FOR_VOTING: ONE_MINUTE + ONE_SECOND * 30,

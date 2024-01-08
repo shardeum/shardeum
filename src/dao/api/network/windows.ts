@@ -31,7 +31,7 @@ export const windows =
   () =>
   async (_req: Request, res: Response): Promise<void> => {
     try {
-      const network = await getShardusAPI().getLocalOrRemoteAccount(daoConfig.daoAccount)
+      const network = await getShardusAPI().getLocalOrRemoteAccount(daoConfig.daoAccountAddress)
       const windows =
         typeof network.data == 'object' && network.data && 'windows' in network.data
           ? network.data.windows
@@ -46,7 +46,7 @@ export const windows_dev =
   () =>
   async (_req: Request, res: Response): Promise<void> => {
     try {
-      const network = await getShardusAPI().getLocalOrRemoteAccount(daoConfig.daoAccount)
+      const network = await getShardusAPI().getLocalOrRemoteAccount(daoConfig.daoAccountAddress)
       const devWindows =
         typeof network.data == 'object' && network.data && 'devWindows' in network.data
           ? network.data.devWindows
