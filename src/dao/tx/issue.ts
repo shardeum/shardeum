@@ -97,7 +97,7 @@ export class Issue implements IIssue, DaoTx<IssueAccount> {
     return response
   }
 
-  apply(txTimestamp: number, wrappedStates: WrappedStates, dapp: Shardus): void {
+  apply(txTimestamp: number, _txId: string, wrappedStates: WrappedStates, dapp: Shardus): void {
     const from: NodeAccount = wrappedStates[this.from].data
 
     const network: DaoGlobalAccount = wrappedStates[daoConfig.daoAccountAddress].data
