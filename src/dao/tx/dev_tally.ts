@@ -51,7 +51,7 @@ export function validate(
   wrappedStates: WrappedStates,
   response: ShardusTypes.IncomingTransactionResult
 ): ShardusTypes.IncomingTransactionResult {
-  const network: DaoGlobalAccount = wrappedStates[daoConfig.daoAccount].data
+  const network: DaoGlobalAccount = wrappedStates[daoConfig.daoAccountAddress].data
   const devIssue: DevIssueAccount = wrappedStates[tx.devIssue] && wrappedStates[tx.devIssue].data
   const devProposals: DevProposalAccount[] = tx.devProposals.map((id: string) => wrappedStates[id].data)
 
@@ -73,7 +73,7 @@ export function validate(
     )}`
     return response
   }
-  if (network.id !== daoConfig.daoAccount) {
+  if (network.id !== daoConfig.daoAccountAddress) {
     response.reason = 'To account must be the network account'
     return response
   }
@@ -101,7 +101,7 @@ export function apply(
   applyResponse: ApplyResponse
 ): void {
   const from: NodeAccount = wrappedStates[tx.from].data
-  const network: DaoGlobalAccount = wrappedStates[daoConfig.daoAccount].data
+  const network: DaoGlobalAccount = wrappedStates[daoConfig.daoAccountAddress].data
   const devIssue: DevIssueAccount = wrappedStates[tx.devIssue].data
   const devProposals: DevProposalAccount[] = tx.devProposals.map((id: string) => wrappedStates[id].data)
   let nextDeveloperFund: DeveloperPayment[] = []
@@ -162,13 +162,13 @@ export function apply(
   const value = {
     type: 'apply_dev_tally',
     timestamp: when,
-    network: daoConfig.daoAccount,
+    network: daoConfig.daoAccountAddress,
     nextDeveloperFund,
     nextDevWindows,
   }
 
   const ourAppDefinedData = applyResponse.appDefinedData as OurAppDefinedData
-  ourAppDefinedData.globalMsg = { address: daoConfig.daoAccount, value, when, source: daoConfig.daoAccount }
+  ourAppDefinedData.globalMsg = { address: daoConfig.daoAccountAddress, value, when, source: daoConfig.daoAccountAddress }
 
   from.timestamp = txTimestamp
   devIssue.timestamp = txTimestamp
@@ -183,7 +183,7 @@ export function transactionReceiptPass(dapp: Shardus, applyResponse: ApplyRespon
 
 export function keys(tx: DevTally, result: TransactionKeys): TransactionKeys {
   result.sourceKeys = [tx.from]
-  result.targetKeys = [...tx.devProposals, tx.devIssue, daoConfig.daoAccount]
+  result.targetKeys = [...tx.devProposals, tx.devIssue, daoConfig.daoAccountAddress]
   result.allKeys = [...result.sourceKeys, ...result.targetKeys]
   return result
 }

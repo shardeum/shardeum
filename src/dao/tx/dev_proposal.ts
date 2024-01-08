@@ -108,7 +108,7 @@ export function validate(
   wrappedStates: WrappedStates,
   response: ShardusTypes.IncomingTransactionResult
 ): ShardusTypes.IncomingTransactionResult {
-  const network: DaoGlobalAccount = wrappedStates[daoConfig.daoAccount].data
+  const network: DaoGlobalAccount = wrappedStates[daoConfig.daoAccountAddress].data
   const devIssue: DevIssueAccount = wrappedStates[tx.devIssue] && wrappedStates[tx.devIssue].data
 
   if (tx.sign.owner !== tx.from) {
@@ -167,7 +167,7 @@ export function apply(
   dapp: Shardus
 ): void {
   const from: UserAccount = wrappedStates[tx.from].data
-  const network: DaoGlobalAccount = wrappedStates[daoConfig.daoAccount].data
+  const network: DaoGlobalAccount = wrappedStates[daoConfig.daoAccountAddress].data
   const devIssue: DevIssueAccount = wrappedStates[tx.devIssue].data
   const devProposal: DevProposalAccount = wrappedStates[tx.devProposal].data
 
@@ -191,7 +191,7 @@ export function apply(
 
 export function keys(tx: DevProposal, result: TransactionKeys): TransactionKeys {
   result.sourceKeys = [tx.from]
-  result.targetKeys = [tx.devIssue, tx.devProposal, daoConfig.daoAccount]
+  result.targetKeys = [tx.devIssue, tx.devProposal, daoConfig.daoAccountAddress]
   result.allKeys = [...result.sourceKeys, ...result.targetKeys]
   return result
 }

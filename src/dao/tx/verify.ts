@@ -80,7 +80,7 @@ export function apply(tx: Verify, txTimestamp: number, wrappedStates: WrappedSta
 
 export function keys(tx: Verify, result: TransactionKeys): TransactionKeys {
   result.sourceKeys = [tx.from]
-  result.targetKeys = [daoConfig.daoAccount]
+  result.targetKeys = [daoConfig.daoAccountAddress]
   result.allKeys = [...result.sourceKeys, ...result.targetKeys]
   return result
 }
