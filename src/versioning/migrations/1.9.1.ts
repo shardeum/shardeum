@@ -12,6 +12,8 @@ export const migrate: Migration = async () => {
 
   //this enables the standby list to use a new form of calculation
   shardusConfig.p2p.standbyListFastHash = true
+  // Enable networkBaseline
+  shardusConfig.p2p.networkBaselineEnabled = true
 }
 
 //WARNING if you add a new one of these migration files you must add it to the migrations list in

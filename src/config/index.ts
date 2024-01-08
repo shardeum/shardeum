@@ -122,6 +122,7 @@ config = merge(config, {
     p2p: {
       cycleDuration: 60,
       minNodesToAllowTxs: 1, // to allow single node networks
+      baselineNodes: process.env.baselineNodes ? parseInt(process.env.baselineNodes) : 300, // config used for baseline for entering recovery, restore, and safety. Should be equivalient to minNodes on network startup
       minNodes: process.env.minNodes ? parseInt(process.env.minNodes) : 300,
       maxNodes: process.env.maxNodes ? parseInt(process.env.maxNodes) : 1100,
       maxJoinedPerCycle: 10,
@@ -163,6 +164,9 @@ config = merge(config, {
 
       //1.6.0 migration
       continueOnException: false,
+
+      // 1.9.1 migration
+      networkBaselineEnabled: false, // when enabled, new p2p config `baselineNodes` is the threshold for going into restore, recovery, and safety mode
     },
   },
 })

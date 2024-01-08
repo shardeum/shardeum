@@ -218,6 +218,10 @@ export function isServiceMode(): boolean {
   return ShardeumFlags.startInServiceMode === true
 }
 
+export function shouldLoadNetworkConfigToNetworkAccount(isFirstSeed: boolean): boolean {
+  return ShardeumFlags.loadGenesisNodeNetworkConfigToNetworkAccount === true && isFirstSeed === true
+}
+
 // grab this
 const pointsAverageInterval = 2 // seconds
 
@@ -2341,7 +2345,7 @@ const getNetworkAccount = async (): Promise<ShardusTypes.WrappedData> => {
   return account
 }
 
-const createNetworkAccount = async (accountId: string): Promise<NetworkAccount> => {
+const createNetworkAccount = async (accountId: string, config: Config, isFirstSeed: boolean): Promise<NetworkAccount> => {
   let listOfChanges = []
 
   const networkAccount = await getNetworkAccount()
@@ -2352,6 +2356,13 @@ const createNetworkAccount = async (accountId: string): Promise<NetworkAccount> 
       change: any
       appData: any
     }[]
+  }
+
+  if (shouldLoadNetworkConfigToNetworkAccount(isFirstSeed)) {
+    // This means this is the first node and we have a flag enabled
+    // that indicates that the local network configs should be loaded in the network account and used from all nodes joining
+    listOfChanges.push({ cycle: 1, change: { p2p: config.server.p2p } })
+    /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log('Initial network account listOfChanges', listOfChanges)
   }
 
   const account: NetworkAccount = {
@@ -4560,7 +4571,7 @@ const shardusSetup = (): void => {
         if (internalTx.internalTXType === InternalTXType.InitNetwork) {
           if (!wrappedEVMAccount) {
             if (accountId === networkAccount) {
-              wrappedEVMAccount = await createNetworkAccount(accountId)
+              wrappedEVMAccount = await createNetworkAccount(accountId, config, shardus.p2p.isFirstSeed)
             } else {
               //wrappedEVMAccount = createNodeAccount(accountId) as any
             }
@@ -4878,8 +4889,8 @@ const shardusSetup = (): void => {
             contractAddress: evmAccountInfo.contractAddress, // storage key
             hash: '',
             accountType: AccountType.ContractCode,
-          }
-          /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`Creating new contract storage account key:${evmAccountID} in contract address ${wrappedEVMAccount.ethAddress}`)
+            }     
+            /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`Creating new contract bytes account key:${evmAccountID} in contract address ${wrappedEVMAccount.ethAddress}`)
         } else {
           throw new Error(`getRelevantData: invalid account type ${accountType}`)
         }
