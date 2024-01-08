@@ -105,7 +105,7 @@ export class ApplyParameters implements IApplyParameters, DaoTx<DaoGlobalAccount
     return response
   }
 
-  apply(txTimestamp: number, wrappedStates: WrappedStates, dapp: Shardus): void {
+  apply(txTimestamp: number, _txId: string, wrappedStates: WrappedStates, dapp: Shardus): void {
     const network = wrappedStates[daoConfig.daoAccountAddress].data as DaoGlobalAccount
     network.current = this.current
     network.next = this.next

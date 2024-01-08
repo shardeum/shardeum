@@ -43,7 +43,7 @@ export abstract class DaoTx<Account> {
     response: IncomingTransactionResult,
     dapp: Shardus
   ): IncomingTransactionResult
-  abstract apply(txTimestamp: number, wrappedStates: WrappedStates, dapp: Shardus): void
+  abstract apply(txTimestamp: number, txId: string, wrappedStates: WrappedStates, dapp: Shardus): void
   abstract keys(result: TransactionKeys): TransactionKeys
   abstract createRelevantAccount(
     dapp: Shardus,
