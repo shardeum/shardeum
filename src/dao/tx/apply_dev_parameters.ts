@@ -73,7 +73,7 @@ export class ApplyDevParameters implements IApplyDevParameters, DaoTx<DaoGlobalA
     return response
   }
 
-  apply(txTimestamp: number, wrappedStates: WrappedStates, dapp: Shardus): void {
+  apply(txTimestamp: number, _txId: string, wrappedStates: WrappedStates, dapp: Shardus): void {
     const network = wrappedStates[daoConfig.daoAccountAddress].data as DaoGlobalAccount
     network.devWindows = this.devWindows
     network.nextDevWindows = this.nextDevWindows

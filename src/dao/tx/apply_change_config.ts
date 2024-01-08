@@ -30,7 +30,7 @@ export class ApplyChangeConfig implements DaoTx<NodeAccount> {
     return response
   }
 
-  apply(txTimestamp: number, wrappedStates: WrappedStates, dapp: Shardus): void {
+  apply(txTimestamp: number, _txId: string, wrappedStates: WrappedStates, dapp: Shardus): void {
     const network: NetworkAccount = wrappedStates[daoConfig.daoAccountAddress].data
     network.listOfChanges.push(this.change)
     network.timestamp = txTimestamp
