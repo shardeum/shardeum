@@ -37,14 +37,14 @@ export class ApplyDevPayment implements ApplyDevPayment, DaoTx<DaoGlobalAccount>
   }
 
   apply(txTimestamp: number, wrappedStates: WrappedStates, dapp: Shardus): void {
-    const network: DaoGlobalAccount = wrappedStates[daoConfig.daoAccount].data
+    const network: DaoGlobalAccount = wrappedStates[daoConfig.daoAccountAddress].data
     network.developerFund = this.developerFund
     network.timestamp = txTimestamp
     dapp.log(`=== APPLIED DEV_PAYMENT GLOBAL ${stringify(network)} ===`)
   }
 
   keys(result: TransactionKeys): TransactionKeys {
-    result.targetKeys = [daoConfig.daoAccount]
+    result.targetKeys = [daoConfig.daoAccountAddress]
     result.allKeys = [...result.sourceKeys, ...result.targetKeys]
     return result
   }

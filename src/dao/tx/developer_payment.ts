@@ -76,14 +76,14 @@ export function validate(
   wrappedStates: WrappedStates,
   response: ShardusTypes.IncomingTransactionResult
 ): ShardusTypes.IncomingTransactionResult {
-  const network: DaoGlobalAccount = wrappedStates[daoConfig.daoAccount].data
+  const network: DaoGlobalAccount = wrappedStates[daoConfig.daoAccountAddress].data
   const developer: UserAccount = wrappedStates[tx.developer] && wrappedStates[tx.developer].data
 
   if (tx.timestamp < tx.payment.timestamp) {
     response.reason = 'This payment is not ready to be released'
     return response
   }
-  if (network.id !== daoConfig.daoAccount) {
+  if (network.id !== daoConfig.daoAccountAddress) {
     response.reason = 'To account must be the network account'
     return response
   }
@@ -120,7 +120,7 @@ export function apply(
 ): void {
   const from: NodeAccount = wrappedStates[tx.from].data
 
-  const network: DaoGlobalAccount = wrappedStates[daoConfig.daoAccount].data
+  const network: DaoGlobalAccount = wrappedStates[daoConfig.daoAccountAddress].data
   const developer: UserAccount = wrappedStates[tx.developer].data
   developer.data.payments.push(tx.payment)
   developer.data.balance += tx.payment.amount
@@ -130,12 +130,12 @@ export function apply(
   const value = {
     type: 'apply_developer_payment',
     timestamp: when,
-    network: daoConfig.daoAccount,
+    network: daoConfig.daoAccountAddress,
     developerFund: network.developerFund.filter((payment: DeveloperPayment) => payment.id !== tx.payment.id),
   }
 
   const ourAppDefinedData = applyResponse.appDefinedData as OurAppDefinedData
-  ourAppDefinedData.globalMsg = { address: daoConfig.daoAccount, value, when, source: daoConfig.daoAccount }
+  ourAppDefinedData.globalMsg = { address: daoConfig.daoAccountAddress, value, when, source: daoConfig.daoAccountAddress }
 
   developer.timestamp = txTimestamp
   from.timestamp = txTimestamp
@@ -150,7 +150,7 @@ export function transactionReceiptPass(dapp: Shardus, applyResponse: ApplyRespon
 
 export function keys(tx: DevPayment, result: TransactionKeys): TransactionKeys {
   result.sourceKeys = [tx.from]
-  result.targetKeys = [tx.developer, daoConfig.daoAccount]
+  result.targetKeys = [tx.developer, daoConfig.daoAccountAddress]
   result.allKeys = [...result.sourceKeys, ...result.targetKeys]
   return result
 }

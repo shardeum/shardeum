@@ -74,7 +74,7 @@ export class ApplyDevParameters implements IApplyDevParameters, DaoTx<DaoGlobalA
   }
 
   apply(txTimestamp: number, wrappedStates: WrappedStates, dapp: Shardus): void {
-    const network = wrappedStates[daoConfig.daoAccount].data as DaoGlobalAccount
+    const network = wrappedStates[daoConfig.daoAccountAddress].data as DaoGlobalAccount
     network.devWindows = this.devWindows
     network.nextDevWindows = this.nextDevWindows
     network.developerFund = this.developerFund
@@ -85,7 +85,7 @@ export class ApplyDevParameters implements IApplyDevParameters, DaoTx<DaoGlobalA
   }
 
   keys(result: TransactionKeys): ShardusTypes.TransactionKeys {
-    result.targetKeys = [daoConfig.daoAccount]
+    result.targetKeys = [daoConfig.daoAccountAddress]
     result.allKeys = [...result.sourceKeys, ...result.targetKeys]
     return result
   }

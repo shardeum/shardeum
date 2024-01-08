@@ -62,7 +62,7 @@ export function validate(
   wrappedStates: WrappedStates,
   response: ShardusTypes.IncomingTransactionResult
 ): ShardusTypes.IncomingTransactionResult {
-  const network: DaoGlobalAccount = wrappedStates[daoConfig.daoAccount].data
+  const network: DaoGlobalAccount = wrappedStates[daoConfig.daoAccountAddress].data
   const devProposal: DevProposalAccount = wrappedStates[tx.devProposal] && wrappedStates[tx.devProposal].data
   const devIssue: DevIssueAccount = wrappedStates[tx.devIssue] && wrappedStates[tx.devIssue].data
 
@@ -114,7 +114,7 @@ export function apply(
   dapp: Shardus
 ): void {
   const from: UserAccount = wrappedStates[tx.from].data
-  const network: DaoGlobalAccount = wrappedStates[daoConfig.daoAccount].data
+  const network: DaoGlobalAccount = wrappedStates[daoConfig.daoAccountAddress].data
   const devProposal: DevProposalAccount = wrappedStates[tx.devProposal].data
 
   from.data.balance -= tx.amount
@@ -135,7 +135,7 @@ export function apply(
 
 export function keys(tx: DevVote, result: TransactionKeys): TransactionKeys {
   result.sourceKeys = [tx.from]
-  result.targetKeys = [tx.devIssue, tx.devProposal, daoConfig.daoAccount]
+  result.targetKeys = [tx.devIssue, tx.devProposal, daoConfig.daoAccountAddress]
   result.allKeys = [...result.sourceKeys, ...result.targetKeys]
   return result
 }

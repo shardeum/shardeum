@@ -22,7 +22,7 @@ export const toll =
             : undefined
 
         if (toll == null) {
-          const network = await getShardusAPI().getLocalOrRemoteAccount(daoConfig.daoAccount)
+          const network = await getShardusAPI().getLocalOrRemoteAccount(daoConfig.daoAccountAddress)
           const toll =
             typeof network.data === 'object' &&
             network.data &&

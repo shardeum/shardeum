@@ -46,7 +46,7 @@ export class ApplyDevTally implements IApplyDevTally, DaoTx<DaoGlobalAccount> {
   }
 
   apply(txTimestamp: number, wrappedStates: WrappedStates, dapp: Shardus): void {
-    const network: DaoGlobalAccount = wrappedStates[daoConfig.daoAccount].data
+    const network: DaoGlobalAccount = wrappedStates[daoConfig.daoAccountAddress].data
     network.nextDeveloperFund = this.nextDeveloperFund
     network.nextDevWindows = this.nextDevWindows
     network.timestamp = txTimestamp
@@ -54,7 +54,7 @@ export class ApplyDevTally implements IApplyDevTally, DaoTx<DaoGlobalAccount> {
   }
 
   keys(result: TransactionKeys): TransactionKeys {
-    result.targetKeys = [daoConfig.daoAccount]
+    result.targetKeys = [daoConfig.daoAccountAddress]
     result.allKeys = [...result.sourceKeys, ...result.targetKeys]
     return result
   }

@@ -43,10 +43,10 @@ export function validate(
   wrappedStates: WrappedStates,
   response: ShardusTypes.IncomingTransactionResult
 ): ShardusTypes.IncomingTransactionResult {
-  const network: DaoGlobalAccount = wrappedStates[daoConfig.daoAccount].data
+  const network: DaoGlobalAccount = wrappedStates[daoConfig.daoAccountAddress].data
   const devIssue: DevIssueAccount = wrappedStates[tx.devIssue].data
 
-  if (network.id !== daoConfig.daoAccount) {
+  if (network.id !== daoConfig.daoAccountAddress) {
     response.reason = 'To account must be the network account'
     return response
   }
@@ -87,14 +87,14 @@ export function apply(
   applyResponse: ShardusTypes.ApplyResponse
 ): void {
   const from: UserAccount = wrappedStates[tx.from].data
-  const network: DaoGlobalAccount = wrappedStates[daoConfig.daoAccount].data
+  const network: DaoGlobalAccount = wrappedStates[daoConfig.daoAccountAddress].data
   const devIssue: DevIssueAccount = wrappedStates[tx.devIssue].data
 
   const when = txTimestamp + 1000 * 10
   const value = {
     type: 'apply_dev_parameters',
     timestamp: when,
-    network: daoConfig.daoAccount,
+    network: daoConfig.daoAccountAddress,
     devWindows: network.nextDevWindows,
     nextDevWindows: {},
     developerFund: [...network.developerFund, ...network.nextDeveloperFund].sort(
@@ -105,7 +105,7 @@ export function apply(
   }
 
   const ourAppDefinedData = applyResponse.appDefinedData as OurAppDefinedData
-  ourAppDefinedData.globalMsg = { address: daoConfig.daoAccount, value, when, source: daoConfig.daoAccount }
+  ourAppDefinedData.globalMsg = { address: daoConfig.daoAccountAddress, value, when, source: daoConfig.daoAccountAddress }
 
   devIssue.active = false
 
@@ -122,7 +122,7 @@ export function transactionReceiptPass(dapp: Shardus, applyResponse: ApplyRespon
 
 export function keys(tx: DevParameters, result: TransactionKeys): TransactionKeys {
   result.sourceKeys = [tx.from]
-  result.targetKeys = [tx.devIssue, daoConfig.daoAccount]
+  result.targetKeys = [tx.devIssue, daoConfig.daoAccountAddress]
   result.allKeys = [...result.sourceKeys, ...result.targetKeys]
   return result
 }

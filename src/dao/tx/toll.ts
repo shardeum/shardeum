@@ -75,7 +75,7 @@ export function validate(
 
 export function apply(tx: Toll, txTimestamp: number, wrappedStates: WrappedStates, dapp: Shardus): void {
   const from: UserAccount = wrappedStates[tx.from].data
-  const network: DaoGlobalAccount = wrappedStates[daoConfig.daoAccount].data
+  const network: DaoGlobalAccount = wrappedStates[daoConfig.daoAccountAddress].data
   from.data.balance -= utils.maintenanceAmount(txTimestamp, from, network)
   from.data.toll = tx.toll
   from.timestamp = txTimestamp
@@ -84,7 +84,7 @@ export function apply(tx: Toll, txTimestamp: number, wrappedStates: WrappedState
 
 export function keys(tx: Toll, result: TransactionKeys): TransactionKeys {
   result.sourceKeys = [tx.from]
-  result.targetKeys = [daoConfig.daoAccount]
+  result.targetKeys = [daoConfig.daoAccountAddress]
   result.allKeys = [...result.sourceKeys, ...result.targetKeys]
   return result
 }

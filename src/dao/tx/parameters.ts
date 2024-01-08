@@ -41,10 +41,10 @@ export function validate(
   wrappedStates: WrappedStates,
   response: ShardusTypes.IncomingTransactionResult
 ): ShardusTypes.IncomingTransactionResult {
-  const network: DaoGlobalAccount = wrappedStates[daoConfig.daoAccount].data
+  const network: DaoGlobalAccount = wrappedStates[daoConfig.daoAccountAddress].data
   const issue: IssueAccount = wrappedStates[tx.issue].data
 
-  if (network.id !== daoConfig.daoAccount) {
+  if (network.id !== daoConfig.daoAccountAddress) {
     response.reason = 'To account must be the network account'
     return response
   }
@@ -74,14 +74,14 @@ export function apply(
 ): void {
   const from: NodeAccount = wrappedStates[tx.from].data
 
-  const network: DaoGlobalAccount = wrappedStates[daoConfig.daoAccount].data
+  const network: DaoGlobalAccount = wrappedStates[daoConfig.daoAccountAddress].data
   const issue: IssueAccount = wrappedStates[tx.issue].data
 
   const when = txTimestamp + 1000 * 10
   const value = {
     type: 'apply_parameters',
     timestamp: when,
-    network: daoConfig.daoAccount,
+    network: daoConfig.daoAccountAddress,
     current: network.next,
     next: {},
     windows: network.nextWindows,
@@ -90,7 +90,7 @@ export function apply(
   }
 
   const ourAppDefinedData = applyResponse.appDefinedData as OurAppDefinedData
-  ourAppDefinedData.globalMsg = { address: daoConfig.daoAccount, value, when, source: daoConfig.daoAccount }
+  ourAppDefinedData.globalMsg = { address: daoConfig.daoAccountAddress, value, when, source: daoConfig.daoAccountAddress }
 
   issue.active = false
 
@@ -107,7 +107,7 @@ export function transactionReceiptPass(dapp: Shardus, applyResponse: ApplyRespon
 
 export function keys(tx: Parameters, result: TransactionKeys): TransactionKeys {
   result.sourceKeys = [tx.from]
-  result.targetKeys = [daoConfig.daoAccount, tx.issue]
+  result.targetKeys = [daoConfig.daoAccountAddress, tx.issue]
   result.allKeys = [...result.sourceKeys, ...result.targetKeys]
   return result
 }

@@ -36,7 +36,7 @@ export function validate(
 ): ShardusTypes.IncomingTransactionResult {
   const from: UserAccount = wrappedStates[tx.from] && wrappedStates[tx.from].data
   const network: DaoGlobalAccount =
-    wrappedStates[daoConfig.daoAccount] && wrappedStates[daoConfig.daoAccount].data
+    wrappedStates[daoConfig.daoAccountAddress] && wrappedStates[daoConfig.daoAccountAddress].data
   if (from === undefined || from === null) {
     response.reason = "from account doesn't exist"
     return response
@@ -70,7 +70,7 @@ export function apply(
   dapp: Shardus
 ): void {
   const from: UserAccount = wrappedStates[tx.from].data
-  const network: DaoGlobalAccount = wrappedStates[daoConfig.daoAccount].data
+  const network: DaoGlobalAccount = wrappedStates[daoConfig.daoAccountAddress].data
   from.claimedSnapshot = true
   from.timestamp = txTimestamp
   network.timestamp = txTimestamp
@@ -79,7 +79,7 @@ export function apply(
 
 export function keys(tx: SnapshotClaim, result: TransactionKeys): TransactionKeys {
   result.sourceKeys = [tx.from]
-  result.targetKeys = [daoConfig.daoAccount]
+  result.targetKeys = [daoConfig.daoAccountAddress]
   result.allKeys = [...result.sourceKeys, ...result.targetKeys]
   return result
 }

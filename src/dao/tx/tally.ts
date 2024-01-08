@@ -50,11 +50,11 @@ export function validate(
   wrappedStates: WrappedStates,
   response: ShardusTypes.IncomingTransactionResult
 ): ShardusTypes.IncomingTransactionResult {
-  const network: DaoGlobalAccount = wrappedStates[daoConfig.daoAccount].data
+  const network: DaoGlobalAccount = wrappedStates[daoConfig.daoAccountAddress].data
   const issue: IssueAccount = wrappedStates[tx.issue]?.data
   const proposals: ProposalAccount[] = tx.proposals.map((id: string) => wrappedStates[id].data)
 
-  if (network.id !== daoConfig.daoAccount) {
+  if (network.id !== daoConfig.daoAccountAddress) {
     response.reason = 'To account must be the network account'
     return response
   }
@@ -96,7 +96,7 @@ export function apply(
   applyResponse: ApplyResponse
 ): void {
   const from: NodeAccount = wrappedStates[tx.from].data
-  const network: DaoGlobalAccount = wrappedStates[daoConfig.daoAccount].data
+  const network: DaoGlobalAccount = wrappedStates[daoConfig.daoAccountAddress].data
   const issue: IssueAccount = wrappedStates[tx.issue].data
   const margin = 100 / (2 * (issue.proposalCount + 1)) / 100
 
@@ -154,13 +154,13 @@ export function apply(
   const value = {
     type: 'apply_tally',
     timestamp: when,
-    network: daoConfig.daoAccount,
+    network: daoConfig.daoAccountAddress,
     next,
     nextWindows,
   }
 
   const ourAppDefinedData = applyResponse.appDefinedData as OurAppDefinedData
-  ourAppDefinedData.globalMsg = { address: daoConfig.daoAccount, value, when, source: daoConfig.daoAccount }
+  ourAppDefinedData.globalMsg = { address: daoConfig.daoAccountAddress, value, when, source: daoConfig.daoAccountAddress }
 
   issue.winnerId = winner.id
 
@@ -187,7 +187,7 @@ export function transactionReceiptPass(
 
 export function keys(tx: Tally, result: TransactionKeys): TransactionKeys {
   result.sourceKeys = [tx.from]
-  result.targetKeys = [...tx.proposals, tx.issue, daoConfig.daoAccount]
+  result.targetKeys = [...tx.proposals, tx.issue, daoConfig.daoAccountAddress]
   result.allKeys = [...result.sourceKeys, ...result.targetKeys]
   return result
 }
