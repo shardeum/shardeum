@@ -1959,7 +1959,7 @@ async function applyInternalTx<A>(
 
   if (internalTx instanceof DaoTx) {
     console.log("daoLogging: executing apply DaoTx")
-    internalTx.apply(txTimestamp, wrappedStates, shardus);
+    internalTx.apply(txTimestamp, txId, wrappedStates, shardus);
   } else if (internalTx.internalTXType === InternalTXType.SetGlobalCodeBytes) {
     // eslint-disable-next-line security/detect-object-injection
     const wrappedEVMAccount: WrappedEVMAccount = wrappedStates[internalTx.from].data
