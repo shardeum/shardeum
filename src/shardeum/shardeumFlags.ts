@@ -109,6 +109,7 @@ interface ShardeumFlags {
   enableLeftNetworkEarlySlashing: boolean
   enableSyncTimeoutSlashing: boolean
   enableNodeRefutedSlashing: boolean
+  loadGenesisNodeNetworkConfigToNetworkAccount: boolean
 }
 
 export const ShardeumFlags: ShardeumFlags = {
@@ -248,7 +249,8 @@ export const ShardeumFlags: ShardeumFlags = {
   numberOfNodesToInjectPenaltyTx: 5,
   enableLeftNetworkEarlySlashing: false,
   enableSyncTimeoutSlashing: false,
-  enableNodeRefutedSlashing: false
+  enableNodeRefutedSlashing: false,
+  loadGenesisNodeNetworkConfigToNetworkAccount: false,
 }
 
 export function updateShardeumFlag(key: string, value: string | number | boolean): void {
