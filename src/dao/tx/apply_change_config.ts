@@ -11,7 +11,8 @@ import { NetworkAccount, WrappedStates } from '../../shardeum/shardeumTypes'
 import { Change } from '@shardus/types/build/src/p2p/CycleParserTypes'
 import { DaoTx } from '.'
 
-export interface ApplyChangeConfig {
+export interface IApplyChangeConfig {
+  type: 'apply_change_config'
   change: {
     cycle: number
     change: Change
@@ -19,7 +20,14 @@ export interface ApplyChangeConfig {
   timestamp: number
 }
 
-export class ApplyChangeConfig implements DaoTx<NodeAccount> {
+export class ApplyChangeConfig implements IApplyChangeConfig, DaoTx<NodeAccount> {
+  readonly type = 'apply_change_config'
+  change: {
+    cycle: number
+    change: Change
+  }
+  timestamp: number
+
   validateFields(response: ShardusTypes.IncomingTransactionResult): ShardusTypes.IncomingTransactionResult {
     return response
   }

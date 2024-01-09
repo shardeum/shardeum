@@ -12,6 +12,7 @@ import { DaoTx } from '.'
 import { TransactionKeys } from '@shardus/core/dist/shardus/shardus-types'
 
 export interface IIssue {
+  type: 'issue'
   nodeId: string
   from: string
   issue: string
@@ -20,6 +21,7 @@ export interface IIssue {
 }
 
 export class Issue implements IIssue, DaoTx<IssueAccount> {
+  readonly type = 'issue'
   nodeId: string
   from: string
   issue: string

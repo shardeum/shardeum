@@ -12,6 +12,7 @@ import { DaoTx } from '.'
 import { SignedObject } from '@shardus/crypto-utils'
 
 export interface IProposal {
+  type: 'proposal'
   from: string
   proposal: string
   issue: string
@@ -21,6 +22,7 @@ export interface IProposal {
 }
 
 export class Proposal implements IProposal, DaoTx<UserAccount | ProposalAccount> {
+  readonly type = 'proposal'
   from: string
   proposal: string
   issue: string
