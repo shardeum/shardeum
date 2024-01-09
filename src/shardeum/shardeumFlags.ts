@@ -109,6 +109,7 @@ interface ShardeumFlags {
   enableNodeRefutedSlashing: boolean
   loadGenesisNodeNetworkConfigToNetworkAccount: boolean
   networkAccountCacheDuration: number
+  enableClaimRewardAdminCert: boolean
 }
 
 export const ShardeumFlags: ShardeumFlags = {
@@ -249,6 +250,7 @@ export const ShardeumFlags: ShardeumFlags = {
   enableNodeRefutedSlashing: false,
   loadGenesisNodeNetworkConfigToNetworkAccount: false,
   networkAccountCacheDuration: 3600, // 60 minutes
+  enableClaimRewardAdminCert: true,
 }
 
 export function updateShardeumFlag(key: string, value: string | number | boolean): void {

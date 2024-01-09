@@ -2162,7 +2162,7 @@ async function applyInternalTx(
   }
   if (internalTx.internalTXType === InternalTXType.ClaimReward) {
     const claimRewardTx = internalTx as ClaimRewardTX
-    applyClaimRewardTx(shardus, claimRewardTx, wrappedStates, txId ,txTimestamp, applyResponse)
+    applyClaimRewardTx(shardus, claimRewardTx, wrappedStates, txId ,txTimestamp, applyResponse, mustUseAdminCert)
   }
   if (internalTx.internalTXType === InternalTXType.Penalty) {
     const penaltyTx = internalTx as PenaltyTX
@@ -4934,8 +4934,8 @@ const shardusSetup = (): void => {
             contractAddress: evmAccountInfo.contractAddress, // storage key
             hash: '',
             accountType: AccountType.ContractCode,
-            }     
-            /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`Creating new contract bytes account key:${evmAccountID} in contract address ${wrappedEVMAccount.ethAddress}`)
+          }
+          /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`Creating new contract bytes account key:${evmAccountID} in contract address ${wrappedEVMAccount.ethAddress}`)
         } else {
           throw new Error(`getRelevantData: invalid account type ${accountType}`)
         }

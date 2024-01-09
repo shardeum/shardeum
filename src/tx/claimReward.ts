@@ -165,13 +165,23 @@ export function validateClaimRewardTx(tx: ClaimRewardTX): { isValid: boolean; re
   return { isValid: true, reason: '' }
 }
 
-export function validateClaimRewardState(tx: ClaimRewardTX, shardus): { result: string; reason: string } {
+export function validateClaimRewardState(
+  tx: ClaimRewardTX,
+  shardus,
+  mustUseAdminCert = false
+): { result: string; reason: string } {
   /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log('validating claimRewardTX', tx)
   const isValid = crypto.verifyObj(tx)
   if (!isValid) {
     /* prettier-ignore */ nestedCountersInstance.countEvent('shardeum-staking', `validateClaimRewardState fail Invalid signature`)
     /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log('validateClaimRewardState fail Invalid signature', tx)
     return { result: 'fail', reason: 'Invalid signature' }
+  }
+
+  if (!ShardeumFlags.enableClaimRewardAdminCert && mustUseAdminCert) {
+    /* prettier-ignore */ nestedCountersInstance.countEvent('shardeum-staking', `validateClaimRewardState fail Reward is disabled for admin cert or golden ticket node`)
+    /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log('validateClaimRewardState fail Reward is disabled for admin cert or golden ticket node', tx)
+    return { result: 'fail', reason: 'Reward is disabled for admin cert or golden ticket node' }
   }
 
   const latestCycles = shardus.getLatestCycles(5)
@@ -208,10 +218,11 @@ export async function applyClaimRewardTx(
   wrappedStates: WrappedStates,
   txId: string,
   txTimestamp: number,
-  applyResponse: ShardusTypes.ApplyResponse
+  applyResponse: ShardusTypes.ApplyResponse,
+  mustUseAdminCert = false
 ): Promise<void> {
   if (ShardeumFlags.VerboseLogs) console.log(`Running applyClaimRewardTx`, tx, wrappedStates)
-  const isValidRequest = validateClaimRewardState(tx, shardus)
+  const isValidRequest = validateClaimRewardState(tx, shardus, mustUseAdminCert)
   if (isValidRequest.result === 'fail') {
     /* prettier-ignore */
     /* prettier-ignore */ if (logFlags.dapp_verbose) console.log(`Invalid claimRewardTx, nominee ${tx.nominee}, reason: ${isValidRequest.reason}`)
