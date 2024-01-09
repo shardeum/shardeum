@@ -9,12 +9,14 @@ import { DeveloperPayment, DevWindows } from '../types'
 import { DaoTx } from '.'
 
 export interface IApplyDevTally {
+  type: 'apply_dev_tally'
   timestamp: number
   nextDeveloperFund: DeveloperPayment[]
   nextDevWindows: DevWindows
 }
 
 export class ApplyDevTally implements IApplyDevTally, DaoTx<DaoGlobalAccount> {
+  readonly type = 'apply_dev_tally'
   timestamp: number
   nextDeveloperFund: DeveloperPayment[]
   nextDevWindows: DevWindows

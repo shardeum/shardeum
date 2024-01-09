@@ -13,6 +13,7 @@ import { WrappedStates } from '@shardus/core/dist/state-manager/state-manager-ty
 import { DaoTx } from '.'
 
 export interface IApplyDevParameters {
+  type: 'apply_dev_parameters'
   timestamp: number
   devWindows: DevWindows
   nextDevWindows: Record<string, never>
@@ -22,6 +23,7 @@ export interface IApplyDevParameters {
 }
 
 export class ApplyDevParameters implements IApplyDevParameters, DaoTx<DaoGlobalAccount> {
+  readonly type = 'apply_dev_parameters'
   timestamp: number
   devWindows: DevWindows
   nextDevWindows: Record<string, never>
