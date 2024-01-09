@@ -17,8 +17,6 @@ import transactions, { DaoTx } from './tx'
 import { getTransactionObj } from '../setup/helpers'
 import * as AccountsStorage from '../storage/accountStorage'
 import { daoAccountAddress } from '../config/dao'
-import { config } from 'dotenv'
-import { ONE_SECOND } from '../config'
 
 export function setupDaoAccount(shardus: Shardus, when: number): void {
   if (ShardeumFlags.EnableDaoFeatures) {
