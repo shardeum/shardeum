@@ -1150,7 +1150,7 @@ const configShardusEndpoints = (): void => {
             console.log("daoLogging: isStaking is", isStaking)
           }
         }
-        txRequiresMinNodes = (isStaking || isAllowedInternal) === false
+        txRequiresMinNodes = !isStaking && !isAllowedInternal
         console.log("daoLogging: txRequiresMinNodes is", txRequiresMinNodes)
       }
 
