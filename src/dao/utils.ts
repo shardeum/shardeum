@@ -189,39 +189,39 @@ export function releaseDeveloperFunds(
   dapp.log('GENERATED_DEV_PAYMENT: ', nodeId)
 }
 
-export function getAccountType(data): unknown {
-  if (data == null) {
+export function getAccountType(data: unknown): unknown {
+  if (data == null || typeof data !== 'object') {
     return 'undetermined'
   }
 
-  if (data.type != null) {
+  if ("type" in data && data.type != null) {
     return data.type
   }
 
   //make sure this works on old accounts with no type
-  if (data.alias !== undefined) {
+  if ("alias" in data) {
     return 'UserAccount'
   }
-  if (data.nodeRewardTime !== undefined) {
+  if ("nodeRewardTime" in data) {
     return 'NodeAccount'
   }
-  if (data.inbox !== undefined) {
+  if ("inbox" in data) {
     return 'AliasAccount'
   }
-  if (data.devProposals !== undefined) {
+  if ("devProposals" in data) {
     return 'DevIssueAccount'
   }
-  if (data.proposals !== undefined) {
+  if ("proposals" in data) {
     return 'IssueAccount'
   }
-  if (data.devWindows !== undefined) {
+  if ("devWindows" in data) {
     return 'NetworkAccount'
   }
-  if (data.totalVotes !== undefined) {
-    if (data.power !== undefined) {
+  if ("totalVotes" in data) {
+    if ("power" in data) {
       return 'ProposalAccount'
     }
-    if (data.payAddress !== undefined) {
+    if ("payAddress" in data) {
       return 'DevProposalAccount'
     }
   }
