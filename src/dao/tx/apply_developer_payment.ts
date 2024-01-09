@@ -7,12 +7,14 @@ import { DaoGlobalAccount } from '../accounts/networkAccount'
 import { IncomingTransactionResult, WrappedResponse } from '@shardus/core/dist/shardus/shardus-types'
 import { DaoTx } from '.'
 
-export interface ApplyDevPayment {
+export interface IApplyDevPayment {
+  type: 'apply_dev_payment'
   timestamp: number
   developerFund: DeveloperPayment[]
 }
 
-export class ApplyDevPayment implements ApplyDevPayment, DaoTx<DaoGlobalAccount> {
+export class ApplyDevPayment implements IApplyDevPayment, DaoTx<DaoGlobalAccount> {
+  readonly type = 'apply_dev_payment'
   timestamp: number
   developerFund: DeveloperPayment[]
 

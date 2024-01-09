@@ -10,12 +10,14 @@ import { Windows } from '../types'
 import { DaoTx } from '.'
 
 export interface IApplyTally {
+  type: 'apply_tally'
   timestamp: number
   next: NetworkParameters
   nextWindows: Windows
 }
 
 export class ApplyTally implements IApplyTally, DaoTx<DaoGlobalAccount> {
+  readonly type = 'apply_tally'
   timestamp: number
   next: NetworkParameters
   nextWindows: Windows
