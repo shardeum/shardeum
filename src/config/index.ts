@@ -249,7 +249,7 @@ config = merge(
   config,
   {
     server: {
-      mode: 'debug', // todo: must set this to "release" for public networks or get security on endpoints. use "debug"
+      mode: 'release', // todo: must set this to "release" for public networks or get security on endpoints. use "debug"
       // for easier debugging
       debug: {
         startInFatalsLogMode: false, // true setting good for big aws test with nodes joining under stress.
