@@ -67,6 +67,7 @@
     "@shardus/monitor-server": "2.6.1",
     "@types/decimal.js": "7.4.0",
     "@types/express": "4.17.2",
+    "@types/got": "^9.6.12",
     "@types/heapdump": "0.3.1",
     "@types/jest": "26.0.20",
     "@types/lodash": "4.14.149",
