@@ -246,9 +246,9 @@ config = merge(
           // '': DevSecurityLevel.Unauthorized,
           // These are production keys.  Use 'git apply use_test_key.patch' for unsafe local test keys
           // Never merge a commit with changes to these lines without approval.
-          //'UNSAFE KEYS IN USE DO NOT CHECK IN': DevSecurityLevel.Low,
-          //'UNSAFE KEYS IN USE DO NOT CHECK IN': DevSecurityLevel.Medium,
-          '774491f80f47fedb119bb861601490f42bc3ea3b57fc63906c0d08e6d777a592': DevSecurityLevel.High,
+          '17a3b692c6c62a689391e49f4c60130c9f919782470a2d7469ac108a1ea304b7': DevSecurityLevel.Low,
+          '4c255f7b77ab9fb21ad99f709a65e5a5648d71a7157d8429a92e3470b2d100f5': DevSecurityLevel.Medium,
+          'bee9590211493d08d9f19915f68f12b0b9f75c56ca6911d699bb1cfa51cbbe77': DevSecurityLevel.High,
         },
         checkAddressFormat: false,
       },
