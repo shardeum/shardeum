@@ -31,7 +31,6 @@ function isBufferValue(toStr, val: Record<string, unknown>): boolean {
 function isUnit8Array(value: unknown): boolean {
   return value instanceof Uint8Array
 }
-
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 function stringifier(
   val: any,
@@ -69,18 +68,11 @@ function stringifier(
           }
           return str + ']'
         } else if (options.bufferEncoding !== 'none' && isBufferValue(toStr, val)) {
-          switch (options.bufferEncoding) {
-            case 'base64':
-              return JSON.stringify({
-                data: Buffer.from(val['data']).toString('base64'),
-                dataType: 'bh',
-              })
-            case 'hex':
-              return JSON.stringify({
-                data: Buffer.from(val['data']).toString(),
-                dataType: 'bh',
-              })
-          }
+          // Handling buffer values with hex encoding directly
+          return JSON.stringify({
+            data: Buffer.from(val['data']).toString('hex'),
+            dataType: 'bh',
+          })
         } else if (toStr === '[object Object]') {
           // only object is left
           keys = objKeys(val).sort()
