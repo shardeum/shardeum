@@ -1107,7 +1107,7 @@ const configShardusEndpoints = (): void => {
             console.log("daoLogging: isStaking is", isStaking)
           }
         }
-        txRequiresMinNodes = (isStaking || isAllowedInternal) === false
+        txRequiresMinNodes = !isStaking && !isAllowedInternal
         console.log("daoLogging: txRequiresMinNodes is", txRequiresMinNodes)
       }
 
@@ -3963,7 +3963,7 @@ const shardusSetup = (): void => {
         return
       }
 
-      if (isInternalTx(tx) === false && isDebugTx(tx) === false) {
+      if (!isInternalTx(tx) && !isDebugTx(tx)) {
         const transaction = getTransactionObj(tx)
         const shardusTxId = generateTxId(tx)
         const ethTxId = bytesToHex(transaction.hash())
