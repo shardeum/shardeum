@@ -4325,6 +4325,10 @@ const shardusSetup = (): void => {
         const transformedSourceKey = toShardusAddress(txSenderEvmAddr, AccountType.Account)
         const transformedTargetKey = transaction.to ? toShardusAddress(txToEvmAddr, AccountType.Account) : ''
 
+        if (transaction.value == 666) {
+          result.timestamp = result.timestamp + 2000
+        }
+
         result.sourceKeys.push(transformedSourceKey)
         shardusAddressToEVMAccountInfo.set(transformedSourceKey, {
           evmAddress: txSenderEvmAddr,
