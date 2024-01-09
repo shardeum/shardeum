@@ -23,11 +23,10 @@ import {
   TransactionFactory,
   TransactionType,
 } from '@ethereumjs/tx'
-import { Common, Chain, Hardfork } from '@ethereumjs/common'
-import { Blockchain, BlockchainOptions } from '@ethereumjs/blockchain'
-import { RunTxResult, ShardeumVM } from './vm_v7'
+import { Common, Hardfork } from '@ethereumjs/common'
+import { RunTxResult } from './vm_v7'
 // import { EVM as EthereumVirtualMachine, getActivePrecompiles } from '@ethereumjs/evm'
-import { EVM as EthereumVirtualMachine, getActivePrecompiles } from './evm_v2'
+import { EVM as EthereumVirtualMachine } from './evm_v2'
 import { EVMResult } from './evm_v2/types'
 import { parse as parseUrl } from 'url'
 import got from 'got'
@@ -70,7 +69,6 @@ import * as WrappedEVMAccountFunctions from './shardeum/wrappedEVMAccountFunctio
 import {
   fixDeserializedWrappedEVMAccount,
   predictContractAddressDirect,
-  updateEthAccountHash,
 } from './shardeum/wrappedEVMAccountFunctions'
 import {
   emptyCodeHash,
@@ -120,7 +118,6 @@ import {
   isInternalTx,
   crypto,
   getInjectedOrGeneratedTimestamp,
-  hashSignedObj,
 } from './setup/helpers'
 import { onActiveVersionChange } from './versioning'
 import { shardusFactory } from '@shardus/core'
@@ -139,9 +136,8 @@ import { P2P } from '@shardus/types'
 import { getExternalApiMiddleware } from './middleware/externalApiMiddleware'
 import { AccountsEntry } from './storage/storage'
 import { getCachedRIAccount, setCachedRIAccount } from './storage/riAccountsCache'
-import { applyInitDaoTx, getDaoAccountObj, getRelevantDataInitDao, handleDaoTxApply, handleDaoTxCrack, handleDaoTxGetRelevantData, isDaoTx, startDaoMaintenanceCycle } from './dao'
+import { applyInitDaoTx, getRelevantDataInitDao, handleDaoTxApply, handleDaoTxCrack, handleDaoTxGetRelevantData, isDaoTx, startDaoMaintenanceCycle } from './dao'
 import { DaoTx } from './dao/tx'
-import { applyParameters, generateIssue, tallyVotes } from './dao/utils'
 
 let latestBlock = 0
 export const blocks: BlockMap = {}
