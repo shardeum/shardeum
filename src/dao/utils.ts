@@ -57,6 +57,7 @@ export async function generateIssue(address: string, nodeId: string, dapp: Shard
   const account = await dapp.getLocalOrRemoteAccount(daoConfig.daoAccountAddress)
   const network = account.data as DaoGlobalAccount
   const tx = new Issue({
+    type: 'issue',
     nodeId,
     from: address,
     issue: crypto.hash(`issue-${network.issue}`),

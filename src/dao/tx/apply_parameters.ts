@@ -14,6 +14,7 @@ import { NetworkParameters } from '../../shardeum/shardeumTypes'
 import { DaoTx } from '.'
 
 export interface IApplyParameters {
+  type: 'apply_parameters'
   timestamp: number
   current: NetworkParameters
   next: Record<string, never>
@@ -23,6 +24,7 @@ export interface IApplyParameters {
 }
 
 export class ApplyParameters implements IApplyParameters, DaoTx<DaoGlobalAccount> {
+  readonly type = 'apply_parameters'
   timestamp: number
   current: NetworkParameters
   next: Record<string, never>

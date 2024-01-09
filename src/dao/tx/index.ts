@@ -37,6 +37,7 @@ import {
 } from '@shardus/core/dist/shardus/shardus-types'
 
 export abstract class DaoTx<Account> {
+  abstract readonly type: string
   abstract validateFields(response: IncomingTransactionResult): IncomingTransactionResult
   abstract validate(
     wrappedStates: WrappedStates,
