@@ -33,18 +33,15 @@ export function validateFields(
       response.success = false
       response.reason = '"signedTx" must be a object.'
       throw new Error(response.reason)
-    }
-    if (typeof signedTx.sign !== 'object') {
+    } else if (typeof signedTx.sign !== 'object') {
       response.success = false
       response.reason = '"sign" property on signedTx must be an object.'
       throw new Error(response.reason)
-    }
-    if (typeof signedTx.from !== 'string') {
+    } else if (typeof signedTx.from !== 'string') {
       response.success = false
       response.reason = '"From" must be a string.'
       throw new Error(response.reason)
-    }
-    if (typeof signedTx.emailHash !== 'string') {
+    } else if (typeof signedTx.emailHash !== 'string') {
       response.success = false
       response.reason = '"emailHash" must be a string.'
       throw new Error(response.reason)
@@ -54,8 +51,7 @@ export function validateFields(
     response.success = false
     response.reason = '"email" must be a string.'
     throw new Error(response.reason)
-  }
-  if (tx.email.length > 30) {
+  } else if (tx.email.length > 30) {
     response.success = false
     response.reason = '"Email" length must be less than 31 characters (30 max)'
     throw new Error(response.reason)

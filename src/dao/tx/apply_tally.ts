@@ -33,48 +33,39 @@ export class ApplyTally implements IApplyTally, DaoTx<DaoGlobalAccount> {
       response.success = false
       response.reason = 'tx "next" field must be a non empty object'
       throw new Error(response.reason)
-    }
-    if (_.isEmpty(this.nextWindows) || typeof this.nextWindows !== 'object') {
+    } else if (_.isEmpty(this.nextWindows) || typeof this.nextWindows !== 'object') {
       response.success = false
       response.reason = 'tx "nextWindows" field must be a non empty object'
       throw new Error(response.reason)
-    }
-    if (typeof this.next.title !== 'string') {
+    } else if (typeof this.next.title !== 'string') {
       response.success = false
       response.reason = 'tx "next parameter title" field must be a string.'
       throw new Error(response.reason)
-    }
-    if (typeof this.next.description !== 'string') {
+    } else if (typeof this.next.description !== 'string') {
       response.success = false
       response.reason = 'tx "next parameter description" field must be a string.'
       throw new Error(response.reason)
-    }
-    if (typeof this.next.nodeRewardInterval !== 'number') {
+    } else if (typeof this.next.nodeRewardInterval !== 'number') {
       response.success = false
       response.reason = 'tx "next parameter nodeRewardInterval" field must be a number.'
       throw new Error(response.reason)
-    }
-    if (typeof this.next.nodeRewardAmountUsd !== 'bigint') {
+    } else if (typeof this.next.nodeRewardAmountUsd !== 'bigint') {
       response.success = false
       response.reason = 'tx "next parameter nodeRewardAmountUsd" field must be a bigint.'
       throw new Error(response.reason)
-    }
-    if (typeof this.next.nodePenaltyUsd !== 'bigint') {
+    } else if (typeof this.next.nodePenaltyUsd !== 'bigint') {
       response.success = false
       response.reason = 'tx "next parameter nodePenaltyUsd" field must be a bigint.'
       throw new Error(response.reason)
-    }
-    if (typeof this.next.stakeRequiredUsd !== 'bigint') {
+    } else if (typeof this.next.stakeRequiredUsd !== 'bigint') {
       response.success = false
       response.reason = 'tx "next parameter stakeRequiredUsd" field must be a bigint.'
       throw new Error(response.reason)
-    }
-    if (typeof this.next.maintenanceInterval !== 'number') {
+    } else if (typeof this.next.maintenanceInterval !== 'number') {
       response.success = false
       response.reason = 'tx "next parameter maintenanceInterval" field must be a number.'
       throw new Error(response.reason)
-    }
-    if (typeof this.next.maintenanceFee !== 'number') {
+    } else if (typeof this.next.maintenanceFee !== 'number') {
       response.success = false
       response.reason = 'tx "next parameter maintenanceFee" field must be a number.'
       throw new Error(response.reason)
