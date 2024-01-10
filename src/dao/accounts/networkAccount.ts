@@ -1,6 +1,6 @@
 import * as crypto from '@shardus/crypto-utils'
 import { daoConfig } from '../../config/dao'
-import { DeveloperPayment, Windows } from '../types'
+import { DeveloperPayment, Windows, WindowRange } from '../types'
 import { AccountType, BaseAccount, NetworkParameters } from '../../shardeum/shardeumTypes'
 import { initialNetworkParamters } from '../../shardeum/initialNetworkParameters'
 
@@ -34,15 +34,15 @@ export class DaoGlobalAccount implements BaseAccount {
     devWindows?: Windows,
     networkParamters?: NetworkParameters
   ) {
-    const proposalWindow = [timestamp, timestamp + daoConfig.TIME_FOR_PROPOSALS]
-    const votingWindow = [proposalWindow[1], proposalWindow[1] + daoConfig.TIME_FOR_VOTING]
-    const graceWindow = [votingWindow[1], votingWindow[1] + daoConfig.TIME_FOR_GRACE]
-    const applyWindow = [graceWindow[1], graceWindow[1] + daoConfig.TIME_FOR_APPLY]
+    const proposalWindow = new WindowRange(timestamp, timestamp + daoConfig.TIME_FOR_PROPOSALS)
+    const votingWindow = new WindowRange(proposalWindow[1], proposalWindow[1] + daoConfig.TIME_FOR_VOTING)
+    const graceWindow = new WindowRange(votingWindow[1], votingWindow[1] + daoConfig.TIME_FOR_GRACE)
+    const applyWindow = new WindowRange(graceWindow[1], graceWindow[1] + daoConfig.TIME_FOR_APPLY)
 
-    const devProposalWindow = [timestamp, timestamp + daoConfig.TIME_FOR_DEV_PROPOSALS]
-    const devVotingWindow = [devProposalWindow[1], devProposalWindow[1] + daoConfig.TIME_FOR_DEV_VOTING]
-    const devGraceWindow = [devVotingWindow[1], devVotingWindow[1] + daoConfig.TIME_FOR_DEV_GRACE]
-    const devApplyWindow = [devGraceWindow[1], devGraceWindow[1] + daoConfig.TIME_FOR_DEV_APPLY]
+    const devProposalWindow = new WindowRange(timestamp, timestamp + daoConfig.TIME_FOR_DEV_PROPOSALS)
+    const devVotingWindow = new WindowRange(devProposalWindow[1], devProposalWindow[1] + daoConfig.TIME_FOR_DEV_VOTING)
+    const devGraceWindow = new WindowRange(devVotingWindow[1], devVotingWindow[1] + daoConfig.TIME_FOR_DEV_GRACE)
+    const devApplyWindow = new WindowRange(devGraceWindow[1], devGraceWindow[1] + daoConfig.TIME_FOR_DEV_APPLY)
 
     this.id = accountId
     this.windows = windows ?? {
@@ -52,10 +52,10 @@ export class DaoGlobalAccount implements BaseAccount {
       applyWindow,
     }
     this.devWindows = devWindows ?? {
-      proposalWindow,
-      votingWindow,
-      graceWindow,
-      applyWindow,
+      proposalWindow: devProposalWindow,
+      votingWindow: devVotingWindow,
+      graceWindow: devGraceWindow,
+      applyWindow: devApplyWindow,
     }
     this.current = networkParamters ?? initialNetworkParamters
     this.hash = crypto.hashObj(this.getHashable())
