@@ -28,6 +28,11 @@ export class ApplyChangeConfig implements IApplyChangeConfig, DaoTx<NodeAccount>
   }
   timestamp: number
 
+  constructor(data: IApplyChangeConfig) {
+    this.change = data.change
+    this.timestamp = data.timestamp
+  }
+
   validateFields(response: ShardusTypes.IncomingTransactionResult): ShardusTypes.IncomingTransactionResult {
     return response
   }
