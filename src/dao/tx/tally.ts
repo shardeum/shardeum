@@ -1,7 +1,7 @@
 import * as crypto from '@shardus/crypto-utils'
 import { Shardus, ShardusTypes } from '@shardus/core'
 import { daoConfig } from '../../config/dao'
-import { Windows } from '../types'
+import { Windows, WindowRange } from '../types'
 import { OurAppDefinedData, TransactionKeys, WrappedStates } from '../../shardeum/shardeumTypes'
 import { DaoGlobalAccount } from '../accounts/networkAccount'
 import { IssueAccount } from '../accounts/issueAccount'
@@ -122,22 +122,22 @@ export function apply(
   winner.winner = true // CHICKEN DINNER
   const next = winner.parameters
   const nextWindows: Windows = {
-    proposalWindow: [
+    proposalWindow: new WindowRange(
       network.windows.applyWindow[1],
       network.windows.applyWindow[1] + daoConfig.TIME_FOR_PROPOSALS,
-    ],
-    votingWindow: [
+    ),
+    votingWindow: new WindowRange(
       network.windows.applyWindow[1] + daoConfig.TIME_FOR_PROPOSALS,
       network.windows.applyWindow[1] + daoConfig.TIME_FOR_PROPOSALS + daoConfig.TIME_FOR_VOTING,
-    ],
-    graceWindow: [
+    ),
+    graceWindow: new WindowRange(
       network.windows.applyWindow[1] + daoConfig.TIME_FOR_PROPOSALS + daoConfig.TIME_FOR_VOTING,
       network.windows.applyWindow[1] +
         daoConfig.TIME_FOR_PROPOSALS +
         daoConfig.TIME_FOR_VOTING +
         daoConfig.TIME_FOR_GRACE,
-    ],
-    applyWindow: [
+    ),
+    applyWindow: new WindowRange(
       network.windows.applyWindow[1] +
         daoConfig.TIME_FOR_PROPOSALS +
         daoConfig.TIME_FOR_VOTING +
@@ -147,7 +147,7 @@ export function apply(
         daoConfig.TIME_FOR_VOTING +
         daoConfig.TIME_FOR_GRACE +
         daoConfig.TIME_FOR_APPLY,
-    ],
+    ),
   }
 
   const when = txTimestamp + 1000 * 10
