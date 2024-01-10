@@ -2,7 +2,7 @@ import * as crypto from '@shardus/crypto-utils'
 import { Shardus, ShardusTypes } from '@shardus/core'
 import { daoConfig } from '../../config/dao'
 import stringify from 'fast-stable-stringify'
-import { DeveloperPayment, Windows } from '../types'
+import { DeveloperPayment, Windows, WindowRange } from '../types'
 import { OurAppDefinedData, TransactionKeys, WrappedStates } from '../../shardeum/shardeumTypes'
 import { DevIssueAccount } from '../accounts/devIssueAccount'
 import { DevProposalAccount } from '../accounts/devProposalAccount'
@@ -129,22 +129,22 @@ export function apply(
   }
 
   const nextDevWindows: Windows = {
-    proposalWindow: [
+    proposalWindow: new WindowRange(
       network.devWindows.applyWindow[1],
       network.devWindows.applyWindow[1] + daoConfig.TIME_FOR_DEV_PROPOSALS,
-    ],
-    votingWindow: [
+    ),
+    votingWindow: new WindowRange(
       network.devWindows.applyWindow[1] + daoConfig.TIME_FOR_DEV_PROPOSALS,
       network.devWindows.applyWindow[1] + daoConfig.TIME_FOR_DEV_PROPOSALS + daoConfig.TIME_FOR_DEV_VOTING,
-    ],
-    graceWindow: [
+    ),
+    graceWindow: new WindowRange(
       network.devWindows.applyWindow[1] + daoConfig.TIME_FOR_DEV_PROPOSALS + daoConfig.TIME_FOR_DEV_VOTING,
       network.devWindows.applyWindow[1] +
         daoConfig.TIME_FOR_DEV_PROPOSALS +
         daoConfig.TIME_FOR_DEV_VOTING +
         daoConfig.TIME_FOR_DEV_GRACE,
-    ],
-    applyWindow: [
+    ),
+    applyWindow: new WindowRange(
       network.devWindows.applyWindow[1] +
         daoConfig.TIME_FOR_DEV_PROPOSALS +
         daoConfig.TIME_FOR_DEV_VOTING +
@@ -154,7 +154,7 @@ export function apply(
         daoConfig.TIME_FOR_DEV_VOTING +
         daoConfig.TIME_FOR_DEV_GRACE +
         daoConfig.TIME_FOR_DEV_APPLY,
-    ],
+    ),
   }
 
   const when = txTimestamp + 1000 * 10
