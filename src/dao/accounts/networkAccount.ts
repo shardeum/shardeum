@@ -40,9 +40,18 @@ export class DaoGlobalAccount implements BaseAccount {
     const applyWindow = new WindowRange(graceWindow[1], graceWindow[1] + daoConfig.TIME_FOR_APPLY)
 
     const devProposalWindow = new WindowRange(timestamp, timestamp + daoConfig.TIME_FOR_DEV_PROPOSALS)
-    const devVotingWindow = new WindowRange(devProposalWindow[1], devProposalWindow[1] + daoConfig.TIME_FOR_DEV_VOTING)
-    const devGraceWindow = new WindowRange(devVotingWindow[1], devVotingWindow[1] + daoConfig.TIME_FOR_DEV_GRACE)
-    const devApplyWindow = new WindowRange(devGraceWindow[1], devGraceWindow[1] + daoConfig.TIME_FOR_DEV_APPLY)
+    const devVotingWindow = new WindowRange(
+      devProposalWindow[1],
+      devProposalWindow[1] + daoConfig.TIME_FOR_DEV_VOTING
+    )
+    const devGraceWindow = new WindowRange(
+      devVotingWindow[1],
+      devVotingWindow[1] + daoConfig.TIME_FOR_DEV_GRACE
+    )
+    const devApplyWindow = new WindowRange(
+      devGraceWindow[1],
+      devGraceWindow[1] + daoConfig.TIME_FOR_DEV_APPLY
+    )
 
     this.id = accountId
     this.windows = windows ?? {

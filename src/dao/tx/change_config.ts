@@ -89,7 +89,12 @@ export function apply(
   }
 
   const ourAppDefinedData = applyResponse.appDefinedData as OurAppDefinedData
-  ourAppDefinedData.globalMsg = { address: daoConfig.daoAccountAddress, value, when, source: daoConfig.daoAccountAddress }
+  ourAppDefinedData.globalMsg = {
+    address: daoConfig.daoAccountAddress,
+    value,
+    when,
+    source: daoConfig.daoAccountAddress,
+  }
 
   from.timestamp = tx.timestamp
   dapp.log('Applied change_config tx')
