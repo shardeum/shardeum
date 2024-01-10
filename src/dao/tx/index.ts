@@ -22,7 +22,6 @@ import * as parameters from './parameters'
 import * as proposal from './proposal'
 import * as register from './register'
 import * as snapshot from './snapshot'
-import * as snapshot_claim from './snapshot_claim'
 import * as tally from './tally'
 import * as toll from './toll'
 import * as transfer from './transfer'
@@ -66,7 +65,6 @@ export default {
   distribute,
   toll,
   node_reward,
-  snapshot_claim,
   issue,
   proposal,
   vote,
