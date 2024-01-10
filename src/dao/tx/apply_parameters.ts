@@ -32,6 +32,15 @@ export class ApplyParameters implements IApplyParameters, DaoTx<DaoGlobalAccount
   nextWindows: Record<string, never>
   issue: number
 
+  constructor(data: IApplyParameters) {
+    this.timestamp = data.timestamp
+    this.current = data.current
+    this.next = data.next
+    this.windows = data.windows
+    this.nextWindows = data.nextWindows
+    this.issue = data.issue
+  }
+
   validateFields(response: ShardusTypes.IncomingTransactionResult): ShardusTypes.IncomingTransactionResult {
     if (_.isEmpty(this.current) || typeof this.current !== 'object') {
       response.success = false

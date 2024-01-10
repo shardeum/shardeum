@@ -18,7 +18,7 @@ export class ApplyDevPayment implements IApplyDevPayment, DaoTx<DaoGlobalAccount
   timestamp: number
   developerFund: DeveloperPayment[]
 
-  constructor(data: ApplyDevPayment) {
+  constructor(data: IApplyDevPayment) {
     this.timestamp = data.timestamp
     this.developerFund = data.developerFund
   }
