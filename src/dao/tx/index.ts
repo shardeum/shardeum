@@ -37,28 +37,24 @@ export abstract class DaoTx<Account> {
    * network.
    */
   static fromTxObject(tx: PlainDaoTx): DaoTx<unknown> | null {
-    if (tx != null && typeof tx == 'object' && 'type' in tx && tx.type && typeof tx.type == 'string') {
-      switch (tx.type) {
-        case 'apply_change_config':
-          return new ApplyChangeConfig(tx)
-        case 'apply_dev_parameters':
-          return new ApplyDevParameters(tx)
-        case 'apply_dev_tally':
-          return new ApplyDevTally(tx)
-        case 'apply_dev_payment':
-          return new ApplyDevPayment(tx)
-        case 'apply_parameters':
-          return new ApplyParameters(tx)
-        case 'apply_tally':
-          return new ApplyTally(tx)
-        case 'issue':
-          return new Issue(tx)
-        case 'proposal':
-          return new Proposal(tx)
-        default:
-          return unreachable(tx)
-      }
-    } else return null
+    switch (tx.type) {
+      case 'apply_change_config':
+        return new ApplyChangeConfig(tx)
+      case 'apply_dev_parameters':
+        return new ApplyDevParameters(tx)
+      case 'apply_dev_tally':
+        return new ApplyDevTally(tx)
+      case 'apply_dev_payment':
+        return new ApplyDevPayment(tx)
+      case 'apply_parameters':
+        return new ApplyParameters(tx)
+      case 'apply_tally':
+        return new ApplyTally(tx)
+      case 'issue':
+        return new Issue(tx)
+      case 'proposal':
+        return new Proposal(tx)
+    }
   }
 }
 
@@ -71,7 +67,3 @@ export type PlainDaoTx =
   | IApplyTally
   | IProposal
   | IIssue
-
-function unreachable(x: never): never {
-  throw new Error(`reached unreachable code: ${x}`)
-}
