@@ -2,7 +2,7 @@ import _ from 'lodash'
 import { Shardus, ShardusTypes } from '@shardus/core'
 import { daoConfig } from '../../config/dao'
 import stringify from 'fast-stable-stringify'
-import { DeveloperPayment, DevWindows } from '../types'
+import { DeveloperPayment, Windows } from '../types'
 import { DaoGlobalAccount } from '../accounts/networkAccount'
 import {
   IncomingTransactionResult,
@@ -15,7 +15,7 @@ import { DaoTx } from '.'
 export interface IApplyDevParameters {
   type: 'apply_dev_parameters'
   timestamp: number
-  devWindows: DevWindows
+  devWindows: Windows
   nextDevWindows: Record<string, never>
   developerFund: DeveloperPayment[]
   nextDeveloperFund: DeveloperPayment[]
@@ -25,7 +25,7 @@ export interface IApplyDevParameters {
 export class ApplyDevParameters implements IApplyDevParameters, DaoTx<DaoGlobalAccount> {
   readonly type = 'apply_dev_parameters'
   timestamp: number
-  devWindows: DevWindows
+  devWindows: Windows
   nextDevWindows: Record<string, never>
   developerFund: DeveloperPayment[]
   nextDeveloperFund: DeveloperPayment[]

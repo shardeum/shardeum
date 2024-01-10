@@ -1,6 +1,6 @@
 import * as crypto from '@shardus/crypto-utils'
 import { daoConfig } from '../../config/dao'
-import { DeveloperPayment, DevWindows, Windows } from '../types'
+import { DeveloperPayment, Windows } from '../types'
 import { AccountType, BaseAccount, NetworkParameters } from '../../shardeum/shardeumTypes'
 import { initialNetworkParamters } from '../../shardeum/initialNetworkParameters'
 
@@ -11,8 +11,8 @@ export class DaoGlobalAccount implements BaseAccount {
   windows: Windows
   nextWindows: Windows | Record<string, never> = {}
 
-  devWindows: DevWindows
-  nextDevWindows: DevWindows | Record<string, never> = {}
+  devWindows: Windows
+  nextDevWindows: Windows | Record<string, never> = {}
 
   issue = 1
   devIssue = 1
@@ -31,7 +31,7 @@ export class DaoGlobalAccount implements BaseAccount {
     accountId: string,
     timestamp = 0,
     windows?: Windows,
-    devWindows?: DevWindows,
+    devWindows?: Windows,
     networkParamters?: NetworkParameters
   ) {
     const proposalWindow = [timestamp, timestamp + daoConfig.TIME_FOR_PROPOSALS]
@@ -52,10 +52,10 @@ export class DaoGlobalAccount implements BaseAccount {
       applyWindow,
     }
     this.devWindows = devWindows ?? {
-      devProposalWindow,
-      devVotingWindow,
-      devGraceWindow,
-      devApplyWindow,
+      proposalWindow,
+      votingWindow,
+      graceWindow,
+      applyWindow,
     }
     this.current = networkParamters ?? initialNetworkParamters
     this.hash = crypto.hashObj(this.getHashable())

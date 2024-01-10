@@ -68,8 +68,8 @@ export function validate(
     return response
   }
   if (
-    tx.timestamp < network.devWindows.devApplyWindow[0] ||
-    tx.timestamp > network.devWindows.devApplyWindow[1]
+    tx.timestamp < network.devWindows.applyWindow[0] ||
+    tx.timestamp > network.devWindows.applyWindow[1]
   ) {
     response.reason = 'Network is not within the time window to apply developer proposal winners'
     return response

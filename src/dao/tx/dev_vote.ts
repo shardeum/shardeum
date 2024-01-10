@@ -95,8 +95,8 @@ export function validate(
     return response
   }
   if (
-    tx.timestamp < network.devWindows.devVotingWindow[0] ||
-    tx.timestamp > network.devWindows.devVotingWindow[1]
+    tx.timestamp < network.devWindows.votingWindow[0] ||
+    tx.timestamp > network.devWindows.votingWindow[1]
   ) {
     response.reason = 'Network is not within the time window to accept votes for developer proposals'
     return response
