@@ -2,7 +2,7 @@ import * as crypto from '@shardus/crypto-utils'
 import { Shardus, ShardusTypes } from '@shardus/core'
 import { daoConfig } from '../../config/dao'
 import stringify from 'fast-stable-stringify'
-import { DeveloperPayment, DevWindows } from '../types'
+import { DeveloperPayment, Windows } from '../types'
 import { OurAppDefinedData, TransactionKeys, WrappedStates } from '../../shardeum/shardeumTypes'
 import { DevIssueAccount } from '../accounts/devIssueAccount'
 import { DevProposalAccount } from '../accounts/devProposalAccount'
@@ -82,8 +82,8 @@ export function validate(
     return response
   }
   if (
-    tx.timestamp < network.devWindows.devGraceWindow[0] ||
-    tx.timestamp > network.devWindows.devGraceWindow[1]
+    tx.timestamp < network.devWindows.graceWindow[0] ||
+    tx.timestamp > network.devWindows.graceWindow[1]
   ) {
     response.reason = 'Network is not within the time window to tally votes for developer proposals'
     return response
@@ -128,28 +128,28 @@ export function apply(
     }
   }
 
-  const nextDevWindows: DevWindows = {
-    devProposalWindow: [
-      network.devWindows.devApplyWindow[1],
-      network.devWindows.devApplyWindow[1] + daoConfig.TIME_FOR_DEV_PROPOSALS,
+  const nextDevWindows: Windows = {
+    proposalWindow: [
+      network.devWindows.applyWindow[1],
+      network.devWindows.applyWindow[1] + daoConfig.TIME_FOR_DEV_PROPOSALS,
     ],
-    devVotingWindow: [
-      network.devWindows.devApplyWindow[1] + daoConfig.TIME_FOR_DEV_PROPOSALS,
-      network.devWindows.devApplyWindow[1] + daoConfig.TIME_FOR_DEV_PROPOSALS + daoConfig.TIME_FOR_DEV_VOTING,
+    votingWindow: [
+      network.devWindows.applyWindow[1] + daoConfig.TIME_FOR_DEV_PROPOSALS,
+      network.devWindows.applyWindow[1] + daoConfig.TIME_FOR_DEV_PROPOSALS + daoConfig.TIME_FOR_DEV_VOTING,
     ],
-    devGraceWindow: [
-      network.devWindows.devApplyWindow[1] + daoConfig.TIME_FOR_DEV_PROPOSALS + daoConfig.TIME_FOR_DEV_VOTING,
-      network.devWindows.devApplyWindow[1] +
+    graceWindow: [
+      network.devWindows.applyWindow[1] + daoConfig.TIME_FOR_DEV_PROPOSALS + daoConfig.TIME_FOR_DEV_VOTING,
+      network.devWindows.applyWindow[1] +
         daoConfig.TIME_FOR_DEV_PROPOSALS +
         daoConfig.TIME_FOR_DEV_VOTING +
         daoConfig.TIME_FOR_DEV_GRACE,
     ],
-    devApplyWindow: [
-      network.devWindows.devApplyWindow[1] +
+    applyWindow: [
+      network.devWindows.applyWindow[1] +
         daoConfig.TIME_FOR_DEV_PROPOSALS +
         daoConfig.TIME_FOR_DEV_VOTING +
         daoConfig.TIME_FOR_DEV_GRACE,
-      network.devWindows.devApplyWindow[1] +
+      network.devWindows.applyWindow[1] +
         daoConfig.TIME_FOR_DEV_PROPOSALS +
         daoConfig.TIME_FOR_DEV_VOTING +
         daoConfig.TIME_FOR_DEV_GRACE +

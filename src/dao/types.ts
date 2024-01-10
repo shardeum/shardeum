@@ -14,13 +14,6 @@ export interface Windows {
   applyWindow: number[]
 }
 
-export interface DevWindows {
-  devProposalWindow: number[]
-  devVotingWindow: number[]
-  devGraceWindow: number[]
-  devApplyWindow: number[]
-}
-
 export interface DeveloperPayment {
   id: string
   address: string
