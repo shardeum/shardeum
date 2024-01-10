@@ -5,21 +5,21 @@ import _ from 'lodash'
 import { DaoGlobalAccount } from '../accounts/networkAccount'
 import { TransactionKeys, WrappedStates } from '../../shardeum/shardeumTypes'
 import { IncomingTransactionResult, WrappedResponse } from '@shardus/core/dist/shardus/shardus-types'
-import { DeveloperPayment, DevWindows } from '../types'
+import { DeveloperPayment, Windows } from '../types'
 import { DaoTx } from '.'
 
 export interface IApplyDevTally {
   type: 'apply_dev_tally'
   timestamp: number
   nextDeveloperFund: DeveloperPayment[]
-  nextDevWindows: DevWindows
+  nextDevWindows: Windows
 }
 
 export class ApplyDevTally implements IApplyDevTally, DaoTx<DaoGlobalAccount> {
   readonly type = 'apply_dev_tally'
   timestamp: number
   nextDeveloperFund: DeveloperPayment[]
-  nextDevWindows: DevWindows
+  nextDevWindows: Windows
 
   constructor(data: IApplyDevTally) {
     this.timestamp = data.timestamp
