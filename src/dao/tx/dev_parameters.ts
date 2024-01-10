@@ -67,10 +67,7 @@ export function validate(
     response.reason = 'This devIssue is no longer active'
     return response
   }
-  if (
-    tx.timestamp < network.devWindows.applyWindow[0] ||
-    tx.timestamp > network.devWindows.applyWindow[1]
-  ) {
+  if (tx.timestamp < network.devWindows.applyWindow[0] || tx.timestamp > network.devWindows.applyWindow[1]) {
     response.reason = 'Network is not within the time window to apply developer proposal winners'
     return response
   }
@@ -105,7 +102,12 @@ export function apply(
   }
 
   const ourAppDefinedData = applyResponse.appDefinedData as OurAppDefinedData
-  ourAppDefinedData.globalMsg = { address: daoConfig.daoAccountAddress, value, when, source: daoConfig.daoAccountAddress }
+  ourAppDefinedData.globalMsg = {
+    address: daoConfig.daoAccountAddress,
+    value,
+    when,
+    source: daoConfig.daoAccountAddress,
+  }
 
   devIssue.active = false
 

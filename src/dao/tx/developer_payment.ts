@@ -135,7 +135,12 @@ export function apply(
   }
 
   const ourAppDefinedData = applyResponse.appDefinedData as OurAppDefinedData
-  ourAppDefinedData.globalMsg = { address: daoConfig.daoAccountAddress, value, when, source: daoConfig.daoAccountAddress }
+  ourAppDefinedData.globalMsg = {
+    address: daoConfig.daoAccountAddress,
+    value,
+    when,
+    source: daoConfig.daoAccountAddress,
+  }
 
   developer.timestamp = txTimestamp
   from.timestamp = txTimestamp
