@@ -124,18 +124,18 @@ export function apply(
   const nextWindows: Windows = {
     proposalWindow: new WindowRange(
       network.windows.applyWindow[1],
-      network.windows.applyWindow[1] + daoConfig.TIME_FOR_PROPOSALS,
+      network.windows.applyWindow[1] + daoConfig.TIME_FOR_PROPOSALS
     ),
     votingWindow: new WindowRange(
       network.windows.applyWindow[1] + daoConfig.TIME_FOR_PROPOSALS,
-      network.windows.applyWindow[1] + daoConfig.TIME_FOR_PROPOSALS + daoConfig.TIME_FOR_VOTING,
+      network.windows.applyWindow[1] + daoConfig.TIME_FOR_PROPOSALS + daoConfig.TIME_FOR_VOTING
     ),
     graceWindow: new WindowRange(
       network.windows.applyWindow[1] + daoConfig.TIME_FOR_PROPOSALS + daoConfig.TIME_FOR_VOTING,
       network.windows.applyWindow[1] +
         daoConfig.TIME_FOR_PROPOSALS +
         daoConfig.TIME_FOR_VOTING +
-        daoConfig.TIME_FOR_GRACE,
+        daoConfig.TIME_FOR_GRACE
     ),
     applyWindow: new WindowRange(
       network.windows.applyWindow[1] +
@@ -146,7 +146,7 @@ export function apply(
         daoConfig.TIME_FOR_PROPOSALS +
         daoConfig.TIME_FOR_VOTING +
         daoConfig.TIME_FOR_GRACE +
-        daoConfig.TIME_FOR_APPLY,
+        daoConfig.TIME_FOR_APPLY
     ),
   }
 
@@ -160,7 +160,12 @@ export function apply(
   }
 
   const ourAppDefinedData = applyResponse.appDefinedData as OurAppDefinedData
-  ourAppDefinedData.globalMsg = { address: daoConfig.daoAccountAddress, value, when, source: daoConfig.daoAccountAddress }
+  ourAppDefinedData.globalMsg = {
+    address: daoConfig.daoAccountAddress,
+    value,
+    when,
+    source: daoConfig.daoAccountAddress,
+  }
 
   issue.winnerId = winner.id
 
