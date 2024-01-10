@@ -27,23 +27,19 @@ export function validateFields(
     response.success = false
     response.reason = 'tx "from" field must be a string.'
     throw new Error(response.reason)
-  }
-  if (typeof tx.amount !== 'number') {
+  } else if (typeof tx.amount !== 'number') {
     response.success = false
     response.reason = 'tx "amount" field must be a number.'
     throw new Error(response.reason)
-  }
-  if (tx.amount < 1) {
+  } else if (tx.amount < 1) {
     response.success = false
     response.reason = 'Minimum voting "amount" allowed is 1 token'
     throw new Error(response.reason)
-  }
-  if (typeof tx.issue !== 'string') {
+  } else if (typeof tx.issue !== 'string') {
     response.success = false
     response.reason = 'tx "issue" field must be a string.'
     throw new Error(response.reason)
-  }
-  if (typeof tx.proposal !== 'string') {
+  } else if (typeof tx.proposal !== 'string') {
     response.success = false
     response.reason = 'tx "proposal" field must be a string.'
     throw new Error(response.reason)

@@ -23,13 +23,11 @@ export function validateFields(
     response.success = false
     response.reason = 'tx "from" field must be a string'
     throw new Error(response.reason)
-  }
-  if (typeof tx.cycle !== 'number') {
+  } else if (typeof tx.cycle !== 'number') {
     response.success = false
     response.reason = 'tx "cycle" field must be a number'
     throw new Error(response.reason)
-  }
-  if (typeof tx.config !== 'string') {
+  } else if (typeof tx.config !== 'string') {
     response.success = false
     response.reason = 'tx "config" field must be a string'
     throw new Error(response.reason)

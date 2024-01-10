@@ -41,18 +41,15 @@ export class Issue implements IIssue, DaoTx<IssueAccount> {
       response.success = false
       response.reason = 'tx "nodeId" field must be a string.'
       throw new Error(response.reason)
-    }
-    if (typeof this.from !== 'string') {
+    } else if (typeof this.from !== 'string') {
       response.success = false
       response.reason = 'tx "from field must be a string.'
       throw new Error(response.reason)
-    }
-    if (typeof this.issue !== 'string') {
+    } else if (typeof this.issue !== 'string') {
       response.success = false
       response.reason = 'tx "issue" field must be a string.'
       throw new Error(response.reason)
-    }
-    if (typeof this.proposal !== 'string') {
+    } else if (typeof this.proposal !== 'string') {
       response.success = false
       response.reason = 'tx "proposal" field must be a string.'
       throw new Error(response.reason)

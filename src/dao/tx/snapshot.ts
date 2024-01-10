@@ -22,8 +22,7 @@ export function validateFields(
     response.success = false
     response.reason = 'tx "from" field must be a string.'
     throw new Error(response.reason)
-  }
-  if (typeof tx.snapshot !== 'object') {
+  } else if (typeof tx.snapshot !== 'object') {
     response.success = false
     response.reason = 'tx "snapshot" field must be an object.'
     throw new Error(response.reason)

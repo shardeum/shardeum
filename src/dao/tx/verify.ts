@@ -21,18 +21,15 @@ export function validateFields(
     response.success = false
     response.reason = 'tx "from" field must be a string.'
     throw new Error(response.reason)
-  }
-  if (typeof tx.code !== 'string') {
+  } else if (typeof tx.code !== 'string') {
     response.success = false
     response.reason = 'tx "code" field must be a string.'
     throw new Error(response.reason)
-  }
-  if (tx.code.length !== 6) {
+  } else if (tx.code.length !== 6) {
     response.success = false
     response.reason = 'tx "code" length must be 6 digits.'
     throw new Error(response.reason)
-  }
-  if (typeof parseInt(tx.code) !== 'number') {
+  } else if (typeof parseInt(tx.code) !== 'number') {
     response.success = false
     response.reason = 'tx "code" field must be parseable to an integer.'
     throw new Error(response.reason)
