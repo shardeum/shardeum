@@ -22,23 +22,19 @@ export function validateFields(
     response.success = false
     response.reason = 'tx "aliasHash" field must be a string.'
     throw new Error(response.reason)
-  }
-  if (typeof tx.from !== 'string') {
+  } else if (typeof tx.from !== 'string') {
     response.success = false
     response.reason = 'tx "from" field must be a string.'
     throw new Error(response.reason)
-  }
-  if (typeof tx.alias !== 'string') {
+  } else if (typeof tx.alias !== 'string') {
     response.success = false
     response.reason = 'tx "alias" field must be a string.'
     throw new Error(response.reason)
-  }
-  if (tx.alias.length > 20) {
+  } else if (tx.alias.length > 20) {
     response.success = false
     response.reason = 'tx "alias" field must be less than 21 characters (20 max)'
     throw new Error(response.reason)
-  }
-  if (/[^A-Za-z0-9]+/g.test(tx.alias)) {
+  } else if (/[^A-Za-z0-9]+/g.test(tx.alias)) {
     response.success = false
     response.reason = 'tx "alias" field may only contain alphanumeric characters'
     throw new Error(response.reason)

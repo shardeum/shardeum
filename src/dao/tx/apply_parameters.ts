@@ -46,63 +46,51 @@ export class ApplyParameters implements IApplyParameters, DaoTx<DaoGlobalAccount
       response.success = false
       response.reason = 'tx "current" field must not be a non empty object'
       throw new Error(response.reason)
-    }
-    if (typeof this.current.title !== 'string') {
+    } else if (typeof this.current.title !== 'string') {
       response.success = false
       response.reason = 'tx "current parameter title" field must be a string.'
       throw new Error(response.reason)
-    }
-    if (typeof this.current.description !== 'string') {
+    } else if (typeof this.current.description !== 'string') {
       response.success = false
       response.reason = 'tx "current parameter description" field must be a string.'
       throw new Error(response.reason)
-    }
-    if (typeof this.current.nodeRewardInterval !== 'number') {
+    } else if (typeof this.current.nodeRewardInterval !== 'number') {
       response.success = false
       response.reason = 'tx "current parameter nodeRewardInterval" field must be a number.'
       throw new Error(response.reason)
-    }
-    if (typeof this.current.nodeRewardAmountUsd !== 'bigint') {
+    } else if (typeof this.current.nodeRewardAmountUsd !== 'bigint') {
       response.success = false
       response.reason = 'tx "current parameter nodeRewardAmountUsd" field must be a bigint.'
       throw new Error(response.reason)
-    }
-    if (typeof this.current.nodePenaltyUsd !== 'bigint') {
+    } else if (typeof this.current.nodePenaltyUsd !== 'bigint') {
       response.success = false
       response.reason = 'tx "current parameter nodePenaltyUsd" field must be a bigint.'
       throw new Error(response.reason)
-    }
-    if (typeof this.current.stakeRequiredUsd !== 'bigint') {
+    } else if (typeof this.current.stakeRequiredUsd !== 'bigint') {
       response.success = false
       response.reason = 'tx "current parameter stakeRequiredUsd" field must be a bigint.'
       throw new Error(response.reason)
-    }
-    if (typeof this.current.maintenanceInterval !== 'number') {
+    } else if (typeof this.current.maintenanceInterval !== 'number') {
       response.success = false
       response.reason = 'tx "current parameter maintenanceInterval" field must be a number.'
       throw new Error(response.reason)
-    }
-    if (typeof this.current.maintenanceFee !== 'number') {
+    } else if (typeof this.current.maintenanceFee !== 'number') {
       response.success = false
       response.reason = 'tx "current parameter maintenanceFee" field must be a number.'
       throw new Error(response.reason)
-    }
-    if (!_.isEmpty(this.next) || typeof this.next !== 'object') {
+    } else if (!_.isEmpty(this.next) || typeof this.next !== 'object') {
       response.success = false
       response.reason = 'tx "next" field must be an empty object.'
       throw new Error(response.reason)
-    }
-    if (_.isEmpty(this.windows) || typeof this.windows !== 'object') {
+    } else if (_.isEmpty(this.windows) || typeof this.windows !== 'object') {
       response.success = false
       response.reason = 'tx "windows" field must be a non empty object.'
       throw new Error(response.reason)
-    }
-    if (!_.isEmpty(this.nextWindows)) {
+    } else if (!_.isEmpty(this.nextWindows)) {
       response.success = false
       response.reason = 'tx "nextWindows" field must be an empty object.'
       throw new Error(response.reason)
-    }
-    if (typeof this.issue !== 'number') {
+    } else if (typeof this.issue !== 'number') {
       response.success = false
       response.reason = 'tx "issue" field must be a number.'
       throw new Error(response.reason)

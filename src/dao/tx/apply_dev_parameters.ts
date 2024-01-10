@@ -45,23 +45,19 @@ export class ApplyDevParameters implements IApplyDevParameters, DaoTx<DaoGlobalA
       response.success = false
       response.reason = 'tx "devIssue" field must be a number.'
       throw new Error(response.reason)
-    }
-    if (_.isEmpty(this.devWindows)) {
+    } else if (_.isEmpty(this.devWindows)) {
       response.success = false
       response.reason = 'tx "devWindows" field must not be empty.'
       throw new Error(response.reason)
-    }
-    if (!_.isEmpty(this.nextDevWindows)) {
+    } else if (!_.isEmpty(this.nextDevWindows)) {
       response.success = false
       response.reason = 'tx "nextDevWindows" field must be an empty object.'
       throw new Error(response.reason)
-    }
-    if (!Array.isArray(this.developerFund)) {
+    } else if (!Array.isArray(this.developerFund)) {
       response.success = false
       response.reason = 'tx "developerFund" field must be an array.'
       throw new Error(response.reason)
-    }
-    if (!_.isEmpty(this.nextDeveloperFund) || !Array.isArray(this.nextDeveloperFund)) {
+    } else if (!_.isEmpty(this.nextDeveloperFund) || !Array.isArray(this.nextDeveloperFund)) {
       response.success = false
       response.reason = 'tx "nextDeveloperFund" field must be an empty array.'
       throw new Error(response.reason)

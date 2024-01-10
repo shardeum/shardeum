@@ -24,13 +24,11 @@ export function validateFields(
     response.success = false
     response.reason = 'tx "from" field must be a string.'
     throw new Error(response.reason)
-  }
-  if (typeof tx.to !== 'string') {
+  } else if (typeof tx.to !== 'string') {
     response.success = false
     response.reason = 'tx "to" field must be a string.'
     throw new Error(response.reason)
-  }
-  if (typeof tx.amount !== 'number' || tx.amount <= 0) {
+  } else if (typeof tx.amount !== 'number' || tx.amount <= 0) {
     response.success = false
     response.reason = 'tx "amount" field must be a positive number.'
     throw new Error(response.reason)
