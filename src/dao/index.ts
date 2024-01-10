@@ -9,11 +9,11 @@ import {
   NetworkAccount,
   WrappedStates,
   WrappedEVMAccount,
+  TransactionKeys,
 } from '../shardeum/shardeumTypes'
 import { DaoGlobalAccount } from './accounts/networkAccount'
 import { applyParameters, decodeDaoTxFromEVMTx, generateIssue, tallyVotes } from './utils'
-import { Transaction, TransactionType } from '@ethereumjs/tx'
-import transactions, { DaoTx } from './tx'
+import { DaoTx } from './tx'
 import { getTransactionObj } from '../setup/helpers'
 import * as AccountsStorage from '../storage/accountStorage'
 import { daoAccountAddress } from '../config/dao'
@@ -44,7 +44,15 @@ export function applyInitDaoTx(
   const dao: NetworkAccount = wrappedStates[daoAccountAddress].data
   dao.timestamp = txTimestamp
   if (ShardeumFlags.supportInternalTxReceipt) {
-    createInternalTxReceipt(shardus, applyResponse, internalTx, daoAccountAddress, daoAccountAddress, txTimestamp, txId)
+    createInternalTxReceipt(
+      shardus,
+      applyResponse,
+      internalTx,
+      daoAccountAddress,
+      daoAccountAddress,
+      txTimestamp,
+      txId
+    )
   }
 }
 
@@ -87,12 +95,11 @@ export function handleDaoTxCrack(
   const unserializedTx = getTransactionObj(tx)
   // Decode data field of EVM tx to get type of DAO tx
   if ('data' in unserializedTx) {
-    const daoTx = decodeDaoTxFromEVMTx(
-      unserializedTx as Transaction[TransactionType.Legacy] | Transaction[TransactionType.AccessListEIP2930]
-    )
-    if (typeof daoTx === 'object' && daoTx && 'type' in daoTx && typeof daoTx.type === 'string') {
+    const plainTx = decodeDaoTxFromEVMTx(unserializedTx)
+    const daoTx = DaoTx.fromTxObject(plainTx)
+    if (daoTx != null) {
       // Call the keys function of the dao tx type
-      const changes = transactions[daoTx.type].keys(daoTx, {})
+      const changes = daoTx.keys({} as TransactionKeys)
       // Combine changes with existing keys
       result.sourceKeys = result.sourceKeys.concat(changes.sourceKeys)
       result.targetKeys = result.targetKeys.concat(changes.targetKeys)
@@ -120,14 +127,13 @@ export async function handleDaoTxGetRelevantData(
   const unserializedTx = getTransactionObj(tx)
   // Decode data field of EVM tx to get type of DAO tx
   if ('data' in unserializedTx) {
-    const daoTx: unknown = decodeDaoTxFromEVMTx(
-      unserializedTx as Transaction[TransactionType.Legacy] | Transaction[TransactionType.AccessListEIP2930]
-    )
-    if (typeof daoTx === 'object' && daoTx && 'type' in daoTx && typeof daoTx.type === 'string') {
+    const plainTx = decodeDaoTxFromEVMTx(unserializedTx)
+    const daoTx = DaoTx.fromTxObject(plainTx)
+    if (daoTx != null) {
       // Try to get the account
       const existingAccount = await AccountsStorage.getAccount(accountId)
       // Return the wrappedResponse obj created by createRelevantAccount function of the dao tx type
-      return transactions[daoTx.type].createRelevantAccount(shardus, existingAccount, accountId, daoTx)
+      return daoTx.createRelevantAccount(shardus, existingAccount, accountId, false)
     }
   }
   return null
@@ -144,14 +150,16 @@ export function handleDaoTxApply(
 ): void {
   // Unserialize the EVM tx
   const unserializedTx = getTransactionObj(tx)
+
   // Decode data field of EVM tx to get type of DAO tx
   if ('data' in unserializedTx) {
-    const daoTx: unknown = decodeDaoTxFromEVMTx(
-      unserializedTx as Transaction[TransactionType.Legacy] | Transaction[TransactionType.AccessListEIP2930]
-    )
-    if (typeof daoTx === 'object' && daoTx && 'type' in daoTx && typeof daoTx.type === 'string') {
-      // Run the apply function of the dao tx type
-      transactions[daoTx.type].apply(tx, txTimestamp, wrappedStates, dapp)
+    const plainTx = decodeDaoTxFromEVMTx(unserializedTx)
+    const daoTx = DaoTx.fromTxObject(plainTx)
+
+    // daoTx will be null if the tx is not a dao tx
+    if (daoTx != null) {
+      // if it's not null, run its apply function
+      daoTx.apply(txTimestamp, null, wrappedStates, dapp)
     }
   }
 }
@@ -164,8 +172,8 @@ export function startDaoMaintenanceCycle(interval: number, shardus: Shardus): vo
   /**
    * This diagram explains how expected, drift, and cycleInterval are used to
    * consistently realign the daoMaintenance fn to run in sync with some
-   * expected interval (cycleInterval in this case) 
-   * 
+   * expected interval (cycleInterval in this case)
+   *
    * now             expected        expected_2      expected_3      expected_4
    * |               |               |               |               |
    * | cycleInterval | cycleInterval | cycleInterval | cycleInterval |
@@ -245,11 +253,10 @@ export function startDaoMaintenanceCycle(interval: number, shardus: Shardus): vo
           applyGenerated = true
         }
       }
-
     } catch (err) {
       /* prettier-ignore */ if (logFlags.error) shardus.log('daoMaintenance ERR: ', err)
       /* prettier-ignore */ if (logFlags.error) console.log('daoMaintenance ERR: ', err)
-    } 
+    }
 
     expected += interval
     setTimeout(daoMaintenance, Math.max(100, interval - drift))
