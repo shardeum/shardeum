@@ -44,58 +44,47 @@ export class Proposal implements IProposal, DaoTx<UserAccount | ProposalAccount>
       response.success = false
       response.reason = 'tx "from" field must be a string.'
       throw new Error(response.reason)
-    }
-    if (typeof this.proposal !== 'string') {
+    } else if (typeof this.proposal !== 'string') {
       response.success = false
       response.reason = 'tx "proposal" field must be a string.'
       throw new Error(response.reason)
-    }
-    if (typeof this.issue !== 'string') {
+    } else if (typeof this.issue !== 'string') {
       response.success = false
       response.reason = 'tx "issue" field must be a string.'
       throw new Error(response.reason)
-    }
-    if (typeof this.parameters !== 'object') {
+    } else if (typeof this.parameters !== 'object') {
       response.success = false
       response.reason = 'tx "parameters" field must be an object.'
       throw new Error(response.reason)
-    }
-    if (typeof this.parameters.title !== 'string') {
+    } else if (typeof this.parameters.title !== 'string') {
       response.success = false
       response.reason = 'tx "parameter title" field must be a string.'
       throw new Error(response.reason)
-    }
-    if (typeof this.parameters.description !== 'string') {
+    } else if (typeof this.parameters.description !== 'string') {
       response.success = false
       response.reason = 'tx "parameter description" field must be a string.'
       throw new Error(response.reason)
-    }
-    if (typeof this.parameters.nodeRewardInterval !== 'number') {
+    } else if (typeof this.parameters.nodeRewardInterval !== 'number') {
       response.success = false
       response.reason = 'tx "parameter nodeRewardInterval" field must be a number.'
       throw new Error(response.reason)
-    }
-    if (typeof this.parameters.nodeRewardAmountUsd !== 'bigint') {
+    } else if (typeof this.parameters.nodeRewardAmountUsd !== 'bigint') {
       response.success = false
       response.reason = 'tx "parameter nodeRewardAmountUsd" field must be a bigint.'
       throw new Error(response.reason)
-    }
-    if (typeof this.parameters.nodePenaltyUsd !== 'bigint') {
+    } else if (typeof this.parameters.nodePenaltyUsd !== 'bigint') {
       response.success = false
       response.reason = 'tx "parameter nodePenaltyUsd" field must be a bigint.'
       throw new Error(response.reason)
-    }
-    if (typeof this.parameters.stakeRequiredUsd !== 'bigint') {
+    } else if (typeof this.parameters.stakeRequiredUsd !== 'bigint') {
       response.success = false
       response.reason = 'tx "parameter stakeRequiredUsd" field must be a bigint.'
       throw new Error(response.reason)
-    }
-    if (typeof this.parameters.maintenanceInterval !== 'number') {
+    } else if (typeof this.parameters.maintenanceInterval !== 'number') {
       response.success = false
       response.reason = 'tx "parameter maintenanceInterval" field must be a number.'
       throw new Error(response.reason)
-    }
-    if (typeof this.parameters.maintenanceFee !== 'number') {
+    } else if (typeof this.parameters.maintenanceFee !== 'number') {
       response.success = false
       response.reason = 'tx "parameter maintenanceFee" field must be a number.'
       throw new Error(response.reason)

@@ -23,18 +23,15 @@ export function validateFields(
     response.success = false
     response.reason = 'tx "from" field must be a string.'
     throw new Error(response.reason)
-  }
-  if (typeof tx.toll !== 'number') {
+  } else if (typeof tx.toll !== 'number') {
     response.success = false
     response.reason = 'tx "toll" field must be a number.'
     throw new Error(response.reason)
-  }
-  if (tx.toll < 1) {
+  } else if (tx.toll < 1) {
     response.success = false
     response.reason = 'Minimum "toll" allowed is 1 token'
     throw new Error(response.reason)
-  }
-  if (tx.toll > 1000000) {
+  } else if (tx.toll > 1000000) {
     response.success = false
     response.reason = 'Maximum toll allowed is 1,000,000 tokens.'
     throw new Error(response.reason)

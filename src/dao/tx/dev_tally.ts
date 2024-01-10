@@ -27,18 +27,15 @@ export function validateFields(
     response.success = false
     response.reason = 'tx "nodeId" field must be a string.'
     throw new Error(response.reason)
-  }
-  if (typeof tx.from !== 'string') {
+  } else if (typeof tx.from !== 'string') {
     response.success = false
     response.reason = 'tx "from" field must be a string.'
     throw new Error(response.reason)
-  }
-  if (typeof tx.devIssue !== 'string') {
+  } else if (typeof tx.devIssue !== 'string') {
     response.success = false
     response.reason = 'tx "devIssue" field must be a string.'
     throw new Error(response.reason)
-  }
-  if (!Array.isArray(tx.devProposals)) {
+  } else if (!Array.isArray(tx.devProposals)) {
     response.success = false
     response.reason = 'tx "devProposals" field must be an array.'
     throw new Error(response.reason)

@@ -32,8 +32,7 @@ export class ApplyDevTally implements IApplyDevTally, DaoTx<DaoGlobalAccount> {
       response.success = false
       response.reason = 'tx "nextDeveloperFund" field must be an array.'
       throw new Error(response.reason)
-    }
-    if (_.isEmpty(this.nextDevWindows)) {
+    } else if (_.isEmpty(this.nextDevWindows)) {
       response.success = false
       response.reason = 'tx "nextDevWindows" field cannot be an empty object.'
       throw new Error(response.reason)

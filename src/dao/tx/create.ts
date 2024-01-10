@@ -20,13 +20,11 @@ export function validateFields(
     response.success = false
     response.reason = '"From" must be a string.'
     throw new Error(response.reason)
-  }
-  if (typeof tx.to !== 'string') {
+  } else if (typeof tx.to !== 'string') {
     response.success = false
     response.reason = '"To" must be a string.'
     throw new Error(response.reason)
-  }
-  if (typeof tx.amount !== 'number') {
+  } else if (typeof tx.amount !== 'number') {
     response.success = false
     response.reason = '"Amount" must be a number.'
     throw new Error(response.reason)

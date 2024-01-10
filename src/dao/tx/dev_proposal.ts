@@ -34,68 +34,55 @@ export function validateFields(
     response.success = false
     response.reason = 'tx "devIssue" field must be a string.'
     throw new Error(response.reason)
-  }
-  if (typeof tx.devProposal !== 'string') {
+  } else if (typeof tx.devProposal !== 'string') {
     response.success = false
     response.reason = 'tx "devProposal" field must be a string.'
     throw new Error(response.reason)
-  }
-  if (typeof tx.totalAmount !== 'number') {
+  } else if (typeof tx.totalAmount !== 'number') {
     response.success = false
     response.reason = 'tx "totalAmount" field must be a number.'
     throw new Error(response.reason)
-  }
-  if (tx.totalAmount < 1) {
+  } else if (tx.totalAmount < 1) {
     response.success = false
     response.reason = 'Minimum "tx totalAmount" allowed for a developer proposal is 1 token'
     throw new Error(response.reason)
-  }
-  if (tx.totalAmount > 100000) {
+  } else if (tx.totalAmount > 100000) {
     response.success = false
     response.reason = 'Maximum "tx totalAmount" allowed for a developer proposal is 100,000 tokens'
     throw new Error(response.reason)
-  }
-  if (_.isEmpty(tx.payments) || !Array.isArray(tx.payments)) {
+  } else if (_.isEmpty(tx.payments) || !Array.isArray(tx.payments)) {
     response.success = false
     response.reason = 'tx "payments" field must be a non empty array.'
     throw new Error(response.reason)
-  }
-  if (typeof tx.title !== 'string') {
+  } else if (typeof tx.title !== 'string') {
     response.success = false
     response.reason = 'tx "title" field must be a string.'
     throw new Error(response.reason)
-  }
-  if (tx.title.length < 1) {
+  } else if (tx.title.length < 1) {
     response.success = false
     response.reason = 'Minimum "tx title" field character count is 1'
     throw new Error(response.reason)
-  }
-  if (tx.title.length > 100) {
+  } else if (tx.title.length > 100) {
     response.success = false
     response.reason = 'Maximum "tx title" field character count is 100'
     throw new Error(response.reason)
-  }
-  if (typeof tx.description !== 'string') {
+  } else if (typeof tx.description !== 'string') {
     response.success = false
     response.reason = 'tx "description" field must be a string.'
     throw new Error(response.reason)
-  }
-  if (tx.description.length < 1) {
+  } else if (tx.description.length < 1) {
     response.success = false
     response.reason = 'Minimum "tx description" field character count is 1'
     throw new Error(response.reason)
-  }
-  if (tx.description.length > 1000) {
+  } else if (tx.description.length > 1000) {
     response.success = false
     response.reason = 'Maximum "tx description" field character count is 1000'
     throw new Error(response.reason)
-  }
-  if (typeof tx.payAddress !== 'string') {
+  } else if (typeof tx.payAddress !== 'string') {
     response.success = false
     response.reason = 'tx "payAddress" field must be a string.'
     throw new Error(response.reason)
-  }
-  if (tx.payAddress.length !== 64) {
+  } else if (tx.payAddress.length !== 64) {
     response.success = false
     response.reason = 'tx "payAddress" field length must be 64 characters (A valid public hex address)'
     throw new Error(response.reason)

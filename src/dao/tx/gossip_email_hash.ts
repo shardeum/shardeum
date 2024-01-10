@@ -22,23 +22,19 @@ export function validateFields(
     response.success = false
     response.reason = 'tx "nodeId" field must be a string.'
     throw new Error(response.reason)
-  }
-  if (typeof tx.from !== 'string') {
+  } else if (typeof tx.from !== 'string') {
     response.success = false
     response.reason = 'tx "from" field must be a string.'
     throw new Error(response.reason)
-  }
-  if (typeof tx.account !== 'string') {
+  } else if (typeof tx.account !== 'string') {
     response.success = false
     response.reason = 'tx "account" field must be a string.'
     throw new Error(response.reason)
-  }
-  if (typeof tx.emailHash !== 'string') {
+  } else if (typeof tx.emailHash !== 'string') {
     response.success = false
     response.reason = 'tx "emailHash" field must be a string.'
     throw new Error(response.reason)
-  }
-  if (typeof tx.verified !== 'string') {
+  } else if (typeof tx.verified !== 'string') {
     response.success = false
     response.reason = 'tx "verified" field must be a string.'
     throw new Error(response.reason)
