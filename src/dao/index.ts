@@ -219,7 +219,10 @@ export function startDaoMaintenanceCycle(interval: number, shardus: Shardus): vo
       const nodeAddress = node.address
 
       // ISSUE
-      if (currentTime >= daoAccountObj.windows.proposalWindow[0] && currentTime <= daoAccountObj.windows.proposalWindow[1]) {
+      if (
+        currentTime >= daoAccountObj.windows.proposalWindow[0] &&
+        currentTime <= daoAccountObj.windows.proposalWindow[1]
+      ) {
         if (!issueGenerated && daoAccountObj.issue > 1) {
           if (luckyNodes.includes(nodeId)) {
             await generateIssue(nodeAddress, nodeId, shardus)
@@ -231,7 +234,10 @@ export function startDaoMaintenanceCycle(interval: number, shardus: Shardus): vo
       }
 
       // TALLY
-      if (currentTime >= daoAccountObj.windows.graceWindow[0] && currentTime <= daoAccountObj.windows.graceWindow[1]) {
+      if (
+        currentTime >= daoAccountObj.windows.graceWindow[0] &&
+        currentTime <= daoAccountObj.windows.graceWindow[1]
+      ) {
         if (!tallyGenerated) {
           if (luckyNodes.includes(nodeId)) {
             await tallyVotes(nodeAddress, nodeId, shardus)
@@ -243,7 +249,10 @@ export function startDaoMaintenanceCycle(interval: number, shardus: Shardus): vo
       }
 
       // APPLY
-      if (currentTime >= daoAccountObj.windows.applyWindow[0] && currentTime <= daoAccountObj.windows.applyWindow[1]) {
+      if (
+        currentTime >= daoAccountObj.windows.applyWindow[0] &&
+        currentTime <= daoAccountObj.windows.applyWindow[1]
+      ) {
         if (!applyGenerated) {
           if (luckyNodes.includes(nodeId)) {
             await applyParameters(nodeAddress, nodeId, shardus)
