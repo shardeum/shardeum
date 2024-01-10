@@ -133,7 +133,7 @@ import { Archiver } from '@shardus/archiver-discovery/dist/src/types'
 import axios from 'axios'
 import { RunState } from './evm_v2/interpreter'
 import { VM } from './vm_v7/vm'
-import rfdc = require('rfdc')
+import rfdc from 'rfdc'
 import { AdminCert, PutAdminCertResult, putAdminCertificateHandler } from './handlers/adminCertificate'
 import { P2P } from '@shardus/types'
 import { getExternalApiMiddleware } from './middleware/externalApiMiddleware'
