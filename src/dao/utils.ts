@@ -8,9 +8,10 @@ import { DevIssueAccount } from './accounts/devIssueAccount'
 import { DeveloperPayment } from './types'
 import { TimestampReceipt } from '@shardus/core/dist/shardus/shardus-types'
 import { Issue } from './tx/issue'
-import { Transaction, TransactionType } from '@ethereumjs/tx'
+import { AccessListEIP2930Transaction, LegacyTransaction, Transaction, TransactionType } from '@ethereumjs/tx'
 import { bytesToHex, toAscii } from '@ethereumjs/util'
 import { logFlags } from '..'
+import { PlainDaoTx } from './tx'
 
 export const maintenanceAmount = (
   timestamp: number,
@@ -240,8 +241,8 @@ export function getInjectedOrGeneratedTimestamp(timestampedTx: TimestampedTx, da
 }
 
 export function decodeDaoTxFromEVMTx(
-  transaction: Transaction[TransactionType.Legacy] | Transaction[TransactionType.AccessListEIP2930]
-): unknown {
+  transaction: LegacyTransaction | AccessListEIP2930Transaction
+): PlainDaoTx {
   const daoTxString = toAscii(bytesToHex(transaction.data))
   /* prettier-ignore */ if (logFlags.verbose) console.log(`daoTxString`, daoTxString)
   return JSON.parse(daoTxString)
