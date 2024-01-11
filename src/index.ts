@@ -30,7 +30,7 @@ import { RunTxResult, ShardeumVM } from './vm_v7'
 import { EVM as EthereumVirtualMachine, getActivePrecompiles } from './evm_v2'
 import { EVMResult } from './evm_v2/types'
 import { parse as parseUrl } from 'url'
-import got from 'got'
+import got, { Response as GotResponse } from 'got'
 import 'dotenv/config'
 import { ShardeumState, TransactionState } from './state'
 import { __ShardFunctions, nestedCountersInstance, ShardusTypes, DebugComplete, Shardus, DevSecurityLevel } from '@shardus/core'
@@ -921,20 +921,20 @@ function _normalizeUrl(url: string): string {
   return normalized
 }
 
-async function _internalHackPostWithResp(url: string, body): Promise<got.Response<any>> {
+async function _internalHackPostWithResp(url: string, body): Promise<GotResponse<any>> {
   const normalized = _normalizeUrl(url)
-  const host = parseUrl(normalized, true)
+
   try {
-    const res = await got.post(host, {
-      timeout: ShardeumFlags.shardeumTimeout,
+    const res = await got.post(normalized, {
+      timeout: {
+        request: ShardeumFlags.shardeumTimeout,
+      },
       retry: 0,
       throwHttpErrors: false,
-      body,
-      json: true,
-      //parseJson: (text:string)=>{},
-      //json: false, // the whole reason for _internalHackGet was because we dont want the text response to mess things up
-      //  and as a debug non shipping endpoint did not want to add optional parameters to http module
+      responseType: 'json',
+      json: body,
     })
+
     return res
   } catch (e) {
     return null
