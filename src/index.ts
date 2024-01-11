@@ -157,6 +157,7 @@ import { accountDeserializer, accountSerializer, binaryDeserializer, binarySeria
 import { apply as applyDaoIssueTx, Issue as DaoIssueTx } from './dao/tx/issue'
 import { applyInitDaoTx, getDaoAccountObj, getRelevantDataInitDao, handleDaoTxApply, handleDaoTxCrack, handleDaoTxGetRelevantData, isDaoTx, startDaoMaintenanceCycle } from './dao'
 import { DaoTx } from './dao/tx'
+import registerDaoAPI from './dao/api'
 
 let latestBlock = 0
 export const blocks: BlockMap = {}
@@ -1002,6 +1003,7 @@ const configShardusEndpoints = (): void => {
   const debugMiddlewareMedium = shardus.getDebugModeMiddlewareMedium()
   //const debugMiddlewareHigh = shardus.getDebugModeMiddlewareHigh()
   const externalApiMiddleware = getExternalApiMiddleware()
+  registerDaoAPI(shardus)
 
   //TODO request needs a signature and a timestamp.  or make it a real TX from a faucet account..
   //?id=<accountID>
