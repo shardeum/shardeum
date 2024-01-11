@@ -1366,6 +1366,9 @@ const configShardusEndpoints = (): void => {
       const codeAccount = await shardus.getLocalOrRemoteAccount(codeAddress, {
         useRICache: true,
       })
+      if (!codeAccount || !codeAccount.data) {
+        return res.json({ contractCode: '0x' })
+      }
 
       const wrappedCodeAccount = codeAccount.data as WrappedEVMAccount
       fixDeserializedWrappedEVMAccount(wrappedCodeAccount)
