@@ -1370,7 +1370,7 @@ const configShardusEndpoints = (): void => {
 
       const wrappedCodeAccount = codeAccount.data as WrappedEVMAccount
       fixDeserializedWrappedEVMAccount(wrappedCodeAccount)
-      const contractCode = wrappedCodeAccount ? bytesToHex(wrappedCodeAccount.codeByte) : '0x'
+      const contractCode = wrappedCodeAccount.codeByte ? bytesToHex(wrappedCodeAccount.codeByte) : '0x'
       return res.json({ contractCode })
     } catch (error) {
       /* prettier-ignore */ if (logFlags.dapp_verbose) console.log('eth_getCode: ' + formatErrorMessage(error))
