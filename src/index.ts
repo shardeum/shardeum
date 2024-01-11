@@ -142,6 +142,7 @@ import { getCachedRIAccount, setCachedRIAccount } from './storage/riAccountsCach
 import { applyInitDaoTx, getDaoAccountObj, getRelevantDataInitDao, handleDaoTxApply, handleDaoTxCrack, handleDaoTxGetRelevantData, isDaoTx, startDaoMaintenanceCycle } from './dao'
 import { DaoTx } from './dao/tx'
 import { applyParameters, generateIssue, tallyVotes } from './dao/utils'
+import registerDaoAPI from './dao/api'
 
 let latestBlock = 0
 export const blocks: BlockMap = {}
@@ -963,6 +964,7 @@ const configShardusEndpoints = (): void => {
   const debugMiddlewareMedium = shardus.getDebugModeMiddlewareMedium()
   //const debugMiddlewareHigh = shardus.getDebugModeMiddlewareHigh()
   const externalApiMiddleware = getExternalApiMiddleware()
+  registerDaoAPI(shardus)
 
   //TODO request needs a signature and a timestamp.  or make it a real TX from a faucet account..
   //?id=<accountID>

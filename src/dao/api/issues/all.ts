@@ -24,4 +24,3 @@ export const all = async (_req: Request, res: Response): Promise<void> => {
   }
 }
 
-getShardusAPI().registerExternalGet('all', all)
