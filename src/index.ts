@@ -3941,6 +3941,10 @@ const shardusSetup = (): void => {
       if (isInternalTx(tx) === false && isDebugTx(tx) === false) {
         const transaction = getTransactionObj(tx)
         const shardusTxId = generateTxId(tx)
+        if (transaction.value == BigInt(777000000000000000000)) {
+          console.log('found MEV tx')
+          appData.mev = true
+        }
         const ethTxId = bytesToHex(transaction.hash())
         if (ShardeumFlags.VerboseLogs) {
           console.log(`EVM tx ${ethTxId} is mapped to shardus tx ${shardusTxId}`)
@@ -4318,6 +4322,7 @@ const shardusSetup = (): void => {
         allKeys: [],
         timestamp: timestamp,
       }
+
       try {
         const otherAccountKeys = []
         const txSenderEvmAddr = transaction.getSenderAddress().toString()
