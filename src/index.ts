@@ -118,6 +118,7 @@ import {
   isInternalTx,
   crypto,
   getInjectedOrGeneratedTimestamp,
+  getTransactionObj,
 } from './setup/helpers'
 import { onActiveVersionChange } from './versioning'
 import { shardusFactory } from '@shardus/core'
@@ -742,31 +743,6 @@ async function createAccount(
   return wrappedEVMAccount
 }
 
-function getTransactionObj(
-  tx
-): Transaction[TransactionType.Legacy] | Transaction[TransactionType.AccessListEIP2930] {
-  if (!tx.raw) throw Error('fail')
-  let transactionObj
-  const serializedInput = toBytes(tx.raw)
-  try {
-    transactionObj = TransactionFactory.fromSerializedData<TransactionType.Legacy>(serializedInput)
-  } catch (e) {
-    // if (ShardeumFlags.VerboseLogs) console.log('Unable to get legacy transaction obj', e)
-  }
-  if (!transactionObj) {
-    try {
-      transactionObj =
-        TransactionFactory.fromSerializedData<TransactionType.AccessListEIP2930>(serializedInput)
-    } catch (e) {
-      if (ShardeumFlags.VerboseLogs) console.log('Unable to get transaction obj', e)
-    }
-  }
-
-  if (transactionObj) {
-    return transactionObj
-  } else throw Error('tx obj fail')
-}
-
 async function getReadableAccountInfo(account: WrappedEVMAccount): Promise<{
   nonce: string
   balance: string
@@ -1098,7 +1074,7 @@ const configShardusEndpoints = (): void => {
           isAllowedInternal = true
         } else {
           console.log("daoLogging: tx is not internal, determining if staking tx")
-          const transaction = getTransactionObj(tx)
+          const transaction = getTransactionObj(tx, false)
           if (transaction != null) {
             console.log("daoLogging: transaction obj is non-null")
             isStaking = isStakingEVMTx(transaction)
@@ -2635,7 +2611,7 @@ async function generateAccessList(
   injectedTx: ShardusTypes.OpaqueTransaction
 ): Promise<{ accessList: unknown[]; shardusMemoryPatterns: unknown; codeHashes: CodeHashObj[] }> {
   try {
-    const transaction = getTransactionObj(injectedTx)
+    const transaction = getTransactionObj(injectedTx, false)
     const caShardusAddress = transaction.to
       ? toShardusAddress(transaction.to.toString(), AccountType.Account)
       : null
@@ -3038,7 +3014,7 @@ const shardusSetup = (): void => {
         )
       }
 
-      const transaction = getTransactionObj(tx)
+      const transaction = getTransactionObj(tx, false)
       const ethTxId = bytesToHex(transaction.hash())
       const shardusReceiptAddress = toShardusAddressWithKey(ethTxId, '', AccountType.Receipt)
       const txId = generateTxId(tx)
@@ -3962,7 +3938,7 @@ const shardusSetup = (): void => {
       }
 
       if (!isInternalTx(tx) && !isDebugTx(tx)) {
-        const transaction = getTransactionObj(tx)
+        const transaction = getTransactionObj(tx, false)
         const shardusTxId = generateTxId(tx)
         const ethTxId = bytesToHex(transaction.hash())
         if (ShardeumFlags.VerboseLogs) {
@@ -4345,7 +4321,7 @@ const shardusSetup = (): void => {
       }
       const txId = generateTxId(tx)
 
-      const transaction = getTransactionObj(tx)
+      const transaction = getTransactionObj(tx, false)
       const result = {
         sourceKeys: [],
         targetKeys: [],
@@ -4733,7 +4709,7 @@ const shardusSetup = (): void => {
       // todo: create new accounts for staking
 
       // check if it a stake tx
-      const transaction = getTransactionObj(tx)
+      const transaction = getTransactionObj(tx, false)
       const isStakeRelatedTx: boolean = isStakingEVMTx(transaction)
 
       if (isStakeRelatedTx) {
@@ -4867,7 +4843,7 @@ const shardusSetup = (): void => {
           accountType = evmAccountInfo.type
         }
 
-        const transaction = getTransactionObj(tx)
+        const transaction = getTransactionObj(tx, false)
         const txHash = bytesToHex(transaction.hash())
         const shardusReceiptAddress = toShardusAddressWithKey(txHash, '', AccountType.Receipt)
         if (shardusReceiptAddress === accountId) {
@@ -5442,7 +5418,7 @@ const shardusSetup = (): void => {
           const debugTx = tx as DebugTx
           return `debugTX: ${DebugTXType[debugTx.debugTXType]}`
         }
-        const transaction = getTransactionObj(tx)
+        const transaction = getTransactionObj(tx, false)
         if (transaction && isStakingEVMTx(transaction)) {
           return `stakingEVMtx`
         }

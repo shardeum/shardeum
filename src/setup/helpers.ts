@@ -1,15 +1,15 @@
 import {
   AccessListEIP2930Transaction,
-  Transaction,
+  LegacyTransaction,
   TransactionFactory,
   TransactionType,
 } from '@ethereumjs/tx'
 import * as crypto from '@shardus/crypto-utils'
-import { toBuffer } from 'ethereumjs-util'
+import { toBuffer, ToBufferInputTypes } from 'ethereumjs-util'
 import { DaoTx } from '../dao/tx'
 import { ShardeumFlags } from '../shardeum/shardeumFlags'
 import { InternalTx, InternalTXType } from '../shardeum/shardeumTypes'
-import { stringify, cryptoStringify } from '../utils/stringify'
+import { cryptoStringify } from '../utils/stringify'
 
 // console.log(crypto.)
 
@@ -43,12 +43,12 @@ export function isDebugTx<T extends { isDebugTx?: unknown }>(tx: T): boolean {
   return !!tx.isDebugTx
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export function getTransactionObj(
-  tx
-): Transaction[TransactionType.Legacy] | Transaction[TransactionType.AccessListEIP2930] {
-  if (!tx.raw) throw Error('fail')
-  let transactionObj
+export function getTransactionObj<T extends { raw?: ToBufferInputTypes }>(
+  tx: T,
+  freeze = true,
+): LegacyTransaction | AccessListEIP2930Transaction {
+  if (!tx?.raw) throw Error('fail')
+  let transactionObj: LegacyTransaction | AccessListEIP2930Transaction
   const serializedInput = toBuffer(tx.raw)
   try {
     transactionObj = TransactionFactory.fromSerializedData<TransactionType.Legacy>(serializedInput)
@@ -65,7 +65,7 @@ export function getTransactionObj(
   }
 
   if (transactionObj) {
-    Object.freeze(transactionObj)
+    if (freeze) Object.freeze(transactionObj)
     return transactionObj
   } else throw Error('tx obj fail')
 }
