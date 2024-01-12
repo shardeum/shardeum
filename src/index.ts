@@ -2484,13 +2484,23 @@ async function estimateGas(
   const blockForTx = blocks[latestBlock]
   const MAX_GASLIMIT = BigInt(30_000_000)
 
-  if (injectedTx.gas == null) {
-    // If no gas limit is specified use the last block gas limit as an upper bound.
-    // injectedTx.gas = blockForTx.header.gasLimit.div(new BN(10).pow(new BN(8))) as any
-    // injectedTx.gasLimit = blockForTx.header.gasLimit.div(new BN(10).pow(new BN(8))) as any
-    injectedTx.gasLimit = blockForTx.header.gasLimit
-  } else {
-    injectedTx.gasLimit = BigInt(injectedTx.gas)
+  try {
+    if (injectedTx.gas == null) {
+      // If no gas limit is specified use the last block gas limit as an upper bound.
+      // injectedTx.gas = blockForTx.header.gasLimit.div(new BN(10).pow(new BN(8))) as any
+      // injectedTx.gasLimit = blockForTx.header.gasLimit.div(new BN(10).pow(new BN(8))) as any
+      injectedTx.gasLimit = blockForTx.header.gasLimit
+    } else {
+      injectedTx.gasLimit = BigInt(injectedTx.gas)
+    }
+  } catch (error) {
+    if (ShardeumFlags.VerboseLogs) console.log('Injected tx without gasLimit', error)
+    injectedTx.gasLimit = BigInt('0x1C9C380') // 30 M Gas
+  }
+
+  // we set this max gasLimit to prevent DDOS attacks with high gasLimits
+  if (injectedTx.gasLimit > MAX_GASLIMIT) {
+    injectedTx.gasLimit = MAX_GASLIMIT
   }
 
   // we set this max gasLimit to prevent DDOS attacks with high gasLimits
