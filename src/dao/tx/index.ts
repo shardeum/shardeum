@@ -5,7 +5,7 @@ import {
   TransactionKeys,
   WrappedResponse,
 } from '@shardus/core/dist/shardus/shardus-types'
-import { IProposal, Proposal } from './proposal'
+import { INetworkProposal, NetworkProposal } from './proposal'
 import { IIssue, Issue } from './issue'
 import { ApplyChangeConfig, IApplyChangeConfig } from './apply_change_config'
 import { ApplyDevParameters, IApplyDevParameters } from './apply_dev_parameters'
@@ -52,8 +52,8 @@ export abstract class DaoTx<Account> {
         return new ApplyTally(tx)
       case 'issue':
         return new Issue(tx)
-      case 'proposal':
-        return new Proposal(tx)
+      case 'NetworkProposal':
+        return new NetworkProposal(tx)
     }
   }
 }
@@ -65,5 +65,5 @@ export type PlainDaoTx =
   | IApplyDevPayment
   | IApplyParameters
   | IApplyTally
-  | IProposal
+  | INetworkProposal
   | IIssue
