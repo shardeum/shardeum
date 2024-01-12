@@ -11,8 +11,8 @@ import { WrappedResponse } from '@shardus/core/dist/shardus/shardus-types'
 import { DaoTx } from '.'
 import { SignedObject } from '@shardus/crypto-utils'
 
-export interface IProposal {
-  type: 'proposal'
+export interface INetworkProposal {
+  type: 'NetworkProposal'
   from: string
   proposal: string
   issue: string
@@ -21,8 +21,8 @@ export interface IProposal {
   sign: crypto.Signature
 }
 
-export class Proposal implements IProposal, DaoTx<UserAccount | ProposalAccount> {
-  readonly type = 'proposal'
+export class NetworkProposal implements INetworkProposal, DaoTx<UserAccount | ProposalAccount> {
+  readonly type = 'NetworkProposal'
   from: string
   proposal: string
   issue: string
@@ -30,7 +30,7 @@ export class Proposal implements IProposal, DaoTx<UserAccount | ProposalAccount>
   timestamp: number
   sign: crypto.Signature
 
-  constructor(data: IProposal) {
+  constructor(data: INetworkProposal) {
     this.from = data.from
     this.proposal = data.proposal
     this.issue = data.issue
