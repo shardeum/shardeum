@@ -10,71 +10,83 @@ import { UserAccount } from './accounts/userAccount'
 
 export class WindowRange {
   #start: number
-  #stop: number
+  #size: number
 
-  static withStartStop(start: number, stop: number): WindowRange {
-    return new WindowRange(start, stop)
-  }
-
-  static withStartSize(start: number, size: number): WindowRange {
-    return new WindowRange(start, start + size)
-  }
-
-  constructor(start: number, stop: number) {
+  constructor(start: number, size: number) {
     if (typeof start !== 'number') throw new Error('start must be a number')
-    if (typeof stop !== 'number') throw new Error('stop must be a number')
+    if (typeof size !== 'number') throw new Error('size must be a number')
     if (Number.isNaN(start)) throw new Error('start must be a number')
-    if (Number.isNaN(stop)) throw new Error('stop must be a number')
-    if (stop < start) throw new Error('stop must be greater than start')
+    if (Number.isNaN(size)) throw new Error('size must be a number')
+    if (start < 0) throw new Error('start must be >= 0')
+    if (size < 0) throw new Error('size must be >= 0')
     this.#start = start
-    this.#stop = stop
+    this.#size = size
   }
 
   get start(): number {
     return this.#start
   }
 
+  get size(): number {
+    return this.#size
+  }
+
   get stop(): number {
-    return this.#stop
+    return this.#start + this.#size
   }
 
   toJSON(): object {
     return {
       start: this.#start,
-      stop: this.#stop,
+      size: this.#size,
     }
   }
 
   toString(): string {
-    return `WindowRange(${this.start}, ${this.stop})`
+    return `WindowRange { start: ${this.#start}, size: ${this.#size} }`
   }
 
   // eslint-disable-next-line @typescript-eslint/no-unused-vars, @typescript-eslint/no-explicit-any
   [util.inspect.custom](depth: number, options: any): string {
-    return `WindowRange { start: ${this.#start}, stop: ${this.#stop} }`
+    return this.toString()
   }
 
+  /**
+   * @returns true if the value is in this range.
+   */
   includes(value: number): boolean {
     // Ranges are half-open on the end so they can be adjacent without overlap.
     // This enables a sequence of ranges without gaps or ambiguities.
     return value >= this.start && value < this.stop
   }
 
+  excludes(value: number): boolean {
+    return value < this.start || value >= this.stop
+  }
+
+  /**
+   * @returns true if the given range overlaps this one.
+   */
   overlaps(other: WindowRange): boolean {
     return this.includes(other.start) || other.includes(this.start)
   }
 
-  isSubsequent(other: WindowRange): boolean {
-    return this.stop === other.start
+  /**
+   * @returns true if the given range is the next one after this one.
+   */
+  isNext(other: WindowRange): boolean {
+    return other.start == this.stop
   }
 
-  nextRangeOfSize(size: number): WindowRange {
+  /**
+   * @returns the next range after this one with the given size.
+   */
+  nextRange(size: number): WindowRange {
     if (typeof size !== 'number') throw new Error('size must be a number')
     if (Number.isNaN(size)) throw new Error('size must be a number')
-    if (size <= 0) throw new Error('size must be greater than 0')
-    return new WindowRange(this.stop, this.stop + size)
+    if (size < 0) throw new Error('size must be >= 0')
+    return new WindowRange(this.stop, size)
   }
-
 }
 
 export interface Windows {
