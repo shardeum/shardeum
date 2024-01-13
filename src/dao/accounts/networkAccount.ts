@@ -35,22 +35,22 @@ export class DaoGlobalAccount implements BaseAccount {
     networkParamters?: NetworkParameters
   ) {
     const proposalWindow = new WindowRange(timestamp, timestamp + daoConfig.TIME_FOR_PROPOSALS)
-    const votingWindow = new WindowRange(proposalWindow[1], proposalWindow[1] + daoConfig.TIME_FOR_VOTING)
-    const graceWindow = new WindowRange(votingWindow[1], votingWindow[1] + daoConfig.TIME_FOR_GRACE)
-    const applyWindow = new WindowRange(graceWindow[1], graceWindow[1] + daoConfig.TIME_FOR_APPLY)
+    const votingWindow = new WindowRange(proposalWindow.stop, proposalWindow.stop + daoConfig.TIME_FOR_VOTING)
+    const graceWindow = new WindowRange(votingWindow.stop, votingWindow.stop + daoConfig.TIME_FOR_GRACE)
+    const applyWindow = new WindowRange(graceWindow.stop, graceWindow.stop + daoConfig.TIME_FOR_APPLY)
 
     const devProposalWindow = new WindowRange(timestamp, timestamp + daoConfig.TIME_FOR_DEV_PROPOSALS)
     const devVotingWindow = new WindowRange(
-      devProposalWindow[1],
-      devProposalWindow[1] + daoConfig.TIME_FOR_DEV_VOTING
+      devProposalWindow.stop,
+      devProposalWindow.stop + daoConfig.TIME_FOR_DEV_VOTING
     )
     const devGraceWindow = new WindowRange(
-      devVotingWindow[1],
-      devVotingWindow[1] + daoConfig.TIME_FOR_DEV_GRACE
+      devVotingWindow.stop,
+      devVotingWindow.stop + daoConfig.TIME_FOR_DEV_GRACE
     )
     const devApplyWindow = new WindowRange(
-      devGraceWindow[1],
-      devGraceWindow[1] + daoConfig.TIME_FOR_DEV_APPLY
+      devGraceWindow.stop,
+      devGraceWindow.stop + daoConfig.TIME_FOR_DEV_APPLY
     )
 
     this.id = accountId
