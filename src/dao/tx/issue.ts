@@ -84,10 +84,7 @@ export class Issue implements IIssue, DaoTx<IssueAccount> {
       )}`
       return response
     }
-    if (
-      this.timestamp < network.windows.proposalWindow.start ||
-      this.timestamp > network.windows.proposalWindow.stop
-    ) {
+    if (network.windows.proposalWindow.excludes(this.timestamp)) {
       response.reason = 'Network is not within the time window to generate issues'
       return response
     }

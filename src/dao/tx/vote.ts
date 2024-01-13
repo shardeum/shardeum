@@ -84,7 +84,7 @@ export function validate(
     response.reason = 'Must send tokens to vote'
     return response
   }
-  if (tx.timestamp < network.windows.votingWindow.start || tx.timestamp > network.windows.votingWindow.stop) {
+  if (network.windows.votingWindow.excludes(tx.timestamp)) {
     response.reason = 'Network is not within the time window to accept votes'
     return response
   }
