@@ -156,8 +156,8 @@ export class NetworkProposal implements INetworkProposal, DaoTx<UserAccount | Pr
       return response
     }
     if (
-      this.timestamp < network.windows.proposalWindow[0] ||
-      this.timestamp > network.windows.proposalWindow[1]
+      this.timestamp < network.windows.proposalWindow.start ||
+      this.timestamp > network.windows.proposalWindow.stop
     ) {
       response.reason = 'Network is not within the time window to accept proposals'
       return response

@@ -54,7 +54,7 @@ export function validate(
     response.reason = 'This issue is no longer active'
     return response
   }
-  if (tx.timestamp < network.windows.applyWindow[0] || tx.timestamp > network.windows.applyWindow[1]) {
+  if (tx.timestamp < network.windows.applyWindow.start || tx.timestamp > network.windows.applyWindow.stop) {
     response.reason = 'Network is not within the time window to apply parameters'
     return response
   }

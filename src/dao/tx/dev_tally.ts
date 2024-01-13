@@ -78,7 +78,7 @@ export function validate(
     response.reason = `The number of devProposals sent in with the transaction ${devProposals.length} doesn't match the devIssue proposalCount ${devIssue.devProposalCount}`
     return response
   }
-  if (tx.timestamp < network.devWindows.graceWindow[0] || tx.timestamp > network.devWindows.graceWindow[1]) {
+  if (tx.timestamp < network.devWindows.graceWindow.start || tx.timestamp > network.devWindows.graceWindow.stop) {
     response.reason = 'Network is not within the time window to tally votes for developer proposals'
     return response
   }
@@ -124,26 +124,26 @@ export function apply(
 
   const nextDevWindows: Windows = {
     proposalWindow: new WindowRange(
-      network.devWindows.applyWindow[1],
-      network.devWindows.applyWindow[1] + daoConfig.TIME_FOR_DEV_PROPOSALS
+      network.devWindows.applyWindow.stop,
+      network.devWindows.applyWindow.stop + daoConfig.TIME_FOR_DEV_PROPOSALS
     ),
     votingWindow: new WindowRange(
-      network.devWindows.applyWindow[1] + daoConfig.TIME_FOR_DEV_PROPOSALS,
-      network.devWindows.applyWindow[1] + daoConfig.TIME_FOR_DEV_PROPOSALS + daoConfig.TIME_FOR_DEV_VOTING
+      network.devWindows.applyWindow.stop + daoConfig.TIME_FOR_DEV_PROPOSALS,
+      network.devWindows.applyWindow.stop + daoConfig.TIME_FOR_DEV_PROPOSALS + daoConfig.TIME_FOR_DEV_VOTING
     ),
     graceWindow: new WindowRange(
-      network.devWindows.applyWindow[1] + daoConfig.TIME_FOR_DEV_PROPOSALS + daoConfig.TIME_FOR_DEV_VOTING,
-      network.devWindows.applyWindow[1] +
+      network.devWindows.applyWindow.stop + daoConfig.TIME_FOR_DEV_PROPOSALS + daoConfig.TIME_FOR_DEV_VOTING,
+      network.devWindows.applyWindow.stop +
         daoConfig.TIME_FOR_DEV_PROPOSALS +
         daoConfig.TIME_FOR_DEV_VOTING +
         daoConfig.TIME_FOR_DEV_GRACE
     ),
     applyWindow: new WindowRange(
-      network.devWindows.applyWindow[1] +
+      network.devWindows.applyWindow.stop +
         daoConfig.TIME_FOR_DEV_PROPOSALS +
         daoConfig.TIME_FOR_DEV_VOTING +
         daoConfig.TIME_FOR_DEV_GRACE,
-      network.devWindows.applyWindow[1] +
+      network.devWindows.applyWindow.stop +
         daoConfig.TIME_FOR_DEV_PROPOSALS +
         daoConfig.TIME_FOR_DEV_VOTING +
         daoConfig.TIME_FOR_DEV_GRACE +
