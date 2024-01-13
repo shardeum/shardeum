@@ -1,3 +1,4 @@
+import * as util from 'util'
 import { AliasAccount } from './accounts/aliasAccount'
 import { DevIssueAccount } from './accounts/devIssueAccount'
 import { DevProposalAccount } from './accounts/devProposalAccount'
@@ -10,6 +11,14 @@ import { UserAccount } from './accounts/userAccount'
 export class WindowRange {
   #start: number
   #stop: number
+
+  static withStartStop(start: number, stop: number): WindowRange {
+    return new WindowRange(start, stop)
+  }
+
+  static withStartSize(start: number, size: number): WindowRange {
+    return new WindowRange(start, start + size)
+  }
 
   constructor(start: number, stop: number) {
     if (typeof start !== 'number') throw new Error('start must be a number')
@@ -29,8 +38,20 @@ export class WindowRange {
     return this.#stop
   }
 
+  toJSON(): object {
+    return {
+      start: this.#start,
+      stop: this.#stop,
+    }
+  }
+
   toString(): string {
     return `WindowRange(${this.start}, ${this.stop})`
+  }
+
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars, @typescript-eslint/no-explicit-any
+  [util.inspect.custom](depth: number, options: any): string {
+    return `WindowRange { start: ${this.#start}, stop: ${this.#stop} }`
   }
 
   includes(value: number): boolean {
@@ -46,6 +67,14 @@ export class WindowRange {
   isSubsequent(other: WindowRange): boolean {
     return this.stop === other.start
   }
+
+  nextRangeOfSize(size: number): WindowRange {
+    if (typeof size !== 'number') throw new Error('size must be a number')
+    if (Number.isNaN(size)) throw new Error('size must be a number')
+    if (size <= 0) throw new Error('size must be greater than 0')
+    return new WindowRange(this.stop, this.stop + size)
+  }
+
 }
 
 export interface Windows {
