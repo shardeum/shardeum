@@ -118,33 +118,16 @@ export function apply(
 
   winner.winner = true // CHICKEN DINNER
   const next = winner.parameters
+
+  const proposalWindow = WindowRange.withStartSize(txTimestamp, daoConfig.TIME_FOR_PROPOSALS)
+  const votingWindow = proposalWindow.nextRangeOfSize(daoConfig.TIME_FOR_VOTING)
+  const graceWindow = votingWindow.nextRangeOfSize(daoConfig.TIME_FOR_GRACE)
+  const applyWindow = graceWindow.nextRangeOfSize(daoConfig.TIME_FOR_APPLY)
   const nextWindows: Windows = {
-    proposalWindow: new WindowRange(
-      network.windows.applyWindow.stop,
-      network.windows.applyWindow.stop + daoConfig.TIME_FOR_PROPOSALS
-    ),
-    votingWindow: new WindowRange(
-      network.windows.applyWindow.stop + daoConfig.TIME_FOR_PROPOSALS,
-      network.windows.applyWindow.stop + daoConfig.TIME_FOR_PROPOSALS + daoConfig.TIME_FOR_VOTING
-    ),
-    graceWindow: new WindowRange(
-      network.windows.applyWindow.stop + daoConfig.TIME_FOR_PROPOSALS + daoConfig.TIME_FOR_VOTING,
-      network.windows.applyWindow.stop +
-        daoConfig.TIME_FOR_PROPOSALS +
-        daoConfig.TIME_FOR_VOTING +
-        daoConfig.TIME_FOR_GRACE
-    ),
-    applyWindow: new WindowRange(
-      network.windows.applyWindow.stop +
-        daoConfig.TIME_FOR_PROPOSALS +
-        daoConfig.TIME_FOR_VOTING +
-        daoConfig.TIME_FOR_GRACE,
-      network.windows.applyWindow.stop +
-        daoConfig.TIME_FOR_PROPOSALS +
-        daoConfig.TIME_FOR_VOTING +
-        daoConfig.TIME_FOR_GRACE +
-        daoConfig.TIME_FOR_APPLY
-    ),
+    proposalWindow,
+    votingWindow,
+    graceWindow,
+    applyWindow,
   }
 
   const when = txTimestamp + 1000 * 10
