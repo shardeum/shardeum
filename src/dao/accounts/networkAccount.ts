@@ -34,24 +34,15 @@ export class DaoGlobalAccount implements BaseAccount {
     devWindows?: Windows,
     networkParamters?: NetworkParameters
   ) {
-    const proposalWindow = new WindowRange(timestamp, timestamp + daoConfig.TIME_FOR_PROPOSALS)
-    const votingWindow = new WindowRange(proposalWindow.stop, proposalWindow.stop + daoConfig.TIME_FOR_VOTING)
-    const graceWindow = new WindowRange(votingWindow.stop, votingWindow.stop + daoConfig.TIME_FOR_GRACE)
-    const applyWindow = new WindowRange(graceWindow.stop, graceWindow.stop + daoConfig.TIME_FOR_APPLY)
+    const proposalWindow = WindowRange.withStartSize(timestamp, daoConfig.TIME_FOR_PROPOSALS)
+    const votingWindow = proposalWindow.nextRangeOfSize(daoConfig.TIME_FOR_VOTING)
+    const graceWindow = votingWindow.nextRangeOfSize(daoConfig.TIME_FOR_GRACE)
+    const applyWindow = graceWindow.nextRangeOfSize(daoConfig.TIME_FOR_APPLY)
 
-    const devProposalWindow = new WindowRange(timestamp, timestamp + daoConfig.TIME_FOR_DEV_PROPOSALS)
-    const devVotingWindow = new WindowRange(
-      devProposalWindow.stop,
-      devProposalWindow.stop + daoConfig.TIME_FOR_DEV_VOTING
-    )
-    const devGraceWindow = new WindowRange(
-      devVotingWindow.stop,
-      devVotingWindow.stop + daoConfig.TIME_FOR_DEV_GRACE
-    )
-    const devApplyWindow = new WindowRange(
-      devGraceWindow.stop,
-      devGraceWindow.stop + daoConfig.TIME_FOR_DEV_APPLY
-    )
+    const devProposalWindow = WindowRange.withStartSize(timestamp, daoConfig.TIME_FOR_DEV_PROPOSALS)
+    const devVotingWindow = devProposalWindow.nextRangeOfSize(daoConfig.TIME_FOR_DEV_VOTING)
+    const devGraceWindow = devVotingWindow.nextRangeOfSize(daoConfig.TIME_FOR_DEV_GRACE)
+    const devApplyWindow = devVotingWindow.nextRangeOfSize(daoConfig.TIME_FOR_DEV_APPLY)
 
     this.id = accountId
     this.windows = windows ?? {
