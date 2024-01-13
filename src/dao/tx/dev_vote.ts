@@ -89,10 +89,7 @@ export function validate(
     response.reason = 'Must send tokens in order to vote'
     return response
   }
-  if (
-    tx.timestamp < network.devWindows.votingWindow.start ||
-    tx.timestamp > network.devWindows.votingWindow.stop
-  ) {
+  if (network.devWindows.votingWindow.excludes(tx.timestamp)) {
     response.reason = 'Network is not within the time window to accept votes for developer proposals'
     return response
   }

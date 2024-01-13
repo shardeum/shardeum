@@ -125,10 +125,7 @@ export function validate(
     response.reason = 'Must give the next devIssue devProposalCount hash'
     return response
   }
-  if (
-    tx.timestamp < network.devWindows.proposalWindow.start ||
-    tx.timestamp > network.devWindows.proposalWindow.stop
-  ) {
+  if (network.devWindows.proposalWindow.excludes(tx.timestamp)) {
     response.reason = 'Network is not within the time window to accept developer proposals'
     return response
   }

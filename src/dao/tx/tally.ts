@@ -76,7 +76,7 @@ export function validate(
       'The number of proposals sent in with the transaction doesnt match the issues proposalCount'
     return response
   }
-  if (tx.timestamp < network.windows.graceWindow.start || tx.timestamp > network.windows.graceWindow.stop) {
+  if (network.windows.graceWindow.excludes(tx.timestamp)) {
     response.reason = 'Network is not within the time window to tally votes for proposals'
     return response
   }
@@ -119,10 +119,10 @@ export function apply(
   winner.winner = true // CHICKEN DINNER
   const next = winner.parameters
 
-  const proposalWindow = WindowRange.withStartSize(txTimestamp, daoConfig.TIME_FOR_PROPOSALS)
-  const votingWindow = proposalWindow.nextRangeOfSize(daoConfig.TIME_FOR_VOTING)
-  const graceWindow = votingWindow.nextRangeOfSize(daoConfig.TIME_FOR_GRACE)
-  const applyWindow = graceWindow.nextRangeOfSize(daoConfig.TIME_FOR_APPLY)
+  const proposalWindow = new WindowRange(txTimestamp, daoConfig.TIME_FOR_PROPOSALS)
+  const votingWindow = proposalWindow.nextRange(daoConfig.TIME_FOR_VOTING)
+  const graceWindow = votingWindow.nextRange(daoConfig.TIME_FOR_GRACE)
+  const applyWindow = graceWindow.nextRange(daoConfig.TIME_FOR_APPLY)
   const nextWindows: Windows = {
     proposalWindow,
     votingWindow,
