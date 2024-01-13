@@ -1,4 +1,4 @@
-import { Shardus } from '@shardus/core'
+ import { Shardus } from '@shardus/core'
 import shardus from '@shardus/core/dist/shardus'
 import { ApplyResponse, OpaqueTransaction } from '@shardus/core/dist/shardus/shardus-types'
 import { createInternalTxReceipt, logFlags, shardeumGetTime } from '..'
@@ -219,10 +219,7 @@ export function startDaoMaintenanceCycle(interval: number, shardus: Shardus): vo
       const nodeAddress = node.address
 
       // ISSUE
-      if (
-        currentTime >= daoAccountObj.windows.proposalWindow.start &&
-        currentTime <= daoAccountObj.windows.proposalWindow.stop
-      ) {
+      if (daoAccountObj.windows.proposalWindow.includes(currentTime)) {
         if (!issueGenerated && daoAccountObj.issue > 1) {
           if (luckyNodes.includes(nodeId)) {
             await generateIssue(nodeAddress, nodeId, shardus)
@@ -234,10 +231,7 @@ export function startDaoMaintenanceCycle(interval: number, shardus: Shardus): vo
       }
 
       // TALLY
-      if (
-        currentTime >= daoAccountObj.windows.graceWindow.start &&
-        currentTime <= daoAccountObj.windows.graceWindow.stop
-      ) {
+      if (daoAccountObj.windows.graceWindow.includes(currentTime)) {
         if (!tallyGenerated) {
           if (luckyNodes.includes(nodeId)) {
             await tallyVotes(nodeAddress, nodeId, shardus)
@@ -249,10 +243,7 @@ export function startDaoMaintenanceCycle(interval: number, shardus: Shardus): vo
       }
 
       // APPLY
-      if (
-        currentTime >= daoAccountObj.windows.applyWindow.start &&
-        currentTime <= daoAccountObj.windows.applyWindow.stop
-      ) {
+      if (daoAccountObj.windows.applyWindow.includes(currentTime)) {
         if (!applyGenerated) {
           if (luckyNodes.includes(nodeId)) {
             await applyParameters(nodeAddress, nodeId, shardus)

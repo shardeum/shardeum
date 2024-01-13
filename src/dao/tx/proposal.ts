@@ -155,10 +155,7 @@ export class NetworkProposal implements INetworkProposal, DaoTx<UserAccount | Pr
       response.reason = 'Max nodeRewardAmountUsd permitted is 1000000000'
       return response
     }
-    if (
-      this.timestamp < network.windows.proposalWindow.start ||
-      this.timestamp > network.windows.proposalWindow.stop
-    ) {
+    if (network.windows.proposalWindow.excludes(this.timestamp)) {
       response.reason = 'Network is not within the time window to accept proposals'
       return response
     }

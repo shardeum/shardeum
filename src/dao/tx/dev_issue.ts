@@ -61,10 +61,7 @@ export function validate(
     response.reason = `devIssue address (${tx.devIssue}) does not match current network devIssue address (${networkDevIssueHash})`
     return response
   }
-  if (
-    tx.timestamp < network.devWindows.proposalWindow.start ||
-    tx.timestamp > network.devWindows.proposalWindow.stop
-  ) {
+  if (network.devWindows.proposalWindow.excludes(tx.timestamp)) {
     response.reason = 'Network is not within the time window to generate developer proposal issues'
     return response
   }

@@ -78,10 +78,7 @@ export function validate(
     response.reason = `The number of devProposals sent in with the transaction ${devProposals.length} doesn't match the devIssue proposalCount ${devIssue.devProposalCount}`
     return response
   }
-  if (
-    tx.timestamp < network.devWindows.graceWindow.start ||
-    tx.timestamp > network.devWindows.graceWindow.stop
-  ) {
+  if (network.devWindows.graceWindow.excludes(tx.timestamp)) {
     response.reason = 'Network is not within the time window to tally votes for developer proposals'
     return response
   }
@@ -125,10 +122,10 @@ export function apply(
     }
   }
 
-  const proposalWindow = WindowRange.withStartSize(txTimestamp, daoConfig.TIME_FOR_DEV_PROPOSALS)
-  const votingWindow = proposalWindow.nextRangeOfSize(daoConfig.TIME_FOR_DEV_VOTING)
-  const graceWindow = votingWindow.nextRangeOfSize(daoConfig.TIME_FOR_DEV_GRACE)
-  const applyWindow = graceWindow.nextRangeOfSize(daoConfig.TIME_FOR_DEV_APPLY)
+  const proposalWindow = new WindowRange(txTimestamp, daoConfig.TIME_FOR_DEV_PROPOSALS)
+  const votingWindow = proposalWindow.nextRange(daoConfig.TIME_FOR_DEV_VOTING)
+  const graceWindow = votingWindow.nextRange(daoConfig.TIME_FOR_DEV_GRACE)
+  const applyWindow = graceWindow.nextRange(daoConfig.TIME_FOR_DEV_APPLY)
 
   const nextDevWindows: Windows = {
     proposalWindow,

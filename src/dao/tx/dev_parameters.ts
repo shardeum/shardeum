@@ -65,7 +65,7 @@ export function validate(
     response.reason = 'This devIssue is no longer active'
     return response
   }
-  if (tx.timestamp < network.devWindows.applyWindow.start || tx.timestamp > network.devWindows.applyWindow.stop) {
+  if (network.devWindows.applyWindow.excludes(tx.timestamp)) {
     response.reason = 'Network is not within the time window to apply developer proposal winners'
     return response
   }
