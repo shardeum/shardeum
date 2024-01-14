@@ -5831,33 +5831,50 @@ const shardusSetup = (): void => {
         /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log('Join req with admincert and golden ticket')
         isReadyToJoinLatestValue = true
         mustUseAdminCert = true
+        /* prettier-ignore */ nestedCountersInstance.countEvent('shardeum-staking', 'goldenTicket available, isReadyToJoin = true')
         return true
       }
 
       if (ShardeumFlags.StakingEnabled === false) {
         isReadyToJoinLatestValue = true
+        /* prettier-ignore */ nestedCountersInstance.countEvent('shardeum-staking', 'staking disabled, isReadyToJoin = true')
         return true
       }
 
       const numTotalNodes = latestCycle.active + latestCycle.syncing // total number of nodes in the network
       if (numTotalNodes < ShardeumFlags.minActiveNodesForStaking) {
         isReadyToJoinLatestValue = true
+        /* prettier-ignore */ nestedCountersInstance.countEvent( 'shardeum-staking', 'numTotalNodes < ShardeumFlags.minActiveNodesForStaking, isReadyToJoin = true' )
         return true
       }
       /* prettier-ignore */ if (logFlags.important_as_error) console.log( `active: ${latestCycle.active}, syncing: ${latestCycle.syncing}, flag: ${ShardeumFlags.AdminCertEnabled}` )
       // check for ShardeumFlags for mode + check if mode is not equal to processing and validate adminCert
       if (ShardeumFlags.AdminCertEnabled === true && mode !== 'processing') {
         /* prettier-ignore */ if (logFlags.important_as_error) console.log('entered admin cert conditon mode:' + mode)
-        if (adminCert && adminCert.certExp > shardeumGetTime()) {
+        if (adminCert) {
           /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`checkAdminCert ${JSON.stringify(adminCert)}`)
-
-          isReadyToJoinLatestValue = true
-          /* prettier-ignore */ if (logFlags.important_as_error) console.log('1 return')
-          mustUseAdminCert = true
-          return true
+          if (adminCert.certExp > shardeumGetTime()) {
+            isReadyToJoinLatestValue = true
+            mustUseAdminCert = true
+            /* prettier-ignore */ nestedCountersInstance.countEvent('shardeum-staking', 'valid admin cert, isReadyToJoin = true')
+            /* prettier-ignore */ if (logFlags.important_as_error) console.log('valid admin cert, isReadyToJoin = true')
+            return true
+          } else {
+            /* prettier-ignore */ nestedCountersInstance.countEvent('shardeum-staking', 'adminCert present but expired, this blocks joining')
+            /* prettier-ignore */ if (logFlags.important_as_error) console.log('admin cert present but expired, this blocks joining')
+            return false
+          }
         }
-        /* prettier-ignore */ if (logFlags.important_as_error) console.log('2 return')
-        return false
+        /* prettier-ignore */ nestedCountersInstance.countEvent('shardeum-staking', 'adminCert expected not ready to join, this blocks joining')
+        /* prettier-ignore */ if (logFlags.important_as_error) console.log('admin cert required but missing, this blocks joining')
+        return false // this will stop us from joining the normal way
+      }
+      if (ShardeumFlags.AdminCertEnabled === true && mode === 'processing') {
+        /* prettier-ignore */ nestedCountersInstance.countEvent('shardeum-staking', 'AdminCertEnabled=true but mode is processing')
+      }
+      if (adminCert && !ShardeumFlags.AdminCertEnabled) {
+        /* prettier-ignore */ nestedCountersInstance.countEvent('shardeum-staking', 'adminCert present but AdminCertEnabled=false')
+        /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`validateJoinRequest: AdminCert available but not utilized due to configuration`)
       }
 
       /* prettier-ignore */ if (logFlags.important_as_error) console.log(`Running isReadyToJoin cycle:${latestCycle.counter} publicKey: ${publicKey}`)

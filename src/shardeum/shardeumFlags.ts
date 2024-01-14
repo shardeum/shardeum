@@ -60,7 +60,7 @@ interface ShardeumFlags {
   generateMemoryPatternData: boolean
   StakingEnabled: boolean
   ModeEnabled: boolean
-  AdminCertEnabled: boolean
+  AdminCertEnabled: boolean //it appears this must be true for a node to use a non golden ticket admin cert. raising a question on this
   minActiveNodesForStaking: number
   MinStakeCertSig: number
   FullCertChecksEnabled: boolean // do we run all of the cert checks when signing.  This config may go away soon after testing.
