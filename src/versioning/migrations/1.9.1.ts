@@ -7,9 +7,9 @@ import { shardusConfig } from '../..'
 // an example for when we need to migrate again.
 
 export const migrate: Migration = async () => {
-  console.log('migrate 1.6.0')
-  nestedCountersInstance.countEvent('migrate', 'calling migrate 1.6.0')
+  console.log('migrate 1.9.1')
+  nestedCountersInstance.countEvent('migrate', 'calling migrate 1.9.1')
 
   //we want to disable this
-  shardusConfig.p2p.continueOnException = false //already baked into settings so this is a no-op
+  //shardusConfig.p2p.continueOnException = false //already baked into settings so this is a no-op
 }
