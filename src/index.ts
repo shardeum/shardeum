@@ -1482,113 +1482,156 @@ const configShardusEndpoints = (): void => {
       return res.json({ result: null, error: 'node busy' })
     }
 
-    try {
-      const callObj = req.body
-      if (ShardeumFlags.VerboseLogs) console.log('callObj', callObj)
-      const opt = {
-        to: Address.fromString(callObj.to),
-        caller: Address.fromString(callObj.from),
-        origin: Address.fromString(callObj.from), // The tx.origin is also the caller here
-        data: toBytes(callObj.data),
-      }
-
-      if (callObj.gas) {
-        opt['gasLimit'] = BigInt(Number(callObj.gas))
-      }
-
-      if (callObj.gasPrice) {
-        opt['gasPrice'] = callObj.gasPrice
-      }
-
-      let caShardusAddress
-      const methodCode = callObj.data.substr(0, 10)
-      let caAccount
-      if (opt['to']) {
-        caShardusAddress = toShardusAddress(callObj.to, AccountType.Account)
-        if (!ShardeumFlags.removeTokenBalanceCache && methodCode === ERC20_BALANCEOF_CODE) {
-          // ERC20 Token balance query
-          //to do convert to timestamp query getAccountTimestamp!!
-          caAccount = await AccountsStorage.getAccount(caShardusAddress)
-          if (caAccount) {
-            const index = ERC20TokenBalanceMap.findIndex(
-              (x) => x.to === callObj.to && x.data === callObj.data
-            )
-            if (index > -1) {
-              const tokenBalanceResult = ERC20TokenBalanceMap[index] // eslint-disable-line security/detect-object-injection
-              /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log('Found in the ERC20TokenBalanceMap; index:', index, callObj.to)
-              ERC20TokenBalanceMap.splice(index, 1)
-              if (tokenBalanceResult.timestamp === caAccount.timestamp) {
-                // The contract account is not updated yet.
-                ERC20TokenBalanceMap.push(tokenBalanceResult)
-                /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`eth call for ERC20TokenBalanceMap`, callObj.to, callObj.data)
-                return res.json({ result: tokenBalanceResult.result })
-              }
-            }
-          }
+      function validateRequest(callObj): string | boolean {
+        function isValidHexString(data: string): boolean {
+          return /^0x[a-fA-F0-9]+$/.test(data) && data.length % 2 === 0
         }
-      }
 
-      if (opt['to']) {
-        if (ShardeumFlags.VerboseLogs) console.log('Calling to ', callObj.to, caShardusAddress)
-        //let callerShardusAddress = toShardusAddress(callObj.caller, AccountType.Account)
-
-        //Overly techincal, should be ported back into SGS as a utility
-        const address = caShardusAddress
-        const accountIsRemote = isServiceMode() ? false : shardus.isAccountRemote(address)
-
-        if (accountIsRemote) {
-          const consensusNode = shardus.getRandomConsensusNodeForAccount(address)
-          /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`Node is in remote shard: ${consensusNode?.externalIp}:${consensusNode?.externalPort}`)
-          if (consensusNode != null) {
-            if (ShardeumFlags.VerboseLogs) console.log(`Node is in remote shard: requesting`)
-
-            const postResp = await _internalHackPostWithResp(
-              `${consensusNode.externalIp}:${consensusNode.externalPort}/contract/call`,
-              callObj
-            )
-            if (postResp.body != null && postResp.body != '') {
-              //getResp.body
-
-              /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`Node is in remote shard: gotResp:${stringify(postResp.body)}`)
-              //res.json({ result: callResult.execResult.returnValue.toString() })
-              //return res.json({ result: '0x' + postResp.body })   //I think the 0x is worse?
-              return res.json({ result: postResp.body.result })
-            }
-          } else {
-            if (ShardeumFlags.VerboseLogs) console.log(`Node is in remote shard: consensusNode = null`)
-            return res.json({ result: null })
-          }
-        } else {
-          if (ShardeumFlags.VerboseLogs) console.log(`Node is in remote shard: false`)
+        function isPositiveNumber(value): boolean {
+          return typeof value === 'number' && value >= 0
         }
+
+        if (callObj.from && !isValidAddress(callObj.from)) {
+          return 'Invalid from address'
+        }
+        if (!isValidAddress(callObj.to)) {
+          return 'Invalid to address'
+        }
+        if (callObj.gas && !isPositiveNumber(callObj.gas)) {
+          return 'Invalid gas value'
+        }
+        if (callObj.gasPrice && !isPositiveNumber(callObj.gasPrice)) {
+          return 'Invalid gasPrice value'
+        }
+        if (callObj.value && typeof callObj.value !== 'number') {
+          return 'Invalid value'
+        }
+        if (callObj.data && !isValidHexString(callObj.data)) {
+          return 'Invalid data'
+        }
+        return true
       }
 
-      // if we are going to handle the call directly charge 20 points.
+      const validationResult = validateRequest(callObj)
+      if (validationResult !== true) {
+        return res.json({ result: null, error: validationResult })
+      }
+
       if (
-        trySpendServicePoints(ShardeumFlags.ServicePoints['contract/call'].direct, req, 'call-direct') ===
+        trySpendServicePoints(ShardeumFlags.ServicePoints['contract/call'].endpoint, req, 'call-endpoint') ===
         false
       ) {
         return res.json({ result: null, error: 'node busy' })
       }
 
-      const callTxState = getCallTXState() //this isn't so great..
-
-      const callerAddress = toShardusAddress(callObj.from, AccountType.Account)
-      const callerAccount = await AccountsStorage.getAccount(callerAddress)
-      if (callerAccount) {
-        if (ShardeumFlags.VerboseLogs) console.log('callerAddress', callerAccount)
-        callTxState._transactionState.insertFirstAccountReads(opt.caller, callerAccount.account)
-        //shardeumStateManager.setTransactionState(callTxState)
-      } else {
-        const acctData = {
-          nonce: 0,
-          balance: oneSHM * BigInt(100), // 100 SHM.  This is a temporary account that will never exist.
+      try {
+        if (ShardeumFlags.VerboseLogs) console.log('callObj', callObj)
+        const opt = {
+          to: Address.fromString(callObj.to),
+          caller: Address.fromString(callObj.from),
+          origin: Address.fromString(callObj.from), // The tx.origin is also the caller here
+          data: toBytes(callObj.data),
         }
-        const fakeAccount = Account.fromAccountData(acctData)
-        callTxState._transactionState.insertFirstAccountReads(opt.caller, fakeAccount)
 
-        //shardeumStateManager.setTransactionState(callTxState)
-      }
+        if (callObj.gas) {
+          opt['gasLimit'] = BigInt(Number(callObj.gas))
+        }
+
+        if (callObj.gasPrice) {
+          opt['gasPrice'] = callObj.gasPrice
+        }
+
+        let caShardusAddress
+        const methodCode = callObj.data && callObj.data.substring(0, 10)
+        let caAccount
+        if (opt['to']) {
+          caShardusAddress = toShardusAddress(callObj.to, AccountType.Account)
+          if (!ShardeumFlags.removeTokenBalanceCache && methodCode === ERC20_BALANCEOF_CODE) {
+            // ERC20 Token balance query
+            //to do convert to timestamp query getAccountTimestamp!!
+            caAccount = await AccountsStorage.getAccount(caShardusAddress)
+            if (caAccount) {
+              const index = ERC20TokenBalanceMap.findIndex(
+                (x) => x.to === callObj.to && x.data === callObj.data
+              )
+              if (index > -1) {
+                const tokenBalanceResult = ERC20TokenBalanceMap[index] // eslint-disable-line security/detect-object-injection
+                /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log('Found in the ERC20TokenBalanceMap; index:', index, callObj.to)
+                ERC20TokenBalanceMap.splice(index, 1)
+                if (tokenBalanceResult.timestamp === caAccount.timestamp) {
+                  // The contract account is not updated yet.
+                  ERC20TokenBalanceMap.push(tokenBalanceResult)
+                  /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`eth call for ERC20TokenBalanceMap`, callObj.to, callObj.data)
+                  return res.json({ result: tokenBalanceResult.result })
+                }
+              }
+            }
+          }
+        }
+
+        if (opt['to']) {
+          if (ShardeumFlags.VerboseLogs) console.log('Calling to ', callObj.to, caShardusAddress)
+          //let callerShardusAddress = toShardusAddress(callObj.caller, AccountType.Account)
+
+          //Overly techincal, should be ported back into SGS as a utility
+          const address = caShardusAddress
+          const accountIsRemote = isServiceMode() ? false : shardus.isAccountRemote(address)
+
+          if (accountIsRemote) {
+            const consensusNode = shardus.getRandomConsensusNodeForAccount(address)
+            /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`Node is in remote shard: ${consensusNode?.externalIp}:${consensusNode?.externalPort}`)
+            if (consensusNode != null) {
+              if (ShardeumFlags.VerboseLogs) console.log(`Node is in remote shard: requesting`)
+
+              const postResp = await _internalHackPostWithResp(
+                `${consensusNode.externalIp}:${consensusNode.externalPort}/contract/call`,
+                callObj
+              )
+              if (postResp.body != null && postResp.body != '') {
+                //getResp.body
+
+                /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`Node is in remote shard: gotResp:${stringify(postResp.body)}`)
+                //res.json({ result: callResult.execResult.returnValue.toString() })
+                //return res.json({ result: '0x' + postResp.body })   //I think the 0x is worse?
+                return res.json({ result: postResp.body.result })
+              }
+            } else {
+              if (ShardeumFlags.VerboseLogs) console.log(`Node is in remote shard: consensusNode = null`)
+              return res.json({ result: null })
+            }
+          } else {
+            if (ShardeumFlags.VerboseLogs) console.log(`Node is in remote shard: false`)
+          }
+        }
+
+        // if we are going to handle the call directly charge 20 points.
+        if (
+          trySpendServicePoints(ShardeumFlags.ServicePoints['contract/call'].direct, req, 'call-direct') ===
+          false
+        ) {
+          return res.json({ result: null, error: 'node busy' })
+        }
+
+        const callTxState = getCallTXState() //this isn't so great..
+
+        const callerAddress = toShardusAddress(callObj.from, AccountType.Account)
+        const callerAccount = await AccountsStorage.getAccount(callerAddress)
+        if (callerAccount) {
+          if (ShardeumFlags.VerboseLogs) console.log('callerAddress', callerAccount)
+          callTxState._transactionState.insertFirstAccountReads(opt.caller, callerAccount.account)
+          //shardeumStateManager.setTransactionState(callTxState)
+        } else {
+          const acctData = {
+            nonce: 0,
+            balance: oneSHM * BigInt(100), // 100 SHM.  This is a temporary account that will never exist.
+          }
+          const fakeAccount = Account.fromAccountData(acctData)
+          callTxState._transactionState.insertFirstAccountReads(opt.caller, fakeAccount)
+
+          //shardeumStateManager.setTransactionState(callTxState)
+        }
+
+        opt['block'] = blocks[latestBlock] // eslint-disable-line security/detect-object-injection
 
       if (callObj.block && callObj.block.number && callObj.block.timestamp) {
         const block = {
@@ -1601,35 +1644,35 @@ const configShardusEndpoints = (): void => {
         opt['block'] = blocks[latestBlock] // eslint-disable-line security/detect-object-injection
       }
 
-      const customEVM = new EthereumVirtualMachine({
-        common: evmCommon,
-        stateManager: callTxState,
-      })
-
-      const callResult: EVMResult = await customEVM.runCall(opt)
-      let returnedValue = bytesToHex(callResult.execResult.returnValue)
-      if (returnedValue && returnedValue.indexOf('0x') === 0) {
-        returnedValue = returnedValue.slice(2)
-      }
-
-      //shardeumStateManager.unsetTransactionState(callTxState.linkedTX)
-      /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log('Call Result', returnedValue)
-
-      if (!ShardeumFlags.removeTokenBalanceCache && methodCode === ERC20_BALANCEOF_CODE) {
-        //TODO would be way faster to have timestamp in db as field
-        //let caAccount = await AccountsStorage.getAccount(caShardusAddress)
-
-        ERC20TokenBalanceMap.push({
-          to: callObj.to,
-          data: callObj.data,
-          timestamp: caAccount && caAccount.timestamp, //this will invalidate for any user..
-          result: callResult.execResult.exceptionError ? null : returnedValue,
-        })
-        if (ERC20TokenBalanceMap.length > ERC20TokenCacheSize + 10) {
-          const extra = ERC20TokenBalanceMap.length - ERC20TokenCacheSize
-          ERC20TokenBalanceMap.splice(0, extra)
+        const callResult: EVMResult = await customEVM.runCall(opt)
+        let returnedValue = bytesToHex(callResult.execResult.returnValue)
+        if (returnedValue && returnedValue.indexOf('0x') === 0) {
+          returnedValue = returnedValue.slice(2)
         }
-      }
+
+        //shardeumStateManager.unsetTransactionState(callTxState.linkedTX)
+        /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log('Call Result', returnedValue)
+
+        if (!ShardeumFlags.removeTokenBalanceCache && methodCode === ERC20_BALANCEOF_CODE) {
+          //TODO would be way faster to have timestamp in db as field
+          //let caAccount = await AccountsStorage.getAccount(caShardusAddress)
+
+          ERC20TokenBalanceMap.push({
+            to: callObj.to,
+            data: callObj.data,
+            timestamp: caAccount && caAccount.timestamp, //this will invalidate for any user..
+            result: callResult.execResult.exceptionError ? null : returnedValue,
+          })
+          if (ERC20TokenBalanceMap.length > ERC20TokenCacheSize + 10) {
+            const extra = ERC20TokenBalanceMap.length - ERC20TokenCacheSize
+            ERC20TokenBalanceMap.splice(0, extra)
+          }
+        }
+
+        if (callResult.execResult.exceptionError) {
+          if (ShardeumFlags.VerboseLogs) console.log('Execution Error:', callResult.execResult.exceptionError)
+          return res.json({ result: null })
+        }
 
       if (callResult.execResult.exceptionError) {
         if (ShardeumFlags.VerboseLogs) console.log('Execution Error:', callResult.execResult.exceptionError)
@@ -1644,13 +1687,8 @@ const configShardusEndpoints = (): void => {
           }
         })
       }
-
-      res.json({ result: returnedValue })
-    } catch (e) {
-      if (ShardeumFlags.VerboseLogs) console.log('Error eth_call', e)
-      return res.json({ result: null })
     }
-  })
+  )
 
   shardus.registerExternalPost('contract/accesslist', externalApiMiddleware, async (req, res) => {
     if (
