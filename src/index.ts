@@ -1479,7 +1479,7 @@ const configShardusEndpoints = (): void => {
           to: string
           gas?: number
           gasPrice?: number
-          value?: number
+          value?: string
           data?: string
         }
       },
@@ -1511,7 +1511,7 @@ const configShardusEndpoints = (): void => {
         if (callObj.gasPrice && !isPositiveNumber(callObj.gasPrice)) {
           return 'Invalid gasPrice value'
         }
-        if (callObj.value && typeof callObj.value !== 'number') {
+        if (callObj.value && !isValidHexString(callObj.value)) {
           return 'Invalid value'
         }
         if (callObj.data && !isValidHexString(callObj.data)) {
