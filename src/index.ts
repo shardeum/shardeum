@@ -1482,6 +1482,27 @@ const configShardusEndpoints = (): void => {
       return res.json({ result: null, error: 'node busy' })
     }
 
+  shardus.registerExternalPost(
+    'contract/call',
+    externalApiMiddleware,
+    async (
+      req: {
+        body: {
+          from?: string
+          to: string
+          gas?: number
+          gasPrice?: number
+          value?: string
+          data?: string
+        }
+      },
+      res
+    ) => {
+      // if(isDebugMode()){
+      //   return res.json(`endpoint not available`)
+      // }
+      const callObj = req.body
+
       function validateRequest(callObj): string | boolean {
         function isValidHexString(data: string): boolean {
           return /^0x[a-fA-F0-9]+$/.test(data) && data.length % 2 === 0
@@ -1503,7 +1524,7 @@ const configShardusEndpoints = (): void => {
         if (callObj.gasPrice && !isPositiveNumber(callObj.gasPrice)) {
           return 'Invalid gasPrice value'
         }
-        if (callObj.value && typeof callObj.value !== 'number') {
+        if (callObj.value && !isValidHexString(callObj.value)) {
           return 'Invalid value'
         }
         if (callObj.data && !isValidHexString(callObj.data)) {
