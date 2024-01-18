@@ -4328,12 +4328,7 @@ const shardusSetup = (): void => {
     },
     getTimestampFromTransaction(tx, appData) {
       if (ShardeumFlags.VerboseLogs) console.log('Running getTimestampFromTransaction', tx, appData)
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      if (ShardeumFlags.autoGenerateAccessList && appData && (appData as any).requestNewTimestamp) {
-        if (ShardeumFlags.VerboseLogs) console.log('Requesting new timestamp', appData)
-        return -1
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      } else return Object.prototype.hasOwnProperty.call(tx, 'timestamp') ? (tx as any).timestamp : 0
+      return -1
     },
     calculateTxId(tx: ShardusTypes.OpaqueTransaction) {
       return generateTxId(tx)
