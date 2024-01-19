@@ -170,6 +170,7 @@ async function _runTx(this: VM, opts: RunTxOpts, evm: any): Promise<RunTxResult>
    */
   await this._emit('beforeTx', tx)
 
+  //missing optimizations here
   const caller = getTxSenderAddress(tx).address
   if (this.DEBUG) {
     debug(`New tx run hash=${opts.tx.isSigned() ? bytesToHex(opts.tx.hash()) : 'unsigned'} sender=${caller}`)

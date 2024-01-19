@@ -2562,8 +2562,8 @@ async function estimateGas(
     }
   }
 
-  const { address: senderAddress, isValid }  = getTxSenderAddress(transaction)
   const txId = crypto.hashObj(transaction)
+  const { address: senderAddress, isValid }  = getTxSenderAddress(transaction, txId)
   const preRunTxState = getPreRunTXState(txId)
   const callerEVMAddress = senderAddress.toString()
   const callerShardusAddress = toShardusAddress(callerEVMAddress, AccountType.Account)
@@ -2680,8 +2680,8 @@ async function generateAccessList(
       }
     }
 
-    const senderAddress = getTxSenderAddress(transaction).address
-    const txId = crypto.hashObj(transaction)
+    const txId = generateTxId(injectedTx)
+    const senderAddress = getTxSenderAddress(transaction, txId).address
     const preRunTxState = getPreRunTXState(txId)
     const callerEVMAddress = senderAddress.toString()
     const callerShardusAddress = toShardusAddress(callerEVMAddress, AccountType.Account)
@@ -3035,11 +3035,11 @@ const shardusSetup = (): void => {
         )
       }
 
+      const txId = generateTxId(tx)
       const transaction = getTransactionObj(tx)
-      const senderAddress = getTxSenderAddress(transaction).address
+      const senderAddress = getTxSenderAddress(transaction, txId).address
       const ethTxId = bytesToHex(transaction.hash())
       const shardusReceiptAddress = toShardusAddressWithKey(ethTxId, '', AccountType.Receipt)
-      const txId = generateTxId(tx)
       // Create an applyResponse which will be used to tell Shardus that the tx has been applied
       /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log('DBG', new Date(), 'attempting to apply tx', txId, ethTxId, tx, wrappedStates, appData)
       const applyResponse = shardus.createApplyResponse(txId, txTimestamp)
@@ -3953,9 +3953,10 @@ const shardusSetup = (): void => {
       }
 
       if (isInternalTx(tx) === false && isDebugTx(tx) === false) {
-        const transaction = getTransactionObj(tx)
-        const senderAddress = getTxSenderAddress(transaction).address
+        
         const shardusTxId = generateTxId(tx)
+        const transaction = getTransactionObj(tx)
+        const senderAddress = getTxSenderAddress(transaction, shardusTxId).address
         const ethTxId = bytesToHex(transaction.hash())
         if (ShardeumFlags.VerboseLogs) {
           console.log(`EVM tx ${ethTxId} is mapped to shardus tx ${shardusTxId}`)
@@ -4325,7 +4326,7 @@ const shardusSetup = (): void => {
       const txId = generateTxId(tx)
 
       const transaction = getTransactionObj(tx)
-      const senderAddress = getTxSenderAddress(transaction).address
+      const senderAddress = getTxSenderAddress(transaction, txId).address
       const result = {
         sourceKeys: [],
         targetKeys: [],
