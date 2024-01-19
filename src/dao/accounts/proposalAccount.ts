@@ -5,16 +5,16 @@ export class ProposalAccount {
   id: string
   power = 0
   totalVotes = 0
-  parameters: NetworkParameters
+  parameters: NetworkParameters | null
   winner = false
-  number = null
+  number: number | null = null
   timestamp = 0
 
   hash: string
 
   constructor(accountId: string, parameters?: NetworkParameters) {
     this.id = accountId
-    this.parameters = parameters
+    this.parameters = parameters || null
     this.hash = crypto.hashObj({
       id: this.id,
       power: this.power,
