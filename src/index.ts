@@ -1883,7 +1883,7 @@ const configShardusEndpoints = (): void => {
     'query-certificate',
     externalApiMiddleware,
     async (req: Request, res: Response) => {
-      nestedCountersInstance.countEvent('shardeum-staking', 'called query-certificate')
+      nestedCountersInstance.countEvent('shardeum-penalty', 'called query-certificate')
 
       const queryCertRes = await queryCertificateHandler(req, shardus)
       if (ShardeumFlags.VerboseLogs) console.log('queryCertRes', queryCertRes)
