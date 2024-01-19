@@ -5486,7 +5486,7 @@ const shardusSetup = (): void => {
             return fail
           }
           const nodeAccount = remoteShardusAccount.data as NodeAccount2
-          if (isLowStake(nodeAccount)) {
+          if (isLowStake(nodeAccount) === false) {
             /* prettier-ignore */ nestedCountersInstance.countEvent('shardeum-remove-node', 'node locked stake is not below minStakeRequired')
             /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`node locked stake is not below minStakeRequired ${type} ${stringify(removeNodeCert)}, cachedNetworkAccount: ${stringify(AccountsStorage.cachedNetworkAccount)} `)
             return fail
