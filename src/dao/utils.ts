@@ -8,7 +8,7 @@ import { DevIssueAccount } from './accounts/devIssueAccount'
 import { DeveloperPayment } from './types'
 import { TimestampReceipt } from '@shardus/core/dist/shardus/shardus-types'
 import { Issue } from './tx/issue'
-import { AccessListEIP2930Transaction, LegacyTransaction, Transaction, TransactionType } from '@ethereumjs/tx'
+import { AccessListEIP2930Transaction, LegacyTransaction } from '@ethereumjs/tx'
 import { bytesToHex, toAscii } from '@ethereumjs/util'
 import { logFlags } from '..'
 import { PlainDaoTx } from './tx'
@@ -228,7 +228,7 @@ interface TimestampedTx {
 }
 export function getInjectedOrGeneratedTimestamp(timestampedTx: TimestampedTx, dapp: Shardus): number {
   const { tx, timestampReceipt } = timestampedTx
-  let txnTimestamp: number
+  let txnTimestamp = 0
 
   if (tx.timestamp) {
     txnTimestamp = tx.timestamp
