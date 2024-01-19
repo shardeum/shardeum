@@ -6260,7 +6260,7 @@ const shardusSetup = (): void => {
         nestedCountersInstance.countEvent('shardeum-staking', `node-deactivated: injectClaimRewardTx`)
         const result = await injectClaimRewardTxWithRetry(shardus, data)
         /* prettier-ignore */ if (logFlags.dapp_verbose) console.log('INJECTED_CLAIM_REWARD_TX', result)
-      } else if (eventType === 'node-left-early' && ShardeumFlags.enableNodeSlashing === true) {
+      } else if (eventType === 'node-left-early' && ShardeumFlags.enableNodeSlashing === true && ShardeumFlags.enableLeftNetworkEarlySlashing) {
         let nodeLostCycle
         let nodeDroppedCycle
         for (let i = 0; i < latestCycles.length; i++) {
@@ -6285,7 +6285,7 @@ const shardusSetup = (): void => {
           nestedCountersInstance.countEvent('shardeum-staking', `node-left-early: event skipped`)
           /* prettier-ignore */ if (logFlags.dapp_verbose) console.log(`Shardeum node-left-early event skipped`, data, nodeLostCycle, nodeDroppedCycle)
         }
-      } else if (eventType === 'node-sync-timeout' && ShardeumFlags.enableNodeSlashing === true) {
+      } else if (eventType === 'node-sync-timeout' && ShardeumFlags.enableNodeSlashing === true && ShardeumFlags.enableSyncTimeoutSlashing) {
         const violationData: SyncingTimeoutViolationData = {
           nodeLostCycle: data.cycleNumber,
           nodeDroppedTime: data.time,
@@ -6293,7 +6293,7 @@ const shardusSetup = (): void => {
         nestedCountersInstance.countEvent('shardeum-staking', `node-sync-timeout: injectPenaltyTx`)
         const result = await PenaltyTx.injectPenaltyTX(shardus, data, violationData)
         /* prettier-ignore */ if (logFlags.dapp_verbose) console.log('INJECTED_PENALTY_TX', result)
-      } else if (eventType === 'node-refuted' && ShardeumFlags.enableNodeSlashing === true) {
+      } else if (eventType === 'node-refuted' && ShardeumFlags.enableNodeSlashing === true && ShardeumFlags.enableNodeRefutedSlashing) {
         let nodeRefutedCycle
         for (let i = 0; i < latestCycles.length; i++) {
           const cycle = latestCycles[i]

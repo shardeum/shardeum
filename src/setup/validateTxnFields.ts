@@ -129,7 +129,7 @@ export const validateTxnFields =
               txnTimestamp: txnTimestamp,
             }
           }
-          const cycle = latestCycles[0]          
+          const cycle = latestCycles[0]
           if(cycle.counter > 1){
             return {
               success: false,

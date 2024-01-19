@@ -222,6 +222,15 @@ export function validatePenaltyTX(tx: PenaltyTX, shardus: Shardus): { isValid: b
     if (ShardeumFlags.VerboseLogs) console.log('validatePenaltyTX fail tx.timestamp', tx)
     return { isValid: false, reason: 'Duration in tx must be > 0' }
   }
+  if (tx.violationType === ViolationType.LeftNetworkEarly && ShardeumFlags.enableLeftNetworkEarlySlashing === false) {
+    return { isValid: false, reason: 'LeftNetworkEarly slashing is disabled' }
+  }
+  if (tx.violationType === ViolationType.SyncingTooLong && ShardeumFlags.enableSyncTimeoutSlashing === false) {
+    return { isValid: false, reason: 'Sync timeout slashing is disabled' }
+  }
+  if (tx.violationType === ViolationType.NodeRefuted && ShardeumFlags.enableNodeRefutedSlashing === false) {
+    return { isValid: false, reason: 'Refuted node slashing is disabled' }
+  }
   try {
     if (!crypto.verifyObj(tx)) {
       /* prettier-ignore */
