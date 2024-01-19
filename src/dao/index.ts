@@ -29,9 +29,9 @@ export function setupDaoAccount(shardus: Shardus, when: number): void {
   }
 }
 
-export async function getDaoAccountObj(shardus: Shardus): Promise<DaoGlobalAccount> {
+export async function getDaoAccountObj(shardus: Shardus): Promise<DaoGlobalAccount | null> {
   const account = await shardus.getLocalOrRemoteAccount(daoAccountAddress)
-  return account.data as DaoGlobalAccount
+  return account?.data as DaoGlobalAccount
 }
 
 export function applyInitDaoTx(
@@ -216,10 +216,19 @@ export function startDaoMaintenanceCycle(interval: number, shardus: Shardus): vo
       // Get the dao account and node data needed for issue creation
       const daoAccountObj = await getDaoAccountObj(shardus)
       const [cycleData] = shardus.getLatestCycles()
+
+      if (!cycleData) {
+        throw new Error("no cycleData; can't continue with daoMaintenance")
+      }
+
       const luckyNodes = shardus.getClosestNodes(cycleData.previous, 3)
       const nodeId = shardus.getNodeId()
       const node = shardus.getNode(nodeId)
       const nodeAddress = node.address
+
+      if (!daoAccountObj) {
+        throw new Error("daoAccountObj not found; can't continue with daoMaintenance")
+      }
 
       // ISSUE
       if (daoAccountObj.windows.proposalWindow.includes(currentTime)) {
