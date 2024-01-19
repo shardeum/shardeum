@@ -1,4 +1,4 @@
- import { Shardus } from '@shardus/core'
+import { Shardus } from '@shardus/core'
 import shardus from '@shardus/core/dist/shardus'
 import { ApplyResponse, OpaqueTransaction } from '@shardus/core/dist/shardus/shardus-types'
 import { createInternalTxReceipt, logFlags, shardeumGetTime } from '..'
@@ -73,8 +73,11 @@ export function getRelevantDataInitDao(
 
 export function isDaoTx<A>(tx: OpaqueTransaction | DaoTx<A>): boolean {
   // EVM txs come in as serialized hexstrings
-  const transaction = getTransactionObj(tx)
-  return tx instanceof DaoTx || transaction.to?.toString() === ShardeumFlags.daoTargetAddress
+  let transaction = null
+  if ('raw' in tx && typeof tx.raw === 'string') {
+    transaction = getTransactionObj(tx as { raw: string })
+  }
+  return tx instanceof DaoTx || transaction?.to?.toString() === ShardeumFlags.daoTargetAddress
 }
 
 /**
