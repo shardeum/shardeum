@@ -146,6 +146,8 @@ import { AccountsEntry } from './storage/storage'
 import { getCachedRIAccount, setCachedRIAccount } from './storage/riAccountsCache'
 import { deserializeEVMAppData, serializeEVMAppData } from './types/EVMAppData'
 import { binaryDeserializer, binarySerializer } from './types/Helpers'
+import { AppObjEnum } from '@shardus/core/dist/shardus/shardus-types'
+import { deserializeEVMResult, serializeEVMResult } from './types/CachedAppData'
 
 let latestBlock = 0
 export const blocks: BlockMap = {}
@@ -6335,8 +6337,10 @@ const shardusSetup = (): void => {
       nestedCountersInstance.countEvent('binarySerializeObject', identifier)
       /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log('binarySerializeObject:', identifier, obj)
       switch (identifier) {
-        case 'AppData':
+        case AppObjEnum.AppData:
           return binarySerializer(obj, serializeEVMAppData).getBuffer()
+        case AppObjEnum.CachedAppData:
+          return binarySerializer(obj, serializeEVMResult).getBuffer()
         default:
           return Buffer.from(cryptoStringify(obj), 'utf8')
       }
@@ -6345,8 +6349,10 @@ const shardusSetup = (): void => {
       nestedCountersInstance.countEvent('binaryDeserializeObject', identifier)
       /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log('binaryDeserializeObject:', identifier, buffer)
       switch (identifier) {
-        case 'AppData':
+        case AppObjEnum.AppData:
           return binaryDeserializer(buffer, deserializeEVMAppData)
+        case AppObjEnum.CachedAppData:
+          return binaryDeserializer(buffer, deserializeEVMResult)
         default:
           return JSON.parse(buffer.toString('utf8'))
       }
