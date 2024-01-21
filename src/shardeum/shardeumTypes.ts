@@ -176,12 +176,16 @@ export interface ClaimRewardTX extends InternalTxBase {
 }
 
 export enum ViolationType {
+  ShardusCoreMaxID = 999,
+  ShardeumMinID = 1000,
   // 0-999 reserved for shardus core
   LeftNetworkEarly = 1000,
   SyncingTooLong = 1001,
   DoubleVote = 1002,
   NodeRefuted = 1003,
   //..others tbd
+
+  ShardeumMaxID = 2000
 }
 
 export interface SyncingTimeoutViolationData {

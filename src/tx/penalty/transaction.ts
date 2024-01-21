@@ -129,13 +129,17 @@ function recordPenaltyTX(txId: string, tx: PenaltyTX): void {
 }
 
 export function clearOldPenaltyTxs(shardus: Shardus): void {
+  let deleteCount = 0
+    /* prettier-ignore */ nestedCountersInstance.countEvent('shardeum-penalty', `clearOldPenaltyTxs mapSize:${penaltyTxsMap.size}`)
   const now = shardus.shardusGetTime()
   for (const [txId, tx] of penaltyTxsMap.entries()) {
     const cycleDuration = config.server.p2p.cycleDuration * 1000
     if (now - tx.timestamp > 5 * cycleDuration) {
       penaltyTxsMap.delete(txId)
+      deleteCount++
     }
   }
+  /* prettier-ignore */ nestedCountersInstance.countEvent('shardeum-penalty', `clearOldPenaltyTxs deleteCount: ${deleteCount}`)
 }
 
 export function validatePenaltyTX(tx: PenaltyTX, shardus: Shardus): { isValid: boolean; reason: string } {
@@ -160,7 +164,7 @@ export function validatePenaltyTX(tx: PenaltyTX, shardus: Shardus): { isValid: b
     if (ShardeumFlags.VerboseLogs) console.log(`validatePenaltyTX fail tx.reportedNode operator address invalid`, tx)
     return { isValid: false, reason: 'Invalid reportedNode operator address' }
   }
-  if (tx.violationType < 1000 || tx.violationType > 1999) {
+  if (tx.violationType < ViolationType.ShardeumMinID || tx.violationType > ViolationType.ShardeumMaxID) {
     /* prettier-ignore */
     nestedCountersInstance.countEvent('shardeum-penalty', `validatePenaltyTX fail tx.violationType not in range`)
     /* prettier-ignore */
