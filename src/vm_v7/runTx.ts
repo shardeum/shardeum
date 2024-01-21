@@ -59,7 +59,7 @@ function execHardfork(hardfork: Hardfork | string, preMergeHf: Hardfork | string
 /**
  * @ignore
  */
-export async function runTx(this: VM, opts: RunTxOpts, evm: EthereumVirtualMachine): Promise<RunTxResult> {
+export async function runTx(this: VM, opts: RunTxOpts, evm: EthereumVirtualMachine, txid: string): Promise<RunTxResult> {
   if (evm == null) evm = this.evm
   // create a reasonable default if no block is given
   opts.block = opts.block ?? Block.fromBlockData({}, { common: this.common })
@@ -131,7 +131,7 @@ export async function runTx(this: VM, opts: RunTxOpts, evm: EthereumVirtualMachi
   }
 
   try {
-    const result = await _runTx.bind(this)(opts, evm)
+    const result = await _runTx.bind(this)(opts, evm, txid)
     await evm.journal.commit()
     if (this.DEBUG) {
       debug(`tx checkpoint committed`)
@@ -151,7 +151,7 @@ export async function runTx(this: VM, opts: RunTxOpts, evm: EthereumVirtualMachi
   }
 }
 
-async function _runTx(this: VM, opts: RunTxOpts, evm: any): Promise<RunTxResult> {
+async function _runTx(this: VM, opts: RunTxOpts, evm: any, txid: string): Promise<RunTxResult> {
   const state = this.stateManager
   if (evm == null) evm = this.evm
 
@@ -170,9 +170,10 @@ async function _runTx(this: VM, opts: RunTxOpts, evm: any): Promise<RunTxResult>
    */
   await this._emit('beforeTx', tx)
 
-  //missing optimizations here.  we dont have a TXID to pass in and enable the caching to work
-  //it may take some effort to pass in this TXID, or some wasted work to recalculate it
-  const caller = getTxSenderAddress(tx).address
+  //txid may be null but getTxSenderAddress can handle that
+  //txid is calculated by shardeum and used to assit caching getTxSenderAddress
+  //which can be very expensive
+  const caller = getTxSenderAddress(tx, txid).address
   if (this.DEBUG) {
     debug(`New tx run hash=${opts.tx.isSigned() ? bytesToHex(opts.tx.hash()) : 'unsigned'} sender=${caller}`)
   }
