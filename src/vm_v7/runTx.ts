@@ -170,7 +170,8 @@ async function _runTx(this: VM, opts: RunTxOpts, evm: any): Promise<RunTxResult>
    */
   await this._emit('beforeTx', tx)
 
-  //missing optimizations here
+  //missing optimizations here.  we dont have a TXID to pass in and enable the caching to work
+  //it may take some effort to pass in this TXID, or some wasted work to recalculate it
   const caller = getTxSenderAddress(tx).address
   if (this.DEBUG) {
     debug(`New tx run hash=${opts.tx.isSigned() ? bytesToHex(opts.tx.hash()) : 'unsigned'} sender=${caller}`)
