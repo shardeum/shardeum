@@ -1,3 +1,5 @@
+//TODO look into deprecating/removing this code as it is not used by shardeum
+
 import { Block } from '@ethereumjs/block'
 import { ConsensusType, Hardfork } from '@ethereumjs/common'
 import { RLP } from '@ethereumjs/rlp'
