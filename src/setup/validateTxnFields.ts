@@ -42,7 +42,7 @@ export const validateTxnFields =
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
 
 
-  (shardus: Shardus, debugAppdata: Map<string, unknown>) =>
+    (shardus: Shardus, debugAppdata: Map<string, unknown>) =>
     (
       timestampedTx: any,
       originalAppData: any
@@ -167,7 +167,7 @@ export const validateTxnFields =
         const isSigned = transaction.isSigned()
         const txId = generateTxId(tx)
         const { address: senderAddress, isValid } = getTxSenderAddress(transaction,txId) // ensures that tx is valid
-        const isSignatureValid = isValid 
+        const isSignatureValid = isValid
         if (ShardeumFlags.VerboseLogs) console.log('validate evm tx', isSigned, isSignatureValid)
 
         //const txId = '0x' + crypto.hashObj(timestampedTx.tx)
@@ -193,8 +193,8 @@ export const validateTxnFields =
             : BigInt(1)
           let minBalance = scaleByStabilityFactor(minBalanceUsd, AccountsStorage.cachedNetworkAccount)
           //check with value added in
-          minBalance = minBalance + BigInt(transaction.value.toString())
-          const accountBalance = BigInt(appData.balance)
+          minBalance = minBalance + transaction.value
+          const accountBalance = appData.balance
           if (accountBalance < minBalance) {
             success = false
             reason = `Sender does not have enough balance.`

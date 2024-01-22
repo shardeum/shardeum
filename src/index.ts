@@ -3959,7 +3959,7 @@ const shardusSetup = (): void => {
           let foundNonce = false
           let foundSender = false
           let nonce = BigInt(0)
-          let balance = BigInt(0).toString()
+          let balance = BigInt(0)
           const txSenderEvmAddr = senderAddress.toString()
           const transformedSourceKey = toShardusAddress(txSenderEvmAddr, AccountType.Account)
 
@@ -3997,7 +3997,7 @@ const shardusSetup = (): void => {
             if (wrappedEVMAccount && wrappedEVMAccount.account) {
               fixDeserializedWrappedEVMAccount(wrappedEVMAccount)
               nonce = wrappedEVMAccount.account.nonce
-              balance = wrappedEVMAccount.account.balance.toString()
+              balance = wrappedEVMAccount.account.balance
               foundNonce = true
             }
           }
@@ -4067,7 +4067,7 @@ const shardusSetup = (): void => {
             let minBalance = scaleByStabilityFactor(minBalanceUsd, AccountsStorage.cachedNetworkAccount)
             //check with value added in
             minBalance = minBalance + transaction.value
-            const accountBalance = BigInt(appData.balance)
+            const accountBalance = appData.balance
             if (accountBalance < minBalance) {
               success = false
               /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`precrack balance fail: sender ${senderAddress.toString()} does not have enough balance. Min balance: ${minBalance.toString()}, Account balance: ${accountBalance.toString()}`)
@@ -4155,6 +4155,8 @@ const shardusSetup = (): void => {
         }
         /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log( `txPreCrackData final result: txNonce: ${appData.txNonce}, currentNonce: ${ appData.nonce }, queueCount: ${appData.queueCount}, appData ${stringify(appData)}` )
       }
+
+      console.log('txPreCrackData', appData)
     },
 
     //@ts-ignore
