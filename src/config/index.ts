@@ -173,7 +173,10 @@ config = merge(config, {
       continueOnException: false,
 
       // 1.9.1 migration
-      networkBaselineEnabled: false, // when enabled, new p2p config `baselineNodes` is the threshold for going into restore, recovery, and safety mode
+      standbyListFastHash: true,
+      
+      // 1.10.0 restart
+      networkBaselineEnabled: true, // when enabled, new p2p config `baselineNodes` is the threshold for going into restore, recovery, and safety mode
     },
   },
 })

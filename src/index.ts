@@ -158,7 +158,7 @@ export const readableBlocks: { [blockNumber: number | string]: ShardeumBlockOver
 //Cache network account
 let cachedNetworkAccount = null
 let cacheExpirationTimestamp = 0
-const CACHE_DURATION_SECONDS = ShardeumFlags.networkAccountCacheDuration // default 10 minutes
+
 
 export let genesisAccounts: string[] = []
 
@@ -5851,7 +5851,7 @@ const shardusSetup = (): void => {
         networkAccount = await fetchNetworkAccountFromArchiver()
         // Update cache with new result
         cachedNetworkAccount = networkAccount
-        cacheExpirationTimestamp = currentTime + CACHE_DURATION_SECONDS * 1000
+        cacheExpirationTimestamp = currentTime + ShardeumFlags.networkAccountCacheDuration * 1000
         /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`isReadyToJoin fetched new network account ${JSON.stringify(networkAccount)}`)
       }
 
