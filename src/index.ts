@@ -2628,7 +2628,7 @@ type CodeHashObj = { codeHash: string; contractAddress: string }
 
 async function generateAccessList(
   injectedTx: ShardusTypes.OpaqueTransaction
-): Promise<{ accessList: unknown[]; shardusMemoryPatterns: unknown; codeHashes: CodeHashObj[] }> {
+): Promise<{ shardusMemoryPatterns: null; failedAccessList?: boolean; accessList: any[]; codeHashes: any[] }> {
   try {
     const transaction = getTransactionObj(injectedTx)
     const caShardusAddress = transaction.to
@@ -2659,14 +2659,15 @@ async function generateAccessList(
                 accessList: postResp.body.accessList,
                 shardusMemoryPatterns: postResp.body.shardusMemoryPatterns,
                 codeHashes: postResp.body.codeHashes,
+                failedAccessList: postResp.body.failedAccessList
               }
             } else {
-              return { accessList: [], shardusMemoryPatterns: null, codeHashes: [] }
+              return { accessList: [], shardusMemoryPatterns: null, codeHashes: [], failedAccessList: true }
             }
           }
         } else {
           /* prettier-ignore */ if (logFlags.dapp_verbose) console.log(`Node is in remote shard: consensusNode = null`)
-          return { accessList: [], shardusMemoryPatterns: null, codeHashes: [] }
+          return { accessList: [], shardusMemoryPatterns: null, codeHashes: [], failedAccessList: true }
         }
       } else {
         /* prettier-ignore */ if (logFlags.dapp_verbose) console.log(`Node is in remote shard: false`)
@@ -2895,9 +2896,10 @@ async function generateAccessList(
         'accesslist',
         `Fail with error: CA ${transaction.to && ShardeumFlags.VerboseLogs ? transaction.to.toString() : ''}`
       )
-      return { accessList: [], shardusMemoryPatterns: null, codeHashes: [] }
+      return { accessList: [], shardusMemoryPatterns: null, codeHashes: [], failedAccessList: true }
     }
-    return { accessList, shardusMemoryPatterns, codeHashes: Array.from(allCodeHash.values()) }
+    const isEmptyCodeHash = allCodeHash.size === 0
+    return { accessList, shardusMemoryPatterns, codeHashes: Array.from(allCodeHash.values()), failedAccessList: isEmptyCodeHash }
   } catch (e) {
     console.log(`Error: generateAccessList`, e)
     nestedCountersInstance.countEvent('accesslist', `Fail: unknown`)
@@ -4132,6 +4134,7 @@ const shardusSetup = (): void => {
               accessList: generatedAccessList,
               shardusMemoryPatterns,
               codeHashes,
+              failedAccessList
             } = await generateAccessList(tx)
             profilerInstance.scopedProfileSectionEnd('accesslist-generate')
 
@@ -4139,6 +4142,7 @@ const shardusSetup = (): void => {
             appData.requestNewTimestamp = true
             appData.shardusMemoryPatterns = shardusMemoryPatterns
             appData.codeHashes = codeHashes
+            if (failedAccessList) appData.preCrackFail = true
             if (appData.accessList && appData.accessList.length > 0) {
               nestedCountersInstance.countEvent(
                 'shardeum',
