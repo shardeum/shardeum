@@ -215,8 +215,11 @@ export function startDaoMaintenanceCycle(interval: number, shardus: Shardus): vo
     try {
       // Get the dao account and node data needed for issue creation
       const daoAccountObj = await getDaoAccountObj(shardus)
-      const [cycleData] = shardus.getLatestCycles()
+      if (!daoAccountObj) {
+        throw new Error("could find dao account; can't continue with daoMaintenance")
+      }
 
+      const [cycleData] = shardus.getLatestCycles()
       if (!cycleData) {
         throw new Error("no cycleData; can't continue with daoMaintenance")
       }
@@ -225,10 +228,6 @@ export function startDaoMaintenanceCycle(interval: number, shardus: Shardus): vo
       const nodeId = shardus.getNodeId()
       const node = shardus.getNode(nodeId)
       const nodeAddress = node.address
-
-      if (!daoAccountObj) {
-        throw new Error("daoAccountObj not found; can't continue with daoMaintenance")
-      }
 
       // ISSUE
       if (daoAccountObj.windows.proposalWindow.includes(currentTime)) {
