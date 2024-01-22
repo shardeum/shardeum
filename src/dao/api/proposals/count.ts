@@ -20,7 +20,7 @@ export const count =
         typeof issue?.data == 'object' && issue.data && 'proposalCount' in issue.data
           ? issue.data.proposalCount
           : undefined
-      res.json({ count })
+      res.json({ count: count || 0 })
     } catch (error) {
       dapp.log(error)
       res.json({ error })
