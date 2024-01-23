@@ -135,6 +135,7 @@ export interface InternalTx extends InternalTxBase {
 }
 
 export interface SetCertTime extends InternalTxBase {
+  internalTXType: InternalTXType.SetCertTime
   nominee: string
   nominator: string
   duration: number
@@ -143,6 +144,7 @@ export interface SetCertTime extends InternalTxBase {
 }
 
 export interface StakeCoinsTX extends InternalTxBase {
+  internalTXType: InternalTXType.Stake
   nominee: string
   nominator: string
   stake: bigint
@@ -151,6 +153,7 @@ export interface StakeCoinsTX extends InternalTxBase {
 }
 
 export interface UnstakeCoinsTX extends InternalTxBase {
+  internalTXType: InternalTXType.Unstake
   nominee: string
   nominator: string
   timestamp: number
@@ -159,6 +162,7 @@ export interface UnstakeCoinsTX extends InternalTxBase {
 }
 
 export interface InitRewardTimes extends InternalTxBase {
+  internalTXType: InternalTXType.InitRewardTimes
   nominee: string
   timestamp: number
   nodeActivatedTime: number
@@ -170,6 +174,7 @@ export interface TransactionKeys extends ShardusTypes.TransactionKeys {
 }
 
 export interface ClaimRewardTX extends InternalTxBase {
+  internalTXType: InternalTXType.ClaimReward
   nominee: string
   nominator: string
   timestamp: number
@@ -193,6 +198,7 @@ export interface LeftNetworkEarlyViolationData {
 }
 
 export interface PenaltyTX extends InternalTxBase {
+  internalTXType: InternalTXType.Penalty
   reportedNodeId: string
   reportedNodePublickKey: string
   operatorEVMAddress: string
