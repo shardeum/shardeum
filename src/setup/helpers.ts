@@ -9,6 +9,7 @@ import { toBuffer, ToBufferInputTypes } from 'ethereumjs-util'
 import { DaoTx } from '../dao/tx'
 import { InternalTXType, InternalTx } from '../shardeum/internalTxs'
 import { ShardeumFlags } from '../shardeum/shardeumFlags'
+import { DebugTx } from '../shardeum/shardeumTypes'
 import { cryptoStringify } from '../utils/stringify'
 
 // console.log(crypto.)
@@ -40,8 +41,8 @@ export function isInternalTx(tx: object): tx is InternalTx {
   return result
 }
 
-export function isDebugTx<T extends { isDebugTx?: unknown }>(tx: T): boolean {
-  return !!tx.isDebugTx
+export function isDebugTx(tx: object): tx is DebugTx {
+  return "isDebugTx" in tx && !!tx.isDebugTx
 }
 
 export function getTransactionObj<T extends { raw?: ToBufferInputTypes }>(

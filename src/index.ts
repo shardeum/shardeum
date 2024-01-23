@@ -3000,8 +3000,7 @@ const shardusSetup = (): void => {
       console.log('daoLogging: tx passed to apply is not internal, no more logging will be done for this tx in `apply`');
 
       if (isDebugTx(tx)) {
-        const debugTx = tx as DebugTx
-        return applyDebugTx(debugTx, wrappedStates, txTimestamp)
+        return applyDebugTx(tx, wrappedStates, txTimestamp)
       }
 
       // it is an EVM tx
