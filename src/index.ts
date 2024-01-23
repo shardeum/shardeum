@@ -3942,14 +3942,15 @@ const shardusSetup = (): void => {
     calculateTxId(tx: ShardusTypes.OpaqueTransaction) {
       return generateTxId(tx)
     },
-    async txPreCrackData(tx, appData) {
+    async txPreCrackData(tx, appData): Promise<boolean> {
       if (ShardeumFlags.VerboseLogs) console.log('Running txPreCrackData', tx, appData)
       if (ShardeumFlags.UseTXPreCrack === false) {
-        return
+        return true
       }
+      let preCrackSuccess = true
 
       if (isInternalTx(tx) === false && isDebugTx(tx) === false) {
-        
+
         const shardusTxId = generateTxId(tx)
         const transaction = getTransactionObj(tx)
         const senderAddress = getTxSenderAddress(transaction, shardusTxId).address
@@ -3989,9 +3990,14 @@ const shardusSetup = (): void => {
             //parallel fetch
             countPromise = shardus.getLocalOrRemoteAccountQueueCount(transformedSourceKey)
           }
-          remoteShardusAccount = await shardus.getLocalOrRemoteAccount(transformedSourceKey)
+          const maxRetry = 3
+          let retry = 0
+          while (remoteShardusAccount == null && retry < maxRetry) {
+            if (ShardeumFlags.VerboseLogs) console.log(`txPreCrackData: fetching remote account for ${txSenderEvmAddr}, retry: ${retry}`)
+            retry++
+            remoteShardusAccount = await shardus.getLocalOrRemoteAccount(transformedSourceKey)
+          }
 
-          let remoteTargetAccount = null
           if (transaction.to) {
             const txTargetEvmAddr = transaction.to.toString()
             const transformedTargetKey = toShardusAddress(txTargetEvmAddr, AccountType.Account)
@@ -4003,6 +4009,7 @@ const shardusSetup = (): void => {
             // queueCountResult = await shardus.getLocalOrRemoteAccountQueueCount(transformedSourceKey)
             if (ShardeumFlags.VerboseLogs) console.log('queueCountResult:', queueCountResult)
             if (queueCountResult.account) {
+              if (ShardeumFlags.VerboseLogs) console.log(`txPreCrackData: overrode remote account for ${txSenderEvmAddr} with queueCountResult.account`, queueCountResult.account)
               remoteShardusAccount.data = queueCountResult.account
             }
           }
@@ -4020,8 +4027,8 @@ const shardusSetup = (): void => {
             }
           }
 
-          if (remoteTargetAccount == undefined) {
-            /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`txPreCrackData: found no local or remote account for target address`)
+          if (remoteTargetAccount == null) {
+            /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`txPreCrackData: target account not found`)
           } else {
             const wrappedEVMAccount = remoteTargetAccount.data as WrappedEVMAccount
             if (wrappedEVMAccount && wrappedEVMAccount.account) {
@@ -4071,6 +4078,7 @@ const shardusSetup = (): void => {
 
         //also run access list generation if needed
         if (
+          remoteTargetAccount != null &&
           !isSimpleTransfer &&
           ShardeumFlags.autoGenerateAccessList &&
           isEIP2930 === false &&
@@ -4105,13 +4113,15 @@ const shardusSetup = (): void => {
               } else {
                 success = false
                 /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`precrack nonce fail: txNonce:${txNonce} is not within +/- ${ShardeumFlags.nonceCheckRange} of perfect nonce ${perfectCount}.    current nonce:${appData.nonce}  queueCount:${appData.queueCount} txHash: ${transaction.hash().toString()} `)
-                nestedCountersInstance.countEvent('shardeum', 'precrack - nonce fail')
+                if (appData.nonce === 0) nestedCountersInstance.countEvent('shardeum', 'precrack - nonce fail, current nonce = 0')
+                else if (appData.nonce > 0) nestedCountersInstance.countEvent('shardeum', 'precrack - nonce fail, current nonce > 0')
               }
             } else {
               if (txNonce != perfectCount) {
                 success = false
                 /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`precrack nonce fail: perfectCount:${perfectCount} != ${txNonce}.    current nonce:${appData.nonce}  queueCount:${appData.queueCount} txHash: ${transaction.hash().toString()} `)
-                nestedCountersInstance.countEvent('shardeum', 'precrack - nonce fail')
+                if (appData.nonce === 0) nestedCountersInstance.countEvent('shardeum', 'precrack - nonce fail, current nonce = 0')
+                else if (appData.nonce > 0) nestedCountersInstance.countEvent('shardeum', 'precrack - nonce fail, current nonce > 0')
               } else {
                 /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`precrack nonce pass: perfectCount:${perfectCount} == ${txNonce}.    current nonce:${appData.nonce}  queueCount:${appData.queueCount}  txHash: ${transaction.hash().toString()}`)
               }
@@ -4142,8 +4152,8 @@ const shardusSetup = (): void => {
             appData.requestNewTimestamp = true
             appData.shardusMemoryPatterns = shardusMemoryPatterns
             appData.codeHashes = codeHashes
-            if (failedAccessList) appData.preCrackFail = true
-            if (appData.accessList && appData.accessList.length > 0) {
+            if (failedAccessList) preCrackSuccess = false
+            if (appData.accessList && appData.accessList.length > 0 && failedAccessList == null) {
               nestedCountersInstance.countEvent(
                 'shardeum',
                 'precrack' + ' -' + ' generateAccessList success: true'
@@ -4175,6 +4185,7 @@ const shardusSetup = (): void => {
         }
         /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log( `txPreCrackData final result: txNonce: ${appData.txNonce}, currentNonce: ${ appData.nonce }, queueCount: ${appData.queueCount}, appData ${stringify(appData)}` )
       }
+      return preCrackSuccess
     },
 
     //@ts-ignore
