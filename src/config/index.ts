@@ -170,6 +170,13 @@ config = merge(config, {
       
       // 1.10.0 restart
       networkBaselineEnabled: true, // when enabled, new p2p config `baselineNodes` is the threshold for going into restore, recovery, and safety mode
+
+      // 1.10.0 todo podA smoke/functional test with these on:
+      // numberOfNodesToInjectPenaltyTx: 5, //this may not need a change but we should probably go ahead and include it
+      // enableLeftNetworkEarlySlashing: true,
+      // enableSyncTimeoutSlashing: true,
+      // enableNodeRefutedSlashing: true
+    
     },
   },
 })
