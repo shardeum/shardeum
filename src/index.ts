@@ -2899,6 +2899,7 @@ async function generateAccessList(
       return { accessList: [], shardusMemoryPatterns: null, codeHashes: [], failedAccessList: true }
     }
     const isEmptyCodeHash = allCodeHash.size === 0
+    if (isEmptyCodeHash)  nestedCountersInstance.countEvent('accesslist', `Fail: empty codeHash`)
     return { accessList, shardusMemoryPatterns, codeHashes: Array.from(allCodeHash.values()), failedAccessList: isEmptyCodeHash }
   } catch (e) {
     console.log(`Error: generateAccessList`, e)
@@ -3967,6 +3968,7 @@ const shardusSetup = (): void => {
         let isSimpleTransfer = false
 
         let remoteShardusAccount
+        let remoteTargetAccount
 
         //if the TX is a contract deploy, predict the new contract address correctly (needs sender's nonce)
         //remote fetch of sender EOA also allows fast balance and nonce checking (assuming we get some queue hints as well from shardus core)
