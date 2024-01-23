@@ -24,11 +24,8 @@ export enum InternalTXType {
  *
  */
 export interface InternalTxBase {
-  isInternalTx: boolean
+  isInternalTx: true
   internalTXType: InternalTXType
-}
-
-export interface InternalTx extends InternalTxBase {
   timestamp: number
   from?: string
   to?: string
@@ -42,6 +39,15 @@ export interface InternalTx extends InternalTxBase {
   nominator?: string // EVM Account (OperAcc)
   sign: ShardusTypes.Sign
 }
+
+export type InternalTx =
+  | ClaimRewardTX
+  | InitRewardTimes
+  | OtherInternalTx
+  | PenaltyTX
+  | SetCertTime
+  | StakeCoinsTX
+  | UnstakeCoinsTX
 
 export interface SetCertTime extends InternalTxBase {
   internalTXType: InternalTXType.SetCertTime
@@ -86,6 +92,17 @@ export interface ClaimRewardTX extends InternalTxBase {
   deactivatedNodeId: string
   nodeDeactivatedTime: number
   sign: ShardusTypes.Sign
+}
+
+export interface OtherInternalTx extends InternalTxBase {
+  internalTXType:
+    | InternalTXType.InitDao
+    | InternalTXType.InitNetwork
+    | InternalTXType.SetGlobalCodeBytes
+    | InternalTXType.ChangeNetworkParam
+    | InternalTXType.ApplyNetworkParam
+    | InternalTXType.ApplyChangeConfig
+    | InternalTXType.ChangeConfig
 }
 
 export interface PenaltyTX extends InternalTxBase {

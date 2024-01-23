@@ -16,12 +16,10 @@ export const validateTransaction =
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   (tx: any): Response => {
     if (isInternalTx(tx)) {
-      const internalTx = tx as InternalTx
-
-      if (isInternalTXGlobal(internalTx) === true) {
+      if (isInternalTXGlobal(tx)) {
         return { result: 'pass', reason: 'valid' }
       } else if (tx.internalTXType === InternalTXType.ChangeConfig||
-        internalTx.internalTXType === InternalTXType.ChangeNetworkParam) {
+        tx.internalTXType === InternalTXType.ChangeNetworkParam) {
         const devPublicKey = shardus.getDevPublicKeyMaxLevel() //get the highest level pk
 
         if (devPublicKey) {
@@ -39,10 +37,10 @@ export const validateTransaction =
       } else if (tx.internalTXType === InternalTXType.SetCertTime) {
         return { result: 'pass', reason: 'valid' }
       } else if (tx.internalTXType === InternalTXType.InitRewardTimes) {
-        return InitRewardTimesTx.validate(tx as InitRewardTimes, shardus)
+        return InitRewardTimesTx.validate(tx, shardus)
       } else {
         //todo validate internal TX
-        const isValid = crypto.verifyObj(internalTx)
+        const isValid = crypto.verifyObj(tx)
         if (isValid) return { result: 'pass', reason: 'valid' }
         else return { result: 'fail', reason: 'Invalid signature' }
       }

@@ -61,8 +61,7 @@ export const validateTxnFields =
     }
 
     if (isSetCertTimeTx(tx)) {
-      const setCertTimeTx = tx as SetCertTime
-      const result = validateSetCertTimeTx(setCertTimeTx)
+      const result = validateSetCertTimeTx(tx)
       return {
         success: result.isValid,
         reason: result.reason,
@@ -71,7 +70,6 @@ export const validateTxnFields =
     }
 
     if (isInternalTx(tx)) {
-      const internalTX = tx as InternalTx
       let success = false
       let reason = ''
 
@@ -82,7 +80,7 @@ export const validateTxnFields =
         const result = tx.validate(null, null, shardus)
         success = result.success
         reason = result.reason
-      } else if (isInternalTXGlobal(internalTX) === true) {
+      } else if (isInternalTXGlobal(tx) === true) {
         return {
           success: true,
           reason: '',
@@ -106,15 +104,15 @@ export const validateTxnFields =
           reason = 'Invalid signature for internal tx'
         }
       } else if (tx.internalTXType === InternalTXType.InitRewardTimes) {
-        const result = InitRewardTimesTx.validateFields(tx as InitRewardTimes, shardus)
+        const result = InitRewardTimesTx.validateFields(tx, shardus)
         success = result.success
         reason = result.reason
       } else if (tx.internalTXType === InternalTXType.ClaimReward) {
-        const result = validateClaimRewardTx(tx as ClaimRewardTX)
+        const result = validateClaimRewardTx(tx)
         success = result.isValid
         reason = result.reason
       } else if (tx.internalTXType === InternalTXType.Penalty) {
-        const result = validatePenaltyTX(tx as PenaltyTX, shardus)
+        const result = validatePenaltyTX(tx, shardus)
         success = result.isValid
         reason = result.reason
       } else if (tx.internalTXType === InternalTXType.InitNetwork) {
@@ -134,7 +132,7 @@ export const validateTxnFields =
             txnTimestamp: txnTimestamp,
           }
         }
-        success = crypto.verifyObj(internalTX)
+        success = crypto.verifyObj(tx)
         return {
           success,
           reason,
@@ -142,7 +140,7 @@ export const validateTxnFields =
         }
       } else {
         try {
-          success = crypto.verifyObj(internalTX)
+          success = crypto.verifyObj(tx)
         } catch (e) {
           reason = 'Invalid signature for internal tx'
         }
@@ -227,8 +225,8 @@ export const validateTxnFields =
 
       if (appData && appData.internalTx && appData.internalTXType === InternalTXType.Stake) {
         if (ShardeumFlags.VerboseLogs) console.log('Validating stake coins tx fields', appData)
-        const stakeCoinsTx = appData.internalTx as StakeCoinsTX
-        const networkAccount = appData.networkAccount as NetworkAccount
+        const stakeCoinsTx = appData.internalTx
+        const networkAccount = appData.networkAccount
         const minStakeAmountUsd = networkAccount.current.stakeRequiredUsd
         const minStakeAmount = scaleByStabilityFactor(minStakeAmountUsd, AccountsStorage.cachedNetworkAccount)
         if (typeof stakeCoinsTx.stake === 'object') stakeCoinsTx.stake = BigInt(stakeCoinsTx.stake)
@@ -297,7 +295,7 @@ export const validateTxnFields =
       if (appData && appData.internalTx && appData.internalTXType === InternalTXType.Unstake) {
         nestedCountersInstance.countEvent('shardeum-unstaking', 'validating unstake coins tx fields')
         if (ShardeumFlags.VerboseLogs) console.log('Validating unstake coins tx fields', appData.internalTx)
-        const unstakeCoinsTX = appData.internalTx as UnstakeCoinsTX
+        const unstakeCoinsTX = appData.internalTx
         if (
           unstakeCoinsTX.nominator == null ||
           unstakeCoinsTX.nominator.toLowerCase() !== transaction.getSenderAddress().toString()

@@ -27,7 +27,7 @@ import { createInternalTxReceipt, logFlags, shardeumGetTime } from '..'
 import { isValidAddress } from '@ethereumjs/util'
 import { InternalTXType, SetCertTime } from '../shardeum/internalTxs'
 
-export function isSetCertTimeTx(tx): boolean {
+export function isSetCertTimeTx(tx): tx is SetCertTime {
   if (tx.isInternalTx && tx.internalTXType === InternalTXType.SetCertTime) {
     return true
   }

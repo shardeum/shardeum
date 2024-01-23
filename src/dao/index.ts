@@ -15,7 +15,7 @@ import { DaoTx } from './tx'
 import { getTransactionObj } from '../setup/helpers'
 import * as AccountsStorage from '../storage/accountStorage'
 import { daoAccountAddress } from '../config/dao'
-import { InternalTx, InternalTXType } from '../shardeum/internalTxs'
+import { InternalTXType, OtherInternalTx } from '../shardeum/internalTxs'
 
 export function setupDaoAccount(shardus: Shardus, when: number): void {
   if (ShardeumFlags.EnableDaoFeatures) {
@@ -36,7 +36,7 @@ export async function getDaoAccountObj(shardus: Shardus): Promise<DaoGlobalAccou
 export function applyInitDaoTx(
   wrappedStates: WrappedStates,
   applyResponse: ApplyResponse,
-  internalTx: InternalTx,
+  internalTx: OtherInternalTx,
   txTimestamp: number,
   txId: string
 ): void {

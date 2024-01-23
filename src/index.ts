@@ -127,16 +127,21 @@ import { P2P } from '@shardus/types'
 import { getExternalApiMiddleware } from './middleware/externalApiMiddleware'
 import { AccountsEntry } from './storage/storage'
 import { getCachedRIAccount, setCachedRIAccount } from './storage/riAccountsCache'
-import { applyInitDaoTx, getRelevantDataInitDao, handleDaoTxApply, handleDaoTxCrack, handleDaoTxGetRelevantData, startDaoMaintenanceCycle } from './dao'
+import {
+  applyInitDaoTx,
+  getRelevantDataInitDao,
+  handleDaoTxApply,
+  handleDaoTxCrack,
+  handleDaoTxGetRelevantData,
+  startDaoMaintenanceCycle,
+} from './dao'
 import { DaoTx, isDaoTx } from './dao/tx'
 import registerDaoAPI from './dao/api'
 import {
-  ClaimRewardTX,
   InitRewardTimes,
   InternalTx,
   InternalTXType,
   PenaltyTX,
-  SetCertTime,
   StakeCoinsTX,
   UnstakeCoinsTX,
 } from './shardeum/internalTxs'
@@ -1935,14 +1940,13 @@ async function applyInternalTx<A>(
   console.log("daoLogging: txId in `applyInternalTx`: ", txId)
 
   const applyResponse: ShardusTypes.ApplyResponse = shardus.createApplyResponse(txId, txTimestamp)
-  const internalTx = tx
 
-  if (internalTx instanceof DaoTx) {
-    console.log("daoLogging: executing apply DaoTx")
-    internalTx.apply(txTimestamp, txId, wrappedStates, shardus);
-  } else if (internalTx.internalTXType === InternalTXType.SetGlobalCodeBytes) {
+  if (tx instanceof DaoTx) {
+    console.log('daoLogging: executing apply DaoTx')
+    tx.apply(txTimestamp, txId, wrappedStates, shardus)
+  } else if (tx.internalTXType === InternalTXType.SetGlobalCodeBytes) {
     // eslint-disable-next-line security/detect-object-injection
-    const wrappedEVMAccount: WrappedEVMAccount = wrappedStates[internalTx.from].data
+    const wrappedEVMAccount: WrappedEVMAccount = wrappedStates[tx.from].data
     //just update the timestamp?
     wrappedEVMAccount.timestamp = txTimestamp
     //I think this will naturally accomplish the goal of the global update.
@@ -1950,17 +1954,9 @@ async function applyInternalTx<A>(
     //need to run this to fix buffer types after serialization
     fixDeserializedWrappedEVMAccount(wrappedEVMAccount)
     if (ShardeumFlags.supportInternalTxReceipt) {
-      createInternalTxReceipt(
-        shardus,
-        applyResponse,
-        internalTx,
-        networkAccount,
-        networkAccount,
-        txTimestamp,
-        txId
-      )
+      createInternalTxReceipt(shardus, applyResponse, tx, networkAccount, networkAccount, txTimestamp, txId)
     }
-  } else if (internalTx.internalTXType === InternalTXType.InitNetwork) {
+  } else if (tx.internalTXType === InternalTXType.InitNetwork) {
     // eslint-disable-next-line security/detect-object-injection
     const network: NetworkAccount = wrappedStates[networkAccount].data
     if (ShardeumFlags.useAccountWrites) {
@@ -1979,19 +1975,11 @@ async function applyInternalTx<A>(
       network.timestamp = txTimestamp
     }
     if (ShardeumFlags.supportInternalTxReceipt) {
-      createInternalTxReceipt(
-        shardus,
-        applyResponse,
-        internalTx,
-        networkAccount,
-        networkAccount,
-        txTimestamp,
-        txId
-      )
+      createInternalTxReceipt(shardus, applyResponse, tx, networkAccount, networkAccount, txTimestamp, txId)
     }
     /* prettier-ignore */ if (logFlags.important_as_error) console.log(`init_network NETWORK_ACCOUNT: ${stringify(network)}`)
     /* prettier-ignore */ if (logFlags.important_as_error) shardus.log('Applied init_network transaction', network)
-  } else if (internalTx.internalTXType === InternalTXType.ChangeConfig) {
+  } else if (tx.internalTXType === InternalTXType.ChangeConfig) {
     /* eslint-disable security/detect-object-injection */
     // const network: NetworkAccount = wrappedStates[networkAccount].data
     // const devAccount: DevAccount = wrappedStates[internalTx.from].data
@@ -2002,11 +1990,11 @@ async function applyInternalTx<A>(
 
     //NEED to sign with dev key (probably check this in validate() )
 
-    if (internalTx.cycle === -1) {
+    if (tx.cycle === -1) {
       ;[cycleData] = shardus.getLatestCycles()
       changeOnCycle = cycleData.counter + 3
     } else {
-      changeOnCycle = internalTx.cycle
+      changeOnCycle = tx.cycle
     }
 
     const when = txTimestamp + ONE_SECOND * 10
@@ -2015,9 +2003,9 @@ async function applyInternalTx<A>(
       isInternalTx: true,
       internalTXType: InternalTXType.ApplyChangeConfig,
       timestamp: when,
-      from: internalTx.from,
+      from: tx.from,
       network: networkAccount,
-      change: { cycle: changeOnCycle, change: JSON.parse(internalTx.config) },
+      change: { cycle: changeOnCycle, change: JSON.parse(tx.config) },
     }
 
     //value = shardus.signAsNode(value)
@@ -2052,19 +2040,11 @@ async function applyInternalTx<A>(
     //   devAccount.timestamp = txTimestamp
     // }
     if (ShardeumFlags.supportInternalTxReceipt) {
-      createInternalTxReceipt(
-        shardus,
-        applyResponse,
-        internalTx,
-        internalTx.from,
-        networkAccount,
-        txTimestamp,
-        txId
-      )
+      createInternalTxReceipt(shardus, applyResponse, tx, tx.from, networkAccount, txTimestamp, txId)
     }
     /* prettier-ignore */ if (logFlags.important_as_error) console.log('Applied change_config tx')
     /* prettier-ignore */ if (logFlags.important_as_error) shardus.log('Applied change_config tx')
-  } else if (internalTx.internalTXType === InternalTXType.ApplyChangeConfig) {
+  } else if (tx.internalTXType === InternalTXType.ApplyChangeConfig) {
     // eslint-disable-next-line security/detect-object-injection
     const network: NetworkAccount = wrappedStates[networkAccount].data
 
@@ -2072,7 +2052,7 @@ async function applyInternalTx<A>(
       // eslint-disable-next-line security/detect-object-injection
       const networkAccountCopy = wrappedStates[networkAccount]
       networkAccountCopy.data.timestamp = txTimestamp
-      networkAccountCopy.data.listOfChanges.push(internalTx.change)
+      networkAccountCopy.data.listOfChanges.push(tx.change)
       const wrappedChangedAccount = WrappedEVMAccountFunctions._shardusWrappedAccount(networkAccountCopy.data)
       shardus.applyResponseAddChangedAccount(
         applyResponse,
@@ -2083,30 +2063,22 @@ async function applyInternalTx<A>(
       )
     } else {
       network.timestamp = txTimestamp
-      network.listOfChanges.push(internalTx.change)
+      network.listOfChanges.push(tx.change)
     }
     /* prettier-ignore */ if (logFlags.important_as_error) console.log(`Applied CHANGE_CONFIG GLOBAL transaction: ${stringify(network)}`)
     /* prettier-ignore */ if (logFlags.important_as_error) shardus.log('Applied CHANGE_CONFIG GLOBAL transaction', stringify(network))
     if (ShardeumFlags.supportInternalTxReceipt) {
-      createInternalTxReceipt(
-        shardus,
-        applyResponse,
-        internalTx,
-        internalTx.from,
-        networkAccount,
-        txTimestamp,
-        txId
-      )
+      createInternalTxReceipt(shardus, applyResponse, tx, tx.from, networkAccount, txTimestamp, txId)
     }
-  } else if (internalTx.internalTXType === InternalTXType.ChangeNetworkParam) {
+  } else if (tx.internalTXType === InternalTXType.ChangeNetworkParam) {
     let changeOnCycle
     let cycleData: ShardusTypes.Cycle
 
-    if (internalTx.cycle === -1) {
+    if (tx.cycle === -1) {
       ;[cycleData] = shardus.getLatestCycles()
       changeOnCycle = cycleData.counter + 1
     } else {
-      changeOnCycle = internalTx.cycle
+      changeOnCycle = tx.cycle
     }
 
     const when = txTimestamp + ONE_SECOND * 10
@@ -2115,9 +2087,9 @@ async function applyInternalTx<A>(
       isInternalTx: true,
       internalTXType: InternalTXType.ApplyNetworkParam,
       timestamp: when,
-      from: internalTx.from,
+      from: tx.from,
       network: networkAccount,
-      change: { cycle: changeOnCycle, change: {}, appData: JSON.parse(internalTx.config) },
+      change: { cycle: changeOnCycle, change: {}, appData: JSON.parse(tx.config) },
     }
 
     const ourAppDefinedData = applyResponse.appDefinedData as OurAppDefinedData
@@ -2125,19 +2097,11 @@ async function applyInternalTx<A>(
     ourAppDefinedData.globalMsg = { address: networkAccount, value, when, source: value.from }
 
     if (ShardeumFlags.supportInternalTxReceipt) {
-      createInternalTxReceipt(
-        shardus,
-        applyResponse,
-        internalTx,
-        internalTx.from,
-        networkAccount,
-        txTimestamp,
-        txId
-      )
+      createInternalTxReceipt(shardus, applyResponse, tx, tx.from, networkAccount, txTimestamp, txId)
     }
     /* prettier-ignore */ if (logFlags.important_as_error) console.log('Applied change_network_param tx')
     /* prettier-ignore */ if (logFlags.important_as_error) shardus.log('Applied change_network_param tx')
-  } else if (internalTx.internalTXType === InternalTXType.ApplyNetworkParam) {
+  } else if (tx.internalTXType === InternalTXType.ApplyNetworkParam) {
     // eslint-disable-next-line security/detect-object-injection
     const network: NetworkAccount = wrappedStates[networkAccount].data
 
@@ -2145,7 +2109,7 @@ async function applyInternalTx<A>(
       // eslint-disable-next-line security/detect-object-injection
       const networkAccountCopy = wrappedStates[networkAccount]
       networkAccountCopy.data.timestamp = txTimestamp
-      networkAccountCopy.data.listOfChanges.push(internalTx.change)
+      networkAccountCopy.data.listOfChanges.push(tx.change)
       const wrappedChangedAccount = WrappedEVMAccountFunctions._shardusWrappedAccount(networkAccountCopy.data)
       shardus.applyResponseAddChangedAccount(
         applyResponse,
@@ -2156,35 +2120,23 @@ async function applyInternalTx<A>(
       )
     } else {
       network.timestamp = txTimestamp
-      network.listOfChanges.push(internalTx.change)
+      network.listOfChanges.push(tx.change)
     }
     if (ShardeumFlags.supportInternalTxReceipt) {
-      createInternalTxReceipt(
-        shardus,
-        applyResponse,
-        internalTx,
-        internalTx.from,
-        networkAccount,
-        txTimestamp,
-        txId
-      )
+      createInternalTxReceipt(shardus, applyResponse, tx, tx.from, networkAccount, txTimestamp, txId)
     }
     /* prettier-ignore */ if (logFlags.important_as_error) console.log(`Applied CHANGE_NETWORK_PARAM GLOBAL transaction: ${stringify(network)}`)
     /* prettier-ignore */ if (logFlags.important_as_error) shardus.log('Applied CHANGE_NETWORK_PARAM GLOBAL transaction', stringify(network))
-  } else if (internalTx.internalTXType === InternalTXType.SetCertTime) {
-    const setCertTimeTx = internalTx as SetCertTime
-    applySetCertTimeTx(shardus, setCertTimeTx, wrappedStates, txTimestamp, applyResponse)
-  } else if (internalTx.internalTXType === InternalTXType.InitRewardTimes) {
-    const rewardTimesTx = internalTx as InitRewardTimes
-    InitRewardTimesTx.apply(shardus, rewardTimesTx, txId, txTimestamp, wrappedStates, applyResponse)
-  } else if (internalTx.internalTXType === InternalTXType.ClaimReward) {
-    const claimRewardTx = internalTx as ClaimRewardTX
-    applyClaimRewardTx(shardus, claimRewardTx, wrappedStates, txTimestamp, applyResponse)
-  } else if (internalTx.internalTXType === InternalTXType.Penalty) {
-    const penaltyTx = internalTx as PenaltyTX
-    applyPenaltyTX(shardus, penaltyTx, wrappedStates, txTimestamp, applyResponse)
-  } else if (internalTx.internalTXType === InternalTXType.InitDao) {
-    applyInitDaoTx(wrappedStates, applyResponse, internalTx, txTimestamp, txId)
+  } else if (tx.internalTXType === InternalTXType.SetCertTime) {
+    applySetCertTimeTx(shardus, tx, wrappedStates, txTimestamp, applyResponse)
+  } else if (tx.internalTXType === InternalTXType.InitRewardTimes) {
+    InitRewardTimesTx.apply(shardus, tx, txId, txTimestamp, wrappedStates, applyResponse)
+  } else if (tx.internalTXType === InternalTXType.ClaimReward) {
+    applyClaimRewardTx(shardus, tx, wrappedStates, txTimestamp, applyResponse)
+  } else if (tx.internalTXType === InternalTXType.Penalty) {
+    applyPenaltyTX(shardus, tx, wrappedStates, txTimestamp, applyResponse)
+  } else if (tx.internalTXType === InternalTXType.InitDao) {
+    applyInitDaoTx(wrappedStates, applyResponse, tx, txTimestamp, txId)
   }
 
   return applyResponse
@@ -4253,7 +4205,7 @@ const shardusSetup = (): void => {
         } else if (tx.internalTXType === InternalTXType.InitDao) {
           keys.targetKeys = [daoConfig.daoAccountAddress]
         } else {
-          console.warn("daoLogging: unhandled internalTx.internalTXType: ", tx.internalTXType)
+          console.warn('daoLogging: unhandled tx.internalTXType: ', tx.internalTXType)
         }
         keys.allKeys = keys.allKeys.concat(keys.sourceKeys, keys.targetKeys, keys.storageKeys)
         // temporary hack for creating a receipt of node reward tx
@@ -4278,7 +4230,6 @@ const shardusSetup = (): void => {
       }
       console.log("daoLogging: isInternalTx is false for crack, no more logging will be done in `crack` for this tx")
       if (isDebugTx(tx)) {
-        const debugTx = tx as DebugTx
         const txId = generateTxId(tx)
         const keys = {
           sourceKeys: [],
@@ -4288,17 +4239,17 @@ const shardusSetup = (): void => {
           timestamp: timestamp,
         }
 
-        const transformedSourceKey = toShardusAddress(debugTx.from, AccountType.Debug)
-        const transformedTargetKey = debugTx.to ? toShardusAddress(debugTx.to, AccountType.Debug) : ''
+        const transformedSourceKey = toShardusAddress(tx.from, AccountType.Debug)
+        const transformedTargetKey = tx.to ? toShardusAddress(tx.to, AccountType.Debug) : ''
         keys.sourceKeys.push(transformedSourceKey)
         shardusAddressToEVMAccountInfo.set(transformedSourceKey, {
-          evmAddress: debugTx.from,
+          evmAddress: tx.from,
           type: AccountType.Debug,
         })
-        if (debugTx.to) {
+        if (tx.to) {
           keys.targetKeys.push(transformedTargetKey)
           shardusAddressToEVMAccountInfo.set(transformedTargetKey, {
-            evmAddress: debugTx.to,
+            evmAddress: tx.to,
             type: AccountType.Debug,
           })
         }
@@ -4560,7 +4511,6 @@ const shardusSetup = (): void => {
 
       if (isInternalTx(tx)) {
         console.log("daoLogging: isInternalTx is true for getRelevantData")
-        const internalTx = tx as InternalTx
 
         let accountCreated = false
         //let wrappedEVMAccount = accounts[accountId]
@@ -4572,15 +4522,15 @@ const shardusSetup = (): void => {
           'getRelevantData.AccountsStorage.getAccount 4',
           DebugComplete.Completed
         )
-        if (internalTx.internalTXType === InternalTXType.SetGlobalCodeBytes) {
+        if (tx.internalTXType === InternalTXType.SetGlobalCodeBytes) {
           if (wrappedEVMAccount == null) {
             accountCreated = true
           }
-          if (internalTx.accountData) {
-            wrappedEVMAccount = internalTx.accountData
+          if (tx.accountData) {
+            wrappedEVMAccount = tx.accountData
           }
         }
-        if (internalTx.internalTXType === InternalTXType.InitNetwork) {
+        if (tx.internalTXType === InternalTXType.InitNetwork) {
           if (!wrappedEVMAccount) {
             if (accountId === networkAccount) {
               wrappedEVMAccount = await createNetworkAccount(accountId)
@@ -4593,8 +4543,8 @@ const shardusSetup = (): void => {
           }
         }
         if (
-          internalTx.internalTXType === InternalTXType.ChangeConfig ||
-          internalTx.internalTXType === InternalTXType.ChangeNetworkParam
+          tx.internalTXType === InternalTXType.ChangeConfig ||
+          tx.internalTXType === InternalTXType.ChangeNetworkParam
         ) {
           // Not sure if this is even relevant.  I think the from account should be one of our dev accounts and
           // and should already exist (hit the faucet)
@@ -4619,41 +4569,43 @@ const shardusSetup = (): void => {
           }
         }
         if (
-          internalTx.internalTXType === InternalTXType.ApplyChangeConfig ||
-          internalTx.internalTXType === InternalTXType.ApplyNetworkParam
+          tx.internalTXType === InternalTXType.ApplyChangeConfig ||
+          tx.internalTXType === InternalTXType.ApplyNetworkParam
         ) {
           if (!wrappedEVMAccount) {
             throw Error(`Network Account is not found ${accountId}`)
           }
         }
-        if (internalTx.internalTXType === InternalTXType.InitRewardTimes) {
+        if (tx.internalTXType === InternalTXType.InitRewardTimes) {
           if (!wrappedEVMAccount) {
             // Node Account has to be already created at this point.
-            if (accountId === internalTx.nominee) {
+            if (accountId === tx.nominee) {
               throw Error(`Node Account <nominee> is not found ${accountId}`)
             }
           }
         }
-        if (internalTx.internalTXType === InternalTXType.ClaimReward) {
+        if (tx.internalTXType === InternalTXType.ClaimReward) {
           if (!wrappedEVMAccount) {
             // Node Account has to be already created at this point.
-            if (accountId === internalTx.nominee) {
+            if (accountId === tx.nominee) {
               throw Error(`Node Account <nominee> is not found ${accountId}`)
             }
           }
         }
-        if (internalTx.internalTXType === InternalTXType.SetCertTime) {
+        if (tx.internalTXType === InternalTXType.SetCertTime) {
           if (!wrappedEVMAccount) {
             // Node Account or EVM Account(Nominator) has to be already created at this point.
-            if (accountId === internalTx.nominee) {
-              throw Error(`Node Account <nominee> is not found ${accountId}, tx: ${stringify(internalTx)}`)
-            } else if (accountId === internalTx.nominator) {
+            if (accountId === tx.nominee) {
+              throw Error(`Node Account <nominee> is not found ${accountId}, tx: ${stringify(tx)}`)
+            } else if (accountId === tx.nominator) {
               throw Error(`EVM Account <nominator> is not found ${accountId}`)
             }
           }
         }
-        if (internalTx.internalTXType === InternalTXType.InitDao) {
-          console.log("daoLogging: internalTx.internalTXType === InternalTXType.InitDao, getting relevant data for dao")
+        if (tx.internalTXType === InternalTXType.InitDao) {
+          console.log(
+            'daoLogging: internalTx.internalTXType === InternalTXType.InitDao, getting relevant data for dao'
+          )
           accountCreated = getRelevantDataInitDao(accountId, wrappedEVMAccount)
           console.log("daoLogging: accountCreated: ", accountCreated)
         }
@@ -5409,12 +5361,10 @@ const shardusSetup = (): void => {
         //@ts-ignore
         const { tx } = timestampedTx
         if (isInternalTx(tx)) {
-          const internalTx = tx as InternalTx
-          return `internalTX: ${InternalTXType[internalTx.internalTXType]} `
+          return `internalTX: ${InternalTXType[tx.internalTXType]} `
         }
         if (isDebugTx(tx)) {
-          const debugTx = tx as DebugTx
-          return `debugTX: ${DebugTXType[debugTx.debugTXType]}`
+          return `debugTX: ${DebugTXType[tx.debugTXType]}`
         }
         const transaction = getTransactionObj(tx, false)
         if (transaction && isStakingEVMTx(transaction)) {
