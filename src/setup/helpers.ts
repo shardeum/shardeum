@@ -34,9 +34,10 @@ export function isInternalTXGlobal(internalTx: InternalTx): boolean {
   )
 }
 
-export function isInternalTx<T extends { isInternalTx?: unknown }>(tx: T): boolean {
-  console.log("daoLogging: isInternalTx", !!tx.isInternalTx || tx instanceof DaoTx)
-  return !!tx.isInternalTx || isDaoTx(tx)
+export function isInternalTx(tx: object): tx is InternalTx {
+  const result = tx instanceof DaoTx || ("isInternalTx" in tx && !!tx.isInternalTx)
+  console.log("daoLogging: isInternalTx", result)
+  return result
 }
 
 export function isDebugTx<T extends { isDebugTx?: unknown }>(tx: T): boolean {

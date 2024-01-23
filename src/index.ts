@@ -4178,7 +4178,6 @@ const shardusSetup = (): void => {
       if (isInternalTx(tx)) {
         console.log("daoLogging: isInternalTx is true for crack")
         const customTXhash = null
-        const internalTx = tx as InternalTx
         const keys = {
           sourceKeys: [],
           targetKeys: [],
@@ -4186,25 +4185,25 @@ const shardusSetup = (): void => {
           allKeys: [],
           timestamp: timestamp,
         }
-        console.log("daoLogging: internalTx.internalTXType: ", internalTx.internalTXType)
-        if (internalTx.internalTXType === InternalTXType.SetGlobalCodeBytes) {
-          keys.sourceKeys = [internalTx.from]
-        } else if (internalTx.internalTXType === InternalTXType.InitNetwork) {
+        console.log("daoLogging: internalTx.internalTXType: ", tx.internalTXType)
+        if (tx.internalTXType === InternalTXType.SetGlobalCodeBytes) {
+          keys.sourceKeys = [tx.from]
+        } else if (tx.internalTXType === InternalTXType.InitNetwork) {
           keys.targetKeys = [networkAccount]
-        } else if (internalTx.internalTXType === InternalTXType.ChangeConfig) {
+        } else if (tx.internalTXType === InternalTXType.ChangeConfig) {
           keys.sourceKeys = [tx.from]
           keys.targetKeys = [networkAccount]
-        } else if (internalTx.internalTXType === InternalTXType.ApplyChangeConfig) {
+        } else if (tx.internalTXType === InternalTXType.ApplyChangeConfig) {
           keys.targetKeys = [networkAccount]
-        } else if (internalTx.internalTXType === InternalTXType.ChangeNetworkParam) {
+        } else if (tx.internalTXType === InternalTXType.ChangeNetworkParam) {
           keys.sourceKeys = [tx.from]
           keys.targetKeys = [networkAccount]
-        } else if (internalTx.internalTXType === InternalTXType.ApplyNetworkParam) {
+        } else if (tx.internalTXType === InternalTXType.ApplyNetworkParam) {
           keys.targetKeys = [networkAccount]
-        } else if (internalTx.internalTXType === InternalTXType.SetCertTime) {
+        } else if (tx.internalTXType === InternalTXType.SetCertTime) {
           keys.sourceKeys = [tx.nominee]
           keys.targetKeys = [toShardusAddress(tx.nominator, AccountType.Account), networkAccount]
-        } else if (internalTx.internalTXType === InternalTXType.InitRewardTimes) {
+        } else if (tx.internalTXType === InternalTXType.InitRewardTimes) {
           keys.sourceKeys = [tx.nominee]
 
           // //force all TXs for the same reward to have the same hash
@@ -4225,7 +4224,7 @@ const shardusSetup = (): void => {
           // let roundedNow = Math.round(now / 3000) * 3000
           // tx.timestamp = roundedNow
           // customTXhash = hashSignedObj(tx)
-        } else if (internalTx.internalTXType === InternalTXType.ClaimReward) {
+        } else if (tx.internalTXType === InternalTXType.ClaimReward) {
           keys.sourceKeys = [tx.nominee]
           keys.targetKeys = [toShardusAddress(tx.nominator, AccountType.Account), networkAccount]
 
@@ -4249,13 +4248,13 @@ const shardusSetup = (): void => {
           // let roundedNow = Math.round(now / 3000) * 3000
           // tx.timestamp = roundedNow
           // customTXhash = crypto.hashObj(tx, true)
-        } else if (internalTx.internalTXType === InternalTXType.Penalty) {
+        } else if (tx.internalTXType === InternalTXType.Penalty) {
           keys.sourceKeys = [tx.reportedNodePublickKey]
           keys.targetKeys = [toShardusAddress(tx.operatorEVMAddress, AccountType.Account), networkAccount]
-        } else if (internalTx.internalTXType === InternalTXType.InitDao) {
+        } else if (tx.internalTXType === InternalTXType.InitDao) {
           keys.targetKeys = [daoConfig.daoAccountAddress]
         } else {
-          console.warn("daoLogging: unhandled internalTx.internalTXType: ", internalTx.internalTXType)
+          console.warn("daoLogging: unhandled internalTx.internalTXType: ", tx.internalTXType)
         }
         keys.allKeys = keys.allKeys.concat(keys.sourceKeys, keys.targetKeys, keys.storageKeys)
         // temporary hack for creating a receipt of node reward tx
