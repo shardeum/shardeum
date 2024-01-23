@@ -5,8 +5,8 @@ import {
   TransactionType,
 } from '@ethereumjs/tx'
 import * as crypto from '@shardus/crypto-utils'
-import { toBuffer } from 'ethereumjs-util'
-import { DaoTx } from '../dao/tx'
+import { toBuffer, ToBufferInputTypes } from 'ethereumjs-util'
+import { DaoTx, isDaoTx } from '../dao/tx'
 import { ShardeumFlags } from '../shardeum/shardeumFlags'
 import { InternalTx, InternalTXType } from '../shardeum/shardeumTypes'
 import { stringify, cryptoStringify } from '../utils/stringify'

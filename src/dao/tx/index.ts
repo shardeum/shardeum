@@ -2,6 +2,7 @@ import { Shardus } from '@shardus/core'
 import { WrappedStates } from '@shardus/core/dist/state-manager/state-manager-types'
 import {
   IncomingTransactionResult,
+  OpaqueTransaction,
   TransactionKeys,
   WrappedResponse,
 } from '@shardus/core/dist/shardus/shardus-types'
@@ -13,6 +14,8 @@ import { ApplyDevTally, IApplyDevTally } from './apply_dev_tally'
 import { ApplyDevPayment, IApplyDevPayment } from './apply_developer_payment'
 import { ApplyParameters, IApplyParameters } from './apply_parameters'
 import { ApplyTally, IApplyTally } from './apply_tally'
+import { getTransactionObj } from '../../setup/helpers'
+import { ShardeumFlags } from '../../shardeum/shardeumFlags'
 
 export abstract class DaoTx<Account> {
   abstract readonly type: string
@@ -65,5 +68,33 @@ export type PlainDaoTx =
   | IApplyDevPayment
   | IApplyParameters
   | IApplyTally
-  | INetworkProposal
   | IIssue
+  | INetworkProposal
+
+function hasDaoTxType(tx: object): tx is PlainDaoTx {
+  return (
+    'type' in tx &&
+    typeof tx.type === 'string' &&
+    [
+      'apply_change_config',
+      'apply_dev_parameters',
+      'apply_dev_tally',
+      'apply_dev_payment',
+      'apply_parameters',
+      'apply_tally',
+      'issue',
+      'NetworkProposal',
+    ].includes(tx.type)
+  )
+}
+
+export function isDaoTx<A>(tx: OpaqueTransaction | DaoTx<A>): boolean {
+  if (hasDaoTxType(tx) || tx instanceof DaoTx) return true
+
+  // EVM txs come in as serialized hexstrings
+  let transaction = null
+  if ('raw' in tx && typeof tx.raw === 'string') {
+    transaction = getTransactionObj(tx as { raw: string })
+  }
+  return transaction?.to?.toString() === ShardeumFlags.daoTargetAddress
+}

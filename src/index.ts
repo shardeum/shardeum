@@ -155,8 +155,8 @@ import { isLowStake } from './tx/penalty/penaltyFunctions'
 import { deserializeWrappedEVMAccount, serializeWrappedEVMAccount } from './types/WrappedEVMAccount'
 import { accountDeserializer, accountSerializer, binaryDeserializer, binarySerializer } from './types/Helpers'
 import { apply as applyDaoIssueTx, Issue as DaoIssueTx } from './dao/tx/issue'
-import { applyInitDaoTx, getDaoAccountObj, getRelevantDataInitDao, handleDaoTxApply, handleDaoTxCrack, handleDaoTxGetRelevantData, isDaoTx, startDaoMaintenanceCycle } from './dao'
-import { DaoTx } from './dao/tx'
+import { applyInitDaoTx, getDaoAccountObj, getRelevantDataInitDao, handleDaoTxApply, handleDaoTxCrack, handleDaoTxGetRelevantData, startDaoMaintenanceCycle } from './dao'
+import { DaoTx, isDaoTx } from './dao/tx'
 import registerDaoAPI from './dao/api'
 
 let latestBlock = 0
