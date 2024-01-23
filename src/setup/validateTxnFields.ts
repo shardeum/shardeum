@@ -39,8 +39,16 @@ import {
  */
 export const validateTxnFields =
   (shardus: Shardus, debugAppdata: Map<string, unknown>) =>
-  (timestampedTx: any, originalAppData: any): ShardusTypes.IncomingTransactionResult => {
+  (timestampedTx: { tx: unknown }, originalAppData: unknown): ShardusTypes.IncomingTransactionResult => {
     const { tx } = timestampedTx
+    if (typeof tx !== 'object') {
+      return {
+        success: false,
+        reason: 'Invalid transaction; not an object',
+        txnTimestamp: 0,
+      }
+    }
+
     const txnTimestamp: number = getInjectedOrGeneratedTimestamp(timestampedTx)
     const appData = fixBigIntLiteralsToBigInt(originalAppData)
 
@@ -149,7 +157,7 @@ export const validateTxnFields =
       return {
         success,
         reason,
-        txnTimestamp: txnTimestamp,
+        txnTimestamp,
       }
     }
 
