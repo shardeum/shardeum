@@ -138,10 +138,8 @@ import {
 import { DaoTx, isDaoTx } from './dao/tx'
 import registerDaoAPI from './dao/api'
 import {
-  InitRewardTimes,
   InternalTx,
   InternalTXType,
-  PenaltyTX,
   StakeCoinsTX,
   UnstakeCoinsTX,
 } from './shardeum/internalTxs'
