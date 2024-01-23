@@ -188,12 +188,12 @@ export const validateTxnFields =
         }
 
         if (ShardeumFlags.txBalancePreCheck && appData != null) {
-          const minBalanceUsd = ShardeumFlags.chargeConstantTxFee
-            ? BigInt(ShardeumFlags.constantTxFeeUsd)
-            : BigInt(1)
-          let minBalance = scaleByStabilityFactor(minBalanceUsd, AccountsStorage.cachedNetworkAccount)
-          //check with value added in
-          minBalance = minBalance + transaction.value
+          let minBalance: bigint // Calculate the minimun balance with the transaction value added in
+          if (ShardeumFlags.chargeConstantTxFee) {
+            const minBalanceUsd = BigInt(ShardeumFlags.constantTxFeeUsd)
+            minBalance =
+              scaleByStabilityFactor(minBalanceUsd, AccountsStorage.cachedNetworkAccount) + transaction.value
+          } else minBalance = transaction.getUpfrontCost() // tx.gasLimit * tx.gasPrice + tx.value
           const accountBalance = appData.balance
           if (accountBalance < minBalance) {
             success = false
