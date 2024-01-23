@@ -1,18 +1,6 @@
 import { nestedCountersInstance, Shardus, ShardusTypes } from '@shardus/core'
 import { ShardeumFlags } from '../shardeum/shardeumFlags'
-import {
-  ClaimRewardTX,
-  InitRewardTimes,
-  InternalTx,
-  InternalTXType,
-  NodeAccount2,
-  PenaltyTX,
-  SetCertTime,
-  StakeCoinsTX,
-  UnstakeCoinsTX,
-  WrappedEVMAccount,
-  NetworkAccount,
-} from '../shardeum/shardeumTypes'
+import { NodeAccount2, WrappedEVMAccount, NetworkAccount } from '../shardeum/shardeumTypes'
 import * as AccountsStorage from '../storage/accountStorage'
 import { validateClaimRewardTx } from '../tx/claimReward'
 import * as InitRewardTimesTx from '../tx/initRewardTimes'
@@ -32,6 +20,16 @@ import { validatePenaltyTX } from '../tx/penalty/transaction'
 import { bytesToHex } from '@ethereumjs/util'
 import { logFlags } from '..'
 import { DaoTx } from '../dao/tx'
+import {
+  ClaimRewardTX,
+  InitRewardTimes,
+  InternalTx,
+  InternalTXType,
+  PenaltyTX,
+  SetCertTime,
+  StakeCoinsTX,
+  UnstakeCoinsTX,
+} from '../shardeum/internalTxs'
 
 /**
  * Checks that Transaction fields are valid

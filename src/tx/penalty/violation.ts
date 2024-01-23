@@ -1,8 +1,8 @@
-import { PenaltyTX, ViolationType } from '../../shardeum/shardeumTypes'
 import { ShardeumFlags } from '../../shardeum/shardeumFlags'
 import { _base16BNParser } from '../../utils'
 import { nestedCountersInstance } from '@shardus/core'
 import { logFlags } from '../..'
+import { PenaltyTX, ViolationType } from '../../shardeum/internalTxs'
 
 export function getPenaltyForViolation(tx: PenaltyTX, stakeLock: bigint): bigint {
   //can remove this will crash part after fix confirmed

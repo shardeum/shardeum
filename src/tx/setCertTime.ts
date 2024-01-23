@@ -7,9 +7,7 @@ import { toShardusAddress } from '../shardeum/evmAddress'
 import { ShardeumFlags } from '../shardeum/shardeumFlags'
 import {
   AccountType,
-  InternalTXType,
   NodeAccountQueryResponse,
-  SetCertTime,
   WrappedEVMAccount,
   WrappedStates,
   InjectTxResponse,
@@ -25,9 +23,9 @@ import {
   generateTxId,
   stringify,
 } from '../utils'
-import { hashSignedObj } from '../setup/helpers'
 import { createInternalTxReceipt, logFlags, shardeumGetTime } from '..'
 import { isValidAddress } from '@ethereumjs/util'
+import { InternalTXType, SetCertTime } from '../shardeum/internalTxs'
 
 export function isSetCertTimeTx(tx): boolean {
   if (tx.isInternalTx && tx.internalTXType === InternalTXType.SetCertTime) {

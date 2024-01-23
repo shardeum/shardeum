@@ -3,13 +3,10 @@ import * as crypto from '@shardus/crypto-utils'
 import { Address } from '@ethereumjs/util'
 import { networkAccount } from '../shardeum/shardeumConstants'
 import { createInternalTxReceipt, getApplyTXState, logFlags, shardeumGetTime } from '../index'
-import { hashSignedObj } from '../setup/helpers'
 import { toShardusAddress } from '../shardeum/evmAddress'
 import { ShardeumFlags } from '../shardeum/shardeumFlags'
 import {
   AccountType,
-  ClaimRewardTX,
-  InternalTXType,
   isNetworkAccount,
   isNodeAccount2,
   NetworkAccount,
@@ -21,6 +18,7 @@ import * as WrappedEVMAccountFunctions from '../shardeum/wrappedEVMAccountFuncti
 import * as AccountsStorage from '../storage/accountStorage'
 import { scaleByStabilityFactor, sleep, _base16BNParser, _readableSHM, generateTxId } from '../utils'
 import { retry } from '../utils/retry'
+import { ClaimRewardTX, InternalTXType } from '../shardeum/internalTxs'
 
 export async function injectClaimRewardTx(
   shardus,

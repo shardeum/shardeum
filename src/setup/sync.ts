@@ -5,16 +5,15 @@ import genesis from '../config/genesis.json'
 import { loadAccountDataFromDB } from '../shardeum/debugRestoreAccounts'
 import { toShardusAddress } from '../shardeum/evmAddress'
 import { ShardeumFlags } from '../shardeum/shardeumFlags'
-import { AccountType, DevAccount, InternalTXType, WrappedEVMAccount } from '../shardeum/shardeumTypes'
+import { AccountType, DevAccount, WrappedEVMAccount } from '../shardeum/shardeumTypes'
 import * as WrappedEVMAccountFunctions from '../shardeum/wrappedEVMAccountFunctions'
 import { ShardeumState, TransactionState } from '../state'
 import * as AccountsStorage from '../storage/accountStorage'
 import { SerializeToJsonString } from '../utils'
 import { sleep } from '../utils'
-// import { StateManager } from '../vm/state'
-import { DefaultStateManager } from '@ethereumjs/statemanager'
 import { logFlags, shardeumGetTime } from '..'
 import { setupDaoAccount } from '../dao'
+import { InternalTXType } from '../shardeum/internalTxs'
 
 function isDebugMode(): boolean {
   // eslint-disable-next-line @typescript-eslint/ban-ts-comment

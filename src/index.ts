@@ -39,27 +39,17 @@ import {
   AccountType,
   AppJoinData,
   BlockMap,
-  ClaimRewardTX,
   DebugTx,
   DebugTXType,
-  //DevSecurityLevel,
-  //DevAccount,
   EVMAccountInfo,
-  InitRewardTimes,
-  InternalTx,
-  InternalTXType,
   NetworkAccount,
   NodeAccount2,
   NodeInfoAppData,
   OperatorAccountInfo,
   OurAppDefinedData,
-  PenaltyTX,
   ReadableReceipt,
-  SetCertTime,
   ShardeumBlockOverride,
-  StakeCoinsTX,
   StakeInfo,
-  UnstakeCoinsTX,
   WrappedAccount,
   WrappedEVMAccount,
   WrappedStates,
@@ -140,6 +130,16 @@ import { getCachedRIAccount, setCachedRIAccount } from './storage/riAccountsCach
 import { applyInitDaoTx, getRelevantDataInitDao, handleDaoTxApply, handleDaoTxCrack, handleDaoTxGetRelevantData, startDaoMaintenanceCycle } from './dao'
 import { DaoTx, isDaoTx } from './dao/tx'
 import registerDaoAPI from './dao/api'
+import {
+  ClaimRewardTX,
+  InitRewardTimes,
+  InternalTx,
+  InternalTXType,
+  PenaltyTX,
+  SetCertTime,
+  StakeCoinsTX,
+  UnstakeCoinsTX,
+} from './shardeum/internalTxs'
 
 let latestBlock = 0
 export const blocks: BlockMap = {}

@@ -1,16 +1,13 @@
 import { nestedCountersInstance, Shardus, ShardusTypes } from '@shardus/core'
 import {
   AccountType,
-  InternalTXType,
   isNodeAccount2,
   NodeAccount2,
-  PenaltyTX,
-  ViolationType,
   WrappedEVMAccount,
   WrappedStates,
 } from '../../shardeum/shardeumTypes'
 import { ShardeumFlags } from '../../shardeum/shardeumFlags'
-import { crypto, hashSignedObj } from '../../setup/helpers'
+import { crypto } from '../../setup/helpers'
 import { createInternalTxReceipt, getApplyTXState, logFlags, shardeumGetTime } from '../..'
 import { toShardusAddress } from '../../shardeum/evmAddress'
 import { getPenaltyForViolation } from './violation'
@@ -18,6 +15,7 @@ import * as WrappedEVMAccountFunctions from '../../shardeum/wrappedEVMAccountFun
 import { _readableSHM, sleep, generateTxId } from '../../utils'
 import { Address } from '@ethereumjs/util'
 import { applyPenalty } from './penaltyFunctions'
+import { InternalTXType, PenaltyTX, ViolationType } from '../../shardeum/internalTxs'
 
 export async function injectPenaltyTX(
   shardus: Shardus,

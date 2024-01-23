@@ -4,8 +4,6 @@ import { ApplyResponse, OpaqueTransaction } from '@shardus/core/dist/shardus/sha
 import { createInternalTxReceipt, logFlags, shardeumGetTime } from '..'
 import { ShardeumFlags } from '../shardeum/shardeumFlags'
 import {
-  InternalTXType,
-  InternalTx,
   NetworkAccount,
   WrappedStates,
   WrappedEVMAccount,
@@ -17,6 +15,7 @@ import { DaoTx } from './tx'
 import { getTransactionObj } from '../setup/helpers'
 import * as AccountsStorage from '../storage/accountStorage'
 import { daoAccountAddress } from '../config/dao'
+import { InternalTx, InternalTXType } from '../shardeum/internalTxs'
 
 export function setupDaoAccount(shardus: Shardus, when: number): void {
   if (ShardeumFlags.EnableDaoFeatures) {

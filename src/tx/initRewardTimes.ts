@@ -1,18 +1,11 @@
 import { nestedCountersInstance, Shardus, ShardusTypes } from '@shardus/core'
 import * as crypto from '@shardus/crypto-utils'
-import { hashSignedObj } from '../setup/helpers'
 import { ShardeumFlags } from '../shardeum/shardeumFlags'
-import {
-  InitRewardTimes,
-  InternalTx,
-  InternalTXType,
-  isNodeAccount2,
-  NodeAccount2,
-  WrappedStates,
-} from '../shardeum/shardeumTypes'
+import { isNodeAccount2, NodeAccount2, WrappedStates } from '../shardeum/shardeumTypes'
 import * as WrappedEVMAccountFunctions from '../shardeum/wrappedEVMAccountFunctions'
 import { sleep, generateTxId } from '../utils'
 import { createInternalTxReceipt, shardeumGetTime } from '..'
+import { InitRewardTimes, InternalTx, InternalTXType } from '../shardeum/internalTxs'
 
 export async function injectInitRewardTimesTx(
   shardus,
