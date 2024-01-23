@@ -3980,7 +3980,7 @@ const shardusSetup = (): void => {
           let foundNonce = false
           let foundSender = false
           let nonce = BigInt(0)
-          let balance = BigInt(0).toString()
+          let balance = BigInt(0)
           const txSenderEvmAddr = senderAddress.toString()
           const transformedSourceKey = toShardusAddress(txSenderEvmAddr, AccountType.Account)
 
@@ -4024,7 +4024,7 @@ const shardusSetup = (): void => {
             if (wrappedEVMAccount && wrappedEVMAccount.account) {
               fixDeserializedWrappedEVMAccount(wrappedEVMAccount)
               nonce = wrappedEVMAccount.account.nonce
-              balance = wrappedEVMAccount.account.balance.toString()
+              balance = wrappedEVMAccount.account.balance
               foundNonce = true
             }
           }
@@ -4089,13 +4089,14 @@ const shardusSetup = (): void => {
           let success = true
           //early pass on balance check to avoid expensive access list generation.
           if (ShardeumFlags.txBalancePreCheck && appData != null) {
-            const minBalanceUsd = ShardeumFlags.constantTxFeeUsd
-              ? BigInt(ShardeumFlags.constantTxFeeUsd)
-              : BigInt(1)
-            let minBalance = scaleByStabilityFactor(minBalanceUsd, AccountsStorage.cachedNetworkAccount)
-            //check with value added in
-            minBalance = minBalance + transaction.value
-            const accountBalance = BigInt(appData.balance)
+            let minBalance: bigint // Calculate the minimun balance with the transaction value added in
+            if (ShardeumFlags.chargeConstantTxFee) {
+              const minBalanceUsd = BigInt(ShardeumFlags.constantTxFeeUsd)
+              minBalance =
+                scaleByStabilityFactor(minBalanceUsd, AccountsStorage.cachedNetworkAccount) +
+                transaction.value
+            } else minBalance = transaction.getUpfrontCost() // tx.gasLimit * tx.gasPrice + tx.value
+            const accountBalance = appData.balance
             if (accountBalance < minBalance) {
               success = false
               /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`precrack balance fail: sender ${senderAddress.toString()} does not have enough balance. Min balance: ${minBalance.toString()}, Account balance: ${accountBalance.toString()}`)
@@ -4187,6 +4188,7 @@ const shardusSetup = (): void => {
         }
         /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log( `txPreCrackData final result: txNonce: ${appData.txNonce}, currentNonce: ${ appData.nonce }, queueCount: ${appData.queueCount}, appData ${stringify(appData)}` )
       }
+
       return preCrackSuccess
     },
 

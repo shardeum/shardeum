@@ -42,7 +42,7 @@ export const validateTxnFields =
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
 
 
-  (shardus: Shardus, debugAppdata: Map<string, unknown>) =>
+    (shardus: Shardus, debugAppdata: Map<string, unknown>) =>
     (
       timestampedTx: any,
       originalAppData: any
@@ -167,7 +167,7 @@ export const validateTxnFields =
         const isSigned = transaction.isSigned()
         const txId = generateTxId(tx)
         const { address: senderAddress, isValid } = getTxSenderAddress(transaction,txId) // ensures that tx is valid
-        const isSignatureValid = isValid 
+        const isSignatureValid = isValid
         if (ShardeumFlags.VerboseLogs) console.log('validate evm tx', isSigned, isSignatureValid)
 
         //const txId = '0x' + crypto.hashObj(timestampedTx.tx)
@@ -188,13 +188,13 @@ export const validateTxnFields =
         }
 
         if (ShardeumFlags.txBalancePreCheck && appData != null) {
-          const minBalanceUsd = ShardeumFlags.chargeConstantTxFee
-            ? BigInt(ShardeumFlags.constantTxFeeUsd)
-            : BigInt(1)
-          let minBalance = scaleByStabilityFactor(minBalanceUsd, AccountsStorage.cachedNetworkAccount)
-          //check with value added in
-          minBalance = minBalance + BigInt(transaction.value.toString())
-          const accountBalance = BigInt(appData.balance)
+          let minBalance: bigint // Calculate the minimun balance with the transaction value added in
+          if (ShardeumFlags.chargeConstantTxFee) {
+            const minBalanceUsd = BigInt(ShardeumFlags.constantTxFeeUsd)
+            minBalance =
+              scaleByStabilityFactor(minBalanceUsd, AccountsStorage.cachedNetworkAccount) + transaction.value
+          } else minBalance = transaction.getUpfrontCost() // tx.gasLimit * tx.gasPrice + tx.value
+          const accountBalance = appData.balance
           if (accountBalance < minBalance) {
             success = false
             reason = `Sender does not have enough balance.`
