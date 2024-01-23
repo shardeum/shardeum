@@ -136,8 +136,8 @@ import { P2P } from '@shardus/types'
 import { getExternalApiMiddleware } from './middleware/externalApiMiddleware'
 import { AccountsEntry } from './storage/storage'
 import { getCachedRIAccount, setCachedRIAccount } from './storage/riAccountsCache'
-import { applyInitDaoTx, getRelevantDataInitDao, handleDaoTxApply, handleDaoTxCrack, handleDaoTxGetRelevantData, isDaoTx, startDaoMaintenanceCycle } from './dao'
-import { DaoTx } from './dao/tx'
+import { applyInitDaoTx, getRelevantDataInitDao, handleDaoTxApply, handleDaoTxCrack, handleDaoTxGetRelevantData, startDaoMaintenanceCycle } from './dao'
+import { DaoTx, isDaoTx } from './dao/tx'
 import registerDaoAPI from './dao/api'
 
 let latestBlock = 0

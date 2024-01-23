@@ -71,15 +71,6 @@ export function getRelevantDataInitDao(
   return false
 }
 
-export function isDaoTx<A>(tx: OpaqueTransaction | DaoTx<A>): boolean {
-  // EVM txs come in as serialized hexstrings
-  let transaction = null
-  if ('raw' in tx && typeof tx.raw === 'string') {
-    transaction = getTransactionObj(tx as { raw: string })
-  }
-  return tx instanceof DaoTx || transaction?.to?.toString() === ShardeumFlags.daoTargetAddress
-}
-
 /**
  * Liberus txs export a `keys` fn that gets called here
  */
