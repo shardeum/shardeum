@@ -1,3 +1,4 @@
+import { nestedCountersInstance } from '@shardus/core'
 import { isServiceMode, logFlags } from '..'
 import { ShardeumFlags } from '../shardeum/shardeumFlags'
 import { AccountType, WrappedEVMAccount } from '../shardeum/shardeumTypes'
@@ -35,8 +36,15 @@ export async function setCachedRIAccount(account: AccountsEntry): Promise<void> 
       return
     }
     if (ShardeumFlags.UseDBForAccounts === true) {
+      // Reduce the number of updates to the DB by checking if the account already exists
+      const existingAccount = await storage.getRIAccountsCache(account.accountId)
+      if (existingAccount) {
+        return
+      }
       account.timestamp = Date.now()
+      nestedCountersInstance.countEvent('cache', 'setCachedRIAccountData')
       await storage.setRIAccountsCache(account)
+      return
     } else {
       // eslint-disable-next-line security/detect-object-injection
       accounts[account.accountId] = account.data

@@ -42,7 +42,7 @@ export async function getAccount(address: string): Promise<WrappedEVMAccount> {
       account.data = DeSerializeFromJsonString<WrappedEVMAccount>(account.data)
     }
 
-    await setCachedRIAccount(account)
+    setCachedRIAccount(account)
 
     return account.data
   } else {
@@ -97,7 +97,7 @@ export async function setAccount(address: string, account: WrappedEVMAccount): P
       }
       await storage.createOrReplaceAccountEntry(accountEntry)
 
-      await setCachedRIAccount(accountEntry)
+      setCachedRIAccount(accountEntry)
 
       if (address === networkAccount) {
         cachedNetworkAccount = account as unknown as NetworkAccount
