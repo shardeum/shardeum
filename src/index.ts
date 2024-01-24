@@ -5278,12 +5278,11 @@ const shardusSetup = (): void => {
     },
     async setCachedRIAccountData(accountRecords) {
       /* prettier-ignore */ if (logFlags.dapp_verbose) console.log('setCachedRIAccountData', accountRecords)
-      /* prettier-ignore */ nestedCountersInstance.countEvent('cache', 'setCachedRIAccountData')
 
       for (const account of accountRecords) {
         const decodedAccount = account as AccountsEntry
         shardus.setDebugSetLastAppAwait(`setCachedRIAccountData(${decodedAccount.accountId})`)
-        await setCachedRIAccount(decodedAccount)
+        setCachedRIAccount(decodedAccount)
         shardus.setDebugSetLastAppAwait(
           `setCachedRIAccountData(${decodedAccount.accountId})`,
           DebugComplete.Completed
