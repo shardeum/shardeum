@@ -2366,7 +2366,11 @@ const createNetworkAccount = async (accountId: string, config: Config, isFirstSe
   if (shouldLoadNetworkConfigToNetworkAccount(isFirstSeed)) {
     // This means this is the first node and we have a flag enabled
     // that indicates that the local network configs should be loaded in the network account and used from all nodes joining
-    listOfChanges.push({ cycle: 1, change: { p2p: config.server.p2p } })
+    const configCopy = rfdc()(config.server)
+    delete configCopy.baseDir // delete this line you want to include this in the network account
+    // @ts-ignore
+    delete configCopy.ip // delete this line you want to include this in the network account
+    listOfChanges.push({ cycle: 1, change: configCopy })
     /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log('Initial network account listOfChanges', listOfChanges)
   }
 
