@@ -4081,14 +4081,14 @@ const shardusSetup = (): void => {
             appData.balance = balance
           }
         }
+        let shouldGenerateAccesslist = true
+        if (ShardeumFlags.autoGenerateAccessList === false) shouldGenerateAccesslist = false
+        else if (isStakeRelatedTx) shouldGenerateAccesslist = false
+        else if (isSimpleTransfer) shouldGenerateAccesslist = false
+        else if (remoteShardusAccount == null && appData.newCAAddr == null) shouldGenerateAccesslist = false
 
         //also run access list generation if needed
-        if (
-          !isSimpleTransfer &&
-          ShardeumFlags.autoGenerateAccessList &&
-          isEIP2930 === false &&
-          !isStakeRelatedTx
-        ) {
+        if (shouldGenerateAccesslist) {
           let success = true
           //early pass on balance check to avoid expensive access list generation.
           if (ShardeumFlags.txBalancePreCheck && appData != null) {
