@@ -372,17 +372,11 @@ function convertToReadableBlock(block: Block): ShardeumBlockOverride {
   return defaultBlock as unknown as ShardeumBlockOverride
 }
 
-function createNewBlock(blockNumber: number, timestamp: number): Block {
+function createAndRecordBlock(blockNumber: number, timestamp: number): Block {
   /* eslint-disable security/detect-object-injection */
   if (blocks[blockNumber]) return blocks[blockNumber]
   if (!blocks[blockNumber]) {
-    const timestampInSecond = timestamp ? Math.round(timestamp / 1000) : Math.round(shardeumGetTime() / 1000)
-    const blockData = {
-      header: { number: blockNumber, timestamp: timestampInSecond },
-      transactions: [],
-      uncleHeaders: [],
-    }
-    const block = Block.fromBlockData(blockData, { common: evmCommon })
+    const block = createBlock(timestamp, blockNumber)
     const readableBlock = convertToReadableBlock(block)
     blocks[blockNumber] = block
     readableBlocks[blockNumber] = readableBlock
@@ -391,6 +385,17 @@ function createNewBlock(blockNumber: number, timestamp: number): Block {
     return block
   }
   /* eslint-enable security/detect-object-injection */
+}
+
+function createBlock(timestamp: number, blockNumber: number): Block {
+  const timestampInSecond = timestamp ? Math.round(timestamp / 1000) : Math.round(shardeumGetTime() / 1000)
+  const blockData = {
+    header: { number: blockNumber, timestamp: timestampInSecond },
+    transactions: [],
+    uncleHeaders: [],
+  }
+  const block = Block.fromBlockData(blockData, { common: evmCommon })
+  return block
 }
 
 export function setGenesisAccounts(accounts = []): void {
@@ -1540,7 +1545,16 @@ const configShardusEndpoints = (): void => {
         //shardeumStateManager.setTransactionState(callTxState)
       }
 
-      opt['block'] = blocks[latestBlock] // eslint-disable-line security/detect-object-injection
+      if (callObj.block && callObj.block.number && callObj.block.timestamp) {
+        const block = {
+          number: parseInt(callObj.block.number, 16),
+          timestamp: parseInt(callObj.block.timestamp, 16),
+        }
+        opt['block'] = createBlock(block.timestamp, block.number)
+        if (ShardeumFlags.VerboseLogs) console.log(`Got block context from callObj`, block)
+      } else {
+        opt['block'] = blocks[latestBlock] // eslint-disable-line security/detect-object-injection
+      }
 
       const customEVM = new EthereumVirtualMachine({
         common: evmCommon,
@@ -2450,7 +2464,7 @@ const getOrCreateBlockFromTimestamp = (timestamp: number, scheduleNextBlock = fa
   if (ShardeumFlags.VerboseLogs) {
     console.log('Cycle counter vs derived blockNumber', cycle.counter, blockNumber)
   }
-  const block = createNewBlock(blockNumber, newBlockTimestamp)
+  const block = createAndRecordBlock(blockNumber, newBlockTimestamp)
   if (scheduleNextBlock) {
     const nextBlockTimestamp = newBlockTimestamp + ShardeumFlags.blockProductionRate * 1000
     const waitTime = nextBlockTimestamp - shardeumGetTime()
