@@ -4084,7 +4084,6 @@ const shardusSetup = (): void => {
 
         //also run access list generation if needed
         if (
-          remoteTargetAccount != null &&
           !isSimpleTransfer &&
           ShardeumFlags.autoGenerateAccessList &&
           isEIP2930 === false &&
