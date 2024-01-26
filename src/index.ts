@@ -4075,7 +4075,7 @@ const shardusSetup = (): void => {
         if (ShardeumFlags.autoGenerateAccessList === false) shouldGenerateAccesslist = false
         else if (isStakeRelatedTx) shouldGenerateAccesslist = false
         else if (isSimpleTransfer) shouldGenerateAccesslist = false
-        else if (remoteShardusAccount == null && appData.newCAAddr == null) shouldGenerateAccesslist = false
+        else if (remoteTargetAccount == null && appData.newCAAddr == null) shouldGenerateAccesslist = false
 
         //also run access list generation if needed
         if (shouldGenerateAccesslist) {
