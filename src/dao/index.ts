@@ -216,7 +216,7 @@ export function startDaoMaintenanceCycle(interval: number, shardus: Shardus): vo
       // Get the dao account and node data needed for issue creation
       const daoAccountObj = await getDaoAccountObj(shardus)
       if (!daoAccountObj) {
-        throw new Error("could find dao account; can't continue with daoMaintenance")
+        throw new Error("couldn't find dao account; can't continue with daoMaintenance")
       }
 
       const [cycleData] = shardus.getLatestCycles()
