@@ -88,9 +88,7 @@ function hasDaoTxType(tx: object): tx is PlainDaoTx {
   )
 }
 
-export function isDaoTx<A>(tx: OpaqueTransaction | DaoTx<A>): boolean {
-  if (hasDaoTxType(tx) || tx instanceof DaoTx) return true
-
+export function isOpaqueDaoTx(tx: OpaqueTransaction): boolean {
   // EVM txs come in as serialized hexstrings
   let transaction = null
   if ('raw' in tx && typeof tx.raw === 'string') {

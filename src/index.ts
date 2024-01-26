@@ -137,7 +137,7 @@ import {
   handleDaoTxGetRelevantData,
   startDaoMaintenanceCycle,
 } from './dao'
-import { DaoTx, isDaoTx } from './dao/tx'
+import { DaoTx, isOpaqueDaoTx } from './dao/tx'
 import registerDaoAPI from './dao/api'
 import {
   InternalTx,
@@ -2974,7 +2974,7 @@ const shardusSetup = (): void => {
       /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log('DBG', new Date(), 'attempting to apply tx', txId, ethTxId, tx, wrappedStates, appData)
       const applyResponse = shardus.createApplyResponse(txId, txTimestamp)
 
-      if (isDaoTx(tx)) {
+      if (isOpaqueDaoTx(tx)) {
         handleDaoTxApply(tx, txTimestamp, wrappedStates, shardus)
         return applyResponse
       }
@@ -4446,7 +4446,7 @@ const shardusSetup = (): void => {
           result.codeHashKeys
         )
 
-        if (isDaoTx(tx)) handleDaoTxCrack(tx, result)
+        if (isOpaqueDaoTx(tx)) handleDaoTxCrack(tx, result)
 
         if (ShardeumFlags.VerboseLogs) console.log('running getKeyFromTransaction', txId, result)
       } catch (e) {
@@ -4739,7 +4739,7 @@ const shardusSetup = (): void => {
         }
       }
 
-      if (isDaoTx(tx)) {
+      if (isOpaqueDaoTx(tx)) {
         return await handleDaoTxGetRelevantData(accountId, tx, shardus)
       }
 
