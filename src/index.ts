@@ -3969,6 +3969,7 @@ const shardusSetup = (): void => {
         let isSimpleTransfer = false
 
         let remoteShardusAccount
+        let remoteTargetAccount = null
 
         //if the TX is a contract deploy, predict the new contract address correctly (needs sender's nonce)
         //remote fetch of sender EOA also allows fast balance and nonce checking (assuming we get some queue hints as well from shardus core)
@@ -3994,7 +3995,6 @@ const shardusSetup = (): void => {
           }
           remoteShardusAccount = await shardus.getLocalOrRemoteAccount(transformedSourceKey)
 
-          let remoteTargetAccount = null
           if (transaction.to) {
             const txTargetEvmAddr = transaction.to.toString()
             const transformedTargetKey = toShardusAddress(txTargetEvmAddr, AccountType.Account)
