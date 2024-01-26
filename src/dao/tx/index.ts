@@ -67,3 +67,29 @@ export type PlainDaoTx =
   | IApplyTally
   | INetworkProposal
   | IIssue
+
+function hasDaoTxType(tx: object): tx is PlainDaoTx {
+  return (
+    'type' in tx &&
+    typeof tx.type === 'string' &&
+    [
+      'apply_change_config',
+      'apply_dev_parameters',
+      'apply_dev_tally',
+      'apply_dev_payment',
+      'apply_parameters',
+      'apply_tally',
+      'issue',
+      'NetworkProposal',
+    ].includes(tx.type)
+  )
+}
+
+export function isOpaqueDaoTx(tx: OpaqueTransaction): boolean {
+  // EVM txs come in as serialized hexstrings
+  let transaction = null
+  if ('raw' in tx && typeof tx.raw === 'string') {
+    transaction = getTransactionObj(tx as { raw: string })
+  }
+  return transaction?.to?.toString() === ShardeumFlags.daoTargetAddress
+}
