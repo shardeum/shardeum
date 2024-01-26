@@ -3881,7 +3881,7 @@ const shardusSetup = (): void => {
     calculateTxId(tx: ShardusTypes.OpaqueTransaction) {
       return generateTxId(tx)
     },
-    async txPreCrackData(tx, appData) {
+    async txPreCrackData(tx, appData): Promise<boolean> {
       if (ShardeumFlags.VerboseLogs) console.log('Running txPreCrackData', tx, appData)
       if (ShardeumFlags.UseTXPreCrack === false) {
         console.log('daoLogging: txPreCrackData is disabled')
