@@ -37,6 +37,7 @@ export function isInternalTXGlobal(internalTx: InternalTx): boolean {
 
 export function isInternalTx(tx: object): tx is InternalTx {
   const result = tx instanceof DaoTx || ("isInternalTx" in tx && !!tx.isInternalTx)
+  console.trace("daoLogging: tx: ", tx);
   console.log("daoLogging: isInternalTx", result)
   return result
 }
