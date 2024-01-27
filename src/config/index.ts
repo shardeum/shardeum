@@ -25,7 +25,7 @@ export interface Config {
 //TODO: improve typing here
 let config: Config = {
   server: {
-    globalAccount: '0'.repeat(64), //dev-relaunch required to change this: '1' + '0'.repeat(63),
+    globalAccount: '1000000000000000000000000000000000000000000000000000000000000001',
     baseDir: './',
   },
 }

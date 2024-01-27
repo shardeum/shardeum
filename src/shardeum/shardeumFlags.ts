@@ -150,7 +150,7 @@ export const ShardeumFlags: ShardeumFlags = {
   // '10000000000000000'// $0.01 * 10 ^ 18
   // '1000000000000000000' // $1 * 10 ^ 18
   constantTxFeeUsd: '10000000000000000', // $0.01 * 10 ^ 18
-  stakeTargetAddress: '0x0000000000000000000000000000000000000001', //dev-relaunch required to change this '0x0000000000000000000000000000000000010000',
+  stakeTargetAddress: '0x0000000000000000000000000000000000010000',
   certCycleDuration: 10,
   cacheMaxCycleAge: 5,
   cacheMaxItemPerTopic: 4500,
