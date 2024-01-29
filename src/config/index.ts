@@ -163,6 +163,9 @@ config = merge(config, {
 
       //1.6.0 migration
       continueOnException: false,
+
+      //1.9.4 avoid issues with lost archiver system:
+      lostArchiversCyclesToWait: 1000000,
     },
   },
 })
@@ -196,7 +199,7 @@ config = merge(config, {
     sharding: {
       nodesPerConsensusGroup: process.env.nodesPerConsensusGroup
         ? parseInt(process.env.nodesPerConsensusGroup)
-        : 10,  //128 is the final goal
+        : 10, //128 is the final goal
       nodesPerEdge: process.env.nodesPerEdge ? parseInt(process.env.nodesPerEdge) : 5,
       executeInOneShard: true,
     },
@@ -241,7 +244,7 @@ config = merge(
           // Never merge a commit with changes to these lines without approval.
           '17a3b692c6c62a689391e49f4c60130c9f919782470a2d7469ac108a1ea304b7': DevSecurityLevel.Low,
           '4c255f7b77ab9fb21ad99f709a65e5a5648d71a7157d8429a92e3470b2d100f5': DevSecurityLevel.Medium,
-          'bee9590211493d08d9f19915f68f12b0b9f75c56ca6911d699bb1cfa51cbbe77': DevSecurityLevel.High,
+          bee9590211493d08d9f19915f68f12b0b9f75c56ca6911d699bb1cfa51cbbe77: DevSecurityLevel.High,
         },
         checkAddressFormat: false,
       },
