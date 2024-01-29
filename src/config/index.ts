@@ -128,7 +128,8 @@ config = merge(config, {
       maxSyncingPerCycle: 10,
       maxRotatedPerCycle: process.env.maxRotatedPerCycle ? parseInt(process.env.maxRotatedPerCycle) : 1,
       firstCycleJoin: 0,
-      maxSyncTimeFloor: 1200, // 20 minutes.  If the network lives a long time we may have to bump this up
+      maxSyncTimeFloor: 6000, //Using 6000 for a restore from archiver, then set config at runtime back to 1200
+      //  1200=20 minutes.  If the network lives a long time we may have to bump this up
       syncBoostEnabled: false,
       amountToGrow: 30,
       amountToShrink: 5,
@@ -166,6 +167,9 @@ config = merge(config, {
 
       //1.9.4 avoid issues with lost archiver system:
       lostArchiversCyclesToWait: 1000000,
+
+      //1.9.4 this was in the 1.9.1 migration setting from the start:
+      standbyListFastHash: true,
     },
   },
 })
