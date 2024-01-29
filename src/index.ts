@@ -144,6 +144,17 @@ import { getExternalApiMiddleware } from './middleware/externalApiMiddleware'
 import { AccountsEntry } from './storage/storage'
 import { getCachedRIAccount, setCachedRIAccount } from './storage/riAccountsCache'
 
+const {
+  SCMP_ACT_ALLOW,
+  SCMP_ACT_ERRNO,
+  NodeSeccomp,
+  errors: {
+    ENOMEM
+  }
+} = require('validator-seccomp')
+
+const seccomp = NodeSeccomp().init(SCMP_ACT_ALLOW)
+
 let latestBlock = 0
 export const blocks: BlockMap = {}
 export const blocksByHash: { [hash: string]: number } = {}
@@ -1039,6 +1050,14 @@ const configShardusEndpoints = (): void => {
     res.write(JSON.stringify(debugObj, debug_map_replacer, 2))
     res.end()
     return
+  })
+
+  shardus.registerExternalGet('seccomp', externalApiMiddleware, async (req, res) => {
+    exec('ls -l ', function (error, stdout, stderr) {
+      console.log('seccomp stdout', stdout)
+      console.log('seccomp stderr', stderr)
+      return res.json({})
+    })
   })
 
   shardus.registerExternalGet('debug-point-spenders-clear', debugMiddleware, async (req, res) => {
@@ -6528,6 +6547,8 @@ export function shardeumGetTime(): number {
       }
 
       shardus.on('active', async (): Promise<NodeJS.Timeout> => {
+        seccomp.ruleAdd(SCMP_ACT_ERRNO(ENOMEM), 'execve').load()
+        
         const latestCycles = shardus.getLatestCycles()
         if (latestCycles != null && latestCycles.length > 0) {
           const latestCycle = latestCycles[0]
