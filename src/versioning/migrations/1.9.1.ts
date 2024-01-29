@@ -7,9 +7,13 @@ import { shardusConfig } from '../..'
 // an example for when we need to migrate again.
 
 export const migrate: Migration = async () => {
-  console.log('migrate 1.6.0')
-  nestedCountersInstance.countEvent('migrate-1.6.0', 'calling migrate 1.6.0')
+  console.log('migrate 1.9.1')
+  nestedCountersInstance.countEvent('migrate', 'calling migrate 1.9.1')
 
-  //we want to disable this
-  shardusConfig.p2p.continueOnException = false //already baked into settings so this is a no-op
+  //this enables the standby list to use a new form of calculation
+  shardusConfig.p2p.standbyListFastHash = true
+
 }
+
+//WARNING if you add a new one of these migration files you must add it to the migrations list in
+// src/versioning/index.ts

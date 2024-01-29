@@ -12,7 +12,7 @@ import {
   isValidAddress,
   toAscii,
   toBytes,
-  hexToBytes
+  hexToBytes,
 } from '@ethereumjs/util'
 import { ShardeumFlags, updateServicePoints, updateShardeumFlag } from './shardeum/shardeumFlags'
 import {
@@ -30,10 +30,17 @@ import { RunTxResult, ShardeumVM } from './vm_v7'
 import { EVM as EthereumVirtualMachine, getActivePrecompiles } from './evm_v2'
 import { EVMResult } from './evm_v2/types'
 import { parse as parseUrl } from 'url'
-import got from 'got'
+import got, { Response as GotResponse } from 'got'
 import 'dotenv/config'
 import { ShardeumState, TransactionState } from './state'
-import { __ShardFunctions, nestedCountersInstance, ShardusTypes, DebugComplete, Shardus, DevSecurityLevel } from '@shardus/core'
+import {
+  __ShardFunctions,
+  nestedCountersInstance,
+  ShardusTypes,
+  DebugComplete,
+  Shardus,
+  DevSecurityLevel,
+} from '@shardus/core'
 import { ContractByteWrite } from './state/transactionState'
 import { version, devDependencies } from '../package.json'
 import {
@@ -48,10 +55,12 @@ import {
   EVMAccountInfo,
   InitRewardTimes,
   InternalTx,
-  InternalTXType,
+  InternalTXType, isNodeAccount2,
+  LeftNetworkEarlyViolationData,
   NetworkAccount,
   NodeAccount2,
   NodeInfoAppData,
+  NodeRefutedViolationData,
   OperatorAccountInfo,
   OurAppDefinedData,
   PenaltyTX,
@@ -60,6 +69,7 @@ import {
   ShardeumBlockOverride,
   StakeCoinsTX,
   StakeInfo,
+  SyncingTimeoutViolationData,
   UnstakeCoinsTX,
   WrappedAccount,
   WrappedEVMAccount,
@@ -95,6 +105,7 @@ import {
   generateTxId,
   isWithinRange,
   isValidVersion,
+  getTxSenderAddress,
 } from './utils'
 import config, { Config } from './config'
 import Wallet from 'ethereumjs-wallet'
@@ -108,7 +119,7 @@ import { Request, Response } from 'express'
 import {
   CertSignaturesResult,
   queryCertificate,
-  queryCertificateHandler,
+  queryCertificateHandler, RemoveNodeCert,
   StakeCert,
   ValidatorError,
 } from './handlers/queryCertificate'
@@ -126,7 +137,7 @@ import { shardusFactory } from '@shardus/core'
 import { unsafeGetClientIp } from './utils/requests'
 import { initialNetworkParamters } from './shardeum/initialNetworkParameters'
 import { oneSHM, networkAccount, ONE_SECOND } from './shardeum/shardeumConstants'
-import { applyPenaltyTX } from './tx/penalty/transaction'
+import { applyPenaltyTX, clearOldPenaltyTxs } from './tx/penalty/transaction'
 import { getFinalArchiverList, setupArchiverDiscovery } from '@shardus/archiver-discovery'
 import { Archiver } from '@shardus/archiver-discovery/dist/src/types'
 import axios from 'axios'
@@ -143,6 +154,7 @@ import { util } from 'prettier'
 import { getExternalApiMiddleware } from './middleware/externalApiMiddleware'
 import { AccountsEntry } from './storage/storage'
 import { getCachedRIAccount, setCachedRIAccount } from './storage/riAccountsCache'
+import {isLowStake} from "./tx/penalty/penaltyFunctions";
 
 const {
   SCMP_ACT_ALLOW,
@@ -159,6 +171,11 @@ let latestBlock = 0
 export const blocks: BlockMap = {}
 export const blocksByHash: { [hash: string]: number } = {}
 export const readableBlocks: { [blockNumber: number | string]: ShardeumBlockOverride } = {}
+
+//Cache network account
+let cachedNetworkAccount = null
+let cacheExpirationTimestamp = 0
+
 
 export let genesisAccounts: string[] = []
 
@@ -215,6 +232,10 @@ function isDebugMode(): boolean {
 
 export function isServiceMode(): boolean {
   return ShardeumFlags.startInServiceMode === true
+}
+
+export function shouldLoadNetworkConfigToNetworkAccount(isFirstSeed: boolean): boolean {
+  return ShardeumFlags.loadGenesisNodeNetworkConfigToNetworkAccount === true && isFirstSeed === true
 }
 
 // grab this
@@ -932,20 +953,20 @@ function _normalizeUrl(url: string): string {
   return normalized
 }
 
-async function _internalHackPostWithResp(url: string, body): Promise<got.Response<any>> {
+async function _internalHackPostWithResp(url: string, body): Promise<GotResponse<any>> {
   const normalized = _normalizeUrl(url)
-  const host = parseUrl(normalized, true)
+
   try {
-    const res = await got.post(host, {
-      timeout: ShardeumFlags.shardeumTimeout,
+    const res = await got.post(normalized, {
+      timeout: {
+        request: ShardeumFlags.shardeumTimeout,
+      },
       retry: 0,
       throwHttpErrors: false,
-      body,
-      json: true,
-      //parseJson: (text:string)=>{},
-      //json: false, // the whole reason for _internalHackGet was because we dont want the text response to mess things up
-      //  and as a debug non shipping endpoint did not want to add optional parameters to http module
+      responseType: 'json',
+      json: body,
     })
+
     return res
   } catch (e) {
     return null
@@ -1417,76 +1438,6 @@ const configShardusEndpoints = (): void => {
     }
   })
 
-  // shardus.registerExternalPost('eth_estimateGas', async (req, res) => {
-  //   try {
-  //     const transaction = req.body
-  //     let address = toShardusAddress(transaction.to, AccountType.Account)
-  //     let ourNodeShardData = shardus.stateManager.currentCycleShardData.nodeShardData
-  //     let minP = ourNodeShardData.consensusStartPartition
-  //     let maxP = ourNodeShardData.consensusEndPartition
-  //     let { homePartition } = __ShardFunctions.addressToPartition(shardus.stateManager.currentCycleShardData.shardGlobals, address)
-  //     let accountIsRemote = __ShardFunctions.partitionInWrappingRange(homePartition, minP, maxP) === false
-  //     if (accountIsRemote) {
-  //       let homeNode = __ShardFunctions.findHomeNode(
-  //         shardus.stateManager.currentCycleShardData.shardGlobals,
-  //         address,
-  //         shardus.stateManager.currentCycleShardData.parititionShardDataMap
-  //       )
-  //       if (ShardeumFlags.VerboseLogs) console.log(`Node is in remote shard: ${homeNode?.node.externalIp}:${homeNode?.node.externalPort}`)
-  //       if (homeNode != null && homeNode.node != null) {
-  //         if (ShardeumFlags.VerboseLogs) console.log(`Node is in remote shard: requesting`)
-  //         let node = homeNode.node
-  //
-  //         let postResp = await _internalHackPostWithResp(`${node.externalIp}:${node.externalPort}/eth_estimateGas`, transaction)
-  //         if (postResp.body != null && postResp.body != '') {
-  //           if (ShardeumFlags.VerboseLogs) console.log(`Node is in remote shard: gotResp:${stringify(postResp.body)}`)
-  //           return res.json({ result: postResp.body.result })
-  //         }
-  //       } else {
-  //         if (ShardeumFlags.VerboseLogs) console.log(`Node is in remote shard: homenode = null`)
-  //         return res.json({ result: null })
-  //       }
-  //     } else {
-  //       if (ShardeumFlags.VerboseLogs) console.log(`Node is in remote shard: false`)
-  //     }
-  //     let debugTXState = getDebugTXState()
-  //     let debugEVM = EVM.copy()
-  //     let debugStateManager = debugEVM.stateManager as ShardeumState
-  //
-  //     await debugStateManager.checkpoint()
-  //     debugStateManager.setTransactionState(debugTXState)
-  //     const txData = { ...transaction, gasLimit: 3000000 }
-  //     const tx = Transaction.fromTxData(txData, { common: debugEVM._common, freeze: false })
-  //
-  //     // set from address
-  //     const from = transaction.from ? Address.fromString(transaction.from) : Address.zero()
-  //     tx.getSenderAddress = () => {
-  //       return from
-  //     }
-  //
-  //     const runResult: RunTxResult = await debugEVM.runTx({
-  //       tx,
-  //       skipNonce: !ShardeumFlags.CheckNonceGreaterThan,
-  //       skipBalance: true,
-  //       skipBlockGasLimitValidation: true,
-  //     })
-  //
-  //     await debugStateManager.revert()
-  //
-  //     let gasUsed = runResult.gasUsed.toString()
-  //     if (ShardeumFlags.VerboseLogs) console.log('Gas estimated:', gasUsed)
-  //
-  //     if (runResult.execResult.exceptionError) {
-  //       if (ShardeumFlags.VerboseLogs) console.log('Gas Estimation Error:', runResult.execResult.exceptionError)
-  //       return res.json({ result: '2DC6C0' })
-  //     }
-  //     return res.json({ result: gasUsed })
-  //   } catch (e) {
-  //     if (ShardeumFlags.VerboseLogs) console.log('Error', e)
-  //     return res.json({ result: null })
-  //   }
-  // })
-
   shardus.registerExternalPost('contract/call', externalApiMiddleware, async (req, res) => {
     // if(isDebugMode()){
     //   return res.json(`endpoint not available`)
@@ -1890,7 +1841,7 @@ const configShardusEndpoints = (): void => {
     'query-certificate',
     externalApiMiddleware,
     async (req: Request, res: Response) => {
-      nestedCountersInstance.countEvent('shardeum-staking', 'called query-certificate')
+      nestedCountersInstance.countEvent('shardeum-penalty', 'called query-certificate')
 
       const queryCertRes = await queryCertificateHandler(req, shardus)
       if (ShardeumFlags.VerboseLogs) console.log('queryCertRes', queryCertRes)
@@ -2373,6 +2324,41 @@ async function _transactionReceiptPass(
       console.log(`transactionReceiptPass setglobal: ${txHash} ${JSON.stringify(tx)}  `)
     }
   }
+  if (tx.internalTXType === InternalTXType.Penalty) {
+    let nodeAccount: NodeAccount2
+    if (isNodeAccount2(wrappedStates[tx.reportedNodePublickKey].data))
+      nodeAccount = wrappedStates[tx.reportedNodePublickKey].data as NodeAccount2
+
+    if (isLowStake(nodeAccount)) {
+      if (ShardeumFlags.VerboseLogs) console.log(`isLowStake for nodeAccount ${nodeAccount.id}: true`, nodeAccount)
+      const latestCycles = shardus.getLatestCycles()
+      const currentCycle = latestCycles[0]
+      if (!currentCycle) {
+        /* prettier-ignore */ if (logFlags.error) console.log('No cycle records found', latestCycles)
+        return
+      }
+      const certData: RemoveNodeCert = {
+        nodePublicKey: tx.reportedNodePublickKey,
+        cycle: currentCycle.counter,
+      }
+      const signedAppData = await shardus.getAppDataSignatures(
+        'sign-remove-node-cert',
+        crypto.hashObj(certData),
+        5,
+        certData,
+        2
+      )
+      if (!signedAppData.success) {
+        nestedCountersInstance.countEvent('shardeum', 'unable to get signs for remove node cert')
+        if (ShardeumFlags.VerboseLogs) console.log(`Unable to get signature for remove node cert`)
+        // todo: find a better way to retry this
+        return
+      }
+
+      certData.signs = signedAppData.signatures
+      shardus.removeNodeWithCertificiate(certData)
+    }
+  }
 }
 
 const getNetworkAccount = async (): Promise<ShardusTypes.WrappedData> => {
@@ -2383,7 +2369,7 @@ const getNetworkAccount = async (): Promise<ShardusTypes.WrappedData> => {
   return account
 }
 
-const createNetworkAccount = async (accountId: string): Promise<NetworkAccount> => {
+const createNetworkAccount = async (accountId: string, config: Config, isFirstSeed: boolean): Promise<NetworkAccount> => {
   let listOfChanges = []
 
   const networkAccount = await getNetworkAccount()
@@ -2394,6 +2380,17 @@ const createNetworkAccount = async (accountId: string): Promise<NetworkAccount> 
       change: any
       appData: any
     }[]
+  }
+
+  if (shouldLoadNetworkConfigToNetworkAccount(isFirstSeed)) {
+    // This means this is the first node and we have a flag enabled
+    // that indicates that the local network configs should be loaded in the network account and used from all nodes joining
+    const configCopy = rfdc()(config.server)
+    delete configCopy.baseDir // delete this line you want to include this in the network account
+    // @ts-ignore
+    delete configCopy.ip // delete this line you want to include this in the network account
+    listOfChanges.push({ cycle: 1, change: configCopy })
+    /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log('Initial network account listOfChanges', listOfChanges)
   }
 
   const account: NetworkAccount = {
@@ -2506,13 +2503,23 @@ async function estimateGas(
   const blockForTx = blocks[latestBlock]
   const MAX_GASLIMIT = BigInt(30_000_000)
 
-  if (injectedTx.gas == null) {
-    // If no gas limit is specified use the last block gas limit as an upper bound.
-    // injectedTx.gas = blockForTx.header.gasLimit.div(new BN(10).pow(new BN(8))) as any
-    // injectedTx.gasLimit = blockForTx.header.gasLimit.div(new BN(10).pow(new BN(8))) as any
-    injectedTx.gasLimit = blockForTx.header.gasLimit
-  } else {
-    injectedTx.gasLimit = BigInt(injectedTx.gas)
+  try {
+    if (injectedTx.gas == null) {
+      // If no gas limit is specified use the last block gas limit as an upper bound.
+      // injectedTx.gas = blockForTx.header.gasLimit.div(new BN(10).pow(new BN(8))) as any
+      // injectedTx.gasLimit = blockForTx.header.gasLimit.div(new BN(10).pow(new BN(8))) as any
+      injectedTx.gasLimit = blockForTx.header.gasLimit
+    } else {
+      injectedTx.gasLimit = BigInt(injectedTx.gas)
+    }
+  } catch (error) {
+    if (ShardeumFlags.VerboseLogs) console.log('Injected tx without gasLimit', error)
+    injectedTx.gasLimit = BigInt('0x1C9C380') // 30 M Gas
+  }
+
+  // we set this max gasLimit to prevent DDOS attacks with high gasLimits
+  if (injectedTx.gasLimit > MAX_GASLIMIT) {
+    injectedTx.gasLimit = MAX_GASLIMIT
   }
 
   // we set this max gasLimit to prevent DDOS attacks with high gasLimits
@@ -2571,8 +2578,9 @@ async function estimateGas(
   }
 
   const txId = crypto.hashObj(transaction)
+  const { address: senderAddress, isValid }  = getTxSenderAddress(transaction, txId)
   const preRunTxState = getPreRunTXState(txId)
-  const callerEVMAddress = transaction.getSenderAddress().toString()
+  const callerEVMAddress = senderAddress.toString()
   const callerShardusAddress = toShardusAddress(callerEVMAddress, AccountType.Account)
   let callerAccount = await AccountsStorage.getAccount(callerShardusAddress)
   // callerAccount.account.balance = oneSHM.mul(new BN(100)) // 100 SHM. In case someone estimates gas with 0 balance
@@ -2599,7 +2607,7 @@ async function estimateGas(
   }
 
   preRunTxState._transactionState.insertFirstAccountReads(
-    transaction.getSenderAddress(),
+    senderAddress,
     callerAccount ? callerAccount.account : fakeAccount
   )
 
@@ -2624,7 +2632,8 @@ async function estimateGas(
       skipBalance: true,
       networkAccount: await AccountsStorage.getCachedNetworkAccount(),
     },
-    customEVM
+    customEVM,
+    txId
   )
   if (ShardeumFlags.VerboseLogs) console.log('Predicted gasUsed', runTxResult.totalGasSpent)
 
@@ -2642,7 +2651,7 @@ type CodeHashObj = { codeHash: string; contractAddress: string }
 
 async function generateAccessList(
   injectedTx: ShardusTypes.OpaqueTransaction
-): Promise<{ accessList: unknown[]; shardusMemoryPatterns: unknown; codeHashes: CodeHashObj[] }> {
+): Promise<{ shardusMemoryPatterns: null; failedAccessList?: boolean; accessList: any[]; codeHashes: any[] }> {
   try {
     const transaction = getTransactionObj(injectedTx)
     const caShardusAddress = transaction.to
@@ -2673,23 +2682,25 @@ async function generateAccessList(
                 accessList: postResp.body.accessList,
                 shardusMemoryPatterns: postResp.body.shardusMemoryPatterns,
                 codeHashes: postResp.body.codeHashes,
+                failedAccessList: postResp.body.failedAccessList
               }
             } else {
-              return { accessList: [], shardusMemoryPatterns: null, codeHashes: [] }
+              return { accessList: [], shardusMemoryPatterns: null, codeHashes: [], failedAccessList: true }
             }
           }
         } else {
           /* prettier-ignore */ if (logFlags.dapp_verbose) console.log(`Node is in remote shard: consensusNode = null`)
-          return { accessList: [], shardusMemoryPatterns: null, codeHashes: [] }
+          return { accessList: [], shardusMemoryPatterns: null, codeHashes: [], failedAccessList: true }
         }
       } else {
         /* prettier-ignore */ if (logFlags.dapp_verbose) console.log(`Node is in remote shard: false`)
       }
     }
 
-    const txId = crypto.hashObj(transaction)
+    const txId = generateTxId(injectedTx)
+    const senderAddress = getTxSenderAddress(transaction, txId).address
     const preRunTxState = getPreRunTXState(txId)
-    const callerEVMAddress = transaction.getSenderAddress().toString()
+    const callerEVMAddress = senderAddress.toString()
     const callerShardusAddress = toShardusAddress(callerEVMAddress, AccountType.Account)
     let callerAccount = await AccountsStorage.getAccount(callerShardusAddress)
     const fakeAccountData = {
@@ -2712,8 +2723,6 @@ async function generateAccessList(
     if (ShardeumFlags.accesslistNonceFix && callerAccount && callerAccount.account) {
       callerAccount.account.nonce = BigInt(transaction.nonce.toString())
     }
-
-    const senderAddress = transaction.getSenderAddress()
 
     preRunTxState._transactionState.insertFirstAccountReads(
       senderAddress,
@@ -2741,7 +2750,8 @@ async function generateAccessList(
         skipBalance: true,
         networkAccount: await AccountsStorage.getCachedNetworkAccount(),
       },
-      customEVM
+      customEVM,
+      txId
     )
 
     const readAccounts = preRunTxState._transactionState.getReadAccounts()
@@ -2757,7 +2767,7 @@ async function generateAccessList(
     const readImmutableSet = new Set()
 
     //always make the sender rw.  This is because the sender will always spend gas and increment nonce
-    if (transaction.getSenderAddress() != null) {
+    if (senderAddress != null) {
       const shardusKey = callerShardusAddress
       writeSet.add(shardusKey)
       readSet.add(shardusKey)
@@ -2861,7 +2871,7 @@ async function generateAccessList(
       console.log('Immutable read accounts', readImmutableSet)
     }
 
-    const allCodeHash = new Map<string, CodeHashObj>
+    const allCodeHash = new Map<string, CodeHashObj>()
 
     for (const address of allInvolvedContracts) {
       const allKeys = new Set()
@@ -2887,14 +2897,14 @@ async function generateAccessList(
         const contractAddress = byteReads.contractAddress.toString()
         if (contractAddress !== address) continue
         //if (!allKeys.has(codeHash)) allKeys.add(codeHash)
-        if (!allCodeHash.has(contractAddress)) allCodeHash.set(contractAddress, {codeHash, contractAddress })
+        if (!allCodeHash.has(contractAddress)) allCodeHash.set(contractAddress, { codeHash, contractAddress })
       }
       for (const [, byteReads] of writtenAccounts.contractBytes) {
         const codeHash = bytesToHex(byteReads.codeHash)
         const contractAddress = byteReads.contractAddress.toString()
         if (contractAddress !== address) continue
         //if (!allKeys.has(codeHash)) allKeys.add(codeHash)
-        if (!allCodeHash.has(contractAddress)) allCodeHash.set(contractAddress, {codeHash, contractAddress })
+        if (!allCodeHash.has(contractAddress)) allCodeHash.set(contractAddress, { codeHash, contractAddress })
       }
 
       // const accessListItem = [address, Array.from(allKeys).map((key) => key)]
@@ -2909,9 +2919,11 @@ async function generateAccessList(
         'accesslist',
         `Fail with error: CA ${transaction.to && ShardeumFlags.VerboseLogs ? transaction.to.toString() : ''}`
       )
-      return { accessList: [], shardusMemoryPatterns: null, codeHashes: [] }
+      return { accessList: [], shardusMemoryPatterns: null, codeHashes: [], failedAccessList: true }
     }
-    return { accessList, shardusMemoryPatterns, codeHashes: Array.from(allCodeHash.values()) }
+    const isEmptyCodeHash = allCodeHash.size === 0
+    if (isEmptyCodeHash)  nestedCountersInstance.countEvent('accesslist', `Fail: empty codeHash`)
+    return { accessList, shardusMemoryPatterns, codeHashes: Array.from(allCodeHash.values()), failedAccessList: isEmptyCodeHash }
   } catch (e) {
     console.log(`Error: generateAccessList`, e)
     nestedCountersInstance.countEvent('accesslist', `Fail: unknown`)
@@ -3043,10 +3055,11 @@ const shardusSetup = (): void => {
         )
       }
 
+      const txId = generateTxId(tx)
       const transaction = getTransactionObj(tx)
+      const senderAddress = getTxSenderAddress(transaction, txId).address
       const ethTxId = bytesToHex(transaction.hash())
       const shardusReceiptAddress = toShardusAddressWithKey(ethTxId, '', AccountType.Receipt)
-      const txId = generateTxId(tx)
       // Create an applyResponse which will be used to tell Shardus that the tx has been applied
       /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log('DBG', new Date(), 'attempting to apply tx', txId, ethTxId, tx, wrappedStates, appData)
       const applyResponse = shardus.createApplyResponse(txId, txTimestamp)
@@ -3231,7 +3244,7 @@ const shardusSetup = (): void => {
           logs: [],
           logsBloom: '',
           contractAddress: null,
-          from: transaction.getSenderAddress().toString(),
+          from: senderAddress.toString(),
           to: transaction.to ? transaction.to.toString() : null,
           chainId: '0x' + ShardeumFlags.ChainID.toString(16),
           stakeInfo: {
@@ -3471,7 +3484,7 @@ const shardusSetup = (): void => {
           logs: [],
           logsBloom: '',
           contractAddress: null,
-          from: transaction.getSenderAddress().toString(),
+          from: senderAddress.toString(),
           to: transaction.to ? transaction.to.toString() : null,
           chainId: '0x' + ShardeumFlags.ChainID.toString(16),
           stakeInfo,
@@ -3575,7 +3588,7 @@ const shardusSetup = (): void => {
 
       // this code's got bug
       // if(ShardeumFlags.CheckNonce === true){
-      //   let senderEVMAddrStr = transaction.getSenderAddress().toString()
+      //   let senderEVMAddrStr = senderAddress.toString()
       //   let shardusAddress = toShardusAddress(senderEVMAddrStr,  AccountType.Account)
       //   let senderAccount:WrappedEVMAccount = wrappedStates[shardusAddress]
       //  bug here seem like nonce is undefined even though type def indicate, it does.
@@ -3585,7 +3598,6 @@ const shardusSetup = (): void => {
       // }
 
       // Apply the tx
-      // const runTxResult = await EVM.runTx({tx: transaction, skipNonce: !ShardeumFlags.CheckNonce, skipBlockGasLimitValidation: true})
       const blockForTx = getOrCreateBlockFromTimestamp(txTimestamp)
       /* prettier-ignore */ if (logFlags.dapp_verbose) console.log(`Block for tx ${ethTxId}`, blockForTx.header.number.toString(10))
       let runTxResult: RunTxResult
@@ -3611,7 +3623,8 @@ const shardusSetup = (): void => {
             skipNonce: !ShardeumFlags.CheckNonce,
             networkAccount: wrappedNetworkAccount.data,
           },
-          customEVM
+          customEVM,
+          txId
         )
         shardus.setDebugSetLastAppAwait(`apply():runTx`, DebugComplete.Completed)
         if (ShardeumFlags.VerboseLogs) console.log('runTxResult', txId, runTxResult)
@@ -3625,7 +3638,7 @@ const shardusSetup = (): void => {
         // if (!transactionFailHashMap[ethTxId]) {
         let caAddr = null
         if (!transaction.to) {
-          const txSenderEvmAddr = transaction.getSenderAddress().toString()
+          const txSenderEvmAddr = senderAddress.toString()
 
           const hack0Nonce = BigInt(0)
           const caAddrBuf = predictContractAddressDirect(txSenderEvmAddr, hack0Nonce)
@@ -3655,7 +3668,7 @@ const shardusSetup = (): void => {
           maxFeePerGas: undefined,
           maxPriorityFeePerGas: undefined,
           contractAddress: caAddr,
-          from: transaction.getSenderAddress().toString(),
+          from: senderAddress.toString(),
           to: transaction.to ? transaction.to.toString() : null,
           chainId: '0x' + ShardeumFlags.ChainID.toString(16),
           value: bigIntToHex(transaction.value),
@@ -3675,7 +3688,7 @@ const shardusSetup = (): void => {
           amountSpent: BigInt(0).toString(),
           txId,
           accountType: AccountType.Receipt,
-          txFrom: transaction.getSenderAddress().toString(),
+          txFrom: senderAddress.toString(),
         }
         // if (ShardeumFlags.EVMReceiptsAsAccounts) {
         //   transactionFailHashMap[ethTxId] = wrappedFailReceiptAccount
@@ -3840,7 +3853,6 @@ const shardusSetup = (): void => {
         }
       }
 
-      const txSenderEvmAddr = transaction.getSenderAddress().toString()
       //TODO also create an account for the receipt (nested in the returned runTxResult should be a receipt with a list of logs)
       // We are ready to loop over the receipts and add them
       if (runTxResult) {
@@ -3879,7 +3891,7 @@ const shardusSetup = (): void => {
           logs: logs,
           logsBloom: bytesToHex(runTxResult.receipt.bitvector),
           contractAddress: runTxResult.createdAddress ? runTxResult.createdAddress.toString() : null,
-          from: transaction.getSenderAddress().toString(),
+          from: senderAddress.toString(),
           to: transaction.to ? transaction.to.toString() : null,
           chainId: '0x' + ShardeumFlags.ChainID.toString(16),
           value: bigIntToHex(transaction.value),
@@ -3901,7 +3913,7 @@ const shardusSetup = (): void => {
           amountSpent: bigIntToHex(runTxResult.amountSpent),
           txId,
           accountType: AccountType.Receipt,
-          txFrom: txSenderEvmAddr,
+          txFrom: senderAddress.toString(),
         }
         /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`DBG Receipt Account for txId ${ethTxId}`, wrappedReceiptAccount)
       }
@@ -3954,19 +3966,22 @@ const shardusSetup = (): void => {
     calculateTxId(tx: ShardusTypes.OpaqueTransaction) {
       return generateTxId(tx)
     },
-    async txPreCrackData(tx, appData) {
+    async txPreCrackData(tx, appData): Promise<boolean> {
       if (ShardeumFlags.VerboseLogs) console.log('Running txPreCrackData', tx, appData)
       if (ShardeumFlags.UseTXPreCrack === false) {
-        return
+        return true
       }
+      let preCrackSuccess = true
 
       if (isInternalTx(tx) === false && isDebugTx(tx) === false) {
-        const transaction = getTransactionObj(tx)
+
         const shardusTxId = generateTxId(tx)
         if (transaction.value == BigInt(777000000000000000000)) {
           console.log('found MEV tx')
           appData.mev = true
         }
+        const transaction = getTransactionObj(tx)
+        const senderAddress = getTxSenderAddress(transaction, shardusTxId).address
         const ethTxId = bytesToHex(transaction.hash())
         if (ShardeumFlags.VerboseLogs) {
           console.log(`EVM tx ${ethTxId} is mapped to shardus tx ${shardusTxId}`)
@@ -3980,6 +3995,7 @@ const shardusSetup = (): void => {
         let isSimpleTransfer = false
 
         let remoteShardusAccount
+        let remoteTargetAccount
 
         //if the TX is a contract deploy, predict the new contract address correctly (needs sender's nonce)
         //remote fetch of sender EOA also allows fast balance and nonce checking (assuming we get some queue hints as well from shardus core)
@@ -3991,8 +4007,8 @@ const shardusSetup = (): void => {
           let foundNonce = false
           let foundSender = false
           let nonce = BigInt(0)
-          let balance = BigInt(0).toString()
-          const txSenderEvmAddr = transaction.getSenderAddress().toString()
+          let balance = BigInt(0)
+          const txSenderEvmAddr = senderAddress.toString()
           const transformedSourceKey = toShardusAddress(txSenderEvmAddr, AccountType.Account)
 
           let queueCountResult = { count: 0, committingAppData: [], account: null }
@@ -4003,9 +4019,14 @@ const shardusSetup = (): void => {
             //parallel fetch
             countPromise = shardus.getLocalOrRemoteAccountQueueCount(transformedSourceKey)
           }
-          remoteShardusAccount = await shardus.getLocalOrRemoteAccount(transformedSourceKey)
+          const maxRetry = 3
+          let retry = 0
+          while (remoteShardusAccount == null && retry < maxRetry) {
+            if (ShardeumFlags.VerboseLogs) console.log(`txPreCrackData: fetching remote account for ${txSenderEvmAddr}, retry: ${retry}`)
+            retry++
+            remoteShardusAccount = await shardus.getLocalOrRemoteAccount(transformedSourceKey)
+          }
 
-          let remoteTargetAccount = null
           if (transaction.to) {
             const txTargetEvmAddr = transaction.to.toString()
             const transformedTargetKey = toShardusAddress(txTargetEvmAddr, AccountType.Account)
@@ -4017,6 +4038,7 @@ const shardusSetup = (): void => {
             // queueCountResult = await shardus.getLocalOrRemoteAccountQueueCount(transformedSourceKey)
             if (ShardeumFlags.VerboseLogs) console.log('queueCountResult:', queueCountResult)
             if (queueCountResult.account) {
+              if (ShardeumFlags.VerboseLogs) console.log(`txPreCrackData: overrode remote account for ${txSenderEvmAddr} with queueCountResult.account`, queueCountResult.account)
               remoteShardusAccount.data = queueCountResult.account
             }
           }
@@ -4029,13 +4051,13 @@ const shardusSetup = (): void => {
             if (wrappedEVMAccount && wrappedEVMAccount.account) {
               fixDeserializedWrappedEVMAccount(wrappedEVMAccount)
               nonce = wrappedEVMAccount.account.nonce
-              balance = wrappedEVMAccount.account.balance.toString()
+              balance = wrappedEVMAccount.account.balance
               foundNonce = true
             }
           }
 
-          if (remoteTargetAccount == undefined) {
-            /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`txPreCrackData: found no local or remote account for target address`)
+          if (remoteTargetAccount == null) {
+            /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`txPreCrackData: target account not found`)
           } else {
             const wrappedEVMAccount = remoteTargetAccount.data as WrappedEVMAccount
             if (wrappedEVMAccount && wrappedEVMAccount.account) {
@@ -4082,30 +4104,31 @@ const shardusSetup = (): void => {
             appData.balance = balance
           }
         }
+        let shouldGenerateAccesslist = true
+        if (ShardeumFlags.autoGenerateAccessList === false) shouldGenerateAccesslist = false
+        else if (isStakeRelatedTx) shouldGenerateAccesslist = false
+        else if (isSimpleTransfer) shouldGenerateAccesslist = false
+        else if (remoteShardusAccount == null && appData.newCAAddr == null) shouldGenerateAccesslist = false
 
         //also run access list generation if needed
-        if (
-          !isSimpleTransfer &&
-          ShardeumFlags.autoGenerateAccessList &&
-          isEIP2930 === false &&
-          !isStakeRelatedTx
-        ) {
+        if (shouldGenerateAccesslist) {
           let success = true
           //early pass on balance check to avoid expensive access list generation.
           if (ShardeumFlags.txBalancePreCheck && appData != null) {
-            const minBalanceUsd = ShardeumFlags.constantTxFeeUsd
-              ? BigInt(ShardeumFlags.constantTxFeeUsd)
-              : BigInt(1)
-            let minBalance = scaleByStabilityFactor(minBalanceUsd, AccountsStorage.cachedNetworkAccount)
-            //check with value added in
-            minBalance = minBalance + transaction.value
-            const accountBalance = BigInt(appData.balance)
+            let minBalance: bigint // Calculate the minimun balance with the transaction value added in
+            if (ShardeumFlags.chargeConstantTxFee) {
+              const minBalanceUsd = BigInt(ShardeumFlags.constantTxFeeUsd)
+              minBalance =
+                scaleByStabilityFactor(minBalanceUsd, AccountsStorage.cachedNetworkAccount) +
+                transaction.value
+            } else minBalance = transaction.getUpfrontCost() // tx.gasLimit * tx.gasPrice + tx.value
+            const accountBalance = appData.balance
             if (accountBalance < minBalance) {
               success = false
-              /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`precrack balance fail: sender ${transaction.getSenderAddress()} does not have enough balance. Min balance: ${minBalance.toString()}, Account balance: ${accountBalance.toString()}`)
+              /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`precrack balance fail: sender ${senderAddress.toString()} does not have enough balance. Min balance: ${minBalance.toString()}, Account balance: ${accountBalance.toString()}`)
               nestedCountersInstance.countEvent('shardeum', 'precrack - insufficient balance')
             } else {
-              /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`precrack balance pass: sender ${transaction.getSenderAddress()} has balance of ${accountBalance.toString()}`)
+              /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`precrack balance pass: sender ${senderAddress.toString()} has balance of ${accountBalance.toString()}`)
             }
           }
 
@@ -4119,13 +4142,15 @@ const shardusSetup = (): void => {
               } else {
                 success = false
                 /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`precrack nonce fail: txNonce:${txNonce} is not within +/- ${ShardeumFlags.nonceCheckRange} of perfect nonce ${perfectCount}.    current nonce:${appData.nonce}  queueCount:${appData.queueCount} txHash: ${transaction.hash().toString()} `)
-                nestedCountersInstance.countEvent('shardeum', 'precrack - nonce fail')
+                if (appData.nonce === 0) nestedCountersInstance.countEvent('shardeum', 'precrack - nonce fail, current nonce = 0')
+                else if (appData.nonce > 0) nestedCountersInstance.countEvent('shardeum', 'precrack - nonce fail, current nonce > 0')
               }
             } else {
               if (txNonce != perfectCount) {
                 success = false
                 /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`precrack nonce fail: perfectCount:${perfectCount} != ${txNonce}.    current nonce:${appData.nonce}  queueCount:${appData.queueCount} txHash: ${transaction.hash().toString()} `)
-                nestedCountersInstance.countEvent('shardeum', 'precrack - nonce fail')
+                if (appData.nonce === 0) nestedCountersInstance.countEvent('shardeum', 'precrack - nonce fail, current nonce = 0')
+                else if (appData.nonce > 0) nestedCountersInstance.countEvent('shardeum', 'precrack - nonce fail, current nonce > 0')
               } else {
                 /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`precrack nonce pass: perfectCount:${perfectCount} == ${txNonce}.    current nonce:${appData.nonce}  queueCount:${appData.queueCount}  txHash: ${transaction.hash().toString()}`)
               }
@@ -4135,7 +4160,7 @@ const shardusSetup = (): void => {
           if (success === true) {
             // generate access list for non EIP 2930 txs
             const callObj = {
-              from: await transaction.getSenderAddress().toString(),
+              from: senderAddress.toString(),
               to: transaction.to ? transaction.to.toString() : null,
               value: bigIntToHex(transaction.value),
               data: bytesToHex(transaction.data),
@@ -4148,6 +4173,7 @@ const shardusSetup = (): void => {
               accessList: generatedAccessList,
               shardusMemoryPatterns,
               codeHashes,
+              failedAccessList
             } = await generateAccessList(tx)
             profilerInstance.scopedProfileSectionEnd('accesslist-generate')
 
@@ -4155,7 +4181,8 @@ const shardusSetup = (): void => {
             appData.requestNewTimestamp = true
             appData.shardusMemoryPatterns = shardusMemoryPatterns
             appData.codeHashes = codeHashes
-            if (appData.accessList && appData.accessList.length > 0) {
+            if (failedAccessList) preCrackSuccess = false
+            if (appData.accessList && appData.accessList.length > 0 && failedAccessList == null) {
               nestedCountersInstance.countEvent(
                 'shardeum',
                 'precrack' + ' -' + ' generateAccessList success: true'
@@ -4187,6 +4214,8 @@ const shardusSetup = (): void => {
         }
         /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log( `txPreCrackData final result: txNonce: ${appData.txNonce}, currentNonce: ${ appData.nonce }, queueCount: ${appData.queueCount}, appData ${stringify(appData)}` )
       }
+
+      return preCrackSuccess
     },
 
     //@ts-ignore
@@ -4336,6 +4365,7 @@ const shardusSetup = (): void => {
       const txId = generateTxId(tx)
 
       const transaction = getTransactionObj(tx)
+      const senderAddress = getTxSenderAddress(transaction, txId).address
       const result = {
         sourceKeys: [],
         targetKeys: [],
@@ -4347,7 +4377,7 @@ const shardusSetup = (): void => {
 
       try {
         const otherAccountKeys = []
-        const txSenderEvmAddr = transaction.getSenderAddress().toString()
+        const txSenderEvmAddr = senderAddress.toString()
         const txToEvmAddr = transaction.to ? transaction.to.toString() : undefined
         const transformedSourceKey = toShardusAddress(txSenderEvmAddr, AccountType.Account)
         const transformedTargetKey = transaction.to ? toShardusAddress(txToEvmAddr, AccountType.Account) : ''
@@ -4467,7 +4497,11 @@ const shardusSetup = (): void => {
           //setting this may be useless seems like we never needed to do anything with codebytes in
           //getRelevantData before
           for (const codeHashObj of appData.codeHashes) {
-            const shardusAddr = toShardusAddressWithKey(codeHashObj.contractAddress, codeHashObj.codeHash, AccountType.ContractCode)
+            const shardusAddr = toShardusAddressWithKey(
+              codeHashObj.contractAddress,
+              codeHashObj.codeHash,
+              AccountType.ContractCode
+            )
             result.codeHashKeys.push(shardusAddr)
             shardusAddressToEVMAccountInfo.set(shardusAddr, {
               evmAddress: codeHashObj.codeHash,
@@ -4588,7 +4622,7 @@ const shardusSetup = (): void => {
         if (internalTx.internalTXType === InternalTXType.InitNetwork) {
           if (!wrappedEVMAccount) {
             if (accountId === networkAccount) {
-              wrappedEVMAccount = await createNetworkAccount(accountId)
+              wrappedEVMAccount = await createNetworkAccount(accountId, config, shardus.p2p.isFirstSeed)
             } else {
               //wrappedEVMAccount = createNodeAccount(accountId) as any
             }
@@ -4897,19 +4931,17 @@ const shardusSetup = (): void => {
             accountType: AccountType.ContractStorage,
           }
           /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`Creating new contract storage account key:${evmAccountID} in contract address ${wrappedEVMAccount.ethAddress}`)
-        }  else if (accountType === AccountType.ContractCode) {
-          //if(ShardeumFlags.createCodebytesFix){
-            wrappedEVMAccount = {
-              timestamp: 0,
-              codeHash: hexToBytes('0x' + evmAccountInfo.evmAddress),
-              codeByte: Buffer.from([]),
-              ethAddress: evmAccountInfo.evmAddress, // storage key
-              contractAddress: evmAccountInfo.contractAddress, // storage key
-              hash: '',
-              accountType: AccountType.ContractCode,
+        } else if (accountType === AccountType.ContractCode) {
+          wrappedEVMAccount = {
+            timestamp: 0,
+            codeHash: hexToBytes('0x' + evmAccountInfo.evmAddress),
+            codeByte: Buffer.from([]),
+            ethAddress: evmAccountInfo.evmAddress, // storage key
+            contractAddress: evmAccountInfo.contractAddress, // storage key
+            hash: '',
+            accountType: AccountType.ContractCode,
             }     
             /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`Creating new contract bytes account key:${evmAccountID} in contract address ${wrappedEVMAccount.ethAddress}`)
-          //}
         } else {
           throw new Error(`getRelevantData: invalid account type ${accountType}`)
         }
@@ -5275,12 +5307,11 @@ const shardusSetup = (): void => {
     },
     async setCachedRIAccountData(accountRecords) {
       /* prettier-ignore */ if (logFlags.dapp_verbose) console.log('setCachedRIAccountData', accountRecords)
-      /* prettier-ignore */ nestedCountersInstance.countEvent('cache', 'setCachedRIAccountData')
 
       for (const account of accountRecords) {
         const decodedAccount = account as AccountsEntry
         shardus.setDebugSetLastAppAwait(`setCachedRIAccountData(${decodedAccount.accountId})`)
-        await setCachedRIAccount(decodedAccount)
+        setCachedRIAccount(decodedAccount)
         shardus.setDebugSetLastAppAwait(
           `setCachedRIAccountData(${decodedAccount.accountId})`,
           DebugComplete.Completed
@@ -5387,6 +5418,78 @@ const shardusSetup = (): void => {
           if (ShardeumFlags.VerboseLogs) console.log(`signAppData passed ${type} ${stringify(stakeCert)}`)
           nestedCountersInstance.countEvent('shardeum-staking', 'sign-stake-cert - passed')
           return result
+        } else if (type === 'sign-remove-node-cert') {
+          if (nodesToSign != 5) return fail
+          const removeNodeCert = appData as RemoveNodeCert
+          if (!removeNodeCert.nodePublicKey || !removeNodeCert.cycle) {
+            nestedCountersInstance.countEvent('shardeum-remove-node', 'signAppData format failed')
+            /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`signAppData format failed ${type} ${stringify(removeNodeCert)} `)
+            return fail
+          }
+          const latestCycles = shardus.getLatestCycles()
+          const currentCycle = latestCycles[0]
+          if (!currentCycle) {
+            /* prettier-ignore */ if (logFlags.error) console.log('No cycle records found', latestCycles)
+            return fail
+          }
+          if (removeNodeCert.cycle !== currentCycle.counter) {
+            /* prettier-ignore */ nestedCountersInstance.countEvent('shardeum-remove-node', 'cycle in cert does not match current cycle')
+            /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`cycle in cert does not match current cycle ${type} ${stringify(removeNodeCert)}, current: ${currentCycle.counter}`)
+            return fail
+          }
+          let minStakeRequiredUsd: bigint
+          let minStakeRequired: bigint
+          let stakeAmount: bigint
+          try {
+            minStakeRequiredUsd = _base16BNParser(
+              AccountsStorage.cachedNetworkAccount.current.stakeRequiredUsd
+            )
+          } catch (e) {
+            /* prettier-ignore */ nestedCountersInstance.countEvent('shardeum-remove-node', 'signAppData' +
+              ' stakeRequiredUsd parse error')
+            /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`signAppData minStakeRequiredUsd parse error ${type} ${stringify(removeNodeCert)}, cachedNetworkAccount: ${stringify(AccountsStorage.cachedNetworkAccount)} `)
+            return fail
+          }
+          try {
+            minStakeRequired = scaleByStabilityFactor(
+              minStakeRequiredUsd,
+              AccountsStorage.cachedNetworkAccount
+            )
+          } catch (e) {
+            /* prettier-ignore */ nestedCountersInstance.countEvent('shardeum-remove-node', 'signAppData' +
+              ' minStakeRequired parse error')
+            /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`signAppData minStakeRequired parse error ${type} ${stringify(removeNodeCert)}, cachedNetworkAccount: ${stringify(AccountsStorage.cachedNetworkAccount)} `)
+            return fail
+          }
+
+          let remoteShardusAccount
+          try {
+            remoteShardusAccount = await shardus.getLocalOrRemoteAccount(removeNodeCert.nodePublicKey)
+            if (!isNodeAccount2(remoteShardusAccount.data)) {
+              /* prettier-ignore */
+              nestedCountersInstance.countEvent('shardeum-remove-node', 'nodePublicKey is not a node account')
+              /* prettier-ignore */
+              if (ShardeumFlags.VerboseLogs) console.log(`nodePublicKey is not a node account ${type} ${stringify(removeNodeCert)}, cachedNetworkAccount: ${stringify(AccountsStorage.cachedNetworkAccount)} `)
+              return fail
+            }
+          } catch (e) {
+            /* prettier-ignore */ nestedCountersInstance.countEvent('shardeum-remove-node', 'signAppData' +
+              ' minStakeRequired parse error')
+            /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`signAppData minStakeRequired parse error ${type} ${stringify(removeNodeCert)}, cachedNetworkAccount: ${stringify(AccountsStorage.cachedNetworkAccount)} `)
+            return fail
+          }
+          const nodeAccount = remoteShardusAccount.data as NodeAccount2
+          if (isLowStake(nodeAccount) === false) {
+            /* prettier-ignore */ nestedCountersInstance.countEvent('shardeum-remove-node', 'node locked stake is not below minStakeRequired')
+            /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`node locked stake is not below minStakeRequired ${type} ${stringify(removeNodeCert)}, cachedNetworkAccount: ${stringify(AccountsStorage.cachedNetworkAccount)} `)
+            return fail
+          }
+
+          const signedCert: RemoveNodeCert = shardus.signAsNode(removeNodeCert)
+          const result: ShardusTypes.SignAppDataResult = { success: true, signature: signedCert.sign }
+          if (ShardeumFlags.VerboseLogs) console.log(`signAppData passed ${type} ${stringify(removeNodeCert)}`)
+          nestedCountersInstance.countEvent('shardeum-staking', 'sign-stake-cert - passed')
+          return result
         }
       } catch (e) {
         /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`signAppData failed: ${type} ${stringify(stakeCert)}, error: ${stringify(e)}`)
@@ -5446,22 +5549,13 @@ const shardusSetup = (): void => {
       }
     },
     transactionReceiptPass(
-      tx,
+      timestampedTx: ShardusTypes.OpaqueTransaction,
       wrappedStates: { [id: string]: WrappedAccount },
       applyResponse: ShardusTypes.ApplyResponse
     ) {
-      let txId: string
-      //this code may seem equivalent but hashSignedObj will not be "smart" until after txHashingFix is true
-      if (ShardeumFlags.txHashingFix === true) {
-        txId = generateTxId(tx)
-      } else {
-        // @ts-ignore
-        if (!tx.sign) {
-          txId = crypto.hashObj(tx)
-        } else {
-          txId = crypto.hashObj(tx, true) // compute from tx
-        }
-      }
+      //@ts-ignore
+      const { tx } = timestampedTx
+      const txId: string = generateTxId(tx)
 
       //This next log is usefull but very heavy on the output lines:
       //Updating to be on only with verbose logs
@@ -5564,7 +5658,7 @@ const shardusSetup = (): void => {
           }
           const pkClearance = shardus.getDevPublicKey(adminCert.sign.owner)
           // check for invalid signature for AdminCert
-          if(pkClearance == null){
+          if (pkClearance == null) {
             return {
               success: false,
               reason: 'Unauthorized! no getDevPublicKey defined',
@@ -5574,7 +5668,7 @@ const shardusSetup = (): void => {
           if (
             pkClearance &&
             (!shardus.crypto.verify(adminCert, pkClearance) ||
-            shardus.ensureKeySecurity(pkClearance, DevSecurityLevel.High) === false)
+              shardus.ensureKeySecurity(pkClearance, DevSecurityLevel.High) === false)
           ) {
             /* prettier-ignore */ nestedCountersInstance.countEvent('shardeum-mode', 'validateJoinRequest fail: !shardus.crypto.verify(adminCert, shardus.getDevPublicKeyMaxLevel())')
             return {
@@ -5626,7 +5720,7 @@ const shardusSetup = (): void => {
 
           const pkClearance = shardus.getDevPublicKey(adminCert.sign.owner)
           // check for invalid signature for AdminCert
-          if(pkClearance == null){
+          if (pkClearance == null) {
             return {
               success: false,
               reason: 'Unauthorized! no getDevPublicKey defined',
@@ -5636,7 +5730,7 @@ const shardusSetup = (): void => {
           if (
             pkClearance &&
             (!shardus.crypto.verify(adminCert, pkClearance) ||
-            shardus.ensureKeySecurity(pkClearance, DevSecurityLevel.High) === false)
+              shardus.ensureKeySecurity(pkClearance, DevSecurityLevel.High) === false)
           ) {
             // check for invalid signature for AdminCert
             /* prettier-ignore */ nestedCountersInstance.countEvent('shardeum-mode', 'validateJoinRequest fail: !shardus.crypto.verify(adminCert, shardus.getDevPublicKeyMaxLevel())')
@@ -5822,7 +5916,20 @@ const shardusSetup = (): void => {
       activeNodes: P2P.P2PTypes.Node[],
       mode: P2P.ModesTypes.Record['mode']
     ): Promise<boolean> {
-      const networkAccount = await fetchNetworkAccountFromArchiver()
+      const currentTime = Date.now()
+      let networkAccount = null
+      if (currentTime < cacheExpirationTimestamp && cachedNetworkAccount) {
+        // Use cached result if it's still valid
+        networkAccount = cachedNetworkAccount
+        /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`isReadyToJoin using cached network account ${JSON.stringify(networkAccount)}`)
+      } else {
+        // Fetch new network account data
+        networkAccount = await fetchNetworkAccountFromArchiver()
+        // Update cache with new result
+        cachedNetworkAccount = networkAccount
+        cacheExpirationTimestamp = currentTime + ShardeumFlags.networkAccountCacheDuration * 1000
+        /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`isReadyToJoin fetched new network account ${JSON.stringify(networkAccount)}`)
+      }
 
       if (initialNetworkParamters && networkAccount) {
         if (
@@ -5833,8 +5940,7 @@ const shardusSetup = (): void => {
           )
         ) {
           const tag = 'version out-of-date; please update and restart'
-          const message =
-            'node version is out-of-date; please update node to latest version'
+          const message = 'node version is out-of-date; please update node to latest version'
           shardus.shutdownFromDapp(tag, message, false)
           return false
         }
@@ -5848,33 +5954,50 @@ const shardusSetup = (): void => {
         /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log('Join req with admincert and golden ticket')
         isReadyToJoinLatestValue = true
         mustUseAdminCert = true
+        /* prettier-ignore */ nestedCountersInstance.countEvent('shardeum-staking', 'goldenTicket available, isReadyToJoin = true')
         return true
       }
 
       if (ShardeumFlags.StakingEnabled === false) {
         isReadyToJoinLatestValue = true
+        /* prettier-ignore */ nestedCountersInstance.countEvent('shardeum-staking', 'staking disabled, isReadyToJoin = true')
         return true
       }
 
       const numTotalNodes = latestCycle.active + latestCycle.syncing // total number of nodes in the network
       if (numTotalNodes < ShardeumFlags.minActiveNodesForStaking) {
         isReadyToJoinLatestValue = true
+        /* prettier-ignore */ nestedCountersInstance.countEvent( 'shardeum-staking', 'numTotalNodes < ShardeumFlags.minActiveNodesForStaking, isReadyToJoin = true' )
         return true
       }
       /* prettier-ignore */ if (logFlags.important_as_error) console.log( `active: ${latestCycle.active}, syncing: ${latestCycle.syncing}, flag: ${ShardeumFlags.AdminCertEnabled}` )
       // check for ShardeumFlags for mode + check if mode is not equal to processing and validate adminCert
       if (ShardeumFlags.AdminCertEnabled === true && mode !== 'processing') {
         /* prettier-ignore */ if (logFlags.important_as_error) console.log('entered admin cert conditon mode:' + mode)
-        if (adminCert && adminCert.certExp > shardeumGetTime()) {
+        if (adminCert) {
           /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`checkAdminCert ${JSON.stringify(adminCert)}`)
-
-          isReadyToJoinLatestValue = true
-          /* prettier-ignore */ if (logFlags.important_as_error) console.log('1 return')
-          mustUseAdminCert = true
-          return true
+          if (adminCert.certExp > shardeumGetTime()) {
+            isReadyToJoinLatestValue = true
+            mustUseAdminCert = true
+            /* prettier-ignore */ nestedCountersInstance.countEvent('shardeum-staking', 'valid admin cert, isReadyToJoin = true')
+            /* prettier-ignore */ if (logFlags.important_as_error) console.log('valid admin cert, isReadyToJoin = true')
+            return true
+          } else {
+            /* prettier-ignore */ nestedCountersInstance.countEvent('shardeum-staking', 'adminCert present but expired, this blocks joining')
+            /* prettier-ignore */ if (logFlags.important_as_error) console.log('admin cert present but expired, this blocks joining')
+            return false
+          }
         }
-        /* prettier-ignore */ if (logFlags.important_as_error) console.log('2 return')
-        return false
+        /* prettier-ignore */ nestedCountersInstance.countEvent('shardeum-staking', 'adminCert expected not ready to join, this blocks joining')
+        /* prettier-ignore */ if (logFlags.important_as_error) console.log('admin cert required but missing, this blocks joining')
+        return false // this will stop us from joining the normal way
+      }
+      if (ShardeumFlags.AdminCertEnabled === true && mode === 'processing') {
+        /* prettier-ignore */ nestedCountersInstance.countEvent('shardeum-staking', 'AdminCertEnabled=true but mode is processing')
+      }
+      if (adminCert && !ShardeumFlags.AdminCertEnabled) {
+        /* prettier-ignore */ nestedCountersInstance.countEvent('shardeum-staking', 'adminCert present but AdminCertEnabled=false')
+        /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`validateJoinRequest: AdminCert available but not utilized due to configuration`)
       }
 
       /* prettier-ignore */ if (logFlags.important_as_error) console.log(`Running isReadyToJoin cycle:${latestCycle.counter} publicKey: ${publicKey}`)
@@ -6127,55 +6250,75 @@ const shardusSetup = (): void => {
       // skip if this node is also activated in the same cycle
       const currentlyActivatedNode = currentCycle.activated.includes(nodeId)
       if (currentlyActivatedNode) return
-      // Address as the hash of node public Key and current cycle
-      const address = crypto.hashObj({
-        nodePublicKey: data.publicKey,
-        counter: currentCycle.counter,
-      })
-      const nodes = shardus.getClosestNodes(address, 5)
-      if (ShardeumFlags.VerboseLogs) console.log('closest nodes', nodes)
 
-      if (nodes.includes(nodeId)) {
-        if (eventType === 'node-activated') {
-          const activeNodesCount = currentCycle.active
-          const stakingEnabled = activeNodesCount >= ShardeumFlags.minActiveNodesForStaking
-          // Skip initRewardTimes if activeNodesCount is less than minActiveNodesForStaking
-          if (!stakingEnabled) {
-            return
+      if (eventType === 'node-activated') {
+        const activeNodesCount = currentCycle.active
+        const stakingEnabled = activeNodesCount >= ShardeumFlags.minActiveNodesForStaking
+        // Skip initRewardTimes if activeNodesCount is less than minActiveNodesForStaking
+        if (!stakingEnabled) {
+          return
+        }
+        nestedCountersInstance.countEvent('shardeum-staking', `node-activated: injectInitRewardTimesTx`)
+        //TODO need retry on this also
+        const result = await InitRewardTimesTx.injectInitRewardTimesTx(shardus, data)
+        /* prettier-ignore */ if (logFlags.dapp_verbose) console.log('INJECTED_INIT_REWARD_TIMES_TX', result)
+      } else if (eventType === 'node-deactivated') {
+        nestedCountersInstance.countEvent('shardeum-staking', `node-deactivated: injectClaimRewardTx`)
+        const result = await injectClaimRewardTxWithRetry(shardus, data)
+        /* prettier-ignore */ if (logFlags.dapp_verbose) console.log('INJECTED_CLAIM_REWARD_TX', result)
+      } else if (eventType === 'node-left-early' && ShardeumFlags.enableNodeSlashing === true && ShardeumFlags.enableLeftNetworkEarlySlashing) {
+        let nodeLostCycle
+        let nodeDroppedCycle
+        for (let i = 0; i < latestCycles.length; i++) {
+          const cycle = latestCycles[i]
+          if (cycle == null) continue
+          if (cycle.apoptosized.includes(data.nodeId)) {
+            nodeDroppedCycle = cycle.counter
+          } else if (cycle.lost.includes(data.nodeId)) {
+            nodeLostCycle = cycle.counter
           }
-          nestedCountersInstance.countEvent('shardeum-staking', `node-activated: injectInitRewardTimesTx`)
-          //TODO need retry on this also
-          const result = await InitRewardTimesTx.injectInitRewardTimesTx(shardus, data)
-          /* prettier-ignore */ if (logFlags.dapp_verbose) console.log('INJECTED_INIT_REWARD_TIMES_TX', result)
-        } else if (eventType === 'node-deactivated') {
-          nestedCountersInstance.countEvent('shardeum-staking', `node-deactivated: injectClaimRewardTx`)
-          const result = await injectClaimRewardTxWithRetry(shardus, data)
-          /* prettier-ignore */ if (logFlags.dapp_verbose) console.log('INJECTED_CLAIM_REWARD_TX', result)
-        } else if (eventType === 'node-left-early' && ShardeumFlags.enableNodeSlashing === true) {
-          let nodeLostCycle
-          let nodeDroppedCycle
-          for (let i = 0; i < latestCycles.length; i++) {
-            const cycle = latestCycles[i]
-            if (cycle == null) continue
-            if (cycle.apoptosized.includes(data.nodeId)) {
-              nodeDroppedCycle = cycle.counter
-            } else if (cycle.lost.includes(data.nodeId)) {
-              nodeLostCycle = cycle.counter
-            }
+        }
+        if (nodeLostCycle && nodeDroppedCycle && nodeLostCycle < nodeDroppedCycle) {
+          const violationData: LeftNetworkEarlyViolationData = {
+            nodeLostCycle,
+            nodeDroppedCycle,
+            nodeDroppedTime: data.time,
           }
-          if (nodeLostCycle && nodeDroppedCycle && nodeLostCycle < nodeDroppedCycle) {
-            const violationData = {
-              nodeLostCycle,
-              nodeDroppedCycle,
-              nodeDroppedTime: data.time,
-            }
-            nestedCountersInstance.countEvent('shardeum-staking', `node-left-early: injectClaimRewardTx`)
-            const result = await PenaltyTx.injectPenaltyTX(shardus, data, violationData)
-            /* prettier-ignore */ if (logFlags.dapp_verbose) console.log('INJECTED_PENALTY_TX', result)
-          } else {
-            nestedCountersInstance.countEvent('shardeum-staking', `node-left-early: event skipped`)
-            /* prettier-ignore */ if (logFlags.dapp_verbose) console.log(`Shardeum node-left-early event skipped`, data, nodeLostCycle, nodeDroppedCycle)
+          nestedCountersInstance.countEvent('shardeum-staking', `node-left-early: injectPenaltyTx`)
+          const result = await PenaltyTx.injectPenaltyTX(shardus, data, violationData)
+          /* prettier-ignore */ if (logFlags.dapp_verbose) console.log('INJECTED_PENALTY_TX', result)
+        } else {
+          nestedCountersInstance.countEvent('shardeum-staking', `node-left-early: event skipped`)
+          /* prettier-ignore */ if (logFlags.dapp_verbose) console.log(`Shardeum node-left-early event skipped`, data, nodeLostCycle, nodeDroppedCycle)
+        }
+      } else if (eventType === 'node-sync-timeout' && ShardeumFlags.enableNodeSlashing === true && ShardeumFlags.enableSyncTimeoutSlashing) {
+        const violationData: SyncingTimeoutViolationData = {
+          nodeLostCycle: data.cycleNumber,
+          nodeDroppedTime: data.time,
+        }
+        nestedCountersInstance.countEvent('shardeum-staking', `node-sync-timeout: injectPenaltyTx`)
+        const result = await PenaltyTx.injectPenaltyTX(shardus, data, violationData)
+        /* prettier-ignore */ if (logFlags.dapp_verbose) console.log('INJECTED_PENALTY_TX', result)
+      } else if (eventType === 'node-refuted' && ShardeumFlags.enableNodeSlashing === true && ShardeumFlags.enableNodeRefutedSlashing) {
+        let nodeRefutedCycle
+        for (let i = 0; i < latestCycles.length; i++) {
+          const cycle = latestCycles[i]
+          if (cycle == null) continue
+          if (cycle.refuted.includes(data.nodeId)) {
+            nodeRefutedCycle = cycle.counter
           }
+        }
+        if (nodeRefutedCycle === data.cycleNumber) {
+          const violationData: NodeRefutedViolationData = {
+            nodeRefutedCycle: nodeRefutedCycle,
+            nodeRefutedTime: data.time,
+          }
+          nestedCountersInstance.countEvent('shardeum-staking', `node-refuted: injectPenaltyTx`)
+          const result = await PenaltyTx.injectPenaltyTX(shardus, data, violationData)
+          /* prettier-ignore */ if (logFlags.dapp_verbose) console.log('INJECTED_PENALTY_TX', result)
+        } else {
+          nestedCountersInstance.countEvent('shardeum-staking', `node-refuted: event skipped`)
+          /* prettier-ignore */ if (logFlags.dapp_verbose) console.log(`Shardeum node-refuted event skipped`, data, nodeRefutedCycle)
         }
       }
     },
@@ -6499,7 +6642,7 @@ export function shardeumGetTime(): number {
 
   if (ShardeumFlags.GlobalNetworkAccount) {
     // CODE THAT GETS EXECUTED WHEN NODES START
-    ;(async (): Promise<void> => {
+    await (async (): Promise<void> => {
       const serverConfig = config.server
       const cycleInterval = serverConfig.p2p.cycleDuration * ONE_SECOND
 
@@ -6512,7 +6655,9 @@ export function shardeumGetTime(): number {
 
       // THIS CODE IS CALLED ON EVERY NODE ON EVERY CYCLE
       async function networkMaintenance(): Promise<NodeJS.Timeout> {
-        /* prettier-ignore */ if (logFlags.dapp_verbose) shardus.log('New maintainence cycle has started')
+        /* prettier-ignore */
+        if (logFlags.dapp_verbose) shardus.log('New maintainence cycle has started')
+        clearOldPenaltyTxs(shardus)
         drift = shardeumGetTime() - expected
 
         try {
@@ -6527,21 +6672,28 @@ export function shardeumGetTime(): number {
             latestCycles.length > 0 &&
             latestCycles[0].counter < ShardeumFlags.FirstNodeRewardCycle
           ) {
-            /* prettier-ignore */ if (logFlags.dapp_verbose) shardus.log( `Too early for node reward: ${latestCycles[0].counter}.  first reward:${ShardeumFlags.FirstNodeRewardCycle}` )
-            /* prettier-ignore */ if (logFlags.dapp_verbose) shardus.log('Maintenance cycle has ended')
+            /* prettier-ignore */
+            if (logFlags.dapp_verbose) shardus.log(`Too early for node reward: ${latestCycles[0].counter}.  first reward:${ShardeumFlags.FirstNodeRewardCycle}`)
+            /* prettier-ignore */
+            if (logFlags.dapp_verbose) shardus.log('Maintenance cycle has ended')
             expected += cycleInterval
             return setTimeout(networkMaintenance, Math.max(100, cycleInterval - drift))
           }
         } catch (err) {
-          /* prettier-ignore */ if (logFlags.error) shardus.log('ERR: ', err)
-          /* prettier-ignore */ if (logFlags.error) console.log('ERR: ', err)
+          /* prettier-ignore */
+          if (logFlags.error) shardus.log('ERR: ', err)
+          /* prettier-ignore */
+          if (logFlags.error) console.log('ERR: ', err)
           return setTimeout(networkMaintenance, 5000) // wait 5s before trying again
         }
 
-        /* prettier-ignore */ if (logFlags.dapp_verbose) shardus.log('nodeId: ', nodeId)
-        /* prettier-ignore */ if (logFlags.dapp_verbose) shardus.log('nodeAddress: ', nodeAddress)
+        /* prettier-ignore */
+        if (logFlags.dapp_verbose) shardus.log('nodeId: ', nodeId)
+        /* prettier-ignore */
+        if (logFlags.dapp_verbose) shardus.log('nodeAddress: ', nodeAddress)
 
-        /* prettier-ignore */ if (logFlags.dapp_verbose) shardus.log('Maintainence cycle has ended')
+        /* prettier-ignore */
+        if (logFlags.dapp_verbose) shardus.log('Maintainence cycle has ended')
         expected += cycleInterval
         return setTimeout(networkMaintenance, Math.max(100, cycleInterval - drift))
       }

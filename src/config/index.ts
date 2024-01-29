@@ -122,6 +122,7 @@ config = merge(config, {
     p2p: {
       cycleDuration: 60,
       minNodesToAllowTxs: 1, // to allow single node networks
+      baselineNodes: process.env.baselineNodes ? parseInt(process.env.baselineNodes) : 300, // config used for baseline for entering recovery, restore, and safety. Should be equivalient to minNodes on network startup
       minNodes: process.env.minNodes ? parseInt(process.env.minNodes) : 300,
       maxNodes: process.env.maxNodes ? parseInt(process.env.maxNodes) : 1100,
       maxJoinedPerCycle: 10,
@@ -163,6 +164,19 @@ config = merge(config, {
 
       //1.6.0 migration
       continueOnException: false,
+
+      // 1.9.1 migration 
+      standbyListFastHash: true,
+      
+      // 1.10.0 restart
+      networkBaselineEnabled: true, // when enabled, new p2p config `baselineNodes` is the threshold for going into restore, recovery, and safety mode
+
+      // 1.10.0 todo podA smoke/functional test with these on:
+      // numberOfNodesToInjectPenaltyTx: 5, //this may not need a change but we should probably go ahead and include it
+      // enableLeftNetworkEarlySlashing: true,
+      // enableSyncTimeoutSlashing: true,
+      // enableNodeRefutedSlashing: true
+    
     },
   },
 })
@@ -203,6 +217,7 @@ config = merge(config, {
     stateManager: {
       accountBucketSize: 200, // todo: we need to re-test with higher numbers after some recent improvements
       includeBeforeStatesInReceipts: true, // 1.5.3 migration
+      useNewPOQ: true, // 1.10.0 enabled required by archive server updates 
     },
   },
 })

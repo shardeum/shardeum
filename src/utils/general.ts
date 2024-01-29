@@ -1,6 +1,10 @@
 import { NetworkAccount } from '../shardeum/shardeumTypes'
 
-export function calculateGasPrice(baselineTxFee: string, baselineTxGasUsage: string, networkAccount: NetworkAccount): bigint {
+export function calculateGasPrice(
+  baselineTxFee: string,
+  baselineTxGasUsage: string,
+  networkAccount: NetworkAccount
+): bigint {
   const txFee = BigInt(baselineTxFee)
   const gas = BigInt(baselineTxGasUsage)
   const gasPrice = txFee / gas
@@ -10,7 +14,7 @@ export function calculateGasPrice(baselineTxFee: string, baselineTxGasUsage: str
 export function scaleByStabilityFactor(input: bigint, networkAccount: NetworkAccount): bigint {
   const stabilityScaleMult = BigInt(networkAccount.current.stabilityScaleMul)
   const stabilityScaleDiv = BigInt(networkAccount.current.stabilityScaleDiv)
-  return (input * stabilityScaleMult) / (stabilityScaleDiv)
+  return (input * stabilityScaleMult) / stabilityScaleDiv
 }
 
 export function sleep(ms: number): Promise<void> {
@@ -100,7 +104,7 @@ export function getRandom<T>(arr: T[], n: number): T[] {
 }
 export function isWithinRange(a: number, b: number, range: number): boolean {
   try {
-    return Math.abs(a - b) <= range;
+    return Math.abs(a - b) <= range
   } catch (e) {
     return false
   }
