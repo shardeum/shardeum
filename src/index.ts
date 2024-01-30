@@ -1505,7 +1505,7 @@ const configShardusEndpoints = (): void => {
 
       function validateRequest(callObj): string | boolean {
         function isValidHexString(data: string): boolean {
-          return /^0x[a-fA-F0-9]+$/.test(data) && data.length % 2 === 0
+          return /^(0x|0X)[a-fA-F0-9]+$/.test(data) && data.length % 2 === 0
         }
 
         function isPositiveNumber(value): boolean {
