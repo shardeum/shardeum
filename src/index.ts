@@ -2595,8 +2595,8 @@ async function estimateGas(
   const txId = crypto.hashObj(transaction)
   const { address: senderAddress, isValid } = getTxSenderAddress(transaction, txId)
   const preRunTxState = getPreRunTXState(txId)
-  const callerEVMAddress = isValid ? senderAddress.toString() : from.toString()
-  const callerShardusAddress = toShardusAddress(callerEVMAddress, AccountType.Account)
+  const callerEVMAddress = isValid ? senderAddress : from
+  const callerShardusAddress = toShardusAddress(callerEVMAddress.toString(), AccountType.Account)
   let callerAccount = await AccountsStorage.getAccount(callerShardusAddress)
   // callerAccount.account.balance = oneSHM.mul(new BN(100)) // 100 SHM. In case someone estimates gas with 0 balance
   if (ShardeumFlags.VerboseLogs) {
@@ -2622,7 +2622,7 @@ async function estimateGas(
   }
 
   preRunTxState._transactionState.insertFirstAccountReads(
-    senderAddress,
+    callerEVMAddress,
     callerAccount ? callerAccount.account : fakeAccount
   )
 
