@@ -14,7 +14,6 @@ import {
   toBytes,
   hexToBytes,
 } from '@ethereumjs/util'
-import { ShardeumFlags, updateServicePoints, updateShardeumFlag } from './shardeum/shardeumFlags'
 import {
   AccessListEIP2930Transaction,
   LegacyTransaction,
@@ -4090,7 +4089,8 @@ const shardusSetup = (): void => {
           }
           retry = 0
           while (remoteShardusAccount == null && retry < maxRetry) {
-            if (ShardeumFlags.VerboseLogs) console.log(`txPreCrackData: fetching remote account for ${txSenderEvmAddr}, retry: ${retry}`)
+            if (ShardeumFlags.VerboseLogs)
+              console.log(`txPreCrackData: fetching remote account for ${txSenderEvmAddr}, retry: ${retry}`)
             retry++
             remoteShardusAccount = await shardus
               .getLocalOrRemoteAccount(transformedSourceKey)
