@@ -1,12 +1,14 @@
 import { VectorBufferStream } from '@shardus/core'
+import { OperatorAccountInfo, ReadableReceipt } from '../shardeum/shardeumTypes'
+import { DeSerializeFromJsonString, SerializeToJsonString } from '../utils'
+import { TxReceipt } from '../vm_v7'
+import { BaseAccount, deserializeBaseAccount, serializeBaseAccount } from './BaseAccount'
 import { EVMAccount, deserializeEVMAccount, serializeEVMAccount } from './EVMAccount'
-import { binaryDeserializer, binarySerializer } from './Helpers'
+import { TypeIdentifierEnum } from './enum/TypeIdentifierEnum'
 
-const cEVMAppData = 2
-const cEVMAppDataVersion = 1
+const cWrappedEVMAccountVersion = 1
 
-export interface EVMAppData {
-  accountType: number
+export interface WrappedEVMAccount extends BaseAccount {
   ethAddress: string
   hash: string
   timestamp: number
@@ -20,18 +22,25 @@ export interface EVMAppData {
   txId?: string
   txFrom?: string
   balance?: number
+  receipt?: TxReceipt
+  readableReceipt?: ReadableReceipt
+  operatorAccountInfo?: OperatorAccountInfo
 }
 
-export function serializeEVMAppData(stream: VectorBufferStream, obj: EVMAppData, root = false): void {
+export function serializeWrappedEVMAccount(
+  stream: VectorBufferStream,
+  obj: WrappedEVMAccount,
+  root = false
+): void {
   if (root) {
-    stream.writeUInt16(cEVMAppData)
+    stream.writeUInt16(TypeIdentifierEnum.cWrappedEVMAccount)
   }
-  stream.writeUInt16(cEVMAppDataVersion)
+  stream.writeUInt16(cWrappedEVMAccountVersion)
 
-  stream.writeUInt32(obj.accountType)
+  serializeBaseAccount(stream, obj, false)
   stream.writeString(obj.ethAddress)
   stream.writeString(obj.hash)
-  stream.writeDouble(obj.timestamp)
+  stream.writeString(obj.timestamp.toString())
 
   // Serialize optional fields with presence flags
   if (obj.account !== undefined) {
@@ -58,16 +67,30 @@ export function serializeEVMAppData(stream: VectorBufferStream, obj: EVMAppData,
     : stream.writeUInt8(0)
   obj.txId !== undefined ? (stream.writeUInt8(1), stream.writeString(obj.txId)) : stream.writeUInt8(0)
   obj.txFrom !== undefined ? (stream.writeUInt8(1), stream.writeString(obj.txFrom)) : stream.writeUInt8(0)
-  obj.balance !== undefined ? (stream.writeUInt8(1), stream.writeUInt32(obj.balance)) : stream.writeUInt8(0)
+  obj.balance !== undefined
+    ? (stream.writeUInt8(1), stream.writeString(obj.balance.toString()))
+    : stream.writeUInt8(0)
+
+  // JSON serialization
+  const receiptJson = SerializeToJsonString(obj.receipt)
+  obj.receipt !== undefined ? (stream.writeUInt8(1), stream.writeString(receiptJson)) : stream.writeUInt8(0)
+  const readableReceiptJson = SerializeToJsonString(obj.readableReceipt)
+  obj.readableReceipt !== undefined
+    ? (stream.writeUInt8(1), stream.writeString(readableReceiptJson))
+    : stream.writeUInt8(0)
+  const operatorAccountInfoJson = SerializeToJsonString(obj.operatorAccountInfo)
+  obj.operatorAccountInfo !== undefined
+    ? (stream.writeUInt8(1), stream.writeString(operatorAccountInfoJson))
+    : stream.writeUInt8(0)
 }
 
-export function deserializeEVMAppData(stream: VectorBufferStream): EVMAppData {
+export function deserializeWrappedEVMAccount(stream: VectorBufferStream): WrappedEVMAccount {
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const version = stream.readUInt16()
-  const accountType = stream.readUInt32()
+  const baseAccount = deserializeBaseAccount(stream)
   const ethAddress = stream.readString()
   const hash = stream.readString()
-  const timestamp = stream.readDouble()
+  const timestamp = Number(stream.readString())
   const account = stream.readUInt8() === 1 ? deserializeEVMAccount(stream) : undefined
   const key = stream.readUInt8() === 1 ? stream.readString() : undefined
   const valueBuffer = stream.readUInt8() === 1 ? stream.readBuffer() : undefined
@@ -86,9 +109,18 @@ export function deserializeEVMAppData(stream: VectorBufferStream): EVMAppData {
   const amountSpent = stream.readUInt8() === 1 ? stream.readString() : undefined
   const txId = stream.readUInt8() === 1 ? stream.readString() : undefined
   const txFrom = stream.readUInt8() === 1 ? stream.readString() : undefined
-  const balance = stream.readUInt8() === 1 ? stream.readUInt32() : undefined
-  const obj: EVMAppData = {
-    accountType,
+  const balance = stream.readUInt8() === 1 ? Number(stream.readString()) : undefined
+
+  // JSON deserialization
+  const receipt =
+    stream.readUInt8() === 1 ? DeSerializeFromJsonString<TxReceipt>(stream.readString()) : undefined
+  const readableReceipt =
+    stream.readUInt8() === 1 ? DeSerializeFromJsonString<ReadableReceipt>(stream.readString()) : undefined
+  const operatorAccountInfo =
+    stream.readUInt8() === 1 ? DeSerializeFromJsonString<OperatorAccountInfo>(stream.readString()) : undefined
+
+  const obj: WrappedEVMAccount = {
+    ...baseAccount,
     ethAddress,
     hash,
     timestamp,
@@ -102,6 +134,9 @@ export function deserializeEVMAppData(stream: VectorBufferStream): EVMAppData {
     txId,
     txFrom,
     balance,
+    receipt,
+    readableReceipt,
+    operatorAccountInfo,
   }
   return obj
 }

@@ -34,7 +34,7 @@ export class ShardeumAccount extends Account {
 
 //There are a lot of change variables. Maybe I can collapse them here and update this later
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-type Change = any
+export type Change = any
 
 /**
  * Still working out the details here.

@@ -155,8 +155,8 @@ import { getExternalApiMiddleware } from './middleware/externalApiMiddleware'
 import { AccountsEntry } from './storage/storage'
 import { getCachedRIAccount, setCachedRIAccount } from './storage/riAccountsCache'
 import {isLowStake} from "./tx/penalty/penaltyFunctions";
-import { deserializeEVMAppData, serializeEVMAppData } from './types/EVMAppData'
-import { binaryDeserializer, binarySerializer } from './types/Helpers'
+import { deserializeWrappedEVMAccount, serializeWrappedEVMAccount } from './types/WrappedEVMAccount'
+import { accountDeserializer, accountSerializer, binaryDeserializer, binarySerializer } from './types/Helpers'
 
 let latestBlock = 0
 export const blocks: BlockMap = {}
@@ -6450,7 +6450,7 @@ const shardusSetup = (): void => {
       /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log('binarySerializeObject:', identifier, obj)
       switch (identifier) {
         case 'AppData':
-          return binarySerializer(obj, serializeEVMAppData).getBuffer()
+          return accountSerializer(obj).getBuffer()
         default:
           return Buffer.from(cryptoStringify(obj), 'utf8')
       }
@@ -6460,7 +6460,7 @@ const shardusSetup = (): void => {
       /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log('binaryDeserializeObject:', identifier, buffer)
       switch (identifier) {
         case 'AppData':
-          return binaryDeserializer(buffer, deserializeEVMAppData)
+          return accountDeserializer(buffer)
         default:
           return JSON.parse(buffer.toString('utf8'))
       }
