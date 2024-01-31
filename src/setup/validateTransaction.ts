@@ -5,6 +5,8 @@ import { crypto, getTransactionObj, isDebugTx, isInternalTx, isInternalTXGlobal,
 import * as InitRewardTimesTx from '../tx/initRewardTimes'
 import * as AccountsStorage from '../storage/accountStorage'
 import { logFlags } from '..'
+import config from '../config'
+import { comparePropertiesTypes } from '../utils'
 
 type Response = {
   result: string
@@ -41,6 +43,14 @@ export const validateTransaction =
         if (!authorized) {
           return { result: 'fail', reason: 'Unauthorized User' }
         } else {
+		if (tx.internalTXType === InternalTXType.ChangeConfig) {
+			if (comparePropertiesTypes(givenConfig, config.server)) {
+				if (comparePropertiesTypes(givenConfig, config)) {
+					return { result: 'pass', reason: 'valid' }
+				} else {
+					return { result: 'fail', reason: 'Invalid config' }
+				}
+		}
           return { result: 'pass', reason: 'valid' }
         }
 
