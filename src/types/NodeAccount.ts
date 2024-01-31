@@ -39,11 +39,11 @@ export function serializeNodeAccount(stream: VectorBufferStream, obj: NodeAccoun
     stream.writeUInt8(0) // false flag
   }
 
-  stream.writeBigUInt64(obj.stakeLock)
-  stream.writeBigUInt64(obj.reward)
+  stream.writeString(obj.stakeLock.toString())
+  stream.writeString(obj.reward.toString())
   stream.writeString(obj.rewardStartTime.toString())
   stream.writeString(obj.rewardEndTime.toString())
-  stream.writeBigUInt64(obj.penalty)
+  stream.writeString(obj.penalty.toString())
 
   stream.writeString(SerializeToJsonString(obj.nodeAccountStats))
 
@@ -65,12 +65,11 @@ export function deserializeNodeAccount(stream: VectorBufferStream): NodeAccount 
     // true flag
     nominator = stream.readString()
   }
-
-  const stakeLock = stream.readBigUInt64()
-  const reward = stream.readBigUInt64()
+  const stakeLock = BigInt(stream.readString())
+  const reward = BigInt(stream.readString())
   const rewardStartTime = Number(stream.readString())
   const rewardEndTime = Number(stream.readString())
-  const penalty = stream.readBigUInt64()
+  const penalty = BigInt(stream.readString())
 
   const nodeAccountStats = DeSerializeFromJsonString<NodeAccountStats>(stream.readString())
 
