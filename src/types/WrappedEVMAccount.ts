@@ -1,9 +1,10 @@
+import { Account } from '@ethereumjs/util'
 import { VectorBufferStream } from '@shardus/core'
 import { OperatorAccountInfo, ReadableReceipt } from '../shardeum/shardeumTypes'
 import { DeSerializeFromJsonString, SerializeToJsonString } from '../utils'
 import { TxReceipt } from '../vm_v7'
 import { BaseAccount, deserializeBaseAccount, serializeBaseAccount } from './BaseAccount'
-import { EVMAccount, deserializeEVMAccount, serializeEVMAccount } from './EVMAccount'
+import { deserializeEVMAccount, serializeEVMAccount } from './EVMAccount'
 import { TypeIdentifierEnum } from './enum/TypeIdentifierEnum'
 
 const cWrappedEVMAccountVersion = 1
@@ -12,7 +13,7 @@ export interface WrappedEVMAccount extends BaseAccount {
   ethAddress: string
   hash: string
   timestamp: number
-  account?: EVMAccount
+  account?: Account
   key?: string
   value?: Uint8Array
   codeHash?: Uint8Array
@@ -91,7 +92,8 @@ export function deserializeWrappedEVMAccount(stream: VectorBufferStream): Wrappe
   const ethAddress = stream.readString()
   const hash = stream.readString()
   const timestamp = Number(stream.readString())
-  const account = stream.readUInt8() === 1 ? deserializeEVMAccount(stream) : undefined
+  const account =
+    stream.readUInt8() === 1 ? Account.fromAccountData(deserializeEVMAccount(stream)) : undefined
   const key = stream.readUInt8() === 1 ? stream.readString() : undefined
   const valueBuffer = stream.readUInt8() === 1 ? stream.readBuffer() : undefined
   const value = valueBuffer
