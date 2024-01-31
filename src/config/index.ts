@@ -129,7 +129,8 @@ config = merge(config, {
       maxSyncingPerCycle: 10,
       maxRotatedPerCycle: process.env.maxRotatedPerCycle ? parseInt(process.env.maxRotatedPerCycle) : 1,
       firstCycleJoin: 0,
-      maxSyncTimeFloor: 1200, // 20 minutes.  If the network lives a long time we may have to bump this up
+      maxSyncTimeFloor: 6000, //Using 6000 for a restore from archiver, then set config at runtime back to 1200
+      //  1200=20 minutes.  If the network lives a long time we may have to bump this up
       syncBoostEnabled: false,
       amountToGrow: 30,
       amountToShrink: 5,
@@ -165,9 +166,11 @@ config = merge(config, {
       //1.6.0 migration
       continueOnException: false,
 
-      // 1.9.1 migration 
+      // 1.9.1 migration
       standbyListFastHash: true,
-      
+      //1.9.4 avoid issues with lost archiver system:
+      lostArchiversCyclesToWait: 1000000,
+
       // 1.10.0 restart
       networkBaselineEnabled: true, // when enabled, new p2p config `baselineNodes` is the threshold for going into restore, recovery, and safety mode
 
@@ -176,7 +179,6 @@ config = merge(config, {
       // enableLeftNetworkEarlySlashing: true,
       // enableSyncTimeoutSlashing: true,
       // enableNodeRefutedSlashing: true
-    
     },
   },
 })
@@ -210,14 +212,14 @@ config = merge(config, {
     sharding: {
       nodesPerConsensusGroup: process.env.nodesPerConsensusGroup
         ? parseInt(process.env.nodesPerConsensusGroup)
-        : 10,  //128 is the final goal
+        : 10, //128 is the final goal
       nodesPerEdge: process.env.nodesPerEdge ? parseInt(process.env.nodesPerEdge) : 5,
       executeInOneShard: true,
     },
     stateManager: {
       accountBucketSize: 200, // todo: we need to re-test with higher numbers after some recent improvements
       includeBeforeStatesInReceipts: true, // 1.5.3 migration
-      useNewPOQ: true, // 1.10.0 enabled required by archive server updates 
+      useNewPOQ: true, // 1.10.0 enabled required by archive server updates
     },
   },
 })
@@ -256,7 +258,8 @@ config = merge(
           // Never merge a commit with changes to these lines without approval.
           '17a3b692c6c62a689391e49f4c60130c9f919782470a2d7469ac108a1ea304b7': DevSecurityLevel.Low,
           '4c255f7b77ab9fb21ad99f709a65e5a5648d71a7157d8429a92e3470b2d100f5': DevSecurityLevel.Medium,
-          'bee9590211493d08d9f19915f68f12b0b9f75c56ca6911d699bb1cfa51cbbe77': DevSecurityLevel.High,
+          //this last line needs command to ignore auto formatting or prettier will strip the quotes!!
+          /* prettier-ignore */ 'bee9590211493d08d9f19915f68f12b0b9f75c56ca6911d699bb1cfa51cbbe77': DevSecurityLevel.High,
         },
         checkAddressFormat: false,
       },

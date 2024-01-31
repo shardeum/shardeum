@@ -3972,7 +3972,7 @@ const shardusSetup = (): void => {
         let isSimpleTransfer = false
 
         let remoteShardusAccount
-        let remoteTargetAccount
+        let remoteTargetAccount = null
 
         //if the TX is a contract deploy, predict the new contract address correctly (needs sender's nonce)
         //remote fetch of sender EOA also allows fast balance and nonce checking (assuming we get some queue hints as well from shardus core)
@@ -4085,7 +4085,8 @@ const shardusSetup = (): void => {
         if (ShardeumFlags.autoGenerateAccessList === false) shouldGenerateAccesslist = false
         else if (isStakeRelatedTx) shouldGenerateAccesslist = false
         else if (isSimpleTransfer) shouldGenerateAccesslist = false
-        else if (remoteShardusAccount == null && appData.newCAAddr == null) shouldGenerateAccesslist = false
+        //else if (remoteShardusAccount == null && appData.newCAAddr == null) shouldGenerateAccesslist = false //resolve which is correct from merge!
+        else if (remoteTargetAccount == null && appData.newCAAddr == null) shouldGenerateAccesslist = false
 
         //also run access list generation if needed
         if (shouldGenerateAccesslist) {
