@@ -91,8 +91,11 @@ export function accountSpecificHash(account: WrappedEVMAccount | InternalAccount
   }
   if (!isWrappedEVMAccount(account)) return ''
   if (account.accountType === AccountType.Account) {
-    //Hash the full account, if we knew EOA vs CA we could mabe skip some steps.
-    hash = crypto.hashObj(account.account)
+    const { account: EVMAccountInfo, operatorAccountInfo, timestamp } = account
+    const accountData = operatorAccountInfo
+      ? { EVMAccountInfo, operatorAccountInfo, timestamp }
+      : { EVMAccountInfo, timestamp }
+    hash = crypto.hashObj(accountData)
   } else if (account.accountType === AccountType.Debug) {
     hash = crypto.hashObj(account)
   } else if (account.accountType === AccountType.ContractStorage) {
