@@ -1,4 +1,4 @@
-import { Shardus } from '@shardus/core'
+import { DevSecurityLevel, Shardus } from '@shardus/core'
 import { ShardeumFlags } from '../shardeum/shardeumFlags'
 import { InitRewardTimes, InternalTx, InternalTXType } from '../shardeum/shardeumTypes'
 import { crypto, getTransactionObj, isDebugTx, isInternalTx, isInternalTXGlobal, verify } from './helpers'
@@ -24,20 +24,26 @@ export const validateTransaction =
         tx.internalTXType === InternalTXType.ChangeConfig ||
         internalTx.internalTXType === InternalTXType.ChangeNetworkParam
       ) {
-        const devPublicKey = shardus.getDevPublicKeyMaxLevel() //get the highest level pk
 
-        if (devPublicKey) {
-          const isValid = verify(tx, devPublicKey)
-          /* prettier-ignore */ if (logFlags.dapp_verbose) console.log('isValid', isValid)
-
-          if (isValid) {
-            return { result: 'pass', reason: 'valid' }
-          } else {
-            return { result: 'fail', reason: 'Invalid signature' }
+        const devPublicKeys = shardus.getDevPublicKeys()
+        let isUserVerified = false
+        for (const devPublicKey in devPublicKeys) {
+          const verificationStatus = verify(tx, devPublicKey)
+          if (verificationStatus) {
+            isUserVerified = true
+            break
           }
-        } else {
+        }
+        if (!isUserVerified) {
           return { result: 'fail', reason: 'Dev key is not defined on the server!' }
         }
+        const authorized = shardus.ensureKeySecurity(tx.sign.owner, DevSecurityLevel.High)
+        if (!authorized) {
+          return { result: 'fail', reason: 'Unauthorized User' }
+        } else {
+          return { result: 'pass', reason: 'valid' }
+        }
+
       } else if (tx.internalTXType === InternalTXType.SetCertTime) {
         return { result: 'pass', reason: 'valid' }
       } else if (tx.internalTXType === InternalTXType.InitRewardTimes) {

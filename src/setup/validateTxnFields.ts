@@ -1,4 +1,4 @@
-import { nestedCountersInstance, Shardus } from '@shardus/core'
+import { DevSecurityLevel, nestedCountersInstance, Shardus } from '@shardus/core'
 import { ShardeumFlags } from '../shardeum/shardeumFlags'
 import {
   ClaimRewardTX,
@@ -96,14 +96,27 @@ export const validateTxnFields =
         } else if (tx.internalTXType === InternalTXType.ChangeConfig ||
           tx.internalTXType === InternalTXType.ChangeNetworkParam) {
           try {
-            // const devPublicKey = shardus.getDevPublicKey() // This have to be reviewed again whether to get from shardus interface or not
-            const devPublicKey = shardus.getDevPublicKeyMaxLevel()
-            if (devPublicKey) {
-              success = verify(tx, devPublicKey)
-              if (!success) reason = 'Dev key does not match!'
-            } else {
+
+            const devPublicKeys = shardus.getDevPublicKeys()
+            let isUserVerified = false
+            for (const devPublicKey in devPublicKeys) {
+              const verificationStatus = verify(tx, devPublicKey)
+              if (verificationStatus) {
+                isUserVerified = true
+                break
+              }
+            }
+            if (!isUserVerified) {
               success = false
               reason = 'Dev key is not defined on the server!'
+            }
+            const authorized = shardus.ensureKeySecurity(tx.sign.owner, DevSecurityLevel.High)
+            if (!authorized) {
+              success = false
+              reason = 'Unauthorized User'
+            } else {
+              success = true
+              reason = 'valid'
             }
           } catch (e) {
             reason = 'Invalid signature for internal tx'
