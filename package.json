@@ -1,6 +1,6 @@
 {
   "name": "shardeum",
-  "version": "1.9.4",
+  "version": "1.9.5",
   "description": "",
   "main": "dist/src/index.js",
   "scripts": {
@@ -44,9 +44,9 @@
     "@ethereumjs/vm": "7.0.0",
     "@mapbox/node-pre-gyp": "1.0.10",
     "@shardus/archiver-discovery": "1.1.0",
-    "@shardus/core": "2.11.8",
+    "@shardus/core": "2.11.9",
     "@shardus/crypto-utils": "4.1.2",
-    "@shardus/net": "1.3.9",
+    "@shardus/net": "1.3.10",
     "@shardus/types": "1.2.6",
     "@types/sqlite3": "3.1.8",
     "cliffy": "2.5.1",
