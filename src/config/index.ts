@@ -261,7 +261,7 @@ config = merge(
           //this last line needs command to ignore auto formatting or prettier will strip the quotes!!
           /* prettier-ignore */ 'bee9590211493d08d9f19915f68f12b0b9f75c56ca6911d699bb1cfa51cbbe77': DevSecurityLevel.High,
         },
-        checkAddressFormat: false,
+        checkAddressFormat: true, //enabled for 1.10.0
       },
     },
   },
