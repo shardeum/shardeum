@@ -697,6 +697,7 @@ async function tryGetRemoteAccountCB(
   address: string,
   key: string
 ): Promise<WrappedEVMAccount> {
+  profilerInstance.profileSectionStart('tryGetRemoteAccountCB')
   const shardusAddress = toShardusAddressWithKey(address, key, type)
   /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`Trying to get remote account for address: ${address}, type: ${type}, key: ${key}`)
   const remoteShardusAccount = await shardus.getLocalOrRemoteAccount(shardusAddress, {
@@ -704,11 +705,13 @@ async function tryGetRemoteAccountCB(
   })
   if (remoteShardusAccount == undefined) {
     /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`Found no remote account for address: ${address}, type: ${type}, key: ${key}`)
+    profilerInstance.profileSectionEnd('tryGetRemoteAccountCB')
     return
   }
   const fixedEVMAccount = remoteShardusAccount.data as WrappedEVMAccount
   fixDeserializedWrappedEVMAccount(fixedEVMAccount)
   /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`Successfully found remote account for address: ${address}, type: ${type}, key: ${key}`, fixedEVMAccount)
+  profilerInstance.profileSectionEnd('tryGetRemoteAccountCB')
   return fixedEVMAccount
 }
 
@@ -3950,6 +3953,7 @@ const shardusSetup = (): void => {
       return generateTxId(tx)
     },
     async txPreCrackData(tx, appData): Promise<boolean> {
+      profilerInstance.profileSectionStart('txPreCrackData')
       if (ShardeumFlags.VerboseLogs) console.log('Running txPreCrackData', tx, appData)
       if (ShardeumFlags.UseTXPreCrack === false) {
         return true
@@ -4085,6 +4089,7 @@ const shardusSetup = (): void => {
         }
         let shouldGenerateAccesslist = true
         if (ShardeumFlags.autoGenerateAccessList === false) shouldGenerateAccesslist = false
+        else if (isEIP2930) shouldGenerateAccesslist = false
         else if (isStakeRelatedTx) shouldGenerateAccesslist = false
         else if (isSimpleTransfer) shouldGenerateAccesslist = false
         //else if (remoteShardusAccount == null && appData.newCAAddr == null) shouldGenerateAccesslist = false //resolve which is correct from merge!
@@ -4195,6 +4200,7 @@ const shardusSetup = (): void => {
         /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log( `txPreCrackData final result: txNonce: ${appData.txNonce}, currentNonce: ${ appData.nonce }, queueCount: ${appData.queueCount}, appData ${stringify(appData)}` )
       }
 
+      profilerInstance.profileSectionEnd('txPreCrackData')
       return preCrackSuccess
     },
 
@@ -4410,34 +4416,63 @@ const shardusSetup = (): void => {
         }
 
         if (transaction instanceof AccessListEIP2930Transaction && transaction.AccessListJSON != null) {
+          let involvedCAAccounts = []
           for (const accessList of transaction.AccessListJSON) {
-            const address = accessList.address
-            if (address) {
-              const shardusAddr = toShardusAddress(address, AccountType.Account)
+            const contractAddress = accessList.address
+            if (contractAddress) {
+              const shardusAddr = toShardusAddress(contractAddress, AccountType.Account)
               shardusAddressToEVMAccountInfo.set(shardusAddr, {
-                evmAddress: address,
+                evmAddress: contractAddress,
                 type: AccountType.Account,
               })
               otherAccountKeys.push(shardusAddr)
+              involvedCAAccounts.push(shardusAddr)
 
               //TODO: we need some new logic that can check each account to try loading each CA "early"
               //and figure so we will at least know the code hash to load
               //probably should also do some work with memory access patterns too.
             }
+
+            // get the codeHash from last item of storageKeys
+            if (accessList.storageKeys.length > 0) {
+              const codeHash = accessList.storageKeys.pop()
+              const shardusAddr = toShardusAddressWithKey(contractAddress, codeHash, AccountType.ContractCode)
+              shardusAddressToEVMAccountInfo.set(shardusAddr, {
+                evmAddress: codeHash,
+                contractAddress: contractAddress,
+                type: AccountType.ContractCode,
+              })
+              result.codeHashKeys.push(shardusAddr)
+            }
+
+
             //let storageKeys = accessList.storageKeys.map(key => toShardusAddress(key, AccountType.ContractStorage))
             const storageKeys = []
             for (const storageKey of accessList.storageKeys) {
               //let shardusAddr = toShardusAddress(storageKey, AccountType.ContractStorage)
-              const shardusAddr = toShardusAddressWithKey(address, storageKey, AccountType.ContractStorage)
+              const shardusAddr = toShardusAddressWithKey(contractAddress, storageKey, AccountType.ContractStorage)
 
               shardusAddressToEVMAccountInfo.set(shardusAddr, {
                 evmAddress: shardusAddr,
-                contractAddress: address,
+                contractAddress: contractAddress,
                 type: AccountType.ContractStorage,
               })
               storageKeys.push(shardusAddr)
             }
             result.storageKeys = result.storageKeys.concat(storageKeys)
+          }
+          if (ShardeumFlags.generateMemoryPatternData) {
+            if (appData.shardusMemoryPatterns) {
+              shardusMemoryPatterns = appData.shardusMemoryPatterns
+            } else {
+              let memoryPatterns = { on: [], ri: [], ro: [], rw: [], wo: [] }
+              memoryPatterns.ri = [...result.codeHashKeys]
+              memoryPatterns.ro = [...result.codeHashKeys, ...involvedCAAccounts]
+              memoryPatterns.rw = [...result.sourceKeys]
+              memoryPatterns.wo = [...result.storageKeys]
+              appData.shardusMemoryPatterns = Object.assign({}, memoryPatterns)
+              shardusMemoryPatterns = Object.assign({}, memoryPatterns)
+            }
           }
         } else {
           if (ShardeumFlags.autoGenerateAccessList && appData.accessList) {
@@ -4919,7 +4954,7 @@ const shardusSetup = (): void => {
             contractAddress: evmAccountInfo.contractAddress, // storage key
             hash: '',
             accountType: AccountType.ContractCode,
-            }     
+          }
             /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`Creating new contract bytes account key:${evmAccountID} in contract address ${wrappedEVMAccount.ethAddress}`)
         } else {
           throw new Error(`getRelevantData: invalid account type ${accountType}`)
