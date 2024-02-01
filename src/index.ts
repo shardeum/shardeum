@@ -3976,11 +3976,11 @@ const shardusSetup = (): void => {
       if (isInternalTx(tx) === false && isDebugTx(tx) === false) {
 
         const shardusTxId = generateTxId(tx)
+        const transaction = getTransactionObj(tx)
         if (transaction.value == BigInt(777000000000000000000)) {
           console.log('found MEV tx')
           appData.mev = true
         }
-        const transaction = getTransactionObj(tx)
         const senderAddress = getTxSenderAddress(transaction, shardusTxId).address
         const ethTxId = bytesToHex(transaction.hash())
         if (ShardeumFlags.VerboseLogs) {
