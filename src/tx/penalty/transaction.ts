@@ -1,4 +1,4 @@
-import {nestedCountersInstance, Shardus, ShardusTypes} from '@shardus/core'
+import { nestedCountersInstance, Shardus, ShardusTypes } from '@shardus/core'
 import {
   AccountType,
   InternalTXType,
@@ -10,7 +10,7 @@ import {
   SyncingTimeoutViolationData,
   ViolationType,
   WrappedEVMAccount,
-  WrappedStates
+  WrappedStates,
 } from '../../shardeum/shardeumTypes'
 import { ShardeumFlags } from '../../shardeum/shardeumFlags'
 import { crypto } from '../../setup/helpers'
@@ -294,6 +294,9 @@ export async function applyPenaltyTX(
     nodeAccount.rewardEndTime = tx.violationData?.nodeDroppedTime || Math.floor(tx.timestamp / 1000)
     nodeAccount.nodeAccountStats.history.push({ b: nodeAccount.rewardStartTime, e: nodeAccount.rewardEndTime })
   }
+
+  nodeAccount.timestamp = txTimestamp
+  operatorAccount.timestamp = txTimestamp
 
   const shardeumState = getApplyTXState(txId)
   shardeumState._transactionState.appData = {}

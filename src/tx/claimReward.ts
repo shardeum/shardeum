@@ -325,6 +325,7 @@ export async function applyClaimRewardTx(
   await shardeumState.putAccount(operatorEVMAddress, operatorAccount.account)
   await shardeumState.commit()
 
+  operatorAccount.timestamp = txTimestamp
   /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log( `Calculating node reward. nodeRewardAmount: ${_readableSHM(nodeRewardAmount)}, nodeRewardInterval: ${ network.current.nodeRewardInterval } ms, uptime duration: ${durationInNetwork} sec, totalReward: ${_readableSHM( totalReward )}, finalReward: ${_readableSHM(nodeAccount.reward)}   nodeAccount.rewardEndTime:${ nodeAccount.rewardEndTime }  nodeAccount.rewardStartTime:${nodeAccount.rewardStartTime} ` )
 
   if (ShardeumFlags.useAccountWrites) {
