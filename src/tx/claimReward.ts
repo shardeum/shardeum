@@ -206,6 +206,7 @@ export async function applyClaimRewardTx(
   shardus,
   tx: ClaimRewardTX,
   wrappedStates: WrappedStates,
+  txId: string,
   txTimestamp: number,
   applyResponse: ShardusTypes.ApplyResponse
 ): Promise<void> {
@@ -291,7 +292,6 @@ export async function applyClaimRewardTx(
     _base16BNParser(nodeAccount.nodeAccountStats.totalReward) + nodeAccount.reward
   nodeAccount.nodeAccountStats.history.push({ b: nodeAccount.rewardStartTime, e: nodeAccount.rewardEndTime })
 
-  const txId = generateTxId(tx)
   const shardeumState = getApplyTXState(txId)
   shardeumState._transactionState.appData = {}
 

@@ -2154,7 +2154,7 @@ async function applyInternalTx(
   }
   if (internalTx.internalTXType === InternalTXType.SetCertTime) {
     const setCertTimeTx = internalTx as SetCertTime
-    applySetCertTimeTx(shardus, setCertTimeTx, wrappedStates, txTimestamp, applyResponse)
+    applySetCertTimeTx(shardus, setCertTimeTx, wrappedStates, txId, txTimestamp, applyResponse)
   }
   if (internalTx.internalTXType === InternalTXType.InitRewardTimes) {
     const rewardTimesTx = internalTx as InitRewardTimes
@@ -2162,11 +2162,11 @@ async function applyInternalTx(
   }
   if (internalTx.internalTXType === InternalTXType.ClaimReward) {
     const claimRewardTx = internalTx as ClaimRewardTX
-    applyClaimRewardTx(shardus, claimRewardTx, wrappedStates, txTimestamp, applyResponse)
+    applyClaimRewardTx(shardus, claimRewardTx, wrappedStates, txId ,txTimestamp, applyResponse)
   }
   if (internalTx.internalTXType === InternalTXType.Penalty) {
     const penaltyTx = internalTx as PenaltyTX
-    applyPenaltyTX(shardus, penaltyTx, wrappedStates, txTimestamp, applyResponse)
+    applyPenaltyTX(shardus, penaltyTx, wrappedStates, txId, txTimestamp, applyResponse)
   }
   return applyResponse
 }

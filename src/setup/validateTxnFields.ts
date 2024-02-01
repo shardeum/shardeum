@@ -62,6 +62,7 @@ export const validateTxnFields =
           txnTimestamp,
         }
       }
+      const txId = generateTxId(tx)
 
       if (isDebugTx(tx)) {
         return {
@@ -130,7 +131,7 @@ export const validateTxnFields =
           success = result.isValid
           reason = result.reason
         } else if (tx.internalTXType === InternalTXType.Penalty) {
-          const result = validatePenaltyTX(tx as PenaltyTX, shardus)
+          const result = validatePenaltyTX(txId, tx as PenaltyTX)
           success = result.isValid
           reason = result.reason
         } else if (tx.internalTXType === InternalTXType.InitNetwork) {
@@ -178,7 +179,6 @@ export const validateTxnFields =
       try {
         const transaction = getTransactionObj(tx)
         const isSigned = transaction.isSigned()
-        const txId = generateTxId(tx)
         const { address: senderAddress, isValid } = getTxSenderAddress(transaction,txId) // ensures that tx is valid
         const isSignatureValid = isValid
         if (ShardeumFlags.VerboseLogs) console.log('validate evm tx', isSigned, isSignatureValid)

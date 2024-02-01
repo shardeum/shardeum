@@ -130,7 +130,7 @@ function recordPenaltyTX(txId: string, tx: PenaltyTX): void {
 
 export function clearOldPenaltyTxs(shardus: Shardus): void {
   let deleteCount = 0
-    /* prettier-ignore */ nestedCountersInstance.countEvent('shardeum-penalty', `clearOldPenaltyTxs mapSize:${penaltyTxsMap.size}`)
+  /* prettier-ignore */ nestedCountersInstance.countEvent('shardeum-penalty', `clearOldPenaltyTxs mapSize:${penaltyTxsMap.size}`)
   const now = shardus.shardusGetTime()
   for (const [txId, tx] of penaltyTxsMap.entries()) {
     const cycleDuration = config.server.p2p.cycleDuration * 1000
@@ -142,7 +142,7 @@ export function clearOldPenaltyTxs(shardus: Shardus): void {
   /* prettier-ignore */ nestedCountersInstance.countEvent('shardeum-penalty', `clearOldPenaltyTxs deleteCount: ${deleteCount}`)
 }
 
-export function validatePenaltyTX(tx: PenaltyTX, shardus: Shardus): { isValid: boolean; reason: string } {
+export function validatePenaltyTX(txId: string, tx: PenaltyTX): { isValid: boolean; reason: string } {
   if (!tx.reportedNodeId || tx.reportedNodeId === '' || tx.reportedNodeId.length !== 64) {
     /* prettier-ignore */
     nestedCountersInstance.countEvent('shardeum-penalty', `validatePenaltyTX fail tx.reportedNode address invalid`)
@@ -181,7 +181,6 @@ export function validatePenaltyTX(tx: PenaltyTX, shardus: Shardus): { isValid: b
   }
 
   // check if we have this penalty tx stored in the Map
-  const txId = generateTxId(tx)
   const preRecordedfPenaltyTX = penaltyTxsMap.get(txId)
 
   if (preRecordedfPenaltyTX == null) {
@@ -259,11 +258,12 @@ export async function applyPenaltyTX(
   shardus,
   tx: PenaltyTX,
   wrappedStates: WrappedStates,
+  txId: string,
   txTimestamp: number,
   applyResponse: ShardusTypes.ApplyResponse
 ): Promise<void> {
   if (ShardeumFlags.VerboseLogs) console.log(`Running applyPenaltyTX`, tx, wrappedStates)
-  const isValidRequest = validatePenaltyTX(tx, shardus)
+  const isValidRequest = validatePenaltyTX(txId, tx)
   if (!isValidRequest) {
     /* prettier-ignore */ if (logFlags.dapp_verbose) console.log(`Invalid penaltyTX, reportedNode ${tx.reportedNodePublickKey}, reason: ${isValidRequest.reason}`)
     nestedCountersInstance.countEvent('shardeum-penalty', `applyPenaltyTX fail `)
@@ -295,7 +295,6 @@ export async function applyPenaltyTX(
     nodeAccount.nodeAccountStats.history.push({ b: nodeAccount.rewardStartTime, e: nodeAccount.rewardEndTime })
   }
 
-  const txId = generateTxId(tx)
   const shardeumState = getApplyTXState(txId)
   shardeumState._transactionState.appData = {}
 

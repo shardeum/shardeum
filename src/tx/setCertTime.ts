@@ -186,6 +186,7 @@ export function applySetCertTimeTx(
   shardus,
   tx: SetCertTime,
   wrappedStates: WrappedStates,
+  txId: string,
   txTimestamp: number,
   applyResponse: ShardusTypes.ApplyResponse
 ): void {
@@ -279,7 +280,6 @@ export function applySetCertTimeTx(
   /* prettier-ignore */ if (logFlags.dapp_verbose) console.log('operatorEVMAccount After', operatorEVMAccount)
 
   // Apply state
-  const txId = generateTxId(tx)
   if (ShardeumFlags.useAccountWrites) {
     const wrappedChangedAccount = WrappedEVMAccountFunctions._shardusWrappedAccount(operatorEVMAccount)
     shardus.applyResponseAddChangedAccount(
