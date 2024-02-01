@@ -2179,7 +2179,7 @@ export const createInternalTxReceipt = (
   to: string,
   txTimestamp: number,
   txId: string,
-  amountSpent = BigInt(0).toString()
+  amountSpent = bigIntToHex(BigInt(0))
 ): void => {
   const blockForReceipt = getOrCreateBlockFromTimestamp(txTimestamp)
   const blockNumberForTx = blockForReceipt.header.number.toString()
@@ -2244,6 +2244,7 @@ async function applyDebugTx(
     const fromAccount: WrappedEVMAccount = wrappedStates[fromAddress].data
     const toAccount: WrappedEVMAccount = wrappedStates[toAddress].data
     fromAccount.timestamp = txTimestamp
+    toAccount.timestamp = txTimestamp
     fromAccount.balance -= 1
     toAccount.balance += 1
     fixDeserializedWrappedEVMAccount(fromAccount)
@@ -3682,7 +3683,7 @@ const shardusSetup = (): void => {
           hash: '',
           // receipt: runTxResult.receipt,
           readableReceipt,
-          amountSpent: BigInt(0).toString(),
+          amountSpent: bigIntToHex(BigInt(0)),
           txId,
           accountType: AccountType.Receipt,
           txFrom: senderAddress.toString(),
