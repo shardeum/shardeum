@@ -26,7 +26,6 @@ export const validateTransaction =
         tx.internalTXType === InternalTXType.ChangeConfig ||
         internalTx.internalTXType === InternalTXType.ChangeNetworkParam
       ) {
-
         const devPublicKeys = shardus.getDevPublicKeys()
         let isUserVerified = false
         for (const devPublicKey in devPublicKeys) {
@@ -43,17 +42,16 @@ export const validateTransaction =
         if (!authorized) {
           return { result: 'fail', reason: 'Unauthorized User' }
         } else {
-		if (tx.internalTXType === InternalTXType.ChangeConfig) {
-			if (comparePropertiesTypes(givenConfig, config.server)) {
-				if (comparePropertiesTypes(givenConfig, config)) {
-					return { result: 'pass', reason: 'valid' }
-				} else {
-					return { result: 'fail', reason: 'Invalid config' }
-				}
-		}
+          if (tx.internalTXType === InternalTXType.ChangeConfig) {
+            const givenConfig = JSON.parse(tx.config)
+            if (comparePropertiesTypes(givenConfig, config.server)) {
+              return { result: 'pass', reason: 'valid' }
+            } else {
+              return { result: 'fail', reason: 'Invalid config' }
+            }
+          }
           return { result: 'pass', reason: 'valid' }
         }
-
       } else if (tx.internalTXType === InternalTXType.SetCertTime) {
         return { result: 'pass', reason: 'valid' }
       } else if (tx.internalTXType === InternalTXType.InitRewardTimes) {
