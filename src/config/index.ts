@@ -120,10 +120,11 @@ if (process.env.APP_IP) {
 config = merge(config, {
   server: {
     p2p: {
-      cycleDuration: 60,
+      cycleDuration: 30,
       minNodesToAllowTxs: 1, // to allow single node networks
-      baselineNodes: process.env.baselineNodes ? parseInt(process.env.baselineNodes) : 300, // config used for baseline for entering recovery, restore, and safety. Should be equivalient to minNodes on network startup
-      minNodes: process.env.minNodes ? parseInt(process.env.minNodes) : 300,
+      baselineNodes: process.env.baselineNodes ? parseInt(process.env.baselineNodes) : 5, // config used for
+      // baseline for entering recovery, restore, and safety. Should be equivalient to minNodes on network startup
+      minNodes: process.env.minNodes ? parseInt(process.env.minNodes) : 15,
       maxNodes: process.env.maxNodes ? parseInt(process.env.maxNodes) : 1100,
       maxJoinedPerCycle: 10,
       maxSyncingPerCycle: 10,
@@ -136,7 +137,7 @@ config = merge(config, {
       amountToShrink: 5,
       maxDesiredMultiplier: 1.2,
       maxScaleReqs: 250, // todo: this will become a variable config but this should work for a 500 node demo
-      forceBogonFilteringOn: true,
+      forceBogonFilteringOn: false,
       //these are new feature in 1.3.0, we can make them default:true in shardus-core later
 
       // 1.2.3 migration starts
@@ -179,6 +180,8 @@ config = merge(config, {
       // enableLeftNetworkEarlySlashing: true,
       // enableSyncTimeoutSlashing: true,
       // enableNodeRefutedSlashing: true
+
+      useBinarySerializedEndpoints: false
     },
   },
 })
@@ -199,8 +202,8 @@ config = merge(config, {
     loadDetection: {
       queueLimit: 400, // EXSS does the main limiting now queue limit is a secondary limit
       executeQueueLimit: 250,
-      desiredTxTime: 30, // 15
-      highThreshold: 0.5,
+      desiredTxTime: 45, // 15
+      highThreshold: 0.7,
       lowThreshold: 0.2,
     },
   },
@@ -212,8 +215,8 @@ config = merge(config, {
     sharding: {
       nodesPerConsensusGroup: process.env.nodesPerConsensusGroup
         ? parseInt(process.env.nodesPerConsensusGroup)
-        : 10, //128 is the final goal
-      nodesPerEdge: process.env.nodesPerEdge ? parseInt(process.env.nodesPerEdge) : 5,
+        : 5,  //128 is the final goal
+      nodesPerEdge: process.env.nodesPerEdge ? parseInt(process.env.nodesPerEdge) : 1,
       executeInOneShard: true,
     },
     stateManager: {
@@ -242,11 +245,11 @@ config = merge(
   config,
   {
     server: {
-      mode: 'release', // todo: must set this to "release" for public networks or get security on endpoints. use "debug"
+      mode: 'debug', // todo: must set this to "release" for public networks or get security on endpoints. use "debug"
       // for easier debugging
       debug: {
-        startInFatalsLogMode: false, // true setting good for big aws test with nodes joining under stress.
-        startInErrorLogMode: true,
+        startInFatalsLogMode: true, // true setting good for big aws test with nodes joining under stress.
+        startInErrorLogMode: false,
         robustQueryDebug: false,
         fakeNetworkDelay: 0,
         disableSnapshots: true, // do not check in if set to false
@@ -262,6 +265,7 @@ config = merge(
           /* prettier-ignore */ 'bee9590211493d08d9f19915f68f12b0b9f75c56ca6911d699bb1cfa51cbbe77': DevSecurityLevel.High,
         },
         checkAddressFormat: true, //enabled for 1.10.0
+        enableScopedProfiling: false
       },
     },
   },
