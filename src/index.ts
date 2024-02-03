@@ -55,7 +55,8 @@ import {
   EVMAccountInfo,
   InitRewardTimes,
   InternalTx,
-  InternalTXType, isNodeAccount2,
+  InternalTXType,
+  isNodeAccount2,
   LeftNetworkEarlyViolationData,
   NetworkAccount,
   NodeAccount2,
@@ -119,7 +120,8 @@ import { Request, Response } from 'express'
 import {
   CertSignaturesResult,
   queryCertificate,
-  queryCertificateHandler, RemoveNodeCert,
+  queryCertificateHandler,
+  RemoveNodeCert,
   StakeCert,
   ValidatorError,
 } from './handlers/queryCertificate'
@@ -154,7 +156,7 @@ import { util } from 'prettier'
 import { getExternalApiMiddleware } from './middleware/externalApiMiddleware'
 import { AccountsEntry } from './storage/storage'
 import { getCachedRIAccount, setCachedRIAccount } from './storage/riAccountsCache'
-import {isLowStake} from "./tx/penalty/penaltyFunctions";
+import { isLowStake } from './tx/penalty/penaltyFunctions'
 import { deserializeWrappedEVMAccount, serializeWrappedEVMAccount } from './types/WrappedEVMAccount'
 import { accountDeserializer, accountSerializer, binaryDeserializer, binarySerializer } from './types/Helpers'
 
@@ -166,7 +168,6 @@ export const readableBlocks: { [blockNumber: number | string]: ShardeumBlockOver
 //Cache network account
 let cachedNetworkAccount = null
 let cacheExpirationTimestamp = 0
-
 
 export let genesisAccounts: string[] = []
 
@@ -2328,7 +2329,8 @@ async function _transactionReceiptPass(
       nodeAccount = wrappedStates[tx.reportedNodePublickKey].data as NodeAccount2
 
     if (isLowStake(nodeAccount)) {
-      if (ShardeumFlags.VerboseLogs) console.log(`isLowStake for nodeAccount ${nodeAccount.id}: true`, nodeAccount)
+      if (ShardeumFlags.VerboseLogs)
+        console.log(`isLowStake for nodeAccount ${nodeAccount.id}: true`, nodeAccount)
       const latestCycles = shardus.getLatestCycles()
       const currentCycle = latestCycles[0]
       if (!currentCycle) {
@@ -2367,7 +2369,11 @@ const getNetworkAccount = async (): Promise<ShardusTypes.WrappedData> => {
   return account
 }
 
-const createNetworkAccount = async (accountId: string, config: Config, isFirstSeed: boolean): Promise<NetworkAccount> => {
+const createNetworkAccount = async (
+  accountId: string,
+  config: Config,
+  isFirstSeed: boolean
+): Promise<NetworkAccount> => {
   let listOfChanges = []
 
   const networkAccount = await getNetworkAccount()
@@ -2576,7 +2582,7 @@ async function estimateGas(
   }
 
   const txId = crypto.hashObj(transaction)
-  const { address: senderAddress, isValid }  = getTxSenderAddress(transaction, txId)
+  const { address: senderAddress, isValid } = getTxSenderAddress(transaction, txId)
   const preRunTxState = getPreRunTXState(txId)
   const callerEVMAddress = senderAddress.toString()
   const callerShardusAddress = toShardusAddress(callerEVMAddress, AccountType.Account)
@@ -2647,9 +2653,12 @@ async function estimateGas(
 
 type CodeHashObj = { codeHash: string; contractAddress: string }
 
-async function generateAccessList(
-  injectedTx: ShardusTypes.OpaqueTransaction
-): Promise<{ shardusMemoryPatterns: null; failedAccessList?: boolean; accessList: any[]; codeHashes: any[] }> {
+async function generateAccessList(injectedTx: ShardusTypes.OpaqueTransaction): Promise<{
+  shardusMemoryPatterns: null
+  failedAccessList?: boolean
+  accessList: any[]
+  codeHashes: any[]
+}> {
   try {
     const transaction = getTransactionObj(injectedTx)
     const caShardusAddress = transaction.to
@@ -2680,7 +2689,7 @@ async function generateAccessList(
                 accessList: postResp.body.accessList,
                 shardusMemoryPatterns: postResp.body.shardusMemoryPatterns,
                 codeHashes: postResp.body.codeHashes,
-                failedAccessList: postResp.body.failedAccessList
+                failedAccessList: postResp.body.failedAccessList,
               }
             } else {
               return { accessList: [], shardusMemoryPatterns: null, codeHashes: [], failedAccessList: true }
@@ -2920,8 +2929,13 @@ async function generateAccessList(
       return { accessList: [], shardusMemoryPatterns: null, codeHashes: [], failedAccessList: true }
     }
     const isEmptyCodeHash = allCodeHash.size === 0
-    if (isEmptyCodeHash)  nestedCountersInstance.countEvent('accesslist', `Fail: empty codeHash`)
-    return { accessList, shardusMemoryPatterns, codeHashes: Array.from(allCodeHash.values()), failedAccessList: isEmptyCodeHash }
+    if (isEmptyCodeHash) nestedCountersInstance.countEvent('accesslist', `Fail: empty codeHash`)
+    return {
+      accessList,
+      shardusMemoryPatterns,
+      codeHashes: Array.from(allCodeHash.values()),
+      failedAccessList: isEmptyCodeHash,
+    }
   } catch (e) {
     console.log(`Error: generateAccessList`, e)
     nestedCountersInstance.countEvent('accesslist', `Fail: unknown`)
@@ -3972,7 +3986,6 @@ const shardusSetup = (): void => {
       let preCrackSuccess = true
 
       if (isInternalTx(tx) === false && isDebugTx(tx) === false) {
-
         const shardusTxId = generateTxId(tx)
         const transaction = getTransactionObj(tx)
         const senderAddress = getTxSenderAddress(transaction, shardusTxId).address
@@ -4016,7 +4029,8 @@ const shardusSetup = (): void => {
           const maxRetry = 3
           let retry = 0
           while (remoteShardusAccount == null && retry < maxRetry) {
-            if (ShardeumFlags.VerboseLogs) console.log(`txPreCrackData: fetching remote account for ${txSenderEvmAddr}, retry: ${retry}`)
+            if (ShardeumFlags.VerboseLogs)
+              console.log(`txPreCrackData: fetching remote account for ${txSenderEvmAddr}, retry: ${retry}`)
             retry++
             remoteShardusAccount = await shardus.getLocalOrRemoteAccount(transformedSourceKey)
           }
@@ -4032,7 +4046,11 @@ const shardusSetup = (): void => {
             // queueCountResult = await shardus.getLocalOrRemoteAccountQueueCount(transformedSourceKey)
             if (ShardeumFlags.VerboseLogs) console.log('queueCountResult:', queueCountResult)
             if (queueCountResult.account) {
-              if (ShardeumFlags.VerboseLogs) console.log(`txPreCrackData: overrode remote account for ${txSenderEvmAddr} with queueCountResult.account`, queueCountResult.account)
+              if (ShardeumFlags.VerboseLogs)
+                console.log(
+                  `txPreCrackData: overrode remote account for ${txSenderEvmAddr} with queueCountResult.account`,
+                  queueCountResult.account
+                )
               remoteShardusAccount.data = queueCountResult.account
             }
           }
@@ -4137,15 +4155,19 @@ const shardusSetup = (): void => {
               } else {
                 success = false
                 /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`precrack nonce fail: txNonce:${txNonce} is not within +/- ${ShardeumFlags.nonceCheckRange} of perfect nonce ${perfectCount}.    current nonce:${appData.nonce}  queueCount:${appData.queueCount} txHash: ${transaction.hash().toString()} `)
-                if (appData.nonce === 0) nestedCountersInstance.countEvent('shardeum', 'precrack - nonce fail, current nonce = 0')
-                else if (appData.nonce > 0) nestedCountersInstance.countEvent('shardeum', 'precrack - nonce fail, current nonce > 0')
+                if (appData.nonce === 0)
+                  nestedCountersInstance.countEvent('shardeum', 'precrack - nonce fail, current nonce = 0')
+                else if (appData.nonce > 0)
+                  nestedCountersInstance.countEvent('shardeum', 'precrack - nonce fail, current nonce > 0')
               }
             } else {
               if (txNonce != perfectCount) {
                 success = false
                 /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`precrack nonce fail: perfectCount:${perfectCount} != ${txNonce}.    current nonce:${appData.nonce}  queueCount:${appData.queueCount} txHash: ${transaction.hash().toString()} `)
-                if (appData.nonce === 0) nestedCountersInstance.countEvent('shardeum', 'precrack - nonce fail, current nonce = 0')
-                else if (appData.nonce > 0) nestedCountersInstance.countEvent('shardeum', 'precrack - nonce fail, current nonce > 0')
+                if (appData.nonce === 0)
+                  nestedCountersInstance.countEvent('shardeum', 'precrack - nonce fail, current nonce = 0')
+                else if (appData.nonce > 0)
+                  nestedCountersInstance.countEvent('shardeum', 'precrack - nonce fail, current nonce > 0')
               } else {
                 /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`precrack nonce pass: perfectCount:${perfectCount} == ${txNonce}.    current nonce:${appData.nonce}  queueCount:${appData.queueCount}  txHash: ${transaction.hash().toString()}`)
               }
@@ -4168,7 +4190,7 @@ const shardusSetup = (): void => {
               accessList: generatedAccessList,
               shardusMemoryPatterns,
               codeHashes,
-              failedAccessList
+              failedAccessList,
             } = await generateAccessList(tx)
             profilerInstance.scopedProfileSectionEnd('accesslist-generate')
 
@@ -4684,6 +4706,9 @@ const shardusSetup = (): void => {
               throw Error(`EVM Account <nominator> is not found ${accountId}`)
             }
           }
+        }
+        if (!wrappedEVMAccount) {
+          throw Error(`Account not found ${accountId}`)
         }
         if (ShardeumFlags.VerboseLogs) console.log('Running getRelevantData', wrappedEVMAccount)
         return shardus.createWrappedResponse(
@@ -5481,7 +5506,8 @@ const shardusSetup = (): void => {
 
           const signedCert: RemoveNodeCert = shardus.signAsNode(removeNodeCert)
           const result: ShardusTypes.SignAppDataResult = { success: true, signature: signedCert.sign }
-          if (ShardeumFlags.VerboseLogs) console.log(`signAppData passed ${type} ${stringify(removeNodeCert)}`)
+          if (ShardeumFlags.VerboseLogs)
+            console.log(`signAppData passed ${type} ${stringify(removeNodeCert)}`)
           nestedCountersInstance.countEvent('shardeum-staking', 'sign-stake-cert - passed')
           return result
         }
@@ -6260,7 +6286,11 @@ const shardusSetup = (): void => {
         nestedCountersInstance.countEvent('shardeum-staking', `node-deactivated: injectClaimRewardTx`)
         const result = await injectClaimRewardTxWithRetry(shardus, data)
         /* prettier-ignore */ if (logFlags.dapp_verbose) console.log('INJECTED_CLAIM_REWARD_TX', result)
-      } else if (eventType === 'node-left-early' && ShardeumFlags.enableNodeSlashing === true && ShardeumFlags.enableLeftNetworkEarlySlashing) {
+      } else if (
+        eventType === 'node-left-early' &&
+        ShardeumFlags.enableNodeSlashing === true &&
+        ShardeumFlags.enableLeftNetworkEarlySlashing
+      ) {
         let nodeLostCycle
         let nodeDroppedCycle
         for (let i = 0; i < latestCycles.length; i++) {
@@ -6285,7 +6315,11 @@ const shardusSetup = (): void => {
           nestedCountersInstance.countEvent('shardeum-staking', `node-left-early: event skipped`)
           /* prettier-ignore */ if (logFlags.dapp_verbose) console.log(`Shardeum node-left-early event skipped`, data, nodeLostCycle, nodeDroppedCycle)
         }
-      } else if (eventType === 'node-sync-timeout' && ShardeumFlags.enableNodeSlashing === true && ShardeumFlags.enableSyncTimeoutSlashing) {
+      } else if (
+        eventType === 'node-sync-timeout' &&
+        ShardeumFlags.enableNodeSlashing === true &&
+        ShardeumFlags.enableSyncTimeoutSlashing
+      ) {
         const violationData: SyncingTimeoutViolationData = {
           nodeLostCycle: data.cycleNumber,
           nodeDroppedTime: data.time,
@@ -6293,7 +6327,11 @@ const shardusSetup = (): void => {
         nestedCountersInstance.countEvent('shardeum-staking', `node-sync-timeout: injectPenaltyTx`)
         const result = await PenaltyTx.injectPenaltyTX(shardus, data, violationData)
         /* prettier-ignore */ if (logFlags.dapp_verbose) console.log('INJECTED_PENALTY_TX', result)
-      } else if (eventType === 'node-refuted' && ShardeumFlags.enableNodeSlashing === true && ShardeumFlags.enableNodeRefutedSlashing) {
+      } else if (
+        eventType === 'node-refuted' &&
+        ShardeumFlags.enableNodeSlashing === true &&
+        ShardeumFlags.enableNodeRefutedSlashing
+      ) {
         let nodeRefutedCycle
         for (let i = 0; i < latestCycles.length; i++) {
           const cycle = latestCycles[i]
