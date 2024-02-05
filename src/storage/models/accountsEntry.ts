@@ -1,12 +1,12 @@
-import * as Sequelize from 'sequelize'
+import { SQLDataTypes } from '../utils/schemaDefintions'
 
 const accountsEntry = [
   'accountsEntry',
   {
-    accountId: { type: Sequelize.STRING, allowNull: false, unique: 'compositeIndex' }, //, primaryKey: true
-    timestamp: { type: Sequelize.BIGINT, allowNull: false, unique: 'compositeIndex' }, //do we need bigint...
-    data: { type: Sequelize.JSON, allowNull: false }, //binary?
-    //hash: { type: Sequelize.STRING, allowNull: false },
+    accountId: { type: SQLDataTypes.STRING, allowNull: false, unique: 'compositeIndex' }, //, primaryKey: true
+    timestamp: { type: SQLDataTypes.BIGINT, allowNull: false, unique: 'compositeIndex' }, //do we need bigint...
+    data: { type: SQLDataTypes.JSON, allowNull: false }, //binary?
+    //hash: { type: SQLDataTypes.STRING, allowNull: false },
   },
 ]
 

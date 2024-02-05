@@ -1,7 +1,6 @@
 import fs from 'fs'
 import path from 'path'
 import { DeSerializeFromJsonString } from '../src/utils'
-const { Sequelize } = require('sequelize')
 const sqlite3 = require('sqlite3').verbose()
 
 /* dataRestore tool collects all the rows in all the databases (sharded network will have more than 1
@@ -19,7 +18,7 @@ async function main() {
   const targetJSONPath = './account-export.json'
 
   // get all the database files to fetch data from
-  let dbFiles = await dbFilesFromFolders(baseDirectory)
+  const dbFiles = await dbFilesFromFolders(baseDirectory)
 
   // export the rows of all the databases
   await exportData(dbFiles, batchSize, targetDBPath, targetJSONPath, true) // exportToJson is set to true for now
@@ -27,14 +26,13 @@ async function main() {
 
 /* dbFilesFromFolders finds out all the database files under the given root folder */
 async function dbFilesFromFolders(baseDirectory: string): Promise<string[]> {
-  let dbFiles = []
-  fs.readdirSync(baseDirectory).forEach(file => {
+  const dbFiles = []
+  fs.readdirSync(baseDirectory).forEach((file) => {
     try {
-      let nodeDirectory = path.resolve(baseDirectory, file)
-      let isDir = fs.lstatSync(nodeDirectory).isDirectory()
+      const nodeDirectory = path.resolve(baseDirectory, file)
+      const isDir = fs.lstatSync(nodeDirectory).isDirectory()
       if (isDir) {
-        let dbFilepath = path.resolve(baseDirectory, nodeDirectory + '/db/shardeum.sqlite')
-        let size = fs.lstatSync(dbFilepath)?.size ?? -1
+        const dbFilepath = path.resolve(baseDirectory, nodeDirectory + '/db/shardeum.sqlite')
         dbFiles.push(dbFilepath)
       }
     } catch (error) {
@@ -54,12 +52,12 @@ async function exportData(
   targetJSONPath: string,
   exportToJson: boolean
 ) {
-  let targetDB = await createTargetDB(targetDBPath)
+  const targetDB = await createTargetDB(targetDBPath)
   let totalDBRowCount = 0
   let totalJSONRowCount = 0
 
   //for every db found in the root directory, export the rows to a single DB.
-  for (let dbFile of dbFiles) {
+  for (const dbFile of dbFiles) {
     totalDBRowCount += await writeDBToTarget(dbFile, targetDB, batchSize)
   }
   await targetDB.close()
@@ -82,22 +80,21 @@ async function writeDBToTarget(dbFile, targetDB, batchSize) {
   let rowCount = 0
   let sourceDB = getDB(dbFile)
   try {
-    let latestAccountId = '00' //  storing latest value of every batch make the pagination faster
-    for (let i = 0; ; i += batchSize) {
-      const queryString = `SELECT * FROM accountsEntry WHERE accountId > \'${latestAccountId}\' order by accountId asc LIMIT ${batchSize}`
-      let accounts = await sourceDB.query(queryString)
-      accounts = accounts[0]
-      await targetDB.serialize(function() {
-        targetDB.run('begin transaction')
-        for (let account of accounts) {
-          const dataStr = JSON.stringify(DeSerializeFromJsonString(account.data)).replace(/'/g, "''")
-          let insertQuery = `insert into accountsEntry (accountId, timestamp, data) values (\'${account.accountId}\', ${account.timestamp}, \'${dataStr}\')`
-          targetDB.run(insertQuery)
-          latestAccountId = account.accountId
-          rowCount++
-        }
-        targetDB.run('commit')
-      })
+    let latestAccountId = '00'
+    while (true) {
+      const queryString = `SELECT * FROM accountsEntry WHERE accountId > ? ORDER BY accountId ASC LIMIT ?`
+      let accounts = await runQuery(sourceDB, queryString, [latestAccountId, batchSize])
+
+      await run(targetDB, 'BEGIN TRANSACTION')
+      for (let account of accounts) {
+        const dataStr = JSON.stringify(DeSerializeFromJsonString(account.data)).replace(/'/g, "''")
+        let insertQuery = `INSERT INTO accountsEntry (accountId, timestamp, data) VALUES (?, ?, ?)`
+        await run(targetDB, insertQuery, [account.accountId, account.timestamp, dataStr])
+        latestAccountId = account.accountId
+        rowCount++
+      }
+      await run(targetDB, 'COMMIT')
+
       if (rowCount % 100000 == 0) {
         console.log(`inserted ${rowCount} elements in target database`)
       }
@@ -108,10 +105,9 @@ async function writeDBToTarget(dbFile, targetDB, batchSize) {
     console.log(`successfully exported ${rowCount} rows`)
   } catch (error) {
     console.error('error processing the source database:', error)
+    await run(targetDB, 'ROLLBACK')
   } finally {
-    if (sourceDB) {
-      await sourceDB.close()
-    }
+    sourceDB.close()
   }
   return rowCount
 }
@@ -121,18 +117,18 @@ async function writeDBToTarget(dbFile, targetDB, batchSize) {
  */
 async function exportToJSON(targetDbPath, targetJsonPath, batchSize) {
   let rowCount = 0
-  let targetDB = getDB(targetDbPath)
+  const targetDB = getDB(targetDbPath)
   const writableStream = fs.createWriteStream(targetJsonPath)
   try {
     for (let i = 0; ; i += batchSize) {
       const queryString = `SELECT * FROM accountsEntry order by timestamp asc LIMIT ${batchSize} offset ${i}`
       let accounts = await targetDB.query(queryString)
       accounts = accounts[0]
-      for (let account of accounts) {
+      for (const account of accounts) {
         const dataObj = JSON.parse(account.data)
         dataObj.timestamp = 1
-        let dataStr = JSON.stringify(dataObj).replace(/"/g, '\\"')
-        let jsonString = `{ "accountId" : "${account.accountId}", "timestamp" : 1, "data": "${dataStr}" }`
+        const dataStr = JSON.stringify(dataObj).replace(/"/g, '\\"')
+        const jsonString = `{ "accountId" : "${account.accountId}", "timestamp" : 1, "data": "${dataStr}" }`
         writableStream.write(jsonString)
         writableStream.write('\n')
         rowCount++
@@ -166,7 +162,7 @@ async function createTargetDB(targetDBPath: string) {
     console.log('deleted old database successfully')
   }
   console.log('creating new database')
-  let targetDB = new sqlite3.Database(targetDBPath)
+  const targetDB = new sqlite3.Database(targetDBPath)
   targetDB.run(
     'CREATE TABLE if not exists `accountsEntry` (`accountId` VARCHAR(255) NOT NULL, `timestamp` BIGINT NOT NULL, `data` JSON NOT NULL, PRIMARY KEY (`accountId`))'
   )
@@ -177,18 +173,29 @@ async function createTargetDB(targetDBPath: string) {
   return targetDB
 }
 
-function getDB(db: string) {
-  return new Sequelize('database', 'username', 'password', {
-    dialect: 'sqlite',
-    storage: db, // or ':memory:'
-    pool: {
-      max: 1000,
-      min: 0,
-      acquire: 30000,
-      idle: 10000,
-    },
-    //disable DB log to console because it is super slow!
-    logging: false,
+function getDB(dbPath) {
+  return new sqlite3.Database(dbPath, sqlite3.OPEN_READWRITE | sqlite3.OPEN_CREATE, (err) => {
+    if (err) {
+      console.error('Error opening database: ', err.message)
+    }
+  })
+}
+
+function runQuery(db, query, params = []) {
+  return new Promise((resolve, reject) => {
+    db.all(query, params, (err, rows) => {
+      if (err) reject(err)
+      else resolve(rows)
+    })
+  })
+}
+
+function run(db, query, params = []) {
+  return new Promise((resolve, reject) => {
+    db.run(query, params, function (err) {
+      if (err) reject(err)
+      else resolve(this)
+    })
   })
 }
 

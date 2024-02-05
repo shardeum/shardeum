@@ -1,11 +1,11 @@
-import * as Sequelize from 'sequelize'
+import { SQLDataTypes } from '../utils/schemaDefintions'
 
 const riAccountsCache = [
   'riAccountsCache',
   {
-    accountId: { type: Sequelize.STRING, allowNull: false, unique: 'compositeIndex' },
-    timestamp: { type: Sequelize.BIGINT, allowNull: false, unique: 'compositeIndex' },
-    data: { type: Sequelize.JSON, allowNull: false },
+    accountId: { type: SQLDataTypes.STRING, allowNull: false, unique: 'compositeIndex' },
+    timestamp: { type: SQLDataTypes.BIGINT, allowNull: false, unique: 'compositeIndex' },
+    data: { type: SQLDataTypes.JSON, allowNull: false },
   },
 ]
 
