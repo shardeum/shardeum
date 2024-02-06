@@ -4031,20 +4031,30 @@ const shardusSetup = (): void => {
           const txSenderEvmAddr = senderAddress.toString()
           const transformedSourceKey = toShardusAddress(txSenderEvmAddr, AccountType.Account)
 
-          let queueCountResult = { count: 0, committingAppData: [], account: null }
-          //this is likely QueueCountsResult but it is not exported from shardus
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          let countPromise: Promise<any> = undefined
-          if (ShardeumFlags.txNoncePreCheck) {
-            //parallel fetch
-            countPromise = shardus.getLocalOrRemoteAccountQueueCount(transformedSourceKey)
-          }
+          let queueCountResult = undefined
           const maxRetry = 3
           let retry = 0
+          if (ShardeumFlags.txNoncePreCheck) {
+            while((!queueCountResult || queueCountResult?.count === -1) && retry < maxRetry) {
+              retry++
+              queueCountResult = await shardus.getLocalOrRemoteAccountQueueCount(transformedSourceKey)
+            }
+            if (!queueCountResult || queueCountResult?.count === -1) {
+              nestedCountersInstance.countEvent('shardeum', 'Fetching queue count failed')
+            }
+          }
+          const maxRetry = 3
+          retry = 0
           while (remoteShardusAccount == null && retry < maxRetry) {
             if (ShardeumFlags.VerboseLogs) console.log(`txPreCrackData: fetching remote account for ${txSenderEvmAddr}, retry: ${retry}`)
             retry++
-            remoteShardusAccount = await shardus.getLocalOrRemoteAccount(transformedSourceKey)
+            remoteShardusAccount = await shardus.getLocalOrRemoteAccount(transformedSourceKey).catch((e) => {
+              console.error(`txPreCrackData: error fetching remote account for ${txSenderEvmAddr}, retry: ${retry}`, e)
+            });
+          }
+          if (remoteShardusAccount == null) {
+            if (ShardeumFlags.VerboseLogs) console.log(`txPreCrackData: found no local or remote account for address: ${txSenderEvmAddr}, key: ${transformedSourceKey}.`)
+            nestedCountersInstance.countEvent('shardeum', 'remoteShardusAccount was empty')
           }
 
           if (transaction.to) {
@@ -4053,9 +4063,6 @@ const shardusSetup = (): void => {
             remoteTargetAccount = await shardus.getLocalOrRemoteAccount(transformedTargetKey)
           }
           if (ShardeumFlags.txNoncePreCheck) {
-            //parallel fetch
-            queueCountResult = await countPromise
-            // queueCountResult = await shardus.getLocalOrRemoteAccountQueueCount(transformedSourceKey)
             if (ShardeumFlags.VerboseLogs) console.log('queueCountResult:', queueCountResult)
             if (queueCountResult.account) {
               if (ShardeumFlags.VerboseLogs)
@@ -4066,7 +4073,7 @@ const shardusSetup = (): void => {
             }
           }
 
-          if (remoteShardusAccount == undefined) {
+          if (remoteShardusAccount == null) {
             /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`txPreCrackData: found no local or remote account for address: ${txSenderEvmAddr}, key: ${transformedSourceKey}. using nonce=0`)
           } else {
             foundSender = true
@@ -4102,7 +4109,7 @@ const shardusSetup = (): void => {
 
           // Attach nonce, queueCount and txNonce to appData
           if (ShardeumFlags.txNoncePreCheck) {
-            if (queueCountResult == null) {
+            if (queueCountResult.count === -1) {
               /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`txPreCrackData uanble to get queueCountResult for ${txSenderEvmAddr} queueCountResult:${queueCountResult}`)
               throw new Error(
                 `txPreCrackData uanble to get queueCountResult for ${txSenderEvmAddr} queueCountResult:${queueCountResult}`
