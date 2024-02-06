@@ -143,6 +143,8 @@ import { applyInitDaoTx, getDaoAccountObj, getRelevantDataInitDao, handleDaoTxAp
 import { applyParameters, generateIssue, tallyVotes } from './dao/utils'
 import { DaoTx, isOpaqueDaoTx } from './dao/tx'
 import registerDaoAPI from './dao/api'
+import { DaoGlobalAccount } from './dao/accounts/networkAccount'
+import { isLowStake } from "./tx/penalty/penaltyFunctions";
 
 let latestBlock = 0
 export const blocks: BlockMap = {}
@@ -2212,7 +2214,7 @@ async function applyInternalTx<A>(
     const penaltyTx = internalTx as PenaltyTX
     applyPenaltyTX(shardus, penaltyTx, wrappedStates, txTimestamp, applyResponse)
   } else if (internalTx.internalTXType === InternalTXType.InitDao) {
-    applyInitDaoTx(wrappedStates, applyResponse, internalTx, txTimestamp, txId)
+    applyInitDaoTx(shardus, wrappedStates, applyResponse, internalTx, txTimestamp, txId)
   }
 
   return applyResponse
@@ -4595,7 +4597,7 @@ const shardusSetup = (): void => {
         let accountCreated = false
         //let wrappedEVMAccount = accounts[accountId]
         shardus.setDebugSetLastAppAwait('getRelevantData.AccountsStorage.getAccount 4')
-        let wrappedEVMAccount: NetworkAccount | WrappedEVMAccount = await AccountsStorage.getAccount(
+        let wrappedEVMAccount: NetworkAccount | WrappedEVMAccount | DaoGlobalAccount = await AccountsStorage.getAccount(
           accountId
         )
         shardus.setDebugSetLastAppAwait(
@@ -4682,10 +4684,17 @@ const shardusSetup = (): void => {
             }
           }
         }
-        if (internalTx.internalTXType === InternalTXType.InitDao) {
-          console.log("daoLogging: internalTx.internalTXType === InternalTXType.InitDao, getting relevant data for dao")
-          accountCreated = getRelevantDataInitDao(accountId, wrappedEVMAccount)
-          console.log("daoLogging: accountCreated: ", accountCreated)
+        if (tx.internalTXType === InternalTXType.InitDao) {
+          console.log(
+            'daoLogging: internalTx.internalTXType === InternalTXType.InitDao, getting relevant data for dao'
+          )
+          if (!wrappedEVMAccount) {
+            wrappedEVMAccount = await getRelevantDataInitDao(accountId)
+            accountCreated = true
+            console.log("daoLogging: accountCreated: ", accountCreated)
+          } else {
+            throw Error(`Dao Account already exists`)
+          }
         }
         if (ShardeumFlags.VerboseLogs) console.log('Running getRelevantData', wrappedEVMAccount)
         return shardus.createWrappedResponse(
