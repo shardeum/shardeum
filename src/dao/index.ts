@@ -76,14 +76,7 @@ export function getRelevantDataInitDao(
  */
 export function handleDaoTxCrack(
   tx: OpaqueTransaction,
-  result: {
-    sourceKeys: string[]
-    targetKeys: string[]
-    storageKeys: string[]
-    codeHashKeys: string[]
-    allKeys: string[]
-    timestamp: number
-  }
+  result: TransactionKeys
 ): void {
   // Unserialize tx
   const unserializedTx = getTransactionObj(tx)
