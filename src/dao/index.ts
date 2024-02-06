@@ -1,12 +1,10 @@
 import { Shardus } from '@shardus/core'
 import shardus from '@shardus/core/dist/shardus'
-import { ApplyResponse, OpaqueTransaction } from '@shardus/core/dist/shardus/shardus-types'
+import { ApplyResponse, OpaqueTransaction, WrappedResponse } from '@shardus/core/dist/shardus/shardus-types'
 import { createInternalTxReceipt, logFlags, shardeumGetTime } from '..'
 import { ShardeumFlags } from '../shardeum/shardeumFlags'
 import {
-  NetworkAccount,
   WrappedStates,
-  WrappedEVMAccount,
   TransactionKeys,
 } from '../shardeum/shardeumTypes'
 import { DaoGlobalAccount } from './accounts/networkAccount'
@@ -16,6 +14,8 @@ import { getTransactionObj } from '../setup/helpers'
 import * as AccountsStorage from '../storage/accountStorage'
 import { daoAccountAddress } from '../config/dao'
 import { InternalTXType, OtherInternalTx } from '../shardeum/internalTxs'
+import { inspect } from 'util'
+import * as WrappedEVMAccountFunctions from '../shardeum/wrappedEVMAccountFunctions'
 
 export function setupDaoAccount(shardus: Shardus, when: number): void {
   if (ShardeumFlags.EnableDaoFeatures) {
@@ -34,14 +34,29 @@ export async function getDaoAccountObj(shardus: Shardus): Promise<DaoGlobalAccou
 }
 
 export function applyInitDaoTx(
+  shardus: Shardus,
   wrappedStates: WrappedStates,
   applyResponse: ApplyResponse,
   internalTx: OtherInternalTx,
   txTimestamp: number,
   txId: string
 ): void {
-  const dao: NetworkAccount = wrappedStates[daoAccountAddress].data
-  dao.timestamp = txTimestamp
+
+  // eslint-disable-next-line security/detect-object-injection
+  const daoWrittenAccount = wrappedStates[daoAccountAddress]
+  const daoAccount: DaoGlobalAccount = daoWrittenAccount.data
+  daoAccount.timestamp = txTimestamp
+
+  if (ShardeumFlags.useAccountWrites) {
+    shardus.applyResponseAddChangedAccount(
+      applyResponse,
+      daoAccountAddress,
+      WrappedEVMAccountFunctions._shardusWrappedAccount(daoAccount) as WrappedResponse,
+      txId,
+      txTimestamp
+    )
+  }
+
   if (ShardeumFlags.supportInternalTxReceipt) {
     createInternalTxReceipt(
       shardus,
@@ -57,17 +72,10 @@ export function applyInitDaoTx(
 
 export function getRelevantDataInitDao(
   accountId: string,
-  wrappedEVMAccount: NetworkAccount | DaoGlobalAccount | WrappedEVMAccount
-): boolean {
-  if (!wrappedEVMAccount) {
-    if (accountId === daoAccountAddress) {
-      wrappedEVMAccount = new DaoGlobalAccount(daoAccountAddress)
-      return true
-    } else {
-      //wrappedEVMAccount = createNodeAccount(accountId) as any
-    }
+): DaoGlobalAccount | undefined {
+  if (accountId === daoAccountAddress) {
+    return new DaoGlobalAccount(daoAccountAddress)
   }
-  return false
 }
 
 /**
@@ -199,7 +207,7 @@ export function startDaoMaintenanceCycle(interval: number, shardus: Shardus): vo
       // Get the dao account and node data needed for issue creation
       const daoAccountObj = await getDaoAccountObj(shardus)
       if (!daoAccountObj) {
-        throw new Error("couldn't find dao account; can't continue with daoMaintenance")
+        throw new Error(`couldn't find dao account: ${inspect(daoAccountObj)}; can't continue with daoMaintenance`)
       }
 
       const [cycleData] = shardus.getLatestCycles()
