@@ -45,7 +45,6 @@ export function applyInitDaoTx(
   txTimestamp: number,
   txId: string
 ): void {
-
   // eslint-disable-next-line security/detect-object-injection
   const daoWrittenAccount = wrappedStates[daoAccountAddress]
   const daoAccount: DaoGlobalAccount = daoWrittenAccount.data
@@ -74,9 +73,7 @@ export function applyInitDaoTx(
   }
 }
 
-export function getRelevantDataInitDao(
-  accountId: string,
-): DaoGlobalAccount | undefined {
+export function getRelevantDataInitDao(accountId: string): DaoGlobalAccount | undefined {
   if (accountId === daoAccountAddress) {
     return new DaoGlobalAccount(daoAccountAddress)
   }
@@ -85,10 +82,7 @@ export function getRelevantDataInitDao(
 /**
  * Liberus txs export a `keys` fn that gets called here
  */
-export function handleDaoTxCrack(
-  tx: OpaqueTransaction,
-  result: TransactionKeys
-): void {
+export function handleDaoTxCrack(tx: OpaqueTransaction, result: TransactionKeys): void {
   // Unserialize tx
   const unserializedTx = getTransactionObj(tx)
   // Decode data field of EVM tx to get type of DAO tx
@@ -211,7 +205,9 @@ export function startDaoMaintenanceCycle(interval: number, shardus: Shardus): vo
       // Get the dao account and node data needed for issue creation
       const daoAccountObj = await getDaoAccountObj(shardus)
       if (!daoAccountObj) {
-        throw new Error(`couldn't find dao account: ${inspect(daoAccountObj)}; can't continue with daoMaintenance`)
+        throw new Error(
+          `couldn't find dao account: ${inspect(daoAccountObj)}; can't continue with daoMaintenance`
+        )
       }
 
       const [cycleData] = shardus.getLatestCycles()
