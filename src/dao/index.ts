@@ -220,39 +220,37 @@ export function startDaoMaintenanceCycle(interval: number, shardus: Shardus): vo
       const nodeAddress = node.address
 
       // ISSUE
-      if (WindowRange.fromObj(daoAccountObj.windows.proposalWindow).includes(currentTime)) {
-        if (!issueGenerated && daoAccountObj.issue > 1) {
-          if (luckyNodes.includes(nodeId)) {
-            await generateIssue(nodeAddress, nodeId, shardus)
-          }
-          issueGenerated = true
-          tallyGenerated = false
-          applyGenerated = false
+      if (
+        WindowRange.fromObj(daoAccountObj.windows.proposalWindow).includes(currentTime) &&
+        !issueGenerated &&
+        daoAccountObj.issue > 1
+      ) {
+        if (luckyNodes.includes(nodeId)) {
+          await generateIssue(nodeAddress, nodeId, shardus)
         }
+        issueGenerated = true
+        tallyGenerated = false
+        applyGenerated = false
       }
 
       // TALLY
-      if (WindowRange.fromObj(daoAccountObj.windows.graceWindow).includes(currentTime)) {
-        if (!tallyGenerated) {
-          if (luckyNodes.includes(nodeId)) {
-            await tallyVotes(nodeAddress, nodeId, shardus)
-          }
-          issueGenerated = false
-          tallyGenerated = true
-          applyGenerated = false
+      if (WindowRange.fromObj(daoAccountObj.windows.graceWindow).includes(currentTime) && !tallyGenerated) {
+        if (luckyNodes.includes(nodeId)) {
+          await tallyVotes(nodeAddress, nodeId, shardus)
         }
+        issueGenerated = false
+        tallyGenerated = true
+        applyGenerated = false
       }
 
       // APPLY
-      if (WindowRange.fromObj(daoAccountObj.windows.applyWindow).includes(currentTime)) {
-        if (!applyGenerated) {
-          if (luckyNodes.includes(nodeId)) {
-            await applyParameters(nodeAddress, nodeId, shardus)
-          }
-          issueGenerated = false
-          tallyGenerated = false
-          applyGenerated = true
+      if (WindowRange.fromObj(daoAccountObj.windows.applyWindow).includes(currentTime) && !applyGenerated) {
+        if (luckyNodes.includes(nodeId)) {
+          await applyParameters(nodeAddress, nodeId, shardus)
         }
+        issueGenerated = false
+        tallyGenerated = false
+        applyGenerated = true
       }
     } catch (err) {
       /* prettier-ignore */ if (logFlags.error) shardus.log('daoMaintenance ERR: ', err)
