@@ -13,6 +13,14 @@ export class WindowRange {
   #size: number
 
   constructor(start: number, size: number) {
+    this.init(start, size)
+  }
+
+  static fromObj({ start, size }: { start: number; size: number }): WindowRange {
+    return new WindowRange(start, size)
+  }
+
+  private init(start: number, size: number): void {
     if (typeof start !== 'number') throw new Error('start must be a number')
     if (typeof size !== 'number') throw new Error('size must be a number')
     if (Number.isNaN(start)) throw new Error('start must be a number')

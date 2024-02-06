@@ -16,6 +16,7 @@ import { daoAccountAddress } from '../config/dao'
 import { InternalTXType, OtherInternalTx } from '../shardeum/internalTxs'
 import { inspect } from 'util'
 import * as WrappedEVMAccountFunctions from '../shardeum/wrappedEVMAccountFunctions'
+import { WindowRange } from './types'
 
 export function setupDaoAccount(shardus: Shardus, when: number): void {
   if (ShardeumFlags.EnableDaoFeatures) {
@@ -221,7 +222,7 @@ export function startDaoMaintenanceCycle(interval: number, shardus: Shardus): vo
       const nodeAddress = node.address
 
       // ISSUE
-      if (daoAccountObj.windows.proposalWindow.includes(currentTime)) {
+      if (WindowRange.fromObj(daoAccountObj.windows.proposalWindow).includes(currentTime)) {
         if (!issueGenerated && daoAccountObj.issue > 1) {
           if (luckyNodes.includes(nodeId)) {
             await generateIssue(nodeAddress, nodeId, shardus)
@@ -233,7 +234,7 @@ export function startDaoMaintenanceCycle(interval: number, shardus: Shardus): vo
       }
 
       // TALLY
-      if (daoAccountObj.windows.graceWindow.includes(currentTime)) {
+      if (WindowRange.fromObj(daoAccountObj.windows.graceWindow).includes(currentTime)) {
         if (!tallyGenerated) {
           if (luckyNodes.includes(nodeId)) {
             await tallyVotes(nodeAddress, nodeId, shardus)
@@ -245,7 +246,7 @@ export function startDaoMaintenanceCycle(interval: number, shardus: Shardus): vo
       }
 
       // APPLY
-      if (daoAccountObj.windows.applyWindow.includes(currentTime)) {
+      if (WindowRange.fromObj(daoAccountObj.windows.applyWindow).includes(currentTime)) {
         if (!applyGenerated) {
           if (luckyNodes.includes(nodeId)) {
             await applyParameters(nodeAddress, nodeId, shardus)
