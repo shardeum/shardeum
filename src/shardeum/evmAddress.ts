@@ -49,7 +49,8 @@ export function getAccountShardusAddress(account: WrappedEVMAccount | InternalAc
       account.accountType === AccountType.NetworkAccount ||
       account.accountType === AccountType.NodeAccount ||
       account.accountType === AccountType.NodeAccount2 ||
-      account.accountType === AccountType.DevAccount
+      account.accountType === AccountType.DevAccount ||
+      account.accountType === AccountType.DaoAccount
     ) {
       return (account as unknown as NetworkAccount).id
     }
