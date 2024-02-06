@@ -3993,7 +3993,13 @@ const shardusSetup = (): void => {
             //parallel fetch
             countPromise = shardus.getLocalOrRemoteAccountQueueCount(transformedSourceKey)
           }
-          remoteShardusAccount = await shardus.getLocalOrRemoteAccount(transformedSourceKey)
+          const maxRetry = 3
+          let retry = 0
+          while (remoteShardusAccount == null && retry < maxRetry) {
+            if (ShardeumFlags.VerboseLogs) console.log(`txPreCrackData: fetching remote account for ${txSenderEvmAddr}, retry: ${retry}`)
+            retry++
+            remoteShardusAccount = await shardus.getLocalOrRemoteAccount(transformedSourceKey)
+          }
 
           if (transaction.to) {
             const txTargetEvmAddr = transaction.to.toString()
