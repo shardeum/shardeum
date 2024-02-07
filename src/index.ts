@@ -2900,7 +2900,7 @@ async function generateAccessList(
       if (ShardeumFlags.VerboseLogs) console.log('Execution Error:', runTxResult.execResult.exceptionError)
       nestedCountersInstance.countEvent(
         'accesslist',
-        `Fail with error: CA ${transaction.to && ShardeumFlags.VerboseLogs ? transaction.to.toString() : ''}`
+        `Fail with evm error: CA ${transaction.to && ShardeumFlags.VerboseLogs ? transaction.to.toString() : ''}`
       )
       return { accessList: [], shardusMemoryPatterns: null, codeHashes: [], failedAccessList: true }
     }
@@ -4139,16 +4139,6 @@ const shardusSetup = (): void => {
           }
 
           if (success === true) {
-            // generate access list for non EIP 2930 txs
-            const callObj = {
-              from: senderAddress.toString(),
-              to: transaction.to ? transaction.to.toString() : null,
-              value: bigIntToHex(transaction.value),
-              data: bytesToHex(transaction.data),
-              gasLimit: bigIntToHex(transaction.gasLimit),
-              newContractAddress: appData.newCAAddr,
-            }
-
             profilerInstance.scopedProfileSectionStart('accesslist-generate')
             const {
               accessList: generatedAccessList,
@@ -4906,17 +4896,16 @@ const shardusSetup = (): void => {
             accountType: AccountType.ContractStorage,
           }
           /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`Creating new contract storage account key:${evmAccountID} in contract address ${wrappedEVMAccount.ethAddress}`)
-        }  else if (accountType === AccountType.ContractCode) {
-          //if(ShardeumFlags.createCodebytesFix){
-            wrappedEVMAccount = {
-              timestamp: 0,
-              codeHash: hexToBytes('0x' + evmAccountInfo.evmAddress),
-              codeByte: Buffer.from([]),
-              ethAddress: evmAccountInfo.evmAddress, // storage key
-              contractAddress: evmAccountInfo.contractAddress, // storage key
-              hash: '',
-              accountType: AccountType.ContractCode,
-            }     
+        } else if (accountType === AccountType.ContractCode) {
+          wrappedEVMAccount = {
+            timestamp: 0,
+            codeHash: hexToBytes('0x' + evmAccountInfo.evmAddress),
+            codeByte: Buffer.from([]),
+            ethAddress: evmAccountInfo.evmAddress, // storage key
+            contractAddress: evmAccountInfo.contractAddress, // storage key
+            hash: '',
+            accountType: AccountType.ContractCode,
+            }
             /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`Creating new contract bytes account key:${evmAccountID} in contract address ${wrappedEVMAccount.ethAddress}`)
           //}
         } else {
