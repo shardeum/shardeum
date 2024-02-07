@@ -675,18 +675,28 @@ async function tryGetRemoteAccountCB(
   address: string,
   key: string
 ): Promise<WrappedEVMAccount> {
+  let retry = 0
+  let maxRetry = 1 // default for contract storage accounts
+  if (type === AccountType.Account) maxRetry = 2 // for CA accounts
+  else if (type === AccountType.ContractCode && key != emptyCodeHash) maxRetry = 3 // for codebytes
+
   const shardusAddress = toShardusAddressWithKey(address, key, type)
-  /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`Trying to get remote account for address: ${address}, type: ${type}, key: ${key}`)
-  const remoteShardusAccount = await shardus.getLocalOrRemoteAccount(shardusAddress, {
-    useRICache: true,
-  })
+  let remoteShardusAccount
+  while (retry < maxRetry && remoteShardusAccount == null) {
+    /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`Trying to get remote account for address: ${address}, type: ${type}, key: ${key} retry: ${retry}`)
+    retry++
+    remoteShardusAccount = await shardus.getLocalOrRemoteAccount(shardusAddress, {
+      useRICache: true,
+    })
+  }
+
   if (remoteShardusAccount == undefined) {
-    /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`Found no remote account for address: ${address}, type: ${type}, key: ${key}`)
+    /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`Found no remote account for address: ${address}, type: ${type}, key: ${key}, retry: ${retry}`)
     return
   }
   const fixedEVMAccount = remoteShardusAccount.data as WrappedEVMAccount
   fixDeserializedWrappedEVMAccount(fixedEVMAccount)
-  /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`Successfully found remote account for address: ${address}, type: ${type}, key: ${key}`, fixedEVMAccount)
+  /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`Successfully found remote account for address: ${address}, type: ${type}, key: ${key}, retry: ${retry}`, fixedEVMAccount)
   return fixedEVMAccount
 }
 
