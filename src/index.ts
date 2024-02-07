@@ -2495,20 +2495,6 @@ const getOrCreateBlockFromTimestamp = (timestamp: number, scheduleNextBlock = fa
   return block
 }
 
-function wrapTransaction(
-  transaction: LegacyTransaction | AccessListEIP2930Transaction,
-  impl: () => Address
-): LegacyTransaction | AccessListEIP2930Transaction {
-  return new Proxy(transaction, {
-    get: function (target, prop, receiver): any {
-      if (prop === 'getSenderAddress') {
-        return impl
-      }
-      return Reflect.get(target, prop, receiver)
-    },
-  })
-}
-
 async function estimateGas(
   injectedTx: { from: string; maxFeePerGas: string; gas: number } & LegacyTxData
 ): Promise<{ estimateGas: string }> {
@@ -2547,14 +2533,11 @@ async function estimateGas(
     gasLimit: injectedTx.gasLimit ? injectedTx.gasLimit : blockForTx.header.gasLimit,
   }
 
-  let transaction: LegacyTransaction | AccessListEIP2930Transaction =
+  const transaction: LegacyTransaction | AccessListEIP2930Transaction =
     TransactionFactory.fromTxData<TransactionType.Legacy>(txData)
   if (ShardeumFlags.VerboseLogs) console.log(`parsed tx`, transaction)
 
   const from = injectedTx.from !== undefined ? Address.fromString(injectedTx.from) : Address.zero()
-  transaction = wrapTransaction(transaction, (): Address => {
-    return from
-  })
 
   const caShardusAddress = transaction.to
     ? toShardusAddress(transaction.to.toString(), AccountType.Account)
@@ -2595,7 +2578,7 @@ async function estimateGas(
   const txId = crypto.hashObj(transaction)
   const { address: senderAddress, isValid } = getTxSenderAddress(transaction, txId)
   const preRunTxState = getPreRunTXState(txId)
-  const callerEVMAddress = isValid ? senderAddress : from
+  const callerEVMAddress = isValid ? senderAddress : getTxSenderAddress(transaction, txId, from).address
   const callerShardusAddress = toShardusAddress(callerEVMAddress.toString(), AccountType.Account)
   let callerAccount = await AccountsStorage.getAccount(callerShardusAddress)
   // callerAccount.account.balance = oneSHM.mul(new BN(100)) // 100 SHM. In case someone estimates gas with 0 balance

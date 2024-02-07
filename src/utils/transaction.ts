@@ -35,9 +35,18 @@ function toHexString(byteArray: Uint8Array): string {
 
 export function getTxSenderAddress(
   tx: TypedTransaction,
-  txid: string = undefined
+  txid: string = undefined,
+  overrideSender: Address = undefined
 ): { address: Address; isValid: boolean } {
   try {
+    if (overrideSender != null) {
+      const res = { address: overrideSender, isValid: true }
+      if (txid != null) {
+        txSenderCache.set(txid, res)
+      }
+      return res
+    }
+
     if (txid != null) {
       const cached = txSenderCache.get(txid)
       if (cached != null) {
