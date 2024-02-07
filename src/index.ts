@@ -4012,7 +4012,12 @@ const shardusSetup = (): void => {
           while (remoteShardusAccount == null && retry < maxRetry) {
             if (ShardeumFlags.VerboseLogs) console.log(`txPreCrackData: fetching remote account for ${txSenderEvmAddr}, retry: ${retry}`)
             retry++
-            remoteShardusAccount = await shardus.getLocalOrRemoteAccount(transformedSourceKey)
+            remoteShardusAccount = await shardus.getLocalOrRemoteAccount(transformedSourceKey).catch((e) => {
+              if (ShardeumFlags.VerboseLogs) console.log(`txPreCrackData: EXCEP failed to fetch remote account for ${txSenderEvmAddr}, retry: ${retry}`, e)
+            });
+          }
+          if (remoteShardusAccount == null) {
+            if (ShardeumFlags.VerboseLogs) console.log(`txPreCrackData: STILL failed to fetch remote account for ${txSenderEvmAddr}`)
           }
 
           if (transaction.to) {
