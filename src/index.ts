@@ -692,7 +692,7 @@ async function tryGetRemoteAccountCB(
 
   if (remoteShardusAccount == undefined) {
     /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`Found no remote account for address: ${address}, type: ${type}, key: ${key}, retry: ${retry}`)
-    if (type === AccountType.ContractCode) nestedCountersInstance.countEvent('shardeum', `tryRemoteAccountCB: fail. type: ${type}, address: ${address}, key: ${key}`)
+    if (type === AccountType.Account || type === AccountType.ContractCode) nestedCountersInstance.countEvent('shardeum', `tryRemoteAccountCB: fail. type: ${type}, address: ${address}, key: ${key}`)
     return
   }
   const fixedEVMAccount = remoteShardusAccount.data as WrappedEVMAccount
@@ -2672,13 +2672,17 @@ async function generateAccessList(
           /* prettier-ignore */ if (logFlags.dapp_verbose) console.log('Accesslist response from node', consensusNode.externalPort, postResp.body)
           if (postResp.body != null && postResp.body != '' && postResp.body.accessList != null) {
             /* prettier-ignore */ if (logFlags.dapp_verbose) console.log(`Node is in remote shard: gotResp:${stringify(postResp.body)}`)
-            if (Array.isArray(postResp.body.accessList) && postResp.body.accessList.length) {
+            if (Array.isArray(postResp.body.accessList) && postResp.body.accessList.length > 0) {
               nestedCountersInstance.countEvent('accesslist', `remote shard accessList: ${postResp.body.accessList.length} items, success: ${postResp.body.failedAccessList != true}`)
+              let failed = postResp.body.failedAccessList
+              if (postResp.body.codeHashes == null || postResp.body.codeHashes.length == 0) {
+                failed = true
+              }
               return {
                 accessList: postResp.body.accessList,
                 shardusMemoryPatterns: postResp.body.shardusMemoryPatterns,
                 codeHashes: postResp.body.codeHashes,
-                failedAccessList: postResp.body.failedAccessList
+                failedAccessList: failed
               }
             } else {
               nestedCountersInstance.countEvent('accesslist', `remote shard accessList: empty`)
