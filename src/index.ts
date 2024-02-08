@@ -692,6 +692,7 @@ async function tryGetRemoteAccountCB(
 
   if (remoteShardusAccount == undefined) {
     /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`Found no remote account for address: ${address}, type: ${type}, key: ${key}, retry: ${retry}`)
+    if (type === AccountType.ContractCode) nestedCountersInstance.countEvent('shardeum', `tryRemoteAccountCB: fail. type: ${type}, address: ${address}, key: ${key}`)
     return
   }
   const fixedEVMAccount = remoteShardusAccount.data as WrappedEVMAccount
@@ -2672,6 +2673,7 @@ async function generateAccessList(
           if (postResp.body != null && postResp.body != '' && postResp.body.accessList != null) {
             /* prettier-ignore */ if (logFlags.dapp_verbose) console.log(`Node is in remote shard: gotResp:${stringify(postResp.body)}`)
             if (Array.isArray(postResp.body.accessList) && postResp.body.accessList.length) {
+              nestedCountersInstance.countEvent('accesslist', `remote shard accessList: ${postResp.body.accessList.length} items, success: ${postResp.body.failedAccessList != true}`)
               return {
                 accessList: postResp.body.accessList,
                 shardusMemoryPatterns: postResp.body.shardusMemoryPatterns,
@@ -2679,10 +2681,12 @@ async function generateAccessList(
                 failedAccessList: postResp.body.failedAccessList
               }
             } else {
+              nestedCountersInstance.countEvent('accesslist', `remote shard accessList: empty`)
               return { accessList: [], shardusMemoryPatterns: null, codeHashes: [], failedAccessList: true }
             }
           }
         } else {
+          nestedCountersInstance.countEvent('accesslist', `remote shard found no consensus node`)
           /* prettier-ignore */ if (logFlags.dapp_verbose) console.log(`Node is in remote shard: consensusNode = null`)
           return { accessList: [], shardusMemoryPatterns: null, codeHashes: [], failedAccessList: true }
         }
@@ -2710,7 +2714,7 @@ async function generateAccessList(
       }
     }
     if (callerAccount == null) {
-      /* prettier-ignore */ nestedCountersInstance.countEvent( 'shardeum-endpoints', `Unable to find caller account while generating accessList. Using a fake account to estimate gas` )
+      /* prettier-ignore */ nestedCountersInstance.countEvent( 'accesslist', `Unable to find caller account while generating accessList. Using a fake account to estimate gas` )
       /* prettier-ignore */ if (logFlags.dapp_verbose) console.log( `Unable to find caller account: ${callerShardusAddress} while generating accessList. Using a fake account to generate accessList` )
     }
     // temporarily set caller account's nonce same as tx's nonce
@@ -2732,6 +2736,7 @@ async function generateAccessList(
     EVM.stateManager = preRunTxState
 
     if (transaction == null) {
+      nestedCountersInstance.countEvent('accesslist', 'transaction is null')
       return { accessList: [], shardusMemoryPatterns: null, codeHashes: [] }
     }
 
@@ -2910,16 +2915,17 @@ async function generateAccessList(
       if (ShardeumFlags.VerboseLogs) console.log('Execution Error:', runTxResult.execResult.exceptionError)
       nestedCountersInstance.countEvent(
         'accesslist',
-        `Fail with evm error: CA ${transaction.to && ShardeumFlags.VerboseLogs ? transaction.to.toString() : ''}`
+        `Local Fail with evm error: CA ${transaction.to && ShardeumFlags.VerboseLogs ? transaction.to.toString() : ''}`
       )
       return { accessList: [], shardusMemoryPatterns: null, codeHashes: [], failedAccessList: true }
     }
     const isEmptyCodeHash = allCodeHash.size === 0
-    if (isEmptyCodeHash)  nestedCountersInstance.countEvent('accesslist', `Fail: empty codeHash`)
+    if (isEmptyCodeHash)  nestedCountersInstance.countEvent('accesslist', `Local Fail: empty codeHash`)
+    else nestedCountersInstance.countEvent('accesslist', `Local Success: true`)
     return { accessList, shardusMemoryPatterns, codeHashes: Array.from(allCodeHash.values()), failedAccessList: isEmptyCodeHash }
   } catch (e) {
     console.log(`Error: generateAccessList`, e)
-    nestedCountersInstance.countEvent('accesslist', `Fail: unknown`)
+    nestedCountersInstance.countEvent('accesslist', `Local Fail: unknown`)
     return { accessList: [], shardusMemoryPatterns: null, codeHashes: [] }
   }
 }
@@ -4158,12 +4164,15 @@ const shardusSetup = (): void => {
             } = await generateAccessList(tx)
             profilerInstance.scopedProfileSectionEnd('accesslist-generate')
 
+            console.log(`Accesslist Result for tx: ${ethTxId}`, generatedAccessList, shardusMemoryPatterns, codeHashes, failedAccessList)
+
             appData.accessList = generatedAccessList ? generatedAccessList : null
             appData.requestNewTimestamp = true
             appData.shardusMemoryPatterns = shardusMemoryPatterns
             appData.codeHashes = codeHashes
             if (failedAccessList) preCrackSuccess = false
-            if (appData.accessList && appData.accessList.length > 0 && failedAccessList == null) {
+
+            if (appData.accessList && appData.accessList.length > 0 && preCrackSuccess === true) {
               nestedCountersInstance.countEvent(
                 'shardeum',
                 'precrack' + ' -' + ' generateAccessList success: true'
