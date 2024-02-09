@@ -4021,7 +4021,6 @@ const shardusSetup = (): void => {
               nestedCountersInstance.countEvent('shardeum', 'Fetching queue count failed')
             }
           }
-          const maxRetry = 3
           retry = 0
           while (remoteShardusAccount == null && retry < maxRetry) {
             if (ShardeumFlags.VerboseLogs) console.log(`txPreCrackData: fetching remote account for ${txSenderEvmAddr}, retry: ${retry}`)
