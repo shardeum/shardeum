@@ -1602,7 +1602,16 @@ const configShardusEndpoints = (): void => {
 
       if (callResult.execResult.exceptionError) {
         if (ShardeumFlags.VerboseLogs) console.log('Execution Error:', callResult.execResult.exceptionError)
-        return res.json({ result: null })
+        return res.json({
+          result: {
+            error: {
+              code: -32000,
+              message: `execution reverted: ${callResult.execResult.exceptionError.errorType} `
+                + `${callResult.execResult.exceptionError.error}`,
+              data: bytesToHex(callResult.execResult.returnValue)
+            },
+          }
+        })
       }
 
       res.json({ result: returnedValue })
