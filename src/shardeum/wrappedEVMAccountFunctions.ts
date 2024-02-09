@@ -37,8 +37,11 @@ export function accountSpecificHash(account: WrappedEVMAccount | InternalAccount
   }
   if (!isWrappedEVMAccount(account)) return ''
   if (account.accountType === AccountType.Account) {
-    //Hash the full account, if we knew EOA vs CA we could mabe skip some steps.
-    hash = crypto.hashObj(account.account)
+    const { account: EVMAccountInfo, operatorAccountInfo, timestamp } = account
+    const accountData = operatorAccountInfo
+      ? { EVMAccountInfo, operatorAccountInfo, timestamp }
+      : { EVMAccountInfo, timestamp }
+    hash = crypto.hashObj(accountData)
   } else if (account.accountType === AccountType.Debug) {
     hash = crypto.hashObj(account)
   } else if (account.accountType === AccountType.ContractStorage) {
@@ -93,7 +96,11 @@ export function fixDeserializedWrappedEVMAccount(wrappedEVMAccount: WrappedEVMAc
 
 function fixWrappedEVMAccountBuffers(wrappedEVMAccount: WrappedEVMAccount): void {
   if (wrappedEVMAccount.accountType === AccountType.ContractCode) {
-    if (!(wrappedEVMAccount.codeHash instanceof Uint8Array) && typeof wrappedEVMAccount.codeHash === 'object' && Object.values(wrappedEVMAccount.codeHash).length === 32) {
+    if (
+      !(wrappedEVMAccount.codeHash instanceof Uint8Array) &&
+      typeof wrappedEVMAccount.codeHash === 'object' &&
+      Object.values(wrappedEVMAccount.codeHash).length === 32
+    ) {
       wrappedEVMAccount.codeHash = Uint8Array.from(Object.values(wrappedEVMAccount.codeHash))
       wrappedEVMAccount.codeByte = Uint8Array.from(Object.values(wrappedEVMAccount.codeByte))
     } else {
@@ -109,7 +116,6 @@ function fixWrappedEVMAccountBuffers(wrappedEVMAccount: WrappedEVMAccount): void
       wrappedEVMAccount.value = Uint8Array.from(wrappedEVMAccount.value)
     }
   }
-
 }
 
 export function predictContractAddress(wrappedEVMAccount: WrappedEVMAccount): Buffer {

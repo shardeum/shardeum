@@ -206,6 +206,7 @@ export async function applyClaimRewardTx(
   shardus,
   tx: ClaimRewardTX,
   wrappedStates: WrappedStates,
+  txId: string,
   txTimestamp: number,
   applyResponse: ShardusTypes.ApplyResponse
 ): Promise<void> {
@@ -291,7 +292,6 @@ export async function applyClaimRewardTx(
     _base16BNParser(nodeAccount.nodeAccountStats.totalReward) + nodeAccount.reward
   nodeAccount.nodeAccountStats.history.push({ b: nodeAccount.rewardStartTime, e: nodeAccount.rewardEndTime })
 
-  const txId = generateTxId(tx)
   const shardeumState = getApplyTXState(txId)
   shardeumState._transactionState.appData = {}
 
@@ -325,6 +325,7 @@ export async function applyClaimRewardTx(
   await shardeumState.putAccount(operatorEVMAddress, operatorAccount.account)
   await shardeumState.commit()
 
+  operatorAccount.timestamp = txTimestamp
   /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log( `Calculating node reward. nodeRewardAmount: ${_readableSHM(nodeRewardAmount)}, nodeRewardInterval: ${ network.current.nodeRewardInterval } ms, uptime duration: ${durationInNetwork} sec, totalReward: ${_readableSHM( totalReward )}, finalReward: ${_readableSHM(nodeAccount.reward)}   nodeAccount.rewardEndTime:${ nodeAccount.rewardEndTime }  nodeAccount.rewardStartTime:${nodeAccount.rewardStartTime} ` )
 
   if (ShardeumFlags.useAccountWrites) {

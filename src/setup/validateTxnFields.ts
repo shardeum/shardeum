@@ -1,4 +1,4 @@
-import { nestedCountersInstance, Shardus } from '@shardus/core'
+import { DevSecurityLevel, nestedCountersInstance, Shardus } from '@shardus/core'
 import { ShardeumFlags } from '../shardeum/shardeumFlags'
 import {
   ClaimRewardTX,
@@ -62,6 +62,7 @@ export const validateTxnFields =
           txnTimestamp,
         }
       }
+      const txId = generateTxId(tx)
 
       if (isDebugTx(tx)) {
         return {
@@ -96,14 +97,27 @@ export const validateTxnFields =
         } else if (tx.internalTXType === InternalTXType.ChangeConfig ||
           tx.internalTXType === InternalTXType.ChangeNetworkParam) {
           try {
-            // const devPublicKey = shardus.getDevPublicKey() // This have to be reviewed again whether to get from shardus interface or not
-            const devPublicKey = shardus.getDevPublicKeyMaxLevel()
-            if (devPublicKey) {
-              success = verify(tx, devPublicKey)
-              if (!success) reason = 'Dev key does not match!'
-            } else {
+
+            const devPublicKeys = shardus.getDevPublicKeys()
+            let isUserVerified = false
+            for (const devPublicKey in devPublicKeys) {
+              const verificationStatus = verify(tx, devPublicKey)
+              if (verificationStatus) {
+                isUserVerified = true
+                break
+              }
+            }
+            if (!isUserVerified) {
               success = false
               reason = 'Dev key is not defined on the server!'
+            }
+            const authorized = shardus.ensureKeySecurity(tx.sign.owner, DevSecurityLevel.High)
+            if (!authorized) {
+              success = false
+              reason = 'Unauthorized User'
+            } else {
+              success = true
+              reason = 'valid'
             }
           } catch (e) {
             reason = 'Invalid signature for internal tx'
@@ -117,7 +131,7 @@ export const validateTxnFields =
           success = result.isValid
           reason = result.reason
         } else if (tx.internalTXType === InternalTXType.Penalty) {
-          const result = validatePenaltyTX(tx as PenaltyTX, shardus)
+          const result = validatePenaltyTX(txId, tx as PenaltyTX)
           success = result.isValid
           reason = result.reason
         } else if (tx.internalTXType === InternalTXType.InitNetwork) {
@@ -165,7 +179,6 @@ export const validateTxnFields =
       try {
         const transaction = getTransactionObj(tx)
         const isSigned = transaction.isSigned()
-        const txId = generateTxId(tx)
         const { address: senderAddress, isValid } = getTxSenderAddress(transaction,txId) // ensures that tx is valid
         const isSignatureValid = isValid
         if (ShardeumFlags.VerboseLogs) console.log('validate evm tx', isSigned, isSignatureValid)
@@ -334,10 +347,10 @@ export const validateTxnFields =
             } else if (nodeAccount.nominator !== unstakeCoinsTX.nominator) {
               success = false
               reason = `This node is staked by another account. You can't unstake it!`
-            } else if (shardus.isOnStandbyList(appData.nomineeAccount) === true) {
+            } else if (shardus.isOnStandbyList(nodeAccount.id) === true) {
               success = false
               reason = `This node is in the network's Standby list. You can unstake only after the node leaves the Standby list!`
-            } else if (shardus.isNodeActiveByPubKey(appData.nomineeAccount) === true) {
+            } else if (shardus.isNodeActiveByPubKey(nodeAccount.id) === true) {
               success = false
               reason = `This node is still active in the network. You can unstake only after the node leaves the network!`
             } else if (

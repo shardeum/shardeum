@@ -34,7 +34,7 @@ export class ShardeumAccount extends Account {
 
 //There are a lot of change variables. Maybe I can collapse them here and update this later
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-type Change = any
+export type Change = any
 
 /**
  * Still working out the details here.
@@ -258,7 +258,7 @@ export interface OurAppDefinedData {
 }
 
 export interface ReadableReceipt {
-  status?: boolean | string | number
+  status: number // 1 for success, 0 for failure
   transactionHash: string
   transactionIndex: string
   blockNumber: string

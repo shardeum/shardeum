@@ -16,8 +16,8 @@
 
 Make sure you have the following installed and configured (we recommend using [nvm](https://github.com/nvm-sh/nvm)/[nvm-windows](https://github.com/coreybutler/nvm-windows) to manage your Node.js and npm versions):
 
-- Node.js (10.x.x)
-- npm (6.x.x)
+- Node.js (18.16.1)
+- npm (9.5.1)
 - Git
 
 Then, install the `node-gyp` dependencies for your platform listed [here](https://www.npmjs.com/package/node-gyp#installation).
@@ -25,15 +25,15 @@ Then, install the `node-gyp` dependencies for your platform listed [here](https:
 On Ubuntu, it goes something like this:
 
 ```
-$ sudo apt update && sudo apt install python2.7 make g++
-$ npm config set python python2.7
+$ sudo apt update && sudo apt install python3 make g++
+$ npm config set python `which python3`
 ```
 
 ### Install
 
 ```
-$ npm i -g git+https://gitlab.com/shardus/enterprise/tools/shardus-cli.git
-$ shardus init myApp https://gitlab.com/shardus/enterprise/applications/coin-app-template.git
+$ npm i -g git+https://gitlab.com/shardus/tools/shardus-cli.git
+$ shardus init myApp https://gitlab.com/shardus/applications/coin-app-template.git
 $ cd myApp
 ```
 
@@ -44,7 +44,7 @@ $ cd myApp
 2. Start the `seed-node-server`, `monitor-server`, and your `index.ts` server:
 
    ```
-   $ npm start
+   $ npm run start
    ```
 
 3. Interact with your `index.ts` server:
@@ -58,46 +58,60 @@ $ cd myApp
 4. Stop the `seed-node-server` and `monitor-server`, and clean residual run files:
 
    ```
-   $ npm stop && npm run clean
+   $ npm run stop && npm run clean
    ```
 
 Repeat until desired behavior is achieved...
 
-## Test a network of nodes
+## Local test network setup
 
-1. Create a local test network with multiple instances of your `index.ts` server:
+1. cd to server directory
 
    ```
-   $ shardus network create --default
-   (uses default settings for prompts)...
+   $ cd server
+   ```
+
+2. Install dependencies
+
+   ```
+   $ npm ci
+   $ npm run prepare
+   $ npm install -g shardus
+   $ npm update @shardus/archiver 
+   ```
+
+3. Create a local network with multiple nodes:
+
+   ```
+   $ shardus create <number-of-nodes>
    $ cd instances
    ```
 
-2. Start your local test network:
+4. Interact with the network:
 
    ```
-   $ shardus network start
+   $ shardus --help
    ```
-
-3. Interact with your network:
-
-   ```
-   $ node ../client.js
-   $ client$ help
-   ...
-   ```
-
-4. Stop the network:
+5. Viewing logs
 
    ```
-   $ shardus network stop
+   $ shardus pm2 monit
    ```
 
-5. Clean databases and logs from the last run:
+5. Stop the network:
 
    ```
-   $ shardus network clean
+   $ shardus stop
    ```
+
+6. Clean databases and logs from the last run:
+
+   ```
+   $ shardus clean
+   $ rm -rf instances
+   ```
+
+
 
 # CONTRIBUTING
 

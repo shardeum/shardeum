@@ -2,11 +2,11 @@
 import fs from 'fs'
 //import Log4js from 'log4js'
 import path from 'path'
-import * as Sequelize from 'sequelize'
 
 import { isObject, SerializeToJsonString } from '../utils'
+import { Op } from './utils/sqlOpertors'
+import { SQLDataTypes } from './utils/schemaDefintions'
 
-const Op = Sequelize.Op
 //const sqlite3 = require('sqlite3').verbose()
 import { Database, OPEN_READONLY } from 'sqlite3'
 import config from '../config'
@@ -87,7 +87,7 @@ class Sqlite3Storage {
           type = value
           // if (logFlags.console) console.log(' TYPE MISSING!!!! ' + key)
         }
-        if (type.toString() === Sequelize.JSON.toString()) {
+        if (type.toString() === SQLDataTypes.JSON.toString()) {
           // eslint-disable-next-line security/detect-object-injection
           modelData.isColumnJSON[key] = true
           modelData.JSONkeys.push(key)

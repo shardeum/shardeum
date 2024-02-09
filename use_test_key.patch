@@ -1,14 +1,15 @@
 diff --git a/src/config/index.ts b/src/config/index.ts
-index 8f51257..00a1624 100644
+index 7f4ff86..8c5109e 100644
 --- a/src/config/index.ts
 +++ b/src/config/index.ts
-@@ -239,9 +239,9 @@ config = merge(
+@@ -256,10 +256,9 @@ config = merge(
            // '': DevSecurityLevel.Unauthorized,
            // These are production keys.  Use 'git apply use_test_key.patch' for unsafe local test keys
            // Never merge a commit with changes to these lines without approval.
 -          '17a3b692c6c62a689391e49f4c60130c9f919782470a2d7469ac108a1ea304b7': DevSecurityLevel.Low,
 -          '4c255f7b77ab9fb21ad99f709a65e5a5648d71a7157d8429a92e3470b2d100f5': DevSecurityLevel.Medium,
--          'bee9590211493d08d9f19915f68f12b0b9f75c56ca6911d699bb1cfa51cbbe77': DevSecurityLevel.High,
+-          //this last line needs command to ignore auto formatting or prettier will strip the quotes!!
+-          /* prettier-ignore */ 'bee9590211493d08d9f19915f68f12b0b9f75c56ca6911d699bb1cfa51cbbe77': DevSecurityLevel.High,
 +          //'UNSAFE KEYS IN USE DO NOT CHECK IN': DevSecurityLevel.Low,
 +          //'UNSAFE KEYS IN USE DO NOT CHECK IN': DevSecurityLevel.Medium,
 +          '774491f80f47fedb119bb861601490f42bc3ea3b57fc63906c0d08e6d777a592': DevSecurityLevel.High,

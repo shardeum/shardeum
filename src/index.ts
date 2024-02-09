@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/ban-ts-comment */
 import { exec } from 'child_process'
 import { arch, cpus, freemem, totalmem, platform } from 'os'
-import { stringify } from './utils/stringify'
+import { cryptoStringify, stringify } from './utils/stringify'
 import {
   Account,
   Address,
@@ -155,6 +155,8 @@ import { getExternalApiMiddleware } from './middleware/externalApiMiddleware'
 import { AccountsEntry } from './storage/storage'
 import { getCachedRIAccount, setCachedRIAccount } from './storage/riAccountsCache'
 import {isLowStake} from "./tx/penalty/penaltyFunctions";
+import { deserializeWrappedEVMAccount, serializeWrappedEVMAccount } from './types/WrappedEVMAccount'
+import { accountDeserializer, accountSerializer, binaryDeserializer, binarySerializer } from './types/Helpers'
 
 const {
   SCMP_ACT_ALLOW,
@@ -381,17 +383,11 @@ function convertToReadableBlock(block: Block): ShardeumBlockOverride {
   return defaultBlock as unknown as ShardeumBlockOverride
 }
 
-function createNewBlock(blockNumber: number, timestamp: number): Block {
+function createAndRecordBlock(blockNumber: number, timestamp: number): Block {
   /* eslint-disable security/detect-object-injection */
   if (blocks[blockNumber]) return blocks[blockNumber]
   if (!blocks[blockNumber]) {
-    const timestampInSecond = timestamp ? Math.round(timestamp / 1000) : Math.round(shardeumGetTime() / 1000)
-    const blockData = {
-      header: { number: blockNumber, timestamp: timestampInSecond },
-      transactions: [],
-      uncleHeaders: [],
-    }
-    const block = Block.fromBlockData(blockData, { common: evmCommon })
+    const block = createBlock(timestamp, blockNumber)
     const readableBlock = convertToReadableBlock(block)
     blocks[blockNumber] = block
     readableBlocks[blockNumber] = readableBlock
@@ -400,6 +396,17 @@ function createNewBlock(blockNumber: number, timestamp: number): Block {
     return block
   }
   /* eslint-enable security/detect-object-injection */
+}
+
+function createBlock(timestamp: number, blockNumber: number): Block {
+  const timestampInSecond = timestamp ? Math.round(timestamp / 1000) : Math.round(shardeumGetTime() / 1000)
+  const blockData = {
+    header: { number: blockNumber, timestamp: timestampInSecond },
+    transactions: [],
+    uncleHeaders: [],
+  }
+  const block = Block.fromBlockData(blockData, { common: evmCommon })
+  return block
 }
 
 export function setGenesisAccounts(accounts = []): void {
@@ -1557,7 +1564,16 @@ const configShardusEndpoints = (): void => {
         //shardeumStateManager.setTransactionState(callTxState)
       }
 
-      opt['block'] = blocks[latestBlock] // eslint-disable-line security/detect-object-injection
+      if (callObj.block && callObj.block.number && callObj.block.timestamp) {
+        const block = {
+          number: parseInt(callObj.block.number, 16),
+          timestamp: parseInt(callObj.block.timestamp, 16),
+        }
+        opt['block'] = createBlock(block.timestamp, block.number)
+        if (ShardeumFlags.VerboseLogs) console.log(`Got block context from callObj`, block)
+      } else {
+        opt['block'] = blocks[latestBlock] // eslint-disable-line security/detect-object-injection
+      }
 
       const customEVM = new EthereumVirtualMachine({
         common: evmCommon,
@@ -2157,7 +2173,7 @@ async function applyInternalTx(
   }
   if (internalTx.internalTXType === InternalTXType.SetCertTime) {
     const setCertTimeTx = internalTx as SetCertTime
-    applySetCertTimeTx(shardus, setCertTimeTx, wrappedStates, txTimestamp, applyResponse)
+    applySetCertTimeTx(shardus, setCertTimeTx, wrappedStates, txId, txTimestamp, applyResponse)
   }
   if (internalTx.internalTXType === InternalTXType.InitRewardTimes) {
     const rewardTimesTx = internalTx as InitRewardTimes
@@ -2165,11 +2181,11 @@ async function applyInternalTx(
   }
   if (internalTx.internalTXType === InternalTXType.ClaimReward) {
     const claimRewardTx = internalTx as ClaimRewardTX
-    applyClaimRewardTx(shardus, claimRewardTx, wrappedStates, txTimestamp, applyResponse)
+    applyClaimRewardTx(shardus, claimRewardTx, wrappedStates, txId ,txTimestamp, applyResponse)
   }
   if (internalTx.internalTXType === InternalTXType.Penalty) {
     const penaltyTx = internalTx as PenaltyTX
-    applyPenaltyTX(shardus, penaltyTx, wrappedStates, txTimestamp, applyResponse)
+    applyPenaltyTX(shardus, penaltyTx, wrappedStates, txId, txTimestamp, applyResponse)
   }
   return applyResponse
 }
@@ -2182,7 +2198,7 @@ export const createInternalTxReceipt = (
   to: string,
   txTimestamp: number,
   txId: string,
-  amountSpent = BigInt(0).toString()
+  amountSpent = bigIntToHex(BigInt(0))
 ): void => {
   const blockForReceipt = getOrCreateBlockFromTimestamp(txTimestamp)
   const blockNumberForTx = blockForReceipt.header.number.toString()
@@ -2247,6 +2263,7 @@ async function applyDebugTx(
     const fromAccount: WrappedEVMAccount = wrappedStates[fromAddress].data
     const toAccount: WrappedEVMAccount = wrappedStates[toAddress].data
     fromAccount.timestamp = txTimestamp
+    toAccount.timestamp = txTimestamp
     fromAccount.balance -= 1
     toAccount.balance += 1
     fixDeserializedWrappedEVMAccount(fromAccount)
@@ -2467,7 +2484,7 @@ const getOrCreateBlockFromTimestamp = (timestamp: number, scheduleNextBlock = fa
   if (ShardeumFlags.VerboseLogs) {
     console.log('Cycle counter vs derived blockNumber', cycle.counter, blockNumber)
   }
-  const block = createNewBlock(blockNumber, newBlockTimestamp)
+  const block = createAndRecordBlock(blockNumber, newBlockTimestamp)
   if (scheduleNextBlock) {
     const nextBlockTimestamp = newBlockTimestamp + ShardeumFlags.blockProductionRate * 1000
     const waitTime = nextBlockTimestamp - shardeumGetTime()
@@ -3685,7 +3702,7 @@ const shardusSetup = (): void => {
           hash: '',
           // receipt: runTxResult.receipt,
           readableReceipt,
-          amountSpent: BigInt(0).toString(),
+          amountSpent: bigIntToHex(BigInt(0)),
           txId,
           accountType: AccountType.Receipt,
           txFrom: senderAddress.toString(),
@@ -3995,7 +4012,7 @@ const shardusSetup = (): void => {
         let isSimpleTransfer = false
 
         let remoteShardusAccount
-        let remoteTargetAccount
+        let remoteTargetAccount = null
 
         //if the TX is a contract deploy, predict the new contract address correctly (needs sender's nonce)
         //remote fetch of sender EOA also allows fast balance and nonce checking (assuming we get some queue hints as well from shardus core)
@@ -4108,7 +4125,8 @@ const shardusSetup = (): void => {
         if (ShardeumFlags.autoGenerateAccessList === false) shouldGenerateAccesslist = false
         else if (isStakeRelatedTx) shouldGenerateAccesslist = false
         else if (isSimpleTransfer) shouldGenerateAccesslist = false
-        else if (remoteShardusAccount == null && appData.newCAAddr == null) shouldGenerateAccesslist = false
+        //else if (remoteShardusAccount == null && appData.newCAAddr == null) shouldGenerateAccesslist = false //resolve which is correct from merge!
+        else if (remoteTargetAccount == null && appData.newCAAddr == null) shouldGenerateAccesslist = false
 
         //also run access list generation if needed
         if (shouldGenerateAccesslist) {
@@ -6465,6 +6483,26 @@ const shardusSetup = (): void => {
       }
 
       return { canStay: true, reason: '' }
+    },
+    binarySerializeObject(identifier: string, obj): Buffer {
+      nestedCountersInstance.countEvent('binarySerializeObject', identifier)
+      /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log('binarySerializeObject:', identifier, obj)
+      switch (identifier) {
+        case 'AppData':
+          return accountSerializer(obj).getBuffer()
+        default:
+          return Buffer.from(cryptoStringify(obj), 'utf8')
+      }
+    },
+    binaryDeserializeObject(identifier: string, buffer: Buffer) {
+      nestedCountersInstance.countEvent('binaryDeserializeObject', identifier)
+      /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log('binaryDeserializeObject:', identifier, buffer)
+      switch (identifier) {
+        case 'AppData':
+          return accountDeserializer(buffer)
+        default:
+          return JSON.parse(buffer.toString('utf8'))
+      }
     },
   })
 

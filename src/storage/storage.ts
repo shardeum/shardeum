@@ -4,9 +4,8 @@ import models from './models'
 import { WrappedEVMAccount } from '../shardeum/shardeumTypes'
 import { ShardeumFlags } from '../shardeum/shardeumFlags'
 import Sqlite3Storage from './sqlite3storage'
-import * as Sequelize from 'sequelize'
 import { isServiceMode } from '..'
-const Op = Sequelize.Op
+import { Op } from './utils/sqlOpertors'
 
 export interface AccountsEntry {
   accountId: string

@@ -27,7 +27,7 @@ import {
 } from '../utils'
 import { hashSignedObj } from '../setup/helpers'
 import { createInternalTxReceipt, logFlags, shardeumGetTime } from '..'
-import { isValidAddress } from '@ethereumjs/util'
+import { bigIntToHex, isValidAddress } from '@ethereumjs/util'
 
 export function isSetCertTimeTx(tx): boolean {
   if (tx.isInternalTx && tx.internalTXType === InternalTXType.SetCertTime) {
@@ -186,6 +186,7 @@ export function applySetCertTimeTx(
   shardus,
   tx: SetCertTime,
   wrappedStates: WrappedStates,
+  txId: string,
   txTimestamp: number,
   applyResponse: ShardusTypes.ApplyResponse
 ): void {
@@ -266,20 +267,19 @@ export function applySetCertTimeTx(
   // deduct tx fee if certExp is not set yet or far from expiration
   /* prettier-ignore */ if (logFlags.dapp_verbose) console.log(`applySetCertTimeTx shouldChargeTxFee: ${shouldChargeTxFee}`)
 
-  let amountSpent = BigInt(0).toString()
+  let amountSpent = bigIntToHex(BigInt(0))
   if (shouldChargeTxFee) {
     const costTxFee = scaleByStabilityFactor(
       BigInt(ShardeumFlags.constantTxFeeUsd),
       AccountsStorage.cachedNetworkAccount
     )
     operatorEVMAccount.account.balance = operatorEVMAccount.account.balance - costTxFee
-    amountSpent = costTxFee.toString()
+    amountSpent = bigIntToHex(costTxFee)
   }
 
   /* prettier-ignore */ if (logFlags.dapp_verbose) console.log('operatorEVMAccount After', operatorEVMAccount)
 
   // Apply state
-  const txId = generateTxId(tx)
   if (ShardeumFlags.useAccountWrites) {
     const wrappedChangedAccount = WrappedEVMAccountFunctions._shardusWrappedAccount(operatorEVMAccount)
     shardus.applyResponseAddChangedAccount(
