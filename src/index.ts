@@ -107,6 +107,8 @@ import {
   isWithinRange,
   isValidVersion,
   getTxSenderAddress,
+  isInSenderCache,
+  removeTxFromSenderCache,
 } from './utils'
 import config, { Config } from './config'
 import Wallet from 'ethereumjs-wallet'
@@ -2622,6 +2624,13 @@ async function estimateGas(
   // EVM.evm.stateManager = preRunTxState
   // EVM.evm.journal.stateManager = preRunTxState
 
+  if (!isInSenderCache(txId)) {
+    nestedCountersInstance.countEvent(
+      'shardeum-endpoints',
+      `tx in senderTxCache evicted before EVM processing`
+    )
+  }
+
   const runTxResult = await EVM.runTx(
     {
       block: blocks[latestBlock],
@@ -2633,11 +2642,16 @@ async function estimateGas(
     customEVM,
     txId
   )
+
   if (ShardeumFlags.VerboseLogs) console.log('Predicted gasUsed', runTxResult.totalGasSpent)
 
   if (runTxResult.execResult.exceptionError) {
     if (ShardeumFlags.VerboseLogs) console.log('Execution Error:', runTxResult.execResult.exceptionError)
     throw new Error(runTxResult.execResult.exceptionError)
+  }
+
+  if (!isValid) {
+    removeTxFromSenderCache(txId)
   }
   // For the estimate, we add the gasRefund to the gasUsed because gasRefund is subtracted after execution.
   // That can lead to higher gasUsed during execution than the actual gasUsed
@@ -4948,7 +4962,7 @@ const shardusSetup = (): void => {
             contractAddress: evmAccountInfo.contractAddress, // storage key
             hash: '',
             accountType: AccountType.ContractCode,
-            }     
+          }
           /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`Creating new contract bytes account key:${evmAccountID} in contract address ${wrappedEVMAccount.ethAddress}`)
         } else {
           throw new Error(`getRelevantData: invalid account type ${accountType}`)

@@ -76,3 +76,11 @@ export function getTxSenderAddress(
     return res
   }
 }
+
+export function isInSenderCache(txid: string): boolean {
+  return txSenderCache.has(txid)
+}
+
+export function removeTxFromSenderCache(txid: string): void {
+  txSenderCache.delete(txid)
+}
