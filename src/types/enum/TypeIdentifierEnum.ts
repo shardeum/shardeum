@@ -6,4 +6,5 @@ export enum TypeIdentifierEnum {
   cNetworkAccount,
   cNodeAccountStats,
   cNodeAccount,
+  cUnknown,
 }

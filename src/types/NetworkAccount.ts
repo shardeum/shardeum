@@ -40,7 +40,7 @@ export function serializeNetworkAccount(stream: VectorBufferStream, obj: Network
   }
 
   stream.writeString(obj.hash)
-  stream.writeUInt32(obj.timestamp)
+  stream.writeString(obj.timestamp.toString())
 }
 
 export function deserializeNetworkAccount(stream: VectorBufferStream): NetworkAccount {
@@ -62,7 +62,7 @@ export function deserializeNetworkAccount(stream: VectorBufferStream): NetworkAc
   }
 
   const hash = stream.readString()
-  const timestamp = stream.readUInt32()
+  const timestamp = Number(stream.readString())
 
   return {
     ...baseAccount,

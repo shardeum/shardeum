@@ -1,5 +1,5 @@
 import { VectorBufferStream } from '@shardus/core'
-import { BaseAccount, serializeBaseAccount } from './BaseAccount'
+import { BaseAccount, deserializeBaseAccount, serializeBaseAccount } from './BaseAccount'
 import { TypeIdentifierEnum } from './enum/TypeIdentifierEnum'
 
 const cDevAccountVersion = 1
@@ -24,7 +24,7 @@ export function serializeDevAccount(stream: VectorBufferStream, obj: DevAccount,
 export function deserializeDevAccount(stream: VectorBufferStream): DevAccount {
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const version = stream.readUInt16()
-  const baseAccount = deserializeDevAccount(stream)
+  const baseAccount = deserializeBaseAccount(stream)
   const id = stream.readString()
   const hash = stream.readString()
   const timestamp = Number(stream.readString())
