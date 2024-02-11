@@ -1360,10 +1360,14 @@ const configShardusEndpoints = (): void => {
       return res.json({ error: 'node busy' })
     }
 
+    const address = req.params['address']
+    if (address.length !== 42 && address.length !== 64) {
+      return res.json({ error: 'Invalid address' })
+    }
+
     try {
       if (!req.query.type) {
-        const id = req.params['address']
-        const shardusAddress = toShardusAddress(id, AccountType.Account)
+        const shardusAddress = toShardusAddress(address, AccountType.Account)
         const account = await shardus.getLocalOrRemoteAccount(shardusAddress)
         if (!account) {
           return res.json({ account: null })
@@ -1376,8 +1380,17 @@ const configShardusEndpoints = (): void => {
       } else {
         let accountType: number
         if (typeof req.query.type === 'string') accountType = parseInt(req.query.type)
-        const id = req.params['address']
-        const shardusAddress = toShardusAddressWithKey(id, '', accountType)
+        if (AccountType[accountType] == null) {
+          return res.json({ error: 'Invalid account type' })
+        }
+        const secondaryAddressStr: string = (req.query.secondaryAddress as string) || ''
+        if (secondaryAddressStr !== '' && secondaryAddressStr.length !== 64) {
+          return res.json({ error: 'Invalid secondary address' })
+        }
+        let shardusAddress: string = address
+        if (address.length === 42) {
+          shardusAddress = toShardusAddressWithKey(address, secondaryAddressStr, accountType)
+        }
         const account = await shardus.getLocalOrRemoteAccount(shardusAddress)
         const readableAccount = JSON.parse(stringify(account))
         return res.json({ account: readableAccount })
@@ -2185,7 +2198,15 @@ async function applyInternalTx(
   }
   if (internalTx.internalTXType === InternalTXType.ClaimReward) {
     const claimRewardTx = internalTx as ClaimRewardTX
-    applyClaimRewardTx(shardus, claimRewardTx, wrappedStates, txId ,txTimestamp, applyResponse, mustUseAdminCert)
+    applyClaimRewardTx(
+      shardus,
+      claimRewardTx,
+      wrappedStates,
+      txId,
+      txTimestamp,
+      applyResponse,
+      mustUseAdminCert
+    )
   }
   if (internalTx.internalTXType === InternalTXType.Penalty) {
     const penaltyTx = internalTx as PenaltyTX
