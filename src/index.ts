@@ -2667,7 +2667,7 @@ type CodeHashObj = { codeHash: string; contractAddress: string }
 async function generateAccessList(
   injectedTx: ShardusTypes.OpaqueTransaction
 ): Promise<{ shardusMemoryPatterns: null; failedAccessList?: boolean; accessList: any[]; codeHashes: any[] }> {
-}> {
+
   try {
     const transaction = getTransactionObj(injectedTx)
     const caShardusAddress = transaction.to
@@ -4043,7 +4043,6 @@ const shardusSetup = (): void => {
               nestedCountersInstance.countEvent('shardeum', 'Fetching queue count failed')
             }
           }
-          const maxRetry = 3
           retry = 0
           while (remoteShardusAccount == null && retry < maxRetry) {
             if (ShardeumFlags.VerboseLogs) console.log(`txPreCrackData: fetching remote account for ${txSenderEvmAddr}, retry: ${retry}`)
@@ -4175,7 +4174,6 @@ const shardusSetup = (): void => {
                 /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`precrack nonce fail: txNonce:${txNonce} is not within +/- ${ShardeumFlags.nonceCheckRange} of perfect nonce ${perfectCount}.    current nonce:${appData.nonce}  queueCount:${appData.queueCount} txHash: ${transaction.hash().toString()} `)
                 if (appData.nonce === 0)
                 nestedCountersInstance.countEvent('shardeum', 'precrack - nonce fail')
-                else if (appData.nonce > 0)
               }
             } else {
               if (txNonce != perfectCount) {
@@ -4183,9 +4181,9 @@ const shardusSetup = (): void => {
                 /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`precrack nonce fail: perfectCount:${perfectCount} != ${txNonce}.    current nonce:${appData.nonce}  queueCount:${appData.queueCount} txHash: ${transaction.hash().toString()} `)
                 if (appData.nonce === 0)
                 nestedCountersInstance.countEvent('shardeum', 'precrack - nonce fail')
-                else if (appData.nonce > 0)
-              } else {
-                /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`precrack nonce pass: perfectCount:${perfectCount} == ${txNonce}.    current nonce:${appData.nonce}  queueCount:${appData.queueCount}  txHash: ${transaction.hash().toString()}`)
+                else if (appData.nonce > 0){
+                  /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`precrack nonce pass: perfectCount:${perfectCount} == ${txNonce}.    current nonce:${appData.nonce}  queueCount:${appData.queueCount}  txHash: ${transaction.hash().toString()}`)
+                }
               }
             }
           }
@@ -4193,8 +4191,9 @@ const shardusSetup = (): void => {
           if (success === true) {
             profilerInstance.scopedProfileSectionStart('accesslist-generate')
             const {
-              accessList: generatedAccessList,
               shardusMemoryPatterns,
+              failedAccessList,
+              accessList: generatedAccessList,
               codeHashes,
             } = await generateAccessList(tx)
             profilerInstance.scopedProfileSectionEnd('accesslist-generate')
@@ -4239,7 +4238,6 @@ const shardusSetup = (): void => {
         }
         /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log( `txPreCrackData final result: txNonce: ${appData.txNonce}, currentNonce: ${ appData.nonce }, queueCount: ${appData.queueCount}, appData ${stringify(appData)}` )
       }
-      return preCrackSuccess
       return preCrackSuccess
     },
 
