@@ -114,6 +114,7 @@
     "debug": "4.3.4",
     "jsonwebtoken": "9.0.2",
     "engine.io": "3.6.1",
-    "nat-api": "timadinorth/nat-api#appsec-dep-fix"
+    "nat-api": "timadinorth/nat-api#appsec-dep-fix",
+    "ip": "2.0.0"
   }
 }
