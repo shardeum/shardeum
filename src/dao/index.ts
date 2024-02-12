@@ -11,7 +11,15 @@ import {
   TransactionKeys,
 } from '../shardeum/shardeumTypes'
 import { DaoGlobalAccount } from './accounts/networkAccount'
-import { applyParameters, decodeDaoTxFromEVMTx, generateIssue, tallyVotes } from './utils'
+import {
+  applyDevParameters,
+  applyParameters,
+  decodeDaoTxFromEVMTx,
+  generateDevIssue,
+  generateIssue,
+  tallyDevVotes,
+  tallyVotes,
+} from './utils'
 import { DaoTx } from './tx'
 import { getTransactionObj } from '../setup/helpers'
 import * as AccountsStorage from '../storage/accountStorage'
@@ -202,6 +210,9 @@ export function startDaoMaintenanceCycle(interval: number, shardus: Shardus): vo
   let issueGenerated = false
   let tallyGenerated = false
   let applyGenerated = false
+  let devIssueGenerated = false
+  let devTallyGenerated = false
+  let devApplyGenerated = false
 
   /**
    * The function is called every interval to run DAO maintenance
@@ -243,6 +254,20 @@ export function startDaoMaintenanceCycle(interval: number, shardus: Shardus): vo
         applyGenerated = false
       }
 
+      // DEV_ISSUE
+      if (
+        WindowRange.fromObj(daoAccountObj.devWindows.proposalWindow).includes(currentTime) &&
+        !devIssueGenerated &&
+        daoAccountObj.issue > 1
+      ) {
+        if (luckyNodes.includes(nodeId)) {
+          await generateDevIssue(nodeAddress, nodeId, shardus)
+        }
+        devIssueGenerated = true
+        devTallyGenerated = false
+        devApplyGenerated = false
+      }
+
       // TALLY
       if (WindowRange.fromObj(daoAccountObj.windows.graceWindow).includes(currentTime) && !tallyGenerated) {
         if (luckyNodes.includes(nodeId)) {
@@ -261,6 +286,32 @@ export function startDaoMaintenanceCycle(interval: number, shardus: Shardus): vo
         issueGenerated = false
         tallyGenerated = false
         applyGenerated = true
+      }
+
+      // DEV_TALLY
+      if (
+        WindowRange.fromObj(daoAccountObj.devWindows.graceWindow).includes(currentTime) &&
+        !devTallyGenerated
+      ) {
+        if (luckyNodes.includes(nodeId)) {
+          await tallyDevVotes(nodeAddress, nodeId, shardus)
+        }
+        devIssueGenerated = false
+        devTallyGenerated = true
+        devApplyGenerated = false
+      }
+
+      // DEV_APPLY
+      if (
+        WindowRange.fromObj(daoAccountObj.devWindows.applyWindow).includes(currentTime) &&
+        !devApplyGenerated
+      ) {
+        if (luckyNodes.includes(nodeId)) {
+          await applyDevParameters(nodeAddress, nodeId, shardus)
+        }
+        devIssueGenerated = false
+        devTallyGenerated = false
+        devApplyGenerated = true
       }
     } catch (err) {
       /* prettier-ignore */ if (logFlags.error) shardus.log('daoMaintenance ERR: ', err)

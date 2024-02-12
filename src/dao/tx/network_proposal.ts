@@ -12,7 +12,7 @@ import { DaoTx } from '.'
 import { SignedObject } from '@shardus/crypto-utils'
 
 export interface INetworkProposal {
-  type: 'NetworkProposal'
+  type:'network_proposal'
   from: string
   proposal: string
   issue: string
@@ -22,7 +22,7 @@ export interface INetworkProposal {
 }
 
 export class NetworkProposal implements INetworkProposal, DaoTx<UserAccount | ProposalAccount> {
-  readonly type = 'NetworkProposal'
+  readonly type = 'network_proposal'
   from: string
   proposal: string
   issue: string
