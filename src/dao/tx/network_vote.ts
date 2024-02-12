@@ -4,28 +4,24 @@ import * as utils from '../utils'
 import { daoConfig } from '../../config/dao'
 import { TransactionKeys, WrappedStates } from '../../shardeum/shardeumTypes'
 import { DaoGlobalAccount } from '../accounts/networkAccount'
-import { DevProposalAccount } from '../accounts/devProposalAccount'
-import { DevIssueAccount } from '../accounts/devIssueAccount'
+import { ProposalAccount } from '../accounts/proposalAccount'
+import { IssueAccount } from '../accounts/issueAccount'
 import { UserAccount } from '../accounts/userAccount'
 import { WrappedResponse } from '@shardus/core/dist/shardus/shardus-types'
-import Decimal from 'decimal.js'
-import _ from 'lodash'
 import { DaoTx } from '.'
-import { DeveloperPayment } from '../types'
 
-export interface IDevVote {
-  type: 'dev_vote'
+export interface IVote {
+  type: 'network_vote'
   from: string
-  devIssue: string
-  devProposal: string
-  approve: boolean
+  issue: string
+  proposal: string
   amount: number
   timestamp: number
   sign: crypto.Signature
 }
 
 export function validateFields(
-  tx: IDevVote,
+  tx: IVote,
   response: ShardusTypes.IncomingTransactionResult
 ): ShardusTypes.IncomingTransactionResult {
   if (typeof tx.from !== 'string') {
@@ -34,36 +30,32 @@ export function validateFields(
     throw new Error(response.reason)
   } else if (typeof tx.amount !== 'number') {
     response.success = false
-    response.reason = 'ts "amount" field must be a number.'
+    response.reason = 'tx "amount" field must be a number.'
     throw new Error(response.reason)
   } else if (tx.amount < 1) {
     response.success = false
     response.reason = 'Minimum voting "amount" allowed is 1 token'
     throw new Error(response.reason)
-  } else if (typeof tx.approve !== 'boolean') {
+  } else if (typeof tx.issue !== 'string') {
     response.success = false
-    response.reason = 'tx "approve" field must be a boolean.'
+    response.reason = 'tx "issue" field must be a string.'
     throw new Error(response.reason)
-  } else if (typeof tx.devProposal !== 'string') {
+  } else if (typeof tx.proposal !== 'string') {
     response.success = false
-    response.reason = 'tx "devProposal" field must be a string.'
-    throw new Error(response.reason)
-  } else if (typeof tx.devIssue !== 'string') {
-    response.success = false
-    response.reason = 'tx "devIssue" field must be a string.'
+    response.reason = 'tx "proposal" field must be a string.'
     throw new Error(response.reason)
   }
   return response
 }
 
 export function validate(
-  tx: IDevVote,
+  tx: IVote,
   wrappedStates: WrappedStates,
   response: ShardusTypes.IncomingTransactionResult
 ): ShardusTypes.IncomingTransactionResult {
   const network: DaoGlobalAccount = wrappedStates[daoConfig.daoAccountAddress].data
-  const devProposal: DevProposalAccount = wrappedStates[tx.devProposal] && wrappedStates[tx.devProposal].data
-  const devIssue: DevIssueAccount = wrappedStates[tx.devIssue] && wrappedStates[tx.devIssue].data
+  const proposal: ProposalAccount = wrappedStates[tx.proposal] && wrappedStates[tx.proposal].data
+  const issue: IssueAccount = wrappedStates[tx.issue] && wrappedStates[tx.issue].data
 
   if (tx.sign.owner !== tx.from) {
     response.reason = 'not signed by from account'
@@ -73,28 +65,28 @@ export function validate(
     response.reason = 'incorrect signing'
     return response
   }
-  if (!devProposal) {
-    response.reason = "devProposal doesn't exist"
+  if (!issue) {
+    response.reason = "issue doesn't exist"
     return response
   }
-  if (!devIssue) {
-    response.reason = "devIssue doesn't exist"
+  if (issue.number !== network.issue) {
+    response.reason = `This issue number ${issue.number} does not match the current network issue ${network.issue}`
     return response
   }
-  if (devIssue.number !== network.devIssue) {
-    response.reason = `This devIssue number ${devIssue.number} does not match the current network devIssue ${network.issue}`
+  if (issue.active === false) {
+    response.reason = 'issue no longer active'
     return response
   }
-  if (devIssue.active === false) {
-    response.reason = 'devIssue no longer active'
+  if (!proposal) {
+    response.reason = "Proposal doesn't exist"
     return response
   }
   if (tx.amount <= 0) {
-    response.reason = 'Must send tokens in order to vote'
+    response.reason = 'Must send tokens to vote'
     return response
   }
-  if (network.devWindows.votingWindow.excludes(tx.timestamp)) {
-    response.reason = 'Network is not within the time window to accept votes for developer proposals'
+  if (network.windows.votingWindow.excludes(tx.timestamp)) {
+    response.reason = 'Network is not within the time window to accept votes'
     return response
   }
   response.success = true
@@ -103,7 +95,7 @@ export function validate(
 }
 
 export function apply(
-  tx: IDevVote,
+  tx: IVote,
   txTimestamp: number,
   txId: string,
   wrappedStates: WrappedStates,
@@ -111,95 +103,75 @@ export function apply(
 ): void {
   const from: UserAccount = wrappedStates[tx.from].data
   const network: DaoGlobalAccount = wrappedStates[daoConfig.daoAccountAddress].data
-  const devProposal: DevProposalAccount = wrappedStates[tx.devProposal].data
-
+  const proposal: ProposalAccount = wrappedStates[tx.proposal].data
   from.data.balance -= tx.amount
   from.data.balance -= utils.maintenanceAmount(txTimestamp, from, network)
+  proposal.power += tx.amount
+  proposal.totalVotes++
 
-  if (tx.approve) {
-    devProposal.approve += tx.amount
-  } else {
-    devProposal.reject += tx.amount
-  }
-
-  devProposal.totalVotes++
   from.data.transactions.push({ ...tx, txId })
   from.timestamp = txTimestamp
-  devProposal.timestamp = txTimestamp
-  dapp.log('Applied dev_vote tx', from, devProposal)
+  proposal.timestamp = txTimestamp
+  dapp.log('Applied vote tx', from, proposal)
 }
 
-export function keys(tx: IDevVote, result: TransactionKeys): TransactionKeys {
+export function keys(tx: IVote, result: TransactionKeys): TransactionKeys {
   result.sourceKeys = [tx.from]
-  result.targetKeys = [tx.devIssue, tx.devProposal, daoConfig.daoAccountAddress]
+  result.targetKeys = [tx.issue, tx.proposal, daoConfig.daoAccountAddress]
   result.allKeys = [...result.sourceKeys, ...result.targetKeys]
   return result
 }
 
 export function createRelevantAccount(
   dapp: Shardus,
-  account: UserAccount | DevProposalAccount,
+  account: UserAccount,
   accountId: string,
-  tx: IDevVote,
   accountCreated = false
 ): WrappedResponse {
   if (!account) {
-    if (accountId === tx.devProposal) {
-      throw Error('Dev Proposal Account must already exist for the dev_vote transaction')
-    } else {
-      throw Error('Account must already exist for the dev_vote transaction')
-    }
+    throw new Error('Account must already exist for the vote transaction')
   }
   return dapp.createWrappedResponse(accountId, accountCreated, account.hash, account.timestamp, account)
 }
 
-export class DevVote implements IDevVote, DaoTx<UserAccount> {
-  readonly type = 'dev_vote'
+export class Vote implements IVote, DaoTx<UserAccount> {
+  readonly type = 'network_vote'
   from: string
-  devIssue: string
-  devProposal: string
-  approve: boolean
+  issue: string
+  proposal: string
   amount: number
   timestamp: number
   sign: crypto.Signature
-
-  constructor(data: IDevVote) {
+  constructor(data: IVote) {
     this.type = data.type
     this.from = data.from
-    this.devIssue = data.devIssue
-    this.devProposal = data.devProposal
-    this.approve = data.approve
+    this.issue = data.issue
+    this.proposal = data.proposal
     this.amount = data.amount
     this.timestamp = data.timestamp
     this.sign = data.sign
   }
 
-  validateFields(
-    response: ShardusTypes.IncomingTransactionResult
-  ): ShardusTypes.IncomingTransactionResult {
+  validateFields(response: ShardusTypes.IncomingTransactionResult): ShardusTypes.IncomingTransactionResult {
     if (typeof this.from !== 'string') {
       response.success = false
       response.reason = 'tx "from" field must be a string.'
       throw new Error(response.reason)
     } else if (typeof this.amount !== 'number') {
       response.success = false
-      response.reason = 'ts "amount" field must be a number.'
+      response.reason = 'tx "amount" field must be a number.'
       throw new Error(response.reason)
     } else if (this.amount < 1) {
       response.success = false
       response.reason = 'Minimum voting "amount" allowed is 1 token'
       throw new Error(response.reason)
-    } else if (typeof this.approve !== 'boolean') {
+    } else if (typeof this.issue !== 'string') {
       response.success = false
-      response.reason = 'tx "approve" field must be a boolean.'
+      response.reason = 'tx "issue" field must be a string.'
       throw new Error(response.reason)
-    } else if (typeof this.devProposal !== 'string') {
+    } else if (typeof this.proposal !== 'string') {
       response.success = false
-      response.reason = 'tx "devProposal" field must be a string.'
-      throw new Error(response.reason)
-    } else if (typeof this.devIssue !== 'string') {
-      response.success = false
-      response.reason = 'tx "devIssue" field must be a string.'
+      response.reason = 'tx "proposal" field must be a string.'
       throw new Error(response.reason)
     }
     return response
@@ -210,9 +182,8 @@ export class DevVote implements IDevVote, DaoTx<UserAccount> {
     response: ShardusTypes.IncomingTransactionResult
   ): ShardusTypes.IncomingTransactionResult {
     const network: DaoGlobalAccount = wrappedStates[daoConfig.daoAccountAddress].data
-    const devProposal: DevProposalAccount =
-      wrappedStates[this.devProposal] && wrappedStates[this.devProposal].data
-    const devIssue: DevIssueAccount = wrappedStates[this.devIssue] && wrappedStates[this.devIssue].data
+    const proposal: ProposalAccount = wrappedStates[this.proposal] && wrappedStates[this.proposal].data
+    const issue: IssueAccount = wrappedStates[this.issue] && wrappedStates[this.issue].data
 
     if (this.sign.owner !== this.from) {
       response.reason = 'not signed by from account'
@@ -222,28 +193,28 @@ export class DevVote implements IDevVote, DaoTx<UserAccount> {
       response.reason = 'incorrect signing'
       return response
     }
-    if (!devProposal) {
-      response.reason = "devProposal doesn't exist"
+    if (!issue) {
+      response.reason = "issue doesn't exist"
       return response
     }
-    if (!devIssue) {
-      response.reason = "devIssue doesn't exist"
+    if (issue.number !== network.issue) {
+      response.reason = `This issue number ${issue.number} does not match the current network issue ${network.issue}`
       return response
     }
-    if (devIssue.number !== network.devIssue) {
-      response.reason = `This devIssue number ${devIssue.number} does not match the current network devIssue ${network.issue}`
+    if (issue.active === false) {
+      response.reason = 'issue no longer active'
       return response
     }
-    if (devIssue.active === false) {
-      response.reason = 'devIssue no longer active'
+    if (!proposal) {
+      response.reason = "Proposal doesn't exist"
       return response
     }
     if (this.amount <= 0) {
-      response.reason = 'Must send tokens in order to vote'
+      response.reason = 'Must send tokens to vote'
       return response
     }
-    if (network.devWindows.votingWindow.excludes(this.timestamp)) {
-      response.reason = 'Network is not within the time window to accept votes for developer proposals'
+    if (network.windows.votingWindow.excludes(this.timestamp)) {
+      response.reason = 'Network is not within the time window to accept votes'
       return response
     }
     response.success = true
@@ -254,43 +225,33 @@ export class DevVote implements IDevVote, DaoTx<UserAccount> {
   apply(txTimestamp: number, txId: string, wrappedStates: WrappedStates, dapp: Shardus): void {
     const from: UserAccount = wrappedStates[this.from].data
     const network: DaoGlobalAccount = wrappedStates[daoConfig.daoAccountAddress].data
-    const devProposal: DevProposalAccount = wrappedStates[this.devProposal].data
-
+    const proposal: ProposalAccount = wrappedStates[this.proposal].data
     from.data.balance -= this.amount
     from.data.balance -= utils.maintenanceAmount(txTimestamp, from, network)
+    proposal.power += this.amount
+    proposal.totalVotes++
 
-    if (this.approve) {
-      devProposal.approve += this.amount
-    } else {
-      devProposal.reject += this.amount
-    }
-
-    devProposal.totalVotes++
     from.data.transactions.push({ ...this.getHashable(), txId })
     from.timestamp = txTimestamp
-    devProposal.timestamp = txTimestamp
-    dapp.log('Applied dev_vote tx', from, devProposal)
+    proposal.timestamp = txTimestamp
+    dapp.log('Applied vote tx', from, proposal)
   }
 
   keys(result: TransactionKeys): TransactionKeys {
     result.sourceKeys = [this.from]
-    result.targetKeys = [this.devIssue, this.devProposal, daoConfig.daoAccountAddress]
+    result.targetKeys = [this.issue, this.proposal, daoConfig.daoAccountAddress]
     result.allKeys = [...result.sourceKeys, ...result.targetKeys]
     return result
   }
 
   createRelevantAccount(
     dapp: Shardus,
-    account: UserAccount | DevProposalAccount,
+    account: UserAccount,
     accountId: string,
     accountCreated = false
   ): WrappedResponse {
     if (!account) {
-      if (accountId === this.devProposal) {
-        throw Error('Dev Proposal Account must already exist for the dev_vote transaction')
-      } else {
-        throw Error('Account must already exist for the dev_vote transaction')
-      }
+      throw new Error('Account must already exist for the vote transaction')
     }
     return dapp.createWrappedResponse(accountId, accountCreated, account.hash, account.timestamp, account)
   }
@@ -299,9 +260,8 @@ export class DevVote implements IDevVote, DaoTx<UserAccount> {
     return {
       type: this.type,
       from: this.from,
-      devIssue: this.devIssue,
-      devProposal: this.devProposal,
-      approve: this.approve,
+      issue: this.issue,
+      proposal: this.proposal,
       amount: this.amount,
       timestamp: this.timestamp,
       sign: this.sign,
