@@ -1,5 +1,5 @@
 diff --git a/src/config/index.ts b/src/config/index.ts
-index 7f4ff86..8c5109e 100644
+index 4291760..e53336e 100644
 --- a/src/config/index.ts
 +++ b/src/config/index.ts
 @@ -256,10 +256,9 @@ config = merge(
@@ -14,5 +14,5 @@ index 7f4ff86..8c5109e 100644
 +          //'UNSAFE KEYS IN USE DO NOT CHECK IN': DevSecurityLevel.Medium,
 +          '774491f80f47fedb119bb861601490f42bc3ea3b57fc63906c0d08e6d777a592': DevSecurityLevel.High,
          },
-         checkAddressFormat: false,
+         checkAddressFormat: true, //enabled for 1.10.0
        },
