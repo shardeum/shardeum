@@ -1367,7 +1367,10 @@ const configShardusEndpoints = (): void => {
 
     try {
       if (!req.query.type) {
-        const shardusAddress = toShardusAddress(address, AccountType.Account)
+        let shardusAddress = address.toLowerCase()
+        if (address.length === 42) {
+          shardusAddress = toShardusAddress(address, AccountType.Account)
+        }
         const account = await shardus.getLocalOrRemoteAccount(shardusAddress)
         if (!account) {
           return res.json({ account: null })
@@ -1376,7 +1379,7 @@ const configShardusEndpoints = (): void => {
         fixDeserializedWrappedEVMAccount(data)
         const readableAccount = await getReadableAccountInfo(data)
         if (readableAccount) return res.json({ account: readableAccount })
-        else res.json({ account: JSON.parse(stringify(data)) })
+        else res.json({ account: data })
       } else {
         let accountType: number
         if (typeof req.query.type === 'string') accountType = parseInt(req.query.type)
@@ -1384,13 +1387,10 @@ const configShardusEndpoints = (): void => {
           return res.json({ error: 'Invalid account type' })
         }
         const secondaryAddressStr: string = (req.query.secondaryAddress as string) || ''
-        if (secondaryAddressStr !== '' && secondaryAddressStr.length !== 64) {
+        if (secondaryAddressStr !== '' && secondaryAddressStr.length !== 66) {
           return res.json({ error: 'Invalid secondary address' })
         }
-        let shardusAddress: string = address
-        if (address.length === 42) {
-          shardusAddress = toShardusAddressWithKey(address, secondaryAddressStr, accountType)
-        }
+        const shardusAddress = toShardusAddressWithKey(address, secondaryAddressStr, accountType)
         const account = await shardus.getLocalOrRemoteAccount(shardusAddress)
         const readableAccount = JSON.parse(stringify(account))
         return res.json({ account: readableAccount })
