@@ -5888,10 +5888,12 @@ const shardusSetup = (): void => {
           }
 
           const requiredSig = getNodeCountForCertSignatures()
-          const { success, reason } = shardus.validateActiveNodeSignatures(
+          const { success, reason } = shardus.validateClosestActiveNodeSignatures(
             stake_cert,
             stake_cert.signs,
-            requiredSig
+            requiredSig,
+            5,
+            2
           )
           if (!success) {
             /* prettier-ignore */ nestedCountersInstance.countEvent('shardeum-staking', 'validateJoinRequest fail: invalid signature')
