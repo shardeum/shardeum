@@ -58,7 +58,9 @@ export const validateTxnFields =
         reason: 'Invalid transaction timestamp',
         txnTimestamp,
       }
-      const txId = generateTxId(tx)
+    }
+
+    const txId = generateTxId(tx)
 
     if (isDebugTx(tx)) {
       return {
@@ -96,19 +98,30 @@ export const validateTxnFields =
           reason: '',
           txnTimestamp,
         }
-      } else if (
-        tx.internalTXType === InternalTXType.ChangeConfig ||
-        tx.internalTXType === InternalTXType.ChangeNetworkParam
-      ) {
+      } else if (tx.internalTXType === InternalTXType.ChangeConfig ||
+        tx.internalTXType === InternalTXType.ChangeNetworkParam) {
         try {
-          // const devPublicKey = shardus.getDevPublicKey() // This have to be reviewed again whether to get from shardus interface or not
-          const devPublicKey = shardus.getDevPublicKeyMaxLevel()
-          if (devPublicKey) {
-            success = verify(tx, devPublicKey)
-            if (!success) reason = 'Dev key does not match!'
-          } else {
+
+          const devPublicKeys = shardus.getDevPublicKeys()
+          let isUserVerified = false
+          for (const devPublicKey in devPublicKeys) {
+            const verificationStatus = verify(tx, devPublicKey)
+            if (verificationStatus) {
+              isUserVerified = true
+              break
+            }
+          }
+          if (!isUserVerified) {
             success = false
             reason = 'Dev key is not defined on the server!'
+          }
+          const authorized = shardus.ensureKeySecurity(tx.sign.owner, DevSecurityLevel.High)
+          if (!authorized) {
+            success = false
+            reason = 'Unauthorized User'
+          } else {
+            success = true
+            reason = 'valid'
           }
         } catch (e) {
           reason = 'Invalid signature for internal tx'
@@ -122,75 +135,22 @@ export const validateTxnFields =
         success = result.isValid
         reason = result.reason
       } else if (tx.internalTXType === InternalTXType.Penalty) {
-        const result = validatePenaltyTX(tx as PenaltyTX, shardus)
+        const result = validatePenaltyTX(txId, tx as PenaltyTX)
         success = result.isValid
         reason = result.reason
       } else if (tx.internalTXType === InternalTXType.InitNetwork) {
         const latestCycles = shardus.getLatestCycles()
         if (latestCycles == null || latestCycles.length === 0) {
+          reason = 'No cycles found'
           return {
             success: false,
             reason,
             txnTimestamp: txnTimestamp,
           }
-        } else if (tx.internalTXType === InternalTXType.ChangeConfig ||
-          tx.internalTXType === InternalTXType.ChangeNetworkParam) {
-          try {
-
-            const devPublicKeys = shardus.getDevPublicKeys()
-            let isUserVerified = false
-            for (const devPublicKey in devPublicKeys) {
-              const verificationStatus = verify(tx, devPublicKey)
-              if (verificationStatus) {
-                isUserVerified = true
-                break
-              }
-            }
-            if (!isUserVerified) {
-              success = false
-              reason = 'Dev key is not defined on the server!'
-            }
-            const authorized = shardus.ensureKeySecurity(tx.sign.owner, DevSecurityLevel.High)
-            if (!authorized) {
-              success = false
-              reason = 'Unauthorized User'
-            } else {
-              success = true
-              reason = 'valid'
-            }
-          } catch (e) {
-            reason = 'Invalid signature for internal tx'
-          }
-        } else if (tx.internalTXType === InternalTXType.InitRewardTimes) {
-          const result = InitRewardTimesTx.validateFields(tx as InitRewardTimes, shardus)
-          success = result.success
-          reason = result.reason
-        } else if (tx.internalTXType === InternalTXType.ClaimReward) {
-          const result = validateClaimRewardTx(tx as ClaimRewardTX)
-          success = result.isValid
-          reason = result.reason
-        } else if (tx.internalTXType === InternalTXType.Penalty) {
-          const result = validatePenaltyTX(txId, tx as PenaltyTX)
-          success = result.isValid
-          reason = result.reason
-        } else if (tx.internalTXType === InternalTXType.InitNetwork) {
-          const latestCycles = shardus.getLatestCycles()
-          if (latestCycles == null || latestCycles.length === 0) {
-            return {
-              success: false,
-              reason,
-              txnTimestamp: txnTimestamp,
-            }
-          }
-          const cycle = latestCycles[0]
-          if (cycle.counter > 1) {
-            return {
-              success: false,
-              reason,
-              txnTimestamp: txnTimestamp,
-            }
-          }
-          success = crypto.verifyObj(internalTX)
+        }
+        const cycle = latestCycles[0]
+        if (cycle.counter > 1) {
+          reason = 'Network already initialized'
           return {
             success: false,
             reason,
@@ -198,17 +158,6 @@ export const validateTxnFields =
           }
         }
         success = crypto.verifyObj(internalTX)
-        return {
-          success,
-          reason,
-          txnTimestamp: txnTimestamp,
-        }
-      } else {
-        try {
-          success = crypto.verifyObj(internalTX)
-        } catch (e) {
-          reason = 'Invalid signature for internal tx'
-        }
       }
       if (ShardeumFlags.VerboseLogs) console.log('validateTxsField', success, reason)
       return {
@@ -246,24 +195,6 @@ export const validateTxnFields =
         nestedCountersInstance.countEvent('shardeum', 'validate - sign ' + isSigned ? 'failed' : 'missing')
       }
 
-      if (ShardeumFlags.txBalancePreCheck && appData != null) {
-        const minBalanceUsd = ShardeumFlags.chargeConstantTxFee
-          ? BigInt(ShardeumFlags.constantTxFeeUsd)
-          : BigInt(1)
-        let minBalance = scaleByStabilityFactor(minBalanceUsd, AccountsStorage.cachedNetworkAccount)
-        //check with value added in
-        minBalance = minBalance + BigInt(transaction.value.toString())
-        const accountBalance = BigInt(appData.balance)
-        if (accountBalance < minBalance) {
-          success = false
-          reason = `Sender does not have enough balance.`
-          /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`balance fail: sender ${transaction.getSenderAddress()} does not have enough balance. Min balance: ${minBalance.toString()}, Account balance: ${accountBalance.toString()}`)
-          nestedCountersInstance.countEvent('shardeum', 'validate - insufficient balance')
-        } else {
-          /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`balance pass: sender ${transaction.getSenderAddress()} has balance of ${accountBalance.toString()}`)
-        }
-      }
-
         if (ShardeumFlags.txBalancePreCheck && appData != null) {
           let minBalance: bigint // Calculate the minimun balance with the transaction value added in
           if (ShardeumFlags.chargeConstantTxFee) {
@@ -290,7 +221,6 @@ export const validateTxnFields =
             /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`nonce pass: expectedNonce:${perfectCount} == txNonce:${txNonce}.    accountNonce:${appData.nonce}  queueCount:${appData.queueCount}  txHash: ${transaction.hash().toString()}`)
           }
         }
-      }
 
         if (appData && appData.internalTx && appData.internalTXType === InternalTXType.Stake) {
           if (ShardeumFlags.VerboseLogs) console.log('Validating stake coins tx fields', appData)
@@ -362,7 +292,6 @@ export const validateTxnFields =
             }
           }
         }
-      }
 
         if (appData && appData.internalTx && appData.internalTXType === InternalTXType.Unstake) {
           nestedCountersInstance.countEvent('shardeum-unstaking', 'validating unstake coins tx fields')
@@ -427,7 +356,6 @@ export const validateTxnFields =
           success = false
           reason = `This nominee node is not found!`
         }
-      }
     } catch (e) {
       if (ShardeumFlags.VerboseLogs) console.log('validate error', e)
       nestedCountersInstance.countEvent('shardeum', `validate - exception ${e.message}`)
