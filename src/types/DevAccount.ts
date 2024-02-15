@@ -14,16 +14,18 @@ export function serializeDevAccount(stream: VectorBufferStream, obj: DevAccount,
   if (root) {
     stream.writeUInt16(TypeIdentifierEnum.cDevAccount)
   }
-  stream.writeUInt16(cDevAccountVersion)
+  stream.writeUInt8(cDevAccountVersion)
   serializeBaseAccount(stream, obj, false)
   stream.writeString(obj.id)
   stream.writeString(obj.hash)
-  stream.writeString(obj.timestamp.toString())
+  stream.writeBigUInt64(BigInt(obj.timestamp))
 }
 
 export function deserializeDevAccount(stream: VectorBufferStream): DevAccount {
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const version = stream.readUInt16()
+  const version = stream.readUInt8()
+  if (version > cDevAccountVersion) {
+    throw new Error('DevAccount version mismatch')
+  }
   const baseAccount = deserializeBaseAccount(stream)
   const id = stream.readString()
   const hash = stream.readString()

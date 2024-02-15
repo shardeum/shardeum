@@ -24,7 +24,7 @@ export function serializeNodeAccount(stream: VectorBufferStream, obj: NodeAccoun
   if (root) {
     stream.writeUInt16(TypeIdentifierEnum.cNodeAccount)
   }
-  stream.writeUInt16(cNodeAccountVersion)
+  stream.writeUInt8(cNodeAccountVersion)
 
   serializeBaseAccount(stream, obj, false)
   stream.writeString(obj.id)
@@ -51,8 +51,10 @@ export function serializeNodeAccount(stream: VectorBufferStream, obj: NodeAccoun
 }
 
 export function deserializeNodeAccount(stream: VectorBufferStream): NodeAccount {
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const version = stream.readUInt16()
+  const version = stream.readUInt8()
+  if (version > cNodeAccountVersion) {
+    throw new Error('NodeAccount version mismatch')
+  }
 
   const baseAccount = deserializeBaseAccount(stream)
   const id = stream.readString()

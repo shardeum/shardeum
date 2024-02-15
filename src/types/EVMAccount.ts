@@ -14,7 +14,7 @@ export function serializeEVMAccount(stream: VectorBufferStream, obj: EVMAccount,
   if (root) {
     stream.writeUInt16(TypeIdentifierEnum.cEVMAccount)
   }
-  stream.writeUInt16(cEVMAccountVersion)
+  stream.writeUInt8(cEVMAccountVersion)
 
   stream.writeString(obj.nonce.toString())
   stream.writeString(obj.balance.toString())
@@ -23,8 +23,10 @@ export function serializeEVMAccount(stream: VectorBufferStream, obj: EVMAccount,
 }
 
 export function deserializeEVMAccount(stream: VectorBufferStream): EVMAccount {
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const version = stream.readUInt16()
+  const version = stream.readUInt8()
+  if (version > cEVMAccountVersion) {
+    throw new Error('EVMAccount version mismatch')
+  }
   const nonce = BigInt(stream.readString())
   const balance = BigInt(stream.readString())
   const storageRootBuffer = stream.readBuffer()

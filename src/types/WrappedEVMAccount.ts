@@ -36,7 +36,7 @@ export function serializeWrappedEVMAccount(
   if (root) {
     stream.writeUInt16(TypeIdentifierEnum.cWrappedEVMAccount)
   }
-  stream.writeUInt16(cWrappedEVMAccountVersion)
+  stream.writeUInt8(cWrappedEVMAccountVersion)
 
   serializeBaseAccount(stream, obj, false)
   stream.writeString(obj.ethAddress)
@@ -86,8 +86,10 @@ export function serializeWrappedEVMAccount(
 }
 
 export function deserializeWrappedEVMAccount(stream: VectorBufferStream): WrappedEVMAccount {
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const version = stream.readUInt16()
+  const version = stream.readUInt8()
+  if (version > cWrappedEVMAccountVersion) {
+    throw new Error('WrappedEVMAccount version mismatch')
+  }
   const baseAccount = deserializeBaseAccount(stream)
   const ethAddress = stream.readString()
   const hash = stream.readString()
