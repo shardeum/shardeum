@@ -6604,7 +6604,8 @@ const shardusSetup = (): void => {
             return Buffer.from(SerializeToJsonString(obj), 'utf8')
         }
       } catch (e) {
-        /* prettier-ignore */ console.log('binarySerializeObject error:', e)
+        /* prettier-ignore */ if (logFlags.verbose) console.log('binarySerializeObject error:', e)
+        nestedCountersInstance.countEvent('binarySerializeObject', 'error')
         return Buffer.from(SerializeToJsonString(obj), 'utf8')
       }
     },
@@ -6619,7 +6620,8 @@ const shardusSetup = (): void => {
             return DeSerializeFromJsonString(buffer.toString('utf8'))
         }
       } catch (e) {
-        /* prettier-ignore */ console.log('binaryDeserializeObject error:', e)
+        /* prettier-ignore */ if (logFlags.verbose) console.log('binaryDeserializeObject error:', e)
+        nestedCountersInstance.countEvent('binaryDeserializeObject', 'error')
         return DeSerializeFromJsonString(buffer.toString('utf8'))
       }
     },

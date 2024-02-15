@@ -1,8 +1,6 @@
 import { ShardeumFlags } from '../shardeum/shardeumFlags'
 import { DecimalString, HexString } from '../shardeum/shardeumTypes'
 import { stringify } from './stringify'
-import { isHexPrefixed, isHexString } from '@ethereumjs/util'
-import BN from 'bn.js'
 
 export function isHexStringWithoutPrefix(value: string, length?: number): boolean {
   if (value && typeof value === 'string' && value.indexOf('0x') >= 0) return false // do not convert strings with 0x
