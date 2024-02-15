@@ -713,7 +713,7 @@ async function tryGetRemoteAccountCB(
   const shardusAddress = toShardusAddressWithKey(address, key, type)
   let remoteShardusAccount
   while (retry < maxRetry && remoteShardusAccount == null) {
-    /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`Trying to get remote account for address: ${address}, type: ${type}, key: ${key} retry: ${retry}`)
+     /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`${Date.now()} Trying to get remote account for address: ${address}, type: ${type}, key: ${key} retry: ${retry}`)
     retry++
     remoteShardusAccount = await shardus.getLocalOrRemoteAccount(shardusAddress, {
       useRICache: true,
@@ -721,13 +721,17 @@ async function tryGetRemoteAccountCB(
   }
 
   if (remoteShardusAccount == undefined) {
-    /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`Found no remote account for address: ${address}, type: ${type}, key: ${key}, retry: ${retry}`)
-    if (type === AccountType.Account || type === AccountType.ContractCode) nestedCountersInstance.countEvent('shardeum', `tryRemoteAccountCB: fail. type: ${type}, address: ${address}, key: ${key}`)
+    /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`${Date.now()} Found no remote account for address: ${address}, type: ${type}, key: ${key}, retry: ${retry}`)
+    if (type === AccountType.Account || type === AccountType.ContractCode)
+      nestedCountersInstance.countEvent(
+        'shardeum',
+        `tryRemoteAccountCB: fail. type: ${type}, address: ${address}, key: ${key}`
+      )
     return
   }
   const fixedEVMAccount = remoteShardusAccount.data as WrappedEVMAccount
   fixDeserializedWrappedEVMAccount(fixedEVMAccount)
-  /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`Successfully found remote account for address: ${address}, type: ${type}, key: ${key}, retry: ${retry}`, fixedEVMAccount)
+  /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`${Date.now()} Successfully found remote account for address: ${address}, type: ${type}, key: ${key}, retry: ${retry}`, fixedEVMAccount)
   return fixedEVMAccount
 }
 
