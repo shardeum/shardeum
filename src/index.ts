@@ -713,11 +713,23 @@ async function tryGetRemoteAccountCB(
   const shardusAddress = toShardusAddressWithKey(address, key, type)
   let remoteShardusAccount
   while (retry < maxRetry && remoteShardusAccount == null) {
-     /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`${Date.now()} Trying to get remote account for address: ${address}, type: ${type}, key: ${key} retry: ${retry}`)
-    retry++
-    remoteShardusAccount = await shardus.getLocalOrRemoteAccount(shardusAddress, {
-      useRICache: true,
-    })
+    //getLocalOrRemoteAccount can throw if the remote node gives us issues
+    //we want to catch these and retry
+    try{
+      /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`${Date.now()} Trying to get remote account for address: ${address}, type: ${type}, key: ${key} retry: ${retry}`)
+      retry++
+      remoteShardusAccount = await shardus.getLocalOrRemoteAccount(shardusAddress, {
+        useRICache: true,
+      })
+    } catch (ex){
+      continue
+    }
+    //if this is true we will trust a null response and let it be the value of the account
+    //with this flag true it means we will trust that we see a null account an not an error
+    if(ShardeumFlags.tryGetRemoteAccountCB_OnlyErrorsLoop && remoteShardusAccount == null){
+      //lets accept the null, because it may be an actually empty account that is not created yet.
+      break
+    }
   }
 
   if (remoteShardusAccount == undefined) {
@@ -2710,8 +2722,8 @@ async function generateAccessList(
 
       const address = caShardusAddress
       const accountIsRemote = isServiceMode() ? false : shardus.isAccountRemote(address)
-
-      if (accountIsRemote) {
+      //ShardeumFlags.debugLocalAALG === false means that we will skip the remote attempt and run it locally 
+      if (accountIsRemote && ShardeumFlags.debugLocalAALG === false) {
         const consensusNode = shardus.getRandomConsensusNodeForAccount(address)
         /* prettier-ignore */ if (logFlags.dapp_verbose) console.log(`Node is in remote shard: ${consensusNode?.externalIp}:${consensusNode?.externalPort}`)
         if (consensusNode != null) {

@@ -110,6 +110,8 @@ interface ShardeumFlags {
   loadGenesisNodeNetworkConfigToNetworkAccount: boolean
   networkAccountCacheDuration: number
   enableClaimRewardAdminCert: boolean
+  debugLocalAALG: boolean //run the AALG on this node to make it easier to debug in a large network 
+  tryGetRemoteAccountCB_OnlyErrorsLoop: boolean
 }
 
 export const ShardeumFlags: ShardeumFlags = {
@@ -251,6 +253,8 @@ export const ShardeumFlags: ShardeumFlags = {
   loadGenesisNodeNetworkConfigToNetworkAccount: false,
   networkAccountCacheDuration: 3600, // 60 minutes
   enableClaimRewardAdminCert: true,
+  debugLocalAALG: false,
+  tryGetRemoteAccountCB_OnlyErrorsLoop: true,
 }
 
 export function updateShardeumFlag(key: string, value: string | number | boolean): void {
