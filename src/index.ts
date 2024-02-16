@@ -983,6 +983,11 @@ async function _internalHackPostWithResp(url: string, body): Promise<GotResponse
 
     return res
   } catch (e) {
+    if (e instanceof Error) {
+      console.log('internalHackPostWithResp failed', e.message)
+    } else {
+      console.log('internalHackPostWithResp failed', e)
+    }
     return null
   }
 }
