@@ -1,5 +1,5 @@
 import { VectorBufferStream } from '@shardus/core'
-import { BaseAccount, serializeBaseAccount } from './BaseAccount'
+import { BaseAccount, deserializeBaseAccount, serializeBaseAccount } from './BaseAccount'
 import { TypeIdentifierEnum } from './enum/TypeIdentifierEnum'
 
 const cDevAccountVersion = 1
@@ -14,20 +14,22 @@ export function serializeDevAccount(stream: VectorBufferStream, obj: DevAccount,
   if (root) {
     stream.writeUInt16(TypeIdentifierEnum.cDevAccount)
   }
-  stream.writeUInt16(cDevAccountVersion)
+  stream.writeUInt8(cDevAccountVersion)
   serializeBaseAccount(stream, obj, false)
   stream.writeString(obj.id)
   stream.writeString(obj.hash)
-  stream.writeString(obj.timestamp.toString())
+  stream.writeBigUInt64(BigInt(obj.timestamp))
 }
 
 export function deserializeDevAccount(stream: VectorBufferStream): DevAccount {
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const version = stream.readUInt16()
-  const baseAccount = deserializeDevAccount(stream)
+  const version = stream.readUInt8()
+  if (version > cDevAccountVersion) {
+    throw new Error('DevAccount version mismatch')
+  }
+  const baseAccount = deserializeBaseAccount(stream)
   const id = stream.readString()
   const hash = stream.readString()
-  const timestamp = Number(stream.readString())
+  const timestamp = Number(stream.readBigUInt64())
 
   return {
     ...baseAccount,
