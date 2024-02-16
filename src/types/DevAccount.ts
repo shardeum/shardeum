@@ -29,7 +29,7 @@ export function deserializeDevAccount(stream: VectorBufferStream): DevAccount {
   const baseAccount = deserializeBaseAccount(stream)
   const id = stream.readString()
   const hash = stream.readString()
-  const timestamp = Number(stream.readString())
+  const timestamp = Number(stream.readBigUInt64())
 
   return {
     ...baseAccount,

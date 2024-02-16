@@ -29,7 +29,7 @@ export function serializeNodeAccount(stream: VectorBufferStream, obj: NodeAccoun
   serializeBaseAccount(stream, obj, false)
   stream.writeString(obj.id)
   stream.writeString(obj.hash)
-  stream.writeString(obj.timestamp.toString())
+  stream.writeBigUInt64(BigInt(obj.timestamp))
 
   // Serialize nullable string
   if (obj.nominator !== null) {
@@ -41,8 +41,8 @@ export function serializeNodeAccount(stream: VectorBufferStream, obj: NodeAccoun
 
   stream.writeString(obj.stakeLock.toString())
   stream.writeString(obj.reward.toString())
-  stream.writeString(obj.rewardStartTime.toString())
-  stream.writeString(obj.rewardEndTime.toString())
+  stream.writeBigUInt64(BigInt(obj.rewardStartTime))
+  stream.writeBigUInt64(BigInt(obj.rewardEndTime))
   stream.writeString(obj.penalty.toString())
 
   stream.writeString(SerializeToJsonString(obj.nodeAccountStats))
@@ -59,7 +59,7 @@ export function deserializeNodeAccount(stream: VectorBufferStream): NodeAccount 
   const baseAccount = deserializeBaseAccount(stream)
   const id = stream.readString()
   const hash = stream.readString()
-  const timestamp = Number(stream.readString())
+  const timestamp = Number(stream.readBigUInt64())
 
   // Deserialize nullable string
   let nominator = null
@@ -69,8 +69,8 @@ export function deserializeNodeAccount(stream: VectorBufferStream): NodeAccount 
   }
   const stakeLock = BigInt(stream.readString())
   const reward = BigInt(stream.readString())
-  const rewardStartTime = Number(stream.readString())
-  const rewardEndTime = Number(stream.readString())
+  const rewardStartTime = Number(stream.readBigUInt64())
+  const rewardEndTime = Number(stream.readBigUInt64())
   const penalty = BigInt(stream.readString())
 
   const nodeAccountStats = DeSerializeFromJsonString<NodeAccountStats>(stream.readString())
