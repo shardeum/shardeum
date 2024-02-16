@@ -179,6 +179,7 @@ config = merge(config, {
       // enableLeftNetworkEarlySlashing: true,
       // enableSyncTimeoutSlashing: true,
       // enableNodeRefutedSlashing: true
+      rotationCountMultiply: 3,
     },
   },
 })
