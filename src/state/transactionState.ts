@@ -776,8 +776,8 @@ export default class TransactionState {
 
       //need to know if we got a trustable null or if there was an error giving us a null!
       if(wrappedEVMAccount == null){
-        storedRlp = undefined
-        storedValue = undefined
+        storedRlp = RLP.encode(Uint8Array.from([]))
+        storedValue = Uint8Array.from([])
 
         // storage hit, however it is a null we trust!!! data exists in this shard
         // setting value to undefined 
@@ -788,7 +788,7 @@ export default class TransactionState {
           this.firstContractStorageReads.set(addressString, contractStorageReads)
         }
         contractStorageReads.set(keyString, storedRlp)
-        return undefined
+        return Uint8Array.from([])
       }
     }
 
