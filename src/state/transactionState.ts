@@ -773,6 +773,23 @@ export default class TransactionState {
         storedRlp = wrappedEVMAccount.value
         storedValue = storedRlp ? RLP.decode(storedRlp) : undefined
       }
+
+      //need to know if we got a trustable null or if there was an error giving us a null!
+      if(wrappedEVMAccount == null){
+        storedRlp = undefined
+        storedValue = undefined
+
+        // storage hit, however it is a null we trust!!! data exists in this shard
+        // setting value to undefined 
+        //put this in our first reads map, so that we will know this is a new value
+        let contractStorageReads = this.firstContractStorageReads.get(addressString)
+        if (contractStorageReads == null) {
+          contractStorageReads = new Map()
+          this.firstContractStorageReads.set(addressString, contractStorageReads)
+        }
+        contractStorageReads.set(keyString, storedRlp)
+        return undefined
+      }
     }
 
     //Storage miss!!!, account not on this shard

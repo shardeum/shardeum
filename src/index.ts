@@ -739,7 +739,8 @@ async function tryGetRemoteAccountCB(
         'shardeum',
         `tryRemoteAccountCB: fail. type: ${type}, address: ${address}, key: ${key}`
       )
-    return
+    //this could be new account
+    return undefined
   }
   const fixedEVMAccount = remoteShardusAccount.data as WrappedEVMAccount
   fixDeserializedWrappedEVMAccount(fixedEVMAccount)
@@ -6742,6 +6743,8 @@ export function shardeumGetTime(): number {
   if (isServiceMode())
     AccountsStorage.setAccount(networkAccount, await AccountsStorage.getAccount(networkAccount))
   shardusSetup()
+  config.server = shardus.config //possibly set the server config to match the merged one?
+
 
   if (ShardeumFlags.GlobalNetworkAccount) {
     // CODE THAT GETS EXECUTED WHEN NODES START
