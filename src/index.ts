@@ -107,6 +107,7 @@ import {
   getTxSenderAddress,
   isInSenderCache,
   removeTxFromSenderCache,
+  DeSerializeFromJsonString,
 } from './utils'
 import config, { Config } from './config'
 import Wallet from 'ethereumjs-wallet'
@@ -6658,21 +6659,33 @@ const shardusSetup = (): void => {
     binarySerializeObject(identifier: string, obj): Buffer {
       nestedCountersInstance.countEvent('binarySerializeObject', identifier)
       /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log('binarySerializeObject:', identifier, obj)
-      switch (identifier) {
-        case 'AppData':
-          return accountSerializer(obj).getBuffer()
-        default:
-          return Buffer.from(cryptoStringify(obj), 'utf8')
+      try {
+        switch (identifier) {
+          case 'AppData':
+            return accountSerializer(obj).getBuffer()
+          default:
+            return Buffer.from(SerializeToJsonString(obj), 'utf8')
+        }
+      } catch (e) {
+        /* prettier-ignore */ if (logFlags.error) console.log('binarySerializeObject error:', e)
+        nestedCountersInstance.countEvent('binarySerializeObject', 'error')
+        return Buffer.from(SerializeToJsonString(obj), 'utf8')
       }
     },
     binaryDeserializeObject(identifier: string, buffer: Buffer) {
       nestedCountersInstance.countEvent('binaryDeserializeObject', identifier)
       /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log('binaryDeserializeObject:', identifier, buffer)
-      switch (identifier) {
-        case 'AppData':
-          return accountDeserializer(buffer)
-        default:
-          return JSON.parse(buffer.toString('utf8'))
+      try {
+        switch (identifier) {
+          case 'AppData':
+            return accountDeserializer(buffer)
+          default:
+            return DeSerializeFromJsonString(buffer.toString('utf8'))
+        }
+      } catch (e) {
+        /* prettier-ignore */ if (logFlags.error) console.log('binaryDeserializeObject error:', e)
+        nestedCountersInstance.countEvent('binaryDeserializeObject', 'error')
+        return DeSerializeFromJsonString(buffer.toString('utf8'))
       }
     },
   })

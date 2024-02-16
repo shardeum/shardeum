@@ -1,11 +1,16 @@
-import { VectorBufferStream } from '@shardus/core'
+import { VectorBufferStream, nestedCountersInstance } from '@shardus/core'
 import { AccountType } from '../shardeum/shardeumTypes'
 import { BaseAccount } from './BaseAccount'
 import { DevAccount, deserializeDevAccount, serializeDevAccount } from './DevAccount'
-import { NetworkAccount, serializeNetworkAccount } from './NetworkAccount'
-import { NodeAccount, serializeNodeAccount } from './NodeAccount'
-import { WrappedEVMAccount, serializeWrappedEVMAccount } from './WrappedEVMAccount'
+import { NetworkAccount, deserializeNetworkAccount, serializeNetworkAccount } from './NetworkAccount'
+import { NodeAccount, deserializeNodeAccount, serializeNodeAccount } from './NodeAccount'
+import {
+  WrappedEVMAccount,
+  deserializeWrappedEVMAccount,
+  serializeWrappedEVMAccount,
+} from './WrappedEVMAccount'
 import { TypeIdentifierEnum } from './enum/TypeIdentifierEnum'
+import { DeSerializeFromJsonString, SerializeToJsonString } from '../utils'
 
 export const binarySerializer = <T>(
   data: T,
@@ -30,16 +35,29 @@ export const accountSerializer = <T extends BaseAccount>(data: T): VectorBufferS
   const serializedPayload = new VectorBufferStream(0)
   switch (data.accountType) {
     case AccountType.DevAccount:
+      nestedCountersInstance.countEvent('binarySerialize', 'DevAccount')
       serializeDevAccount(serializedPayload, data as unknown as DevAccount, true)
       break
     case AccountType.NetworkAccount:
+      nestedCountersInstance.countEvent('binarySerialize', 'NetworkAccount')
       serializeNetworkAccount(serializedPayload, data as unknown as NetworkAccount, true)
       break
     case AccountType.NodeAccount:
+      nestedCountersInstance.countEvent('binarySerialize', 'NodeAccount')
       serializeNodeAccount(serializedPayload, data as unknown as NodeAccount, true)
       break
-    default:
+    case AccountType.Account:
+    case AccountType.ContractCode:
+    case AccountType.ContractStorage:
+    case AccountType.Receipt:
+      nestedCountersInstance.countEvent('binarySerialize', 'WrappedEVMAccount')
       serializeWrappedEVMAccount(serializedPayload, data as unknown as WrappedEVMAccount, true)
+      break
+    default:
+      nestedCountersInstance.countEvent('binarySerialize', `UnknownAccType-${data.accountType}`)
+      serializedPayload.writeUInt16(TypeIdentifierEnum.cUnknown)
+      serializedPayload.writeString(SerializeToJsonString(data))
+      break
   }
   return serializedPayload
 }
@@ -49,14 +67,19 @@ export const accountDeserializer = <T extends BaseAccount>(data: Buffer): T => {
   const payloadType = payloadStream.readUInt16()
   switch (payloadType) {
     case TypeIdentifierEnum.cDevAccount:
+      nestedCountersInstance.countEvent('binaryDeserialize', 'DevAccount')
       return deserializeDevAccount(payloadStream) as unknown as T
     case TypeIdentifierEnum.cNetworkAccount:
-      return deserializeDevAccount(payloadStream) as unknown as T
+      nestedCountersInstance.countEvent('binaryDeserialize', 'NetworkAccount')
+      return deserializeNetworkAccount(payloadStream) as unknown as T
     case TypeIdentifierEnum.cNodeAccount:
-      return deserializeDevAccount(payloadStream) as unknown as T
+      nestedCountersInstance.countEvent('binaryDeserialize', 'NodeAccount')
+      return deserializeNodeAccount(payloadStream) as unknown as T
     case TypeIdentifierEnum.cWrappedEVMAccount:
-      return deserializeDevAccount(payloadStream) as unknown as T
+      nestedCountersInstance.countEvent('binaryDeserialize', 'WrappedEVMAccount')
+      return deserializeWrappedEVMAccount(payloadStream) as unknown as T
     default:
-      throw new Error(`Unknown account type ${payloadType}`)
+      nestedCountersInstance.countEvent('binaryDeserialize', `UnknownAccType-${payloadType}`)
+      return DeSerializeFromJsonString<T>(payloadStream.readString())
   }
 }

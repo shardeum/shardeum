@@ -22,7 +22,7 @@ export function serializeNetworkAccount(stream: VectorBufferStream, obj: Network
   if (root) {
     stream.writeUInt16(TypeIdentifierEnum.cNetworkAccount)
   }
-  stream.writeUInt16(cNetworkAccountVersion)
+  stream.writeUInt8(cNetworkAccountVersion)
 
   serializeBaseAccount(stream, obj, false)
   stream.writeString(obj.id)
@@ -40,12 +40,14 @@ export function serializeNetworkAccount(stream: VectorBufferStream, obj: Network
   }
 
   stream.writeString(obj.hash)
-  stream.writeUInt32(obj.timestamp)
+  stream.writeBigUInt64(BigInt(obj.timestamp))
 }
 
 export function deserializeNetworkAccount(stream: VectorBufferStream): NetworkAccount {
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const version = stream.readUInt16()
+  const version = stream.readUInt8()
+  if (version > cNetworkAccountVersion) {
+    throw new Error('NetworkAccount version mismatch')
+  }
 
   const baseAccount = deserializeBaseAccount(stream)
   const id = stream.readString()
@@ -62,7 +64,7 @@ export function deserializeNetworkAccount(stream: VectorBufferStream): NetworkAc
   }
 
   const hash = stream.readString()
-  const timestamp = stream.readUInt32()
+  const timestamp = Number(stream.readBigUInt64())
 
   return {
     ...baseAccount,
