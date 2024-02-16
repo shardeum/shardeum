@@ -720,6 +720,7 @@ async function tryGetRemoteAccountCB(
       retry++
       remoteShardusAccount = await shardus.getLocalOrRemoteAccount(shardusAddress, {
         useRICache: true,
+        canThrowException: true
       })
     } catch (ex){
       continue
