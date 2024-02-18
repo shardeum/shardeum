@@ -122,8 +122,8 @@ config = merge(config, {
     p2p: {
       cycleDuration: 60,
       minNodesToAllowTxs: 1, // to allow single node networks
-      baselineNodes: process.env.baselineNodes ? parseInt(process.env.baselineNodes) : 300, // config used for baseline for entering recovery, restore, and safety. Should be equivalient to minNodes on network startup
-      minNodes: process.env.minNodes ? parseInt(process.env.minNodes) : 300,
+      baselineNodes: process.env.baselineNodes ? parseInt(process.env.baselineNodes) : 10, // config used for baseline for entering recovery, restore, and safety. Should be equivalient to minNodes on network startup
+      minNodes: process.env.minNodes ? parseInt(process.env.minNodes) : 10,
       maxNodes: process.env.maxNodes ? parseInt(process.env.maxNodes) : 1100,
       maxJoinedPerCycle: 10,
       maxSyncingPerCycle: 10,
@@ -136,7 +136,7 @@ config = merge(config, {
       amountToShrink: 5,
       maxDesiredMultiplier: 1.2,
       maxScaleReqs: 250, // todo: this will become a variable config but this should work for a 500 node demo
-      forceBogonFilteringOn: true,
+      forceBogonFilteringOn: false,
       //these are new feature in 1.3.0, we can make them default:true in shardus-core later
 
       // 1.2.3 migration starts
@@ -243,7 +243,7 @@ config = merge(
   config,
   {
     server: {
-      mode: 'release', // todo: must set this to "release" for public networks or get security on endpoints. use "debug"
+      mode: 'debug', // todo: must set this to "release" for public networks or get security on endpoints. use "debug"
       // for easier debugging
       debug: {
         startInFatalsLogMode: false, // true setting good for big aws test with nodes joining under stress.
@@ -257,10 +257,9 @@ config = merge(
           // '': DevSecurityLevel.Unauthorized,
           // These are production keys.  Use 'git apply use_test_key.patch' for unsafe local test keys
           // Never merge a commit with changes to these lines without approval.
-          '17a3b692c6c62a689391e49f4c60130c9f919782470a2d7469ac108a1ea304b7': DevSecurityLevel.Low,
-          '4c255f7b77ab9fb21ad99f709a65e5a5648d71a7157d8429a92e3470b2d100f5': DevSecurityLevel.Medium,
-          //this last line needs command to ignore auto formatting or prettier will strip the quotes!!
-          /* prettier-ignore */ 'bee9590211493d08d9f19915f68f12b0b9f75c56ca6911d699bb1cfa51cbbe77': DevSecurityLevel.High,
+          //'UNSAFE KEYS IN USE DO NOT CHECK IN': DevSecurityLevel.Low,
+          //'UNSAFE KEYS IN USE DO NOT CHECK IN': DevSecurityLevel.Medium,
+          '774491f80f47fedb119bb861601490f42bc3ea3b57fc63906c0d08e6d777a592': DevSecurityLevel.High,
         },
         checkAddressFormat: true, //enabled for 1.10.0
       },
