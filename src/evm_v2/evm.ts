@@ -109,6 +109,8 @@ export class EVM implements EVMInterface {
 
   protected readonly _optsCached: EVMOpts
 
+  private hardforkChangedEmitter: NodeJS.EventEmitter
+
   public get precompiles(): Map<string, PrecompileFunc> {
     return this._precompiles
   }
@@ -179,11 +181,6 @@ export class EVM implements EVMInterface {
 
     this.journal = new Journal(this.stateManager, this.common)
 
-    this.common.events.on('hardforkChanged', () => {
-      this.getActiveOpcodes()
-      this._precompiles = getActivePrecompiles(this.common, this._customPrecompiles)
-    })
-
     // Initialize the opcode data
     this.getActiveOpcodes()
     this._precompiles = getActivePrecompiles(this.common, this._customPrecompiles)
@@ -196,6 +193,15 @@ export class EVM implements EVMInterface {
     // Additional window check is to prevent vite browser bundling (and potentially other) to break
     this.DEBUG =
       typeof window === 'undefined' ? process?.env?.DEBUG?.includes('ethjs') ?? false : false
+  }
+
+  listenToHardforkChanged(): void {
+    if (!this.hardforkChangedEmitter) {
+      this.hardforkChangedEmitter = this.common.events.on('hardforkChanged', () => {
+        this.getActiveOpcodes()
+        this._precompiles = getActivePrecompiles(this.common, this._customPrecompiles)
+      })
+    }
   }
 
   /**

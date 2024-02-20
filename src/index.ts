@@ -484,6 +484,7 @@ async function initEVMSingletons(): Promise<void> {
       common: evmCommon,
       stateManager: undefined,
     })
+    customEVM.listenToHardforkChanged()
     EVM = await VM.create({
       common: evmCommon,
       stateManager: undefined,
@@ -2723,7 +2724,7 @@ async function generateAccessList(
 
       const address = caShardusAddress
       const accountIsRemote = isServiceMode() ? false : shardus.isAccountRemote(address)
-      //ShardeumFlags.debugLocalAALG === false means that we will skip the remote attempt and run it locally 
+      //ShardeumFlags.debugLocalAALG === false means that we will skip the remote attempt and run it locally
       if (accountIsRemote && ShardeumFlags.debugLocalAALG === false) {
         const consensusNode = shardus.getRandomConsensusNodeForAccount(address)
         /* prettier-ignore */ if (logFlags.dapp_verbose) console.log(`Node is in remote shard: ${consensusNode?.externalIp}:${consensusNode?.externalPort}`)
