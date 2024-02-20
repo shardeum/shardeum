@@ -129,7 +129,7 @@ config = merge(config, {
       maxSyncingPerCycle: 10,
       maxRotatedPerCycle: process.env.maxRotatedPerCycle ? parseInt(process.env.maxRotatedPerCycle) : 1,
       firstCycleJoin: 0,
-      maxSyncTimeFloor: 6000, //Using 6000 for a restore from archiver, then set config at runtime back to 1200
+      maxSyncTimeFloor: 1200, //Using 6000 for a restore from archiver, then set config at runtime back to 1200
       //  1200=20 minutes.  If the network lives a long time we may have to bump this up
       syncBoostEnabled: false,
       amountToGrow: 30,
@@ -180,6 +180,8 @@ config = merge(config, {
       // enableSyncTimeoutSlashing: true,
       // enableNodeRefutedSlashing: true
       rotationCountMultiply: 3,
+      // 1.10.0
+      standbyListCyclesTTL: 1440, //nodes only need to refresh once every 24 hours (which is 1440 60s cycles!)
     },
   },
 })
