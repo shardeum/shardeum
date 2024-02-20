@@ -43,7 +43,6 @@ class Storage {
     await this.storage.init()
     console.log('shardeum storage init complete:')
 
-
     if (!isServiceMode()) {
       //would be neat if this wasn't needed here (refactor so storage stays more generic?)
       await this.storage.runCreate(
@@ -187,6 +186,34 @@ class Storage {
     limit: number,
     accountOffset: string
   ): Promise<AccountsEntry[]> {
+    const accountStartNum = Number(accountStart)
+    const accountEndNum = Number(accountEnd)
+    limit = Number(limit)
+    const accountOffsetNum = Number(accountOffset)
+    tsStart = Number(tsStart)
+    tsEnd = Number(tsEnd)
+
+    if (
+      isNaN(accountStartNum) ||
+      isNaN(accountEndNum) ||
+      isNaN(accountOffsetNum) ||
+      isNaN(limit) ||
+      isNaN(tsStart) ||
+      isNaN(tsEnd)
+    ) {
+      throw new Error('arguments should be numbers.')
+    }
+    if (accountEndNum < accountStartNum) {
+      throw new Error('accountEnd must be greater than or equal to accountStart.')
+    }
+    if (tsStart < 0 || tsEnd < 0 || tsEnd < tsStart) {
+      throw new Error('Invalid timestamp range.')
+    }
+
+    // Validate limit
+    if (limit <= 0) {
+      throw new Error('Invalid limit. Must be a positive number')
+    }
     this._checkInit()
     try {
       const query = `SELECT * FROM accountsEntry WHERE (timestamp, accountId) >= (${tsStart}, "${accountOffset}") 
