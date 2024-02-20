@@ -5,7 +5,7 @@ image: 'registry.gitlab.com/shardus/dev-container:latest_node18'
 
 before_script:
   - node -v
-  - apt-get -qq install -y libseccomp-dev
+  - apt-get update && apt-get -qq install -y libseccomp-dev
 
 stages:
   - build
