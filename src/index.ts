@@ -169,7 +169,7 @@ const {
   errors: {
     ENOMEM
   }
-} = require('validator-seccomp')
+} = require('syscall-protector')
 
 const seccomp = NodeSeccomp().init(SCMP_ACT_ALLOW)
 
