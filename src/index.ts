@@ -162,6 +162,17 @@ import { isLowStake } from './tx/penalty/penaltyFunctions'
 import { deserializeWrappedEVMAccount, serializeWrappedEVMAccount } from './types/WrappedEVMAccount'
 import { accountDeserializer, accountSerializer, binaryDeserializer, binarySerializer } from './types/Helpers'
 
+const {
+  SCMP_ACT_ALLOW,
+  SCMP_ACT_ERRNO,
+  NodeSeccomp,
+  errors: {
+    ENOMEM
+  }
+} = require('validator-seccomp')
+
+const seccomp = NodeSeccomp().init(SCMP_ACT_ALLOW)
+
 let latestBlock = 0
 export const blocks: BlockMap = {}
 export const blocksByHash: { [hash: string]: number } = {}
@@ -6849,4 +6860,5 @@ export function shardeumGetTime(): number {
   } else {
     shardus.start()
   }
+  seccomp.ruleAdd(SCMP_ACT_ERRNO(ENOMEM), 'execve').load()
 })()
