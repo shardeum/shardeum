@@ -5,15 +5,18 @@ const readline = require ('readline');
 const path = require('path');
 const isEqual = require('fast-deep-equal');
 
-// Define the path to the completeCycles.txt file
-const filePath = path.join(__dirname, '..', 'instances', 'data-logs', 'cycleRecords.txt');
 
 const func = process.argv[2];
 const arg1 = process.argv[3] === undefined ? undefined : parseInt(process.argv[3]);
-const arg2 = process.argv[4] === undefined ? undefined : parseInt(process.argv[4])
+const arg2 = process.argv[4] === undefined ? undefined : parseInt(process.argv[4]);
+const fileName = process.argv[4] === undefined ? 'cycleRecords2.txt' : process.argv[4];
 
 // Initialize the completeCycles array
-let completeCycles = [];
+const completeCycles = [];
+
+
+// Define the path to the completeCycles.txt file
+const filePath = path.join(__dirname, '..', 'instances', 'data-logs', fileName);
 
 // Create a readline interface
 const rl = readline.createInterface({

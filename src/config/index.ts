@@ -262,6 +262,7 @@ config = merge(
           '774491f80f47fedb119bb861601490f42bc3ea3b57fc63906c0d08e6d777a592': DevSecurityLevel.High,
         },
         checkAddressFormat: true, //enabled for 1.10.0
+        enableCycleRecordDebugTool: false, // only enable if you want to debug variant cycle records
       },
     },
   },
