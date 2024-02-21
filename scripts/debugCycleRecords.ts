@@ -9,14 +9,13 @@ const isEqual = require('fast-deep-equal');
 const func = process.argv[2];
 const arg1 = process.argv[3] === undefined ? undefined : parseInt(process.argv[3]);
 const arg2 = process.argv[4] === undefined ? undefined : parseInt(process.argv[4]);
-const fileName = process.argv[4] === undefined ? 'cycleRecords2.txt' : process.argv[4];
+//const fileName = process.argv[4] === undefined ? 'cycleRecords2.txt' : process.argv[4];
 
 // Initialize the completeCycles array
 const completeCycles = [];
 
-
 // Define the path to the completeCycles.txt file
-const filePath = path.join(__dirname, '..', 'instances', 'data-logs', fileName);
+const filePath = path.join(__dirname, '..', 'instances', 'data-logs', 'cycleRecords1.txt');
 
 // Create a readline interface
 const rl = readline.createInterface({
@@ -28,7 +27,7 @@ const rl = readline.createInterface({
 // Read the file line by line
 rl.on('line', (line) => {
   // Parse the stringified JSON object from each line
-  const { cycleNumber, cycleRecord } = JSON.parse(line);
+  const { port, cycleNumber, cycleRecord } = JSON.parse(line);
 
   // Ensure the completeCycles array is large enough
   while (completeCycles.length <= cycleNumber) {
@@ -36,7 +35,7 @@ rl.on('line', (line) => {
   }
 
   // Append the cycleRecord to the appropriate subarray
-  completeCycles[cycleNumber].push(cycleRecord);
+  completeCycles[cycleNumber].push({ port, cycleRecord });
 });
 
 // When file reading is complete, log the completeCycles array or perform further processing
@@ -45,20 +44,21 @@ rl.on('close', () => {
   
   const uniqueCompleteCycles = completeCycles.map((cycleArray) => {
     const cycleMap = new Map();
-  
-    cycleArray.forEach((cycleRecord) => {
+    //console.log(cycleArray);
+    //console.log(cycleMap);
+    cycleArray.forEach(({ port, cycleRecord }) => {
       let found = false;
       for (const [key, value] of cycleMap.entries()) {
-
         if (isEqual(key, cycleRecord)) {
-          cycleMap.set(key, value + 1);
+          value.push(port)
+          cycleMap.set(key, value);
           found = true;
           break;
         }
       }
   
       if (!found) {
-        cycleMap.set(cycleRecord, 1);
+        cycleMap.set(cycleRecord, [ port ]);
       }
     });
   
@@ -69,7 +69,7 @@ rl.on('close', () => {
     console.log('Cycle', cycle);
     console.log('Unique records:', uniqueCompleteCycles[cycle].size);
     for (const [key, value] of uniqueCompleteCycles[cycle].entries()) {
-      console.log(`${value} of this cycle record:`);
+      console.log(`${value.length} nodes: ${value.join(', ')} `);
       console.log(key);
     }
   }
@@ -95,6 +95,14 @@ rl.on('close', () => {
     }
   }
 
+  function printVariancePerVariantCycles(start = 0, end = uniqueCompleteCycles.length) {
+    if (end > uniqueCompleteCycles.length) end = uniqueCompleteCycles.length;
+    for (let i = start; i < end; i++) {
+      if (uniqueCompleteCycles[i].size > 1)
+        console.log(`Cycle ${i} has ${uniqueCompleteCycles[i].size} unique records`);
+    }
+  }
+
   if (func === 'help') {
     console.log('Available functions: pc, pcs, pvc, pvpc');
     console.log('pc: print cycle (args: cycle number)');
@@ -109,6 +117,8 @@ rl.on('close', () => {
     printVariantCycles(arg1, arg2);
   } else if (func === 'pvpc') {
     printVariancePerCycle(arg1, arg2);
+  } else if (func === 'pvpvc') {
+    printVariancePerVariantCycles(arg1, arg2)
   }
 
 });
