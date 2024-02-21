@@ -6,7 +6,6 @@ import {
 } from '@ethereumjs/tx'
 import * as crypto from '@shardus/crypto-utils'
 import { toBuffer } from 'ethereumjs-util'
-import { DaoTx } from '../dao/tx'
 import { ShardeumFlags } from '../shardeum/shardeumFlags'
 import { InternalTx, InternalTXType } from '../shardeum/shardeumTypes'
 import { stringify, cryptoStringify } from '../utils/stringify'
@@ -35,13 +34,17 @@ export function isInternalTXGlobal(internalTx: InternalTx): boolean {
   )
 }
 
-export function isInternalTx<T extends { isInternalTx?: unknown }>(tx: T): boolean {
-  console.log("daoLogging: isInternalTx", !!tx.isInternalTx || tx instanceof DaoTx)
-  return !!tx.isInternalTx || tx instanceof DaoTx
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export function isInternalTx(tx: any): boolean {
+  if (tx.isInternalTx) {
+    return true
+  }
+  return false
 }
 
-export function isDebugTx<T extends { isDebugTx?: unknown }>(tx: T): boolean {
-  return !!tx.isDebugTx
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export function isDebugTx(tx: any): boolean {
+  return tx.isDebugTx != null
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
