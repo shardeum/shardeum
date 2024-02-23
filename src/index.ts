@@ -4277,7 +4277,7 @@ const shardusSetup = (): void => {
                 'shardeum',
                 'precrack' + ' -' + ' generateAccessList success: false'
               )
-              return {status: false, reason: 'Failed to generate access list'}
+              return {status: false, reason: 'Failed to generate access list2'}
             }
           }
         }
