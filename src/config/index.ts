@@ -182,6 +182,9 @@ config = merge(config, {
       rotationCountMultiply: 3,
       // 1.10.0
       standbyListCyclesTTL: 1440, //nodes only need to refresh once every 24 hours (which is 1440 60s cycles!)
+
+      // 1.10.1
+      sortSyncFinished: true, //sort the finished list
     },
   },
 })
