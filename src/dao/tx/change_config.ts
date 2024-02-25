@@ -7,14 +7,6 @@ import { UserAccount } from '../accounts/userAccount'
 import { CycleRecord } from '@shardus/types/build/src/p2p/CycleCreatorTypes'
 import { NodeAccount } from '../accounts/nodeAccount'
 
-export interface ChangeConfig {
-  type: 'change_config'
-  from: string
-  cycle: ShardusTypes.Cycle
-  config: string
-  timestamp: number
-}
-
 export function validateFields(
   tx: ChangeConfig,
   response: ShardusTypes.IncomingTransactionResult
