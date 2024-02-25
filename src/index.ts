@@ -1948,8 +1948,8 @@ const configShardusEndpoints = (): void => {
  *    #### ##    ##    ##    ######## ##     ## ##    ## ##     ## ########       ##    ##     ##
  */
 
-async function applyInternalTx<A>(
-  tx: InternalTx | DaoTx<A>,
+async function applyInternalTx(
+  tx: InternalTx,
   wrappedStates: WrappedStates,
   txTimestamp: number
 ): Promise<ShardusTypes.ApplyResponse> {
@@ -1957,10 +1957,7 @@ async function applyInternalTx<A>(
   const applyResponse: ShardusTypes.ApplyResponse = shardus.createApplyResponse(txId, txTimestamp)
   const internalTx = tx
 
-  if (internalTx instanceof DaoTx) {
-    console.log("daoLogging: executing apply DaoTx")
-    internalTx.apply(txTimestamp, txId, wrappedStates, shardus);
-  } else if (internalTx.internalTXType === InternalTXType.SetGlobalCodeBytes) {
+  if (internalTx.internalTXType === InternalTXType.SetGlobalCodeBytes) {
     // eslint-disable-next-line security/detect-object-injection
     const wrappedEVMAccount: WrappedEVMAccount = wrappedStates[internalTx.from].data
     //just update the timestamp?
