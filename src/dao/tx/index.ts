@@ -3,6 +3,7 @@ import { WrappedStates } from '@shardus/core/dist/state-manager/state-manager-ty
 import {
   ApplyResponse,
   IncomingTransactionResult,
+  OpaqueTransaction,
   TransactionKeys,
   WrappedResponse,
 } from '@shardus/core/dist/shardus/shardus-types'
