@@ -4123,9 +4123,12 @@ const shardusSetup = (): void => {
             }
           }
 
-          if (remoteShardusAccount == null) {
+          if (remoteShardusAccount == null && isDebugMode() === false) {
             /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`txPreCrackData: found no local or remote account for address: ${txSenderEvmAddr}, key: ${transformedSourceKey}. using nonce=0`)
-            return {status: false, reason: `Couldn't find local or remote account for address: ${txSenderEvmAddr}`}
+            return {
+              status: false,
+              reason: `Couldn't find local or remote account for address: ${txSenderEvmAddr}`,
+            }
           } else {
             foundSender = true
             const wrappedEVMAccount = remoteShardusAccount as WrappedEVMAccount
@@ -4135,7 +4138,8 @@ const shardusSetup = (): void => {
               balance = wrappedEVMAccount.account.balance
               foundNonce = true
             } else {
-              return {status: false, reason: `Couldn't find account data for address: ${txSenderEvmAddr}`}
+              if (isDebugMode() === false)
+                return { status: false, reason: `Couldn't find account data for address: ${txSenderEvmAddr}` }
             }
           }
 
