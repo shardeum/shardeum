@@ -151,8 +151,6 @@ export const validateTxnFields =
             reason,
             txnTimestamp: txnTimestamp,
           }
-        } else if (tx.internalTXType === InternalTXType.Dao) {
-          throw new Error(`DAO transactions are not implemented here. tx: ${stringify(tx)}`)
         } else {
           try {
             success = crypto.verifyObj(internalTX)
