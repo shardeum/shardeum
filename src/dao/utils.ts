@@ -251,7 +251,7 @@ export function decodeDaoTxFromEVMTx(
   return JSON.parse(daoTxString)
 }
 
-export function encodeDaoTxToEVMTx(daoTx: { type: string }, shardus: Shardus): string {
+export function encodeDaoTxToEVMTx(daoTx: { type: string, [key: string]: unknown}, shardus: Shardus): string {
   if (daoTx?.type == null || daoTx?.type === '') throw new Error(`Invalid DaoTx: ${daoTx}`)
   // Encode the DaoTx as a hexstring
   const daoTxString = fromAscii(JSON.stringify(daoTx))

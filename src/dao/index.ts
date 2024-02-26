@@ -1,3 +1,4 @@
+import * as crypto from '@shardus/crypto-utils'
 import { Shardus } from '@shardus/core'
 import shardus from '@shardus/core/dist/shardus'
 import { ApplyResponse, OpaqueTransaction, WrappedResponse } from '@shardus/core/dist/shardus/shardus-types'
@@ -15,6 +16,7 @@ import {
   applyDevParameters,
   applyParameters,
   decodeDaoTxFromEVMTx,
+  encodeDaoTxToEVMTx,
   generateDevIssue,
   generateNetworkIssue,
   tallyDevVotes,
@@ -27,8 +29,10 @@ import { daoAccountAddress } from '../config/dao'
 import { inspect } from 'util'
 import * as WrappedEVMAccountFunctions from '../shardeum/wrappedEVMAccountFunctions'
 import { WindowRange } from './types'
+import { ONE_SECOND } from '../config'
+import { sleep } from '../utils'
 
-export function setupDaoAccount(shardus: Shardus, when: number): void {
+export async function setupDaoAccount(shardus: Shardus, when: number): Promise<void> {
   if (ShardeumFlags.EnableDaoFeatures) {
     const daoValue = {
       isInternalTx: true,
@@ -36,6 +40,39 @@ export function setupDaoAccount(shardus: Shardus, when: number): void {
       timestamp: when,
     }
     shardus.setGlobal(daoAccountAddress, daoValue, when, daoAccountAddress)
+
+    await sleep(ONE_SECOND * 10)
+
+    const nodeId = shardus.getNodeId()
+    const address = shardus.getNode(nodeId).address
+
+    shardus.set({
+      raw: encodeDaoTxToEVMTx(
+        {
+          type: 'issue',
+          nodeId,
+          from: address,
+          issue: crypto.hash(`issue-${1}`),
+          proposal: crypto.hash(`issue-${1}-proposal-1`),
+          timestamp: Date.now(),
+        },
+        shardus
+      ),
+    })
+    shardus.set({
+      raw: encodeDaoTxToEVMTx(
+        {
+          type: 'dev_issue',
+          nodeId,
+          from: address,
+          devIssue: crypto.hash(`dev-issue-${1}`),
+          timestamp: Date.now(),
+        },
+        shardus
+      ),
+    })
+
+    await sleep(ONE_SECOND * 10)
   }
 }
 
