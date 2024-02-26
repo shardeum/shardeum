@@ -1,5 +1,5 @@
 import * as crypto from '@shardus/crypto-utils'
-import { daoConfig } from '../config/dao'
+import { daoAccountAddress, daoConfig } from '../config/dao'
 import { Shardus } from '@shardus/core'
 import { UserAccount } from './accounts/userAccount'
 import { DaoGlobalAccount } from './accounts/networkAccount'
@@ -9,9 +9,12 @@ import { DeveloperPayment } from './types'
 import { TimestampReceipt } from '@shardus/core/dist/shardus/shardus-types'
 import { Issue } from './tx/issue'
 import { AccessListEIP2930Transaction, LegacyTransaction } from '@ethereumjs/tx'
-import { bytesToHex, toAscii } from '@ethereumjs/util'
+import { bigIntToHex, bytesToHex, fromAscii, hexToBytes, toAscii, toBytes } from '@ethereumjs/util'
 import { logFlags } from '..'
 import { PlainDaoTx } from './tx'
+import { ShardeumFlags } from '../shardeum/shardeumFlags'
+import { Common } from '@ethereumjs/common'
+import { DevIssue } from './tx/dev_issue'
 
 export const maintenanceAmount = (
   timestamp: number,
@@ -57,7 +60,8 @@ export function nodeReward(address: string, nodeId: string, dapp: Shardus): void
 export async function generateIssue(address: string, nodeId: string, dapp: Shardus): Promise<void> {
   const account = await dapp.getLocalOrRemoteAccount(daoConfig.daoAccountAddress)
   const network = account.data as DaoGlobalAccount
-  const tx = new Issue({
+
+  const networkIssueTx = new Issue({
     type: 'issue',
     nodeId,
     from: address,
@@ -65,7 +69,10 @@ export async function generateIssue(address: string, nodeId: string, dapp: Shard
     proposal: crypto.hash(`issue-${network.issue}-proposal-1`),
     timestamp: Date.now(),
   })
-  dapp.put(tx)
+
+  const EVMEncodedNetworkIssueTx = { raw: encodeDaoTxToEVMTx(networkIssueTx, dapp) }
+
+  dapp.put(EVMEncodedNetworkIssueTx)
   dapp.log('GENERATED_ISSUE: ', nodeId)
 }
 
@@ -73,14 +80,17 @@ export async function generateIssue(address: string, nodeId: string, dapp: Shard
 export async function generateDevIssue(address: string, nodeId: string, dapp: Shardus): Promise<void> {
   const account = await dapp.getLocalOrRemoteAccount(daoConfig.daoAccountAddress)
   const network = account.data as DaoGlobalAccount
-  const tx = {
+  const devIssueTx = new DevIssue({
     type: 'dev_issue',
     nodeId,
     from: address,
     devIssue: crypto.hash(`dev-issue-${network.devIssue}`),
     timestamp: Date.now(),
-  }
-  dapp.put(tx)
+  })
+
+  const EVMEncodedDevIssueTx = { raw: encodeDaoTxToEVMTx(devIssueTx, dapp) }
+
+  dapp.put(EVMEncodedDevIssueTx)
   dapp.log('GENERATED_DEV_ISSUE: ', nodeId)
 }
 
@@ -246,4 +256,30 @@ export function decodeDaoTxFromEVMTx(
   const daoTxString = toAscii(bytesToHex(transaction.data))
   /* prettier-ignore */ if (logFlags.verbose) console.log(`daoTxString`, daoTxString)
   return JSON.parse(daoTxString)
+}
+
+export function encodeDaoTxToEVMTx(daoTx: PlainDaoTx, shardus: Shardus): string {
+  // Encode the DaoTx as a hexstring
+  const daoTxString = fromAscii(JSON.stringify(daoTx))
+
+  // Create parameters for the EVM transaction that will encapsulate the DaoTx
+  const txParams = {
+    to: ShardeumFlags.daoTargetAddress,
+    gasLimit: bigIntToHex(BigInt(30000000)),
+    value: bigIntToHex(BigInt(0)),
+    data: daoTxString,
+    nonce: bigIntToHex(BigInt(0)),
+  }
+
+  // Create the EVM transaction and add the proper ChainID 
+  const tx = LegacyTransaction.fromTxData(txParams, { common: Common.custom({ chainId: ShardeumFlags.ChainID }) })
+
+  // Sign the transaction with the shardus layers secret key
+  const secretKey = shardus.crypto.keypair.secretKey
+  const pk = secretKey.substring(0, 2) === '0x' ? secretKey : '0x' + secretKey
+  const signedTx = tx.sign(hexToBytes(pk))
+
+  // Serialize the transaction
+  const serializedTx = bytesToHex(signedTx.serialize())
+  return serializedTx
 }
