@@ -3045,7 +3045,7 @@ const shardusSetup = (): void => {
       const applyResponse = shardus.createApplyResponse(txId, txTimestamp)
 
       if (isOpaqueDaoTx(tx)) {
-        handleDaoTxApply(tx, txTimestamp, wrappedStates, shardus)
+        handleDaoTxApply(tx, txTimestamp, wrappedStates, shardus, applyResponse)
         return applyResponse
       }
 

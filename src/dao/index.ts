@@ -154,7 +154,8 @@ export function handleDaoTxApply(
   tx: OpaqueTransaction,
   txTimestamp: number,
   wrappedStates: WrappedStates,
-  dapp: Shardus
+  dapp: Shardus,
+  applyResponse: ApplyResponse
 ): void {
   // Unserialize the EVM tx
   const unserializedTx = getTransactionObj(tx)
@@ -167,7 +168,7 @@ export function handleDaoTxApply(
     // daoTx will be null if the tx is not a dao tx
     if (daoTx != null) {
       // if it's not null, run its apply function
-      daoTx.apply(txTimestamp, null, wrappedStates, dapp)
+      daoTx.apply(txTimestamp, null, wrappedStates, dapp, applyResponse)
     }
   }
 }

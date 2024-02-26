@@ -23,6 +23,7 @@ import { DevTally, IDevTally } from './dev_tally'
 import { DevParameters, IDevParameters } from './dev_parameters'
 import { DevVote, IDevVote } from './dev_vote'
 import { IVote, Vote } from './network_vote'
+import { ITally, Tally } from './tally'
 
 export abstract class DaoTx<Account> {
   abstract readonly type: string
@@ -76,6 +77,8 @@ export abstract class DaoTx<Account> {
         return new DevParameters(tx)
       case 'dev_vote':
         return new DevVote(tx)
+      case 'tally':
+        return new Tally(tx)
     }
   }
 }
@@ -95,6 +98,7 @@ export type PlainDaoTx =
   | IDevTally
   | IDevParameters
   | IDevVote
+  | ITally
 
 function hasDaoTxType(tx: object): tx is PlainDaoTx {
   return (

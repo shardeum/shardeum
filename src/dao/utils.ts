@@ -60,19 +60,15 @@ export function nodeReward(address: string, nodeId: string, dapp: Shardus): void
 export async function generateNetworkIssue(address: string, nodeId: string, dapp: Shardus): Promise<void> {
   const account = await dapp.getLocalOrRemoteAccount(daoConfig.daoAccountAddress)
   const network = account.data as DaoGlobalAccount
-
-  const networkIssueTx = new NetworkIssue({
+  const tx = {
     type: 'issue',
     nodeId,
     from: address,
     issue: crypto.hash(`issue-${network.issue}`),
     proposal: crypto.hash(`issue-${network.issue}-proposal-1`),
     timestamp: Date.now(),
-  })
-
-  const EVMEncodedNetworkIssueTx = { raw: encodeDaoTxToEVMTx(networkIssueTx, dapp) }
-
-  dapp.put(EVMEncodedNetworkIssueTx)
+  }
+  dapp.put({raw: encodeDaoTxToEVMTx(tx, dapp)})
   dapp.log('GENERATED_ISSUE: ', nodeId)
 }
 
@@ -80,17 +76,14 @@ export async function generateNetworkIssue(address: string, nodeId: string, dapp
 export async function generateDevIssue(address: string, nodeId: string, dapp: Shardus): Promise<void> {
   const account = await dapp.getLocalOrRemoteAccount(daoConfig.daoAccountAddress)
   const network = account.data as DaoGlobalAccount
-  const devIssueTx = new DevIssue({
+  const tx = {
     type: 'dev_issue',
     nodeId,
     from: address,
     devIssue: crypto.hash(`dev-issue-${network.devIssue}`),
     timestamp: Date.now(),
-  })
-
-  const EVMEncodedDevIssueTx = { raw: encodeDaoTxToEVMTx(devIssueTx, dapp) }
-
-  dapp.put(EVMEncodedDevIssueTx)
+  }
+  dapp.put({raw: encodeDaoTxToEVMTx(tx, dapp)})
   dapp.log('GENERATED_DEV_ISSUE: ', nodeId)
 }
 
@@ -114,7 +107,7 @@ export async function tallyVotes(address: string, nodeId: string, dapp: Shardus)
       proposals: issue.proposals,
       timestamp: Date.now(),
     }
-    dapp.put(tx)
+    dapp.put({raw: encodeDaoTxToEVMTx(tx, dapp)})
     dapp.log('GENERATED_TALLY: ', nodeId)
   } catch (err) {
     dapp.log('ERR: ', err)
