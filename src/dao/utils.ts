@@ -142,7 +142,7 @@ export async function tallyDevVotes(address: string, nodeId: string, dapp: Shard
       devProposals: devIssue.devProposals,
       timestamp: Date.now(),
     }
-    dapp.put(tx)
+    dapp.put({raw: encodeDaoTxToEVMTx(tx, dapp)})
     dapp.log('GENERATED_DEV_TALLY: ', nodeId)
   } catch (err) {
     dapp.log('ERR: ', err)
@@ -177,7 +177,7 @@ export async function applyDevParameters(address: string, nodeId: string, dapp: 
     devIssue: crypto.hash(`dev-issue-${network.devIssue}`),
     timestamp: Date.now(),
   }
-  dapp.put(tx)
+  dapp.put({raw: encodeDaoTxToEVMTx(tx, dapp)})
   dapp.log('GENERATED_DEV_APPLY: ', nodeId)
 }
 
