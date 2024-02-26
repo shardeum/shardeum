@@ -258,7 +258,8 @@ export function decodeDaoTxFromEVMTx(
   return JSON.parse(daoTxString)
 }
 
-export function encodeDaoTxToEVMTx(daoTx: PlainDaoTx, shardus: Shardus): string {
+export function encodeDaoTxToEVMTx(daoTx: { type: string }, shardus: Shardus): string {
+  if (daoTx?.type == null || daoTx?.type === '') throw new Error(`Invalid DaoTx: ${daoTx}`)
   // Encode the DaoTx as a hexstring
   const daoTxString = fromAscii(JSON.stringify(daoTx))
 
@@ -271,8 +272,10 @@ export function encodeDaoTxToEVMTx(daoTx: PlainDaoTx, shardus: Shardus): string 
     nonce: bigIntToHex(BigInt(0)),
   }
 
-  // Create the EVM transaction and add the proper ChainID 
-  const tx = LegacyTransaction.fromTxData(txParams, { common: Common.custom({ chainId: ShardeumFlags.ChainID }) })
+  // Create the EVM transaction and add the proper ChainID
+  const tx = LegacyTransaction.fromTxData(txParams, {
+    common: Common.custom({ chainId: ShardeumFlags.ChainID }),
+  })
 
   // Sign the transaction with the shardus layers secret key
   const secretKey = shardus.crypto.keypair.secretKey
