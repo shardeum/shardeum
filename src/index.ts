@@ -3952,7 +3952,7 @@ const shardusSetup = (): void => {
     calculateTxId(tx: ShardusTypes.OpaqueTransaction) {
       return generateTxId(tx)
     },
-    async txPreCrackData(tx, appData): Promise<boolean> {
+    async txPreCrackData(tx, appData): Promise<void> {
       if (ShardeumFlags.VerboseLogs) console.log('Running txPreCrackData', tx, appData)
       if (ShardeumFlags.UseTXPreCrack === false) {
         return

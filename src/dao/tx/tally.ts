@@ -272,7 +272,13 @@ export class Tally implements ITally, DaoTx<NodeAccount | DevIssueAccount> {
     return response
   }
 
-  apply(txTimestamp: number, txId: string, wrappedStates: WrappedStates, dapp: Shardus, applyResponse: ApplyResponse): void {
+  apply(
+    txTimestamp: number,
+    txId: string,
+    wrappedStates: WrappedStates,
+    dapp: Shardus,
+    applyResponse: ApplyResponse
+  ): void {
     const from: NodeAccount = wrappedStates[this.from].data
     const network: DaoGlobalAccount = wrappedStates[daoConfig.daoAccountAddress].data
     const issue: IssueAccount = wrappedStates[this.issue].data
@@ -337,7 +343,12 @@ export class Tally implements ITally, DaoTx<NodeAccount | DevIssueAccount> {
     dapp.log('Applied tally tx', issue, winner)
   }
 
-  transactionReceiptPass(dapp: Shardus): void {
+  transactionReceiptPass(
+    tx: Tally,
+    wrappedStates: WrappedStates,
+    dapp: Shardus,
+    applyResponse: ApplyResponse
+  ): void {
     const issue: IssueAccount = wrappedStates[this.issue].data
     const defaultProposal: ProposalAccount =
       wrappedStates[crypto.hash(`issue-${issue.number}-proposal-1`)].data
