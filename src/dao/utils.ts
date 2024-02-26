@@ -7,7 +7,7 @@ import { IssueAccount } from './accounts/issueAccount'
 import { DevIssueAccount } from './accounts/devIssueAccount'
 import { DeveloperPayment } from './types'
 import { TimestampReceipt } from '@shardus/core/dist/shardus/shardus-types'
-import { Issue } from './tx/issue'
+import { NetworkIssue } from './tx/network_issue'
 import { AccessListEIP2930Transaction, LegacyTransaction } from '@ethereumjs/tx'
 import { bigIntToHex, bytesToHex, fromAscii, hexToBytes, toAscii, toBytes } from '@ethereumjs/util'
 import { logFlags } from '..'
@@ -57,11 +57,11 @@ export function nodeReward(address: string, nodeId: string, dapp: Shardus): void
 }
 
 // ISSUE TRANSACTION FUNCTION
-export async function generateIssue(address: string, nodeId: string, dapp: Shardus): Promise<void> {
+export async function generateNetworkIssue(address: string, nodeId: string, dapp: Shardus): Promise<void> {
   const account = await dapp.getLocalOrRemoteAccount(daoConfig.daoAccountAddress)
   const network = account.data as DaoGlobalAccount
 
-  const networkIssueTx = new Issue({
+  const networkIssueTx = new NetworkIssue({
     type: 'issue',
     nodeId,
     from: address,

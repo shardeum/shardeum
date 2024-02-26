@@ -16,7 +16,7 @@ import {
   applyParameters,
   decodeDaoTxFromEVMTx,
   generateDevIssue,
-  generateIssue,
+  generateNetworkIssue,
   tallyDevVotes,
   tallyVotes,
 } from './utils'
@@ -239,14 +239,14 @@ export function startDaoMaintenanceCycle(interval: number, shardus: Shardus): vo
       const node = shardus.getNode(nodeId)
       const nodeAddress = node.address
 
-      // ISSUE
+      // NETWORK ISSUE
       if (
         WindowRange.fromObj(daoAccountObj.windows.proposalWindow).includes(currentTime) &&
         !issueGenerated &&
         daoAccountObj.issue > 1
       ) {
         if (luckyNodes.includes(nodeId)) {
-          await generateIssue(nodeAddress, nodeId, shardus)
+          await generateNetworkIssue(nodeAddress, nodeId, shardus)
         }
         issueGenerated = true
         tallyGenerated = false

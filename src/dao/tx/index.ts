@@ -8,7 +8,7 @@ import {
   WrappedResponse,
 } from '@shardus/core/dist/shardus/shardus-types'
 import { INetworkProposal, NetworkProposal } from './network_proposal'
-import { IIssue, Issue } from './issue'
+import { INetworkIssue, NetworkIssue } from './network_issue'
 import { ApplyChangeConfig, IApplyChangeConfig } from './apply_change_config'
 import { ApplyDevParameters, IApplyDevParameters } from './apply_dev_parameters'
 import { ApplyDevTally, IApplyDevTally } from './apply_dev_tally'
@@ -61,7 +61,7 @@ export abstract class DaoTx<Account> {
       case 'apply_tally':
         return new ApplyTally(tx)
       case 'issue':
-        return new Issue(tx)
+        return new NetworkIssue(tx)
       case 'network_proposal':
         return new NetworkProposal(tx)
       case 'network_vote':
@@ -88,7 +88,7 @@ export type PlainDaoTx =
   | IApplyParameters
   | IApplyTally
   | INetworkProposal
-  | IIssue
+  | INetworkIssue
   | IVote
   | IDevProposal
   | IDevIssue

@@ -11,7 +11,7 @@ import { daoConfig } from '../../config/dao'
 import { DaoTx } from '.'
 import { TransactionKeys } from '@shardus/core/dist/shardus/shardus-types'
 
-export interface IIssue {
+export interface INetworkIssue {
   type: 'issue'
   nodeId: string
   from: string
@@ -20,7 +20,7 @@ export interface IIssue {
   timestamp: number
 }
 
-export class Issue implements IIssue, DaoTx<IssueAccount> {
+export class NetworkIssue implements INetworkIssue, DaoTx<IssueAccount> {
   readonly type = 'issue'
   nodeId: string
   from: string
@@ -28,7 +28,7 @@ export class Issue implements IIssue, DaoTx<IssueAccount> {
   proposal: string
   timestamp: number
 
-  constructor(data: IIssue) {
+  constructor(data: INetworkIssue) {
     this.nodeId = data.nodeId
     this.from = data.from
     this.issue = data.issue
