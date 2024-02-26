@@ -162,7 +162,7 @@ export async function applyParameters(address: string, nodeId: string, dapp: Sha
     issue: crypto.hash(`issue-${network.issue}`),
     timestamp: Date.now(),
   }
-  dapp.put(tx)
+  dapp.put({raw: encodeDaoTxToEVMTx(tx, dapp)})
   dapp.log('GENERATED_APPLY: ', nodeId)
 }
 
