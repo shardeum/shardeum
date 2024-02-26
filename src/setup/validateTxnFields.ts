@@ -18,6 +18,7 @@ import { validateClaimRewardTx } from '../tx/claimReward'
 import * as InitRewardTimesTx from '../tx/initRewardTimes'
 import { isSetCertTimeTx, validateSetCertTimeTx } from '../tx/setCertTime'
 import { scaleByStabilityFactor, _base16BNParser, isWithinRange } from '../utils'
+import { stringify } from '../utils/stringify'
 import {
   crypto,
   getInjectedOrGeneratedTimestamp,
@@ -151,11 +152,7 @@ export const validateTxnFields =
             txnTimestamp: txnTimestamp,
           }
         } else if (tx.internalTXType === InternalTXType.Dao) {
-          // TODO: what to put for `wrappedStates` and `response`? also,
-          // `shardus` is not used in `validateDaoIssueTx`
-          const result = validateDaoIssueTx(tx as DaoIssueTx, null, null, shardus)
-          success = result.success
-          reason = result.reason
+          throw new Error(`DAO transactions are not implemented here. tx: ${stringify(tx)}`)
         } else {
           try {
             success = crypto.verifyObj(internalTX)
