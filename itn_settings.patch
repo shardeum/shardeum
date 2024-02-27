@@ -1,8 +1,8 @@
 diff --git a/src/config/index.ts b/src/config/index.ts
-index 4eb3571..19a0370 100644
+index 14f85f2..3065e45 100644
 --- a/src/config/index.ts
 +++ b/src/config/index.ts
-@@ -122,9 +122,9 @@ config = merge(config, {
+@@ -122,14 +122,14 @@ config = merge(config, {
      p2p: {
        cycleDuration: 60,
        minNodesToAllowTxs: 1, // to allow single node networks
@@ -15,7 +15,13 @@ index 4eb3571..19a0370 100644
        maxJoinedPerCycle: 10,
        maxSyncingPerCycle: 10,
        maxRotatedPerCycle: process.env.maxRotatedPerCycle ? parseInt(process.env.maxRotatedPerCycle) : 1,
-@@ -213,7 +213,7 @@ config = merge(config, {
+       firstCycleJoin: 0,
+-      maxSyncTimeFloor: 1200, //Using 6000 for a restore from archiver, then set config at runtime back to 1200
++      maxSyncTimeFloor: 6000, //Using 6000 for a restore from archiver, then set config at runtime back to 1200
+       //  1200=20 minutes.  If the network lives a long time we may have to bump this up
+       syncBoostEnabled: false,
+       amountToGrow: 30,
+@@ -218,7 +218,7 @@ config = merge(config, {
      sharding: {
        nodesPerConsensusGroup: process.env.nodesPerConsensusGroup
          ? parseInt(process.env.nodesPerConsensusGroup)
