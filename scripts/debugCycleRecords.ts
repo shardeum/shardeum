@@ -109,6 +109,7 @@ rl.on('close', () => {
     console.log('pcs: print cycles (args: start cycle number, end cycle number)');
     console.log('pvc: print variant cycles (args: start cycle number, end cycle number)');
     console.log('pvpc: print variance per cycle (args: start cycle number, end cycle number)');
+    console.log('pvpvc: print variance per variant cycles (args: start cycle number, end cycle number)');
   } else if (func === 'pc') {
     printCycle(arg1);
   } else if (func === 'pcs') {
