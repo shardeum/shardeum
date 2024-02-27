@@ -1,0 +1,37 @@
+diff --git a/src/config/index.ts b/src/config/index.ts
+index 14f85f2..766698b 100644
+--- a/src/config/index.ts
++++ b/src/config/index.ts
+@@ -122,9 +122,9 @@ config = merge(config, {
+     p2p: {
+       cycleDuration: 60,
+       minNodesToAllowTxs: 1, // to allow single node networks
+-      baselineNodes: process.env.baselineNodes ? parseInt(process.env.baselineNodes) : 300, // config used for baseline for entering recovery, restore, and safety. Should be equivalient to minNodes on network startup
+-      minNodes: process.env.minNodes ? parseInt(process.env.minNodes) : 300,
+-      maxNodes: process.env.maxNodes ? parseInt(process.env.maxNodes) : 1100,
++      baselineNodes: process.env.baselineNodes ? parseInt(process.env.baselineNodes) : 100, // config used for baseline for entering recovery, restore, and safety. Should be equivalient to minNodes on network startup
++      minNodes: process.env.minNodes ? parseInt(process.env.minNodes) : 100,
++      maxNodes: process.env.maxNodes ? parseInt(process.env.maxNodes) : 1500,
+       maxJoinedPerCycle: 10,
+       maxSyncingPerCycle: 10,
+       maxRotatedPerCycle: process.env.maxRotatedPerCycle ? parseInt(process.env.maxRotatedPerCycle) : 1,
+@@ -218,7 +218,7 @@ config = merge(config, {
+     sharding: {
+       nodesPerConsensusGroup: process.env.nodesPerConsensusGroup
+         ? parseInt(process.env.nodesPerConsensusGroup)
+-        : 10, //128 is the final goal
++        : 128, //128 is the final goal
+       nodesPerEdge: process.env.nodesPerEdge ? parseInt(process.env.nodesPerEdge) : 5,
+       executeInOneShard: true,
+     },
+@@ -262,8 +262,8 @@ config = merge(
+           // '': DevSecurityLevel.Unauthorized,
+           // These are production keys.  Use 'git apply use_test_key.patch' for unsafe local test keys
+           // Never merge a commit with changes to these lines without approval.
+-          'a45f9a87e10d6dbd88c141e4fb293f96ab30441cbb77a4b04c577ba18d393505': DevSecurityLevel.Low,
+-          'b51124e6d01e0684ff2b86eac9433d585a17319f15b393c8e4426af19117f704': DevSecurityLevel.Medium,
++          a45f9a87e10d6dbd88c141e4fb293f96ab30441cbb77a4b04c577ba18d393505: DevSecurityLevel.Low,
++          b51124e6d01e0684ff2b86eac9433d585a17319f15b393c8e4426af19117f704: DevSecurityLevel.Medium,
+           //this last line needs command to ignore auto formatting or prettier will strip the quotes!!
+           /* prettier-ignore */ 'c980f4dbdd40a9d334b3815b223e83d27e227892a109413e4bc114e8220bd281': DevSecurityLevel.High,
+         },
