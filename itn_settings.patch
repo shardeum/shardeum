@@ -1,5 +1,5 @@
 diff --git a/src/config/index.ts b/src/config/index.ts
-index 14f85f2..3065e45 100644
+index 14f85f2..410b97c 100644
 --- a/src/config/index.ts
 +++ b/src/config/index.ts
 @@ -122,14 +122,14 @@ config = merge(config, {
@@ -9,8 +9,8 @@ index 14f85f2..3065e45 100644
 -      baselineNodes: process.env.baselineNodes ? parseInt(process.env.baselineNodes) : 300, // config used for baseline for entering recovery, restore, and safety. Should be equivalient to minNodes on network startup
 -      minNodes: process.env.minNodes ? parseInt(process.env.minNodes) : 300,
 -      maxNodes: process.env.maxNodes ? parseInt(process.env.maxNodes) : 1100,
-+      baselineNodes: process.env.baselineNodes ? parseInt(process.env.baselineNodes) : 1000, // config used for baseline for entering recovery, restore, and safety. Should be equivalient to minNodes on network startup
-+      minNodes: process.env.minNodes ? parseInt(process.env.minNodes) : 1000,
++      baselineNodes: process.env.baselineNodes ? parseInt(process.env.baselineNodes) : 100, // config used for baseline for entering recovery, restore, and safety. Should be equivalient to minNodes on network startup
++      minNodes: process.env.minNodes ? parseInt(process.env.minNodes) : 100,
 +      maxNodes: process.env.maxNodes ? parseInt(process.env.maxNodes) : 1500,
        maxJoinedPerCycle: 10,
        maxSyncingPerCycle: 10,
