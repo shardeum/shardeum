@@ -185,6 +185,8 @@ config = merge(config, {
 
       // 1.10.1
       sortSyncFinished: true, //sort the finished list
+      // 1.10.1
+      extraNodesToAddInRestart: 5, //how many extra nodes to we add in restart phase so we dont get stuck in restore phase
     },
   },
 })
