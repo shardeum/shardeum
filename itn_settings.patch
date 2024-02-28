@@ -1,5 +1,5 @@
 diff --git a/src/config/index.ts b/src/config/index.ts
-index 14f85f2..410b97c 100644
+index 4bbd79a..2607a88 100644
 --- a/src/config/index.ts
 +++ b/src/config/index.ts
 @@ -122,14 +122,14 @@ config = merge(config, {
@@ -9,19 +9,28 @@ index 14f85f2..410b97c 100644
 -      baselineNodes: process.env.baselineNodes ? parseInt(process.env.baselineNodes) : 300, // config used for baseline for entering recovery, restore, and safety. Should be equivalient to minNodes on network startup
 -      minNodes: process.env.minNodes ? parseInt(process.env.minNodes) : 300,
 -      maxNodes: process.env.maxNodes ? parseInt(process.env.maxNodes) : 1100,
-+      baselineNodes: process.env.baselineNodes ? parseInt(process.env.baselineNodes) : 100, // config used for baseline for entering recovery, restore, and safety. Should be equivalient to minNodes on network startup
-+      minNodes: process.env.minNodes ? parseInt(process.env.minNodes) : 100,
++      baselineNodes: process.env.baselineNodes ? parseInt(process.env.baselineNodes) : 1000, // config used for baseline for entering recovery, restore, and safety. Should be equivalient to minNodes on network startup
++      minNodes: process.env.minNodes ? parseInt(process.env.minNodes) : 1000,
 +      maxNodes: process.env.maxNodes ? parseInt(process.env.maxNodes) : 1500,
        maxJoinedPerCycle: 10,
        maxSyncingPerCycle: 10,
        maxRotatedPerCycle: process.env.maxRotatedPerCycle ? parseInt(process.env.maxRotatedPerCycle) : 1,
        firstCycleJoin: 0,
 -      maxSyncTimeFloor: 1200, //Using 6000 for a restore from archiver, then set config at runtime back to 1200
-+      maxSyncTimeFloor: 6000, //Using 6000 for a restore from archiver, then set config at runtime back to 1200
++      maxSyncTimeFloor: 12000, //Using 12000 for a restore from archiver, then set config at runtime back to 1200
        //  1200=20 minutes.  If the network lives a long time we may have to bump this up
        syncBoostEnabled: false,
        amountToGrow: 30,
-@@ -218,7 +218,7 @@ config = merge(config, {
+@@ -186,7 +186,7 @@ config = merge(config, {
+       // 1.10.1
+       sortSyncFinished: true, //sort the finished list
+       // 1.10.1
+-      extraNodesToAddInRestart: 5, //how many extra nodes to we add in restart phase so we dont get stuck in restore phase
++      extraNodesToAddInRestart: 20, //how many extra nodes to we add in restart phase so we dont get stuck in restore phase
+     },
+   },
+ })
+@@ -220,7 +220,7 @@ config = merge(config, {
      sharding: {
        nodesPerConsensusGroup: process.env.nodesPerConsensusGroup
          ? parseInt(process.env.nodesPerConsensusGroup)
