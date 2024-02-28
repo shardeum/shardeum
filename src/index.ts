@@ -6619,18 +6619,23 @@ async function fetchNetworkAccountFromArchiver(): Promise<WrappedAccount> {
     archiver: Archiver
   }[] = []
   for (const archiver of archiverList) {
-    const res = await axios.get<{ networkAccountHash: string }>(
-      `http://${archiver.ip}:${archiver.port}/get-network-account?hash=true`
-    )
-    if (!res.data) {
-      /* prettier-ignore */ nestedCountersInstance.countEvent('network-config-operation', 'failure: did not get network account from archiver private key. Use default configs.')
-      throw new Error(`fetchNetworkAccountFromArchiver() from pk:${archiver.publicKey} returned null`)
-    }
+    try{
+      const res = await axios.get<{ networkAccountHash: string }>(
+        `http://${archiver.ip}:${archiver.port}/get-network-account?hash=true`
+      )
+      if (!res.data) {
+        /* prettier-ignore */ nestedCountersInstance.countEvent('network-config-operation', 'failure: did not get network account from archiver private key. Use default configs.')
+        throw new Error(`fetchNetworkAccountFromArchiver() from pk:${archiver.publicKey} returned null`)
+      }
 
-    values.push({
-      hash: res.data.networkAccountHash as string,
-      archiver,
-    })
+      values.push({
+        hash: res.data.networkAccountHash as string,
+        archiver,
+      })
+    } catch(ex){
+      //dont let one bad archiver crash us !
+      /* prettier-ignore */ nestedCountersInstance.countEvent('network-config-operation', `error: ${ex?.message}`)
+    }
   }
 
   //make sure there was a majority winner for the hash
