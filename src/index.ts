@@ -4175,7 +4175,7 @@ const shardusSetup = (): void => {
               if (queueCountResult.committingAppData?.length > 0) {
                 const highestCommittingNonce = queueCountResult.committingAppData
                   .map((appData) => appData.txNonce)
-                  .sort()[0]
+                  .sort((a: number, b: number) => b - a)[0] 
                 const expectedAccountNonce = highestCommittingNonce + 1
                 if (appData.nonce < expectedAccountNonce) appData.nonce = expectedAccountNonce
               }
