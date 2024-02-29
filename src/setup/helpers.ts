@@ -29,7 +29,8 @@ export function isInternalTXGlobal(internalTx: InternalTx): boolean {
     internalTx.internalTXType === InternalTXType.SetGlobalCodeBytes ||
     internalTx.internalTXType === InternalTXType.ApplyChangeConfig ||
     internalTx.internalTXType === InternalTXType.InitNetwork ||
-    internalTx.internalTXType === InternalTXType.ApplyNetworkParam
+    internalTx.internalTXType === InternalTXType.ApplyNetworkParam ||
+    internalTx.internalTXType === InternalTXType.InitDao
   )
 }
 
