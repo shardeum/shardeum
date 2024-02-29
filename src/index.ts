@@ -1469,8 +1469,42 @@ const configShardusEndpoints = (): void => {
       return res.json({ result: null, error: 'node busy' })
     }
 
+    function validateRequest(callObj): string | boolean {
+      function isValidHexString(data: string): boolean {
+        return /^(0x|0X)[a-fA-F0-9]+$/.test(data) && data.length % 2 === 0
+      }
+
+      function isPositiveNumber(value): boolean {
+        return typeof value === 'number' && value >= 0
+      }
+
+      if (callObj.from && !isValidAddress(callObj.from)) {
+        return 'Invalid from address'
+      }
+      if (!isValidAddress(callObj.to)) {
+        return 'Invalid to address'
+      }
+      if (callObj.gas && !isPositiveNumber(callObj.gas)) {
+        return 'Invalid gas value'
+      }
+      if (callObj.gasPrice && !isPositiveNumber(callObj.gasPrice)) {
+        return 'Invalid gasPrice value'
+      }
+      if (callObj.value && !isValidHexString(callObj.value)) {
+        return 'Invalid value'
+      }
+      if (callObj.data && !isValidHexString(callObj.data)) {
+        return 'Invalid data'
+      }
+      return true
+    }
+
     try {
       const callObj = req.body
+      const validationResult = validateRequest(callObj)
+      if (validationResult !== true) {
+        return res.json({ result: null, error: validationResult })
+      }
       if (ShardeumFlags.VerboseLogs) console.log('callObj', callObj)
       const opt = {
         to: Address.fromString(callObj.to),
