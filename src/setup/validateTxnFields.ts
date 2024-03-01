@@ -220,25 +220,42 @@ export const validateTxnFields =
 
         if (ShardeumFlags.txNoncePreCheck && appData != null) {
           const txNonce = parseInt(transaction.nonce.toString(10))
-          const perfectCount = appData.nonce + appData.queueCount
+
+          let perfectCount = appData.nonce + appData.queueCount
+
+          if(appData.highestCommittingNonce > appData.nonce){
+            perfectCount = appData.highestCommittingNonce + appData.queueCount
+            /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`validate - use highestCommittingNonce: ${appData.highestCommittingNonce} queueCount:${appData.queueCount} txNonce: ${txNonce}   txHash: ${txHash}`)
+            nestedCountersInstance.countEvent('shardeum', `validate - use highestCommittingNonce: txNonce === perfectCount ${txNonce === perfectCount} `)
+          } else {
+            /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`validate - use nonce: ${appData.nonce} queueCount:${appData.queueCount} txNonce: ${txNonce}   txHash: ${txHash}`)
+            nestedCountersInstance.countEvent('shardeum', `validate - use nonce: txNonce === perfectCount ${txNonce === perfectCount} `)
+
+          }
 
           if (ShardeumFlags.looseNonceCheck) {
             if (isWithinRange(txNonce, perfectCount, ShardeumFlags.nonceCheckRange)) {
-              /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`nonce pass: txNonce:${txNonce} is within +/- ${ShardeumFlags.nonceCheckRange} of perfectCount:${perfectCount}.    accountNonce:${appData.nonce}  queueCount:${appData.queueCount}  txHash: ${transaction.hash().toString()}`)
+              /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`nonce pass: txNonce:${txNonce} is within +/- ${ShardeumFlags.nonceCheckRange} of perfectCount:${perfectCount}.    accountNonce:${appData.nonce}  queueCount:${appData.queueCount}  txHash: ${txHash}`)
+
+              if(txNonce != perfectCount){
+                nestedCountersInstance.countEvent('shardeum', `validate - loose nonce pass: txNonce - perfectCount: ${txNonce - perfectCount}`)
+                //todo: what would even be smarter would be to have some automatic follow up to know how often "letting something slide"
+                //results in a postive (tx worked) or negative (tx still fails but takes longer to fail) outcome
+              }
             } else {
               success = false
               reason = `Transaction nonce is not within +/- ${ShardeumFlags.nonceCheckRange} of perfectCount ${perfectCount}  txNonce:${txNonce} accountNonce:${appData.nonce} queueCount:${appData.queueCount}`
-              /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`nonce fail: txNonce:${txNonce} is not within +/- ${ShardeumFlags.nonceCheckRange} of perfectCount:${perfectCount}.    accountNonce:${appData.nonce}  queueCount:${appData.queueCount} txHash: ${transaction.hash().toString()} `)
+              /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`nonce fail: txNonce:${txNonce} is not within +/- ${ShardeumFlags.nonceCheckRange} of perfectCount:${perfectCount}.    accountNonce:${appData.nonce}  queueCount:${appData.queueCount} txHash: ${txHash} `)
               nestedCountersInstance.countEvent('shardeum', 'validate - nonce fail')
             }
           } else {
             if (txNonce != perfectCount) {
               success = false
               reason = `Transaction nonce != ${perfectCount}  txNonce:${txNonce} accountNonce:${appData.nonce} queueCount:${appData.queueCount}`
-              /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`nonce fail: expectedNonce:${perfectCount} != txNonce:${txNonce}.    accountNonce:${appData.nonce}  queueCount:${appData.queueCount} txHash: ${transaction.hash().toString()} `)
+              /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`nonce fail: expectedNonce:${perfectCount} != txNonce:${txNonce}.    accountNonce:${appData.nonce}  queueCount:${appData.queueCount} txHash: ${txHash} `)
               nestedCountersInstance.countEvent('shardeum', 'validate - nonce fail')
             } else {
-              /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`nonce pass: expectedNonce:${perfectCount} == txNonce:${txNonce}.    accountNonce:${appData.nonce}  queueCount:${appData.queueCount}  txHash: ${transaction.hash().toString()}`)
+              /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`nonce pass: expectedNonce:${perfectCount} == txNonce:${txNonce}.    accountNonce:${appData.nonce}  queueCount:${appData.queueCount}  txHash: ${txHash}`)
             }
           }
         }

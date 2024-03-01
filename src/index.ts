@@ -4170,14 +4170,71 @@ const shardusSetup = (): void => {
               /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`txPreCrackData uanble to get queueCountResult for ${txSenderEvmAddr} queueCountResult:${queueCountResult}`)
               return {status: false, reason: `Unable to get queueCountResult for ${txSenderEvmAddr}`}
             } else {
+              //queueCount is the number of entries in the queue
               appData.queueCount = queueCountResult.count
+              //nonce is a bigint converting to number. this comes rom get local or remote above
+              //will need to fix if an account ever gets too popular for too long
+              //committingAppData probably needs a dapp function that provides a simple summary for each element?
               appData.nonce = parseInt(nonce.toString())
+              //committingAppData is TXs that are in the process of being committed
               if (queueCountResult.committingAppData?.length > 0) {
-                const highestCommittingNonce = queueCountResult.committingAppData
-                  .map((appData) => appData.txNonce)
-                  .sort((a: number, b: number) => b - a)[0] 
-                const expectedAccountNonce = highestCommittingNonce + 1
-                if (appData.nonce < expectedAccountNonce) appData.nonce = expectedAccountNonce
+                let highestCommittingNonce = -1
+                const missingNonces = new Set()
+                try{
+                  //oops I treated this list as a pass on all TX data
+                  // I see now it is just the committing ones 
+                  // this logic below might actually be better if we had the nonce value or each TX in the queue!
+                  // that precrack data could get large though
+                  for(let i=0; i<queueCountResult.committingAppData.length; i++){
+                    // eslint-disable-next-line security/detect-object-injection
+                    const nonce = queueCountResult.committingAppData[i].txNonce
+                    if(nonce == null){
+                      continue
+                    }
+                    if(nonce > highestCommittingNonce){
+                      highestCommittingNonce = nonce
+                    } else if (nonce <= highestCommittingNonce){
+                      //This is an interesting situation to detect.
+                      //it means our list has out of order nonces an has some already that are doomed to fail.
+                      //potentially ok to ignore these
+                      nestedCountersInstance.countEvent('shardeum', `nonce possible fail: same or equal: ${nonce - highestCommittingNonce}`)
+                      /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`txPreCrackData nonce queue error: same or lower. nonce:${nonce} highestCommittingNonce:${highestCommittingNonce} ethTxId:${ethTxId}`)
+                    }
+                    if(nonce > highestCommittingNonce + 1){
+                      //skipped nonce detected.  TX list may be likely to fail this TX.
+                      //it may not be insane to set our nonce to highestCommittingNonce + 1 and break?
+                      //however there could be a highestCommittingNonce + 1 later in the array.
+                      for(let missingNonce = highestCommittingNonce; missingNonce < nonce; missingNonce++ ){
+                        missingNonces.add(missingNonce)
+                      }
+                      nestedCountersInstance.countEvent('shardeum', `nonce possible fail: skipping a nonce: ${nonce - highestCommittingNonce}`)
+                      /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`txPreCrackData nonce queue error: too high skipping a nonce. nonce:${nonce} highestCommittingNonce:${highestCommittingNonce} ethTxId:${ethTxId}`)
+                    }
+                  }
+                  if(missingNonces.size > 0){
+                    nestedCountersInstance.countEvent('shardeum', `nonce possible fail: missing: ${missingNonces.size}`)
+                    /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`txPreCrackData nonce queue error: skippedNonces. ${Array.from(missingNonces).join(', ')}  nonce:${nonce} highestCommittingNonce:${highestCommittingNonce} ethTxId:${ethTxId}`)
+                  }
+
+                  if (queueCountResult.committingAppData?.length > 1){
+                    nestedCountersInstance.countEvent('shardeum', `nonce possible fail: committingAppData, not expecting more than one committing ${queueCountResult.committingAppData?.length}`)
+                    /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`txPreCrackData nonce possible fail: committingAppData, not expecting more than one committing ${queueCountResult.committingAppData?.length} nonce:${nonce} highestCommittingNonce:${highestCommittingNonce} ethTxId:${ethTxId}`)
+                  }
+
+                } catch(ex){
+                  nestedCountersInstance.countEvent('shardeum', `nonce possible fail: ${ex.message}`)
+                  /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`nonce possible fail: ex: nonce:${nonce} highestCommittingNonce:${highestCommittingNonce} ethTxId:${ethTxId}`)
+                }
+
+                // const expectedAccountNonce = highestCommittingNonce //+ 1 //not sure we use the +1 here
+                // if (appData.nonce < expectedAccountNonce){
+                //   //if there is anything in the queue at all setting this to the top value in the queue
+                //   //will invalidate the logic in validateTxnFields
+                //   appData.nonce = expectedAccountNonce
+                // }
+
+                //Let's put this value into its own variable for later
+                appData.highestCommittingNonce = highestCommittingNonce
               }
               appData.txNonce = parseInt(transaction.nonce.toString(10))
               /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`txPreCrackData found nonce:${foundNonce} found sender:${foundSender} for ${txSenderEvmAddr} nonce:${nonce.toString()} queueCount:${queueCountResult.count.toString()}`)
