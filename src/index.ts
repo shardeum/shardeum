@@ -4053,7 +4053,7 @@ const shardusSetup = (): void => {
 
         if (!isValid) {
           nestedCountersInstance.countEvent('shardeum', 'validate - sign failed')
-          return { status: false, reason: 'Transaction is not signed or has invalid signature' }
+          return { status: false, reason: 'Transaction has invalid signature' }
         }
 
 
