@@ -184,8 +184,6 @@ config = merge(config, {
       standbyListCyclesTTL: 1440, //nodes only need to refresh once every 24 hours (which is 1440 60s cycles!)
 
       // 1.10.1
-      sortSyncFinished: true, //sort the finished list
-      // 1.10.1
       extraNodesToAddInRestart: 5, //how many extra nodes to we add in restart phase so we dont get stuck in restore phase
       // 1.10.1
       cyclesToWaitForSyncStarted: 5, //raising this to 5 to reduce the chance of nodes getting booted out too soon
