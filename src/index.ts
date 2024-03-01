@@ -4049,13 +4049,13 @@ const shardusSetup = (): void => {
       if (isInternalTx(tx) === false && isDebugTx(tx) === false) {
         const shardusTxId = generateTxId(tx)
         const transaction = getTransactionObj(tx)
-        const isSigned = transaction.isSigned()
         const { address: senderAddress, isValid } = getTxSenderAddress(transaction, shardusTxId)
 
-        if (!isSigned || !isValid) {
-          nestedCountersInstance.countEvent('shardeum', 'validate - sign ' + isSigned ? 'failed' : 'missing')
-          return { status: false, reason: 'Transaction is not signed or signature is not valid' }
+        if (!isValid) {
+          nestedCountersInstance.countEvent('shardeum', 'validate - sign failed')
+          return { status: false, reason: 'Transaction is not signed or has invalid signature' }
         }
+
 
         const ethTxId = bytesToHex(transaction.hash())
         if (ShardeumFlags.VerboseLogs) {
