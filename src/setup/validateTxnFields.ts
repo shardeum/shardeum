@@ -178,10 +178,10 @@ export const validateTxnFields =
 
       try {
         const transaction = getTransactionObj(tx)
-        const isSigned = transaction.isSigned()
-        const { address: senderAddress, isValid } = getTxSenderAddress(transaction,txId) // ensures that tx is valid
-        const isSignatureValid = isValid
-        if (ShardeumFlags.VerboseLogs) console.log('validate evm tx', isSigned, isSignatureValid)
+        // const isSigned = transaction.isSigned()
+        const senderAddress = getTxSenderAddress(transaction, txId).address
+        // const isSignatureValid = isValid
+        // if (ShardeumFlags.VerboseLogs) console.log('validate evm tx', isSigned, isSignatureValid)
 
         //const txId = '0x' + crypto.hashObj(timestampedTx.tx)
         const txHash = bytesToHex(transaction.hash())
@@ -192,13 +192,13 @@ export const validateTxnFields =
         }
         debugAppdata.set(txHash, appData)
 
-        if (isSigned && isSignatureValid) {
-          success = true
-          reason = ''
-        } else {
-          reason = 'Transaction is not signed or signature is not valid'
-          nestedCountersInstance.countEvent('shardeum', 'validate - sign ' + isSigned ? 'failed' : 'missing')
-        }
+        // if (isSigned && isSignatureValid) {
+        //   success = true
+        //   reason = ''
+        // } else {
+        //   reason = 'Transaction is not signed or signature is not valid'
+        //   nestedCountersInstance.countEvent('shardeum', 'validate - sign ' + isSigned ? 'failed' : 'missing')
+        // }
 
         if (ShardeumFlags.txBalancePreCheck && appData != null) {
           let minBalance: bigint // Calculate the minimun balance with the transaction value added in
