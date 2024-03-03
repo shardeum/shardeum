@@ -19,6 +19,7 @@ export enum AccountType {
   StakeReceipt = 10,
   UnstakeReceipt = 11,
   InternalTxReceipt = 12,
+  DaoAccount = 13,
 }
 
 export interface BaseAccount {
@@ -100,6 +101,7 @@ export enum InternalTXType {
   ChangeNetworkParam = 10,
   ApplyNetworkParam = 11,
   Penalty = 12,
+  InitDao = 13,
 }
 
 export enum DebugTXType {
@@ -223,13 +225,13 @@ export interface DebugTx {
   accountData?: WrappedEVMAccount
 }
 
-export interface WrappedAccount {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export interface WrappedAccount<DataType = any> {
   accountId: string
   stateId: string
   // this affects src/index.ts which is being worked on in another branch
   // I don't want to merge this branch until that one is merged
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  data: any //NetworkAccount | NodeAccount2 | WrappedEVMAccount
+  data: DataType //NetworkAccount | NodeAccount2 | WrappedEVMAccount
   timestamp: number
   accountCreated?: boolean
 }
@@ -242,13 +244,13 @@ export interface OurAppDefinedData {
   globalMsg: {
     address: string
     value: {
-      isInternalTx: boolean
-      internalTXType: InternalTXType
+      isInternalTx?: boolean
+      internalTXType?: InternalTXType
       timestamp: number
       accountData?: WrappedEVMAccount
       from?: string
       change?: {
-        cycle: ShardusTypes.Cycle
+        cycle: number | ShardusTypes.Cycle
         change: Change
       }
     }
@@ -405,7 +407,7 @@ export interface OperatorStats {
 }
 
 export interface ChangeConfig {
-  type: string
+  type: 'change_config'
   from: string
   cycle: ShardusTypes.Cycle
   config: string
@@ -413,13 +415,13 @@ export interface ChangeConfig {
 }
 
 export interface ApplyChangeConfig {
-  type: string
+  type: 'apply_change_config'
   change: Change
   timestamp: number
 }
 
 export interface ChangeNetworkParam {
-  type: string
+  type: 'change_network_param'
   from: string
   cycle: ShardusTypes.Cycle
   config: string
@@ -427,7 +429,7 @@ export interface ChangeNetworkParam {
 }
 
 export interface ApplyNetworkParam {
-  type: string
+  type: 'apply_network_param'
   change: Change
   timestamp: number
 }

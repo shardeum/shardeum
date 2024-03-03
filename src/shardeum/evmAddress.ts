@@ -3,6 +3,7 @@ import { isWrappedEVMAccount, isInternalAccount } from './wrappedEVMAccountFunct
 
 import { ShardeumFlags } from './shardeumFlags'
 import * as crypto from '@shardus/crypto-utils'
+import { add } from 'lodash'
 
 /**
  * This will correctly get a shardus address from a WrappedEVMAccount account no matter what type it is.
@@ -49,7 +50,8 @@ export function getAccountShardusAddress(account: WrappedEVMAccount | InternalAc
       account.accountType === AccountType.NetworkAccount ||
       account.accountType === AccountType.NodeAccount ||
       account.accountType === AccountType.NodeAccount2 ||
-      account.accountType === AccountType.DevAccount
+      account.accountType === AccountType.DevAccount ||
+      account.accountType === AccountType.DaoAccount
     ) {
       return (account as unknown as NetworkAccount).id
     }
@@ -255,4 +257,30 @@ export function toShardusAddress(addressStr: string, accountType: AccountType): 
   //change this:0x665eab3be2472e83e3100b4233952a16eed20c76111111111111111111111111
   //    to this:  665eab3be2472e83e3100b4233952a16eed20c76000000000000000000000000
   return addressStr.slice(2).toLowerCase()
+}
+
+/**
+ * Converts a hexadecimal Ethereum address to a Shardus-compatible address format.
+ * This function takes a string representing an Ethereum address, removes the '0x' prefix if present,
+ * and pads the address with zeros to ensure it is 64 characters long, as required by Shardus.
+ * 
+ * @param address The Ethereum address as a string, which may start with '0x'.
+ * @returns A 64-character string representing the Shardus-compatible address.
+ * 
+ * Example:
+ *   Input:  '0x665eab3be2472e83e3100b4233952a16eed20c76'
+ *   Output: '665eab3be2472e83e3100b4233952a16eed20c76000000000000000000000000'
+ */
+export function ensureShardusAddress(address: string): string {
+  // Check if address starts with '0x' and remove it
+  if (address && address.startsWith && address.startsWith('0x')) {
+      address = address.slice(2);
+  }
+
+  // Pad the address to 64 characters with zeros
+  if (address && address.padEnd) {
+    return address.padEnd(64, '0');
+  }
+
+  return address
 }

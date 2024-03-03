@@ -18,6 +18,7 @@ import { validateClaimRewardTx } from '../tx/claimReward'
 import * as InitRewardTimesTx from '../tx/initRewardTimes'
 import { isSetCertTimeTx, validateSetCertTimeTx } from '../tx/setCertTime'
 import { scaleByStabilityFactor, _base16BNParser, isWithinRange, generateTxId, getTxSenderAddress } from '../utils'
+import { stringify } from '../utils/stringify'
 import {
   crypto,
   getInjectedOrGeneratedTimestamp,
@@ -31,6 +32,13 @@ import { fixBigIntLiteralsToBigInt } from '../utils/serialization'
 import { validatePenaltyTX } from '../tx/penalty/transaction'
 import { bytesToHex } from '@ethereumjs/util'
 import { logFlags } from '..'
+import { NetworkIssue as DaoIssueTx } from '../dao/tx/network_issue';
+
+interface ValidationResult {
+  success: boolean
+  reason: string
+  txnTimestamp: number
+}
 
 /**
  * Checks that Transaction fields are valid

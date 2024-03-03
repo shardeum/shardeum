@@ -9,6 +9,7 @@ interface ShardeumFlags {
   debugTraceLogs: boolean
   Virtual0Address: boolean
   GlobalNetworkAccount: boolean
+  EnableDaoFeatures: boolean
   FirstNodeRewardCycle: number
   blockProductionRate: number // generate new block every 6s
   initialBlockNumber: number // The initial block number to start the chain at.
@@ -54,6 +55,7 @@ interface ShardeumFlags {
   chargeConstantTxFee: boolean
   constantTxFeeUsd: DecimalString
   stakeTargetAddress: string
+  daoTargetAddress: string
   certCycleDuration: number
   cacheMaxCycleAge: number
   cacheMaxItemPerTopic: number
@@ -123,6 +125,7 @@ export const ShardeumFlags: ShardeumFlags = {
   debugTraceLogs: false,
   Virtual0Address: true,
   GlobalNetworkAccount: true,
+  EnableDaoFeatures: true,
   FirstNodeRewardCycle: 100,
   blockProductionRate: 6,
   initialBlockNumber: 0,
@@ -154,6 +157,7 @@ export const ShardeumFlags: ShardeumFlags = {
   // '1000000000000000000' // $1 * 10 ^ 18
   constantTxFeeUsd: '10000000000000000', // $0.01 * 10 ^ 18
   stakeTargetAddress: '0x0000000000000000000000000000000000010000',
+  daoTargetAddress: '0x0000000000000000000000000000000000020000',
   certCycleDuration: 10,
   cacheMaxCycleAge: 5,
   cacheMaxItemPerTopic: 4500,

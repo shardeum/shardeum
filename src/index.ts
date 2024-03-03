@@ -108,6 +108,7 @@ import {
   removeTxFromSenderCache,
 } from './utils'
 import config, { Config } from './config'
+import { daoConfig } from './config/dao'
 import Wallet from 'ethereumjs-wallet'
 import { Block } from '@ethereumjs/block'
 import { ShardeumBlock } from './block/blockchain'
@@ -146,8 +147,13 @@ import { P2P } from '@shardus/types'
 import { getExternalApiMiddleware } from './middleware/externalApiMiddleware'
 import { AccountsEntry } from './storage/storage'
 import { getCachedRIAccount, setCachedRIAccount } from './storage/riAccountsCache'
-import { isLowStake } from './tx/penalty/penaltyFunctions'
 import { accountDeserializer, accountSerializer } from './types/Helpers'
+import { applyInitDaoTx, getDaoAccountObj, getRelevantDataInitDao, handleDaoTxApply, handleDaoTxCrack, handleDaoTxGetRelevantData, isDaoTx, startDaoMaintenanceCycle } from './dao'
+import { applyParameters, generateNetworkIssue, tallyVotes } from './dao/utils'
+import registerDaoAPI from './dao/api'
+import { DaoGlobalAccount } from './dao/accounts/networkAccount'
+import { isLowStake } from "./tx/penalty/penaltyFunctions";
+import { inspect } from 'util'
 
 let latestBlock = 0
 export const blocks: BlockMap = {}
@@ -170,10 +176,14 @@ const ERC20_BALANCEOF_CODE = '0x70a08231'
 let shardus: Shardus
 let profilerInstance
 
+export function getShardusAPI(): Shardus {
+  return shardus
+}
+
 //   next shardus core will export the correct type
 export let logFlags = {
-  verbose: false,
-  dapp_verbose: false,
+  verbose: true,
+  dapp_verbose: true,
   error: true,
   fatal: true,
   important_as_error: true,
@@ -1009,6 +1019,7 @@ const configShardusEndpoints = (): void => {
   const debugMiddlewareMedium = shardus.getDebugModeMiddlewareMedium()
   //const debugMiddlewareHigh = shardus.getDebugModeMiddlewareHigh()
   const externalApiMiddleware = getExternalApiMiddleware()
+  registerDaoAPI(shardus)
 
   //TODO request needs a signature and a timestamp.  or make it a real TX from a faucet account..
   //?id=<accountID>
@@ -1115,7 +1126,7 @@ const configShardusEndpoints = (): void => {
       if (networkAccount.current.txPause && !isInternalTx(tx)) {
         return res.json({
           success: false,
-          reason: `Network will not accept EVM tx until it has at least ${ShardeumFlags.minNodesEVMtx} active node in the network. numActiveNodes: ${numActiveNodes}`,
+          reason: 'Network will not accept EVM txs because network is currently paused.',
           status: 500,
         })
       }
@@ -1955,7 +1966,8 @@ async function applyInternalTx(
 ): Promise<ShardusTypes.ApplyResponse> {
   const txId = generateTxId(tx)
   const applyResponse: ShardusTypes.ApplyResponse = shardus.createApplyResponse(txId, txTimestamp)
-  const internalTx = tx as InternalTx
+  const internalTx = tx
+
   if (internalTx.internalTXType === InternalTXType.SetGlobalCodeBytes) {
     // eslint-disable-next-line security/detect-object-injection
     const wrappedEVMAccount: WrappedEVMAccount = wrappedStates[internalTx.from].data
@@ -2217,6 +2229,8 @@ async function applyInternalTx(
   if (internalTx.internalTXType === InternalTXType.Penalty) {
     const penaltyTx = internalTx as PenaltyTX
     applyPenaltyTX(shardus, penaltyTx, wrappedStates, txId, txTimestamp, applyResponse)
+  } else if (internalTx.internalTXType === InternalTXType.InitDao) {
+    applyInitDaoTx(shardus, wrappedStates, applyResponse, internalTx, txTimestamp, txId)
   }
   return applyResponse
 }
@@ -3138,6 +3152,106 @@ const shardusSetup = (): void => {
       /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log('DBG', new Date(), 'attempting to apply tx', txId, ethTxId, tx, wrappedStates, appData)
       const applyResponse = shardus.createApplyResponse(txId, txTimestamp)
 
+      if (isDaoTx(transaction)) {
+        console.log('apply dbg: Applying Dao tx')
+
+        try {
+          handleDaoTxApply(tx, txTimestamp, txId, wrappedStates, shardus, applyResponse)
+        } catch (error) {
+          console.log(`Error in handleDaoTxApply: ${error}`)
+        }
+
+        // Handle receipt creation for Dao Txs
+        console.log('apply dbg: handing receipt creation')
+        const txFeeUsd = BigInt(ShardeumFlags.constantTxFeeUsd)
+        const txFee = scaleByStabilityFactor(txFeeUsd, AccountsStorage.cachedNetworkAccount)
+        const blockForReceipt = getOrCreateBlockFromTimestamp(txTimestamp)
+        let blockNumberForTx = blockForReceipt.header.number.toString()
+
+        if (ShardeumFlags.supportInternalTxReceipt === false) {
+          blockNumberForTx = `${latestBlock}`
+        }
+
+        // generate a proper receipt for Dao Tx
+        const readableReceipt: ReadableReceipt = {
+          status: 1,
+          transactionHash: ethTxId,
+          transactionIndex: '0x1',
+          // eslint-disable-next-line security/detect-object-injection
+          blockNumber: bigIntToHex(blocks[blockNumberForTx].header.number),
+          nonce: bigIntToHex(transaction.nonce),
+          blockHash: readableBlocks[blockNumberForTx].hash, // eslint-disable-line security/detect-object-injection
+          cumulativeGasUsed: bigIntToHex(
+            scaleByStabilityFactor(
+              BigInt(ShardeumFlags.constantTxFeeUsd),
+              AccountsStorage.cachedNetworkAccount
+            )
+          ),
+          gasUsed: bigIntToHex(
+            scaleByStabilityFactor(
+              BigInt(ShardeumFlags.constantTxFeeUsd),
+              AccountsStorage.cachedNetworkAccount
+            )
+          ),
+          gasRefund: '0x0',
+          gasPrice: bigIntToHex(transaction.gasPrice),
+          gasLimit: bigIntToHex(transaction.gasLimit),
+          maxFeePerGas: undefined,
+          maxPriorityFeePerGas: undefined,
+          logs: [],
+          logsBloom: '',
+          contractAddress: null,
+          from: senderAddress.toString(),
+          to: transaction.to ? transaction.to.toString() : null,
+          chainId: '0x' + ShardeumFlags.ChainID.toString(16),
+          value: bigIntToHex(transaction.value),
+          type: '0x' + transaction.type.toString(16),
+          data: bytesToHex(transaction.data),
+          v: bigIntToHex(transaction.v),
+          r: bigIntToHex(transaction.r),
+          s: bigIntToHex(transaction.s),
+        }
+
+        const wrappedReceiptAccount: WrappedEVMAccount = {
+          timestamp: txTimestamp,
+          ethAddress: ethTxId,
+          hash: '',
+          readableReceipt,
+          amountSpent: bigIntToHex(txFee),
+          txId,
+          accountType: AccountType.Receipt,
+          txFrom: senderAddress.toString(),
+        }
+        /* prettier-ignore */
+        if (ShardeumFlags.VerboseLogs) console.log(`DBG Receipt Account for txId ${ethTxId}`, wrappedReceiptAccount)
+
+        if (ShardeumFlags.EVMReceiptsAsAccounts) {
+          if (ShardeumFlags.VerboseLogs) console.log(`Applied dao tx ${txId}`)
+          if (ShardeumFlags.VerboseLogs) console.log(`Applied dao tx eth ${ethTxId}`)
+          const wrappedChangedAccount =
+            WrappedEVMAccountFunctions._shardusWrappedAccount(wrappedReceiptAccount)
+          if (shardus.applyResponseAddChangedAccount != null) {
+            shardus.applyResponseAddChangedAccount(
+              applyResponse,
+              wrappedChangedAccount.accountId,
+              wrappedChangedAccount as ShardusTypes.WrappedResponse,
+              txId,
+              wrappedChangedAccount.timestamp
+            )
+          }
+        } else {
+          const receiptShardusAccount =
+            WrappedEVMAccountFunctions._shardusWrappedAccount(wrappedReceiptAccount)
+          shardus.applyResponseAddReceiptData(
+            applyResponse,
+            receiptShardusAccount,
+            crypto.hashObj(receiptShardusAccount)
+          )
+        }
+
+        return applyResponse
+      }
+
       //Now we need to get a transaction state object.  For single sharded networks this will be a new object.
       //When we have multiple shards we could have some blob data that wrapped up read accounts.  We will read these accounts
       //Into the the transaction state init at some point (possibly not here).  This will allow the EVM to run and not have
@@ -4052,6 +4166,7 @@ const shardusSetup = (): void => {
         const senderAddress = getTxSenderAddress(transaction, shardusTxId).address
         const ethTxId = bytesToHex(transaction.hash())
         if (ShardeumFlags.VerboseLogs) {
+          console.log(`txPreCrackData transaction: ${inspect(transaction)}}`)
           console.log(`EVM tx ${ethTxId} is mapped to shardus tx ${shardusTxId}`)
           console.log(`Shardus tx ${shardusTxId} is mapped to EVM tx ${ethTxId}`)
         }
@@ -4198,6 +4313,7 @@ const shardusSetup = (): void => {
         else if (isSimpleTransfer) shouldGenerateAccesslist = false
         //else if (remoteShardusAccount == null && appData.newCAAddr == null) shouldGenerateAccesslist = false //resolve which is correct from merge!
         else if (remoteTargetAccount == null && appData.newCAAddr == null) shouldGenerateAccesslist = false
+        else if (isDaoTx(transaction)) shouldGenerateAccesslist = false
 
         //also run access list generation if needed
         if (shouldGenerateAccesslist) {
@@ -4312,8 +4428,15 @@ const shardusSetup = (): void => {
       if (ShardeumFlags.VerboseLogs) console.log('Running getKeyFromTransaction', timestampedTx)
       //@ts-ignore
       const { tx } = timestampedTx
-
       const timestamp: number = getInjectedOrGeneratedTimestamp(timestampedTx)
+      const txId = generateTxId(tx)
+
+      if (isDaoTx(tx)) return {
+        timestamp,
+        id: txId,
+        keys: handleDaoTxCrack(tx, timestamp),
+        shardusMemoryPatterns: null
+      }
 
       let shardusMemoryPatterns = {}
       if (isInternalTx(tx)) {
@@ -4391,6 +4514,10 @@ const shardusSetup = (): void => {
         } else if (internalTx.internalTXType === InternalTXType.Penalty) {
           keys.sourceKeys = [tx.reportedNodePublickKey]
           keys.targetKeys = [toShardusAddress(tx.operatorEVMAddress, AccountType.Account), networkAccount]
+        } else if (internalTx.internalTXType === InternalTXType.InitDao) {
+          keys.targetKeys = [daoConfig.daoAccountAddress]
+        } else {
+          console.warn("daoLogging: unhandled internalTx.internalTXType: ", internalTx.internalTXType)
         }
         keys.allKeys = keys.allKeys.concat(keys.sourceKeys, keys.targetKeys, keys.storageKeys)
         // temporary hack for creating a receipt of node reward tx
@@ -4401,7 +4528,6 @@ const shardusSetup = (): void => {
         //   }
         // }
 
-        const txId = generateTxId(tx)
         if (ShardeumFlags.VerboseLogs) console.log('crack', { timestamp, keys, id: txId })
         return {
           timestamp,
@@ -4412,7 +4538,6 @@ const shardusSetup = (): void => {
       }
       if (isDebugTx(tx)) {
         const debugTx = tx as DebugTx
-        const txId = generateTxId(tx)
         const keys = {
           sourceKeys: [],
           targetKeys: [],
@@ -4451,7 +4576,6 @@ const shardusSetup = (): void => {
       if (rawSerializedTx == null) {
         throw new Error(`Unable to crack EVM transaction. ${JSON.stringify(tx)}`)
       }
-      const txId = generateTxId(tx)
 
       const transaction = getTransactionObj(tx)
       const senderAddress = getTxSenderAddress(transaction, txId).address
@@ -4624,6 +4748,7 @@ const shardusSetup = (): void => {
           additionalAccounts,
           result.codeHashKeys
         )
+
         if (ShardeumFlags.VerboseLogs) console.log('running getKeyFromTransaction', txId, result)
       } catch (e) {
         if (ShardeumFlags.VerboseLogs) console.log('getKeyFromTransaction: Unable to get keys from tx', e)
@@ -4692,7 +4817,7 @@ const shardusSetup = (): void => {
         let accountCreated = false
         //let wrappedEVMAccount = accounts[accountId]
         shardus.setDebugSetLastAppAwait('getRelevantData.AccountsStorage.getAccount 4')
-        let wrappedEVMAccount: NetworkAccount | WrappedEVMAccount = await AccountsStorage.getAccount(
+        let wrappedEVMAccount: NetworkAccount | WrappedEVMAccount | DaoGlobalAccount = await AccountsStorage.getAccount(
           accountId
         )
         shardus.setDebugSetLastAppAwait(
@@ -4779,9 +4904,23 @@ const shardusSetup = (): void => {
             }
           }
         }
+        if (tx.internalTXType === InternalTXType.InitDao) {
+          console.log(
+            'daoLogging: internalTx.internalTXType === InternalTXType.InitDao, getting relevant data for dao'
+          )
+          if (!wrappedEVMAccount) {
+            wrappedEVMAccount = await getRelevantDataInitDao(accountId)
+            accountCreated = true
+            console.log("daoLogging: accountCreated: ", accountCreated)
+          } else {
+            throw Error(`Dao Account already exists`)
+          }
+        }
+
         if (!wrappedEVMAccount) {
           throw Error(`Account not found ${accountId}`)
         }
+
         if (ShardeumFlags.VerboseLogs) console.log('Running getRelevantData', wrappedEVMAccount)
         return shardus.createWrappedResponse(
           accountId,
@@ -4907,6 +5046,10 @@ const shardusSetup = (): void => {
             }
           }
         }
+      }
+
+      if (isDaoTx(tx)) {
+        return await handleDaoTxGetRelevantData(accountId, tx, shardus)
       }
 
       //let wrappedEVMAccount = accounts[accountId]
@@ -6714,7 +6857,7 @@ export function shardeumGetTime(): number {
  * Shardus start
  * Ok to log things without a verbose check here as this is a startup function
  */
-;(async (): Promise<void> => {
+; (async (): Promise<void> => {
   setTimeout(periodicMemoryCleanup, 60000)
 
   await setupArchiverDiscovery({
@@ -6777,6 +6920,8 @@ export function shardeumGetTime(): number {
     await (async (): Promise<void> => {
       const serverConfig = config.server
       const cycleInterval = serverConfig.p2p.cycleDuration * ONE_SECOND
+
+      startDaoMaintenanceCycle(cycleInterval, shardus)
 
       let node
       let nodeId: string
