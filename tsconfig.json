@@ -11,8 +11,9 @@
     "esModuleInterop": true,
     "resolveJsonModule": true,
     "noImplicitReturns": false,
-    "typeRoots": ["node_modules/@types"]
+    "typeRoots": ["node_modules/@types"],
+    "sourceMap": true
   },
-  "include": ["src/**/*", "src/tests"],
+  "include": ["src/**/*", "src/tests", "index.d.ts"],
   "exclude": ["./node_modules", "dist"]
 }

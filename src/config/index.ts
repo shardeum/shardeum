@@ -3,7 +3,14 @@ import path from 'path'
 import merge from 'deepmerge'
 import { ShardeumFlags } from '../shardeum/shardeumFlags'
 import { DevSecurityLevel } from '@shardus/core'
+
 const overwriteMerge = (target: any[], source: any[]): any[] => source // eslint-disable-line @typescript-eslint/no-explicit-any
+
+// helpful time constants in milliseconds
+export const ONE_SECOND = 1000
+export const ONE_MINUTE = 60 * ONE_SECOND
+export const ONE_HOUR = 60 * ONE_MINUTE
+export const ONE_DAY = 24 * ONE_HOUR
 
 export interface Config {
   storage?: any // eslint-disable-line @typescript-eslint/no-explicit-any
