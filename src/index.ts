@@ -4088,12 +4088,12 @@ const shardusSetup = (): void => {
               queueCountResult = await shardus.getLocalOrRemoteAccountQueueCount(transformedSourceKey)
             }
             if (!queueCountResult || queueCountResult?.count === -1) {
-              nestedCountersInstance.countEvent('shardeum', 'Fetching queue count failed')
+              nestedCountersInstance.countEvent('shardeum', 'txPreCrackData: Fetching queue count failed')
             }
           }
           retry = 0
           while (remoteShardusAccount == null && retry < maxRetry) {
-            if (ShardeumFlags.VerboseLogs) console.log(`txPreCrackData: fetching remote account for ${txSenderEvmAddr}, retry: ${retry}`)
+            /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`txPreCrackData: fetching remote account for ${txSenderEvmAddr}, retry: ${retry}`)
             retry++
             remoteShardusAccount = await shardus
               .getLocalOrRemoteAccount(transformedSourceKey)
@@ -4103,11 +4103,8 @@ const shardusSetup = (): void => {
               });
           }
           if (remoteShardusAccount == null) {
-            if (ShardeumFlags.VerboseLogs)
-              console.log(
-                `txPreCrackData: found no local or remote account for address: ${txSenderEvmAddr}, key: ${transformedSourceKey}.`
-              )
-            nestedCountersInstance.countEvent('shardeum', 'remoteShardusAccount was empty')
+            /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log( `txPreCrackData: found no local or remote account for address: ${txSenderEvmAddr}, key: ${transformedSourceKey}.` )
+            nestedCountersInstance.countEvent('shardeum', 'txPreCrackData: remoteShardusAccount was empty')
           }
 
           if (transaction.to) {
@@ -4116,15 +4113,18 @@ const shardusSetup = (): void => {
             remoteTargetAccount = await shardus.getLocalOrRemoteAccount(transformedTargetKey)
           }
           if (ShardeumFlags.txNoncePreCheck) {
-            if (ShardeumFlags.VerboseLogs) console.log('queueCountResult:', queueCountResult)
+            /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log('queueCountResult:', queueCountResult)
             if (queueCountResult.account) {
-              if (ShardeumFlags.VerboseLogs) console.log(queueCountResult.account)
+              /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(queueCountResult.account)
               remoteShardusAccount = queueCountResult.account
+            } else {
+              nestedCountersInstance.countEvent('shardeum', 'txPreCrackData: queueCountResult.account was empty')
             }
           }
 
           if (remoteShardusAccount == null && isDebugMode() === false) {
             /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`txPreCrackData: found no local or remote account for address: ${txSenderEvmAddr}, key: ${transformedSourceKey}. using nonce=0`)
+            nestedCountersInstance.countEvent('shardeum', 'txPreCrackData: failed. found no local or remote account')
             return {
               status: false,
               reason: `Couldn't find local or remote account for address: ${txSenderEvmAddr}`,
@@ -4144,7 +4144,8 @@ const shardusSetup = (): void => {
           }
 
           if (remoteTargetAccount == null) {
-            /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`txPreCrackData: target account not found`)
+            /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`txPreCrackData: target account not found. toAcc:${transaction.to!=null}`)
+            nestedCountersInstance.countEvent('shardeum', `txPreCrackData: target account not found. toAcc:${transaction.to!=null}`)
           } else {
             const wrappedEVMAccount = remoteTargetAccount.data as WrappedEVMAccount
             if (wrappedEVMAccount && wrappedEVMAccount.account) {
@@ -4168,6 +4169,7 @@ const shardusSetup = (): void => {
           if (ShardeumFlags.txNoncePreCheck) {
             if (queueCountResult.count === -1) {
               /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`txPreCrackData uanble to get queueCountResult for ${txSenderEvmAddr} queueCountResult:${queueCountResult}`)
+              nestedCountersInstance.countEvent('shardeum', 'txPreCrackData: failed. Unable to get queueCountResult')
               return {status: false, reason: `Unable to get queueCountResult for ${txSenderEvmAddr}`}
             } else {
               appData.queueCount = queueCountResult.count
@@ -4232,13 +4234,15 @@ const shardusSetup = (): void => {
               } else {
                 success = false
                 /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`precrack nonce fail: txNonce:${txNonce} is not within +/- ${ShardeumFlags.nonceCheckRange} of perfect nonce ${perfectCount}.    current nonce:${appData.nonce}  queueCount:${appData.queueCount} txHash: ${transaction.hash().toString()} `)
-                if (appData.nonce === 0)
-                  nestedCountersInstance.countEvent('shardeum', 'precrack - nonce fail')
+                if (appData.nonce === 0){
+                  nestedCountersInstance.countEvent('shardeum', 'txPreCrackData: looseNonceCheck appData.nonce === 0')
+                }
                 return {status: false, reason: `TX Nonce ${txNonce} is not within +/- ${ShardeumFlags.nonceCheckRange} of perfect nonce ${perfectCount}`}
               }
             } else {
               if (txNonce != perfectCount) {
                 success = false
+                nestedCountersInstance.countEvent('shardeum', 'txPreCrackData: txNonce != perfectCount')
                 /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`precrack nonce fail: perfectCount:${perfectCount} != ${txNonce}.    current nonce:${appData.nonce}  queueCount:${appData.queueCount} txHash: ${transaction.hash().toString()} `)
                 return {status: false, reason: `TX Nonce ${txNonce} is not equal to perfect nonce ${perfectCount}`}
               }
