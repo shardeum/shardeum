@@ -145,8 +145,8 @@ const runTransaction = async (
     return
   }
   const tx = txJson
-  const txTimestamp = getInjectedOrGeneratedTimestamp({ tx: tx })
-  const transaction: LegacyTransaction | AccessListEIP2930Transaction = getTransactionObj(tx)
+  const txTimestamp = getInjectedOrGeneratedTimestamp(tx)
+  const transaction: LegacyTransaction | AccessListEIP2930Transaction = getTransactionObj(tx.tx)
   const senderAddress = getTxSenderAddress(transaction).address
   const ethTxId = bytesToHex(transaction.hash())
   const shardusReceiptAddress = toShardusAddressWithKey(ethTxId, '', AccountType.Receipt)
