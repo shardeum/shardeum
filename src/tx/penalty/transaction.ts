@@ -86,6 +86,7 @@ export async function injectPenaltyTX(
   // store the unsignedTx to local map for later use
   recordPenaltyTX(txId, signedTx)
 
+  // TODO SHM-4164  perf consider porting some of this luckly logic to fastIsPicked  
   // inject the unsignedTx if we are lucky node
   const consensusNodes = shardus.getConsenusGroupForAccount(signedTx.reportedNodePublickKey)
   const consensusNodeIdsAndRanks: { nodeId: string; rank: bigint }[] = consensusNodes.map((n) => {
