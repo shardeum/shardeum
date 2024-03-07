@@ -108,6 +108,8 @@ import {
   isInSenderCache,
   removeTxFromSenderCache,
   DeSerializeFromJsonString, isStakingEVMTx,
+  logFlags,
+  setLogFlags
 } from './utils'
 import config, { Config } from './config'
 import Wallet from 'ethereumjs-wallet'
@@ -173,18 +175,6 @@ const ERC20_BALANCEOF_CODE = '0x70a08231'
 
 let shardus: Shardus
 let profilerInstance
-
-//   next shardus core will export the correct type
-export let logFlags = {
-  verbose: false,
-  dapp_verbose: false,
-  error: true,
-  fatal: true,
-  important_as_error: true,
-  important_as_fatal: true,
-  shardedCache: false,
-  aalg: false,
-}
 
 // Read the CLI and GUI versions and save them in memory
 readOperatorVersions()
@@ -7112,8 +7102,7 @@ export function shardeumGetTime(): number {
     customStringifier: SerializeToJsonString,
   })
 
-  //@ts-ignore
-  logFlags = shardus.getLogFlags()
+  setLogFlags(shardus.getLogFlags())
   //do not need to have log levels for these flags:
   console.log('Shardus Server Config:')
   /** This is just the ServerConfiguration part of the shardus core configuration*/

@@ -1,5 +1,6 @@
 import * as fs from 'fs'
-import { logFlags, setGenesisAccounts } from '..'
+import { setGenesisAccounts } from '..'
+import { logFlags } from '../utils'
 import { networkAccount } from '../shardeum/shardeumConstants'
 import { ShardeumFlags } from '../shardeum/shardeumFlags'
 import * as Path from 'path'

@@ -1,9 +1,8 @@
 import { BN } from 'ethereumjs-util'
-import { scaleByStabilityFactor, _base16BNParser } from '../../utils'
+import { scaleByStabilityFactor, _base16BNParser, logFlags } from '../../utils'
 import { ShardeumFlags } from '../../shardeum/shardeumFlags'
 import * as AccountsStorage from '../../storage/accountStorage'
 import { NodeAccount2, WrappedEVMAccount } from '../../shardeum/shardeumTypes'
-import { logFlags } from '../..'
 
 export function applyPenalty(
   nodeAccount: NodeAccount2,

@@ -13,9 +13,9 @@ import {
 } from '../shardeum/shardeumTypes'
 import { fixDeserializedWrappedEVMAccount, isWrappedEVMAccount } from '../shardeum/wrappedEVMAccountFunctions'
 import { setCertTimeTx } from '../tx/setCertTime'
-import { getRandom, fixBigIntLiteralsToBigInt } from '../utils'
+import { getRandom, fixBigIntLiteralsToBigInt, logFlags } from '../utils'
 import { shardusGetFromNode, shardusPostToNode, shardusPutToNode } from '../utils/requests'
-import { logFlags, shardeumGetTime } from '..'
+import { shardeumGetTime } from '..'
 
 // constants
 

@@ -1,6 +1,6 @@
 import { AccountType, InternalAccount, WrappedEVMAccount } from '../../shardeum/shardeumTypes'
 import { TransactionState } from '../state'
-import { fixBigIntLiteralsToBigInt } from '../../utils'
+import { fixBigIntLiteralsToBigInt } from '../../utils/serialization'
 import { Account, bigIntToBytes, generateAddress } from '@ethereumjs/util'
 import * as crypto from '@shardus/crypto-utils'
 

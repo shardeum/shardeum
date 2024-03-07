@@ -28,7 +28,7 @@ import TransactionState from './transactionState'
 import { ShardeumFlags } from '../shardeum/shardeumFlags'
 import { Trie } from '@ethereumjs/trie'
 import type { Debugger } from 'debug'
-import { logFlags } from '..'
+import { logFlags } from '../utils'
 
 const debug = createDebugLogger('vm:state')
 

@@ -2,7 +2,7 @@ import { nestedCountersInstance, ShardusTypes } from '@shardus/core'
 import * as crypto from '@shardus/crypto-utils'
 import { Address } from '@ethereumjs/util'
 import { networkAccount } from '../shardeum/shardeumConstants'
-import { createInternalTxReceipt, getApplyTXState, logFlags, shardeumGetTime } from '../index'
+import { createInternalTxReceipt, getApplyTXState, shardeumGetTime } from '../index'
 import { hashSignedObj } from '../setup/helpers'
 import { toShardusAddress } from '../shardeum/evmAddress'
 import { ShardeumFlags } from '../shardeum/shardeumFlags'
@@ -19,7 +19,7 @@ import {
 } from '../shardeum/shardeumTypes'
 import * as WrappedEVMAccountFunctions from '../shardeum/wrappedEVMAccountFunctions'
 import * as AccountsStorage from '../storage/accountStorage'
-import { scaleByStabilityFactor, sleep, _base16BNParser, _readableSHM, generateTxId } from '../utils'
+import { scaleByStabilityFactor, sleep, _base16BNParser, _readableSHM, generateTxId, logFlags } from '../utils'
 import { retry } from '../utils/retry'
 
 export async function injectClaimRewardTx(

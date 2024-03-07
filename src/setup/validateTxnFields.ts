@@ -37,7 +37,8 @@ import {
 import { fixBigIntLiteralsToBigInt } from '../utils/serialization'
 import { validatePenaltyTX } from '../tx/penalty/transaction'
 import { bytesToHex } from '@ethereumjs/util'
-import {logFlags, shardusConfig} from '..'
+import { logFlags } from '../utils'
+import { shardusConfig } from '..'
 
 /**
  * Checks that Transaction fields are valid

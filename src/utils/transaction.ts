@@ -2,8 +2,23 @@ import {Transaction, TransactionType, TypedTransaction} from '@ethereumjs/tx'
 import { Address } from '@ethereumjs/util'
 import { getSenderAddress } from '@shardus/net'
 import { hashSignedObj } from '../setup/helpers'
-import { logFlags } from '..'
 import {ShardeumFlags} from "../shardeum/shardeumFlags";
+
+//   next shardus core will export the correct type
+export let logFlags = {
+  verbose: false,
+  dapp_verbose: false,
+  error: true,
+  fatal: true,
+  important_as_error: true,
+  important_as_fatal: true,
+  shardedCache: false,
+  aalg: false,
+}
+
+export function setLogFlags(flags: typeof logFlags): void {
+  logFlags = flags
+}
 
 const txSenderCache: Map<string, { address: Address; isValid: boolean }> = new Map()
 let simpleTTL = 0

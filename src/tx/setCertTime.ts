@@ -24,9 +24,10 @@ import {
   _readableSHM,
   generateTxId,
   stringify,
+  logFlags
 } from '../utils'
 import { hashSignedObj } from '../setup/helpers'
-import { createInternalTxReceipt, logFlags, shardeumGetTime } from '..'
+import { createInternalTxReceipt, shardeumGetTime } from '..'
 import { bigIntToHex, isValidAddress } from '@ethereumjs/util'
 
 export function isSetCertTimeTx(tx): boolean {

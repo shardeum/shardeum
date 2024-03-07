@@ -9,11 +9,10 @@ import { AccountType, DevAccount, InternalTXType, WrappedEVMAccount } from '../s
 import * as WrappedEVMAccountFunctions from '../shardeum/wrappedEVMAccountFunctions'
 import { ShardeumState, TransactionState } from '../state'
 import * as AccountsStorage from '../storage/accountStorage'
-import { SerializeToJsonString } from '../utils'
-import { sleep } from '../utils'
+import { SerializeToJsonString, logFlags, sleep } from '../utils'
 // import { StateManager } from '../vm/state'
 import { DefaultStateManager } from '@ethereumjs/statemanager'
-import { logFlags, shardeumGetTime } from '..'
+import { shardeumGetTime } from '..'
 
 function isDebugMode(): boolean {
   // eslint-disable-next-line @typescript-eslint/ban-ts-comment
