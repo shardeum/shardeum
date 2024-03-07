@@ -935,6 +935,7 @@ function getPreRunTXState(txId: string): ShardeumState {
 export function getApplyTXState(txId: string): ShardeumState {
   let shardeumState = shardeumStateTXMap.get(txId)
   if (shardeumState == null) {
+    if (ShardeumFlags.VerboseLogs) console.log('Creating a new apply tx ShardeumState for ', txId)
     shardeumState = new ShardeumState({ common: evmCommon })
     const transactionState = new TransactionState()
     transactionState.initData(
@@ -953,6 +954,8 @@ export function getApplyTXState(txId: string): ShardeumState {
     )
     shardeumState.setTransactionState(transactionState)
     shardeumStateTXMap.set(txId, shardeumState)
+  } else {
+    if (ShardeumFlags.VerboseLogs) console.log(`Reusing apply tx ShardeumState for txId: ${txId}`)
   }
   return shardeumState
 }
@@ -5656,6 +5659,22 @@ const shardusSetup = (): void => {
 
       //clear this out of the shardeum state map
       if (shardeumStateTXMap.has(txId)) {
+        shardeumStateTXMap.delete(txId)
+      }
+    },
+    transactionReceiptFail(
+      timestampedTx: ShardusTypes.OpaqueTransaction,
+      wrappedStates: { [id: string]: WrappedAccount },
+      applyResponse?: ShardusTypes.ApplyResponse
+    ) {
+      if (ShardeumFlags.VerboseLogs) console.log('running transactionReceiptFail', timestampedTx, wrappedStates, applyResponse)
+      //@ts-ignore
+      const { tx } = timestampedTx
+      const txId: string = generateTxId(tx)
+
+      //clear this out of the shardeum state map
+      if (shardeumStateTXMap.has(txId)) {
+        if (ShardeumFlags.VerboseLogs) console.log('transactionReceiptFail: deleting txId from shardeumStateTXMap', txId)
         shardeumStateTXMap.delete(txId)
       }
     },
