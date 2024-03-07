@@ -31,8 +31,8 @@ function fixWrappedEVMAccountBuffers(wrappedEVMAccount: WrappedEVMAccount): void
       wrappedEVMAccount.codeHash = Uint8Array.from(Object.values(wrappedEVMAccount.codeHash))
       wrappedEVMAccount.codeByte = Uint8Array.from(Object.values(wrappedEVMAccount.codeByte))
     } else {
-      wrappedEVMAccount.codeHash = Uint8Array.from(wrappedEVMAccount.codeHash)
-      wrappedEVMAccount.codeByte = Uint8Array.from(wrappedEVMAccount.codeByte)
+      wrappedEVMAccount.codeHash = wrappedEVMAccount.codeHash ? Uint8Array.from(wrappedEVMAccount.codeHash) : undefined
+      wrappedEVMAccount.codeByte = wrappedEVMAccount.codeByte ? Uint8Array.from(wrappedEVMAccount.codeByte) : undefined
     }
   }
 

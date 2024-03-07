@@ -59,7 +59,7 @@ function getApplyTXState(txId: string, estimateOnly: boolean): ShardeumState {
           //     address,
           //   })
           // ) The correct shardus key for missing CB should be printed by tryGetRemoteAccountCB before this
-          return true
+          return false
         },
         contractStorageMiss: async () => {
           return false
