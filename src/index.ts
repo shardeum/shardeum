@@ -5667,6 +5667,7 @@ const shardusSetup = (): void => {
       wrappedStates: { [id: string]: WrappedAccount },
       applyResponse?: ShardusTypes.ApplyResponse
     ) {
+      if (ShardeumFlags.expiredTransactionStateFix === false) return
       if (ShardeumFlags.VerboseLogs) console.log('running transactionReceiptFail', timestampedTx, wrappedStates, applyResponse)
       //@ts-ignore
       const { tx } = timestampedTx
