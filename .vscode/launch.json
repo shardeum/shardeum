@@ -46,7 +46,12 @@
       "port": 8001,
       "sourceMaps": true,
       "protocol": "inspector",
-      "skipFiles": ["<node_internals>/**"]
+      "trace": true, // Enable detailed logging
+      "skipFiles": ["<node_internals>/**"],
+      "outFiles": [
+        "${workspaceFolder}/dist/**/*.js",
+        "${workspaceFolder}/../shardus-global-server/dist/**/*.js",
+      ]
     },
   ]
 }
