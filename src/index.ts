@@ -6355,6 +6355,7 @@ const shardusSetup = (): void => {
       }
 
       const eventType = data.type
+      nestedCountersInstance.countEvent('eventNotify', `eventType: ${eventType}`)
 
       // Waiting a bit here to make sure that shardus.getLatestCycles gives the latest cycle
       await sleep(1000)
