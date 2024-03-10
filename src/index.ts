@@ -576,7 +576,6 @@ function accountInvolved(transactionState: TransactionState, address: string, is
   //Need to translate address to a shardus-global-server space address!
   // let shardusAddress = toShardusAddress(address, AccountType.Account)
 
-  //TODO implement this shardus function.
   // shardus.accountInvolved will look at the TXID to find the correct queue entry
   //  then it will see if the queueEntry already knows of this account
   //    if it has not seen this account it will test if we can add this account to the queue entry
@@ -619,7 +618,6 @@ function contractStorageInvolved(
 
   //Need to translate key (or a combination of hashing address+key) to a shardus-global-server space address!
 
-  //TODO implement this shardus function.
   //See documentation for details
   //Note we will have 3-4 different account types where accountInvolved gets called (depending on how we handle Receipts),
   // but they will all call the same shardus.accountInvolved() and shardus will not know of the different account types
