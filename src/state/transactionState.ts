@@ -109,6 +109,8 @@ export default class TransactionState {
 
   appData: unknown
 
+  warmupCache: Map<string, WrappedEVMAccount>
+
   // callbacks
   accountMissCB: accountEvent
   contractStorageMissCB: contractStorageEvent
@@ -236,6 +238,8 @@ export default class TransactionState {
     this.debugTrace = ShardeumFlags.debugTraceLogs
 
     this.checkpointCount = 0
+
+    this.warmupCache = new Map()
   }
 
   getReadAccounts(): {
