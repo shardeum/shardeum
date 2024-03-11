@@ -241,6 +241,7 @@ config = merge(config, {
       //1.1.4
       archiverDataSubscriptionsUpdate: true,
       startInServiceMode: ShardeumFlags.startInServiceMode,
+      archiveMode: ShardeumFlags.archiveMode,
     },
   },
 })
