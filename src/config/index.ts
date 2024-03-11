@@ -21,6 +21,10 @@ export interface Config {
     }
     baseDir: string
     mode?: 'debug' | 'release'
+    collectorInfo?: {
+      IP: string
+      PORT: string
+    }
   }
 }
 
@@ -245,6 +249,17 @@ config = merge(config, {
       //1.1.4
       archiverDataSubscriptionsUpdate: true,
       startInServiceMode: ShardeumFlags.startInServiceMode,
+      archiveMode: ShardeumFlags.archiveMode,
+    },
+  },
+})
+
+// collector info
+config = merge(config, {
+  server: {
+    collectorInfo: {
+      IP: process.env.COLLECTOR_IP || '127.0.0.1',
+      PORT: process.env.COLLECTOR_PORT || '6001',
     },
   },
 })
