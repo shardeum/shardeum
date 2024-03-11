@@ -245,6 +245,16 @@ config = merge(config, {
   },
 })
 
+// collector info
+config = merge(config, {
+  server: {
+    collectorInfo: {
+      IP: process.env.COLLECTOR_IP || '127.0.0.1',
+      PORT: process.env.COLLECTOR_PORT || '6001',
+    },
+  },
+})
+
 // Debug settings
 config = merge(
   config,
