@@ -120,7 +120,7 @@ interface ShardeumFlags {
 }
 
 export const ShardeumFlags: ShardeumFlags = {
-  contractStorageKeySilo: true,
+  contractStorageKeySilo: false,
   contractStoragePrefixBitLength: 3,
   contractCodeKeySilo: false,
   globalCodeBytes: false,
