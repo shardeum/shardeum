@@ -12,6 +12,7 @@ import { networkAccount } from '../shardeum/shardeumConstants'
 import { isServiceMode } from '..'
 import { logFlags } from '..'
 import { setCachedRIAccount } from './riAccountsCache'
+import { getContextValue } from '../utils/RequestContext'
 
 //WrappedEVMAccount
 export let accounts: WrappedEVMAccountMap = {}
@@ -34,6 +35,10 @@ export async function lazyInit(): Promise<void> {
 }
 
 export async function getAccount(address: string): Promise<WrappedEVMAccount> {
+  const blockContext = getContextValue('block')
+  if (blockContext != undefined) {
+    // todo: fetch from collector and return
+  }
   if (ShardeumFlags.UseDBForAccounts === true) {
     const account = await storage.getAccountsEntry(address)
     if (!account) return

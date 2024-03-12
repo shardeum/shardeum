@@ -51,6 +51,7 @@
     "@shardus/types": "1.2.11",
     "@types/sqlite3": "3.1.8",
     "cliffy": "2.5.1",
+    "cls-hooked": "^4.2.2",
     "debug": "4.3.4",
     "deepmerge": "4.2.2",
     "dotenv": "16.0.0",

@@ -148,6 +148,7 @@ import { AccountsEntry } from './storage/storage'
 import { getCachedRIAccount, setCachedRIAccount } from './storage/riAccountsCache'
 import { isLowStake } from './tx/penalty/penaltyFunctions'
 import { accountDeserializer, accountSerializer } from './types/Helpers'
+import { runWithContextAsync } from './utils/RequestContext'
 
 let latestBlock = 0
 export const blocks: BlockMap = {}
@@ -1589,7 +1590,19 @@ const configShardusEndpoints = (): void => {
         stateManager: callTxState,
       })
 
-      const callResult: EVMResult = await customEVM.runCall(opt)
+      const requestContext = {
+        block: opt['block'],
+      }
+
+      let callResult: EVMResult
+      const archiveMode = true
+      if (archiveMode) {
+        await runWithContextAsync(async () => {
+          callResult = await customEVM.runCall(opt)
+        }, requestContext)
+      } else {
+        callResult = await customEVM.runCall(opt)
+      }
       let returnedValue = bytesToHex(callResult.execResult.returnValue)
       if (returnedValue && returnedValue.indexOf('0x') === 0) {
         returnedValue = returnedValue.slice(2)
