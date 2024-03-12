@@ -4231,6 +4231,7 @@ const shardusSetup = (): void => {
           if (ShardeumFlags.txNoncePreCheck && appData != null) {
             const txNonce = parseInt(transaction.nonce.toString(16), 16)
             const perfectCount = appData.nonce + appData.queueCount
+            const exactCount = appData.nonce
 
             if (ShardeumFlags.looseNonceCheck) {
               if (isWithinRange(txNonce, perfectCount, ShardeumFlags.nonceCheckRange)) {
@@ -4240,13 +4241,32 @@ const shardusSetup = (): void => {
                 /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`precrack nonce fail: txNonce:${txNonce} is not within +/- ${ShardeumFlags.nonceCheckRange} of perfect nonce ${perfectCount}.    current nonce:${appData.nonce}  queueCount:${appData.queueCount} txHash: ${transaction.hash().toString()} `)
                 if (appData.nonce === 0)
                   nestedCountersInstance.countEvent('shardeum', 'precrack - nonce fail')
-                return {status: false, reason: `TX Nonce ${txNonce} is not within +/- ${ShardeumFlags.nonceCheckRange} of perfect nonce ${perfectCount}`}
+                return {
+                  status: false,
+                  reason: `TX Nonce ${txNonce} is not within +/- ${ShardeumFlags.nonceCheckRange} of perfect nonce ${perfectCount}`,
+                }
               }
             } else {
               if (txNonce != perfectCount) {
                 success = false
                 /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`precrack nonce fail: perfectCount:${perfectCount} != ${txNonce}.    current nonce:${appData.nonce}  queueCount:${appData.queueCount} txHash: ${transaction.hash().toString()} `)
-                return {status: false, reason: `TX Nonce ${txNonce} is not equal to perfect nonce ${perfectCount}`}
+                return {
+                  status: false,
+                  reason: `TX Nonce ${txNonce} is not equal to perfect nonce ${perfectCount}`,
+                }
+              }
+            }
+
+            // Exact nonce check
+            if (ShardeumFlags.exactNonceCheck) {
+              if (txNonce != exactCount) {
+                nestedCountersInstance.countEvent('shardeum', 'precrack - exact nonce check fail')
+                success = false
+                /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`precrack exact nonce check fail: exactCount:${exactCount} != ${txNonce}. current nonce:${appData.nonce} txHash: ${transaction.hash().toString()} `)
+                return {
+                  status: false,
+                  reason: `TX Nonce ${txNonce} is not equal to exact nonce ${exactCount}`,
+                }
               }
             }
           }

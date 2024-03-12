@@ -221,10 +221,11 @@ export const validateTxnFields =
         if (ShardeumFlags.txNoncePreCheck && appData != null) {
           const txNonce = parseInt(transaction.nonce.toString(10))
           const perfectCount = appData.nonce + appData.queueCount
+          const exactCount = appData.nonce
 
           if (ShardeumFlags.looseNonceCheck) {
             if (isWithinRange(txNonce, perfectCount, ShardeumFlags.nonceCheckRange)) {
-              /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`nonce pass: txNonce:${txNonce} is within +/- ${ShardeumFlags.nonceCheckRange} of perfectCount:${perfectCount}.    accountNonce:${appData.nonce}  queueCount:${appData.queueCount}  txHash: ${transaction.hash().toString()}`)
+              /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`nonce pass: txNonce:${txNonce} is within +/- ${ShardeumFlags.nonceCheckRange} of perfectCount:${perfectCount}.    accountNonce:${appData.nonce}  queueCount:${appData.queueCount}  txHash: ${transaction.hash().toString()} `)
             } else {
               success = false
               reason = `Transaction nonce is not within +/- ${ShardeumFlags.nonceCheckRange} of perfectCount ${perfectCount}  txNonce:${txNonce} accountNonce:${appData.nonce} queueCount:${appData.queueCount}`
@@ -238,7 +239,19 @@ export const validateTxnFields =
               /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`nonce fail: expectedNonce:${perfectCount} != txNonce:${txNonce}.    accountNonce:${appData.nonce}  queueCount:${appData.queueCount} txHash: ${transaction.hash().toString()} `)
               nestedCountersInstance.countEvent('shardeum', 'validate - nonce fail')
             } else {
-              /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`nonce pass: expectedNonce:${perfectCount} == txNonce:${txNonce}.    accountNonce:${appData.nonce}  queueCount:${appData.queueCount}  txHash: ${transaction.hash().toString()}`)
+              /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`nonce pass: expectedNonce:${perfectCount} == txNonce:${txNonce}.    accountNonce:${appData.nonce}  queueCount:${appData.queueCount}  txHash: ${transaction.hash().toString()} `)
+            }
+          }
+
+          // ExactNonce check
+          if (ShardeumFlags.exactNonceCheck) {
+            if (txNonce != exactCount) {
+              success = false
+              reason = `Transaction nonce != ${exactCount} (ExactNonce) txNonce:${txNonce} accountNonce:${appData.nonce} queueCount:${appData.queueCount}`
+              /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`ExactNonce check fail: expectedNonce:${exactCount} != txNonce:${txNonce}. accountNonce:${appData.nonce} txHash: ${transaction.hash().toString()} `)
+              nestedCountersInstance.countEvent('shardeum', 'validate - exact nonce check fail')
+            } else {
+              /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`ExactNonce check pass: expectedNonce:${exactCount} == txNonce:${txNonce}. accountNonce:${appData.nonce} txHash: ${transaction.hash().toString()} `)
             }
           }
         }

@@ -97,6 +97,7 @@ interface ShardeumFlags {
   accesslistNonceFix: boolean
   nonceCheckRange: number
   looseNonceCheck: boolean
+  exactNonceCheck: boolean
   supportEstimateGas: boolean
   startInServiceMode: boolean
   allowedEndpointsInServiceMode: string[]
@@ -233,6 +234,7 @@ export const ShardeumFlags: ShardeumFlags = {
   // 1.5.5 migration
   nonceCheckRange: 3, //  This setting is not part of 1.5.5 migration
   looseNonceCheck: true,
+  exactNonceCheck: false,
 
   // 1.5.7 migration
   supportEstimateGas: true,
