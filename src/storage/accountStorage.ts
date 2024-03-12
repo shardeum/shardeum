@@ -54,7 +54,9 @@ async function fetchAccountBlockData(
 
 export async function getAccount(address: string, blockNumber?: string): Promise<WrappedEVMAccount> {
   if (ShardeumFlags.archiveMode && blockNumber) {
-    return fetchAccountBlockData(address, blockNumber) // Get the account data for the queried block
+    const blockData = await fetchAccountBlockData(address, blockNumber) // Get the account data for the queried block
+    if(!blockData) return
+    return blockData
   }
 
   if (ShardeumFlags.UseDBForAccounts === true) {
