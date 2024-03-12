@@ -12,6 +12,8 @@ import { networkAccount } from '../shardeum/shardeumConstants'
 import { isServiceMode } from '..'
 import { logFlags } from '..'
 import { setCachedRIAccount } from './riAccountsCache'
+import { CollectorApiCaller } from './utils/CollectorAPICaller'
+import config from '../config'
 
 //WrappedEVMAccount
 export let accounts: WrappedEVMAccountMap = {}
@@ -33,7 +35,20 @@ export async function lazyInit(): Promise<void> {
   }
 }
 
-export async function getAccount(address: string): Promise<WrappedEVMAccount> {
+export async function getAccount(address: string, blockNumber?: string): Promise<WrappedEVMAccount> {
+  if (ShardeumFlags.archiveMode) {
+    if (blockNumber) {
+      const COLLECTOR_URL = `http://${config.server.collectorInfo.IP}:${config.server.collectorInfo.PORT}`;
+      const collectorApi = new CollectorApiCaller(COLLECTOR_URL);
+      const apiQuery = `${COLLECTOR_URL}/api/account?accountId=${address}&blockNumber=${blockNumber}`;
+      try {
+        const response = await collectorApi.get<WrappedEVMAccount>(apiQuery);
+        return response;
+      } catch (error) {
+        throw new Error(error);
+      }
+    }
+  }
   if (ShardeumFlags.UseDBForAccounts === true) {
     const account = await storage.getAccountsEntry(address)
     if (!account) return
