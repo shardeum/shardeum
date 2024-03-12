@@ -19,6 +19,10 @@ export interface Config {
     }
     baseDir: string
     mode?: 'debug' | 'release'
+    collectorInfo?: {
+      IP: string
+      PORT: string
+    }
   }
 }
 
