@@ -148,7 +148,7 @@ import { AccountsEntry } from './storage/storage'
 import { getCachedRIAccount, setCachedRIAccount } from './storage/riAccountsCache'
 import { isLowStake } from './tx/penalty/penaltyFunctions'
 import { accountDeserializer, accountSerializer } from './types/Helpers'
-import NotificationService from './utils/emailService'
+import { sendMessage } from './utils/notifService'
 
 let latestBlock = 0
 export const blocks: BlockMap = {}
@@ -183,7 +183,6 @@ export let logFlags = {
 
 // Read the CLI and GUI versions and save them in memory
 readOperatorVersions()
-const emailAgent = new NotificationService()
 
 console.log('Shardeum validator started')
 console.log('Shardeum Flags:')
@@ -6418,7 +6417,7 @@ const shardusSetup = (): void => {
             nodeDroppedTime: data.time,
           }
           nestedCountersInstance.countEvent('shardeum-staking', `node-left-early: injectPenaltyTx`)
-          emailAgent.sendEmailNotification('Slashed: Penalty Imposed', 'Node left network early')
+          await sendMessage(`🔴 Slashed! Penalty Imposed - Node left network early`)
           const result = await PenaltyTx.injectPenaltyTX(shardus, data, violationData)
           /* prettier-ignore */ if (logFlags.dapp_verbose) console.log('INJECTED_PENALTY_TX', result)
         } else {
@@ -6435,7 +6434,7 @@ const shardusSetup = (): void => {
           nodeDroppedTime: data.time,
         }
         nestedCountersInstance.countEvent('shardeum-staking', `node-sync-timeout: injectPenaltyTx`)
-        emailAgent.sendEmailNotification('Slashed: Penalty Imposed', 'Node sync timeout')
+        await sendMessage('🔴 Slashed! Penalty Imposed - Node took too long for syncing')
         const result = await PenaltyTx.injectPenaltyTX(shardus, data, violationData)
         /* prettier-ignore */ if (logFlags.dapp_verbose) console.log('INJECTED_PENALTY_TX', result)
       } else if (
@@ -6457,7 +6456,7 @@ const shardusSetup = (): void => {
             nodeRefutedTime: data.time,
           }
           nestedCountersInstance.countEvent('shardeum-staking', `node-refuted: injectPenaltyTx`)
-          emailAgent.sendEmailNotification('Slashed: Penalty Imposed', 'Node refuted')
+          await sendMessage('🔴 Slashed! Penalty Imposed - Node refuted')
           const result = await PenaltyTx.injectPenaltyTX(shardus, data, violationData)
           /* prettier-ignore */ if (logFlags.dapp_verbose) console.log('INJECTED_PENALTY_TX', result)
         } else {
@@ -6869,7 +6868,9 @@ export function shardeumGetTime(): number {
       }
 
       shardus.on('active', async (): Promise<NodeJS.Timeout> => {
-        emailAgent.sendEmailNotification('Your node has started validating!', 'Node has gone active')
+        await sendMessage(
+          '🟢 Congratulations! Your node is active and validating. You have started earning rewards'
+        )
         const latestCycles = shardus.getLatestCycles()
         if (latestCycles != null && latestCycles.length > 0) {
           const latestCycle = latestCycles[0]
