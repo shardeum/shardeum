@@ -13,6 +13,9 @@ import { isServiceMode } from '..'
 import { logFlags } from '..'
 import { setCachedRIAccount } from './riAccountsCache'
 import { getContextValue } from '../utils/RequestContext'
+import config from '../config'
+import { shardusGet } from '../utils/requests'
+import { Block } from '@ethereumjs/block'
 
 //WrappedEVMAccount
 export let accounts: WrappedEVMAccountMap = {}
@@ -34,10 +37,30 @@ export async function lazyInit(): Promise<void> {
   }
 }
 
+async function fetchAccountDataFromCollector(
+  address: string,
+  blockNumber: string
+): Promise<WrappedEVMAccount> {
+  const COLLECTOR_URL = `http://${config.server.collectorInfo.IP}:${config.server.collectorInfo.PORT}`
+  const apiQuery = `${COLLECTOR_URL}/api/account?accountId=${address}&blockNumber=${blockNumber}`
+  try {
+    const response = await shardusGet<WrappedEVMAccount>(apiQuery, {})
+    return response.data
+  } catch (error) {
+    throw new Error(error)
+  }
+}
+
 export async function getAccount(address: string): Promise<WrappedEVMAccount> {
-  const blockContext = getContextValue('block')
-  if (blockContext != undefined) {
-    // todo: fetch from collector and return
+  if (ShardeumFlags.archiveMode) {
+    const blockContext = getContextValue<Block>('block')
+    if (blockContext != undefined) {
+      const accountData = await fetchAccountDataFromCollector(
+        address,
+        blockContext.header.number.toString(16)
+      )
+      return accountData
+    }
   }
   if (ShardeumFlags.UseDBForAccounts === true) {
     const account = await storage.getAccountsEntry(address)
