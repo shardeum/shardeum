@@ -629,7 +629,7 @@ export default class TransactionState {
           `getContractCode: addr:${addressString} codeHashStr:${codeHashStr} v:undefined isRemoteShard:${isRemoteShard}`
         )
 
-      if (canThrow && isRemoteShard) throw new Error('codeBytes in remote shard, abort') //todo smarter throw?
+      if (canThrow && isRemoteShard) throw new Error(`codeBytes: ${codeHashStr} in remote shard, abort`) //todo smarter throw?
 
       //return unitiazlied new code bytes
       //todo need to insert it into a map of new / virtual accounts?

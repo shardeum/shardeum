@@ -6,7 +6,7 @@ if (typeof (Buffer.prototype as any).latin1Slice === 'function') {
     // this is just `buffer.toString("hex")`, but it skips a bunch of checks
     // that don't apply because our `start` and `end` just can't be out of
     // bounds.
-    return (buffer as any).hexSlice(start, end)
+    return buffer.toString("hex", start, end);
   }
 } else {
   stringify = (buffer: Buffer, start: number, end: number) => {

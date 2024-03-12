@@ -62,7 +62,7 @@ function getApplyTXState(txId: string, estimateOnly: boolean): ShardeumState {
           return true
         },
         contractStorageMiss: async () => {
-          return false
+          return true
         },
         accountInvolved: (txState: TransactionState, address: string) => {
           // Missing EOA/CA (Type 0) will halt here
