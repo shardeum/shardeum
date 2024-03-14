@@ -193,6 +193,10 @@ config = merge(config, {
       cyclesToWaitForSyncStarted: 5, //raising this to 5 to reduce the chance of nodes getting booted out too soon
 
       forcedMode: '', //change to 'safety` to force network into safety mode (other modes not implemented and will not force network mode)
+      // 1.10.x ? dev test   needs migration to release
+      useBinarySerializedEndpoints: true,
+      // 1.10 x ? dev test   needs migration to release
+      removeLostSyncingNodeFromList: true
     },
   },
 })
