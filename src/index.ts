@@ -707,7 +707,10 @@ async function tryGetRemoteAccountCB(
     if(remoteShardusAccount != null){
       const fixedEVMAccount = remoteShardusAccount.data as WrappedEVMAccount
       fixDeserializedWrappedEVMAccount(fixedEVMAccount)   
+      nestedCountersInstance.countEvent('aalg-warmup', 'cache hit')
       return fixedEVMAccount   
+    } else {
+      nestedCountersInstance.countEvent('aalg-warmup', 'cache miss')
     }
   }
 
@@ -2854,9 +2857,9 @@ async function generateAccessList(
       callerAccount ? callerAccount.account : fakeAccount // todo: using fake account may not work in new ethereumJS
     )
 
+    const warmupCache = new Map<string, WrappedEVMAccount>() 
 
-    
-    const promises:Promise<ShardusTypes.WrappedDataFromQueue>[] = []
+    //const promises:Promise<ShardusTypes.WrappedDataFromQueue>[] = []
     //use warmupList to fetch data in parallel.  We will feed this in as cache inputs to the transaction 
     //state 
     if(warmupList != null && warmupList.codeHashes?.length > 0 && warmupList.accessList?.length > 0){
@@ -2866,39 +2869,36 @@ async function generateAccessList(
           codeHashObj.codeHash,
           AccountType.ContractCode
         )
-        //TODO a promise with a wrapped race so that we do not wait forever
-        promises.push(shardus.getLocalOrRemoteAccount(shardusAddr, {useRICache:true}))
+        //promises.push(shardus.getLocalOrRemoteAccount(shardusAddr, {useRICache:true}))
+        fetchAndCacheAccountData(shardusAddr, warmupCache, true )
       }
       for(const accesListTuple of warmupList.accessList){
         const contractAddress = accesListTuple[0]
         const storageArray = accesListTuple[1]
 
         const shardusContractAddr = toShardusAddress(contractAddress, AccountType.Account)
-        promises.push(shardus.getLocalOrRemoteAccount(shardusContractAddr))
-
+        //promises.push(shardus.getLocalOrRemoteAccount(shardusContractAddr))
+        fetchAndCacheAccountData(shardusContractAddr, warmupCache )
         for(const storageAddr of storageArray){
           const shardusStorageAddr = toShardusAddressWithKey(
             contractAddress,
             storageAddr,
             AccountType.ContractStorage
           )
-          // TODO.  need to push this in a race.
-          // also may consider if we want less retries? 
-          // this function may benefit from more aggresive racing/retries
-          
-          promises.push(shardus.getLocalOrRemoteAccount(shardusStorageAddr))
+          //promises.push(shardus.getLocalOrRemoteAccount(shardusStorageAddr))
+          fetchAndCacheAccountData(shardusStorageAddr, warmupCache )
         }
       }
     }
 
     //Await all the promises.  TODO more advanced wait that is fault tolerant 
-    const warmupData = await Promise.all(promises)
+    // const warmupData = await Promise.all(promises)
 
-    // build a warmupcache from the results we got 
-    const warmupCache = new Map<string, WrappedEVMAccount>()
-    for(const warmupAcc of warmupData){
-      warmupCache.set(warmupAcc.accountId, warmupAcc.data as WrappedEVMAccount )
-    }
+    // // build a warmupcache from the results we got 
+    // const warmupCache = new Map<string, WrappedEVMAccount>()
+    // for(const warmupAcc of warmupData){
+    //   warmupCache.set(warmupAcc.accountId, warmupAcc.data as WrappedEVMAccount )
+    // }
     preRunTxState._transactionState.warmupCache = warmupCache
 
     const customEVM = new EthereumVirtualMachine({
@@ -3110,6 +3110,16 @@ async function generateAccessList(
     nestedCountersInstance.countEvent('accesslist', `Local Fail: unknown`)
     return { accessList: [], shardusMemoryPatterns: null, codeHashes: [] }
   }
+}
+
+async function fetchAndCacheAccountData(shardusAddress:string, warmupCache: Map<string, WrappedEVMAccount>, useRICache = false) : Promise<void> {
+  const warmupAcc = await shardus.getLocalOrRemoteAccount(shardusAddress, {useRICache})
+
+  //TODO error checking here
+
+  nestedCountersInstance.countEvent('aalg-warmup', 'account warmed')
+
+  warmupCache.set(warmupAcc.accountId, warmupAcc.data as WrappedEVMAccount )
 }
 
 function getNodeCountForCertSignatures(): number {
