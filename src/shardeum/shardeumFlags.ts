@@ -115,6 +115,7 @@ interface ShardeumFlags {
   tryGetRemoteAccountCB_OnlyErrorsLoop: boolean
   expiredTransactionStateFix: boolean
   archiveMode: boolean
+  collectorUrl: string
 }
 
 export const ShardeumFlags: ShardeumFlags = {
@@ -261,6 +262,7 @@ export const ShardeumFlags: ShardeumFlags = {
   tryGetRemoteAccountCB_OnlyErrorsLoop: true,
   expiredTransactionStateFix: false,
   archiveMode: false,
+  collectorUrl: 'http://0.0.0.0:6001',
 }
 
 export function updateShardeumFlag(key: string, value: string | number | boolean): void {
