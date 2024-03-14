@@ -6460,10 +6460,6 @@ const shardusSetup = (): void => {
           nestedCountersInstance.countEvent('shardeum-staking', `node-refuted: event skipped`)
           /* prettier-ignore */ if (logFlags.dapp_verbose) console.log(`Shardeum node-refuted event skipped`, data, nodeRefutedCycle)
         }
-      } else if (
-        eventType === 'node-penalized'
-      ) {
-        await sendMessage(`🔴 Slashed! Penalty Imposed - ${data.reason}`, `${data.reason}:${data.cycle}`)
       }
     },
     async updateNetworkChangeQueue(account: WrappedAccount, appData: any) {

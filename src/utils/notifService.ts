@@ -20,10 +20,14 @@ export async function sendMessage(message: string, sentAlready: string = undefin
   }
 
   try {
-    await axios.post(`${notificationServer}/send-message`, {
+    const res = await axios.post(`${notificationServer}/send-message`, {
       message: message,
       token: messageToken,
     })
+    // Check status code
+    if (res.status !== 200) {
+      console.error('Error sending message:', res.status, res.data)
+    }
   } catch (error) {
     console.error('Error sending message:', error)
   }
