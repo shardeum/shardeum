@@ -20,7 +20,7 @@ export async function sendMessage(message: string, sentAlready: string = undefin
   }
 
   try {
-    const res = await axios.post(`${notificationServer}/send-message`, {
+    const res = await axios.post(`http://${notificationServer}:8082/api/send-message`, {
       message: message,
       token: messageToken,
     })
