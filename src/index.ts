@@ -6417,7 +6417,6 @@ const shardusSetup = (): void => {
             nodeDroppedTime: data.time,
           }
           nestedCountersInstance.countEvent('shardeum-staking', `node-left-early: injectPenaltyTx`)
-          await sendMessage(`🔴 Slashed! Penalty Imposed - Node left network early`)
           const result = await PenaltyTx.injectPenaltyTX(shardus, data, violationData)
           /* prettier-ignore */ if (logFlags.dapp_verbose) console.log('INJECTED_PENALTY_TX', result)
         } else {
@@ -6434,7 +6433,6 @@ const shardusSetup = (): void => {
           nodeDroppedTime: data.time,
         }
         nestedCountersInstance.countEvent('shardeum-staking', `node-sync-timeout: injectPenaltyTx`)
-        await sendMessage('🔴 Slashed! Penalty Imposed - Node took too long for syncing')
         const result = await PenaltyTx.injectPenaltyTX(shardus, data, violationData)
         /* prettier-ignore */ if (logFlags.dapp_verbose) console.log('INJECTED_PENALTY_TX', result)
       } else if (
@@ -6456,13 +6454,16 @@ const shardusSetup = (): void => {
             nodeRefutedTime: data.time,
           }
           nestedCountersInstance.countEvent('shardeum-staking', `node-refuted: injectPenaltyTx`)
-          await sendMessage('🔴 Slashed! Penalty Imposed - Node refuted')
           const result = await PenaltyTx.injectPenaltyTX(shardus, data, violationData)
           /* prettier-ignore */ if (logFlags.dapp_verbose) console.log('INJECTED_PENALTY_TX', result)
         } else {
           nestedCountersInstance.countEvent('shardeum-staking', `node-refuted: event skipped`)
           /* prettier-ignore */ if (logFlags.dapp_verbose) console.log(`Shardeum node-refuted event skipped`, data, nodeRefutedCycle)
         }
+      } else if (
+        eventType === 'node-penalized'
+      ) {
+        await sendMessage(`🔴 Slashed! Penalty Imposed - ${data.reason}`, `${data.reason}:${data.cycle}`)
       }
     },
     async updateNetworkChangeQueue(account: WrappedAccount, appData: any) {
@@ -6866,6 +6867,10 @@ export function shardeumGetTime(): number {
         expected += cycleInterval
         return setTimeout(networkMaintenance, Math.max(100, cycleInterval - drift))
       }
+
+      shardus.on('joined', async () => {
+        await sendMessage('🟡 Your node has started syncing! It should go active soon')
+      })
 
       shardus.on('active', async (): Promise<NodeJS.Timeout> => {
         await sendMessage(

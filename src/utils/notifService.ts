@@ -3,10 +3,20 @@ import axios from 'axios'
 const notificationServer = process.env.NOTIF_SERVER
 const messageToken = process.env.NOTIF_TOKEN
 
-export async function sendMessage(message: string): Promise<void> {
+const previousMessages: string[] = []
+
+export async function sendMessage(message: string, sentAlready: string = undefined): Promise<void> {
   if (!notificationServer || !messageToken) {
     console.error('Notification server not initialized. Missing required environment variables.')
     return
+  }
+
+  if (sentAlready) {
+    if (previousMessages.includes(sentAlready)) {
+      console.log('Message already sent:', sentAlready)
+      return
+    }
+    previousMessages.push(sentAlready)
   }
 
   try {
