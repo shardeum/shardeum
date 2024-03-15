@@ -114,7 +114,7 @@ interface ShardeumFlags {
   debugLocalAALG: boolean //run the AALG on this node to make it easier to debug in a large network
   tryGetRemoteAccountCB_OnlyErrorsLoop: boolean
   expiredTransactionStateFix: boolean
-  archiveMode: boolean
+  startInArchiveMode: boolean
   collectorUrl: string
 }
 
@@ -261,7 +261,7 @@ export const ShardeumFlags: ShardeumFlags = {
   debugLocalAALG: false,
   tryGetRemoteAccountCB_OnlyErrorsLoop: true,
   expiredTransactionStateFix: false,
-  archiveMode: false,
+  startInArchiveMode: false,
   collectorUrl: 'http://0.0.0.0:6001',
 }
 

@@ -13,6 +13,7 @@ import {
   toAscii,
   toBytes,
   hexToBytes,
+  isHexString,
 } from '@ethereumjs/util'
 import {
   AccessListEIP2930Transaction,
@@ -214,6 +215,10 @@ function isDebugMode(): boolean {
 
 export function isServiceMode(): boolean {
   return ShardeumFlags.startInServiceMode === true
+}
+
+export function isArchiverMode(): boolean {
+  return ShardeumFlags.startInArchiveMode === true && isServiceMode()
 }
 
 export function shouldLoadNetworkConfigToNetworkAccount(isFirstSeed: boolean): boolean {
@@ -1373,11 +1378,22 @@ const configShardusEndpoints = (): void => {
         if (address.length === 42) {
           shardusAddress = toShardusAddress(address, AccountType.Account)
         }
-        const account = await shardus.getLocalOrRemoteAccount(shardusAddress)
-        if (!account) {
-          return res.json({ account: null })
+        const hexBlockNumber = req.query.blockNumber as string
+        const hexBlockNumberStr = isHexString(hexBlockNumber) ? hexBlockNumber : null
+
+        let data: WrappedEVMAccount
+        if (isArchiverMode() && hexBlockNumberStr) {
+          data = await AccountsStorage.fetchAccountDataFromCollector(shardusAddress, hexBlockNumberStr)
+          if (!data) {
+            return res.json({ account: null })
+          }
+        } else {
+          const account = await shardus.getLocalOrRemoteAccount(shardusAddress)
+          if (!account) {
+            return res.json({ account: null })
+          }
+          data = account.data as WrappedEVMAccount
         }
-        const data = account.data as WrappedEVMAccount
         fixDeserializedWrappedEVMAccount(data)
         const readableAccount = await getReadableAccountInfo(data)
         if (readableAccount) return res.json({ account: readableAccount })
@@ -1410,11 +1426,26 @@ const configShardusEndpoints = (): void => {
     try {
       const address = req.query.address as string
       const shardusAddress = toShardusAddress(address, AccountType.Account)
-      const account = await shardus.getLocalOrRemoteAccount(shardusAddress)
-      if (!account || !account.data) {
-        return res.json({ contractCode: '0x' })
+
+      const hexBlockNumber = req.query.blockNumber as string
+      const hexBlockNumberStr = isHexString(hexBlockNumber) ? hexBlockNumber : null
+
+      let wrappedEVMAccount: WrappedEVMAccount
+      if (isArchiverMode() && hexBlockNumberStr) {
+        wrappedEVMAccount = await AccountsStorage.fetchAccountDataFromCollector(
+          shardusAddress,
+          hexBlockNumberStr
+        )
+        if (!wrappedEVMAccount) {
+          return res.json({ contractCode: '0x' })
+        }
+      } else {
+        const account = await shardus.getLocalOrRemoteAccount(shardusAddress)
+        if (!account || !account.data) {
+          return res.json({ contractCode: '0x' })
+        }
+        wrappedEVMAccount = account.data as WrappedEVMAccount
       }
-      const wrappedEVMAccount = account.data as WrappedEVMAccount
 
       fixDeserializedWrappedEVMAccount(wrappedEVMAccount)
 
@@ -1574,11 +1605,13 @@ const configShardusEndpoints = (): void => {
         //shardeumStateManager.setTransactionState(callTxState)
       }
 
+      let useLatestState = true
       if (callObj.block && callObj.block.number && callObj.block.timestamp) {
         const block = {
           number: parseInt(callObj.block.number, 16),
           timestamp: parseInt(callObj.block.timestamp, 16),
         }
+        if (callObj.block.useLatestState === false) useLatestState = false
         opt['block'] = createBlock(block.timestamp, block.number)
         if (ShardeumFlags.VerboseLogs) console.log(`Got block context from callObj`, block)
       } else {
@@ -1595,8 +1628,7 @@ const configShardusEndpoints = (): void => {
       }
 
       let callResult: EVMResult
-      const archiveMode = true
-      if (archiveMode) {
+      if (isArchiverMode() && useLatestState === false) {
         await runWithContextAsync(async () => {
           callResult = await customEVM.runCall(opt)
         }, requestContext)

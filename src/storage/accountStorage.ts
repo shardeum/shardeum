@@ -1,19 +1,13 @@
-import {
-  AccountType,
-  NetworkAccount,
-  WrappedEVMAccount,
-  WrappedEVMAccountMap,
-} from '../shardeum/shardeumTypes'
+import { NetworkAccount, WrappedEVMAccount, WrappedEVMAccountMap } from '../shardeum/shardeumTypes'
 
 import { ShardeumFlags } from '../shardeum/shardeumFlags'
 import Storage from '../storage/storage'
-import { DeSerializeFromJsonString, fixBigIntLiteralsToBigInt, _base16BNParser } from '../utils'
+import { DeSerializeFromJsonString, fixBigIntLiteralsToBigInt } from '../utils'
 import { networkAccount } from '../shardeum/shardeumConstants'
-import { isServiceMode } from '..'
+import { isArchiverMode, isServiceMode } from '..'
 import { logFlags } from '..'
 import { setCachedRIAccount } from './riAccountsCache'
 import { getContextValue } from '../utils/RequestContext'
-import config from '../config'
 import { shardusGet } from '../utils/requests'
 import { Block } from '@ethereumjs/block'
 
@@ -39,11 +33,11 @@ export async function lazyInit(): Promise<void> {
 
 // TODO: we should avoid API calls in the storage layer.
 // The scope of this call is limited and should be used only when archive mode is enabled.
-async function fetchAccountDataFromCollector(
-  address: string,
+export async function fetchAccountDataFromCollector(
+  accountId: string,
   blockNumberHex: string
 ): Promise<WrappedEVMAccount> {
-  const apiQuery = `${ShardeumFlags.collectorUrl}/api/account?accountId=${address}&blockNumber=${blockNumberHex}`
+  const apiQuery = `${ShardeumFlags.collectorUrl}/api/account?accountId=${accountId}&blockNumber=${blockNumberHex}`
   try {
     const response = await shardusGet<{
       success: boolean
@@ -52,27 +46,25 @@ async function fetchAccountDataFromCollector(
     if (!response.data.success) {
       throw new Error('Collector failed to return account data')
     }
-    if (response.data.accounts.length === 0) {
+    if (!response.data.accounts && response.data.accounts.length === 0) {
       throw new Error('Collector returned no account data')
     }
     return response.data.accounts[0].account
   } catch (error) {
-    /* prettier-ignore */ if (logFlags.important_as_fatal) console.log(`Error: while trying to fetch account data from collector`, error.message)
+    /* prettier-ignore */ if (logFlags.dapp_verbose) console.log(`Error: while trying to fetch account data from collector`, error.message)
     return null
   }
 }
 
 export async function getAccount(address: string): Promise<WrappedEVMAccount> {
-  if (ShardeumFlags.archiveMode === true) {
+  if (isArchiverMode()) {
     const blockContext = getContextValue<Block>('block')
     if (blockContext != undefined) {
       const accountData = await fetchAccountDataFromCollector(
         address,
         '0x' + blockContext.header.number.toString(16)
       )
-      if (accountData) {
-        return accountData
-      }
+      return accountData
     }
   }
   if (ShardeumFlags.UseDBForAccounts === true) {
