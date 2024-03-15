@@ -68,6 +68,16 @@ export interface ContractByteWrite {
   codeHash: Uint8Array
   contractAddress: Address
 }
+export interface WarmupStats {
+  accReq: number
+  accRcvd: number
+  accRcvdNull: number
+  accReqErr: number
+  cacheHit: number
+  cacheMiss: number
+  cacheEmpty: number
+  cacheEmptyReqMiss: number
+}
 
 export default class TransactionState {
   //Shardus TXID
@@ -110,6 +120,7 @@ export default class TransactionState {
   appData: unknown
 
   warmupCache: Map<string, WrappedEVMAccount>
+  warmupStats: WarmupStats
 
   // callbacks
   accountMissCB: accountEvent
