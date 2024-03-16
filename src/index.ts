@@ -559,51 +559,46 @@ async function contractStorageMiss(): Promise<boolean> {
 }
 
 /**
- * This callback is called so that we can notify shardus global server that the TX needs to access
- * an account.  If the shardus queueEntry has not involved the account yet there is a chance the call
- * will fail in a way that we need to bubble an Error to halt the evm and fail the TX
- * @param linkedTX
- * @param address
- * @param isRead
- * @returns
+ * Ensures that a specific account is marked as involved in the current transaction within the shardus.
+ * The function checks if the account is already considered by the transaction's queue entry.
+ * If not, it attempts to mark the account as involved. If the account has a newer cache timestamp than the transaction,
+ * indicating state changes after the transaction was initiated, the function will halt execution by returning false,
+ * signaling that the transaction must fail. See `shardus.checkAccountTimestamps`
+ * @param transactionState The state object of the current transaction.
+ * @param address The blockchain address of the account.
+ * @param isRead A flag indicating if the operation is a read operation.
+ * @returns A boolean indicating if the account could be successfully involved without causing a transaction failure.
  */
 function accountInvolved(transactionState: TransactionState, address: string, isRead: boolean): boolean {
-  //TODO: this will call into shardus global and make sure this TX can continue execution given
-  // that we may need to invove an additional account
+  // TODO: Shard Hopping for transaction continuity
+  //  Before inserting this transaction (tx) into the queue of a consensus group for an additional key,
+  //  verify no conflicting transactions exist for that key. We use `tryInvolveAccount` to check the target shard's
+  //  queue for any related transactions. Proceed with insertion only if no conflicts are detected.
+  const txID = transactionState.linkedTX;
 
-  const txID = transactionState.linkedTX
-
-  //Need to translate address to a shardus-global-server space address!
-  // let shardusAddress = toShardusAddress(address, AccountType.Account)
-
-  // shardus.accountInvolved will look at the TXID to find the correct queue entry
-  //  then it will see if the queueEntry already knows of this account
-  //    if it has not seen this account it will test if we can add this account to the queue entry
-  //      The test for this is to see if the involved account has a newer cache timestamp than this TXid
-  //        If it fails the test we need to return a faliure code or assert
-  //See documentation for details
   if (shardus.tryInvolveAccount != null) {
     const shardusAddress = toShardusAddress(address, AccountType.Account)
 
     const success = shardus.tryInvolveAccount(txID, shardusAddress, isRead)
     if (success === false) {
-      // transactionState will throw an error and halt the evm
+      // Indicates the transaction must fail due to state inconsistencies.
       return false
     }
   }
-
   return true
 }
 
 /**
- * This callback is called so that we can notify shardus global server that the TX needs to access
- * an account.  If the shardus queueEntry has not involved the account yet there is a chance the call
- * will fail in a way that we need to bubble an Error to halt the evm and fail the TX
- * @param linkedTX
- * @param address
- * @param key
- * @param isRead
- * @returns
+ * Similar to `accountInvolved`, but specifically for contract storage keys. This function ensures
+ * a storage key within a contract is marked as involved in the current transaction.
+ * The function attempts to involve a contract storage key in the transaction's queue entry. If the storage
+ * key has a newer cache timestamp than the transaction, indicating state changes after the transaction's initiation,
+ * the function will halt execution by returning false, signaling that the transaction must fail. See `shardus.checkAccountTimestamps`
+ * @param transactionState The state object of the current transaction.
+ * @param address The blockchain address of the contract.
+ * @param key The specific key within the contract's storage to check.
+ * @param isRead A flag indicating if the operation is a read operation.
+ * @returns A boolean indicating if the contract storage key could be successfully involved without causing a transaction failure.
  */
 function contractStorageInvolved(
   transactionState: TransactionState,
@@ -611,23 +606,18 @@ function contractStorageInvolved(
   key: string,
   isRead: boolean
 ): boolean {
-  //TODO: this will call into shardus global and make sure this TX can continue execution given
-  // that we may need to invove an additional key
-
+  // TODO: Shard Hopping for transaction continuity
+  //  Before inserting this transaction (tx) into the queue of a consensus group for an additional key,
+  //  verify no conflicting transactions exist for that key. We use `tryInvolveAccount` to check the target shard's
+  //  queue for any related transactions. Proceed with insertion only if no conflicts are detected.
   const txID = transactionState.linkedTX
 
-  //Need to translate key (or a combination of hashing address+key) to a shardus-global-server space address!
-
-  //See documentation for details
-  //Note we will have 3-4 different account types where accountInvolved gets called (depending on how we handle Receipts),
-  // but they will all call the same shardus.accountInvolved() and shardus will not know of the different account types
   if (shardus.tryInvolveAccount != null) {
-    //let shardusAddress = toShardusAddress(key, AccountType.ContractStorage)
     const shardusAddress = toShardusAddressWithKey(address, key, AccountType.ContractStorage)
 
     const success = shardus.tryInvolveAccount(txID, shardusAddress, isRead)
     if (success === false) {
-      // transactionState will throw an error and halt the evm
+      // Indicates the transaction must fail due to state inconsistencies
       return false
     }
   }
