@@ -39,7 +39,7 @@ import {
   Shardus,
   DevSecurityLevel,
 } from '@shardus/core'
-import { ContractByteWrite } from './state/transactionState'
+import { ContractByteWrite, WarmupStats } from './state/transactionState'
 import { version, devDependencies } from '../package.json'
 import {
   AccountType,
@@ -693,6 +693,7 @@ async function tryGetRemoteAccountCB(
   address: string,
   key: string
 ): Promise<WrappedEVMAccount> {
+
   let retry = 0
   let maxRetry = 1 // default for contract storage accounts
   if (type === AccountType.Account) maxRetry = 2 // for CA accounts
@@ -700,11 +701,42 @@ async function tryGetRemoteAccountCB(
 
   const shardusAddress = toShardusAddressWithKey(address, key, type)
   let remoteShardusAccount
+
+  const txid = transactionState.linkedTX
+  //utilize warm up cache that lives on a TransactionState object
+  if(transactionState?.warmupCache != null){
+    if(transactionState.warmupCache.has(shardusAddress)){
+      const fixedEVMAccount = transactionState.warmupCache.get(shardusAddress)
+      if(fixedEVMAccount !== null){
+        fixDeserializedWrappedEVMAccount(fixedEVMAccount)   
+        nestedCountersInstance.countEvent('aalg-warmup', 'cache hit')
+        console.log('aalg-hit', txid, shardusAddress, address, key, type)
+        transactionState.warmupStats.cacheHit++
+        return fixedEVMAccount   
+      } 
+      if (fixedEVMAccount === null){
+        nestedCountersInstance.countEvent('aalg-warmup', 'cache slot empty')
+        transactionState.warmupStats.cacheEmpty++
+        console.log('aalg-empty', txid, shardusAddress, address, key, type)
+      }
+      if (fixedEVMAccount === undefined){
+        nestedCountersInstance.countEvent('aalg-warmup', 'cache slot empty-reqmiss')
+        transactionState.warmupStats.cacheEmptyReqMiss++
+        console.log('aalg-empty-reqmiss', txid, shardusAddress, address, key, type)
+      }    
+    } else {
+      nestedCountersInstance.countEvent('aalg-warmup', 'cache miss')
+      transactionState.warmupStats.cacheMiss++
+      console.log('aalg-miss', txid, shardusAddress, address, key, type)
+    }
+  }
+
   while (retry < maxRetry && remoteShardusAccount == null) {
     //getLocalOrRemoteAccount can throw if the remote node gives us issues
     //we want to catch these and retry
     try {
-      /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`${Date.now()} Trying to get remote account for address: ${address}, type: ${type}, key: ${key} retry: ${retry}`)
+      /* prettier-ignore */ //if (ShardeumFlags.VerboseLogs) 
+      console.log(`${Date.now()} Trying to get remote account for address: ${address}, type: ${type}, key: ${key} retry: ${retry}`)
       retry++
       remoteShardusAccount = await shardus.getLocalOrRemoteAccount(shardusAddress, {
         useRICache: true,
@@ -1102,6 +1134,13 @@ const configShardusEndpoints = (): void => {
 
   shardus.registerExternalPost('inject', externalApiMiddleware, async (req, res) => {
     const tx = req.body
+    const appData = null 
+    await handleInject(tx, appData, res)
+  })
+
+
+  async function handleInject(tx, appData, res) : Promise<void> {
+
     if (ShardeumFlags.VerboseLogs) console.log('Transaction injected:', new Date(), tx)
 
     let numActiveNodes = 0
@@ -1109,19 +1148,21 @@ const configShardusEndpoints = (): void => {
       // Reject transaction if network is paused
       const networkAccount = AccountsStorage.cachedNetworkAccount
       if (networkAccount == null || networkAccount.current == null) {
-        return res.json({
+        res.json({
           success: false,
           reason: `Node not ready for inject, waiting for network account data.`,
           status: 500,
         })
+        return
       }
 
       if (networkAccount.current.txPause && !isInternalTx(tx)) {
-        return res.json({
+        res.json({
           success: false,
           reason: `Network will not accept EVM tx until it has at least ${ShardeumFlags.minNodesEVMtx} active node in the network. numActiveNodes: ${numActiveNodes}`,
           status: 500,
         })
+        return
       }
 
       numActiveNodes = shardus.getNumActiveNodes()
@@ -1160,7 +1201,7 @@ const configShardusEndpoints = (): void => {
         })
       } else {
         //normal case, we will put this transaction into the shardus queue
-        const response = await shardus.put(tx)
+        const response = await shardus.put(tx, false, false, appData)
         res.json(response)
       }
     } catch (err) {
@@ -1175,6 +1216,16 @@ const configShardusEndpoints = (): void => {
         /* prettier-ignore */ if (logFlags.error) console.log('Failed to respond to inject tx: ', e)
       }
     }
+
+  }
+
+  shardus.registerExternalPost('inject-with-warmup', externalApiMiddleware, async (req, res) => {
+    const {tx, warmupList} = req.body
+    let appData = null 
+    if(warmupList != null){
+      appData = {warmupList}
+    }
+    await handleInject(tx, appData, res)
   })
 
   shardus.registerExternalGet('eth_blockNumber', externalApiMiddleware, async (req, res) => {
@@ -1661,7 +1712,7 @@ const configShardusEndpoints = (): void => {
       const injectedTx = req.body
       if (ShardeumFlags.VerboseLogs) console.log('AccessList endpoint injectedTx', injectedTx)
 
-      const result = await generateAccessList(injectedTx)
+      const result = await generateAccessList(injectedTx, {accessList:[], codeHashes:[]}, '/accesslist')
 
       res.json(result)
     } catch (e) {
@@ -1669,6 +1720,31 @@ const configShardusEndpoints = (): void => {
       return res.json([])
     }
   })
+
+  shardus.registerExternalPost('contract/accesslist-warmup', externalApiMiddleware, async (req, res) => {
+    if (
+      trySpendServicePoints(
+        ShardeumFlags.ServicePoints['contract/accesslist'].endpoint,
+        req,
+        'accesslist'
+      ) === false
+    ) {
+      return res.json({ result: null, error: 'node busy' })
+    }
+
+    try {
+      const {injectedTx, warmupList} = req.body
+      if (ShardeumFlags.VerboseLogs) console.log('accesslist-warmup endpoint injectedTx', injectedTx)
+
+      const result = await generateAccessList(injectedTx, warmupList, '/accesslist-warmup')
+
+      res.json(result)
+    } catch (e) {
+      if (ShardeumFlags.VerboseLogs) console.log('Error predict accessList warmup', e)
+      return res.json([])
+    }
+  })
+
 
   shardus.registerExternalPost('contract/estimateGas', externalApiMiddleware, async (req, res) => {
     if (
@@ -2704,12 +2780,14 @@ async function estimateGas(
 type CodeHashObj = { codeHash: string; contractAddress: string }
 
 async function generateAccessList(
-  injectedTx: ShardusTypes.OpaqueTransaction
+  injectedTx: ShardusTypes.OpaqueTransaction,
+  warmupList: {accessList:any[], codeHashes: CodeHashObj[]},
+  caller: string
 ): Promise<{
   shardusMemoryPatterns: null
   failedAccessList?: boolean
   accessList: any[]
-  codeHashes: any[]
+  codeHashes: CodeHashObj[]
 }> {
   try {
     const transaction = getTransactionObj(injectedTx)
@@ -2730,8 +2808,8 @@ async function generateAccessList(
           /* prettier-ignore */ if (logFlags.dapp_verbose) console.log(`Node is in remote shard: requesting`)
 
           const postResp = await _internalHackPostWithResp(
-            `${consensusNode.externalIp}:${consensusNode.externalPort}/contract/accesslist`,
-            injectedTx
+            `${consensusNode.externalIp}:${consensusNode.externalPort}/contract/accesslist-warmup`,
+            {injectedTx, warmupList}
           )
           /* prettier-ignore */ if (logFlags.dapp_verbose) console.log('Accesslist response from node', consensusNode.externalPort, postResp.body)
           if (postResp.body != null && postResp.body != '' && postResp.body.accessList != null) {
@@ -2800,6 +2878,61 @@ async function generateAccessList(
       callerAccount ? callerAccount.account : fakeAccount // todo: using fake account may not work in new ethereumJS
     )
 
+    const warmupCache = new Map<string, WrappedEVMAccount>() 
+
+    const warmupStats: WarmupStats = {
+      accReq: 0, accRcvd: 0, accRcvdNull: 0, accReqErr: 0, cacheHit: 0, cacheMiss: 0, cacheEmpty: 0,
+      cacheEmptyReqMiss: 0
+    }
+    //const promises:Promise<ShardusTypes.WrappedDataFromQueue>[] = []
+    //use warmupList to fetch data in parallel.  We will feed this in as cache inputs to the transaction 
+    //state 
+    if(warmupList != null && warmupList.codeHashes?.length > 0 && warmupList.accessList?.length > 0){
+      for(const codeHashObj of warmupList.codeHashes){
+        const shardusAddr = toShardusAddressWithKey(
+          codeHashObj.contractAddress,
+          codeHashObj.codeHash,
+          AccountType.ContractCode
+        )
+        //promises.push(shardus.getLocalOrRemoteAccount(shardusAddr, {useRICache:true}))
+        fetchAndCacheAccountData(shardusAddr, warmupCache, warmupStats, true, txId, AccountType.ContractCode )
+      }
+      for(const accesListTuple of warmupList.accessList){
+        const contractAddress = accesListTuple[0]
+        const storageArray = accesListTuple[1]
+
+        const shardusContractAddr = toShardusAddress(contractAddress, AccountType.Account)
+        //promises.push(shardus.getLocalOrRemoteAccount(shardusContractAddr))
+        fetchAndCacheAccountData(shardusContractAddr, warmupCache, warmupStats, false, txId, AccountType.Account)
+        for(const storageAddr of storageArray){
+          const shardusStorageAddr = toShardusAddressWithKey(
+            contractAddress,
+            storageAddr,
+            AccountType.ContractStorage
+          )
+          //promises.push(shardus.getLocalOrRemoteAccount(shardusStorageAddr))
+          fetchAndCacheAccountData(shardusStorageAddr, warmupCache, warmupStats, false, txId, AccountType.ContractStorage)
+        }
+      }
+    }
+
+    await sleep(ShardeumFlags.aalgWarmupSleep)
+
+    //Await all the promises.  TODO more advanced wait that is fault tolerant 
+    // const warmupData = await Promise.all(promises)
+
+    // // build a warmupcache from the results we got 
+    // const warmupCache = new Map<string, WrappedEVMAccount>()
+    // for(const warmupAcc of warmupData){
+    //   warmupCache.set(warmupAcc.accountId, warmupAcc.data as WrappedEVMAccount )
+    // }
+    preRunTxState._transactionState.warmupCache = warmupCache
+    preRunTxState._transactionState.warmupStats = warmupStats
+
+    if(warmupList != null){
+      console.log(`warmup results, before:`, caller, txId, JSON.stringify(warmupStats, null, 2))
+    }
+
     const customEVM = new EthereumVirtualMachine({
       common: evmCommon,
       stateManager: preRunTxState,
@@ -2825,6 +2958,11 @@ async function generateAccessList(
       customEVM,
       txId
     )
+
+    if(warmupList != null){
+      console.log(`warmup results, after:`, caller, txId, JSON.stringify(warmupStats, null, 2))
+      //todo compare warmupList to access list 
+    }
 
     const readAccounts = preRunTxState._transactionState.getReadAccounts()
     const writtenAccounts = preRunTxState._transactionState.getWrittenAccounts()
@@ -2946,7 +3084,7 @@ async function generateAccessList(
     const allCodeHash = new Map<string, CodeHashObj>()
 
     for (const address of allInvolvedContracts) {
-      const allKeys = new Set()
+      const allKeys = new Set<string>()
       const readKeysMap = readAccounts.contractStorages.get(address)
       const writeKeyMap = writtenAccounts.contractStorages.get(address)
       if (readKeysMap) {
@@ -2962,7 +3100,7 @@ async function generateAccessList(
       }
 
       //this is moved before we process contract bytes so that only storage accounts are added to the access list
-      const accessListItem = [address, Array.from(allKeys).map((key) => key)]
+      const accessListItem = [address, Array.from(allKeys)]
       accessList.push(accessListItem)
 
       for (const [codeHash, byteReads] of readAccounts.contractBytes) {
@@ -3008,6 +3146,35 @@ async function generateAccessList(
     console.log(`Error: generateAccessList`, e)
     nestedCountersInstance.countEvent('accesslist', `Local Fail: unknown`)
     return { accessList: [], shardusMemoryPatterns: null, codeHashes: [] }
+  }
+}
+
+async function fetchAndCacheAccountData(shardusAddress:string, warmupCache: Map<string, WrappedEVMAccount>, warmupStats:WarmupStats, useRICache:boolean, txid:string, type:AccountType) : Promise<void> {
+  warmupStats.accReq++
+  
+  const startTime = Date.now()
+  console.log('fetchAndCacheAccountData-enter', txid, shardusAddress, type)
+  warmupCache.set(shardusAddress, undefined ) //set undefined to indicate we want to fetch this
+  
+  try{
+    const warmupAcc = await shardus.getLocalOrRemoteAccount(shardusAddress, {useRICache, canThrowException: true})
+    const elapsed = Date.now() - startTime
+    if(warmupAcc == null){
+      warmupStats.accRcvdNull++
+      nestedCountersInstance.countEvent('aalg-warmup', 'account warmed-empty')
+      console.log('fetchAndCacheAccountData-null',elapsed, txid, shardusAddress, type)
+      warmupCache.set(shardusAddress, null )//could we init with undefined?
+    } else {
+      nestedCountersInstance.countEvent('aalg-warmup', 'account warmed')
+      warmupCache.set(shardusAddress, warmupAcc.data as WrappedEVMAccount )
+      warmupStats.accRcvd++
+      console.log('fetchAndCacheAccountData-got',elapsed, txid, shardusAddress, type)
+    }
+  } catch(er){
+    const elapsed = Date.now() - startTime
+    warmupStats.accReqErr++
+    nestedCountersInstance.countEvent('aalg-warmup', `account er: ${er.message}`)
+    console.log('fetchAndCacheAccountData-error',elapsed, txid, shardusAddress, type)
   }
 }
 
@@ -4258,7 +4425,7 @@ const shardusSetup = (): void => {
               failedAccessList,
               accessList: generatedAccessList,
               codeHashes,
-            } = await generateAccessList(tx)
+            } = await generateAccessList(tx, appData?.warmupList, 'txPrecrackData')
             profilerInstance.scopedProfileSectionEnd('accesslist-generate')
 
             console.log(
