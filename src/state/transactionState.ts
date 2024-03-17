@@ -250,7 +250,7 @@ export default class TransactionState {
 
     this.checkpointCount = 0
 
-    this.warmupCache = new Map()
+    this.warmupCache = null //
   }
 
   getReadAccounts(): {

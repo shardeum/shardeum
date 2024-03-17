@@ -703,29 +703,31 @@ async function tryGetRemoteAccountCB(
 
   const txid = transactionState.linkedTX
   //utilize warm up cache that lives on a TransactionState object
-  if(transactionState?.warmupCache && transactionState.warmupCache.has(shardusAddress)){
-    const fixedEVMAccount = transactionState.warmupCache.get(shardusAddress)
-    if(fixedEVMAccount !== null){
-      fixDeserializedWrappedEVMAccount(fixedEVMAccount)   
-      nestedCountersInstance.countEvent('aalg-warmup', 'cache hit')
-      console.log('aalg-hit', txid, shardusAddress, address, key, type)
-      transactionState.warmupStats.cacheHit++
-      return fixedEVMAccount   
-    } 
-    if (fixedEVMAccount === null){
-      nestedCountersInstance.countEvent('aalg-warmup', 'cache slot empty')
-      transactionState.warmupStats.cacheEmpty++
-      console.log('aalg-empty', txid, shardusAddress, address, key, type)
+  if(transactionState?.warmupCache != null){
+    if(transactionState.warmupCache.has(shardusAddress)){
+      const fixedEVMAccount = transactionState.warmupCache.get(shardusAddress)
+      if(fixedEVMAccount !== null){
+        fixDeserializedWrappedEVMAccount(fixedEVMAccount)   
+        nestedCountersInstance.countEvent('aalg-warmup', 'cache hit')
+        console.log('aalg-hit', txid, shardusAddress, address, key, type)
+        transactionState.warmupStats.cacheHit++
+        return fixedEVMAccount   
+      } 
+      if (fixedEVMAccount === null){
+        nestedCountersInstance.countEvent('aalg-warmup', 'cache slot empty')
+        transactionState.warmupStats.cacheEmpty++
+        console.log('aalg-empty', txid, shardusAddress, address, key, type)
+      }
+      if (fixedEVMAccount === undefined){
+        nestedCountersInstance.countEvent('aalg-warmup', 'cache slot empty-reqmiss')
+        transactionState.warmupStats.cacheEmptyReqMiss++
+        console.log('aalg-empty-reqmiss', txid, shardusAddress, address, key, type)
+      }    
+    } else {
+      nestedCountersInstance.countEvent('aalg-warmup', 'cache miss')
+      transactionState.warmupStats.cacheMiss++
+      console.log('aalg-miss', txid, shardusAddress, address, key, type)
     }
-    if (fixedEVMAccount === undefined){
-      nestedCountersInstance.countEvent('aalg-warmup', 'cache slot empty-reqmiss')
-      transactionState.warmupStats.cacheEmptyReqMiss++
-      console.log('aalg-empty-reqmiss', txid, shardusAddress, address, key, type)
-    }    
-  } else {
-    nestedCountersInstance.countEvent('aalg-warmup', 'cache miss')
-    transactionState.warmupStats.cacheMiss++
-    console.log('aalg-miss', txid, shardusAddress, address, key, type)
   }
 
   while (retry < maxRetry && remoteShardusAccount == null) {
