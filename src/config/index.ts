@@ -128,6 +128,7 @@ config = merge(config, {
       maxJoinedPerCycle: 10,
       maxSyncingPerCycle: 10,
       maxRotatedPerCycle: process.env.maxRotatedPerCycle ? parseInt(process.env.maxRotatedPerCycle) : 1,
+      enableMaxStandbyCount: true,
       maxStandbyCount: 30000, //max allowed standby nodes count
       firstCycleJoin: 0,
       maxSyncTimeFloor: 1200, //Using 6000 for a restore from archiver, then set config at runtime back to 1200
@@ -137,7 +138,7 @@ config = merge(config, {
       amountToShrink: 5,
       maxDesiredMultiplier: 1.2,
       maxScaleReqs: 250, // todo: this will become a variable config but this should work for a 500 node demo
-      forceBogonFilteringOn: true,
+      forceBogonFilteringOn: false,
       //these are new feature in 1.3.0, we can make them default:true in shardus-core later
 
       // 1.2.3 migration starts
@@ -251,7 +252,7 @@ config = merge(
   config,
   {
     server: {
-      mode: 'release', // todo: must set this to "release" for public networks or get security on endpoints. use "debug"
+      mode: 'debug', // todo: must set this to "release" for public networks or get security on endpoints. use "debug"
       // for easier debugging
       debug: {
         startInFatalsLogMode: false, // true setting good for big aws test with nodes joining under stress.
@@ -265,10 +266,9 @@ config = merge(
           // '': DevSecurityLevel.Unauthorized,
           // These are production keys.  Use 'git apply use_test_key.patch' for unsafe local test keys
           // Never merge a commit with changes to these lines without approval.
-          'a45f9a87e10d6dbd88c141e4fb293f96ab30441cbb77a4b04c577ba18d393505': DevSecurityLevel.Low,
-          'b51124e6d01e0684ff2b86eac9433d585a17319f15b393c8e4426af19117f704': DevSecurityLevel.Medium,
-          //this last line needs command to ignore auto formatting or prettier will strip the quotes!!
-          /* prettier-ignore */ 'c980f4dbdd40a9d334b3815b223e83d27e227892a109413e4bc114e8220bd281': DevSecurityLevel.High,
+          //'UNSAFE KEYS IN USE DO NOT CHECK IN': DevSecurityLevel.Low,
+          //'UNSAFE KEYS IN USE DO NOT CHECK IN': DevSecurityLevel.Medium,
+          '774491f80f47fedb119bb861601490f42bc3ea3b57fc63906c0d08e6d777a592': DevSecurityLevel.High,
         },
         checkAddressFormat: true, //enabled for 1.10.0
         enableCycleRecordDebugTool: false, // only enable if you want to debug variant cycle records
