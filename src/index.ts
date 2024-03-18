@@ -1220,8 +1220,7 @@ const configShardusEndpoints = (): void => {
     /* eslint-disable security/detect-object-injection */
     let blockHash = req.query.blockHash as string
     if (blockHash === 'latest') blockHash = readableBlocks[latestBlock].hash
-    else if (blockHash.length === 66) blockHash = readableBlocks[latestBlock].hash
-    else return res.json({ error: 'Invalid block hash' })
+    else if (blockHash.length !== 66) return res.json({ error: 'Invalid block hash' })
     if (ShardeumFlags.VerboseLogs) console.log('Req: eth_getBlockByHash', blockHash)
     const blockNumber = blocksByHash[blockHash]
     return res.json({ block: readableBlocks[blockNumber] })
