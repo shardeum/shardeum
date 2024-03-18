@@ -1198,34 +1198,32 @@ const configShardusEndpoints = (): void => {
   })
 
   shardus.registerExternalGet('eth_getBlockByNumber', externalApiMiddleware, async (req, res) => {
-    const blockNumberParam = req.query.blockNumber
+    const blockNumberParam = req.query.blockNumber as string
     let blockNumber: number | string
-
     if (blockNumberParam === 'latest' || blockNumberParam === 'earliest') {
       blockNumber = blockNumberParam
-    } else if (typeof blockNumberParam === 'number' && blockNumberParam >= 0) {
-      blockNumber = blockNumberParam
+    } else {
+      blockNumber = parseInt(blockNumberParam)
+      if (Number.isNaN(blockNumber) || blockNumber < 0) {
+        return res.json({ error: 'Invalid block number' })
+      }
     }
-
+    if (ShardeumFlags.VerboseLogs) console.log('Req: eth_getBlockByNumber', blockNumber, latestBlock)
     if (blockNumber === 'latest') blockNumber = latestBlock
     if (blockNumber === 'earliest') {
-      const readableBlockValues = Object.values(readableBlocks)
-      return res.json({ block: readableBlockValues[0] }) // eslint-disable-line security/detect-object-injection
-    }
-    if (ShardeumFlags.VerboseLogs) console.log('Req: eth_getBlockByNumber', blockNumber)
-    if (blockNumber == null) {
-      return res.json({ error: 'Invalid block number' })
+      return res.json({ block: readableBlocks[Object.keys(readableBlocks)[0]] }) // eslint-disable-line security/detect-object-injection
     }
     return res.json({ block: readableBlocks[blockNumber] }) // eslint-disable-line security/detect-object-injection
   })
 
   shardus.registerExternalGet('eth_getBlockByHash', externalApiMiddleware, async (req, res) => {
     /* eslint-disable security/detect-object-injection */
-    let blockHash = req.query.blockHash
+    let blockHash = req.query.blockHash as string
     if (blockHash === 'latest') blockHash = readableBlocks[latestBlock].hash
+    else if (blockHash.length === 66) blockHash = readableBlocks[latestBlock].hash
+    else return res.json({ error: 'Invalid block hash' })
     if (ShardeumFlags.VerboseLogs) console.log('Req: eth_getBlockByHash', blockHash)
-    let blockNumber: number
-    if (typeof blockHash === 'string') blockNumber = blocksByHash[blockHash]
+    const blockNumber = blocksByHash[blockHash]
     return res.json({ block: readableBlocks[blockNumber] })
     /* eslint-enable security/detect-object-injection */
   })
