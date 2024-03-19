@@ -258,9 +258,10 @@ export const ShardeumFlags: ShardeumFlags = {
   debugLocalAALG: false,
   tryGetRemoteAccountCB_OnlyErrorsLoop: true,
 
-  expiredTransactionStateFix: false,
-
   aalgWarmupSleep: 1000,
+
+  //migration in 1.10.2
+  expiredTransactionStateFix: true
 }
 
 export function updateShardeumFlag(key: string, value: string | number | boolean): void {
