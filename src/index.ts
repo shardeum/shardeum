@@ -179,6 +179,7 @@ export let logFlags = {
   fatal: true,
   important_as_error: true,
   important_as_fatal: true,
+  aalg: false
 }
 
 // Read the CLI and GUI versions and save them in memory
@@ -710,24 +711,24 @@ async function tryGetRemoteAccountCB(
       if(fixedEVMAccount !== null){
         fixDeserializedWrappedEVMAccount(fixedEVMAccount)   
         nestedCountersInstance.countEvent('aalg-warmup', 'cache hit')
-        console.log('aalg-hit', txid, shardusAddress, address, key, type)
+        if(logFlags.aalg) console.log('aalg-hit', txid, shardusAddress, address, key, type)
         transactionState.warmupStats.cacheHit++
         return fixedEVMAccount   
       } 
       if (fixedEVMAccount === null){
         nestedCountersInstance.countEvent('aalg-warmup', 'cache slot empty')
         transactionState.warmupStats.cacheEmpty++
-        console.log('aalg-empty', txid, shardusAddress, address, key, type)
+        if(logFlags.aalg) console.log('aalg-empty', txid, shardusAddress, address, key, type)
       }
       if (fixedEVMAccount === undefined){
         nestedCountersInstance.countEvent('aalg-warmup', 'cache slot empty-reqmiss')
         transactionState.warmupStats.cacheEmptyReqMiss++
-        console.log('aalg-empty-reqmiss', txid, shardusAddress, address, key, type)
+        if(logFlags.aalg) console.log('aalg-empty-reqmiss', txid, shardusAddress, address, key, type)
       }    
     } else {
       nestedCountersInstance.countEvent('aalg-warmup', 'cache miss')
       transactionState.warmupStats.cacheMiss++
-      console.log('aalg-miss', txid, shardusAddress, address, key, type)
+      if(logFlags.aalg) console.log('aalg-miss', txid, shardusAddress, address, key, type)
     }
   }
 
@@ -736,7 +737,7 @@ async function tryGetRemoteAccountCB(
     //we want to catch these and retry
     try {
       /* prettier-ignore */ //if (ShardeumFlags.VerboseLogs) 
-      console.log(`${Date.now()} Trying to get remote account for address: ${address}, type: ${type}, key: ${key} retry: ${retry}`)
+      /* prettier-ignore */ if(logFlags.aalg) console.log(`${Date.now()} Trying to get remote account for address: ${address}, type: ${type}, key: ${key} retry: ${retry}`)
       retry++
       remoteShardusAccount = await shardus.getLocalOrRemoteAccount(shardusAddress, {
         useRICache: true,
@@ -1734,13 +1735,13 @@ const configShardusEndpoints = (): void => {
 
     try {
       const {injectedTx, warmupList} = req.body
-      if (ShardeumFlags.VerboseLogs) console.log('accesslist-warmup endpoint injectedTx', injectedTx)
+      /* prettier-ignore */ if(logFlags.aalg) console.log('accesslist-warmup endpoint injectedTx', injectedTx)
 
       const result = await generateAccessList(injectedTx, warmupList, '/accesslist-warmup')
 
       res.json(result)
     } catch (e) {
-      if (ShardeumFlags.VerboseLogs) console.log('Error predict accessList warmup', e)
+      /* prettier-ignore */ if(logFlags.aalg) console.log('Error predict accessList warmup', e)
       return res.json([])
     }
   })
@@ -2930,7 +2931,7 @@ async function generateAccessList(
     preRunTxState._transactionState.warmupStats = warmupStats
 
     if(warmupList != null){
-      console.log(`warmup results, before:`, caller, txId, JSON.stringify(warmupStats, null, 2))
+      /* prettier-ignore */ if(logFlags.aalg) console.log(`warmup results, before:`, caller, txId, JSON.stringify(warmupStats, null, 2))
     }
 
     const customEVM = new EthereumVirtualMachine({
@@ -2960,8 +2961,9 @@ async function generateAccessList(
     )
 
     if(warmupList != null){
-      console.log(`warmup results, after:`, caller, txId, JSON.stringify(warmupStats, null, 2))
-      //todo compare warmupList to access list 
+      /* prettier-ignore */ if(logFlags.aalg) console.log(`warmup results, after:`, caller, txId, JSON.stringify(warmupStats, null, 2))
+      //This logging could be better if we compare the warmup list to the access list generated and give it a score.
+      //potentially can use this for future machine learning feedback to improve aalg-warmup input lists
     }
 
     const readAccounts = preRunTxState._transactionState.getReadAccounts()
@@ -3143,7 +3145,7 @@ async function generateAccessList(
       failedAccessList: isEmptyCodeHash,
     }
   } catch (e) {
-    console.log(`Error: generateAccessList`, e)
+    /* prettier-ignore */ if(logFlags.aalg) console.log(`Error: generateAccessList`, e)
     nestedCountersInstance.countEvent('accesslist', `Local Fail: unknown`)
     return { accessList: [], shardusMemoryPatterns: null, codeHashes: [] }
   }
@@ -3153,7 +3155,7 @@ async function fetchAndCacheAccountData(shardusAddress:string, warmupCache: Map<
   warmupStats.accReq++
   
   const startTime = Date.now()
-  console.log('fetchAndCacheAccountData-enter', txid, shardusAddress, type)
+  /* prettier-ignore */ if(logFlags.aalg) console.log('fetchAndCacheAccountData-enter', txid, shardusAddress, type)
   warmupCache.set(shardusAddress, undefined ) //set undefined to indicate we want to fetch this
   
   try{
@@ -3162,19 +3164,19 @@ async function fetchAndCacheAccountData(shardusAddress:string, warmupCache: Map<
     if(warmupAcc == null){
       warmupStats.accRcvdNull++
       nestedCountersInstance.countEvent('aalg-warmup', 'account warmed-empty')
-      console.log('fetchAndCacheAccountData-null',elapsed, txid, shardusAddress, type)
+      /* prettier-ignore */ if(logFlags.aalg) console.log('fetchAndCacheAccountData-null',elapsed, txid, shardusAddress, type)
       warmupCache.set(shardusAddress, null )//could we init with undefined?
     } else {
       nestedCountersInstance.countEvent('aalg-warmup', 'account warmed')
       warmupCache.set(shardusAddress, warmupAcc.data as WrappedEVMAccount )
       warmupStats.accRcvd++
-      console.log('fetchAndCacheAccountData-got',elapsed, txid, shardusAddress, type)
+      /* prettier-ignore */ if(logFlags.aalg) console.log('fetchAndCacheAccountData-got',elapsed, txid, shardusAddress, type)
     }
   } catch(er){
     const elapsed = Date.now() - startTime
     warmupStats.accReqErr++
     nestedCountersInstance.countEvent('aalg-warmup', `account er: ${er.message}`)
-    console.log('fetchAndCacheAccountData-error',elapsed, txid, shardusAddress, type)
+    /* prettier-ignore */ if(logFlags.aalg) console.log('fetchAndCacheAccountData-error',elapsed, txid, shardusAddress, type)
   }
 }
 
