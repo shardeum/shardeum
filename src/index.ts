@@ -403,7 +403,7 @@ export function setGenesisAccounts(accounts = []): void {
  */
 
 if (ShardeumFlags.UseDBForAccounts === true) {
-  AccountsStorage.init(config.server.baseDir, 'db/' + FilePaths.SHARDEUM_DB)
+  AccountsStorage.init(config.server.baseDir, `db/${FilePaths.SHARDEUM_DB}`)
   if (isServiceMode()) AccountsStorage.lazyInit()
 }
 
@@ -574,7 +574,7 @@ function accountInvolved(transactionState: TransactionState, address: string, is
   //  Before inserting this transaction (tx) into the queue of a consensus group for an additional key,
   //  verify no conflicting transactions exist for that key. We use `tryInvolveAccount` to check the target shard's
   //  queue for any related transactions. Proceed with insertion only if no conflicts are detected.
-  const txID = transactionState.linkedTX;
+  const txID = transactionState.linkedTX
 
   if (shardus.tryInvolveAccount != null) {
     const shardusAddress = toShardusAddress(address, AccountType.Account)
@@ -695,7 +695,7 @@ async function tryGetRemoteAccountCB(
       retry++
       remoteShardusAccount = await shardus.getLocalOrRemoteAccount(shardusAddress, {
         useRICache: true,
-        canThrowException: true
+        canThrowException: true,
       })
     } catch (ex) {
       continue
@@ -2693,9 +2693,7 @@ async function estimateGas(
 
 type CodeHashObj = { codeHash: string; contractAddress: string }
 
-async function generateAccessList(
-  injectedTx: ShardusTypes.OpaqueTransaction
-): Promise<{
+async function generateAccessList(injectedTx: ShardusTypes.OpaqueTransaction): Promise<{
   shardusMemoryPatterns: null
   failedAccessList?: boolean
   accessList: any[]
@@ -4036,10 +4034,10 @@ const shardusSetup = (): void => {
     calculateTxId(tx: ShardusTypes.OpaqueTransaction) {
       return generateTxId(tx)
     },
-    async txPreCrackData(tx, appData): Promise<{status: boolean, reason: string}> {
+    async txPreCrackData(tx, appData): Promise<{ status: boolean; reason: string }> {
       if (ShardeumFlags.VerboseLogs) console.log('Running txPreCrackData', tx, appData)
       if (ShardeumFlags.UseTXPreCrack === false) {
-        return {status: true, reason: 'UseTXPreCrack is false'}
+        return { status: true, reason: 'UseTXPreCrack is false' }
       }
 
       if (isInternalTx(tx) === false && isDebugTx(tx) === false) {
@@ -4096,8 +4094,11 @@ const shardusSetup = (): void => {
               .getLocalOrRemoteAccount(transformedSourceKey)
               .then((account) => account.data)
               .catch((e) => {
-                console.error(`txPreCrackData: error fetching remote account for ${txSenderEvmAddr}, retry: ${retry}`, e)
-              });
+                console.error(
+                  `txPreCrackData: error fetching remote account for ${txSenderEvmAddr}, retry: ${retry}`,
+                  e
+                )
+              })
           }
           if (remoteShardusAccount == null) {
             if (ShardeumFlags.VerboseLogs)
@@ -4165,7 +4166,7 @@ const shardusSetup = (): void => {
           if (ShardeumFlags.txNoncePreCheck) {
             if (queueCountResult.count === -1) {
               /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`txPreCrackData uanble to get queueCountResult for ${txSenderEvmAddr} queueCountResult:${queueCountResult}`)
-              return {status: false, reason: `Unable to get queueCountResult for ${txSenderEvmAddr}`}
+              return { status: false, reason: `Unable to get queueCountResult for ${txSenderEvmAddr}` }
             } else {
               appData.queueCount = queueCountResult.count
               appData.nonce = parseInt(nonce.toString())
@@ -4213,7 +4214,10 @@ const shardusSetup = (): void => {
               success = false
               /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`precrack balance fail: sender ${senderAddress.toString()} does not have enough balance. Min balance: ${minBalance.toString()}, Account balance: ${accountBalance.toString()}`)
               nestedCountersInstance.countEvent('shardeum', 'precrack - insufficient balance')
-              return {status: false, reason: `Insufficient balance. Min balance: ${minBalance.toString()}, Account balance: ${accountBalance.toString()}`}
+              return {
+                status: false,
+                reason: `Insufficient balance. Min balance: ${minBalance.toString()}, Account balance: ${accountBalance.toString()}`,
+              }
             } else {
               /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`precrack balance pass: sender ${senderAddress.toString()} has balance of ${accountBalance.toString()}`)
             }
@@ -4285,7 +4289,7 @@ const shardusSetup = (): void => {
             appData.shardusMemoryPatterns = shardusMemoryPatterns
             appData.codeHashes = codeHashes
             if (failedAccessList) {
-              return {status: false, reason: 'Failed to generate access list'}
+              return { status: false, reason: 'Failed to generate access list' }
             }
 
             if (appData.accessList && appData.accessList.length > 0) {
@@ -4298,7 +4302,7 @@ const shardusSetup = (): void => {
                 'shardeum',
                 'precrack' + ' -' + ' generateAccessList success: false'
               )
-              return {status: false, reason: 'Failed to generate access list2'}
+              return { status: false, reason: 'Failed to generate access list2' }
             }
           }
         }
@@ -4321,7 +4325,7 @@ const shardusSetup = (): void => {
         }
         /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log( `txPreCrackData final result: txNonce: ${appData.txNonce}, currentNonce: ${ appData.nonce }, queueCount: ${appData.queueCount}, appData ${stringify(appData)}` )
       }
-      return {status: true, reason: 'Passed'}
+      return { status: true, reason: 'Passed' }
     },
 
     //@ts-ignore
@@ -5682,14 +5686,16 @@ const shardusSetup = (): void => {
       applyResponse?: ShardusTypes.ApplyResponse
     ) {
       if (ShardeumFlags.expiredTransactionStateFix === false) return
-      if (ShardeumFlags.VerboseLogs) console.log('running transactionReceiptFail', timestampedTx, wrappedStates, applyResponse)
+      if (ShardeumFlags.VerboseLogs)
+        console.log('running transactionReceiptFail', timestampedTx, wrappedStates, applyResponse)
       //@ts-ignore
       const { tx } = timestampedTx
       const txId: string = generateTxId(tx)
 
       //clear this out of the shardeum state map
       if (shardeumStateTXMap.has(txId)) {
-        if (ShardeumFlags.VerboseLogs) console.log('transactionReceiptFail: deleting txId from shardeumStateTXMap', txId)
+        if (ShardeumFlags.VerboseLogs)
+          console.log('transactionReceiptFail: deleting txId from shardeumStateTXMap', txId)
         shardeumStateTXMap.delete(txId)
       }
     },
@@ -6654,7 +6660,7 @@ async function fetchNetworkAccountFromArchiver(): Promise<WrappedAccount> {
     archiver: Archiver
   }[] = []
   for (const archiver of archiverList) {
-    try{
+    try {
       const res = await axios.get<{ networkAccountHash: string }>(
         `http://${archiver.ip}:${archiver.port}/get-network-account?hash=true`
       )
@@ -6667,7 +6673,7 @@ async function fetchNetworkAccountFromArchiver(): Promise<WrappedAccount> {
         hash: res.data.networkAccountHash as string,
         archiver,
       })
-    } catch(ex){
+    } catch (ex) {
       //dont let one bad archiver crash us !
       /* prettier-ignore */ nestedCountersInstance.countEvent('network-config-operation', `error: ${ex?.message}`)
     }

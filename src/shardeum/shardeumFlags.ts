@@ -259,7 +259,7 @@ export const ShardeumFlags: ShardeumFlags = {
   debugLocalAALG: false,
   tryGetRemoteAccountCB_OnlyErrorsLoop: true,
 
-  expiredTransactionStateFix: false
+  expiredTransactionStateFix: false,
 }
 
 export function updateShardeumFlag(key: string, value: string | number | boolean): void {
@@ -318,5 +318,5 @@ export const enum FilePaths {
   ACCOUNT_EXPORT = 'account-export.json',
   CONFIG = 'config.json',
   CLI_PACKAGE = '/home/node/app/cli/package.json',
-  GUI_PACKAGE = '/home/node/app/gui/package.json'
+  GUI_PACKAGE = '/home/node/app/gui/package.json',
 }

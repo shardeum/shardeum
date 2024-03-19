@@ -1,7 +1,7 @@
 const sqlite3 = require('sqlite3').verbose()
 import axios from 'axios'
 import fs from 'fs'
-import {FilePaths} from '../src/shardeum/shardeumFlags'
+import { FilePaths } from '../src/shardeum/shardeumFlags'
 let db: any
 
 const instancesDirPath = 'instances'
@@ -15,7 +15,7 @@ const consensorAccountsFileName = 'instances/consensorAccounts.json'
 const archiverAccountsFileName = 'instances/archiverAccounts.json'
 
 export async function initShardeumDB(node) {
-  const dbName = `${instancesDirPath}/shardus-instance-${node}/` + FilePaths.SHARDEUM_DB
+  const dbName = `${instancesDirPath}/shardus-instance-${node}/${FilePaths.SHARDEUM_DB}`
   console.log(dbName)
   db = new sqlite3.Database(dbName)
   // await run('PRAGMA journal_mode=WAL');
@@ -152,7 +152,7 @@ export async function queryAccountsFromArchiver(skip = 0, limit = 10000) {
 }
 
 export const getAccountsDataFromArchiver = async () => {
-  const dbName = `${instancesDirPath}/` + FilePaths.ARCHIVER_DB
+  const dbName = `${instancesDirPath}/${FilePaths.ARCHIVER_DB}`
   db = new sqlite3.Database(dbName)
   await run('PRAGMA journal_mode=WAL')
   console.log('Database initialized.')
