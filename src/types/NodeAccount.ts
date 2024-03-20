@@ -20,9 +20,9 @@ export interface NodeAccount extends BaseAccount {
   rewarded: boolean
 }
 
-export function serializeNodeAccount(stream: VectorBufferStream, obj: NodeAccount, root = false): void {
+export function serializeNodeAccount(stream: VectorBufferStream, obj: NodeAccount, type: TypeIdentifierEnum, root = false): void {
   if (root) {
-    stream.writeUInt16(TypeIdentifierEnum.cNodeAccount)
+    stream.writeUInt16(type)
   }
   stream.writeUInt8(cNodeAccountVersion)
 
