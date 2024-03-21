@@ -269,9 +269,13 @@ class Sqlite3Storage {
       queryString += whereString
       queryString += this.options2string(opts)
 
+      console.log("Here is the query string: ", queryString)
+      console.log("Here is the value array: ", valueArray)
+
       // if (logFlags.console) console.log(queryString + '  VALUES: ' + stringify(valueArray))
 
       const results = await this.all(queryString, valueArray)
+      console.log("Here are the results: ", results)
       // optionally parse results!
       if (!opts || !opts.raw) {
         if (table.JSONkeys.length > 0) {

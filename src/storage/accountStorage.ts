@@ -36,6 +36,7 @@ export async function lazyInit(): Promise<void> {
 export async function getAccount(address: string): Promise<WrappedEVMAccount> {
   if (ShardeumFlags.UseDBForAccounts === true) {
     const account = await storage.getAccountsEntry(address)
+    console.log("The account is: ", account)
     if (!account) return
 
     if (typeof account.data === 'string') {
