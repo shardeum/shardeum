@@ -5377,6 +5377,7 @@ const shardusSetup = (): void => {
         //const wrappedEVMAccount = accounts[address]
         // TODO perf: could replace with a single query
         /* prettier-ignore */ shardus.setDebugSetLastAppAwait(`getAccountDataByList.AccountsStorage.getAccount(${address})`)
+        console.log("Checking at :", Date.now())
         const wrappedEVMAccount = await AccountsStorage.getAccount(address)
         console.log(`Atharva: ${address}`, wrappedEVMAccount)
         /* prettier-ignore */ shardus.setDebugSetLastAppAwait(`getAccountDataByList.AccountsStorage.getAccount(${address})`, DebugComplete.Completed)
