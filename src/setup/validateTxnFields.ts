@@ -210,7 +210,7 @@ export const validateTxnFields =
           const accountBalance = appData.balance
           if (accountBalance < minBalance) {
             success = false
-            reason = `Sender does not have enough balance.`
+            reason = `Sender Insufficient Balance. Sender: ${senderAddress.toString()}, MinBalance: ${minBalance.toString()}, Account balance: ${accountBalance.toString()}, Difference: ${(minBalance - accountBalance).toString()}`
             /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`balance fail: sender ${senderAddress.toString()} does not have enough balance. Min balance: ${minBalance.toString()}, Account balance: ${accountBalance.toString()}`)
             nestedCountersInstance.countEvent('shardeum', 'validate - insufficient balance')
           } else {

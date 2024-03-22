@@ -4504,7 +4504,7 @@ const shardusSetup = (): void => {
               nestedCountersInstance.countEvent('shardeum', 'precrack - insufficient balance')
               return {
                 status: false,
-                reason: `Insufficient balance. Min balance: ${minBalance.toString()}, Account balance: ${accountBalance.toString()}`,
+                reason: `Sender Insufficient Balance. Sender: ${senderAddress.toString()}, MinBalance: ${minBalance.toString()}, Account balance: ${accountBalance.toString()}, Difference: ${(minBalance - accountBalance).toString()}`,
               }
             } else {
               /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`precrack balance pass: sender ${senderAddress.toString()} has balance of ${accountBalance.toString()}`)
