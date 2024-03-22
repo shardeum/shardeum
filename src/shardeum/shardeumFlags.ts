@@ -260,7 +260,7 @@ export const ShardeumFlags: ShardeumFlags = {
 
   expiredTransactionStateFix: false,
 
-  aalgWarmupSleep: 1000,
+  aalgWarmupSleep: 100,
 }
 
 export function updateShardeumFlag(key: string, value: string | number | boolean): void {
