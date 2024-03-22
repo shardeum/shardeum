@@ -116,6 +116,7 @@ interface ShardeumFlags {
   expiredTransactionStateFix: boolean
   startInArchiveMode: boolean
   collectorUrl: string
+  aalgWarmupSleep: number
 }
 
 export const ShardeumFlags: ShardeumFlags = {
@@ -263,6 +264,8 @@ export const ShardeumFlags: ShardeumFlags = {
   expiredTransactionStateFix: false,
   startInArchiveMode: false,
   collectorUrl: 'http://0.0.0.0:6001',
+
+  aalgWarmupSleep: 100,
 }
 
 export function updateShardeumFlag(key: string, value: string | number | boolean): void {
