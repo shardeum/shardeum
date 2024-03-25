@@ -1,118 +1,225 @@
-# Important notice:
+# Overview
 
--Do not try to connect to the beta network from source yet.
+Shardeum is a Ethereum Virtual Machine compatible Layer 1 platform that is fast, scalable, and transaction fees that are always below $0.01
 
--Visit https://gitlab.com/shardeum/validator/dashboard and use this instead
+It uses dynamic state sharding which minimizes transaction costs through efficient resource utilization, enhancing network scalability by automatically growing and shrinking the network to meet demand, and ensures decentralization and security​​. This allows Shardeum to achieve a balance among the three fundamental properties of security, scalability, and decentralization simultaneously.
 
--local testing may not run great yet. We will update with information on this later
+# Developer Environment setup (Linux/MAC UNIX LIKE)
 
--for now the best use of this repo is to be able to see the code
+To use this repository, you need the following installed locally:
 
-# Getting Familiar with Shardus
+## NVM SetUp
 
-## Setup
+* Install NVM
 
-### Pre-install
-
-Make sure you have the following installed and configured (we recommend using [nvm](https://github.com/nvm-sh/nvm)/[nvm-windows](https://github.com/coreybutler/nvm-windows) to manage your Node.js and npm versions):
-
-- Node.js (18.16.1)
-- npm (9.5.1)
-- Git
-
-Then, install the `node-gyp` dependencies for your platform listed [here](https://www.npmjs.com/package/node-gyp#installation).
-
-On Ubuntu, it goes something like this:
-
-```
-$ sudo apt update && sudo apt install python3 make g++
-$ npm config set python `which python3`
+```bash
+curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.7/install.sh | bash
 ```
 
-### Install
+> You can also checkout the [official documentation](https://github.com/nvm-sh/nvm?tab=readme-ov-file#important-notes) for more information.
+
+* Set NVM directory
+
+```bash
+export NVM_DIR="$HOME/.nvm"
+```
+
+* (Optional) Load NVM and its bash completion scripts by adding the following lines to your `.bashrc` or `.bash_profile`:
+
+```bash
+[ -s "$NVM_DIR/nvm.sh" ] && \\. "$NVM_DIR/nvm.sh"  # This loads nvm
+[ -s "$NVM_DIR/bash_completion" ] && \\. "$NVM_DIR/bash_completion"  # This loads nvm bash_completion
+```
+
+## Rust Setup
+
+* Install Rust
+
+```bash
+curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
+```
+
+* Source the Rust environment
+
+```bash
+source "$HOME/.cargo/env"
+```
+
+## Install build essentials
+
+For Linux:
+
+```bash
+sudo apt-get install build-essential
+```
+
+For MacOS:
+
+```bash
+brew install gcc
+```
+
+Before proceeding further, run the following commands to check the version of npm and node associated with your system.
+
+```bash
+node --version
+18.16.1
+
+npm --version
+9.5.1
+```
+
+Make sure you have `node version 18.16.1` and `npm version 9.5.1` installed which is what most of our tech currently requires. If you are on the wrong version of Node, you can use the Node Version Manager (aka “nvm”) to get the correct one.
+
+```bash
+nvm use 18.16.1
+```
+
+## Install node gyp and configure the Python version
+
+node-gyp is a command-line tool that enables the compilation of native addon modules for Node.js. To ensure its proper functioning, it's essential to install node-gyp globally using npm. Additionally, configure the Python version. Follow these steps to install node-gyp and set the Python version:
 
 ```
-$ npm i -g git+https://gitlab.com/shardus/tools/shardus-cli.git
-$ shardus init myApp https://gitlab.com/shardus/applications/coin-app-template.git
-$ cd myApp
+npm i -g node-gyp         // Install node-gyp globally
+npm config set python `which python3`   // Configure the Python version
+npm config list                         // Verify the configuration
 ```
 
-## Iterate on a single node
+# Installing project source code
 
-1. Make code changes to `index.ts` and / or `client.js`
+Now that the environment is setup, let’s install the project source code and switch to `dev` branch
 
-2. Start the `seed-node-server`, `monitor-server`, and your `index.ts` server:
+```bash
+git clone https://gitlab.com/shardeum/server
+cd server
+git switch dev
+```
 
-   ```
-   $ npm run start
-   ```
+# Installing npm dependencies
 
-3. Interact with your `index.ts` server:
+Once you are on the `dev` branch, install the local node modules to build the project by the following command
 
-   ```
-   $ node client.js
-   $ client$ help
-   ...
-   ```
+```bash
+npm ci
+```
 
-4. Stop the `seed-node-server` and `monitor-server`, and clean residual run files:
+# Initializing project
 
-   ```
-   $ npm run stop && npm run clean
-   ```
+Now, you can initialize the project using the following command
 
-Repeat until desired behavior is achieved...
+```bash
+npm run prepare
+```
 
-## Local test network setup
+# Installing Shardus globally
 
-1. cd to server directory
+[Shardus](https://docs.shardus.com/docs/tools/shardus-cli-tool/README) is a command line tool from Shardus SDK that makes launching any Shardus protocol powered network easier
 
-   ```
-   $ cd server
-   ```
+```bash
+npm install -g shardus
+npm update @shardus/archiver
+```
 
-2. Install dependencies
+# Local Configuration
 
-   ```
-   $ npm ci
-   $ npm run prepare
-   $ npm install -g shardus
-   $ npm update @shardus/archiver 
-   ```
+Before starting the network, make sure to configure your local setup
 
-3. Create a local network with multiple nodes:
+1. **Configure Debug Mode:** Enabling debug mode ensures all network addresses have a designated amount of SHM. Open the `src/config/index.ts` file and set the following configuration settings:
 
-   ```
-   $ shardus create <number-of-nodes>
-   $ cd instances
-   ```
+```bash
+// src/config/index.ts
+forceBogonFilteringOn: false
+mode: 'debug'
+```
 
-4. Interact with the network:
+> Please note that setting `forceBogonFilteringOn` to false is only required when you are running all the nodes locally. By default, it is set to true for production network that prevents certain IP addresses from joining the network.
 
-   ```
-   $ shardus --help
-   ```
-5. Viewing logs
+2. **Debug Flag Configuration:** Disabling txBalancePreCheck allows processing without balance checks for debugging purposes. For that, modify the following flags in `src/shardeum/shardeumFlags.ts` as follows:
 
-   ```
-   $ shardus pm2 monit
-   ```
+```bash
+// src/shardeum/shardeumFlags.ts
+txBalancePreCheck: false
+StakingEnabled: false
+```
 
-5. Stop the network:
+3. **Local Testing:** Additionally, for local testing, adjust the following settings, these changes allow nodes to get active in 30 seconds compared to 60 seconds and generates new block every 3 second instead of 6 seconds, enhancing your local testing efficiency.
 
-   ```
-   $ shardus stop
-   ```
+```bash
+// Local Testing Adjustments
+// src/config/index.ts
+cycleDuration: 30,
 
-6. Clean databases and logs from the last run:
+// Generate new block every 3s
+// src/shardeum/shardeumFlags.ts
+blockProductionRate: 3,
+```
 
-   ```
-   $ shardus clean
-   $ rm -rf instances
-   ```
+After completing the above steps, compile again with `npm run prepare`.
 
+# Run Locally
 
+Now we’re ready to create the network from within the Shardeum validator repo
 
-# CONTRIBUTING
+```bash
+shardus start 20
+```
 
-Please read this contribution [guide](./CONTRIBUTING.md).
+This command will start a Shardeum network of 20 nodes, 1 archiver server and 1 monitor server exposed through port number 3000. You can inspect the nodes via `shardus pm2 list` command.
+
+> Please note for usage instructions and available options for the shardus command-line tool, you can use `shardus --help`
+
+# Install Metamask
+
+Click [here](https://metamask.io/download/). to install the MetaMask extension on your browser.
+
+## Adding Shardeum Network to MetaMask
+
+1. Open MetaMask and click the list of networks at the top, then select "Add Network".
+2. Add Shardeum automatically or manually
+
+| Field | Details |
+| ---      | ---      |
+| Network Name   | Shardeum Sphinx |
+| New RPC URL | <http://localhost:8080> |
+| Chain ID   | 8082 |
+| Currency Symbol | SHM |
+| Block Explorer URL (optional) | none or <http://localhost:6001/> |
+
+# Starting RPC Server
+
+A Shardeum validator node does not have an integrated RPC API and that is provided by a separate server. For starting the RPC server, clone the repository and follow the instructions
+
+```bash
+git clone https://gitlab.com/shardeum/json-rpc-server
+```
+
+Change directory to `json-rpc-server`, switch to `dev` branch and install the required dependencies
+
+```bash
+cd json-rpc-server
+git switch dev
+npm install
+```
+
+If you want to modify the chainId or the port number, go to `src/config.ts` file:
+
+```bash
+chainId: 8082
+port: 8080
+```
+
+The RPC URL for using Metamask with Remix IDE and for running scripts is `http://localhost:port` (default: <http://localhost:8080>)
+
+# Run the Server
+
+To run the server, use the command
+
+```bash
+npm run start
+```
+
+You now have a fully functioning Shardeum network on your local machine! 🎉
+
+# Contributing
+
+Contributions are very welcome! See our [contribution guide](./CONTRIBUTING.md)for more information. Everyone interacting in our codebases, issue trackers, and any other form of communication, including chat rooms and mailing lists, is expected to follow our [code of conduct](./CODE_OF_CONDUCT.md) so we can all enjoy the effort we put into this project.
