@@ -1147,6 +1147,18 @@ const configShardusEndpoints = (): void => {
 
     if (ShardeumFlags.VerboseLogs) console.log('Transaction injected:', new Date(), tx)
 
+    const nodeId = shardus.getNodeId()
+    const node = shardus.getNode(nodeId)
+
+    if (node.status !== P2P.P2PTypes.NodeStatus.ACTIVE) {
+      res.json({
+        success: false,
+        reason: `Node not active. Rejecting inject.`,
+        status: 500,
+      })
+      return
+    }
+
     let numActiveNodes = 0
     try {
       // Reject transaction if network is paused
@@ -4272,6 +4284,9 @@ const shardusSetup = (): void => {
       if (ShardeumFlags.UseTXPreCrack === false) {
         return { status: true, reason: 'UseTXPreCrack is false' }
       }
+
+      // Check if we are active
+
 
       if (isInternalTx(tx) === false && isDebugTx(tx) === false) {
         const shardusTxId = generateTxId(tx)
