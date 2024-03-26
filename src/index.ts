@@ -4332,7 +4332,9 @@ const shardusSetup = (): void => {
 
             try {
                 const account = await shardus.getLocalOrRemoteAccount(transformedSourceKey);
-                remoteShardusAccount = account.data;
+                if (account) {
+                  remoteShardusAccount = account.data
+                }
             } catch (e) {
                 console.error(`txPreCrackData: error fetching remote account for ${txSenderEvmAddr}, retry: ${retry}`, e);
             }              
