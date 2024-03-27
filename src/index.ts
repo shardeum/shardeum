@@ -412,7 +412,7 @@ export function setGenesisAccounts(accounts = []): void {
  */
 
 if (ShardeumFlags.UseDBForAccounts === true) {
-  AccountsStorage.init(config.server.baseDir, `db/${FilePaths.SHARDEUM_DB}`)
+  AccountsStorage.init(config.server.baseDir, `${FilePaths.SHARDEUM_DB}`)
   if (isServiceMode()) AccountsStorage.lazyInit()
 }
 

@@ -1,4 +1,4 @@
-const sqlite3 = require('sqlite3').verbose()
+import sqlite3 from 'sqlite3'
 import axios from 'axios'
 import fs from 'fs'
 import { FilePaths } from '../src/shardeum/shardeumFlags'
@@ -8,13 +8,18 @@ const instancesDirPath = 'instances'
 const numberOfNodes = 8
 const saveAccountsDataAsFile = true
 
-let consensorAccounts: any = []
-let archiverAccounts: any = []
+const consensorAccounts: any = []
+const archiverAccounts: any = []
 
 const consensorAccountsFileName = 'instances/consensorAccounts.json'
 const archiverAccountsFileName = 'instances/archiverAccounts.json'
 
-export async function initShardeumDB(node) {
+const ARCHIVER_URL = 'http://127.0.0.1:4000/full-nodelist' // active archiver url
+
+// Update the archiver db path for different archiver
+const ARCHIVER_DB_PATH = 'archiver-db-4000/archiverdb-4000.sqlite3'
+
+export async function initShardeumDB(node: string): Promise<void> {
   const dbName = `${instancesDirPath}/shardus-instance-${node}/${FilePaths.SHARDEUM_DB}`
   console.log(dbName)
   db = new sqlite3.Database(dbName)
@@ -25,11 +30,11 @@ export async function initShardeumDB(node) {
   )
 }
 
-export async function runCreate(createStatement) {
+export async function runCreate(createStatement): Promise<void> {
   await run(createStatement)
 }
 
-export async function run(sql, params = [] || {}) {
+export async function run(sql, params = [] || {}): Promise<any> {
   return new Promise((resolve, reject) => {
     db.run(sql, params, function (err) {
       if (err) {
@@ -43,7 +48,7 @@ export async function run(sql, params = [] || {}) {
   })
 }
 
-export async function all(sql, params = []) {
+export async function all(sql, params = []): Promise<any> {
   return new Promise((resolve, reject) => {
     db.all(sql, params, (err, rows) => {
       if (err) {
@@ -57,7 +62,7 @@ export async function all(sql, params = []) {
   })
 }
 
-export async function get(sql, params = []) {
+export async function get(sql, params = []): Promise<any> {
   return new Promise((resolve, reject) => {
     db.get(sql, params, (err, result) => {
       if (err) {
@@ -71,7 +76,7 @@ export async function get(sql, params = []) {
   })
 }
 
-export async function queryAccountsFromConsensor() {
+export async function queryAccountsFromConsensor(): Promise<any> {
   let accounts
   try {
     const sql = `SELECT * FROM accountsEntry ORDER BY timestamp ASC`
@@ -82,10 +87,10 @@ export async function queryAccountsFromConsensor() {
   return accounts
 }
 
-export const getAccountsDataFromConsensors = async () => {
-  const res = await axios.get(FilePaths.FULL_NODELIST)
+export const getAccountsDataFromConsensors = async (): Promise<any> => {
+  const res = await axios.get(ARCHIVER_URL)
 
-  for (let nodeinfo of res.data.nodeList) {
+  for (const nodeinfo of res.data.nodeList) {
     const node = nodeinfo.port
     await initShardeumDB(node)
     const accounts = await queryAccountsFromConsensor()
@@ -98,7 +103,7 @@ export const getAccountsDataFromConsensors = async () => {
           }
         }
       }
-      if (!consensorAccounts.find((acc: any) => acc.accountId === account.accountId))
+      if (!consensorAccounts.find((acc) => acc.accountId === account.accountId))
         consensorAccounts.push(account)
     }
   }
@@ -118,7 +123,7 @@ export const getAccountsDataFromConsensors = async () => {
   return consensorAccounts
 }
 
-export async function queryAccountCountFromArchiver() {
+export async function queryAccountCountFromArchiver(): Promise<any> {
   let accounts
   try {
     const sql = `SELECT COUNT(*) FROM accounts`
@@ -133,13 +138,13 @@ export async function queryAccountCountFromArchiver() {
   return accounts
 }
 
-export async function queryAccountsFromArchiver(skip = 0, limit = 10000) {
+export async function queryAccountsFromArchiver(skip = 0, limit = 10000): Promise<any> {
   let accounts
   try {
     const sql = `SELECT * FROM accounts ORDER BY cycleNumber ASC, timestamp ASC LIMIT ${limit} OFFSET ${skip}`
     accounts = await all(sql)
     if (accounts.lenth > 0) {
-      accounts.map((account: any) => {
+      accounts.map((account) => {
         if (account && account.data) account.data = JSON.parse(account.data)
       })
     }
@@ -151,8 +156,8 @@ export async function queryAccountsFromArchiver(skip = 0, limit = 10000) {
   return accounts
 }
 
-export const getAccountsDataFromArchiver = async () => {
-  const dbName = `${instancesDirPath}/${FilePaths.ARCHIVER_DB}`
+export const getAccountsDataFromArchiver = async (): Promise<any> => {
+  const dbName = `${instancesDirPath}/${ARCHIVER_DB_PATH}`
   db = new sqlite3.Database(dbName)
   await run('PRAGMA journal_mode=WAL')
   console.log('Database initialized.')
@@ -162,10 +167,10 @@ export const getAccountsDataFromArchiver = async () => {
 
   const accounts = await queryAccountCountFromArchiver()
   console.log(accounts)
-  let limit = 10000
+  const limit = 10000
   for (let i = 0; i < accounts; ) {
-    let accounts = await queryAccountsFromArchiver(i, limit)
-    archiverAccounts = [...archiverAccounts, ...accounts]
+    const accounts = await queryAccountsFromArchiver(i, limit)
+    archiverAccounts.push(...accounts)
     i += limit
   }
   console.log('Total Number of Accounts From Archiver', archiverAccounts.length)
@@ -174,11 +179,11 @@ export const getAccountsDataFromArchiver = async () => {
   return archiverAccounts
 }
 
-const checkAccountsDataSync = async () => {
+const checkAccountsDataSync = async (): Promise<any> => {
   console.log('Missing Accounts on Archiver!')
-  for (let account1 of consensorAccounts) {
+  for (const account1 of consensorAccounts) {
     let found = false
-    for (let account2 of archiverAccounts) {
+    for (const account2 of archiverAccounts) {
       if (account1.accountId === account2.accountId) {
         found = true
         if (account1.timestamp !== account2.timestamp)
@@ -190,9 +195,9 @@ const checkAccountsDataSync = async () => {
     }
   }
   console.log('Missing Accounts on Consensors!')
-  for (let account1 of archiverAccounts) {
+  for (const account1 of archiverAccounts) {
     let found = false
-    for (let account2 of consensorAccounts) {
+    for (const account2 of consensorAccounts) {
       if (account1.accountId === account2.accountId) {
         found = true
         if (account1.timestamp !== account2.timestamp)
@@ -205,7 +210,7 @@ const checkAccountsDataSync = async () => {
   }
 }
 
-const runProgram = async () => {
+const runProgram = async (): Promise<any> => {
   await getAccountsDataFromConsensors()
   await getAccountsDataFromArchiver()
   await checkAccountsDataSync()
