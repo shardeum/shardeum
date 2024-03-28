@@ -7152,6 +7152,9 @@ export function shardeumGetTime(): number {
         try {
           nodeId = shardus.getNodeId()
           node = shardus.getNode(nodeId)
+          if (!node) {
+            throw new Error(`Node with id ${nodeId} not found`)
+          }
           nodeAddress = node.address
 
           // wait for rewards
