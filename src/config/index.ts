@@ -18,6 +18,7 @@ export interface Config {
         port: number
         publicKey: string
       }>
+      rotationEdgeToAvoid: number
     }
     baseDir: string
     mode?: 'debug' | 'release'

@@ -1443,6 +1443,19 @@ const configShardusEndpoints = (): void => {
       return res.json({ error: 'Invalid address' })
     }
 
+    const id = shardus.getNodeId()
+    const { idx, total } = shardus.getNodeRotationIndex(id)
+    // skip if we have just rotated in
+    if (total >= 10 && idx <= config.server.p2p.rotationEdgeToAvoid) {
+      nestedCountersInstance.countEvent('skip-newly-rotated-node', id)
+      return res.json({ error: 'node close to rotation edges' })
+    }
+    // skip if we're close to rotating out
+    if (total >= 10 && idx >= total - config.server.p2p.rotationEdgeToAvoid) {
+      nestedCountersInstance.countEvent('skip-about-to-rotate-out-node', id)
+      return res.json({ error: 'node close to rotation edges' })
+    }
+
     try {
       if (!req.query.type) {
         let shardusAddress = address.toLowerCase()
