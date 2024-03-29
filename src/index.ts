@@ -685,14 +685,14 @@ function monitorEventCBNoOp(): void {
 
 /**
  * tryGetRemoteAccountCB
- * used by ethCall 
- * also used by AALG process 
+ * used by ethCall
+ * also used by AALG process
  *    AALG with warmup tech can use the warmupCache for faster results
- * @param transactionState 
- * @param type 
- * @param address 
- * @param key 
- * @returns 
+ * @param transactionState
+ * @param type
+ * @param address
+ * @param key
+ * @returns
  */
 async function tryGetRemoteAccountCB(
   transactionState: TransactionState,
@@ -700,7 +700,6 @@ async function tryGetRemoteAccountCB(
   address: string,
   key: string
 ): Promise<WrappedEVMAccount> {
-
   let retry = 0
   let maxRetry = 1 // default for contract storage accounts
   if (type === AccountType.Account) maxRetry = 2 // for CA accounts
@@ -711,26 +710,26 @@ async function tryGetRemoteAccountCB(
 
   const txid = transactionState.linkedTX
   //utilize warm up cache that lives on a TransactionState object
-  if(transactionState?.warmupCache != null){
-    if(transactionState.warmupCache.has(shardusAddress)){
+  if (transactionState?.warmupCache != null) {
+    if (transactionState.warmupCache.has(shardusAddress)) {
       const fixedEVMAccount = transactionState.warmupCache.get(shardusAddress)
-      if(fixedEVMAccount != null){
-        fixDeserializedWrappedEVMAccount(fixedEVMAccount)   
+      if (fixedEVMAccount != null) {
+        fixDeserializedWrappedEVMAccount(fixedEVMAccount)
         nestedCountersInstance.countEvent('aalg-warmup', 'cache hit')
         /* prettier-ignore */ if(logFlags.aalg) console.log('aalg: aalg-hit', txid, shardusAddress, address, key, type)
         transactionState.warmupStats.cacheHit++
-        return fixedEVMAccount   
-      } 
-      if (fixedEVMAccount === null){
+        return fixedEVMAccount
+      }
+      if (fixedEVMAccount === null) {
         nestedCountersInstance.countEvent('aalg-warmup', 'cache slot empty')
         transactionState.warmupStats.cacheEmpty++
         /* prettier-ignore */ if(logFlags.aalg) console.log('aalg: aalg-empty', txid, shardusAddress, address, key, type)
       }
-      if (fixedEVMAccount === undefined){
+      if (fixedEVMAccount === undefined) {
         nestedCountersInstance.countEvent('aalg-warmup', 'cache slot empty-reqmiss')
         transactionState.warmupStats.cacheEmptyReqMiss++
         /* prettier-ignore */ if(logFlags.aalg) console.log('aalg: aalg-empty-reqmiss', txid, shardusAddress, address, key, type)
-      }    
+      }
     } else {
       nestedCountersInstance.countEvent('aalg-warmup', 'cache miss')
       transactionState.warmupStats.cacheMiss++
@@ -761,7 +760,7 @@ async function tryGetRemoteAccountCB(
 
   if (remoteShardusAccount == undefined) {
     /* prettier-ignore */ if (ShardeumFlags.VerboseLogs || logFlags.aalg) console.log(`${Date.now()} Found no remote account for address: ${address}, type: ${type}, key: ${key}, retry: ${retry}`)
-    if (type === AccountType.Account || type === AccountType.ContractCode){
+    if (type === AccountType.Account || type === AccountType.ContractCode) {
       /* prettier-ignore */ nestedCountersInstance.countEvent( 'shardeum', `tryRemoteAccountCB: fail. type: ${type}, address: ${address}, key: ${key}` )
     }
     //this could be new account
@@ -1138,13 +1137,31 @@ const configShardusEndpoints = (): void => {
 
   shardus.registerExternalPost('inject', externalApiMiddleware, async (req, res) => {
     const tx = req.body
-    const appData = null 
+    const appData = null
+    const id = shardus.getNodeId()
+    const { idx, total } = shardus.getNodeRotationIndex(id)
+    // skip if we have just rotated in
+    if (total >= 10 && idx <= config.server.p2p.rotationEdgeToAvoid) {
+      nestedCountersInstance.countEvent('skip-newly-rotated-node', id)
+      return res.json({
+        success: false,
+        reason: `Node is too close to rotation edges. Inject to another node`,
+        status: 500,
+      })
+    }
+    // skip if we're close to rotating out
+    if (total >= 10 && idx >= total - config.server.p2p.rotationEdgeToAvoid) {
+      nestedCountersInstance.countEvent('skip-about-to-rotate-out-node', id)
+      return res.json({
+        success: false,
+        reason: `Node is too close to rotation edges. Inject to another node`,
+        status: 500,
+      })
+    }
     await handleInject(tx, appData, res)
   })
 
-
-  async function handleInject(tx, appData, res) : Promise<void> {
-
+  async function handleInject(tx, appData, res): Promise<void> {
     if (ShardeumFlags.VerboseLogs) console.log('Transaction injected:', new Date(), tx)
 
     const nodeId = shardus.getNodeId()
@@ -1232,14 +1249,13 @@ const configShardusEndpoints = (): void => {
         /* prettier-ignore */ if (logFlags.error) console.log('Failed to respond to inject tx: ', e)
       }
     }
-
   }
 
   shardus.registerExternalPost('inject-with-warmup', externalApiMiddleware, async (req, res) => {
-    const {tx, warmupList} = req.body
-    let appData = null 
-    if(warmupList != null){
-      appData = {warmupList}
+    const { tx, warmupList } = req.body
+    let appData = null
+    if (warmupList != null) {
+      appData = { warmupList }
     }
     await handleInject(tx, appData, res)
   })
@@ -1780,7 +1796,7 @@ const configShardusEndpoints = (): void => {
       const injectedTx = req.body
       if (ShardeumFlags.VerboseLogs) console.log('AccessList endpoint injectedTx', injectedTx)
 
-      const result = await generateAccessList(injectedTx, {accessList:[], codeHashes:[]}, '/accesslist')
+      const result = await generateAccessList(injectedTx, { accessList: [], codeHashes: [] }, '/accesslist')
 
       res.json(result)
     } catch (e) {
@@ -1801,7 +1817,7 @@ const configShardusEndpoints = (): void => {
     }
 
     try {
-      const {injectedTx, warmupList} = req.body
+      const { injectedTx, warmupList } = req.body
       if (ShardeumFlags.VerboseLogs) console.log('accesslist-warmup endpoint injectedTx', injectedTx)
 
       const result = await generateAccessList(injectedTx, warmupList, '/accesslist-warmup')
@@ -1812,7 +1828,6 @@ const configShardusEndpoints = (): void => {
       return res.json([])
     }
   })
-
 
   shardus.registerExternalPost('contract/estimateGas', externalApiMiddleware, async (req, res) => {
     if (
@@ -2851,7 +2866,7 @@ type CodeHashObj = { codeHash: string; contractAddress: string }
 
 async function generateAccessList(
   injectedTx: ShardusTypes.OpaqueTransaction,
-  warmupList: {accessList:any[], codeHashes: CodeHashObj[]},
+  warmupList: { accessList: any[]; codeHashes: CodeHashObj[] },
   caller: string
 ): Promise<{
   shardusMemoryPatterns: null
@@ -2879,7 +2894,7 @@ async function generateAccessList(
 
           const postResp = await _internalHackPostWithResp(
             `${consensusNode.externalIp}:${consensusNode.externalPort}/contract/accesslist-warmup`,
-            {injectedTx, warmupList}
+            { injectedTx, warmupList }
           )
           /* prettier-ignore */ if (logFlags.dapp_verbose || logFlags.aalg) console.log('Accesslist response from node', consensusNode.externalPort, postResp.body)
           if (postResp.body != null && postResp.body != '' && postResp.body.accessList != null) {
@@ -2946,17 +2961,23 @@ async function generateAccessList(
     let warmupCache = null
 
     const warmupStats: WarmupStats = {
-      accReq: 0, accRcvd: 0, accRcvdNull: 0, accReqErr: 0, cacheHit: 0, cacheMiss: 0, cacheEmpty: 0,
-      cacheEmptyReqMiss: 0
+      accReq: 0,
+      accRcvd: 0,
+      accRcvdNull: 0,
+      accReqErr: 0,
+      cacheHit: 0,
+      cacheMiss: 0,
+      cacheEmpty: 0,
+      cacheEmptyReqMiss: 0,
     }
     //const promises:Promise<ShardusTypes.WrappedDataFromQueue>[] = []
-    //use warmupList to fetch data in parallel.  We will feed this in as cache inputs to the transaction 
-    //state 
-    if(warmupList != null && warmupList.codeHashes?.length > 0 && warmupList.accessList?.length > 0){
-      warmupCache = new Map<string, WrappedEVMAccount>() 
+    //use warmupList to fetch data in parallel.  We will feed this in as cache inputs to the transaction
+    //state
+    if (warmupList != null && warmupList.codeHashes?.length > 0 && warmupList.accessList?.length > 0) {
+      warmupCache = new Map<string, WrappedEVMAccount>()
 
       const startTime = Date.now()
-      for(const codeHashObj of warmupList.codeHashes){
+      for (const codeHashObj of warmupList.codeHashes) {
         const shardusAddr = toShardusAddressWithKey(
           codeHashObj.contractAddress,
           codeHashObj.codeHash,
@@ -2965,23 +2986,37 @@ async function generateAccessList(
         //TODO: tie into code bytes cache! should be a pre-fetch
 
         //promises.push(shardus.getLocalOrRemoteAccount(shardusAddr, {useRICache:true}))
-        fetchAndCacheAccountData(shardusAddr, warmupCache, warmupStats, true, txId, AccountType.ContractCode )
+        fetchAndCacheAccountData(shardusAddr, warmupCache, warmupStats, true, txId, AccountType.ContractCode)
       }
-      for(const accesListTuple of warmupList.accessList){
+      for (const accesListTuple of warmupList.accessList) {
         const contractAddress = accesListTuple[0]
         const storageArray = accesListTuple[1]
 
         const shardusContractAddr = toShardusAddress(contractAddress, AccountType.Account)
         //promises.push(shardus.getLocalOrRemoteAccount(shardusContractAddr))
-        fetchAndCacheAccountData(shardusContractAddr, warmupCache, warmupStats, false, txId, AccountType.Account)
-        for(const storageAddr of storageArray){
+        fetchAndCacheAccountData(
+          shardusContractAddr,
+          warmupCache,
+          warmupStats,
+          false,
+          txId,
+          AccountType.Account
+        )
+        for (const storageAddr of storageArray) {
           const shardusStorageAddr = toShardusAddressWithKey(
             contractAddress,
             storageAddr,
             AccountType.ContractStorage
           )
           //promises.push(shardus.getLocalOrRemoteAccount(shardusStorageAddr))
-          fetchAndCacheAccountData(shardusStorageAddr, warmupCache, warmupStats, false, txId, AccountType.ContractStorage)
+          fetchAndCacheAccountData(
+            shardusStorageAddr,
+            warmupCache,
+            warmupStats,
+            false,
+            txId,
+            AccountType.ContractStorage
+          )
         }
       }
 
@@ -2989,12 +3024,10 @@ async function generateAccessList(
       await sleep(ShardeumFlags.aalgWarmupSleep)
     }
 
-    
-
-    //Await all the promises.  TODO more advanced wait that is fault tolerant 
+    //Await all the promises.  TODO more advanced wait that is fault tolerant
     // const warmupData = await Promise.all(promises)
 
-    // // build a warmupcache from the results we got 
+    // // build a warmupcache from the results we got
     // const warmupCache = new Map<string, WrappedEVMAccount>()
     // for(const warmupAcc of warmupData){
     //   warmupCache.set(warmupAcc.accountId, warmupAcc.data as WrappedEVMAccount )
@@ -3002,7 +3035,7 @@ async function generateAccessList(
     preRunTxState._transactionState.warmupCache = warmupCache
     preRunTxState._transactionState.warmupStats = warmupStats
 
-    if(warmupList != null){
+    if (warmupList != null) {
       /* prettier-ignore */ if(logFlags.aalg) console.log(`warmup results, before:`, caller, txId, JSON.stringify(warmupStats, null, 2))
     }
 
@@ -3034,12 +3067,11 @@ async function generateAccessList(
     const elapsed = Date.now() - txStart
     nestedCountersInstance.countEvent('accesslist-times', `elapsed ${Math.round(elapsed / 1000)} sec`)
 
-
-    if(warmupList != null){
-    /* prettier-ignore */ if(logFlags.aalg) console.log(`aalg: results, after: warmed:`, caller, txId, elapsed, JSON.stringify(warmupStats, null, 2) )
-      //todo compare warmupList to access list 
+    if (warmupList != null) {
+      /* prettier-ignore */ if(logFlags.aalg) console.log(`aalg: results, after: warmed:`, caller, txId, elapsed, JSON.stringify(warmupStats, null, 2) )
+      //todo compare warmupList to access list
     } else {
-    /* prettier-ignore */ if(logFlags.aalg) console.log(`aalg: results, after:`, caller, txId, elapsed, JSON.stringify(warmupStats, null, 2) )
+      /* prettier-ignore */ if(logFlags.aalg) console.log(`aalg: results, after:`, caller, txId, elapsed, JSON.stringify(warmupStats, null, 2) )
     }
 
     const readAccounts = preRunTxState._transactionState.getReadAccounts()
@@ -3202,19 +3234,19 @@ async function generateAccessList(
     if (ShardeumFlags.VerboseLogs || logFlags.aalg) console.log('Predicted accessList', accessList)
 
     if (runTxResult.execResult.exceptionError) {
-      if (ShardeumFlags.VerboseLogs || logFlags.aalg) console.log('Execution Error:', runTxResult.execResult.exceptionError)
+      if (ShardeumFlags.VerboseLogs || logFlags.aalg)
+        console.log('Execution Error:', runTxResult.execResult.exceptionError)
       /* prettier-ignore */ nestedCountersInstance.countEvent( 'accesslist', `Local Fail with evm error: CA ${ transaction.to && ShardeumFlags.VerboseLogs ? transaction.to.toString() : '' }` )
       return { accessList: [], shardusMemoryPatterns: null, codeHashes: [], failedAccessList: true }
     }
     const isEmptyCodeHash = allCodeHash.size === 0
-    if (isEmptyCodeHash){
+    if (isEmptyCodeHash) {
       /* prettier-ignore */ if (ShardeumFlags.VerboseLogs || logFlags.aalg) console.log(`aalg: empty codehash ${txId}
       allInvolvedContracts:  ${JSON.stringify(allInvolvedContracts,null,2)}
 
       readAccounts.contractBytes: ${JSON.stringify(readAccounts.contractBytes,null,2)}`)
       nestedCountersInstance.countEvent('accesslist', `Local Fail: empty codeHash`)
-    }
-    else nestedCountersInstance.countEvent('accesslist', `Local Success: true`)
+    } else nestedCountersInstance.countEvent('accesslist', `Local Success: true`)
     return {
       accessList,
       shardusMemoryPatterns,
@@ -3228,28 +3260,38 @@ async function generateAccessList(
   }
 }
 
-async function fetchAndCacheAccountData(shardusAddress:string, warmupCache: Map<string, WrappedEVMAccount>, warmupStats:WarmupStats, useRICache:boolean, txid:string, type:AccountType) : Promise<void> {
+async function fetchAndCacheAccountData(
+  shardusAddress: string,
+  warmupCache: Map<string, WrappedEVMAccount>,
+  warmupStats: WarmupStats,
+  useRICache: boolean,
+  txid: string,
+  type: AccountType
+): Promise<void> {
   warmupStats.accReq++
-  
+
   const startTime = Date.now()
   /* prettier-ignore */ if(logFlags.aalg) console.log('aalg: fetchAndCacheAccountData-enter', txid, shardusAddress, type)
-  warmupCache.set(shardusAddress, undefined ) //set undefined to indicate we want to fetch this
-  
-  try{
-    const warmupAcc = await shardus.getLocalOrRemoteAccount(shardusAddress, {useRICache, canThrowException: true})
+  warmupCache.set(shardusAddress, undefined) //set undefined to indicate we want to fetch this
+
+  try {
+    const warmupAcc = await shardus.getLocalOrRemoteAccount(shardusAddress, {
+      useRICache,
+      canThrowException: true,
+    })
     const elapsed = Date.now() - startTime
-    if(warmupAcc == null){
+    if (warmupAcc == null) {
       warmupStats.accRcvdNull++
       nestedCountersInstance.countEvent('aalg-warmup', 'account warmed-empty')
       /* prettier-ignore */ if(logFlags.aalg) console.log('aalg: fetchAndCacheAccountData-null',elapsed, txid, shardusAddress, type)
-      warmupCache.set(shardusAddress, null )//could we init with undefined?
+      warmupCache.set(shardusAddress, null) //could we init with undefined?
     } else {
       nestedCountersInstance.countEvent('aalg-warmup', 'account warmed')
-      warmupCache.set(shardusAddress, warmupAcc.data as WrappedEVMAccount )
+      warmupCache.set(shardusAddress, warmupAcc.data as WrappedEVMAccount)
       warmupStats.accRcvd++
       /* prettier-ignore */ if(logFlags.aalg) console.log('aalg: fetchAndCacheAccountData-got',elapsed, txid, shardusAddress, type)
     }
-  } catch(er){
+  } catch (er) {
     const elapsed = Date.now() - startTime
     warmupStats.accReqErr++
     nestedCountersInstance.countEvent('aalg-warmup', `account er: ${er.message}`)
@@ -4300,7 +4342,6 @@ const shardusSetup = (): void => {
 
       // Check if we are active
 
-
       if (isInternalTx(tx) === false && isDebugTx(tx) === false) {
         const shardusTxId = generateTxId(tx)
         const transaction = getTransactionObj(tx)
@@ -4349,7 +4390,8 @@ const shardusSetup = (): void => {
           retry = 0
           while (remoteShardusAccount == null && retry < maxRetry) {
             if (ShardeumFlags.VerboseLogs)
-            if (ShardeumFlags.VerboseLogs) console.log(`txPreCrackData: fetching remote account for ${txSenderEvmAddr}, retry: ${retry}`)
+              if (ShardeumFlags.VerboseLogs)
+                console.log(`txPreCrackData: fetching remote account for ${txSenderEvmAddr}, retry: ${retry}`)
             retry++
             // remoteShardusAccount = await shardus
             //   .getLocalOrRemoteAccount(transformedSourceKey)
@@ -4359,13 +4401,16 @@ const shardusSetup = (): void => {
             //   });
 
             try {
-                const account = await shardus.getLocalOrRemoteAccount(transformedSourceKey);
-                if (account) {
-                  remoteShardusAccount = account.data
-                }
+              const account = await shardus.getLocalOrRemoteAccount(transformedSourceKey)
+              if (account) {
+                remoteShardusAccount = account.data
+              }
             } catch (e) {
-                console.error(`txPreCrackData: error fetching remote account for ${txSenderEvmAddr}, retry: ${retry}`, e);
-            }              
+              console.error(
+                `txPreCrackData: error fetching remote account for ${txSenderEvmAddr}, retry: ${retry}`,
+                e
+              )
+            }
           }
           if (remoteShardusAccount == null) {
             /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log( `txPreCrackData: found no local or remote account for address: ${txSenderEvmAddr}, key: ${transformedSourceKey}.` )
@@ -4554,14 +4599,14 @@ const shardusSetup = (): void => {
             appData.shardusMemoryPatterns = shardusMemoryPatterns
             appData.codeHashes = codeHashes
             if (failedAccessList) {
-              return {status: false, reason: `Failed to generate access list ${Date.now() - aalgStart}`}
+              return { status: false, reason: `Failed to generate access list ${Date.now() - aalgStart}` }
             }
 
             if (appData.accessList && appData.accessList.length > 0) {
               /* prettier-ignore */ nestedCountersInstance.countEvent( 'shardeum', 'precrack' + ' -' + ' generateAccessList success: true' )
             } else {
               /* prettier-ignore */ nestedCountersInstance.countEvent( 'shardeum', 'precrack' + ' -' + ' generateAccessList success: false' )
-              return {status: false, reason: `Failed to generate access list2 ${Date.now() - aalgStart}`}
+              return { status: false, reason: `Failed to generate access list2 ${Date.now() - aalgStart}` }
             }
           }
         }
