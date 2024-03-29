@@ -1080,27 +1080,6 @@ const configShardusEndpoints = (): void => {
   //   return res.json({ success: true })
   // })
 
-  let motdCount = 0
-  shardus.registerExternalGet('motd', async (req, res) => {
-    motdCount++
-    // let localCount = 0
-    // await sleep(1000)
-    // localCount++
-    // await sleep(1000)
-    // localCount++
-    // await sleep(1000)
-    // localCount++
-    // await sleep(1000)
-    // localCount++
-    // await sleep(1000)
-    // localCount++
-    // await sleep(1000)
-    // localCount++
-
-    //unofficial version number, may not be maintained always.  used for debug
-    return res.json({ version: '1.4.2.0', date: '20230623', note: '', motd: `${motdCount}` })
-  })
-
   shardus.registerExternalGet('debug-points', debugMiddleware, async (req, res) => {
     // if(isDebugMode()){
     //   return res.json(`endpoint not available`)
