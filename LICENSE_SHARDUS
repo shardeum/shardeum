@@ -1,0 +1,43 @@
+This is the LICENSE_SHARDUS file included with the Shardus software and
+any other software that is based on it or derived from it.
+
+This file must be included without change in any software distribution
+that is a copy, fork or derivative of any software that included this
+file.
+
+This file must be added without change to any software distribution
+that incorporates or requires a software library or module that
+included this file.
+
+A software distribution that is a copy, fork or derivative of software
+that includes this file may not have any other license file in the
+software distribution.
+
+A software distribution that incorporates or requires a software 
+library or module that includes this file may have a separate parent 
+license. The parent license does not apply to the Shardus software it 
+is based on.
+
+The Shardus software is source available and use of the software in a 
+production setting requires obtaining a commercial license. Some parts
+of the Shardus software are covered by pending patents.
+
+Anyone who contributes to the development of the Shardus software may
+be rewarded with Shardus tokens or tokens of projects using the Shardus
+software. This is to encourage contributing to the original Shardus 
+software rather than forking and modifying it.
+
+In a nutshell, if you launch a public network using the Shardus software
+then please make claimable at least 1% of the native tokens of your 
+public network to the Shardus token holders. This will help to market 
+your new project to those who supported the development of the Shardus 
+software. It's a win-win situation.
+
+For details on what is considered production use and how to obtain a
+commercial license, please see:
+https://shardus.com/license
+
+The above license web page can also be accessed from:
+https://github.com/shardus/shardus.github.io/tree/master/license
+
+Version 2024.04.01
