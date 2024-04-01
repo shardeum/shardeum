@@ -4485,6 +4485,16 @@ const shardusSetup = (): void => {
         //else if (remoteShardusAccount == null && appData.newCAAddr == null) shouldGenerateAccesslist = false //resolve which is correct from merge!
         else if (remoteTargetAccount == null && appData.newCAAddr == null) shouldGenerateAccesslist = false
 
+        // dappFeature1enabled is our coin-transfer-only mode. Crack if it calls EVM
+        const isCoinTransfer = isSimpleTransfer || (remoteTargetAccount == null && appData.newCAAddr == null)
+        if (shardusConfig.features.dappFeature1enabled && !isStakeRelatedTx && !isCoinTransfer) {
+          nestedCountersInstance.countEvent('shardeum', 'precrack - coin-transfer-only')
+          return {
+            status: false,
+            reason: `coin-transfer-only mode enabled. Only simple transfers are allowed.`,
+          }
+        }
+
         //also run access list generation if needed
         if (shouldGenerateAccesslist) {
           let success = true
