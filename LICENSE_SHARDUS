@@ -18,7 +18,7 @@ library or module that includes this file may have a separate parent
 license. The parent license does not apply to the Shardus software it 
 is based on.
 
-The Shardus software is open source, but use of the software in a 
+The Shardus software is source available and use of the software in a 
 production setting requires obtaining a commercial license. Some parts
 of the Shardus software are covered by pending patents.
 
@@ -38,4 +38,3 @@ commercial license, please see:
 https://shardus.com/license
 
 Version 2024.04.01
-
