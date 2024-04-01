@@ -113,7 +113,9 @@ if (process.env.APP_IP) {
       server: {
         ip: {
           externalIp: process.env.APP_IP,
+          externalPort: process.env.APP_EXTERNAL_PORT || 9001,
           internalIp: process.env.APP_IP,
+          internalPort: process.env.APP_INTERNAL_PORT || 10001,
         },
       },
     },
