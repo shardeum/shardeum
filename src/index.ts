@@ -151,6 +151,7 @@ import { getCachedRIAccount, setCachedRIAccount } from './storage/riAccountsCach
 import { isLowStake } from './tx/penalty/penaltyFunctions'
 import { accountDeserializer, accountSerializer } from './types/Helpers'
 import { runWithContextAsync } from './utils/RequestContext'
+import { isNodeNearRotatingOut, isNodeRecentlyRotatedIn } from './utils/edgeRotation'
 
 let latestBlock = 0
 export const blocks: BlockMap = {}
@@ -1120,7 +1121,7 @@ const configShardusEndpoints = (): void => {
     const id = shardus.getNodeId()
     const { idx, total } = shardus.getNodeRotationIndex(id)
     // skip if we have just rotated in
-    if (total >= 10 && idx <= config.server.p2p.rotationEdgeToAvoid) {
+    if (isNodeRecentlyRotatedIn(idx, total)) {
       nestedCountersInstance.countEvent('skip-newly-rotated-node', id)
       return res.json({
         success: false,
@@ -1129,7 +1130,7 @@ const configShardusEndpoints = (): void => {
       })
     }
     // skip if we're close to rotating out
-    if (total >= 10 && idx >= total - config.server.p2p.rotationEdgeToAvoid) {
+    if (isNodeNearRotatingOut(idx, total)) {
       nestedCountersInstance.countEvent('skip-about-to-rotate-out-node', id)
       return res.json({
         success: false,
@@ -1441,12 +1442,12 @@ const configShardusEndpoints = (): void => {
     const id = shardus.getNodeId()
     const { idx, total } = shardus.getNodeRotationIndex(id)
     // skip if we have just rotated in
-    if (total >= 10 && idx <= config.server.p2p.rotationEdgeToAvoid) {
+    if (isNodeRecentlyRotatedIn(idx, total)) {
       nestedCountersInstance.countEvent('skip-newly-rotated-node', id)
       return res.json({ error: 'node close to rotation edges' })
     }
     // skip if we're close to rotating out
-    if (total >= 10 && idx >= total - config.server.p2p.rotationEdgeToAvoid) {
+    if (isNodeNearRotatingOut(idx, total)) {
       nestedCountersInstance.countEvent('skip-about-to-rotate-out-node', id)
       return res.json({ error: 'node close to rotation edges' })
     }
