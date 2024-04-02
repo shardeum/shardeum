@@ -197,8 +197,22 @@ config = merge(config, {
       // 1.10.x ? dev test   needs migration to release
       useBinarySerializedEndpoints: true,
       // 1.10 x ? dev test   needs migration to release
-      removeLostSyncingNodeFromList: true
+      removeLostSyncingNodeFromList: true,
+
+      //1.11.0
+      rotationEdgeToAvoid: 3,
+
+      maxStandbyCount: 30000, //max allowed standby nodes count
+      enableMaxStandbyCount: true,
+
+
+
     },
+    features: {
+
+      //This feature will restrict transactions to only coin transfers
+      dappFeature1enabled : false,
+    }
   },
 })
 
