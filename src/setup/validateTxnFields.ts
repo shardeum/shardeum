@@ -17,7 +17,14 @@ import * as AccountsStorage from '../storage/accountStorage'
 import { validateClaimRewardTx } from '../tx/claimReward'
 import * as InitRewardTimesTx from '../tx/initRewardTimes'
 import { isSetCertTimeTx, validateSetCertTimeTx } from '../tx/setCertTime'
-import { scaleByStabilityFactor, _base16BNParser, isWithinRange, generateTxId, getTxSenderAddress } from '../utils'
+import {
+  scaleByStabilityFactor,
+  _base16BNParser,
+  isWithinRange,
+  generateTxId,
+  getTxSenderAddress,
+  emptyCodeHash, isStakingEVMTx
+} from '../utils'
 import {
   crypto,
   getInjectedOrGeneratedTimestamp,
@@ -30,7 +37,7 @@ import {
 import { fixBigIntLiteralsToBigInt } from '../utils/serialization'
 import { validatePenaltyTX } from '../tx/penalty/transaction'
 import { bytesToHex } from '@ethereumjs/util'
-import { logFlags } from '..'
+import {logFlags, shardusConfig} from '..'
 
 /**
  * Checks that Transaction fields are valid
@@ -252,6 +259,20 @@ export const validateTxnFields =
               nestedCountersInstance.countEvent('shardeum', 'validate - exact nonce check fail')
             } else {
               /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`ExactNonce check pass: expectedNonce:${exactCount} == txNonce:${txNonce}. accountNonce:${appData.nonce} txHash: ${transaction.hash().toString()} `)
+            }
+          }
+        }
+
+        const isStakeRelatedTx: boolean = isStakingEVMTx(transaction)
+        if (shardusConfig.features.dappFeature1enabled && appData && !appData.internalTx && !isStakeRelatedTx) {
+          const isCoinTransfer = transaction.value != null && transaction.to != null
+            && (transaction.data == null || transaction.data.length === 0 || bytesToHex(transaction.data) === emptyCodeHash)
+          if (!isCoinTransfer) {
+            nestedCountersInstance.countEvent('shardeum', 'validate - coin-transfer-only mode fail')
+            return {
+              success: false,
+              reason: 'Invalid transaction fields',
+              txnTimestamp,
             }
           }
         }

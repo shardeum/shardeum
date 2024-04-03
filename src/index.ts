@@ -107,7 +107,7 @@ import {
   getTxSenderAddress,
   isInSenderCache,
   removeTxFromSenderCache,
-  DeSerializeFromJsonString,
+  DeSerializeFromJsonString, isStakingEVMTx,
 } from './utils'
 import config, { Config } from './config'
 import Wallet from 'ethereumjs-wallet'
@@ -771,12 +771,6 @@ async function tryGetRemoteAccountCB(
   fixDeserializedWrappedEVMAccount(fixedEVMAccount)
   /* prettier-ignore */ if (ShardeumFlags.VerboseLogs || logFlags.aalg) console.log(`${Date.now()} Successfully found remote account for address: ${address}, type: ${type}, key: ${key}, retry: ${retry}`, fixedEVMAccount)
   return fixedEVMAccount
-}
-
-function isStakingEVMTx(
-  transaction: Transaction[TransactionType.Legacy] | Transaction[TransactionType.AccessListEIP2930]
-): boolean {
-  return transaction.to && transaction.to.toString() === ShardeumFlags.stakeTargetAddress
 }
 
 function getStakeTxBlobFromEVMTx(

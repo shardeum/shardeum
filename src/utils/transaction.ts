@@ -1,8 +1,9 @@
-import { TypedTransaction } from '@ethereumjs/tx'
+import {Transaction, TransactionType, TypedTransaction} from '@ethereumjs/tx'
 import { Address } from '@ethereumjs/util'
 import { getSenderAddress } from '@shardus/net'
 import { hashSignedObj } from '../setup/helpers'
 import { logFlags } from '..'
+import {ShardeumFlags} from "../shardeum/shardeumFlags";
 
 const txSenderCache: Map<string, { address: Address; isValid: boolean }> = new Map()
 let simpleTTL = 0
@@ -84,3 +85,10 @@ export function isInSenderCache(txid: string): boolean {
 export function removeTxFromSenderCache(txid: string): void {
   txSenderCache.delete(txid)
 }
+
+export function isStakingEVMTx(
+  transaction: Transaction[TransactionType.Legacy] | Transaction[TransactionType.AccessListEIP2930]
+): boolean {
+  return transaction.to && transaction.to.toString() === ShardeumFlags.stakeTargetAddress
+}
+
