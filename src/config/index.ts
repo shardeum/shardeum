@@ -187,6 +187,10 @@ config = merge(config, {
       extraNodesToAddInRestart: 5, //how many extra nodes to we add in restart phase so we dont get stuck in restore phase
       // 1.10.1
       cyclesToWaitForSyncStarted: 5, //raising this to 5 to reduce the chance of nodes getting booted out too soon
+
+      // 1.10.2 compatibility 
+      minChecksForUp: 1000, // disable this feature  
+      minChecksForDown: 3, // this is equivalent to the current live value(atlhough a different config name) on beta 1.10.2 
     },
   },
 })
