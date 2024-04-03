@@ -68,12 +68,10 @@ export function _calculateAccountHash(account: WrappedEVMAccount | InternalAccou
 export function _shardusWrappedAccount(
   wrappedEVMAccount: WrappedEVMAccount | InternalAccount
 ): ShardusTypes.WrappedData {
+  const reuseHash = wrappedEVMAccount.accountType === AccountType.ContractCode && wrappedEVMAccount.hash // Use cached hash if available for ContractCode
   const wrappedChangedAccount = {
     accountId: getAccountShardusAddress(wrappedEVMAccount),
-    stateId:
-      wrappedEVMAccount.accountType === AccountType.ContractCode && wrappedEVMAccount.hash
-        ? wrappedEVMAccount.hash
-        : _calculateAccountHash(wrappedEVMAccount), // Use cached hash if available for ContractCode
+    stateId: reuseHash ? wrappedEVMAccount.hash : _calculateAccountHash(wrappedEVMAccount),
     data: wrappedEVMAccount,
     timestamp: wrappedEVMAccount.timestamp,
   }
