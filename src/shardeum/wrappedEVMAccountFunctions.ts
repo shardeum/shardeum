@@ -70,7 +70,10 @@ export function _shardusWrappedAccount(
 ): ShardusTypes.WrappedData {
   const wrappedChangedAccount = {
     accountId: getAccountShardusAddress(wrappedEVMAccount),
-    stateId: _calculateAccountHash(wrappedEVMAccount),
+    stateId:
+      wrappedEVMAccount.accountType === AccountType.ContractCode && wrappedEVMAccount.hash
+        ? wrappedEVMAccount.hash
+        : _calculateAccountHash(wrappedEVMAccount), // Use cached hash if available for ContractCode
     data: wrappedEVMAccount,
     timestamp: wrappedEVMAccount.timestamp,
   }

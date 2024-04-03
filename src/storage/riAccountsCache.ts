@@ -5,6 +5,7 @@ import { AccountType, WrappedEVMAccount } from '../shardeum/shardeumTypes'
 import { DeSerializeFromJsonString } from '../utils'
 import { accounts, storage } from './accountStorage'
 import { AccountsEntry } from './storage'
+import * as WrappedEVMAccountFunctions from '../shardeum/wrappedEVMAccountFunctions'
 
 export async function getCachedRIAccount(address: string): Promise<WrappedEVMAccount> {
   if (ShardeumFlags.enableRIAccountsCache === false || isServiceMode()) return
@@ -43,6 +44,8 @@ export async function setCachedRIAccount(account: AccountsEntry): Promise<void> 
       }
       account.timestamp = Date.now()
       nestedCountersInstance.countEvent('cache', 'setCachedRIAccountData')
+      // Calculate and store the hash of the account data
+      account.data.hash = WrappedEVMAccountFunctions._calculateAccountHash(account.data)
       await storage.setRIAccountsCache(account)
       return
     } else {
