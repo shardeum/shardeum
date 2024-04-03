@@ -191,6 +191,7 @@ config = merge(config, {
       // 1.10.2 compatibility 
       minChecksForUp: 1000, // disable this feature  
       minChecksForDown: 3, // this is equivalent to the current live value(atlhough a different config name) on beta 1.10.2 
+      numCheckerNodes: 3, // this is equivalent to the current live value
     },
   },
 })

@@ -17,7 +17,9 @@ export const migrate: Migration = async () => {
   // that is ok, if we have a node appear lost to two nodes that is enough to strike it.
   // we will likely tune these as they are run time tuneable
   shardusConfig.p2p.minChecksForUp = 2 
-  shardusConfig.p2p.minChecksForDown = 4 
+  shardusConfig.p2p.minChecksForDown = 2 
+  //ask 4 nodes but we only require 2 to count for down
+  shardusConfig.p2p.numCheckerNodes = 4
 
 }
 

@@ -18,8 +18,9 @@ export const migrate: Migration = async () => {
   //TODO later confirm if this is needed or if the changes in config/index.ts are enough
   // mostly sure this is not need.  but added for extra safetly.
   shardusConfig.p2p.minChecksForUp = 1000 
+  //these settings reprecent how beta currently works 
   shardusConfig.p2p.minChecksForDown = 3 
-
+  shardusConfig.p2p.numCheckerNodes = 3
 
 }
 
