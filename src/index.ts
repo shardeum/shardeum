@@ -4404,6 +4404,13 @@ const shardusSetup = (): void => {
             }
           }
 
+          if (ShardeumFlags.disableContractTxs && (transaction.data.length > 0 || transaction.to == null)) {
+            return {
+              status: false,
+              reason: `Contract transactions are disabled.`
+            }
+          }
+
           if (remoteShardusAccount == null && isDebugMode() === false) {
             /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`txPreCrackData: found no local or remote account for address: ${txSenderEvmAddr}, key: ${transformedSourceKey}. using nonce=0`)
             return {
