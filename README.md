@@ -204,7 +204,7 @@ Click [here](https://metamask.io/download/). to install the MetaMask extension o
 
 ### Starting the JSON-RPC Server
 
-A Shardeum validator node does not have an integrated RPC API, instead we provide an Ethereum compatible JSON-RPC server that can be used to interact with the network that allows the existing Ethereum tools to use Shardeum seemlessly. To start the JSON-RPC server, clone the repository:
+A Shardeum validator node does not have an integrated RPC API, instead we provide an Ethereum compatible JSON-RPC server that can be used to interact with the network that allows the existing Ethereum tools to use Shardeum seamlessly. To start the JSON-RPC server, clone the repository:
 
 ```bash
 git clone https://gitlab.com/shardeum/json-rpc-server
