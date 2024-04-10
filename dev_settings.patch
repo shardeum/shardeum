@@ -2,7 +2,7 @@ diff --git a/src/config/index.ts b/src/config/index.ts
 index 14f85f2..766698b 100644
 --- a/src/config/index.ts
 +++ b/src/config/index.ts
-@@ -122,9 +122,9 @@ config = merge(config, {
+@@ -127,9 +127,9 @@
      p2p: {
        cycleDuration: 60,
        minNodesToAllowTxs: 1, // to allow single node networks
@@ -15,7 +15,18 @@ index 14f85f2..766698b 100644
        maxJoinedPerCycle: 10,
        maxSyncingPerCycle: 10,
        maxRotatedPerCycle: process.env.maxRotatedPerCycle ? parseInt(process.env.maxRotatedPerCycle) : 1,
-@@ -218,7 +218,7 @@ config = merge(config, {
+@@ -200,8 +200,8 @@
+       removeLostSyncingNodeFromList: true,
+
+       //1.11.0
+-      rotationEdgeToAvoid: 2,
+-      allowActivePerCycle: 1,
++      rotationEdgeToAvoid: 6,
++      allowActivePerCycle: 3,
+
+       maxStandbyCount: 30000, //max allowed standby nodes count
+       enableMaxStandbyCount: true,
+@@ -246,7 +246,7 @@
      sharding: {
        nodesPerConsensusGroup: process.env.nodesPerConsensusGroup
          ? parseInt(process.env.nodesPerConsensusGroup)
@@ -24,7 +35,7 @@ index 14f85f2..766698b 100644
        nodesPerEdge: process.env.nodesPerEdge ? parseInt(process.env.nodesPerEdge) : 5,
        executeInOneShard: true,
      },
-@@ -262,8 +262,8 @@ config = merge(
+@@ -290,8 +290,8 @@
            // '': DevSecurityLevel.Unauthorized,
            // These are production keys.  Use 'git apply use_test_key.patch' for unsafe local test keys
            // Never merge a commit with changes to these lines without approval.

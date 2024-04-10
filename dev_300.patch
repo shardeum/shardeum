@@ -17,16 +17,27 @@ index ea99fde..9b47442 100644
        //  1200=20 minutes.  If the network lives a long time we may have to bump this up
        syncBoostEnabled: false,
        amountToGrow: 30,
-@@ -184,7 +184,7 @@ config = merge(config, {
+@@ -189,7 +189,7 @@
        standbyListCyclesTTL: 1440, //nodes only need to refresh once every 24 hours (which is 1440 60s cycles!)
- 
+
        // 1.10.1
 -      extraNodesToAddInRestart: 5, //how many extra nodes to we add in restart phase so we dont get stuck in restore phase
 +      extraNodesToAddInRestart: 20, //how many extra nodes to we add in restart phase so we dont get stuck in restore phase
        // 1.10.1
        cyclesToWaitForSyncStarted: 5, //raising this to 5 to reduce the chance of nodes getting booted out too soon
- 
-@@ -225,7 +225,7 @@ config = merge(config, {
+
+@@ -200,8 +200,8 @@
+       removeLostSyncingNodeFromList: true,
+
+       //1.11.0
+-      rotationEdgeToAvoid: 2,
+-      allowActivePerCycle: 1,
++      rotationEdgeToAvoid: 8,
++      allowActivePerCycle: 4,
+
+       maxStandbyCount: 30000, //max allowed standby nodes count
+       enableMaxStandbyCount: true,
+@@ -246,7 +246,7 @@
      sharding: {
        nodesPerConsensusGroup: process.env.nodesPerConsensusGroup
          ? parseInt(process.env.nodesPerConsensusGroup)

@@ -19,6 +19,7 @@ export interface Config {
         publicKey: string
       }>
       rotationEdgeToAvoid: number
+      allowActivePerCycle: number
     }
     baseDir: string
     mode?: 'debug' | 'release'
@@ -200,7 +201,8 @@ config = merge(config, {
       removeLostSyncingNodeFromList: true,
 
       //1.11.0
-      rotationEdgeToAvoid: 3,
+      rotationEdgeToAvoid: 2,
+      allowActivePerCycle: 1,
 
       maxStandbyCount: 30000, //max allowed standby nodes count
       enableMaxStandbyCount: true,
