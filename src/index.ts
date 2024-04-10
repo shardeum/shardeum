@@ -1264,6 +1264,20 @@ const configShardusEndpoints = (): void => {
   shardus.registerExternalGet('eth_getBlockByNumber', externalApiMiddleware, async (req, res) => {
     const blockNumberParam = req.query.blockNumber as string
     let blockNumber: number | string
+
+    const id = shardus.getNodeId()
+    const { idx, total } = shardus.getNodeRotationIndex(id)
+    // skip if we have just rotated in
+    if (isNodeRecentlyRotatedIn(idx, total)) {
+      nestedCountersInstance.countEvent('skip-newly-rotated-node', id)
+      return res.json({ error: 'node close to rotation edges' })
+    }
+    // skip if we're close to rotating out
+    if (isNodeNearRotatingOut(idx, total)) {
+      nestedCountersInstance.countEvent('skip-about-to-rotate-out-node', id)
+      return res.json({ error: 'node close to rotation edges' })
+    }
+
     if (blockNumberParam === 'latest' || blockNumberParam === 'earliest') {
       blockNumber = blockNumberParam
     } else {
