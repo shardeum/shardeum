@@ -281,7 +281,8 @@ config = merge(
         startInFatalsLogMode: false, // true setting good for big aws test with nodes joining under stress.
         startInErrorLogMode: true,
         robustQueryDebug: false,
-        fakeNetworkDelay: 0,
+        fakeNetworkDelayMin: 0,
+        fakeNetworkDelayMax: 0,
         disableSnapshots: true, // do not check in if set to false
         countEndpointStart: -1,
         hashedDevAuth: '',
