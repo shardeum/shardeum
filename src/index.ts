@@ -3489,15 +3489,18 @@ const shardusSetup = (): void => {
             operatorEVMAccount.operatorAccountInfo
           )
         }
+        const txFeeUsd = BigInt(ShardeumFlags.constantTxFeeUsd)
+        const txFee = scaleByStabilityFactor(txFeeUsd, AccountsStorage.cachedNetworkAccount)
+        const totalAmountToDeduct = stakeCoinsTx.stake + txFee
+        if (operatorEVMAccount.account.balance < totalAmountToDeduct) {
+          throw new Error('Operator account does not have enough balance to stake')
+        }
         operatorEVMAccount.operatorAccountInfo.stake += stakeCoinsTx.stake
         operatorEVMAccount.operatorAccountInfo.nominee = stakeCoinsTx.nominee
         if (operatorEVMAccount.operatorAccountInfo.certExp == null)
           operatorEVMAccount.operatorAccountInfo.certExp = 0
         fixDeserializedWrappedEVMAccount(operatorEVMAccount)
 
-        const txFeeUsd = BigInt(ShardeumFlags.constantTxFeeUsd)
-        const txFee = scaleByStabilityFactor(txFeeUsd, AccountsStorage.cachedNetworkAccount)
-        const totalAmountToDeduct = stakeCoinsTx.stake + txFee
         operatorEVMAccount.account.balance = operatorEVMAccount.account.balance - totalAmountToDeduct
         operatorEVMAccount.account.nonce = operatorEVMAccount.account.nonce + BigInt(1)
 
