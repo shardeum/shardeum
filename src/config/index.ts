@@ -221,25 +221,25 @@ config = merge(config, {
 // rateLimiting and loadDetection settings
 config = merge(config, {
   server: {
-    rateLimiting: {
-      limitRate: true,
-      loadLimit: {
-        internal: 0.8,
-        external: 0.8,
-        txTimeInQueue: 0.7,
-        queueLength: 0.8,
-        executeQueueLength: 0.8,
+      rateLimiting: {
+        limitRate: true,
+        loadLimit: {
+          internal: 0.6,
+          external: 0.6,
+          txTimeInQueue: 0.6,
+          queueLength: 0.6,
+          executeQueueLength: 0.6,
+        },
+      },
+      loadDetection: {
+        queueLimit: 80, // EXSS does the main limiting now queue limit is a secondary limit
+        executeQueueLimit: 80,
+        desiredTxTime: 15, // 15
+        highThreshold: 0.5,
+        lowThreshold: 0.2,
       },
     },
-    loadDetection: {
-      queueLimit: 400, // EXSS does the main limiting now queue limit is a secondary limit
-      executeQueueLimit: 250,
-      desiredTxTime: 30, // 15
-      highThreshold: 0.5,
-      lowThreshold: 0.2,
-    },
-  },
-})
+  })
 
 // Sharding and state manager settings
 config = merge(config, {
