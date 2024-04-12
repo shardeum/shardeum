@@ -151,7 +151,6 @@ import { getCachedRIAccount, setCachedRIAccount } from './storage/riAccountsCach
 import { isLowStake } from './tx/penalty/penaltyFunctions'
 import { accountDeserializer, accountSerializer } from './types/Helpers'
 import { runWithContextAsync } from './utils/RequestContext'
-import { isNodeNearRotatingOut, isNodeRecentlyRotatedIn } from './utils/edgeRotation'
 
 let latestBlock = 0
 export const blocks: BlockMap = {}
@@ -1113,19 +1112,8 @@ const configShardusEndpoints = (): void => {
     const tx = req.body
     const appData = null
     const id = shardus.getNodeId()
-    const { idx, total } = shardus.getNodeRotationIndex(id)
-    // skip if we have just rotated in
-    if (isNodeRecentlyRotatedIn(idx, total)) {
-      nestedCountersInstance.countEvent('skip-newly-rotated-node', id)
-      return res.json({
-        success: false,
-        reason: `Node is too close to rotation edges. Inject to another node`,
-        status: 500,
-      })
-    }
-    // skip if we're close to rotating out
-    if (isNodeNearRotatingOut(idx, total)) {
-      nestedCountersInstance.countEvent('skip-about-to-rotate-out-node', id)
+    const isOutOfBounds = shardus.isNodeOutOfRotationBounds(id)
+    if (isOutOfBounds) {
       return res.json({
         success: false,
         reason: `Node is too close to rotation edges. Inject to another node`,
@@ -1235,6 +1223,15 @@ const configShardusEndpoints = (): void => {
   }
 
   shardus.registerExternalPost('inject-with-warmup', externalApiMiddleware, async (req, res) => {
+    const id = shardus.getNodeId()
+    const isOutOfBounds = shardus.isNodeOutOfRotationBounds(id)
+    if (isOutOfBounds) {
+      return res.json({
+        success: false,
+        reason: `Node is too close to rotation edges. Inject to another node`,
+        status: 500,
+      })
+    }
     const { tx, warmupList } = req.body
     let appData = null
     if (warmupList != null) {
@@ -1275,18 +1272,10 @@ const configShardusEndpoints = (): void => {
     let blockNumber: number | string
 
     const id = shardus.getNodeId()
-    const { idx, total } = shardus.getNodeRotationIndex(id)
-    // skip if we have just rotated in
-    if (isNodeRecentlyRotatedIn(idx, total)) {
-      nestedCountersInstance.countEvent('skip-newly-rotated-node', id)
+    const isOutOfBounds = shardus.isNodeOutOfRotationBounds(id)
+    if (isOutOfBounds) {
       return res.json({ error: 'node close to rotation edges' })
     }
-    // skip if we're close to rotating out
-    if (isNodeNearRotatingOut(idx, total)) {
-      nestedCountersInstance.countEvent('skip-about-to-rotate-out-node', id)
-      return res.json({ error: 'node close to rotation edges' })
-    }
-
     if (blockNumberParam === 'latest' || blockNumberParam === 'earliest') {
       blockNumber = blockNumberParam
     } else {
@@ -1457,15 +1446,8 @@ const configShardusEndpoints = (): void => {
     }
 
     const id = shardus.getNodeId()
-    const { idx, total } = shardus.getNodeRotationIndex(id)
-    // skip if we have just rotated in
-    if (isNodeRecentlyRotatedIn(idx, total)) {
-      nestedCountersInstance.countEvent('skip-newly-rotated-node', id)
-      return res.json({ error: 'node close to rotation edges' })
-    }
-    // skip if we're close to rotating out
-    if (isNodeNearRotatingOut(idx, total)) {
-      nestedCountersInstance.countEvent('skip-about-to-rotate-out-node', id)
+    const isOutOfBounds = shardus.isNodeOutOfRotationBounds(id)
+    if (isOutOfBounds) {
       return res.json({ error: 'node close to rotation edges' })
     }
 
