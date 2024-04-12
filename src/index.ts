@@ -1113,10 +1113,10 @@ const configShardusEndpoints = (): void => {
     const appData = null
     const id = shardus.getNodeId()
     const isOutOfBounds = shardus.isNodeOutOfRotationBounds(id)
-    if (isOutOfBounds) {
+    if (isOutOfBounds || !shardus.isNodeInsync()) {
       return res.json({
         success: false,
-        reason: `Node is too close to rotation edges. Inject to another node`,
+        reason: `Node is possibly not in sync. Inject to another node`,
         status: 500,
       })
     }
@@ -1216,10 +1216,10 @@ const configShardusEndpoints = (): void => {
   shardus.registerExternalPost('inject-with-warmup', externalApiMiddleware, async (req, res) => {
     const id = shardus.getNodeId()
     const isOutOfBounds = shardus.isNodeOutOfRotationBounds(id)
-    if (isOutOfBounds) {
+    if (isOutOfBounds || !shardus.isNodeInsync()) {
       return res.json({
         success: false,
-        reason: `Node is too close to rotation edges. Inject to another node`,
+        reason: `Node is possibly not in sync. Inject to another node`,
         status: 500,
       })
     }
@@ -1264,8 +1264,8 @@ const configShardusEndpoints = (): void => {
 
     const id = shardus.getNodeId()
     const isOutOfBounds = shardus.isNodeOutOfRotationBounds(id)
-    if (isOutOfBounds) {
-      return res.json({ error: 'node close to rotation edges' })
+    if (isOutOfBounds || !shardus.isNodeInsync()) {
+      return res.json({ error: 'Node is possibly not in sync. Inject to another node' })
     }
     if (blockNumberParam === 'latest' || blockNumberParam === 'earliest') {
       blockNumber = blockNumberParam
@@ -1438,8 +1438,8 @@ const configShardusEndpoints = (): void => {
 
     const id = shardus.getNodeId()
     const isOutOfBounds = shardus.isNodeOutOfRotationBounds(id)
-    if (isOutOfBounds) {
-      return res.json({ error: 'node close to rotation edges' })
+    if (isOutOfBounds || !shardus.isNodeInsync()) {
+      return res.json({ error: 'Node is possibly not in sync. Inject to another node' })
     }
 
     try {
