@@ -44,7 +44,7 @@ export const validateTransaction =
         } else {
           if (tx.internalTXType === InternalTXType.ChangeConfig) {
             const givenConfig = JSON.parse(tx.config)
-            if (comparePropertiesTypes(givenConfig, config.server)) {
+            if (tx.devPublicKeys || comparePropertiesTypes(givenConfig, config.server) ) {
               return { result: 'pass', reason: 'valid' }
             } else {
               return { result: 'fail', reason: 'Invalid config' }
