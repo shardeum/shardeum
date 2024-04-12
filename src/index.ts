@@ -151,7 +151,6 @@ import { getCachedRIAccount, setCachedRIAccount } from './storage/riAccountsCach
 import { isLowStake } from './tx/penalty/penaltyFunctions'
 import { accountDeserializer, accountSerializer } from './types/Helpers'
 import { runWithContextAsync } from './utils/RequestContext'
-import {isNodeOutOfRotationBounds} from './utils/edgeRotation'
 
 let latestBlock = 0
 export const blocks: BlockMap = {}
@@ -1113,7 +1112,7 @@ const configShardusEndpoints = (): void => {
     const tx = req.body
     const appData = null
     const id = shardus.getNodeId()
-    const isOutOfBounds = isNodeOutOfRotationBounds(shardus, id)
+    const isOutOfBounds = shardus.isNodeOutOfRotationBounds(id)
     if (isOutOfBounds) {
       return res.json({
         success: false,
@@ -1215,6 +1214,15 @@ const configShardusEndpoints = (): void => {
   }
 
   shardus.registerExternalPost('inject-with-warmup', externalApiMiddleware, async (req, res) => {
+    const id = shardus.getNodeId()
+    const isOutOfBounds = shardus.isNodeOutOfRotationBounds(id)
+    if (isOutOfBounds) {
+      return res.json({
+        success: false,
+        reason: `Node is too close to rotation edges. Inject to another node`,
+        status: 500,
+      })
+    }
     const { tx, warmupList } = req.body
     let appData = null
     if (warmupList != null) {
@@ -1255,7 +1263,7 @@ const configShardusEndpoints = (): void => {
     let blockNumber: number | string
 
     const id = shardus.getNodeId()
-    const isOutOfBounds = isNodeOutOfRotationBounds(shardus, id)
+    const isOutOfBounds = shardus.isNodeOutOfRotationBounds(id)
     if (isOutOfBounds) {
       return res.json({ error: 'node close to rotation edges' })
     }
@@ -1429,7 +1437,7 @@ const configShardusEndpoints = (): void => {
     }
 
     const id = shardus.getNodeId()
-    const isOutOfBounds = isNodeOutOfRotationBounds(shardus, id)
+    const isOutOfBounds = shardus.isNodeOutOfRotationBounds(id)
     if (isOutOfBounds) {
       return res.json({ error: 'node close to rotation edges' })
     }
