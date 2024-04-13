@@ -1141,6 +1141,15 @@ const configShardusEndpoints = (): void => {
     const nodeId = shardus.getNodeId()
     const node = shardus.getNode(nodeId)
 
+    if (!node) {
+      nestedCountersInstance.countEvent('shardeum', `txRejectedDueToNodeNotFound`)
+      res.json({
+        success: false,
+        reason: `Node not found. Rejecting inject`,
+        status: 500,
+      })
+      return
+    }
     if (node.status !== P2P.P2PTypes.NodeStatus.ACTIVE) {
       res.json({
         success: false,
