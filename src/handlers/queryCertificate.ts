@@ -12,10 +12,10 @@ import {
   WrappedEVMAccount,
 } from '../shardeum/shardeumTypes'
 import { fixDeserializedWrappedEVMAccount, isWrappedEVMAccount } from '../shardeum/wrappedEVMAccountFunctions'
-import { setCertTimeTx } from '../tx/setCertTime'
 import { getRandom, fixBigIntLiteralsToBigInt } from '../utils'
 import { shardusGetFromNode, shardusPostToNode, shardusPutToNode } from '../utils/requests'
 import { logFlags, shardeumGetTime } from '..'
+import { OpaqueTransaction } from '@shardus/core/dist/shardus/shardus-types'
 
 // constants
 
@@ -216,7 +216,7 @@ export async function queryCertificate(
 // Move this helper function to utils or somewhere
 export async function InjectTxToConsensor(
   randomConsensusNode: ShardusTypes.ValidatorNodeDetails,
-  tx: setCertTimeTx // Sign Object
+  tx: OpaqueTransaction // Sign Object
 ): Promise<InjectTxResponse | ValidatorError> {
   try {
     const res = await shardusPostToNode<any>(randomConsensusNode, `/inject`, tx) // eslint-disable-line @typescript-eslint/no-explicit-any

@@ -6943,7 +6943,10 @@ const shardusSetup = (): void => {
     getTxSenderAddress(tx) {
       const shardusTxId = generateTxId(tx)
       const transaction = getTransactionObj(tx)
-      return getTxSenderAddress(transaction, shardusTxId).address
+      const senderAddress = getTxSenderAddress(transaction, shardusTxId).address
+      const callerEVMAddress = senderAddress.toString()
+      const callerShardusAddress = toShardusAddress(callerEVMAddress, AccountType.Account)
+      return callerShardusAddress
     },
     injectTxToConsensor(validatorDetails, tx) {
       return InjectTxToConsensor(validatorDetails, tx)
