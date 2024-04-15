@@ -20,7 +20,7 @@ COPY . .
 RUN apt-get update && apt-get install -y \
     build-essential \
     curl
-RUN curl https://sh.rustup.rs -sSf | bash -s -- -y
+RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --default-toolchain 1.74.1
 ENV PATH="/root/.cargo/bin:${PATH}"
 
 # Install node_modules
