@@ -1,0 +1,28 @@
+diff --git a/src/config/index.ts b/src/config/index.ts
+index f60b4bc..5936cf4 100644
+--- a/src/config/index.ts
++++ b/src/config/index.ts
+@@ -291,10 +291,19 @@ config = merge(
+           // '': DevSecurityLevel.Unauthorized,
+           // These are production keys.  Use 'git apply use_test_key.patch' for unsafe local test keys
+           // Never merge a commit with changes to these lines without approval.
+-          'a45f9a87e10d6dbd88c141e4fb293f96ab30441cbb77a4b04c577ba18d393505': DevSecurityLevel.Low,
+-          'b51124e6d01e0684ff2b86eac9433d585a17319f15b393c8e4426af19117f704': DevSecurityLevel.Medium,
+-          //this last line needs command to ignore auto formatting or prettier will strip the quotes!!
+-          /* prettier-ignore */ 'c980f4dbdd40a9d334b3815b223e83d27e227892a109413e4bc114e8220bd281': DevSecurityLevel.High,
++          //'UNSAFE KEYS IN USE DO NOT CHECK IN': DevSecurityLevel.Low,
++          //'UNSAFE KEYS IN USE DO NOT CHECK IN': DevSecurityLevel.Medium,
++          '774491f80f47fedb119bb861601490f42bc3ea3b57fc63906c0d08e6d777a592': DevSecurityLevel.High,
++          '7ef74a92f7b179b16a863645c0ca6081634bc635a2efb50f230012dce795d16a': DevSecurityLevel.Low,
++          '8ef07ef4d30d63e6022dda3d1803b94d1cd186c1f0c594561f31ec8d83160550': DevSecurityLevel.Low,
++          'ef3074e41dd9a288a84fa9f5ef72e866fc445071a90863d9f3d93cfd52f1a32c': DevSecurityLevel.Low,
++          'b7a698aa7ce592a28a8623c2a370709198fc130baf123f637ee2e81231c65e71': DevSecurityLevel.Low,
++          '5aab63488780b01639c299a8f604c9aa5e3c7fbd7079ca626ac2ee27d733f9e1': DevSecurityLevel.Medium,
++          '0a2a35e24058504b988f9abeeff015f4e56321a93cfea2606f6c02d4f71eaaa3': DevSecurityLevel.Medium,
++          'abe8893267ebfd8e5e5401332035b6d1a1d76c2efa181b8f7e5c96c1611bc0e6': DevSecurityLevel.Medium,
++          '4aea5d476eaa1488a207d81b1e7abfa3eacb81528bd9ad7d20f0a38d92435366': DevSecurityLevel.High,
++          '9173d7638f6ddda0f30a9d5340614e57b0ba01af9882094f4e639e6fe9314724': DevSecurityLevel.High,
++          'e33b16e683c6fbe7a9bf0171fe57cd3b95281819f89eb7a5faece85428daad54': DevSecurityLevel.High,
+         },
+         checkAddressFormat: true, //enabled for 1.10.0
+         enableCycleRecordDebugTool: false, // only enable if you want to debug variant cycle records
