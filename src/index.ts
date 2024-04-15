@@ -120,6 +120,7 @@ import { applyClaimRewardTx, injectClaimRewardTxWithRetry } from './tx/claimRewa
 import { Request, Response } from 'express'
 import {
   CertSignaturesResult,
+  InjectTxToConsensor,
   queryCertificate,
   queryCertificateHandler,
   RemoveNodeCert,
@@ -6938,6 +6939,15 @@ const shardusSetup = (): void => {
         return DeSerializeFromJsonString(buffer.toString('utf8'))
       }
     },
+
+    getTxSenderAddress(tx) {
+      const shardusTxId = generateTxId(tx)
+      const transaction = getTransactionObj(tx)
+      return getTxSenderAddress(transaction, shardusTxId).address
+    },
+    injectTxToConsensor(validatorDetails, tx) {
+      return InjectTxToConsensor(validatorDetails, tx)
+    }
   })
 
   shardus.registerExceptionHandler()
