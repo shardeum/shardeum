@@ -139,6 +139,20 @@ npm update @shardus/archiver
 
 ## Local Configuration
 
+You have two ways to configure your local environment either easy mode or advanced mode
+
+### Easy Mode
+
+You have the option to quickly configure your local environment by applying one of the patches located in the /server/ folder, such as:
+
+```bash
+git apply debug-20-nodes.patch
+```
+
+For instance, `debug-20-nodes.patch` configures a network with debug settings, requiring 20 nodes to begin processing. These patches are designed to streamline the setup process for specific network configurations, eliminating the need for manual configuration to the following settings.
+
+### Advanced Mode
+
 The default settings included are intended to be used on the live network, so to configure the Shardeum network for local development, there are a few changes that need to be made:
 
 1. **Configure Debug Mode:** Enabling debug mode ensures all network addresses have a designated amount of SHM. Open the `src/config/index.ts` file and set the following configuration settings:
