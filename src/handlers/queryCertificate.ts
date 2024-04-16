@@ -215,11 +215,17 @@ export async function queryCertificate(
 
 // Move this helper function to utils or somewhere
 export async function InjectTxToConsensor(
-  randomConsensusNode: ShardusTypes.ValidatorNodeDetails,
+  randomConsensusNodes: ShardusTypes.ValidatorNodeDetails[],
   tx: OpaqueTransaction // Sign Object
 ): Promise<InjectTxResponse | ValidatorError> {
+  const promises = []
   try {
-    const res = await shardusPostToNode<any>(randomConsensusNode, `/inject`, tx) // eslint-disable-line @typescript-eslint/no-explicit-any
+    for (const randomConsensusNode of randomConsensusNodes) {
+      const promise = shardusPostToNode<any>(randomConsensusNode, `/inject`, tx) // eslint-disable-line
+      // @typescript-eslint/no-explicit-any
+      promises.push(promise)
+    }
+    const res = await Promise.race(promises)
     if (!res.data.success) {
       return { success: false, reason: res.data.reason }
     }

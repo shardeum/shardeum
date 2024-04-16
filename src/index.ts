@@ -4340,6 +4340,7 @@ const shardusSetup = (): void => {
 
         let remoteShardusAccount
         let remoteTargetAccount
+        appData.requestNewTimestamp = true // force all evm txs to generate a new timestamp
 
         //if the TX is a contract deploy, predict the new contract address correctly (needs sender's nonce)
         //remote fetch of sender EOA also allows fast balance and nonce checking (assuming we get some queue hints as well from shardus core)
@@ -4477,7 +4478,6 @@ const shardusSetup = (): void => {
           }
 
           //force all EVM transactions including simple ones to generate a timestamp
-          appData.requestNewTimestamp = true
         }
         let shouldGenerateAccesslist = true
         if (ShardeumFlags.autoGenerateAccessList === false) shouldGenerateAccesslist = false
@@ -6941,7 +6941,13 @@ const shardusSetup = (): void => {
     },
 
     getTxSenderAddress(tx) {
-      if (isInternalTx(tx) || isDebugTx(tx)) { return null }
+      if (isInternalTx(tx) || isDebugTx(tx)) {
+        const internalTx = tx as InternalTx
+        if (internalTx.internalTXType === InternalTXType.InitNetwork) {
+          return internalTx.network
+        }
+        return internalTx.from
+      }
       const shardusTxId = generateTxId(tx)
       const transaction = getTransactionObj(tx)
       const senderAddress = getTxSenderAddress(transaction, shardusTxId).address
@@ -6949,8 +6955,28 @@ const shardusSetup = (): void => {
       const callerShardusAddress = toShardusAddress(callerEVMAddress, AccountType.Account)
       return callerShardusAddress
     },
-    injectTxToConsensor(validatorDetails, tx) {
+    injectTxToConsensor(validatorDetails: any[], tx) {
       return InjectTxToConsensor(validatorDetails, tx)
+    },
+    getNonceFromTx(tx: ShardusTypes.OpaqueTransaction): bigint {
+      if (isInternalTx(tx) || isDebugTx(tx)) {
+        return BigInt(0)
+      }
+      const transaction = getTransactionObj(tx)
+      if (transaction && transaction.nonce) {
+        return transaction.nonce
+      }
+    },
+    async getAccountNonce(accountId: string, wrappedData: ShardusTypes.WrappedData): Promise<bigint> {
+      if (wrappedData != null) {
+        const wrappedEVMAccount = wrappedData.data as WrappedEVMAccount
+        return wrappedEVMAccount.account.nonce
+      }
+      const account: ShardusTypes.WrappedDataFromQueue = await shardus.getLocalOrRemoteAccount(accountId)
+      if (account != null) {
+        const wrappedEVMAccount = account.data as WrappedEVMAccount
+        return wrappedEVMAccount.account.nonce
+      }
     }
   })
 

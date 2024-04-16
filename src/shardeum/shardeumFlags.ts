@@ -138,7 +138,7 @@ export const ShardeumFlags: ShardeumFlags = {
   DebugRestoreFile: 'account-export.json',
   DebugRestoreArchiveBatch: 2000,
   CheckNonce: true,
-  txNoncePreCheck: true,
+  txNoncePreCheck: false,
   txBalancePreCheck: true,
   autoGenerateAccessList: true,
   forwardGenesisAccounts: true,
@@ -236,8 +236,8 @@ export const ShardeumFlags: ShardeumFlags = {
 
   // 1.5.5 migration
   nonceCheckRange: 3, //  This setting is not part of 1.5.5 migration
-  looseNonceCheck: true,
-  exactNonceCheck: false,
+  looseNonceCheck: false,
+  exactNonceCheck: true,
 
   // 1.5.7 migration
   supportEstimateGas: true,

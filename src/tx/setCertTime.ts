@@ -84,7 +84,7 @@ export async function injectSetCertTimeTx(
     timestamp: shardeumGetTime(),
   }
   tx = shardus.signAsNode(tx)
-  const result = await InjectTxToConsensor(randomConsensusNode, tx)
+  const result = await InjectTxToConsensor([randomConsensusNode], tx)
   /* prettier-ignore */ if (logFlags.dapp_verbose) console.log('INJECTED_SET_CERT_TIME_TX', result, tx)
   return result
 }
