@@ -62,6 +62,18 @@ Import the Rust environment variables by running the following command:
 source "$HOME/.cargo/env"
 ```
 
+To compile the code, ensure you have the correct Rust version installed. For compatibility reasons, use Rust version 1.74.1. You can install it by running:
+
+```bash
+rustup install 1.74.1
+```
+
+And set it as the default Rust version:
+
+```bash
+rustup default 1.74.1
+```
+
 ## Build essentials
 
 For Linux:
