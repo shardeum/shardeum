@@ -6941,6 +6941,7 @@ const shardusSetup = (): void => {
     },
 
     getTxSenderAddress(tx) {
+      if (isInternalTx(tx) || isDebugTx(tx)) { return null }
       const shardusTxId = generateTxId(tx)
       const transaction = getTransactionObj(tx)
       const senderAddress = getTxSenderAddress(transaction, shardusTxId).address
