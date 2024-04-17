@@ -6943,8 +6943,27 @@ const shardusSetup = (): void => {
     getTxSenderAddress(tx) {
       if (isInternalTx(tx) || isDebugTx(tx)) {
         const internalTx = tx as InternalTx
-        if (internalTx.internalTXType === InternalTXType.InitNetwork) {
+        if (internalTx.internalTXType === InternalTXType.SetGlobalCodeBytes) {
+          return internalTx.from
+        } else if (internalTx.internalTXType === InternalTXType.InitNetwork) {
           return internalTx.network
+        } else if (internalTx.internalTXType === InternalTXType.ChangeConfig) {
+          return internalTx.from
+        } else if (internalTx.internalTXType === InternalTXType.ApplyChangeConfig) {
+          return internalTx.network
+        } else if (internalTx.internalTXType === InternalTXType.ChangeNetworkParam) {
+          return internalTx.from
+        } else if (internalTx.internalTXType === InternalTXType.ApplyNetworkParam) {
+          return internalTx.network
+        } else if (internalTx.internalTXType === InternalTXType.SetCertTime) {
+          return internalTx.nominee
+        } else if (internalTx.internalTXType === InternalTXType.InitRewardTimes) {
+          return internalTx.nominee
+        } else if (internalTx.internalTXType === InternalTXType.ClaimReward) {
+          return internalTx.nominee
+        } else if (internalTx.internalTXType === InternalTXType.Penalty) {
+          const penaltyTx: any = internalTx
+          return penaltyTx.reportedNodePublickKey
         }
         return internalTx.from
       }
