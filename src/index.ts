@@ -1113,8 +1113,8 @@ const configShardusEndpoints = (): void => {
     const tx = req.body
     const appData = null
     const id = shardus.getNodeId()
-    const isOutOfBounds = shardus.isNodeOutOfRotationBounds(id)
-    if (isOutOfBounds) {
+    const isInRotationBonds = shardus.isNodeInRotationBounds(id)
+    if (isInRotationBonds) {
       return res.json({
         success: false,
         reason: `Node is too close to rotation edges. Inject to another node`,
@@ -1225,8 +1225,8 @@ const configShardusEndpoints = (): void => {
 
   shardus.registerExternalPost('inject-with-warmup', externalApiMiddleware, async (req, res) => {
     const id = shardus.getNodeId()
-    const isOutOfBounds = shardus.isNodeOutOfRotationBounds(id)
-    if (isOutOfBounds) {
+    const isInRotationBonds = shardus.isNodeInRotationBounds(id)
+    if (isInRotationBonds) {
       return res.json({
         success: false,
         reason: `Node is too close to rotation edges. Inject to another node`,
@@ -1273,8 +1273,8 @@ const configShardusEndpoints = (): void => {
     let blockNumber: number | string
 
     const id = shardus.getNodeId()
-    const isOutOfBounds = shardus.isNodeOutOfRotationBounds(id)
-    if (isOutOfBounds) {
+    const isInRotationBonds = shardus.isNodeInRotationBounds(id)
+    if (isInRotationBonds) {
       return res.json({ error: 'node close to rotation edges' })
     }
     if (blockNumberParam === 'latest' || blockNumberParam === 'earliest') {
@@ -1447,8 +1447,8 @@ const configShardusEndpoints = (): void => {
     }
 
     const id = shardus.getNodeId()
-    const isOutOfBounds = shardus.isNodeOutOfRotationBounds(id)
-    if (isOutOfBounds) {
+    const isInRotationBonds = shardus.isNodeInRotationBounds(id)
+    if (isInRotationBonds) {
       return res.json({ error: 'node close to rotation edges' })
     }
 
