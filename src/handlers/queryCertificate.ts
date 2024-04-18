@@ -225,13 +225,52 @@ export async function InjectTxToConsensor(
       // @typescript-eslint/no-explicit-any
       promises.push(promise)
     }
-    const res = await Promise.race(promises)
+    const res = await raceForSuccess(promises, 5000)
     if (!res.data.success) {
       return { success: false, reason: res.data.reason }
     }
     return res.data as InjectTxResponse
   } catch (error) {
     return { success: false, reason: (error as Error).message }
+  }
+}
+
+async function raceForSuccess<T extends {
+  data: {
+    success: boolean;
+    reason?: string;
+  }
+}>(promises: Promise<T>[], timeoutMs: number): Promise<T> {
+  let hasResolved = false;
+  const timeout = (ms: number): Promise<never> =>
+    new Promise((_, reject) =>
+      setTimeout(() => reject(new Error("Timeout: Operation did not complete within the allowed time.")), ms)
+    )
+  const checkSuccess = (promise: Promise<T>): Promise<T> =>
+    new Promise<T>((resolve, reject) => {
+      promise.then(response => {
+        if (response.data.success) {
+          hasResolved = true;
+          resolve(response);
+        } else {
+          reject(new Error(response.data.reason));
+        }
+      }).catch(reject);
+    });
+
+  const wrappedPromises = promises.map(checkSuccess);
+  const raceWithTimeout = Promise.race([...wrappedPromises, timeout(timeoutMs)]);
+
+  try {
+    return await raceWithTimeout;
+  } catch (error) {
+    if (!hasResolved) {
+      // When not a single promise resolves successfully, and it's not due to a timeout
+      const reason = error instanceof Error ? error.message : String(error);
+      throw new Error("All promises failed or returned unsuccessful responses: " + reason);
+    }
+    // Re-throwing the timeout or any other error
+    throw error;
   }
 }
 
