@@ -6692,6 +6692,7 @@ const shardusSetup = (): void => {
         const result = await InitRewardTimesTx.injectInitRewardTimesTx(shardus, data)
         /* prettier-ignore */ if (logFlags.dapp_verbose) console.log('INJECTED_INIT_REWARD_TIMES_TX', result)
       } else if (eventType === 'node-deactivated') {
+        // todo: aamir check the timestamp and cycle the first time we see this event
         nestedCountersInstance.countEvent('shardeum-staking', `node-deactivated: injectClaimRewardTx`)
         const result = await injectClaimRewardTxWithRetry(shardus, data)
         /* prettier-ignore */ if (logFlags.dapp_verbose) console.log('INJECTED_CLAIM_REWARD_TX', result)

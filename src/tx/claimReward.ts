@@ -37,6 +37,7 @@ export async function injectClaimRewardTx(
     timestamp: shardeumGetTime(),
     deactivatedNodeId: eventData.nodeId,
     nodeDeactivatedTime: eventData.time,
+    cycle: eventData.cycleNumber,
     isInternalTx: true,
     internalTXType: InternalTXType.ClaimReward,
   }
@@ -53,12 +54,14 @@ export async function injectClaimRewardTx(
     tx.timestamp = futureTimestamp
     // since we have to pick a future timestamp, we need to wait until it is time to submit the tx
     await sleep(waitTime)
+    // todo: aamir keep an eye on the waitTime
   }
 
   tx = shardus.signAsNode(tx)
   if (ShardeumFlags.VerboseLogs) {
+    const latestCycles = shardus.getLatestCycles(1)
     const txId = generateTxId(tx)
-    console.log(`injectClaimRewardTx: tx.timestamp: ${tx.timestamp} txid: ${txId}`, tx)
+    console.log(`injectClaimRewardTx: tx.timestamp: ${tx.timestamp} txid: ${txId}, cycle:`, tx, latestCycles[0])
   }
 
   return await shardus.put(tx)
@@ -79,9 +82,9 @@ export async function injectClaimRewardTxWithRetry(
     }
   }
 
-  let rewardEndTime = nodeAccount.rewardEndTime
-  if (!rewardEndTime) {
-    rewardEndTime = 0
+  let rewardEndTimeBeforeInjection = nodeAccount.rewardEndTime
+  if (!rewardEndTimeBeforeInjection) {
+    rewardEndTimeBeforeInjection = 0
   }
 
   const retryFunc = async (): Promise<unknown> => {
@@ -100,6 +103,7 @@ export async function injectClaimRewardTxWithRetry(
       //note we want to go ahead and not retry, because 400 == bad request
       return false
     }
+    // todo: aamir check how many times we are retrying and the timestamps
 
     if (result.success) {
       const nodeAccount = await shardus.getLocalOrRemoteAccount(eventData.publicKey)
@@ -108,7 +112,7 @@ export async function injectClaimRewardTxWithRetry(
       }
       const data = nodeAccount.data
       // Reward end time is updated do not retry
-      if (data.rewardEndTime > rewardEndTime) {
+      if (data.rewardEndTime > rewardEndTimeBeforeInjection) {// tx is applied already
         return false
       }
       return true
