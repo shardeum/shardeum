@@ -6688,14 +6688,30 @@ const shardusSetup = (): void => {
           return
         }
         nestedCountersInstance.countEvent('shardeum-staking', `node-activated: injectInitRewardTimesTx`)
+
         //TODO need retry on this also
-        const result = await InitRewardTimesTx.injectInitRewardTimesTx(shardus, data)
-        /* prettier-ignore */ if (logFlags.dapp_verbose) console.log('INJECTED_INIT_REWARD_TIMES_TX', result)
+        // Limit the nodes that send this to the 5 closest to the node id
+        const closestNodes = shardus.getClosestNodes(data.nodeId, 5)
+        const ourId = shardus.getNodeId()
+        for (const id of closestNodes) {
+          if (id === ourId) {
+            const result = await InitRewardTimesTx.injectInitRewardTimesTx(shardus, data)
+            /* prettier-ignore */ if (logFlags.dapp_verbose) console.log('INJECTED_INIT_REWARD_TIMES_TX', result)
+          }
+        }
       } else if (eventType === 'node-deactivated') {
         // todo: aamir check the timestamp and cycle the first time we see this event
         nestedCountersInstance.countEvent('shardeum-staking', `node-deactivated: injectClaimRewardTx`)
-        const result = await injectClaimRewardTxWithRetry(shardus, data)
-        /* prettier-ignore */ if (logFlags.dapp_verbose) console.log('INJECTED_CLAIM_REWARD_TX', result)
+
+        // Limit the nodes that send this to the 5 closest to the node id
+        const closestNodes = shardus.getClosestNodes(data.nodeId, 5)
+        const ourId = shardus.getNodeId()
+        for (const id of closestNodes) {
+          if (id === ourId) {
+            const result = await injectClaimRewardTxWithRetry(shardus, data)
+            /* prettier-ignore */ if (logFlags.dapp_verbose) console.log('INJECTED_CLAIM_REWARD_TX', result)
+          }
+        }
       } else if (
         eventType === 'node-left-early' &&
         ShardeumFlags.enableNodeSlashing === true &&
@@ -6719,8 +6735,16 @@ const shardusSetup = (): void => {
             nodeDroppedTime: data.time,
           }
           nestedCountersInstance.countEvent('shardeum-staking', `node-left-early: injectPenaltyTx`)
-          const result = await PenaltyTx.injectPenaltyTX(shardus, data, violationData)
-          /* prettier-ignore */ if (logFlags.dapp_verbose) console.log('INJECTED_PENALTY_TX', result)
+
+          // Limit the nodes that send this to the 5 closest to the node id
+          const closestNodes = shardus.getClosestNodes(data.nodeId, 5)
+          const ourId = shardus.getNodeId()
+          for (const id of closestNodes) {
+            if (id === ourId) {
+              const result = await PenaltyTx.injectPenaltyTX(shardus, data, violationData)
+              /* prettier-ignore */ if (logFlags.dapp_verbose) console.log('INJECTED_PENALTY_TX', result)
+            }
+          }
         } else {
           nestedCountersInstance.countEvent('shardeum-staking', `node-left-early: event skipped`)
           /* prettier-ignore */ if (logFlags.dapp_verbose) console.log(`Shardeum node-left-early event skipped`, data, nodeLostCycle, nodeDroppedCycle)
@@ -6735,8 +6759,16 @@ const shardusSetup = (): void => {
           nodeDroppedTime: data.time,
         }
         nestedCountersInstance.countEvent('shardeum-staking', `node-sync-timeout: injectPenaltyTx`)
-        const result = await PenaltyTx.injectPenaltyTX(shardus, data, violationData)
-        /* prettier-ignore */ if (logFlags.dapp_verbose) console.log('INJECTED_PENALTY_TX', result)
+
+        // Limit the nodes that send this to the 5 closest to the node id
+        const closestNodes = shardus.getClosestNodes(data.nodeId, 5)
+        const ourId = shardus.getNodeId()
+        for (const id of closestNodes) {
+          if (id === ourId) {
+            const result = await PenaltyTx.injectPenaltyTX(shardus, data, violationData)
+            /* prettier-ignore */ if (logFlags.dapp_verbose) console.log('INJECTED_PENALTY_TX', result)
+          }
+        }
       } else if (
         eventType === 'node-refuted' &&
         ShardeumFlags.enableNodeSlashing === true &&
@@ -6756,8 +6788,16 @@ const shardusSetup = (): void => {
             nodeRefutedTime: data.time,
           }
           nestedCountersInstance.countEvent('shardeum-staking', `node-refuted: injectPenaltyTx`)
-          const result = await PenaltyTx.injectPenaltyTX(shardus, data, violationData)
-          /* prettier-ignore */ if (logFlags.dapp_verbose) console.log('INJECTED_PENALTY_TX', result)
+
+          // Limit the nodes that send this to the 5 closest to the node id
+          const closestNodes = shardus.getClosestNodes(data.nodeId, 5)
+          const ourId = shardus.getNodeId()
+          for (const id of closestNodes) {
+            if (id === ourId) {
+              const result = await PenaltyTx.injectPenaltyTX(shardus, data, violationData)
+              /* prettier-ignore */ if (logFlags.dapp_verbose) console.log('INJECTED_PENALTY_TX', result)
+            }
+          }
         } else {
           nestedCountersInstance.countEvent('shardeum-staking', `node-refuted: event skipped`)
           /* prettier-ignore */ if (logFlags.dapp_verbose) console.log(`Shardeum node-refuted event skipped`, data, nodeRefutedCycle)
