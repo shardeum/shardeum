@@ -235,43 +235,45 @@ export async function InjectTxToConsensor(
   }
 }
 
-async function raceForSuccess<T extends {
-  data: {
-    success: boolean;
-    reason?: string;
-  }
-}>(promises: Promise<T>[], timeoutMs: number): Promise<T> {
-  let hasResolved = false;
-  const timeout = (ms: number): Promise<never> =>
-    new Promise((_, reject) =>
-      setTimeout(() => reject(new Error("Timeout: Operation did not complete within the allowed time.")), ms)
-    )
-  const checkSuccess = (promise: Promise<T>): Promise<T> =>
-    new Promise<T>((resolve, reject) => {
-      promise.then(response => {
-        if (response.data.success) {
-          hasResolved = true;
-          resolve(response);
-        } else {
-          reject(new Error(response.data.reason));
-        }
-      }).catch(reject);
-    });
-
-  const wrappedPromises = promises.map(checkSuccess);
-  const raceWithTimeout = Promise.race([...wrappedPromises, timeout(timeoutMs)]);
-
-  try {
-    return await raceWithTimeout;
-  } catch (error) {
-    if (!hasResolved) {
-      // When not a single promise resolves successfully, and it's not due to a timeout
-      const reason = error instanceof Error ? error.message : String(error);
-      throw new Error("All promises failed or returned unsuccessful responses: " + reason);
+async function raceForSuccess<
+  T extends {
+    data: {
+      success: boolean
+      reason?: string
     }
-    // Re-throwing the timeout or any other error
-    throw error;
   }
+>(promises: Promise<T>[], timeoutMs: number): Promise<T> {
+  return new Promise((resolve, reject) => {
+    let unresolvedCount = promises.length
+    const timer = setTimeout(() => {
+      reject(new Error('Timeout: Operation did not complete within the allowed time.'))
+    }, timeoutMs)
+
+    for (const promise of promises) {
+      promise
+        .then((response) => {
+          if (response.data.success) {
+            clearTimeout(timer)
+            resolve(response)
+          } else {
+            unresolvedCount--
+            if (unresolvedCount === 0) {
+              clearTimeout(timer)
+              //reject(new Error('All promises failed or returned unsuccessful responses.'))
+              resolve(response)
+            }
+          }
+        })
+        .catch((error) => {
+          unresolvedCount--
+          if (unresolvedCount === 0) {
+            clearTimeout(timer)
+            //reject(new Error('All promises failed or returned unsuccessful responses: ' + error))
+            reject(error)
+          }
+        })
+    }
+  })
 }
 
 export async function queryCertificateHandler(
