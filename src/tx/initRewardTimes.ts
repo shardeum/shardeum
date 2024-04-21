@@ -26,6 +26,31 @@ export async function injectInitRewardTimesTx(
     timestamp: shardeumGetTime(),
   } as InitRewardTimes
 
+  // check if this node has node account data
+  let wrappedData: ShardusTypes.WrappedData = await shardus.getLocalOrRemoteAccount(eventData.publicKey)
+  if (wrappedData == null || wrappedData.data == null) {
+    //try one more time
+    wrappedData = await shardus.getLocalOrRemoteAccount(eventData.publicKey)
+    if (wrappedData == null || wrappedData.data == null) {
+      /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`injectInitRewardTimesTx failed cant find : ${eventData.publicKey}`)
+      /* prettier-ignore */ nestedCountersInstance.countEvent('shardeum-staking', `injectInitRewardTimesTx failed cant find node`)
+      return
+    }
+  }
+  const nodeAccount = wrappedData.data as NodeAccount2
+  // check if the nodeAccount has nomimator data
+  if (nodeAccount.nominator == null) {
+    /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`injectInitRewardTimesTx failed cant find nomimator : ${eventData.publicKey}`, nodeAccount)
+    /* prettier-ignore */ nestedCountersInstance.countEvent('shardeum-staking', `injectInitRewardTimesTx failed cant find nomimator`)
+    return
+  }
+  // check if nodeAccount.rewardStartTime is already set to eventData.time
+  if (nodeAccount.rewardStartTime >= tx.nodeActivatedTime) {
+    /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`injectInitRewardTimesTx failed rewardStartTime already set : ${eventData.publicKey}`, nodeAccount)
+    /* prettier-ignore */ nestedCountersInstance.countEvent('shardeum-staking', `injectInitRewardTimesTx failed rewardStartTime already set`)
+    return
+  }
+
   if (ShardeumFlags.txHashingFix) {
     // to make sure that different nodes all submit an equivalent tx that is counted as the same tx,
     // we need to make sure that we have a deterministic timestamp
@@ -87,10 +112,6 @@ export function validateFields(tx: InitRewardTimes, shardus: Shardus): { success
 
   /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log('validateFields InitRewardTimes success', tx)
   return { success: true, reason: 'valid' }
-}
-
-export function validatePreCrackData(tx: InternalTx): void {
-  /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log('Validating InitRewardTimesTX PreCrackData', tx)
 }
 
 export function validate(tx: InitRewardTimes, shardus: Shardus): { result: string; reason: string } {

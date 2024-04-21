@@ -25,7 +25,7 @@ import { retry } from '../utils/retry'
 export async function injectClaimRewardTx(
   shardus,
   eventData: ShardusTypes.ShardusEvent,
-  nodeAccount
+  nodeAccount: NodeAccount2
 ): Promise<{
   success: boolean
   reason: string
@@ -33,7 +33,7 @@ export async function injectClaimRewardTx(
 }> {
   let tx = {
     nominee: eventData.publicKey,
-    nominator: nodeAccount.data.nominator,
+    nominator: nodeAccount.nominator,
     timestamp: shardeumGetTime(),
     deactivatedNodeId: eventData.nodeId,
     nodeDeactivatedTime: eventData.time,
@@ -63,23 +63,37 @@ export async function injectClaimRewardTx(
     const txId = generateTxId(tx)
     console.log(`injectClaimRewardTx: tx.timestamp: ${tx.timestamp} txid: ${txId}, cycle:`, tx, latestCycles[0])
   }
-
-  return await shardus.put(tx)
+  const injectResult = await shardus.put(tx)
+  return injectResult
 }
 
 export async function injectClaimRewardTxWithRetry(
   shardus,
   eventData: ShardusTypes.ShardusEvent
 ): Promise<unknown> {
-  let nodeAccount = await shardus.getLocalOrRemoteAccount(eventData.publicKey)
-  if (nodeAccount === null) {
+  let wrappedData: ShardusTypes.WrappedData = await shardus.getLocalOrRemoteAccount(eventData.publicKey)
+
+  if (wrappedData == null || wrappedData.data == null) {
     //try one more time
-    nodeAccount = await shardus.getLocalOrRemoteAccount(eventData.publicKey)
-    if (nodeAccount === null) {
+    wrappedData = await shardus.getLocalOrRemoteAccount(eventData.publicKey)
+    if (wrappedData == null || wrappedData.data == null) {
       /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`injectClaimRewardTx failed cant find : ${eventData.publicKey}`)
       /* prettier-ignore */ nestedCountersInstance.countEvent('shardeum-staking', `injectClaimRewardTx failed cant find node`)
       return
     }
+  }
+  const nodeAccount = wrappedData.data as NodeAccount2
+  // check if the rewardStartTime is non-zero
+  if (nodeAccount.rewardStartTime <= 0) {
+    /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`injectClaimRewardTx failed rewardStartTime <= 0`)
+    /* prettier-ignore */ nestedCountersInstance.countEvent('shardeum-staking', `injectClaimRewardTx failed rewardStartTime <= 0`)
+    return
+  }
+  // check if nodeAccount.rewardEndTime is already set to eventData.time
+  if (nodeAccount.rewardEndTime >= eventData.time) {
+    /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`injectClaimRewardTx failed rewardEndTime already set : ${eventData.publicKey}`, nodeAccount)
+    /* prettier-ignore */ nestedCountersInstance.countEvent('shardeum-staking', `injectClaimRewardTx failed rewardEndTime already set`)
+    return
   }
 
   let rewardEndTimeBeforeInjection = nodeAccount.rewardEndTime
@@ -103,7 +117,6 @@ export async function injectClaimRewardTxWithRetry(
       //note we want to go ahead and not retry, because 400 == bad request
       return false
     }
-    // todo: aamir check how many times we are retrying and the timestamps
 
     if (result.success) {
       const nodeAccount = await shardus.getLocalOrRemoteAccount(eventData.publicKey)
@@ -165,12 +178,13 @@ export function validateClaimRewardTx(tx: ClaimRewardTX): { isValid: boolean; re
     /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log('validateClaimRewardTx fail Invalid signature exception', tx)
     return { isValid: false, reason: 'Invalid signature for ClaimReward tx' }
   }
-  /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log('validateClaimRewardTx success', tx)
+  /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log('validateClaimRewardTx format success', tx)
   return { isValid: true, reason: '' }
 }
 
 export function validateClaimRewardState(
   tx: ClaimRewardTX,
+  wrappedStates: WrappedStates,
   shardus,
   mustUseAdminCert = false
 ): { result: string; reason: string } {
@@ -186,6 +200,25 @@ export function validateClaimRewardState(
     /* prettier-ignore */ nestedCountersInstance.countEvent('shardeum-staking', `validateClaimRewardState fail Reward is disabled for admin cert or golden ticket node`)
     /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log('validateClaimRewardState fail Reward is disabled for admin cert or golden ticket node', tx)
     return { result: 'fail', reason: 'Reward is disabled for admin cert or golden ticket node' }
+  }
+
+  /* eslint-disable security/detect-object-injection */
+  let nodeAccount: NodeAccount2
+  if (isNodeAccount2(wrappedStates[tx.nominee].data)) {
+    nodeAccount = wrappedStates[tx.nominee].data as NodeAccount2
+  }
+  // check if the rewardStartTime is non-zero
+  if (nodeAccount.rewardStartTime <= 0) {
+    /* prettier-ignore */ nestedCountersInstance.countEvent('shardeum-staking', `validateClaimRewardState fail rewardStartTime <= 0`)
+    /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log('validateClaimRewardState fail rewardStartTime <= 0', tx)
+    return { result: 'fail', reason: 'rewardStartTime is less than or equal 0' }
+  }
+
+  // check if nodeAccount.rewardEndTime is already set to tx.nodeDeactivatedTime
+  if (nodeAccount.rewardEndTime >= tx.nodeDeactivatedTime) {
+    /* prettier-ignore */ nestedCountersInstance.countEvent('shardeum-staking', `validateClaimRewardState fail rewardEndTime already set`)
+    /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log('validateClaimRewardState fail rewardEndTime already set', tx)
+    return { result: 'fail', reason: 'rewardEndTime is already set' }
   }
 
   const latestCycles = shardus.getLatestCycles(5)
@@ -226,7 +259,7 @@ export async function applyClaimRewardTx(
   mustUseAdminCert = false
 ): Promise<void> {
   if (ShardeumFlags.VerboseLogs) console.log(`Running applyClaimRewardTx`, tx, wrappedStates)
-  const isValidRequest = validateClaimRewardState(tx, shardus, mustUseAdminCert)
+  const isValidRequest = validateClaimRewardState(tx, wrappedStates, shardus, mustUseAdminCert)
   if (isValidRequest.result === 'fail') {
     /* prettier-ignore */
     /* prettier-ignore */ if (logFlags.dapp_verbose) console.log(`Invalid claimRewardTx, nominee ${tx.nominee}, reason: ${isValidRequest.reason}`)

@@ -6691,7 +6691,7 @@ const shardusSetup = (): void => {
 
         //TODO need retry on this also
         // Limit the nodes that send this to the 5 closest to the node id
-        const closestNodes = shardus.getClosestNodes(data.nodeId, 5)
+        const closestNodes = shardus.getClosestNodes(data.publicKey, 5)
         const ourId = shardus.getNodeId()
         for (const id of closestNodes) {
           if (id === ourId) {
@@ -6704,7 +6704,7 @@ const shardusSetup = (): void => {
         nestedCountersInstance.countEvent('shardeum-staking', `node-deactivated: injectClaimRewardTx`)
 
         // Limit the nodes that send this to the 5 closest to the node id
-        const closestNodes = shardus.getClosestNodes(data.nodeId, 5)
+        const closestNodes = shardus.getClosestNodes(data.publicKey, 5)
         const ourId = shardus.getNodeId()
         for (const id of closestNodes) {
           if (id === ourId) {
