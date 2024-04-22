@@ -1,5 +1,5 @@
 <p align="center">
-    <img src="shardeum-logo.png" alt="Shardeum Logo" width="70%">
+    <img src="https://github.com/shardeum/.github/raw/dev/shardeum-white-bg.png" alt="Shardeum Logo" width="70%">
 </p>
 
 <p align="center">
@@ -20,7 +20,7 @@ For chatting with others using Shardeum:
 
 To run a Shardeum validator on your linux host for the public network, you can use the installer script by running the following command:
 
-`curl -O https://gitlab.com/shardeum/validator/dashboard/-/raw/dev-beta-1.11/installer.sh && chmod +x installer.sh && ./installer.sh`
+`curl -O https://gitlab.com/shardeum/validator/dashboard/-/raw/main/installer.sh && chmod +x installer.sh && ./installer.sh`
 
 
 ## Local development
