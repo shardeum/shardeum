@@ -4932,9 +4932,9 @@ const shardusSetup = (): void => {
         // insert otherAccountKeys second, because we need the CA addres at the front of the list for contract deploy
         // There wont be a target key in when we deploy a contract
         result.allKeys = result.allKeys.concat(
+          result.sourceKeys,
           result.targetKeys,
           otherAccountKeys,
-          result.sourceKeys,
           result.storageKeys,
           additionalAccounts,
           result.codeHashKeys
