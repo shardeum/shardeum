@@ -1591,7 +1591,7 @@ const configShardusEndpoints = (): void => {
         opt['gasLimit'] = BigInt(Number(callObj.gas))
       }
 
-      if (callObj.gasPrice) {
+      if (callObj.gasPrice && isHexString(callObj.gasPrice)) {
         opt['gasPrice'] = callObj.gasPrice
       }
 
