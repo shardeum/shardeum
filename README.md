@@ -119,7 +119,7 @@ npm config list                         // Verify the configuration
 Now that the environment is setup, let’s install the project source code and switch to `dev` branch
 
 ```bash
-git clone https://gitlab.com/shardeum/server
+git clone https://github.com/shardeum/shardeum.git
 cd server
 git switch dev
 ```
@@ -233,7 +233,7 @@ Click [here](https://metamask.io/download/). to install the MetaMask extension o
 A Shardeum validator node does not have an integrated RPC API, instead we provide an Ethereum compatible JSON-RPC server that can be used to interact with the network that allows the existing Ethereum tools to use Shardeum seamlessly. To start the JSON-RPC server, clone the repository:
 
 ```bash
-git clone https://gitlab.com/shardeum/json-rpc-server
+git clone https://github.com/shardeum/json-rpc-server.git
 ```
 
 Change directory to `json-rpc-server`, switch to `dev` branch and install the required dependencies
@@ -265,4 +265,4 @@ You now have a fully functioning Shardeum network on your local machine! 🎉
 
 ## Contributing
 
-Contributions are very welcome! See our [contribution guide](./CONTRIBUTING.md)for more information. Everyone interacting in our codebases, issue trackers, and any other form of communication, including chat rooms and mailing lists, is expected to follow our [code of conduct](./CODE_OF_CONDUCT.md) so we can all enjoy the effort we put into this project.
+Contributions are very welcome! See our [contribution guide](./CONTRIBUTING.md) for more information. Everyone interacting in our codebases, issue trackers, and any other form of communication, including chat rooms and mailing lists, is expected to follow our [code of conduct](./CODE_OF_CONDUCT.md) so we can all enjoy the effort we put into this project.
