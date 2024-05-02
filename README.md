@@ -215,7 +215,7 @@ For usage instructions and available options for the shardus command-line tool, 
 ```bash
 shardus stop && shardus clean && rm -rf instances
 ```
-This command will stop the running network, cleans up any associated resources, and removes instances from the system.
+This command will stop the running network, clean up the associated resources, and remove the `instances` folder from the system.
 
 ### Obtaining Test Tokens on the Local Network
 
