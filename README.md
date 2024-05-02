@@ -211,6 +211,17 @@ This command will start a Shardeum network of 20 nodes, 1 archiver server and 1 
 
 For usage instructions and available options for the shardus command-line tool, run `shardus --help`
 
+## Stopping the Running Network and Cleanup
+
+```bash
+shardus stop && shardus clean && rm -rf instances
+```
+This command will stop the running network, cleans up any associated resources, and removes instances from the system.
+
+### Obtaining Test Tokens on the Local Network
+
+If you're running a local Shardeum network, navigate to the [src/config/genesis.json](src/config/genesis.json) file within the shardeum repository. Simply add your wallet address to this file, then restart the network. Voila! You'll now have SHM tokens available on your wallet within the local network.
+
 ## Install Metamask
 
 Click [here](https://metamask.io/download/). to install the MetaMask extension on your browser.
