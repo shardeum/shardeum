@@ -59,7 +59,7 @@
     "ethereumjs-wallet": "1.0.2",
     "fast-stable-stringify": "1.0.0",
     "functional-red-black-tree": "^1.0.1",
-    "got": "^11.8.6",
+    "got": "^12.1.0",
     "inquirer": "9.1.4",
     "rfdc": "1.3.0",
     "sqlite3": "5.1.6"
