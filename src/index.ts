@@ -1118,7 +1118,7 @@ const configShardusEndpoints = (): void => {
       const {idx, total} = shardus.getAgeIndexForNodeId(id)
       return res.status(503).json({
         success: false,
-        reason: `Node is too close to rotation edges. Inject to another node (${idx}/${total}`
+        reason: `Node is too close to rotation edges. Inject to another node (${idx}/${total})`
       })
     }
     await handleInject(tx, appData, res)
@@ -1230,7 +1230,7 @@ const configShardusEndpoints = (): void => {
       const {idx, total} = shardus.getAgeIndexForNodeId(id)
       return res.status(503).json({
         success: false,
-        reason: `Node is too close to rotation edges. Inject to another node (${idx}/${total}`
+        reason: `Node is too close to rotation edges. Inject to another node (${idx}/${total})`
       })
     }
     const { tx, warmupList } = req.body
@@ -1277,7 +1277,7 @@ const configShardusEndpoints = (): void => {
     if (isInRotationBonds) {
       const {idx, total} = shardus.getAgeIndexForNodeId(id)
       return res.status(503).json({
-        error: `Node is too close to rotation edges. Inject to another node (${idx}/${total}`
+        error: `Node is too close to rotation edges. Inject to another node (${idx}/${total})`
       })
     }
     if (blockNumberParam === 'latest' || blockNumberParam === 'earliest') {
@@ -1454,7 +1454,7 @@ const configShardusEndpoints = (): void => {
     if (isInRotationBonds) {
       const {idx, total} = shardus.getAgeIndexForNodeId(id)
       return res.status(503).json({
-        error: `Node is too close to rotation edges. Inject to another node (${idx}/${total}`
+        error: `Node is too close to rotation edges. Inject to another node (${idx}/${total})`
       })
     }
 
