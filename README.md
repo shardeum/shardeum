@@ -219,7 +219,7 @@ This command will stop the running network, cleans up any associated resources, 
 
 ### Obtaining Test Tokens on the Local Network
 
-If you're running a local Shardeum network, navigate to the [src/config/genesis.json](src/config/genesis.json) file within the shardeum repository. Simply add your wallet address to this file, then restart the network. Voila! You'll now have SHM tokens available on your wallet within the local network.
+If you're running a local Shardeum network, add your wallet address to the [src/config/genesis.json](src/config/genesis.json) file and restart the network. Voila! You'll now have SHM tokens available on your wallet within the local network.
 
 ## Install Metamask
 
