@@ -10,6 +10,9 @@
 # Node.js LTS 12.x.x from Docker Hub
 FROM node:18.16.1
 
+# Link this Dockerfile to the image in the GHCR
+LABEL "org.opencontainers.image.source"="https://github.com/shardeum/shardeum"
+
 # Create app directory
 WORKDIR /usr/src/app
 
