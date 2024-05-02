@@ -22,10 +22,9 @@ To run a Shardeum validator on your linux host for the public network, you can u
 
 `curl -O https://gitlab.com/shardeum/validator/dashboard/-/raw/main/installer.sh && chmod +x installer.sh && ./installer.sh`
 
-
 ## Local development
 
-To run a Shardeum network for local development the instructions below will help you configure your machine to be able to spin up local validator, archiver and monitor servers. 
+To run a Shardeum network for local development the instructions below will help you configure your machine to be able to spin up local validator, archiver and monitor servers.
 
 Shardeum requires a specific version of Node.js version 18.16.1 and npm version 9.5.1. To manage multiple versions of Node.js, we recommend using the Node Version Manager (NVM). Follow these steps to install NVM:
 
@@ -108,7 +107,7 @@ nvm use 18.16.1
 
 node-gyp is a command-line tool that enables the compilation of native addon modules for Node.js. To ensure its proper functioning, it's essential to install node-gyp globally using npm. Additionally, configure the Python version. Follow these steps to install node-gyp and set the Python version:
 
-```
+```bash
 npm i -g node-gyp         // Install node-gyp globally
 npm config set python `which python3`   // Configure the Python version
 npm config list                         // Verify the configuration
