@@ -250,6 +250,13 @@ export function validateClaimRewardState(
     return { result: 'fail', reason: 'The cycle start time and nodeActivatedTime does not match!' }
   }
 
+  const nominee_nodeAcc = wrappedStates[tx.nominee].data as NodeAccount2
+  if (nominee_nodeAcc.nominator !== tx.nominator) {
+    /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log('validateClaimRewardState fail tx.nominator does not match', tx)
+    /* prettier-ignore */ nestedCountersInstance.countEvent('shardeum-staking', `validateClaimRewardState fail tx.nominator does not match`)
+    return { result: 'fail', reason: 'tx.nominator does not match' }
+  }
+
   /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log('validateClaimRewardState success', tx)
   return { result: 'pass', reason: 'valid' }
 }
