@@ -22,10 +22,9 @@ To run a Shardeum validator on your linux host for the public network, you can u
 
 `curl -O https://gitlab.com/shardeum/validator/dashboard/-/raw/main/installer.sh && chmod +x installer.sh && ./installer.sh`
 
-
 ## Local development
 
-To run a Shardeum network for local development the instructions below will help you configure your machine to be able to spin up local validator, archiver and monitor servers. 
+To run a Shardeum network for local development the instructions below will help you configure your machine to be able to spin up local validator, archiver and monitor servers.
 
 Shardeum requires a specific version of Node.js version 18.16.1 and npm version 9.5.1. To manage multiple versions of Node.js, we recommend using the Node Version Manager (NVM). Follow these steps to install NVM:
 
@@ -108,7 +107,7 @@ nvm use 18.16.1
 
 node-gyp is a command-line tool that enables the compilation of native addon modules for Node.js. To ensure its proper functioning, it's essential to install node-gyp globally using npm. Additionally, configure the Python version. Follow these steps to install node-gyp and set the Python version:
 
-```
+```bash
 npm i -g node-gyp         // Install node-gyp globally
 npm config set python `which python3`   // Configure the Python version
 npm config list                         // Verify the configuration
@@ -210,6 +209,17 @@ shardus start 20
 This command will start a Shardeum network of 20 nodes, 1 archiver server and 1 monitor server exposed through port number 3000. You can inspect the nodes via `shardus pm2 list` command.
 
 For usage instructions and available options for the shardus command-line tool, run `shardus --help`
+
+## Stopping the Running Network and Cleanup
+
+```bash
+shardus stop && shardus clean && rm -rf instances
+```
+This command will stop the running network, clean up the associated resources, and remove the `instances` folder from the system.
+
+### Obtaining Test Tokens on the Local Network
+
+If you're running a local Shardeum network, add your wallet address to the [src/config/genesis.json](src/config/genesis.json) file and restart the network. Voila! You'll now have SHM tokens available on your wallet within the local network.
 
 ## Install Metamask
 
