@@ -8,7 +8,7 @@
 # Useful for development, but don't ship it. Use 'Dockerfile' instead.
 
 # Node.js LTS 12.x.x from Docker Hub
-FROM node:18.16.1
+FROM node:18.16.1-slim
 
 # Link this Dockerfile to the image in the GHCR
 LABEL "org.opencontainers.image.source"="https://github.com/shardeum/shardeum"
@@ -20,11 +20,17 @@ WORKDIR /usr/src/app
 COPY . .
 
 # Install Rust build chain for modules
-RUN apt-get update && apt-get install -y \
+RUN apt-get update && apt-get install -y --no-install-recommends \
     build-essential \
-    curl
+    curl \
+    && rm -rf /var/lib/apt/lists/* 
+
 RUN curl https://sh.rustup.rs -sSf | bash -s -- -y
 ENV PATH="/root/.cargo/bin:${PATH}"
+
+# Create a non-root user 
+RUN useradd -m appuser
+USER appuser
 
 # Install node_modules
 RUN npm install
