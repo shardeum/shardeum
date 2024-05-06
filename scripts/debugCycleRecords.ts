@@ -4,6 +4,7 @@ const fs = require('fs');
 const readline = require ('readline');
 const path = require('path');
 const isEqual = require('fast-deep-equal');
+const fss = require('fast-stable-stringify');
 
 
 const func = process.argv[2];
@@ -27,7 +28,8 @@ const rl = readline.createInterface({
 // Read the file line by line
 rl.on('line', (line) => {
   // Parse the stringified JSON object from each line
-  const { port, cycleNumber, cycleRecord } = JSON.parse(line);
+  const { port, cycleNumber, cycleRecord } = JSON.parse(fss(JSON.parse(line)))
+  //const { port, cycleNumber, cycleRecord } = JSON.parse(line)
 
   // Ensure the completeCycles array is large enough
   while (completeCycles.length <= cycleNumber) {
@@ -54,6 +56,8 @@ rl.on('close', () => {
           cycleMap.set(key, value);
           found = true;
           break;
+        } else {
+          //console.log('Not equal:', key, cycleRecord)
         }
       }
   
@@ -64,6 +68,30 @@ rl.on('close', () => {
   
     return cycleMap;
   });
+
+  // Helper functions
+
+  function isRotationOOS(cycle) {
+    if (uniqueCompleteCycles[cycle].size > 2) return false
+    let loneRecordExists = false
+    let nodePort
+    uniqueCompleteCycles[cycle].forEach((value, key) => {
+      if (value.length === 1) {
+        nodePort = value[0]
+        loneRecordExists = true
+      }
+    })
+    if (loneRecordExists) {
+      uniqueCompleteCycles[cycle + 1].forEach((value, key) => {
+        if (value.includes(nodePort)) {
+          return false
+        }
+      })
+    }
+    return true
+  }
+
+  // Analysis functions
 
   function printCycle(cycle) {
     console.log('Cycle', cycle);
@@ -98,8 +126,10 @@ rl.on('close', () => {
   function printVariancePerVariantCycles(start = 0, end = uniqueCompleteCycles.length) {
     if (end > uniqueCompleteCycles.length) end = uniqueCompleteCycles.length;
     for (let i = start; i < end; i++) {
-      if (uniqueCompleteCycles[i].size > 1)
-        console.log(`Cycle ${i} has ${uniqueCompleteCycles[i].size} unique records`);
+      if (uniqueCompleteCycles[i].size > 1) {
+        if (isRotationOOS(i) === false)
+          console.log(`Cycle ${i} has ${uniqueCompleteCycles[i].size} unique records`);
+      }
     }
   }
 
