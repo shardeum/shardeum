@@ -134,7 +134,7 @@ export const validateTxnFields =
           success = result.success
           reason = result.reason
         } else if (tx.internalTXType === InternalTXType.ClaimReward) {
-          const result = validateClaimRewardTx(tx as ClaimRewardTX)
+          const result = validateClaimRewardTx(tx as ClaimRewardTX, shardus)
           success = result.isValid
           reason = result.reason
         } else if (tx.internalTXType === InternalTXType.Penalty) {
