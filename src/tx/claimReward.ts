@@ -1,4 +1,4 @@
-import { nestedCountersInstance, ShardusTypes } from '@shardus/core'
+import { nestedCountersInstance, Shardus, ShardusTypes } from '@shardus/core'
 import * as crypto from '@shardus/crypto-utils'
 import { Address } from '@ethereumjs/util'
 import { networkAccount } from '../shardeum/shardeumConstants'
@@ -146,7 +146,7 @@ export async function injectClaimRewardTxWithRetry(
   return res
 }
 
-export function validateClaimRewardTx(tx: ClaimRewardTX): { isValid: boolean; reason: string } {
+export function validateClaimRewardTx(tx: ClaimRewardTX, shardus: Shardus): { isValid: boolean; reason: string } {
   if (!tx.nominee || tx.nominee === '' || tx.nominee.length !== 64) {
     /* prettier-ignore */ nestedCountersInstance.countEvent('shardeum-staking', `validateClaimRewardTx fail tx.nominee address invalid`)
     /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log('validateClaimRewardTx fail tx.nominee address invalid', tx)
@@ -166,6 +166,11 @@ export function validateClaimRewardTx(tx: ClaimRewardTX): { isValid: boolean; re
     /* prettier-ignore */ nestedCountersInstance.countEvent('shardeum-staking', `validateClaimRewardTx fail tx.timestamp`)
     /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log('validateClaimRewardTx fail tx.timestamp', tx)
     return { isValid: false, reason: 'Duration in tx must be > 0' }
+  }
+  if(shardus.getNode(tx.deactivatedNodeId)){
+    /* prettier-ignore */ nestedCountersInstance.countEvent('shardeum-staking', `validateClaimRewardTx fail node still active`)
+    /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log('validateClaimRewardTx fail node still active', tx)
+    return { isValid: false, reason: 'Node is still active' }
   }
   try {
     if (!crypto.verifyObj(tx)) {
@@ -243,6 +248,13 @@ export function validateClaimRewardState(
     /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log('validate InitRewardTimes fail nodeActivedCycle.start !== tx.nodeActivatedTime', tx)
     /* prettier-ignore */ nestedCountersInstance.countEvent('shardeum-staking', `validate InitRewardTimes fail nodeActivedCycle.start !== tx.nodeActivatedTime`)
     return { result: 'fail', reason: 'The cycle start time and nodeActivatedTime does not match!' }
+  }
+
+  const nominee_nodeAcc = wrappedStates[tx.nominee].data as NodeAccount2
+  if (nominee_nodeAcc.nominator !== tx.nominator) {
+    /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log('validateClaimRewardState fail tx.nominator does not match', tx)
+    /* prettier-ignore */ nestedCountersInstance.countEvent('shardeum-staking', `validateClaimRewardState fail tx.nominator does not match`)
+    return { result: 'fail', reason: 'tx.nominator does not match' }
   }
 
   /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log('validateClaimRewardState success', tx)
