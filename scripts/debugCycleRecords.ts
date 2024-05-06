@@ -99,6 +99,57 @@ rl.on('close', () => {
     for (const [key, value] of uniqueCompleteCycles[cycle].entries()) {
       console.log(`${value.length} nodes: ${value.join(', ')} `);
       console.log(key);
+
+  function printCycleDifferences(cycle) {
+    console.log('Cycle', cycle)
+    console.log('Unique records:', uniqueCompleteCycles[cycle].size)
+    printCycleValueDifferences(cycle)
+  }
+
+  function printCycleValueDifferences(cycle) {
+    const entries = Array.from(uniqueCompleteCycles[cycle].entries())
+
+    console.log(`Value differences in Cycle ${cycle}:`)
+
+    for (let i = 0; i < entries.length - 1; i++) {
+      const [key1, value1] = entries[i]
+      const [key2, value2] = entries[i + 1]
+
+      console.log(`Differences between entries for nodes ${value1} and ${value2}:`)
+
+      compareValues(key1, key2, [])
+    }
+  }
+
+  function compareValues(val1, val2, path) {
+    // Iterate over all properties in the first object
+    for (const key in val1) {
+      const newPath = [...path, key]
+      if (val2.hasOwnProperty(key)) {
+        if (
+          typeof val1[key] === 'object' &&
+          val1[key] !== null &&
+          typeof val2[key] === 'object' &&
+          val2[key] !== null
+        ) {
+          compareValues(val1[key], val2[key], newPath)
+        } else if (val1[key] !== val2[key]) {
+          console.log(
+            `Property '${newPath.join('.')}' values differ: ${JSON.stringify(
+              val1[key]
+            )} is different than ${JSON.stringify(val2[key])}`
+          )
+        }
+      } else {
+        console.log(`Property '${newPath.join('.')}' not found in the second object`)
+      }
+    }
+
+    // Check for any properties in the second object that are not in the first object
+    for (const key in val2) {
+      if (!val1.hasOwnProperty(key)) {
+        console.log(`Property '${path.concat(key).join('.')}' not found in the first object`)
+      }
     }
   }
 
@@ -113,6 +164,11 @@ rl.on('close', () => {
     if (end > uniqueCompleteCycles.length) end = uniqueCompleteCycles.length;
     for (let i = start; i < end; i++) {
       if (uniqueCompleteCycles[i].size > 1) printCycle(i);
+
+  function printVariantCyclesDifferences(start = 0, end = uniqueCompleteCycles.length) {
+    if (end > uniqueCompleteCycles.length) end = uniqueCompleteCycles.length
+    for (let i = start; i < end; i++) {
+      if (uniqueCompleteCycles[i].size > 1) printCycleDifferences(i)
     }
   }
 
@@ -140,6 +196,7 @@ rl.on('close', () => {
     console.log('pvc: print variant cycles (args: start cycle number, end cycle number)');
     console.log('pvpc: print variance per cycle (args: start cycle number, end cycle number)');
     console.log('pvpvc: print variance per variant cycles (args: start cycle number, end cycle number)');
+    console.log('pvcd: print variant cycles differences (args: start cycle number, end cycle number)')
   } else if (func === 'pc') {
     printCycle(arg1);
   } else if (func === 'pcs') {
@@ -150,6 +207,7 @@ rl.on('close', () => {
     printVariancePerCycle(arg1, arg2);
   } else if (func === 'pvpvc') {
     printVariancePerVariantCycles(arg1, arg2)
+  } else if (func === 'pvcd') {
+    printVariantCyclesDifferences(arg1, arg2)
   }
-
 });
