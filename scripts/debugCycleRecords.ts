@@ -94,11 +94,13 @@ rl.on('close', () => {
   // Analysis functions
 
   function printCycle(cycle) {
-    console.log('Cycle', cycle);
-    console.log('Unique records:', uniqueCompleteCycles[cycle].size);
+    console.log('Cycle', cycle)
+    console.log('Unique records:', uniqueCompleteCycles[cycle].size)
     for (const [key, value] of uniqueCompleteCycles[cycle].entries()) {
-      console.log(`${value.length} nodes: ${value.join(', ')} `);
-      console.log(key);
+      console.log(`${value.length} nodes: ${value.join(', ')} `)
+      console.log(key)
+    }
+  }
 
   function printCycleDifferences(cycle) {
     console.log('Cycle', cycle)
@@ -111,18 +113,19 @@ rl.on('close', () => {
 
     console.log(`Value differences in Cycle ${cycle}:`)
 
-    for (let i = 0; i < entries.length - 1; i++) {
-      const [key1, value1] = entries[i]
-      const [key2, value2] = entries[i + 1]
+    for (let i = 0; i < entries.length; i++) {
+      for (let j = i + 1; j < entries.length; j++) {
+        const [key1, value1] = entries[i]
+        const [key2, value2] = entries[j]
 
-      console.log(`Differences between entries for nodes ${value1} and ${value2}:`)
+        console.log(`Differences between entries for nodes ${value1} and ${value2}:`)
 
-      compareValues(key1, key2, [])
+        compareValues(key1, key2, [])
+      }
     }
   }
 
   function compareValues(val1, val2, path) {
-    // Iterate over all properties in the first object
     for (const key in val1) {
       const newPath = [...path, key]
       if (val2.hasOwnProperty(key)) {
@@ -145,7 +148,6 @@ rl.on('close', () => {
       }
     }
 
-    // Check for any properties in the second object that are not in the first object
     for (const key in val2) {
       if (!val1.hasOwnProperty(key)) {
         console.log(`Property '${path.concat(key).join('.')}' not found in the first object`)
@@ -154,21 +156,25 @@ rl.on('close', () => {
   }
 
   function printCycles(start = 0, end = uniqueCompleteCycles.length) {
-    if (end > uniqueCompleteCycles.length) end = uniqueCompleteCycles.length;
+    if (end > uniqueCompleteCycles.length) end = uniqueCompleteCycles.length
     for (let i = start; i < end; i++) {
-      printCycle(i);
+      printCycle(i)
     }
   }
 
   function printVariantCycles(start = 0, end = uniqueCompleteCycles.length) {
-    if (end > uniqueCompleteCycles.length) end = uniqueCompleteCycles.length;
+    if (end > uniqueCompleteCycles.length) end = uniqueCompleteCycles.length
     for (let i = start; i < end; i++) {
-      if (uniqueCompleteCycles[i].size > 1) printCycle(i);
+      if (uniqueCompleteCycles[i].size > 1) printCycle(i)
+    }
+  }
 
   function printVariantCyclesDifferences(start = 0, end = uniqueCompleteCycles.length) {
     if (end > uniqueCompleteCycles.length) end = uniqueCompleteCycles.length
     for (let i = start; i < end; i++) {
-      if (uniqueCompleteCycles[i].size > 1) printCycleDifferences(i)
+      if (isRotationOOS(i) === false) {
+        if (uniqueCompleteCycles[i].size > 1) printCycleDifferences(i)
+      }
     }
   }
 
