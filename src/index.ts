@@ -4204,6 +4204,23 @@ const shardusSetup = (): void => {
         }
       }
 
+      if (accountWrites.size === 0) { // it means SHM transfer fail
+        // loop through original wrappedStates and add them to the applyResponse
+        for (const accountId in wrappedStates) {
+          if (wrappedStates[accountId].timestamp === 0) continue
+          const wrappedData: ShardusTypes.WrappedData = wrappedStates[accountId]
+          if (shardus.applyResponseAddChangedAccount != null) {
+            shardus.applyResponseAddChangedAccount(
+              applyResponse,
+              wrappedData.accountId,
+              wrappedData as ShardusTypes.WrappedResponse,
+              txId,
+              wrappedData.timestamp
+            )
+          }
+        }
+      }
+
       //TODO also create an account for the receipt (nested in the returned runTxResult should be a receipt with a list of logs)
       // We are ready to loop over the receipts and add them
       if (runTxResult) {
