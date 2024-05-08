@@ -116,18 +116,28 @@ export const validateTransaction =
   }
 
 function omitDevKeys(givenConfig: any): any {
-  const { devPublicKeys, ...restOfConfig } = givenConfig
+  if (!givenConfig.debug?.devPublicKeys) {
+    return givenConfig
+  }
+
+  const { debug, ...restOfConfig } = givenConfig
+  const { devPublicKeys, ...restOfDebug } = debug
+
+  if (Object.keys(restOfDebug).length > 0) {
+    return { ...restOfConfig, debug: restOfDebug }
+  }
+
   return restOfConfig
 }
 
 function isValidDevKeyAddition(givenConfig: any): boolean {
-  const devPublicKeys = givenConfig.devPublicKeys
+  const devPublicKeys = givenConfig.debug?.devPublicKeys
   if (!devPublicKeys) {
     return true
   }
 
   for (const key in devPublicKeys) {
-    if (!isHexString(key, 64)) {
+    if (!isValidHexKey(key)) {
       return false
     }
 
@@ -138,5 +148,10 @@ function isValidDevKeyAddition(givenConfig: any): boolean {
     }
   }
   return true
+}
+
+function isValidHexKey(key: string): boolean {
+  const hexPattern = /^[a-f0-9]{64}$/i
+  return hexPattern.test(key)
 }
 
