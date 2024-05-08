@@ -13,12 +13,6 @@ type Response = {
   reason: string
 }
 
-type DebugDevKeyConfig = {
-  debug?: {
-    devPublicKeys: { [key: string]: DevSecurityLevel }
-  }
-}
-
 export const validateTransaction =
   (shardus: Shardus) =>
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -135,7 +129,7 @@ function omitDevKeys(givenConfig: any): any {
   return restOfConfig
 }
 
-function isValidDevKeyAddition(givenConfig: DebugDevKeyConfig): boolean {
+function isValidDevKeyAddition(givenConfig: any): boolean {
   const devPublicKeys = givenConfig.debug?.devPublicKeys
   if (!devPublicKeys) {
     return true
