@@ -248,6 +248,8 @@ async function _runTx(this: VM, opts: RunTxOpts, evm: any, txid: string): Promis
         await evm.journal.putAccount(caller, fromAccount)
       }
     } else {
+      // todo: research to prevent replay attacks when the account has enough balance
+      // probably charge the gas and increase the nonce
       const msg = _errorMsg(
         `sender doesn't have enough funds to send tx. The upfront cost is: ${upFrontCost} and the sender's account (${caller}) only has: ${balance}`,
         this,
