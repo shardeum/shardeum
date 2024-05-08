@@ -7,7 +7,6 @@ import * as AccountsStorage from '../storage/accountStorage'
 import { logFlags } from '..'
 import config from '../config'
 import { comparePropertiesTypes } from '../utils'
-import { isHexString } from '@ethereumjs/util'
 
 type Response = {
   result: string
