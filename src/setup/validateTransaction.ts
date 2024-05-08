@@ -7,6 +7,7 @@ import * as AccountsStorage from '../storage/accountStorage'
 import { logFlags } from '..'
 import config from '../config'
 import { comparePropertiesTypes } from '../utils'
+import { isHexString } from '@ethereumjs/util'
 
 type Response = {
   result: string
@@ -44,7 +45,10 @@ export const validateTransaction =
         } else {
           if (tx.internalTXType === InternalTXType.ChangeConfig) {
             const givenConfig = JSON.parse(tx.config)
-            if (comparePropertiesTypes(givenConfig, config.server)) {
+            if (
+              comparePropertiesTypes(omitDevKeys(givenConfig), config.server) &&
+              isValidDevKeyAddition(givenConfig)
+            ) {
               return { result: 'pass', reason: 'valid' }
             } else {
               return { result: 'fail', reason: 'Invalid config' }
@@ -110,3 +114,29 @@ export const validateTransaction =
 
     return response
   }
+
+function omitDevKeys(givenConfig: any): any {
+  const { devPublicKeys, ...restOfConfig } = givenConfig
+  return restOfConfig
+}
+
+function isValidDevKeyAddition(givenConfig: any): boolean {
+  const devPublicKeys = givenConfig.devPublicKeys
+  if (!devPublicKeys) {
+    return true
+  }
+
+  for (const key in devPublicKeys) {
+    if (!isHexString(key, 64)) {
+      return false
+    }
+
+    // eslint-disable-next-line security/detect-object-injection
+    const securityLevel = devPublicKeys[key]
+    if (!Object.values(DevSecurityLevel).includes(securityLevel)) {
+      return false
+    }
+  }
+  return true
+}
+
