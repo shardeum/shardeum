@@ -44,7 +44,10 @@ export const validateTransaction =
         } else {
           if (tx.internalTXType === InternalTXType.ChangeConfig) {
             const givenConfig = JSON.parse(tx.config)
-            if (comparePropertiesTypes(givenConfig, config.server)) {
+            if (
+              comparePropertiesTypes(omitDevKeys(givenConfig), config.server) &&
+              isValidDevKeyAddition(givenConfig)
+            ) {
               return { result: 'pass', reason: 'valid' }
             } else {
               return { result: 'fail', reason: 'Invalid config' }
@@ -110,3 +113,44 @@ export const validateTransaction =
 
     return response
   }
+
+function omitDevKeys(givenConfig: any): any {
+  if (!givenConfig.debug?.devPublicKeys) {
+    return givenConfig
+  }
+
+  const { debug, ...restOfConfig } = givenConfig
+  const { devPublicKeys, ...restOfDebug } = debug
+
+  if (Object.keys(restOfDebug).length > 0) {
+    return { ...restOfConfig, debug: restOfDebug }
+  }
+
+  return restOfConfig
+}
+
+function isValidDevKeyAddition(givenConfig: any): boolean {
+  const devPublicKeys = givenConfig.debug?.devPublicKeys
+  if (!devPublicKeys) {
+    return true
+  }
+
+  for (const key in devPublicKeys) {
+    if (!isValidHexKey(key)) {
+      return false
+    }
+
+    // eslint-disable-next-line security/detect-object-injection
+    const securityLevel = devPublicKeys[key]
+    if (!Object.values(DevSecurityLevel).includes(securityLevel)) {
+      return false
+    }
+  }
+  return true
+}
+
+function isValidHexKey(key: string): boolean {
+  const hexPattern = /^[a-f0-9]{64}$/i
+  return hexPattern.test(key)
+}
+
