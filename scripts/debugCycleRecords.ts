@@ -42,55 +42,30 @@ rl.on('line', (line) => {
 
 // When file reading is complete, log the completeCycles array or perform further processing
 rl.on('close', () => {
-  console.log('Finished reading the file. Processing complete.');
-  
+  console.log('Finished reading the file. Processing complete.')
+
   const uniqueCompleteCycles = completeCycles.map((cycleArray) => {
-    const cycleMap = new Map();
+    const cycleMap = new Map()
     //console.log(cycleArray);
     //console.log(cycleMap);
     cycleArray.forEach(({ port, cycleRecord }) => {
-      let found = false;
+      let found = false
       for (const [key, value] of cycleMap.entries()) {
         if (isEqual(key, cycleRecord)) {
           value.push(port)
-          cycleMap.set(key, value);
-          found = true;
-          break;
-        } else {
-          //console.log('Not equal:', key, cycleRecord)
+          cycleMap.set(key, value)
+          found = true
+          break
         }
       }
-  
+
       if (!found) {
-        cycleMap.set(cycleRecord, [ port ]);
-      }
-    });
-  
-    return cycleMap;
-  });
-
-  // Helper functions
-
-  function isRotationOOS(cycle) {
-    if (uniqueCompleteCycles[cycle].size > 2) return false
-    let loneRecordExists = false
-    let nodePort
-    uniqueCompleteCycles[cycle].forEach((value, key) => {
-      if (value.length === 1) {
-        nodePort = value[0]
-        loneRecordExists = true
+        cycleMap.set(cycleRecord, [port])
       }
     })
-    if (loneRecordExists) {
-      uniqueCompleteCycles[cycle + 1].forEach((value, key) => {
-        if (value.includes(nodePort)) {
-          return false
-        }
-      })
-    }
-    return true
-  }
 
+    return cycleMap
+  })
   // Analysis functions
 
   function printCycle(cycle) {
@@ -172,25 +147,22 @@ rl.on('close', () => {
   function printVariantCyclesDifferences(start = 0, end = uniqueCompleteCycles.length) {
     if (end > uniqueCompleteCycles.length) end = uniqueCompleteCycles.length
     for (let i = start; i < end; i++) {
-      if (isRotationOOS(i) === false) {
-        if (uniqueCompleteCycles[i].size > 1) printCycleDifferences(i)
-      }
+      if (uniqueCompleteCycles[i].size > 1) printCycleDifferences(i)
     }
   }
 
   function printVariancePerCycle(start = 0, end = uniqueCompleteCycles.length) {
-    if (end > uniqueCompleteCycles.length) end = uniqueCompleteCycles.length;
+    if (end > uniqueCompleteCycles.length) end = uniqueCompleteCycles.length
     for (let i = start; i < end; i++) {
-      console.log(`Cycle ${i} has ${uniqueCompleteCycles[i].size} unique records`);
+      console.log(`Cycle ${i} has ${uniqueCompleteCycles[i].size} unique records`)
     }
   }
 
   function printVariancePerVariantCycles(start = 0, end = uniqueCompleteCycles.length) {
-    if (end > uniqueCompleteCycles.length) end = uniqueCompleteCycles.length;
+    if (end > uniqueCompleteCycles.length) end = uniqueCompleteCycles.length
     for (let i = start; i < end; i++) {
       if (uniqueCompleteCycles[i].size > 1) {
-        if (isRotationOOS(i) === false)
-          console.log(`Cycle ${i} has ${uniqueCompleteCycles[i].size} unique records`);
+        console.log(`Cycle ${i} has ${uniqueCompleteCycles[i].size} unique records`)
       }
     }
   }
