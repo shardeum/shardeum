@@ -201,7 +201,7 @@ config = merge(config, {
       removeLostSyncingNodeFromList: true,
 
       //1.11.0
-      rotationEdgeToAvoid: 2,
+      rotationEdgeToAvoid: 0, //we are moving away from this feature in current testing.  There seem to be errors related to it
       allowActivePerCycle: 1,
 
       maxStandbyCount: 30000, //max allowed standby nodes count
@@ -232,8 +232,8 @@ config = merge(config, {
         },
       },
       loadDetection: {
-        queueLimit: 80, // EXSS does the main limiting now queue limit is a secondary limit
-        executeQueueLimit: 80,
+        queueLimit: 320, // EXSS does the main limiting now queue limit is a secondary limit.  It should be higher that the exeutute queue limit
+        executeQueueLimit: 160, // This limit how many items can be in the queue that will execute (apply) on our node 
         desiredTxTime: 15, // 15
         highThreshold: 0.5,
         lowThreshold: 0.2,
@@ -255,6 +255,8 @@ config = merge(config, {
       accountBucketSize: 200, // todo: we need to re-test with higher numbers after some recent improvements
       includeBeforeStatesInReceipts: true, // 1.5.3 migration
       useNewPOQ: true, // 1.10.0 enabled required by archive server updates
+
+      forwardToLuckyNodes: false, // 1.11.0 we seem to have more issues with this on.  can turn off for local testing
     },
   },
 })
