@@ -1,0 +1,13 @@
+diff --git a/src/config/index.ts b/src/config/index.ts
+index ce02cbd..32224c3 100644
+--- a/src/config/index.ts
++++ b/src/config/index.ts
+@@ -258,7 +258,7 @@ config = merge(config, {
+ 
+       forwardToLuckyNodes: false, // 1.11.0 we seem to have more issues with this on.  can turn off for local testing
+ 
+-      removeStuckTxsFromQueue: false, // with this false there are known cases where a network can get stuck TXs.
++      removeStuckTxsFromQueue: true, // with this false there are known cases where a network can get stuck TXs.
+                                       // there is wip to correct this.
+     },
+   },
