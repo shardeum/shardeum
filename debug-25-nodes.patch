@@ -1,5 +1,5 @@
 diff --git a/src/config/index.ts b/src/config/index.ts
-index 30ea6b0..f79e194 100644
+index 5ccae91..a41cbe3 100644
 --- a/src/config/index.ts
 +++ b/src/config/index.ts
 @@ -128,8 +128,8 @@ config = merge(config, {
@@ -26,12 +26,12 @@ index 30ea6b0..f79e194 100644
        removeLostSyncingNodeFromList: true,
  
        //1.11.0
--      rotationEdgeToAvoid: 2,
-+      rotationEdgeToAvoid: 4,
+-      rotationEdgeToAvoid: 0, //we are moving away from this feature in current testing.  There seem to be errors related to it
++      rotationEdgeToAvoid: 4, //we are moving away from this feature in current testing.  There seem to be errors related to it
        allowActivePerCycle: 1,
  
        maxStandbyCount: 30000, //max allowed standby nodes count
-@@ -277,7 +277,7 @@ config = merge(
+@@ -279,7 +279,7 @@ config = merge(
    config,
    {
      server: {
