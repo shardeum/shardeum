@@ -1,8 +1,8 @@
 diff --git a/src/config/index.ts b/src/config/index.ts
-index bf68f37b9..983538b6e 100644
+index 5ccae91..a38c42a 100644
 --- a/src/config/index.ts
 +++ b/src/config/index.ts
-@@ -167,7 +167,7 @@ config = merge(
+@@ -283,7 +283,7 @@ config = merge(
        // for easier debugging
        debug: {
          startInFatalsLogMode: false, // true setting good for big aws test with nodes joining under stress.
@@ -12,15 +12,15 @@ index bf68f37b9..983538b6e 100644
          fakeNetworkDelay: 0,
          disableSnapshots: true, // do not check in if set to false
 diff --git a/src/shardeum/shardeumFlags.ts b/src/shardeum/shardeumFlags.ts
-index b48215ac8..be7d0b037 100644
+index bb9c1d6..87912eb 100644
 --- a/src/shardeum/shardeumFlags.ts
 +++ b/src/shardeum/shardeumFlags.ts
-@@ -65,7 +65,7 @@ interface ShardeumFlags {
- export const ShardeumFlags: ShardeumFlags = {
-   contractStorageKeySilo: true,
+@@ -124,7 +124,7 @@ export const ShardeumFlags: ShardeumFlags = {
+   contractStoragePrefixBitLength: 3,
+   contractCodeKeySilo: false,
    globalCodeBytes: false,
 -  VerboseLogs: false,
 +  VerboseLogs: true,
+   debugTraceLogs: false,
    Virtual0Address: true,
    GlobalNetworkAccount: true,
-   FirstNodeRewardCycle: 100,

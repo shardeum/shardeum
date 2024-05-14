@@ -1,8 +1,8 @@
 diff --git a/src/config/index.ts b/src/config/index.ts
-index 14f85f2..766698b 100644
+index 5ccae91..0647710 100644
 --- a/src/config/index.ts
 +++ b/src/config/index.ts
-@@ -127,9 +127,9 @@
+@@ -128,9 +128,9 @@ config = merge(config, {
      p2p: {
        cycleDuration: 60,
        minNodesToAllowTxs: 1, // to allow single node networks
@@ -15,18 +15,16 @@ index 14f85f2..766698b 100644
        maxJoinedPerCycle: 10,
        maxSyncingPerCycle: 10,
        maxRotatedPerCycle: process.env.maxRotatedPerCycle ? parseInt(process.env.maxRotatedPerCycle) : 1,
-@@ -200,8 +200,8 @@
-       removeLostSyncingNodeFromList: true,
-
+@@ -202,7 +202,7 @@ config = merge(config, {
+ 
        //1.11.0
--      rotationEdgeToAvoid: 2,
+       rotationEdgeToAvoid: 0, //we are moving away from this feature in current testing.  There seem to be errors related to it
 -      allowActivePerCycle: 1,
-+      rotationEdgeToAvoid: 6,
 +      allowActivePerCycle: 3,
-
+ 
        maxStandbyCount: 30000, //max allowed standby nodes count
        enableMaxStandbyCount: true,
-@@ -246,7 +246,7 @@
+@@ -247,7 +247,7 @@ config = merge(config, {
      sharding: {
        nodesPerConsensusGroup: process.env.nodesPerConsensusGroup
          ? parseInt(process.env.nodesPerConsensusGroup)

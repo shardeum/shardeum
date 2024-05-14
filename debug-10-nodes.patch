@@ -1,5 +1,5 @@
 diff --git a/src/config/index.ts b/src/config/index.ts
-index 30ea6b0..0d4cd71 100644
+index 5ccae91..dea8cd4 100644
 --- a/src/config/index.ts
 +++ b/src/config/index.ts
 @@ -128,8 +128,8 @@ config = merge(config, {
@@ -22,7 +22,7 @@ index 30ea6b0..0d4cd71 100644
        //these are new feature in 1.3.0, we can make them default:true in shardus-core later
  
        // 1.2.3 migration starts
-@@ -277,7 +277,7 @@ config = merge(
+@@ -279,7 +279,7 @@ config = merge(
    config,
    {
      server: {
