@@ -1,5 +1,5 @@
 diff --git a/src/config/index.ts b/src/config/index.ts
-index 30ea6b0..0597c78 100644
+index 5ccae91..e401202 100644
 --- a/src/config/index.ts
 +++ b/src/config/index.ts
 @@ -128,8 +128,8 @@ config = merge(config, {
@@ -20,18 +20,9 @@ index 30ea6b0..0597c78 100644
 -      forceBogonFilteringOn: true,
 +      forceBogonFilteringOn: false,
        //these are new feature in 1.3.0, we can make them default:true in shardus-core later
-
+ 
        // 1.2.3 migration starts
-@@ -201,7 +201,7 @@ config = merge(config, {
-       removeLostSyncingNodeFromList: true,
-
-       //1.11.0
--      rotationEdgeToAvoid: 2,
-+      rotationEdgeToAvoid: 4,
-       allowActivePerCycle: 1,
-
-       maxStandbyCount: 30000, //max allowed standby nodes count
-@@ -277,7 +277,7 @@ config = merge(
+@@ -279,7 +279,7 @@ config = merge(
    config,
    {
      server: {
