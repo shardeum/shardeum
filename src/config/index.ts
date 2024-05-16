@@ -257,6 +257,9 @@ config = merge(config, {
       useNewPOQ: true, // 1.10.0 enabled required by archive server updates
 
       forwardToLuckyNodes: false, // 1.11.0 we seem to have more issues with this on.  can turn off for local testing
+
+      removeStuckTxsFromQueue: false,
+      removeStuckChallengedTXs: false,
     },
   },
 })
