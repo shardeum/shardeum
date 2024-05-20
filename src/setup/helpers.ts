@@ -88,7 +88,8 @@ export function getInjectedOrGeneratedTimestamp(timestampedTx): number {
       console.log(`Timestamp ${txnTimestamp} is extracted from the injected tx.`)
     }
   }
-  return txnTimestamp
+  // if timestamp is a float, round it down to nearest millisecond
+  return Math.floor(txnTimestamp)
 }
 
 /**
