@@ -1111,6 +1111,10 @@ const configShardusEndpoints = (): void => {
 
   shardus.registerExternalPost('inject', externalApiMiddleware, async (req, res) => {
     const tx = req.body
+    // if timestamp is a float, round it down to nearest millisecond
+    if (tx.timestamp && typeof tx.timestamp === 'number') {
+      tx.timestamp = Math.floor(tx.timestamp)
+    }
     const appData = null
     const id = shardus.getNodeId()
     const isInRotationBonds = shardus.isNodeInRotationBounds(id)
