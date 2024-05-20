@@ -2,6 +2,7 @@ import sqlite3 from 'sqlite3'
 import axios from 'axios'
 import fs from 'fs'
 import { FilePaths } from '../src/shardeum/shardeumFlags'
+import { Utils } from '@shardus/types'
 let db: any
 
 const instancesDirPath = 'instances'
@@ -119,7 +120,7 @@ export const getAccountsDataFromConsensors = async (): Promise<any> => {
   // }
   console.log('Total Number of Accounts From Consensors', consensorAccounts.length)
   if (saveAccountsDataAsFile)
-    fs.writeFileSync(consensorAccountsFileName, JSON.stringify(consensorAccounts, null, 2))
+    fs.writeFileSync(consensorAccountsFileName, Utils.safeStringify(consensorAccounts))
   return consensorAccounts
 }
 
@@ -145,7 +146,7 @@ export async function queryAccountsFromArchiver(skip = 0, limit = 10000): Promis
     accounts = await all(sql)
     if (accounts.lenth > 0) {
       accounts.map((account) => {
-        if (account && account.data) account.data = JSON.parse(account.data)
+        if (account && account.data) account.data = Utils.safeJsonParse(account.data)
       })
     }
   } catch (e) {

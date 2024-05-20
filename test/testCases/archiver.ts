@@ -1,6 +1,7 @@
 import execa from 'execa'
 import * as utils from '../testUtils'
 import * as AccountsCheck from '../../scripts/accountsSyncCheck'
+import { Utils } from '@shardus/types'
 
 const opts = { shell: true }
 
@@ -86,7 +87,7 @@ export const archiverTest = (startNewAchiver = false, checkTotalDataCheck = fals
         let data1 = dataFromArchiver_1[i]
         let data2 = dataFromArchiver_2[j]
         if (data2) {
-          let isSame = JSON.stringify(data1) === JSON.stringify(data2)
+          let isSame = Utils.safeStringify(data1) === Utils.safeStringify(data2)
           j++
           if (!isSame) {
             console.log(data1.counter, data2.counter, isSame)

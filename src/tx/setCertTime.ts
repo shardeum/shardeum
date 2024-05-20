@@ -17,17 +17,11 @@ import {
 import * as WrappedEVMAccountFunctions from '../shardeum/wrappedEVMAccountFunctions'
 import { fixDeserializedWrappedEVMAccount } from '../shardeum/wrappedEVMAccountFunctions'
 import * as AccountsStorage from '../storage/accountStorage'
-import {
-  getRandom,
-  scaleByStabilityFactor,
-  _base16BNParser,
-  _readableSHM,
-  generateTxId,
-  stringify,
-} from '../utils'
-import { hashSignedObj } from '../setup/helpers'
+import { getRandom, scaleByStabilityFactor, _base16BNParser, _readableSHM } from '../utils'
+
 import { createInternalTxReceipt, logFlags, shardeumGetTime } from '..'
 import { bigIntToHex, isValidAddress } from '@ethereumjs/util'
+import { Utils } from '@shardus/types'
 
 export function isSetCertTimeTx(tx): boolean {
   if (tx.isInternalTx && tx.internalTXType === InternalTXType.SetCertTime) {
@@ -144,16 +138,16 @@ export function validateSetCertTimeState(
         /* prettier-ignore */ nestedCountersInstance.countEvent('shardeum-staking', 'validateSetCertTimeState' + ' stake failed to parse')
         return {
           result: 'fail',
-          reason: `stake failed to parse: ${stringify(operatorEVMAccount.operatorAccountInfo.stake)} er:${
-            er.message
-          }`,
+          reason: `stake failed to parse: ${Utils.safeStringify(
+            operatorEVMAccount.operatorAccountInfo.stake
+          )} er:${er.message}`,
         }
       }
     } else if (operatorEVMAccount && operatorEVMAccount.operatorAccountInfo == null) {
       /* prettier-ignore */ nestedCountersInstance.countEvent('shardeum-staking', 'validateSetCertTimeState' + ' Operator account info is null')
       return {
         result: 'fail',
-        reason: `Operator account info is null: ${stringify(operatorEVMAccount)}`,
+        reason: `Operator account info is null: ${Utils.safeStringify(operatorEVMAccount)}`,
       }
     }
   }

@@ -6,6 +6,7 @@ import { ShardeumFlags } from '../shardeum/shardeumFlags'
 import Sqlite3Storage from './sqlite3storage'
 import { isServiceMode } from '..'
 import { Op } from './utils/sqlOpertors'
+import { Utils } from '@shardus/types'
 
 export interface AccountsEntry {
   accountId: string
@@ -118,7 +119,7 @@ class Storage {
   async setRIAccountsCache(accountEntry: AccountsEntry): Promise<void> {
     this._checkInit()
     try {
-      console.log('setRIAccountsCache: ', JSON.stringify(accountEntry))
+      console.log('setRIAccountsCache: ', Utils.safeStringify(accountEntry))
       await this._create(this.storageModels.riAccountsCache, accountEntry, {
         createOrReplace: true,
       })

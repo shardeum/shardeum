@@ -1,5 +1,6 @@
 import * as utils from './testUtils'
 import axios from 'axios'
+import { Utils } from '@shardus/types'
 
 export async function getAccountsReport(_shuffle: boolean = false) {
   const activeNodes = await utils.queryActiveNodes()
@@ -38,11 +39,11 @@ export const dataSyncTest = (START_NETWORK_SIZE, EXPECTED_ACTIVE_NODES, accounts
       let data1 = await getAccountsReport()
       await utils._sleep(600000) // Wait for 10 minutes to let network nodes rotate
       let data2 = await getAccountsReport()
-      let isSame = JSON.stringify(data1) === JSON.stringify(data2)
+      let isSame = Utils.safeStringify(data1) === Utils.safeStringify(data2)
       if (!isSame) {
         await utils._sleep(10000)
         data2 = await getAccountsReport()
-        isSame = JSON.stringify(data1) === JSON.stringify(data2)
+        isSame = Utils.safeStringify(data1) === Utils.safeStringify(data2)
       }
       expect(isSame).toBe(true)
     })

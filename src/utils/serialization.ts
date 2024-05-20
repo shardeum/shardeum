@@ -1,6 +1,6 @@
 import { ShardeumFlags } from '../shardeum/shardeumFlags'
 import { DecimalString, HexString } from '../shardeum/shardeumTypes'
-import { stringify } from './stringify'
+import { Utils } from '@shardus/types'
 
 export function isHexStringWithoutPrefix(value: string, length?: number): boolean {
   if (value && typeof value === 'string' && value.indexOf('0x') >= 0) return false // do not convert strings with 0x
@@ -14,9 +14,9 @@ export function isHexStringWithoutPrefix(value: string, length?: number): boolea
 
 export function SerializeToJsonString(obj: unknown): string {
   if (ShardeumFlags.UseBase64BufferEncoding) {
-    return stringify(obj, { bufferEncoding: 'base64' })
+    return Utils.safeStringify(obj, { bufferEncoding: 'base64' })
   } else {
-    return stringify(obj, { bufferEncoding: 'none' })
+    return Utils.safeStringify(obj, { bufferEncoding: 'none' })
   }
 }
 
@@ -58,12 +58,7 @@ function base64BufferReviver(key: string, value: any): any {
 }
 
 export function DeSerializeFromJsonString<T>(jsonString: string): T {
-  let parsedStruct
-  if (ShardeumFlags.UseBase64BufferEncoding) {
-    parsedStruct = JSON.parse(jsonString, base64BufferReviver) as T
-  } else {
-    parsedStruct = JSON.parse(jsonString) as T
-  }
+  let parsedStruct = Utils.safeJsonParse(jsonString) as T
   return parsedStruct
 }
 

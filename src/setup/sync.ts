@@ -14,6 +14,7 @@ import { sleep } from '../utils'
 // import { StateManager } from '../vm/state'
 import { DefaultStateManager } from '@ethereumjs/statemanager'
 import { logFlags, shardeumGetTime } from '..'
+import { Utils } from '@shardus/types'
 
 function isDebugMode(): boolean {
   // eslint-disable-next-line @typescript-eslint/ban-ts-comment
@@ -45,7 +46,7 @@ export const sync = (shardus: Shardus, evmCommon: any) => async (): Promise<void
           file: ShardeumFlags.DebugRestoreFile,
         }
         const report = await loadAccountDataFromDB(shardus, loadOptions)
-        /* prettier-ignore */ if (logFlags.important_as_error) console.log('loadAccountDataFromDB:' + JSON.stringify(report))
+        /* prettier-ignore */ if (logFlags.important_as_error) console.log('loadAccountDataFromDB:' + Utils. safeStringify(report))
       }
 
       //create genesis accounts before network account since nodes will wait for the network account
@@ -104,7 +105,7 @@ export const sync = (shardus: Shardus, evmCommon: any) => async (): Promise<void
         await shardus.debugCommitAccountCopies(accountCopies)
         if (ShardeumFlags.forwardGenesisAccounts) {
           accountCopies = accountCopies.map((account) => {
-            return JSON.parse(SerializeToJsonString(account))
+            return Utils.safeJsonParse(SerializeToJsonString(account))
           })
           await shardus.forwardAccounts({ accounts: accountCopies, receipts: [] })
         }

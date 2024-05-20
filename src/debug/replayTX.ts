@@ -17,8 +17,8 @@ import * as AccountsStorage from './db'
 import * as WrappedEVMAccountFunctions from './utils/wrappedEVMAccountFunctions'
 import { estimateGas } from './estimateGas/estimateGas'
 import { EVM as EthereumVirtualMachine } from '../evm_v2'
-import { stringify} from '../utils/stringify'
 import { getTxSenderAddress } from '../utils'
+import { Utils } from '@shardus/types'
 
 export async function createAccount(addressStr: string, balance = BigInt(0)): Promise<WrappedEVMAccount> {
   // if (ShardeumFlags.VerboseLogs) console.log('Creating new account', addressStr)
@@ -53,7 +53,7 @@ function getApplyTXState(txId: string, estimateOnly: boolean): ShardeumState {
         storageMiss: async () => {
           // Only missing contractBytes will reach here
           // console.log(
-          //   JSON.stringify({
+          //   Utils. safeStringify({
           //     status: 'error',
           //     type: AccountType.ContractCode,
           //     address,
@@ -69,7 +69,7 @@ function getApplyTXState(txId: string, estimateOnly: boolean): ShardeumState {
           const { found, shardusKey } = hasAccount(address)
           if (!found) {
             console.log(
-              stringify({
+              Utils.safeStringify({
                 status: 'error',
                 type: AccountType.Account,
                 shardusKey,
@@ -84,7 +84,7 @@ function getApplyTXState(txId: string, estimateOnly: boolean): ShardeumState {
           if (!account) {
             if (estimateOnly) {
               console.log(
-                stringify({
+                Utils.safeStringify({
                   status: 'error',
                   type: AccountType.ContractStorage,
                   address,
@@ -107,7 +107,7 @@ function getApplyTXState(txId: string, estimateOnly: boolean): ShardeumState {
           const { account, shardusKey } = getKey(address, key, type)
           if (!account && type != AccountType.ContractStorage) {
             console.log(
-              stringify({
+              Utils.safeStringify({
                 status: 'error',
                 type,
                 address,
@@ -253,7 +253,7 @@ const runTransaction = async (
       const stack: ITraceData[] = []
       if (options.disableStack !== true) {
         for (const stackItem of event.stack) {
-          const traceData = TraceData.from(Buffer.from(stackItem.toString(16), "hex"))
+          const traceData = TraceData.from(Buffer.from(stackItem.toString(16), 'hex'))
           stack.push(traceData)
         }
       }
@@ -347,7 +347,7 @@ const runTransaction = async (
     customEVM
   )
   if (execOptions.structLogs) {
-    console.log(stringify(structLogs))
+    console.log(Utils.safeStringify(structLogs))
   }
 }
 
@@ -404,7 +404,7 @@ if (!file) {
       }
       const estimateOnly = loadStatesFromJson(file)
       // eslint-disable-next-line security/detect-non-literal-fs-filename
-      const txJson = JSON.parse(fs.readFileSync(file, 'utf8'))
+      const txJson = Utils.safeJsonParse(fs.readFileSync(file, 'utf8'))
       const transaction = estimateOnly ? txJson.txData : txJson.tx.originalTxData
       return runTransaction(transaction, accounts, options, estimateOnly)
     })
