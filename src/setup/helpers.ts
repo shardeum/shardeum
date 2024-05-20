@@ -89,10 +89,7 @@ export function getInjectedOrGeneratedTimestamp(timestampedTx): number {
     }
   }
   // if timestamp is a float, round it down to nearest millisecond
-  if (txnTimestamp && typeof txnTimestamp === 'number') {
-    txnTimestamp = Math.floor(txnTimestamp)
-  }
-  return txnTimestamp
+  return Math.floor(txnTimestamp)
 }
 
 /**
