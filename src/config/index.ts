@@ -207,8 +207,7 @@ config = merge(config, {
       maxStandbyCount: 30000, //max allowed standby nodes count
       enableMaxStandbyCount: true,
 
-
-
+      formingNodesPerCycle: 16, //how many nodes can be add in a cycle while in forming mode
     },
     features: {
 
@@ -221,25 +220,25 @@ config = merge(config, {
 // rateLimiting and loadDetection settings
 config = merge(config, {
   server: {
-      rateLimiting: {
-        limitRate: true,
-        loadLimit: {
-          internal: 0.6,
-          external: 0.6,
-          txTimeInQueue: 0.6,
-          queueLength: 0.6,
-          executeQueueLength: 0.6,
-        },
-      },
-      loadDetection: {
-        queueLimit: 320, // EXSS does the main limiting now queue limit is a secondary limit.  It should be higher that the exeutute queue limit
-        executeQueueLimit: 160, // This limit how many items can be in the queue that will execute (apply) on our node 
-        desiredTxTime: 15, // 15
-        highThreshold: 0.5,
-        lowThreshold: 0.2,
+    rateLimiting: {
+      limitRate: true,
+      loadLimit: {
+        internal: 0.6,
+        external: 0.6,
+        txTimeInQueue: 0.6,
+        queueLength: 0.6,
+        executeQueueLength: 0.6,
       },
     },
-  })
+    loadDetection: {
+      queueLimit: 320, // EXSS does the main limiting now queue limit is a secondary limit.  It should be higher that the exeutute queue limit
+      executeQueueLimit: 160, // This limit how many items can be in the queue that will execute (apply) on our node
+      desiredTxTime: 15, // 15
+      highThreshold: 0.5,
+      lowThreshold: 0.2,
+    },
+  },
+})
 
 // Sharding and state manager settings
 config = merge(config, {
