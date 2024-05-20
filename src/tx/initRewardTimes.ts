@@ -12,7 +12,7 @@ import {
 } from '../shardeum/shardeumTypes'
 import * as WrappedEVMAccountFunctions from '../shardeum/wrappedEVMAccountFunctions'
 import { sleep, generateTxId } from '../utils'
-import { createInternalTxReceipt, shardeumGetTime } from '..'
+import { createInternalTxReceipt, shardeumGetTime, logFlags } from '..'
 
 export async function injectInitRewardTimesTx(
   shardus,
@@ -116,6 +116,7 @@ export function validateFields(tx: InitRewardTimes, shardus: Shardus): { success
 
 export function validate(tx: InitRewardTimes, shardus: Shardus): { result: string; reason: string } {
   /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log('Validating InitRewardTimesTX', tx)
+
   const isValid = crypto.verifyObj(tx)
   if (!isValid) {
     /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log('validate InitRewardTimes fail Invalid signature', tx)
@@ -140,6 +141,41 @@ export function validate(tx: InitRewardTimes, shardus: Shardus): { result: strin
   return { result: 'pass', reason: 'valid' }
 }
 
+export function validateInitRewardState(
+  tx: InitRewardTimes,
+  wrappedStates: WrappedStates
+): { result: string; reason: string } {
+  /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log('validating initRewardTimesTx', tx)
+  const isValid = crypto.verifyObj(tx)
+  if (!isValid) {
+    /* prettier-ignore */ nestedCountersInstance.countEvent('shardeum-staking', `validateInitRewardState fail Invalid signature`)
+    /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log('validateInitRewardState fail Invalid signature', tx)
+    return { result: 'fail', reason: 'Invalid signature' }
+  }
+
+  /* eslint-disable security/detect-object-injection */
+  let nodeAccount: NodeAccount2
+  if (isNodeAccount2(wrappedStates[tx.nominee].data)) {
+    nodeAccount = wrappedStates[tx.nominee].data as NodeAccount2
+  }
+
+  // check if nodeAccount.rewardStartTime is already set to tx.nodeActivatedTime
+  if (nodeAccount.rewardStartTime >= tx.nodeActivatedTime) {
+    /* prettier-ignore */ nestedCountersInstance.countEvent('shardeum-staking', `validateInitRewardState fail rewardStartTime already set`)
+    /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log('validateInitRewardState fail rewardStartTime already set', tx)
+    return { result: 'fail', reason: 'rewardStartTime is already set' }
+  }
+
+  if (nodeAccount.timestamp >= tx.timestamp) {
+    /* prettier-ignore */ nestedCountersInstance.countEvent('shardeum-staking', `validateInitRewardState fail timestamp already set`)
+    /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log('validateInitRewardState fail timestamp already set', tx)
+    return { result: 'fail', reason: 'timestamp is already set' }
+  }
+
+  /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log('validateInitRewardState success', tx)
+  return { result: 'pass', reason: 'valid' }
+}
+
 export function apply(
   shardus,
   tx: InitRewardTimes,
@@ -153,6 +189,19 @@ export function apply(
   if (isNodeAccount2(acct)) {
     nodeAccount = acct
   } else throw new Error('tx.nominee is not a NodeAccount2')
+
+  // check the account state against the tx
+  const isValidRequest = validateInitRewardState(tx, wrappedStates)
+  if (isValidRequest.result === 'fail') {
+    /* prettier-ignore */ if (logFlags.dapp_verbose) console.log(`Invalid initRewardTimesTx, nominee ${tx.nominee}, reason: ${isValidRequest.reason}`)
+    nestedCountersInstance.countEvent('shardeum-staking', `applyInitRewardTimes fail `)
+    shardus.applyResponseSetFailed(
+      applyResponse,
+      `initRewardTimesTx failed validateInitRewardState nominee ${tx.nominee} ${isValidRequest.reason}`
+    )
+    return
+  }
+
   nodeAccount.rewardStartTime = tx.nodeActivatedTime
   nodeAccount.rewardEndTime = 0
   nodeAccount.timestamp = txTimestamp
