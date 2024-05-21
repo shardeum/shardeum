@@ -7238,9 +7238,7 @@ export function shardeumGetTime(): number {
 
   // this code is only excuted when starting or setting up the network***
   // shardus factory for nodes joining later in the network.
-  shardus = shardusFactory(configToLoad, {
-    customStringifier: SerializeToJsonString,
-  })
+  shardus = shardusFactory(configToLoad)
 
   //@ts-ignore
   logFlags = shardus.getLogFlags()

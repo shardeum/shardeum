@@ -67,9 +67,7 @@ describe('sync', () => {
   beforeEach(() => {
     evmCommon = new Common({ chain: Chain.Mainnet })
     // @ts-ignore
-    shardus = shardusFactory(config, {
-      customStringifier: SerializeToJsonString,
-    })
+    shardus = shardusFactory(config)
   })
 
   afterEach(() => {

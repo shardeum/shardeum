@@ -2,16 +2,6 @@ import { ShardeumFlags } from '../shardeum/shardeumFlags'
 import { DecimalString, HexString } from '../shardeum/shardeumTypes'
 import { Utils } from '@shardus/types'
 
-export function isHexStringWithoutPrefix(value: string, length?: number): boolean {
-  if (value && typeof value === 'string' && value.indexOf('0x') >= 0) return false // do not convert strings with 0x
-  // prefix
-  if (typeof value !== 'string' || !value.match(/^[0-9A-Fa-f]*$/)) return false
-
-  if (typeof length !== 'undefined' && length > 0 && value.length !== 2 + 2 * length) return false
-
-  return true
-}
-
 export function SerializeToJsonString(obj: unknown): string {
   if (ShardeumFlags.UseBase64BufferEncoding) {
     return Utils.safeStringify(obj, { bufferEncoding: 'base64' })
@@ -40,26 +30,8 @@ export function GetBufferFromField(input: any, encoding?: 'base64' | 'hex'): Buf
   }
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-function base64BufferReviver(key: string, value: any): any {
-  const originalObject = value
-  if (
-    isObject(originalObject) &&
-    Object.prototype.hasOwnProperty.call(originalObject, 'dataType') &&
-    originalObject.dataType &&
-    originalObject.dataType == 'bh'
-  ) {
-    return new Uint8Array(GetBufferFromField(originalObject, 'base64'))
-  } else if (value && isHexStringWithoutPrefix(value) && value.length !== 42 && value.length !== 64) {
-    return BigInt('0x' + value)
-  } else {
-    return value
-  }
-}
-
 export function DeSerializeFromJsonString<T>(jsonString: string): T {
-  let parsedStruct = Utils.safeJsonParse(jsonString) as T
-  return parsedStruct
+  return Utils.safeJsonParse(jsonString) as T
 }
 
 // convert obj with __BigInt__ to BigInt
