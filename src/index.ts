@@ -156,7 +156,7 @@ import { SafeBalance } from './utils/safeMath'
 import { verifyStakeTx, verifyUnstakeTx } from './tx/staking/verifyStake'
 import { AJVSchemaEnum } from './types/enum/AJVSchemaEnum'
 import { initAjvSchemas, verifyPayload } from './types/ajv/Helpers'
-import { Sign } from '@shardus/core/dist/shardus/shardus-types'
+import { Sign, ServerMode } from '@shardus/core/dist/shardus/shardus-types'
 
 let latestBlock = 0
 export const blocks: BlockMap = {}
@@ -2822,6 +2822,7 @@ const createNetworkAccount = async (
     next: {},
     hash: '',
     timestamp: 0,
+    mode: config.server.mode as ServerMode,
   }
   account.hash = WrappedEVMAccountFunctions._calculateAccountHash(account)
   /* prettier-ignore */ if (logFlags.important_as_error) console.log('INITIAL_HASH: ', account.hash)
@@ -6761,6 +6762,17 @@ const shardusSetup = (): void => {
         ) {
           const tag = 'version out-of-date; please update and restart'
           const message = 'node version is out-of-date; please update node to latest version'
+          shardus.shutdownFromDapp(tag, message, false)
+          return false
+        }
+
+        //error out nodes in debug mode for production networks to prevent joining
+        if (
+          networkAccount.data.current.mode === ServerMode.Release &&
+          config.server.mode !== ServerMode.Release
+        ) {
+          const tag = 'wrong mode; please update and restart'
+          const message = 'node mode must be release; please update the node mode'
           shardus.shutdownFromDapp(tag, message, false)
           return false
         }
