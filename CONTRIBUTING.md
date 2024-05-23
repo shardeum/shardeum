@@ -45,12 +45,13 @@ There are a few common scenarios where you might want to use `/* prettier-ignore
 2. **Special Formatting**: When you have specific formatting that you want to maintain that Prettier would otherwise change.
 3. **Temporary Code**: When you have temporary code that is meant for testing and you don’t want it to be auto-formatted.
 
-## How to Use `/* prettier-ignore */`
+### How to Use `/* prettier-ignore */`
 
 To use `/* prettier-ignore */`, simply place the comment on the line before the code you want to ignore. Here is an example:
 
-### Example
+#### Example
 
 ```javascript
-/* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log('Lengths of blocks after pruning', Object.keys(blocksByHash).length, Object.keys(readableBlocks).length)
+/* prettier-ignore */
+if (ShardeumFlags.VerboseLogs) console.log('Lengths of blocks after pruning', Object.keys(blocksByHash).length, Object.keys(readableBlocks).length)
 ```
