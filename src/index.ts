@@ -6401,7 +6401,7 @@ const shardusSetup = (): void => {
 
         //error out nodes in debug mode for production networks to prevent joining
         if (
-          networkAccount.data.current.mode === ServerMode.Release &&
+          networkAccount.data.mode === ServerMode.Release &&
           config.server.mode !== ServerMode.Release
         ) {
           const tag = 'wrong mode; please update and restart'
