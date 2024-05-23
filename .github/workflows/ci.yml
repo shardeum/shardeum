@@ -1,0 +1,27 @@
+name: Node CI Workflow
+
+on:
+  push:
+    branches:
+      - dev
+  pull_request:
+    branches:
+      - dev
+  workflow_dispatch:
+    inputs:
+      workflowBranch:
+        description: 'Select the branch to run the workflow on'
+        required: true
+        default: 'main'
+        type: choice
+        options:
+          - dev
+          - main
+jobs:
+  ci-dev:
+    if: ${{ github.event.inputs.workflowBranch == 'dev' }}
+    uses: shardeum/github-automation/.github/workflows/node-ci-shared.yml@dev
+
+  ci-main:
+    if: ${{ github.event.inputs.workflowBranch == 'main' || !github.event.inputs.workflowBranch }}
+    uses: shardeum/github-automation/.github/workflows/node-ci-shared.yml@main
