@@ -1,4 +1,4 @@
-import { VectorBufferStream } from '@shardus/core'
+import { ShardusTypes, VectorBufferStream } from '@shardus/core'
 import { Change, NetworkParameters } from '../shardeum/shardeumTypes'
 import { DeSerializeFromJsonString, SerializeToJsonString } from '../utils'
 import { BaseAccount, deserializeBaseAccount, serializeBaseAccount } from './BaseAccount'
@@ -16,6 +16,7 @@ export interface NetworkAccount extends BaseAccount {
   next
   hash: string
   timestamp: number
+  mode: ShardusTypes.ServerMode
 }
 
 export function serializeNetworkAccount(stream: VectorBufferStream, obj: NetworkAccount, root = false): void {
@@ -41,6 +42,7 @@ export function serializeNetworkAccount(stream: VectorBufferStream, obj: Network
 
   stream.writeString(obj.hash)
   stream.writeBigUInt64(BigInt(obj.timestamp))
+  stream.writeString(obj.mode)
 }
 
 export function deserializeNetworkAccount(stream: VectorBufferStream): NetworkAccount {
@@ -65,6 +67,7 @@ export function deserializeNetworkAccount(stream: VectorBufferStream): NetworkAc
 
   const hash = stream.readString()
   const timestamp = Number(stream.readBigUInt64())
+  const mode = stream.readString() as ShardusTypes.ServerMode
 
   return {
     ...baseAccount,
@@ -74,5 +77,6 @@ export function deserializeNetworkAccount(stream: VectorBufferStream): NetworkAc
     next,
     hash,
     timestamp,
+    mode,
   }
 }
