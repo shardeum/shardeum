@@ -18,7 +18,7 @@ Ensure this repo is kept clean and linear repository history by using rebase and
 
 
 
-# Pull Request Guidelines
+## Pull Request Guidelines
 
 - **Initiate with Draft:** Begin every pull request in the `Draft` state to allow for incremental changes and feedback.
 - **Atomic Commits:** Ensure each commit is self-contained and represents a single logical change.
