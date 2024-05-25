@@ -30,7 +30,6 @@ Ensure this repo is kept clean and linear repository history by using rebase and
 - **Testing:** Include test coverage and ensure your branch passes all required tests and CI/CD pipelines.
 - **Regular Updates:** Regularly update your branch with the latest changes from the `dev` branch using `--rebase` to avoid conflicts.
 - **Use Rebase, Avoid Merge:** Always use rebase instead of merge to integrate changes from `dev` to keep the history clean.
-- **No Direct Submissions to Main:** Direct submissions to the `main` branch are prohibited. All changes must go through the `dev` branch first.
 - **Review and Undraft:** Once your PR is complete, undraft it and request reviews to proceed with merging.
 
 ## Standardized Formatting Guidelines
