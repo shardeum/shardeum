@@ -1,6 +1,6 @@
 # Contribution guide
 
- Welcome to Shardeum contribution guide provides the essential information you need to contribute effectively to our repository. Whether you're fixing a bug, adding a new feature, or improving documentation, following these guidelines will streamline the process and ensure smooth collaboration. Please read through this guide carefully before starting your contribution.
+Welcome to the Shardeum contribution guide! This guide provides the essential information you need to contribute effectively to our repository. Whether you're fixing a bug, adding a new feature, or improving documentation, following these guidelines will streamline the process and ensure smooth collaboration. Please read through this guide carefully before starting your contribution.
 
 # Branch Organization
 
