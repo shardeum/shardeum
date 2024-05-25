@@ -25,7 +25,6 @@ Ensure this repo is kept clean and linear repository history by using rebase and
 - **Frequent Commits:** It's encouraged to commit and push changes to your branch frequently. This helps in keeping track of progress and facilitates easier collaboration.
 - **Rebase and Squash:** Before moving a PR out of draft, rebase your branch onto the latest `dev` branch and squash your commits to streamline the history.
 - **Logical Multiple Commits:** If multiple commits in a PR make logical sense, they can be kept, but strive to squash them into as few commits as possible to maintain clarity during reviews.
-
 - **Code Compliance:** Ensure your code adheres to the project’s formatting and linting guidelines.
 - **Testing:** Include test coverage and ensure your branch passes all required tests and CI/CD pipelines.
 - **Regular Updates:** Regularly update your branch with the latest changes from the `dev` branch using `--rebase` to avoid conflicts.
