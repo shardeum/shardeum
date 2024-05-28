@@ -108,6 +108,7 @@ import {
   removeTxFromSenderCache,
   DeSerializeFromJsonString,
   isStakingEVMTx,
+  convertBigIntsToHex,
 } from './utils'
 import config, { Config } from './config'
 import Wallet from 'ethereumjs-wallet'
@@ -1871,7 +1872,7 @@ const configShardusEndpoints = (): void => {
         if (cachedAppData && cachedAppData.appData) {
           /* prettier-ignore */ if (logFlags.shardedCache) console.log(`cachedAppData: Found tx receipt for ${txHash} ${Date.now()}`)
           const receipt = cachedAppData.appData as ShardusTypes.WrappedData
-          return res.json({ account: Utils.safeJsonParse(Utils.safeStringify(receipt.data)) })
+          return res.json({ account: convertBigIntsToHex(receipt.data) })
         } else {
           // tools will ask for a tx receipt before it exists!
           // we could register a "waiting" placeholer cache item

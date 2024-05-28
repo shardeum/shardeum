@@ -20,18 +20,27 @@ export const isObject = (val): boolean => {
   return typeof val === 'function' || typeof val === 'object'
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export function GetBufferFromField(input: any, encoding?: 'base64' | 'hex'): Buffer {
-  switch (encoding) {
-    case 'base64':
-      return Buffer.from(input.data, 'base64')
-    default:
-      return Buffer.from(input)
-  }
-}
-
 export function DeSerializeFromJsonString<T>(jsonString: string): T {
   return Utils.safeJsonParse(jsonString) as T
+}
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export function convertBigIntsToHex(obj: any): any {
+  if (typeof obj === 'bigint') {
+    return `0x${obj.toString(16)}`
+  } else if (Array.isArray(obj)) {
+    return obj.map((element) => convertBigIntsToHex(element))
+  } else if (typeof obj === 'object' && obj !== null) {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const newObj: { [key: string]: any } = {}
+    for (const key in obj) {
+      // eslint-disable-next-line security/detect-object-injection
+      newObj[key] = convertBigIntsToHex(obj[key])
+    }
+    return newObj
+  }
+  // Return the value unchanged if it's not a bigint, an array, or an object
+  return obj
 }
 
 // convert obj with __BigInt__ to BigInt
