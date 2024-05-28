@@ -207,7 +207,7 @@ config = merge(config, {
       maxStandbyCount: 30000, //max allowed standby nodes count
       enableMaxStandbyCount: true,
 
-      formingNodesPerCycle: 16, //how many nodes can be add in a cycle while in forming mode
+      formingNodesPerCycle: 7, //how many nodes can be add in a cycle while in forming mode
     },
     features: {
 
