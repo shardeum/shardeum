@@ -1504,7 +1504,7 @@ const configShardusEndpoints = (): void => {
         }
         const shardusAddress = toShardusAddressWithKey(address, secondaryAddressStr, accountType)
         const account = await shardus.getLocalOrRemoteAccount(shardusAddress)
-        const readableAccount = Utils.safeJsonParse(Utils.safeStringify(account))
+        const readableAccount = convertBigIntsToHex(account)
         return res.json({ account: readableAccount })
       }
     } catch (error) {
