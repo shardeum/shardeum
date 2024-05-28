@@ -3,7 +3,7 @@ import fs from 'fs'
 //import Log4js from 'log4js'
 import path from 'path'
 
-import { isObject, SerializeToJsonString } from '../utils'
+import { isObject } from '../utils'
 import { Op } from './utils/sqlOpertors'
 import { SQLDataTypes } from './utils/schemaDefintions'
 
@@ -11,6 +11,7 @@ import { SQLDataTypes } from './utils/schemaDefintions'
 import { Database, OPEN_READONLY } from 'sqlite3'
 import config from '../config'
 import { isServiceMode } from '..'
+import { Utils } from '@shardus/types'
 
 interface Sqlite3Storage {
   baseDir: string
@@ -239,7 +240,7 @@ class Sqlite3Storage {
 
         // eslint-disable-next-line security/detect-object-injection
         if (table.isColumnJSON[column]) {
-          value = SerializeToJsonString(value)
+          value = Utils.safeStringify(value)
         }
         // if (logFlags.console) console.log(`column: ${column}  ${value}`)
         inputs.push(value)
@@ -451,7 +452,7 @@ class Sqlite3Storage {
           paramEntry.sql = `${paramEntry.name} ${paramEntry.type} ?`
 
           if (table.isColumnJSON[paramEntry.name]) {
-            paramEntry.v1 = SerializeToJsonString(paramEntry.v1)
+            paramEntry.v1 = Utils.safeStringify(paramEntry.v1)
           }
           paramEntry.vals = [paramEntry.v1]
         }

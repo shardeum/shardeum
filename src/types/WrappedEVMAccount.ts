@@ -1,11 +1,11 @@
 import { Account } from '@ethereumjs/util'
 import { VectorBufferStream } from '@shardus/core'
 import { OperatorAccountInfo, ReadableReceipt } from '../shardeum/shardeumTypes'
-import { DeSerializeFromJsonString, SerializeToJsonString } from '../utils'
 import { TxReceipt } from '../vm_v7'
 import { BaseAccount, deserializeBaseAccount, serializeBaseAccount } from './BaseAccount'
 import { deserializeEVMAccount, serializeEVMAccount } from './EVMAccount'
 import { TypeIdentifierEnum } from './enum/TypeIdentifierEnum'
+import { Utils } from '@shardus/types'
 
 const cWrappedEVMAccountVersion = 1
 
@@ -73,13 +73,13 @@ export function serializeWrappedEVMAccount(
     : stream.writeUInt8(0)
 
   // JSON serialization
-  const receiptJson = SerializeToJsonString(obj.receipt)
+  const receiptJson = Utils.safeStringify(obj.receipt)
   obj.receipt !== undefined ? (stream.writeUInt8(1), stream.writeString(receiptJson)) : stream.writeUInt8(0)
-  const readableReceiptJson = SerializeToJsonString(obj.readableReceipt)
+  const readableReceiptJson = Utils.safeStringify(obj.readableReceipt)
   obj.readableReceipt !== undefined
     ? (stream.writeUInt8(1), stream.writeString(readableReceiptJson))
     : stream.writeUInt8(0)
-  const operatorAccountInfoJson = SerializeToJsonString(obj.operatorAccountInfo)
+  const operatorAccountInfoJson = Utils.safeStringify(obj.operatorAccountInfo)
   obj.operatorAccountInfo !== undefined
     ? (stream.writeUInt8(1), stream.writeString(operatorAccountInfoJson))
     : stream.writeUInt8(0)
@@ -117,11 +117,11 @@ export function deserializeWrappedEVMAccount(stream: VectorBufferStream): Wrappe
 
   // JSON deserialization
   const receipt =
-    stream.readUInt8() === 1 ? DeSerializeFromJsonString<TxReceipt>(stream.readString()) : undefined
+    stream.readUInt8() === 1 ? (Utils.safeJsonParse(stream.readString()) as TxReceipt) : undefined
   const readableReceipt =
-    stream.readUInt8() === 1 ? DeSerializeFromJsonString<ReadableReceipt>(stream.readString()) : undefined
+    stream.readUInt8() === 1 ? (Utils.safeJsonParse(stream.readString()) as ReadableReceipt) : undefined
   const operatorAccountInfo =
-    stream.readUInt8() === 1 ? DeSerializeFromJsonString<OperatorAccountInfo>(stream.readString()) : undefined
+    stream.readUInt8() === 1 ? (Utils.safeJsonParse(stream.readString()) as OperatorAccountInfo) : undefined
 
   const obj: WrappedEVMAccount = {
     ...baseAccount,

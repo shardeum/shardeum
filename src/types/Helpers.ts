@@ -1,5 +1,5 @@
 import { VectorBufferStream, nestedCountersInstance } from '@shardus/core'
-import {AccountType, NodeAccount2} from '../shardeum/shardeumTypes'
+import { AccountType, NodeAccount2 } from '../shardeum/shardeumTypes'
 import { BaseAccount } from './BaseAccount'
 import { DevAccount, deserializeDevAccount, serializeDevAccount } from './DevAccount'
 import { NetworkAccount, deserializeNetworkAccount, serializeNetworkAccount } from './NetworkAccount'
@@ -10,7 +10,7 @@ import {
   serializeWrappedEVMAccount,
 } from './WrappedEVMAccount'
 import { TypeIdentifierEnum } from './enum/TypeIdentifierEnum'
-import { DeSerializeFromJsonString, SerializeToJsonString } from '../utils'
+import { Utils } from '@shardus/types'
 
 export const binarySerializer = <T>(
   data: T,
@@ -44,11 +44,21 @@ export const accountSerializer = <T extends BaseAccount>(data: T): VectorBufferS
       break
     case AccountType.NodeAccount:
       nestedCountersInstance.countEvent('binarySerialize', 'NodeAccount')
-      serializeNodeAccount(serializedPayload, data as unknown as NodeAccount, TypeIdentifierEnum.cNodeAccount,true)
+      serializeNodeAccount(
+        serializedPayload,
+        data as unknown as NodeAccount,
+        TypeIdentifierEnum.cNodeAccount,
+        true
+      )
       break
     case AccountType.NodeAccount2:
       nestedCountersInstance.countEvent('binarySerialize', 'NodeAccount2')
-      serializeNodeAccount(serializedPayload, data as unknown as NodeAccount2, TypeIdentifierEnum.cNodeAccount2, true)
+      serializeNodeAccount(
+        serializedPayload,
+        data as unknown as NodeAccount2,
+        TypeIdentifierEnum.cNodeAccount2,
+        true
+      )
       break
     case AccountType.Account:
     case AccountType.ContractCode:
@@ -60,7 +70,7 @@ export const accountSerializer = <T extends BaseAccount>(data: T): VectorBufferS
     default:
       nestedCountersInstance.countEvent('binarySerialize', `UnknownAccType-${data.accountType}`)
       serializedPayload.writeUInt16(TypeIdentifierEnum.cUnknown)
-      serializedPayload.writeString(SerializeToJsonString(data))
+      serializedPayload.writeString(Utils.safeStringify(data))
       break
   }
   return serializedPayload
@@ -87,6 +97,6 @@ export const accountDeserializer = <T extends BaseAccount>(data: Buffer): T => {
       return deserializeWrappedEVMAccount(payloadStream) as unknown as T
     default:
       nestedCountersInstance.countEvent('binaryDeserialize', `UnknownAccType-${payloadType}`)
-      return DeSerializeFromJsonString<T>(payloadStream.readString())
+      return Utils.safeJsonParse(payloadStream.readString()) as unknown as T
   }
 }

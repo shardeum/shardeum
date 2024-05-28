@@ -1,14 +1,5 @@
-import { ShardeumFlags } from '../shardeum/shardeumFlags'
 import { DecimalString, HexString } from '../shardeum/shardeumTypes'
 import { Utils } from '@shardus/types'
-
-export function SerializeToJsonString(obj: unknown): string {
-  if (ShardeumFlags.UseBase64BufferEncoding) {
-    return Utils.safeStringify(obj, { bufferEncoding: 'base64' })
-  } else {
-    return Utils.safeStringify(obj, { bufferEncoding: 'none' })
-  }
-}
 
 export const isObject = (val): boolean => {
   if (val === null) {
@@ -18,10 +9,6 @@ export const isObject = (val): boolean => {
     return false
   }
   return typeof val === 'function' || typeof val === 'object'
-}
-
-export function DeSerializeFromJsonString<T>(jsonString: string): T {
-  return Utils.safeJsonParse(jsonString) as T
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -45,8 +32,8 @@ export function convertBigIntsToHex(obj: any): any {
 
 // convert obj with __BigInt__ to BigInt
 export function fixBigIntLiteralsToBigInt(obj): any {
-  const jsonString = SerializeToJsonString(obj)
-  const parsedStruct = DeSerializeFromJsonString(jsonString)
+  const jsonString = Utils.safeStringify(obj)
+  const parsedStruct = Utils.safeJsonParse(jsonString)
   return parsedStruct
 }
 

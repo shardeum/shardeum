@@ -1,6 +1,5 @@
 import fs from 'fs'
 import path from 'path'
-import { DeSerializeFromJsonString } from '../src/utils'
 import { FilePaths } from '../src/shardeum/shardeumFlags'
 import { Utils } from '@shardus/types'
 
@@ -92,7 +91,7 @@ async function writeDBToTarget(dbFile, targetDB, batchSize) {
 
       await run(targetDB, 'BEGIN TRANSACTION')
       for (let account of accounts) {
-        const dataStr = Utils.safeStringify(DeSerializeFromJsonString(account.data)).replace(/'/g, "''")
+        const dataStr = Utils.safeStringify(Utils.safeJsonParse(account.data)).replace(/'/g, "''")
         let insertQuery = `INSERT INTO accountsEntry (accountId, timestamp, data) VALUES (?, ?, ?)`
         await run(targetDB, insertQuery, [account.accountId, account.timestamp, dataStr])
         latestAccountId = account.accountId

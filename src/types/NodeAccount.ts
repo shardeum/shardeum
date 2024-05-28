@@ -1,8 +1,8 @@
 import { VectorBufferStream } from '@shardus/core'
 import { NodeAccountStats } from '../shardeum/shardeumTypes'
-import { DeSerializeFromJsonString, SerializeToJsonString } from '../utils'
 import { BaseAccount, deserializeBaseAccount, serializeBaseAccount } from './BaseAccount'
 import { TypeIdentifierEnum } from './enum/TypeIdentifierEnum'
+import { Utils } from '@shardus/types'
 
 const cNodeAccountVersion = 1
 
@@ -20,7 +20,12 @@ export interface NodeAccount extends BaseAccount {
   rewarded: boolean
 }
 
-export function serializeNodeAccount(stream: VectorBufferStream, obj: NodeAccount, type: TypeIdentifierEnum, root = false): void {
+export function serializeNodeAccount(
+  stream: VectorBufferStream,
+  obj: NodeAccount,
+  type: TypeIdentifierEnum,
+  root = false
+): void {
   if (root) {
     stream.writeUInt16(type)
   }
@@ -45,7 +50,7 @@ export function serializeNodeAccount(stream: VectorBufferStream, obj: NodeAccoun
   stream.writeBigUInt64(BigInt(obj.rewardEndTime))
   stream.writeString(obj.penalty.toString())
 
-  stream.writeString(SerializeToJsonString(obj.nodeAccountStats))
+  stream.writeString(Utils.safeStringify(obj.nodeAccountStats))
 
   stream.writeUInt8(obj.rewarded ? 1 : 0) // Serialize boolean as UInt8
 }
@@ -73,7 +78,7 @@ export function deserializeNodeAccount(stream: VectorBufferStream): NodeAccount 
   const rewardEndTime = Number(stream.readBigUInt64())
   const penalty = BigInt(stream.readString())
 
-  const nodeAccountStats = DeSerializeFromJsonString<NodeAccountStats>(stream.readString())
+  const nodeAccountStats = Utils.safeJsonParse(stream.readString()) as NodeAccountStats
 
   const rewarded = stream.readUInt8() === 1
 

@@ -84,7 +84,6 @@ import {
   emptyCodeHash,
   isEqualOrNewerVersion,
   replacer,
-  SerializeToJsonString,
   fixBigIntLiteralsToBigInt,
   sleep,
   zeroAddressStr,
@@ -106,7 +105,6 @@ import {
   getTxSenderAddress,
   isInSenderCache,
   removeTxFromSenderCache,
-  DeSerializeFromJsonString,
   isStakingEVMTx,
   convertBigIntsToHex,
 } from './utils'
@@ -1993,7 +1991,7 @@ const configShardusEndpoints = (): void => {
 
     //let sorted = Utils.safeJsonParse(Utils.safeStringify(accounts))
     const accounts = await AccountsStorage.debugGetAllAccounts()
-    const sorted = Utils.safeJsonParse(SerializeToJsonString(accounts))
+    const sorted = Utils.safeJsonParse(Utils.safeStringify(accounts))
 
     res.json({ accounts: sorted })
   })
@@ -6996,12 +6994,12 @@ const shardusSetup = (): void => {
           case 'AppData':
             return accountSerializer(obj).getBuffer()
           default:
-            return Buffer.from(SerializeToJsonString(obj), 'utf8')
+            return Buffer.from(Utils.safeStringify(obj), 'utf8')
         }
       } catch (e) {
         /* prettier-ignore */ if (logFlags.error) console.log('binarySerializeObject error:', e)
         nestedCountersInstance.countEvent('binarySerializeObject', 'error')
-        return Buffer.from(SerializeToJsonString(obj), 'utf8')
+        return Buffer.from(Utils.safeStringify(obj), 'utf8')
       }
     },
     binaryDeserializeObject(identifier: string, buffer: Buffer) {
@@ -7012,12 +7010,12 @@ const shardusSetup = (): void => {
           case 'AppData':
             return accountDeserializer(buffer)
           default:
-            return DeSerializeFromJsonString(buffer.toString('utf8'))
+            return Utils.safeJsonParse(buffer.toString('utf8'))
         }
       } catch (e) {
         /* prettier-ignore */ if (logFlags.error) console.log('binaryDeserializeObject error:', e)
         nestedCountersInstance.countEvent('binaryDeserializeObject', 'error')
-        return DeSerializeFromJsonString(buffer.toString('utf8'))
+        return Utils.safeJsonParse(buffer.toString('utf8'))
       }
     },
 
