@@ -31,4 +31,27 @@ This repo try to keep a clean single straight git history line.
 - `/*prettier-ignore*/` is often used to bypass really long debug code lines, this is a tip, not an instruction.
 - Do not abuse `/*prettier-ignore*/`.
 
+## Using `/* prettier-ignore */`
 
+### What is `/* prettier-ignore */`?
+
+`/* prettier-ignore */` is a directive used in Prettier to prevent the code formatter from formatting a specific piece of code. This can be useful when you have lines of code that should remain unchanged for readability, debugging, or other specific reasons.
+
+### When to Use `/* prettier-ignore */`
+
+There are a few common scenarios where you might want to use `/* prettier-ignore */`:
+
+1. **Long Debug Lines**: When you have long lines of code for debugging purposes that you want to keep on a single line for easier readability.
+2. **Special Formatting**: When you have specific formatting that you want to maintain that Prettier would otherwise change.
+3. **Temporary Code**: When you have temporary code that is meant for testing and you don’t want it to be auto-formatted.
+
+### How to Use `/* prettier-ignore */`
+
+To use `/* prettier-ignore */`, simply place the comment on the line before the code you want to ignore. Here is an example:
+
+#### Example
+
+```javascript
+/* prettier-ignore */
+if (ShardeumFlags.VerboseLogs) console.log('Lengths of blocks after pruning', Object.keys(blocksByHash).length, Object.keys(readableBlocks).length)
+```
