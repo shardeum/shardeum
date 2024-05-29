@@ -86,32 +86,6 @@ export async function injectPenaltyTX(
   // store the unsignedTx to local map for later use
   recordPenaltyTX(txId, signedTx)
 
-  // inject the unsignedTx if we are lucky node
-  const consensusNodes = shardus.getConsenusGroupForAccount(signedTx.reportedNodePublickKey)
-  const consensusNodeIdsAndRanks: { nodeId: string; rank: bigint }[] = consensusNodes.map((n) => {
-    return {
-      nodeId: n.id,
-      rank: shardus.computeNodeRank(n.id, txId, signedTx.timestamp),
-    }
-  })
-  const sortedNodeIdsAndRanks = consensusNodeIdsAndRanks.sort((a, b): number => {
-    return b.rank > a.rank ? 1 : -1
-  })
-  const ourNodeId = shardus.getNodeId()
-
-  let isLuckyNode = false
-  for (let i = 0; i < ShardeumFlags.numberOfNodesToInjectPenaltyTx; i++) {
-    if (sortedNodeIdsAndRanks[i].nodeId === ourNodeId) {
-      isLuckyNode = true
-      break
-    }
-  }
-
-  if (!isLuckyNode) {
-    if (ShardeumFlags.VerboseLogs)
-      console.log(`injectPenaltyTX: not lucky node, skipping injection`, signedTx)
-    return
-  }
   // since we have to pick a future timestamp, we need to wait until it is time to submit the signedTx
   await sleep(waitTime)
 
