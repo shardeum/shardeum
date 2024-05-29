@@ -105,31 +105,31 @@ function recordPenaltyTX(txId: string, tx: PenaltyTX): void {
 /**
  * Compares the event timestamp of the penalty tx with the timestamp of the last saved penalty tx
  */
-function isDuplicatePenaltyTx(
+function isProcessedPenaltyTx(
   tx: PenaltyTX,
   nodeAccount: NodeAccount2
-): { isDuplicate: boolean; eventTime: number } {
+): { isProcessed: boolean; eventTime: number } {
   switch (tx.violationType) {
     case ViolationType.LeftNetworkEarly:
       return {
-        isDuplicate:
-          nodeAccount.nodeAccountStats.lastPenaltyTime ===
+        isProcessed:
+          nodeAccount.nodeAccountStats.lastPenaltyTime >=
           (tx.violationData as LeftNetworkEarlyViolationData).nodeDroppedTime,
         eventTime: (tx.violationData as LeftNetworkEarlyViolationData).nodeDroppedTime,
       }
 
     case ViolationType.NodeRefuted:
       return {
-        isDuplicate:
-          nodeAccount.nodeAccountStats.lastPenaltyTime ===
+        isProcessed:
+          nodeAccount.nodeAccountStats.lastPenaltyTime >=
           (tx.violationData as NodeRefutedViolationData).nodeRefutedTime,
         eventTime: (tx.violationData as NodeRefutedViolationData).nodeRefutedTime,
       }
 
     case ViolationType.SyncingTooLong:
       return {
-        isDuplicate:
-          nodeAccount.nodeAccountStats.lastPenaltyTime ===
+        isProcessed:
+          nodeAccount.nodeAccountStats.lastPenaltyTime >=
           (tx.violationData as SyncingTimeoutViolationData).nodeDroppedTime,
         eventTime: (tx.violationData as SyncingTimeoutViolationData).nodeDroppedTime,
       }
@@ -296,12 +296,12 @@ export async function applyPenaltyTX(
     operatorAccount = wrappedStates[operatorShardusAddress].data as WrappedEVMAccount
   }
 
-  const { isDuplicate, eventTime } = isDuplicatePenaltyTx(tx, nodeAccount)
-  if (isDuplicate) {
+  const { isProcessed, eventTime } = isProcessedPenaltyTx(tx, nodeAccount)
+  if (isProcessed) {
     /* prettier-ignore */ if (logFlags.dapp_verbose) console.log(`Duplicate penaltyTX: , TxId: ${txId}, reportedNode ${tx.reportedNodePublickKey}, ${{lastPenaltyTime: nodeAccount.nodeAccountStats.lastPenaltyTime, eventTime}}`)
     shardus.applyResponseSetFailed(
       applyResponse,
-      `applyPenaltyTX failed isDuplicatePenaltyTX reportedNode: ${tx.reportedNodePublickKey}`
+      `applyPenaltyTX failed isProcessedPenaltyTx reportedNode: ${tx.reportedNodePublickKey}`
     )
     return
   }
@@ -314,9 +314,8 @@ export async function applyPenaltyTX(
     amount: penaltyAmount,
     timestamp: eventTime,
   })
-  if (tx.violationType === ViolationType.LeftNetworkEarly) {
-    nodeAccount.rewardEndTime =
-      (tx.violationData as LeftNetworkEarlyViolationData)?.nodeDroppedTime || Math.floor(tx.timestamp / 1000)
+  if (tx.violationType === ViolationType.LeftNetworkEarly && nodeAccount.rewardStartTime > 0) {
+    nodeAccount.rewardEndTime = (tx.violationData as LeftNetworkEarlyViolationData)?.nodeDroppedTime
     nodeAccount.nodeAccountStats.history.push({
       b: nodeAccount.rewardStartTime,
       e: nodeAccount.rewardEndTime,
