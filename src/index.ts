@@ -7505,14 +7505,23 @@ async function fetchNetworkAccountFromArchiver(): Promise<WrappedAccount> {
   }[] = []
   for (const archiver of archiverList) {
     try {
-      const res = await axios.get<{ networkAccountHash: string }>(
+      const res = await axios.get<{ networkAccountHash: string,
+        sign: {
+          owner: string,
+          sig: string
+        } 
+      }>(
         `http://${archiver.ip}:${archiver.port}/get-network-account?hash=true`
       )
       if (!res.data) {
         /* prettier-ignore */ nestedCountersInstance.countEvent('network-config-operation', 'failure: did not get network account from archiver private key. Use default configs.')
         throw new Error(`fetchNetworkAccountFromArchiver() from pk:${archiver.publicKey} returned null`)
       }
-
+      const isResponseVerified = shardus.crypto.verify(res.data)
+      const isFromArchiver = archiver.publicKey === res.data.sign.owner
+      if (!isResponseVerified || !isFromArchiver) {
+        throw new Error(`The response signature is not the same from archiver pk:${archiver.publicKey}`)
+      }
       values.push({
         hash: res.data.networkAccountHash as string,
         archiver,
