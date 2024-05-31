@@ -224,9 +224,19 @@ config = merge(config, {
   server: {
     rateLimiting: {
       limitRate: true,
+      //check out isOverloaded and getWinningLoad to see how these work
+      //what ever value is the highest is used to reject TXs at a sliding rate
+      //i.e. if the limit is 0.6  and the load is 0.7 then we will reject 25% of TXs randomly (because that is 25% of the way to 1.0 from 0.6)
+      //     when they get to 1.0 load (the max) they will reject 100% of TXs
       loadLimit: {
+        //these are multipliers for internal and external factors
         internal: 0.6,
         external: 0.6,
+        //these are multipliers three external load factors that can influence network scale up/down votes
+        //however these multipler are used for rate limiting and it is highThreshold / lowThreshold that are used for voting
+        //having a super fast computer will not impact this, it is about the collaborative health of the network based on 
+        //what is in our queue.  even though our queue may be different than other node it is similar because of overalp in 
+        //dynamic sharding ranges
         txTimeInQueue: 0.6,
         queueLength: 0.6,
         executeQueueLength: 0.6,
@@ -235,9 +245,16 @@ config = merge(config, {
     loadDetection: {
       queueLimit: 320, // EXSS does the main limiting now queue limit is a secondary limit.  It should be higher that the exeutute queue limit
       executeQueueLimit: 160, // This limit how many items can be in the queue that will execute (apply) on our node
-      desiredTxTime: 15, // 15
-      highThreshold: 0.5,
-      lowThreshold: 0.2,
+                              // Example: if you a have a limit of 160 and we expect TXs to take 4 sec in consensus after a 6 second wait
+                              // then we look at 160 / 10 to see that 10tps sustained or more will give us a 1.0 load.
+                              // note that executeQueueLength value of 0.6 means we start rejecting TXs at 60% of the limit
+      desiredTxTime: 15, // this is the average age of a TX in the queue.  we will only detect this if there are at least 20 txes in the queue
+      highThreshold: 0.5, // This is mainly used to detect if any of of our three parameters above are getting too high
+                          // if any of the the three external load factors are above highload we will raise a high load 
+                          // event and vote to the network if we are in the voter set for that cycle
+                          // if enough nodes vote or up, then then desired node count will go up (although there is a limit based on current active nodes)
+      lowThreshold: 0.2,  // similar to highThreshold but for low values. 
+                          // load below this will trigger a network scale down vote.
     },
   },
 })
