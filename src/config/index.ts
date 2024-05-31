@@ -208,6 +208,8 @@ config = merge(config, {
       enableMaxStandbyCount: true,
 
       formingNodesPerCycle: 7, //how many nodes can be add in a cycle while in forming mode
+
+      downNodeFilteringEnabled: false, //turning down node filtering off for diagnostics purposes
     },
     features: {
 
