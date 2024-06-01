@@ -2633,6 +2633,7 @@ const createNodeAccount2 = (accountId: string): NodeAccount2 => {
       totalPenalty: BigInt(0),
       history: [],
       penaltyHistory: [],
+      lastPenaltyTime: 0,
       isShardeumRun: false,
     },
     // rewarded: false // To be compatible with v1.1.2 nodes, commented out for now.
