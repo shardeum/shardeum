@@ -324,7 +324,7 @@ export async function applyPenaltyTX(
 
   const { isProcessed, eventTime } = isProcessedPenaltyTx(tx, nodeAccount)
   if (isProcessed) {
-    /* prettier-ignore */ if (logFlags.dapp_verbose) console.log(`Duplicate penaltyTX: , TxId: ${txId}, reportedNode ${tx.reportedNodePublickKey}, ${{lastPenaltyTime: nodeAccount.nodeAccountStats.lastPenaltyTime, eventTime}}`)
+    /* prettier-ignore */ if (logFlags.dapp_verbose) console.log(`Processed penaltyTX: , TxId: ${txId}, reportedNode ${tx.reportedNodePublickKey}, ${{lastPenaltyTime: nodeAccount.nodeAccountStats.lastPenaltyTime, eventTime}}`)
     shardus.applyResponseSetFailed(
       applyResponse,
       `applyPenaltyTX failed isProcessedPenaltyTx reportedNode: ${tx.reportedNodePublickKey}`
