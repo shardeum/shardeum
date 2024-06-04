@@ -86,14 +86,20 @@ export async function injectPenaltyTX(
   // store the unsignedTx to local map for later use
   recordPenaltyTX(txId, signedTx)
 
-  // since we have to pick a future timestamp, we need to wait until it is time to submit the signedTx
-  await sleep(waitTime)
-
-  if (ShardeumFlags.VerboseLogs) {
-    console.log(`injectPenaltyTX: tx.timestamp: ${signedTx.timestamp} txid: ${txId}`, signedTx)
+  // Limit the nodes that send this to the 5 closest to the node id
+  const closestNodes = shardus.getClosestNodes(eventData.nodeId, 5)
+  const ourId = shardus.getNodeId()
+  for (const id of closestNodes) {
+    if (id === ourId) {
+      // since we have to pick a future timestamp, we need to wait until it is time to submit the signedTx
+      await sleep(waitTime)
+      if (ShardeumFlags.VerboseLogs) {
+        console.log(`injectPenaltyTX: tx.timestamp: ${signedTx.timestamp} txid: ${txId}`, signedTx)
+      }
+      const result = await shardus.put(signedTx)
+      /* prettier-ignore */ if (logFlags.dapp_verbose) console.log('INJECTED_PENALTY_TX', result)
+    }
   }
-
-  return await shardus.put(signedTx)
 }
 
 function recordPenaltyTX(txId: string, tx: PenaltyTX): void {

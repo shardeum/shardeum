@@ -6769,15 +6769,7 @@ const shardusSetup = (): void => {
           }
           nestedCountersInstance.countEvent('shardeum-staking', `node-left-early: injectPenaltyTx`)
 
-          // Limit the nodes that send this to the 5 closest to the node id
-          const closestNodes = shardus.getClosestNodes(data.nodeId, 5)
-          const ourId = shardus.getNodeId()
-          for (const id of closestNodes) {
-            if (id === ourId) {
-              const result = await PenaltyTx.injectPenaltyTX(shardus, data, violationData)
-              /* prettier-ignore */ if (logFlags.dapp_verbose) console.log('INJECTED_PENALTY_TX', result)
-            }
-          }
+          await PenaltyTx.injectPenaltyTX(shardus, data, violationData)
         } else {
           nestedCountersInstance.countEvent('shardeum-staking', `node-left-early: event skipped`)
           /* prettier-ignore */ if (logFlags.dapp_verbose) console.log(`Shardeum node-left-early event skipped`, data, nodeLostCycle, nodeDroppedCycle)
