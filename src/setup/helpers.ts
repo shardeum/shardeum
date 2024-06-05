@@ -11,7 +11,7 @@ import { InternalTx, InternalTXType } from '../shardeum/shardeumTypes'
 import { Utils } from '@shardus/types'
 
 crypto.init('69fa4195670576c0160d660c3be36556ff8d504725be8a59b5a96509e0c994bc')
-crypto.setCustomStringifier(Utils.safeStringify, 'shardeum_crypto_stringify')
+crypto.setCustomStringifier(Utils.safeStringify, 'shardus_safeStringify')
 export { crypto }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any

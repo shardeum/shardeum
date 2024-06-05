@@ -2,8 +2,7 @@ import * as crypto from '@shardus/crypto-utils'
 import { Utils } from '@shardus/types'
 
 crypto.init('69fa4195670576c0160d660c3be36556ff8d504725be8a59b5a96509e0c994bc')
-// @ts-ignore
-crypto.setCustomStringifier(Utils.safeStringify)
+crypto.setCustomStringifier(Utils.safeStringify, 'shardus_safeStringify')
 const data = {
   address: '0x1f1545Eb7EE5C3C1c4784ee9ddE5D26A9f76F77C',
   timestamp: Date.now(),
