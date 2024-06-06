@@ -107,7 +107,8 @@ import {
   getTxSenderAddress,
   isInSenderCache,
   removeTxFromSenderCache,
-  DeSerializeFromJsonString, isStakingEVMTx,
+  DeSerializeFromJsonString,
+  isStakingEVMTx,
 } from './utils'
 import config, { Config } from './config'
 import Wallet from 'ethereumjs-wallet'
@@ -717,24 +718,24 @@ async function tryGetRemoteAccountCB(
       if (fixedEVMAccount != null) {
         fixDeserializedWrappedEVMAccount(fixedEVMAccount)
         nestedCountersInstance.countEvent('aalg-warmup', 'cache hit')
-        /* prettier-ignore */ if(logFlags.aalg) console.log('aalg: aalg-hit', txid, shardusAddress, address, key, type)
+        /* prettier-ignore */ if (logFlags.aalg) console.log('aalg: aalg-hit', txid, shardusAddress, address, key, type)
         transactionState.warmupStats.cacheHit++
         return fixedEVMAccount
       }
       if (fixedEVMAccount === null) {
         nestedCountersInstance.countEvent('aalg-warmup', 'cache slot empty')
         transactionState.warmupStats.cacheEmpty++
-        /* prettier-ignore */ if(logFlags.aalg) console.log('aalg: aalg-empty', txid, shardusAddress, address, key, type)
+        /* prettier-ignore */ if (logFlags.aalg) console.log('aalg: aalg-empty', txid, shardusAddress, address, key, type)
       }
       if (fixedEVMAccount === undefined) {
         nestedCountersInstance.countEvent('aalg-warmup', 'cache slot empty-reqmiss')
         transactionState.warmupStats.cacheEmptyReqMiss++
-        /* prettier-ignore */ if(logFlags.aalg) console.log('aalg: aalg-empty-reqmiss', txid, shardusAddress, address, key, type)
+        /* prettier-ignore */ if (logFlags.aalg) console.log('aalg: aalg-empty-reqmiss', txid, shardusAddress, address, key, type)
       }
     } else {
       nestedCountersInstance.countEvent('aalg-warmup', 'cache miss')
       transactionState.warmupStats.cacheMiss++
-      /* prettier-ignore */ if(logFlags.aalg) console.log('aalg: aalg-miss', txid, shardusAddress, address, key, type)
+      /* prettier-ignore */ if (logFlags.aalg) console.log('aalg: aalg-miss', txid, shardusAddress, address, key, type)
     }
   }
 
@@ -742,7 +743,7 @@ async function tryGetRemoteAccountCB(
     //getLocalOrRemoteAccount can throw if the remote node gives us issues
     //we want to catch these and retry
     try {
-      /* prettier-ignore */ if(logFlags.aalg || ShardeumFlags.VerboseLogs) console.log(`${Date.now()} Trying to get remote account for address: ${address}, type: ${type}, key: ${key} retry: ${retry}`)
+      /* prettier-ignore */ if (logFlags.aalg || ShardeumFlags.VerboseLogs) console.log(`${Date.now()} Trying to get remote account for address: ${address}, type: ${type}, key: ${key} retry: ${retry}`)
       retry++
       remoteShardusAccount = await shardus.getLocalOrRemoteAccount(shardusAddress, {
         useRICache: true,
@@ -762,7 +763,7 @@ async function tryGetRemoteAccountCB(
   if (remoteShardusAccount == undefined) {
     /* prettier-ignore */ if (ShardeumFlags.VerboseLogs || logFlags.aalg) console.log(`${Date.now()} Found no remote account for address: ${address}, type: ${type}, key: ${key}, retry: ${retry}`)
     if (type === AccountType.Account || type === AccountType.ContractCode) {
-      /* prettier-ignore */ nestedCountersInstance.countEvent( 'shardeum', `tryRemoteAccountCB: fail. type: ${type}, address: ${address}, key: ${key}` )
+      /* prettier-ignore */ nestedCountersInstance.countEvent('shardeum', `tryRemoteAccountCB: fail. type: ${type}, address: ${address}, key: ${key}`)
     }
     //this could be new account
     return undefined
@@ -1079,7 +1080,10 @@ const configShardusEndpoints = (): void => {
     // if(isDebugMode()){
     //   return res.json(`endpoint not available`)
     // }
-
+    if (Number.isNaN(Number(req.query.points as string))) {
+      /* prettier-ignore */ if (logFlags.error) console.log(`Invalid input debug-points number`)
+      return res.json({ error: `Invalid input debug-points number` })
+    }
     const points = Number(req.query.points ?? ShardeumFlags.ServicePoints['debug-points'])
     if (trySpendServicePoints(points, null, 'debug-points') === false) {
       return res.json({ error: 'node busy', points, servicePointSpendHistory, debugLastTotalServicePoints })
@@ -1301,7 +1305,8 @@ const configShardusEndpoints = (): void => {
     /* eslint-disable security/detect-object-injection */
     let blockHash = req.query.blockHash as string
     if (blockHash === 'latest') blockHash = readableBlocks[latestBlock].hash
-    else if (blockHash.length !== 66 || !isHexString(blockHash)) return res.json({ error: 'Invalid block hash' })
+    else if (blockHash.length !== 66 || !isHexString(blockHash))
+      return res.json({ error: 'Invalid block hash' })
     if (ShardeumFlags.VerboseLogs) console.log('Req: eth_getBlockByHash', blockHash)
     const blockNumber = blocksByHash[blockHash]
     return res.json({ block: readableBlocks[blockNumber] })
@@ -1860,17 +1865,17 @@ const configShardusEndpoints = (): void => {
         const cachedAppData = await shardus.getLocalOrRemoteCachedAppData('receipt', dataId)
         if (ShardeumFlags.VerboseLogs) console.log(`cachedAppData for tx hash ${txHash}`, cachedAppData)
         if (cachedAppData && cachedAppData.appData) {
-          /* prettier-ignore */ if(logFlags.shardedCache) console.log(`cachedAppData: Found tx receipt for ${txHash} ${Date.now()}`)
+          /* prettier-ignore */ if (logFlags.shardedCache) console.log(`cachedAppData: Found tx receipt for ${txHash} ${Date.now()}`)
           const receipt = cachedAppData.appData as ShardusTypes.WrappedData
           return res.json({ account: JSON.parse(stringify(receipt.data)) })
         } else {
           // tools will ask for a tx receipt before it exists!
           // we could register a "waiting" placeholer cache item
-          /* prettier-ignore */ if(logFlags.shardedCache) console.log(`cachedAppData: Unable to find tx receipt for ${txHash} ${Date.now()}`)
+          /* prettier-ignore */ if (logFlags.shardedCache) console.log(`cachedAppData: Unable to find tx receipt for ${txHash} ${Date.now()}`)
         }
         return res.json({ account: null })
       } catch (error) {
-        /* prettier-ignore */ if(logFlags.shardedCache) console.log('cachedAppData: Unable to get tx receipt: ' + formatErrorMessage(error))
+        /* prettier-ignore */ if (logFlags.shardedCache) console.log('cachedAppData: Unable to get tx receipt: ' + formatErrorMessage(error))
         return res.json({ account: null })
       }
     } else {
@@ -2789,8 +2794,8 @@ async function estimateGas(
     }
   }
   if (callerAccount == null) {
-    /* prettier-ignore */ nestedCountersInstance.countEvent( 'shardeum-endpoints', `Unable to find caller account while estimating gas. Using a fake account to estimate gas` )
-    /* prettier-ignore */ if (logFlags.dapp_verbose) console.log( `Unable to find caller account: ${callerShardusAddress} while estimating gas. Using a fake account to estimate gas` )
+    /* prettier-ignore */ nestedCountersInstance.countEvent('shardeum-endpoints', `Unable to find caller account while estimating gas. Using a fake account to estimate gas`)
+    /* prettier-ignore */ if (logFlags.dapp_verbose) console.log(`Unable to find caller account: ${callerShardusAddress} while estimating gas. Using a fake account to estimate gas`)
   }
 
   preRunTxState._transactionState.insertFirstAccountReads(
@@ -2884,7 +2889,7 @@ async function generateAccessList(
           if (postResp.body != null && postResp.body != '' && postResp.body.accessList != null) {
             /* prettier-ignore */ if (logFlags.dapp_verbose || logFlags.aalg) console.log(`Node is in remote shard: gotResp:${stringify(postResp.body)}`)
             if (Array.isArray(postResp.body.accessList) && postResp.body.accessList.length > 0) {
-              /* prettier-ignore */ nestedCountersInstance.countEvent( 'accesslist', `remote shard accessList: ${postResp.body.accessList.length} items, success: ${ postResp.body.failedAccessList != true }` )
+              /* prettier-ignore */ nestedCountersInstance.countEvent('accesslist', `remote shard accessList: ${postResp.body.accessList.length} items, success: ${postResp.body.failedAccessList != true}`)
               let failed = postResp.body.failedAccessList
               if (postResp.body.codeHashes == null || postResp.body.codeHashes.length == 0) {
                 failed = true
@@ -2929,8 +2934,8 @@ async function generateAccessList(
       }
     }
     if (callerAccount == null) {
-      /* prettier-ignore */ nestedCountersInstance.countEvent( 'accesslist', `Unable to find caller account while generating accessList. Using a fake account to estimate gas` )
-      /* prettier-ignore */ if (logFlags.dapp_verbose || logFlags.aalg) console.log( `Unable to find caller account: ${callerShardusAddress} while generating accessList. Using a fake account to generate accessList` )
+      /* prettier-ignore */ nestedCountersInstance.countEvent('accesslist', `Unable to find caller account while generating accessList. Using a fake account to estimate gas`)
+      /* prettier-ignore */ if (logFlags.dapp_verbose || logFlags.aalg) console.log(`Unable to find caller account: ${callerShardusAddress} while generating accessList. Using a fake account to generate accessList`)
     }
     // temporarily set caller account's nonce same as tx's nonce
     if (ShardeumFlags.accesslistNonceFix && callerAccount && callerAccount.account) {
@@ -3004,7 +3009,7 @@ async function generateAccessList(
         }
       }
 
-      /* prettier-ignore */ if(logFlags.aalg) console.log(`aalg: sending fetch: ${Date.now()-startTime} ms and wait ${ShardeumFlags.aalgWarmupSleep} tx:${txId}`)
+      /* prettier-ignore */ if (logFlags.aalg) console.log(`aalg: sending fetch: ${Date.now() - startTime} ms and wait ${ShardeumFlags.aalgWarmupSleep} tx:${txId}`)
       await sleep(ShardeumFlags.aalgWarmupSleep)
     }
 
@@ -3020,7 +3025,7 @@ async function generateAccessList(
     preRunTxState._transactionState.warmupStats = warmupStats
 
     if (warmupList != null) {
-      /* prettier-ignore */ if(logFlags.aalg) console.log(`warmup results, before:`, caller, txId, JSON.stringify(warmupStats, null, 2))
+      /* prettier-ignore */ if (logFlags.aalg) console.log(`warmup results, before:`, caller, txId, JSON.stringify(warmupStats, null, 2))
     }
 
     const customEVM = new EthereumVirtualMachine({
@@ -3052,10 +3057,10 @@ async function generateAccessList(
     nestedCountersInstance.countEvent('accesslist-times', `elapsed ${Math.round(elapsed / 1000)} sec`)
 
     if (warmupList != null) {
-      /* prettier-ignore */ if(logFlags.aalg) console.log(`aalg: results, after: warmed:`, caller, txId, elapsed, JSON.stringify(warmupStats, null, 2) )
+      /* prettier-ignore */ if (logFlags.aalg) console.log(`aalg: results, after: warmed:`, caller, txId, elapsed, JSON.stringify(warmupStats, null, 2))
       //todo compare warmupList to access list
     } else {
-      /* prettier-ignore */ if(logFlags.aalg) console.log(`aalg: results, after:`, caller, txId, elapsed, JSON.stringify(warmupStats, null, 2) )
+      /* prettier-ignore */ if (logFlags.aalg) console.log(`aalg: results, after:`, caller, txId, elapsed, JSON.stringify(warmupStats, null, 2))
     }
 
     const readAccounts = preRunTxState._transactionState.getReadAccounts()
@@ -3220,15 +3225,15 @@ async function generateAccessList(
     if (runTxResult.execResult.exceptionError) {
       if (ShardeumFlags.VerboseLogs || logFlags.aalg)
         console.log('Execution Error:', runTxResult.execResult.exceptionError)
-      /* prettier-ignore */ nestedCountersInstance.countEvent( 'accesslist', `Local Fail with evm error: CA ${ transaction.to && ShardeumFlags.VerboseLogs ? transaction.to.toString() : '' }` )
+      /* prettier-ignore */ nestedCountersInstance.countEvent('accesslist', `Local Fail with evm error: CA ${transaction.to && ShardeumFlags.VerboseLogs ? transaction.to.toString() : ''}`)
       return { accessList: [], shardusMemoryPatterns: null, codeHashes: [], failedAccessList: true }
     }
     const isEmptyCodeHash = allCodeHash.size === 0
     if (isEmptyCodeHash) {
       /* prettier-ignore */ if (ShardeumFlags.VerboseLogs || logFlags.aalg) console.log(`aalg: empty codehash ${txId}
-      allInvolvedContracts:  ${JSON.stringify(allInvolvedContracts,null,2)}
+      allInvolvedContracts:  ${JSON.stringify(allInvolvedContracts, null, 2)}
 
-      readAccounts.contractBytes: ${JSON.stringify(readAccounts.contractBytes,null,2)}`)
+      readAccounts.contractBytes: ${JSON.stringify(readAccounts.contractBytes, null, 2)}`)
       nestedCountersInstance.countEvent('accesslist', `Local Fail: empty codeHash`)
     } else nestedCountersInstance.countEvent('accesslist', `Local Success: true`)
     return {
@@ -3255,7 +3260,7 @@ async function fetchAndCacheAccountData(
   warmupStats.accReq++
 
   const startTime = Date.now()
-  /* prettier-ignore */ if(logFlags.aalg) console.log('aalg: fetchAndCacheAccountData-enter', txid, shardusAddress, type)
+  /* prettier-ignore */ if (logFlags.aalg) console.log('aalg: fetchAndCacheAccountData-enter', txid, shardusAddress, type)
   warmupCache.set(shardusAddress, undefined) //set undefined to indicate we want to fetch this
 
   try {
@@ -3267,19 +3272,19 @@ async function fetchAndCacheAccountData(
     if (warmupAcc == null) {
       warmupStats.accRcvdNull++
       nestedCountersInstance.countEvent('aalg-warmup', 'account warmed-empty')
-      /* prettier-ignore */ if(logFlags.aalg) console.log('aalg: fetchAndCacheAccountData-null',elapsed, txid, shardusAddress, type)
+      /* prettier-ignore */ if (logFlags.aalg) console.log('aalg: fetchAndCacheAccountData-null', elapsed, txid, shardusAddress, type)
       warmupCache.set(shardusAddress, null) //could we init with undefined?
     } else {
       nestedCountersInstance.countEvent('aalg-warmup', 'account warmed')
       warmupCache.set(shardusAddress, warmupAcc.data as WrappedEVMAccount)
       warmupStats.accRcvd++
-      /* prettier-ignore */ if(logFlags.aalg) console.log('aalg: fetchAndCacheAccountData-got',elapsed, txid, shardusAddress, type)
+      /* prettier-ignore */ if (logFlags.aalg) console.log('aalg: fetchAndCacheAccountData-got', elapsed, txid, shardusAddress, type)
     }
   } catch (er) {
     const elapsed = Date.now() - startTime
     warmupStats.accReqErr++
     nestedCountersInstance.countEvent('aalg-warmup', `account er: ${er.message}`)
-    /* prettier-ignore */ if(logFlags.aalg) console.log('aalg: fetchAndCacheAccountData-error',elapsed, txid, shardusAddress, type)
+    /* prettier-ignore */ if (logFlags.aalg) console.log('aalg: fetchAndCacheAccountData-error', elapsed, txid, shardusAddress, type)
   }
 }
 
@@ -4418,7 +4423,7 @@ const shardusSetup = (): void => {
             }
           }
           if (remoteShardusAccount == null) {
-            /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log( `txPreCrackData: found no local or remote account for address: ${txSenderEvmAddr}, key: ${transformedSourceKey}.` )
+            /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`txPreCrackData: found no local or remote account for address: ${txSenderEvmAddr}, key: ${transformedSourceKey}.`)
             nestedCountersInstance.countEvent('shardeum', 'remoteShardusAccount was empty')
           }
 
@@ -4539,7 +4544,9 @@ const shardusSetup = (): void => {
               nestedCountersInstance.countEvent('shardeum', 'precrack - insufficient balance')
               return {
                 status: false,
-                reason: `Sender Insufficient Balance. Sender: ${senderAddress.toString()}, MinBalance: ${minBalance.toString()}, Account balance: ${accountBalance.toString()}, Difference: ${(minBalance - accountBalance).toString()}`,
+                reason: `Sender Insufficient Balance. Sender: ${senderAddress.toString()}, MinBalance: ${minBalance.toString()}, Account balance: ${accountBalance.toString()}, Difference: ${(
+                  minBalance - accountBalance
+                ).toString()}`,
               }
             } else {
               /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`precrack balance pass: sender ${senderAddress.toString()} has balance of ${accountBalance.toString()}`)
@@ -4617,9 +4624,9 @@ const shardusSetup = (): void => {
             }
 
             if (appData.accessList && appData.accessList.length > 0) {
-              /* prettier-ignore */ nestedCountersInstance.countEvent( 'shardeum', 'precrack' + ' -' + ' generateAccessList success: true' )
+              /* prettier-ignore */ nestedCountersInstance.countEvent('shardeum', 'precrack' + ' -' + ' generateAccessList success: true')
             } else {
-              /* prettier-ignore */ nestedCountersInstance.countEvent( 'shardeum', 'precrack' + ' -' + ' generateAccessList success: false' )
+              /* prettier-ignore */ nestedCountersInstance.countEvent('shardeum', 'precrack' + ' -' + ' generateAccessList success: false')
               return { status: false, reason: `Failed to generate access list2 ${Date.now() - aalgStart}` }
             }
           }
@@ -4641,7 +4648,7 @@ const shardusSetup = (): void => {
             /* prettier-ignore */ if (logFlags.error) console.log('Error: while doing preCrack for stake related tx', e)
           }
         }
-        /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log( `txPreCrackData final result: txNonce: ${appData.txNonce}, currentNonce: ${ appData.nonce }, queueCount: ${appData.queueCount}, appData ${stringify(appData)}` )
+        /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`txPreCrackData final result: txNonce: ${appData.txNonce}, currentNonce: ${appData.nonce}, queueCount: ${appData.queueCount}, appData ${stringify(appData)}`)
       }
       return { status: true, reason: 'Passed' }
     },
@@ -5332,7 +5339,7 @@ const shardusSetup = (): void => {
           // attach OperatorAccountInfo if it is a staking tx
           if (isStakeRelatedTx) {
             const stakeCoinsTx: StakeCoinsTX = appData.internalTx
-            /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log( 'Adding operator account info to wrappedEVMAccount', evmAccountID, stakeCoinsTx.nominator )
+            /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log('Adding operator account info to wrappedEVMAccount', evmAccountID, stakeCoinsTx.nominator)
             if (evmAccountID === stakeCoinsTx.nominator) {
               wrappedEVMAccount.operatorAccountInfo = {
                 stake: BigInt(0),
@@ -5669,7 +5676,7 @@ const shardusSetup = (): void => {
         }
       }
 
-      /* prettier-ignore */ if (logFlags.dapp_verbose) shardus.log( `getAccountDataByRange: extra:${extra} ${stringify({ accountStart, accountEnd, tsStart, tsEnd, maxRecords, offset, })}` )
+      /* prettier-ignore */ if (logFlags.dapp_verbose) shardus.log(`getAccountDataByRange: extra:${extra} ${stringify({ accountStart, accountEnd, tsStart, tsEnd, maxRecords, offset, })}`)
 
       for (const wrappedEVMAccount of cappedResults) {
         // Process and add to finalResults
@@ -5876,7 +5883,7 @@ const shardusSetup = (): void => {
             )
           } catch (e) {
             /* prettier-ignore */ nestedCountersInstance.countEvent('shardeum-remove-node', 'signAppData' +
-              ' stakeRequiredUsd parse error')
+            ' stakeRequiredUsd parse error')
             /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`signAppData minStakeRequiredUsd parse error ${type} ${stringify(removeNodeCert)}, cachedNetworkAccount: ${stringify(AccountsStorage.cachedNetworkAccount)} `)
             return fail
           }
@@ -5887,7 +5894,7 @@ const shardusSetup = (): void => {
             )
           } catch (e) {
             /* prettier-ignore */ nestedCountersInstance.countEvent('shardeum-remove-node', 'signAppData' +
-              ' minStakeRequired parse error')
+            ' minStakeRequired parse error')
             /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`signAppData minStakeRequired parse error ${type} ${stringify(removeNodeCert)}, cachedNetworkAccount: ${stringify(AccountsStorage.cachedNetworkAccount)} `)
             return fail
           }
@@ -5904,7 +5911,7 @@ const shardusSetup = (): void => {
             }
           } catch (e) {
             /* prettier-ignore */ nestedCountersInstance.countEvent('shardeum-remove-node', 'signAppData' +
-              ' minStakeRequired parse error')
+            ' minStakeRequired parse error')
             /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`signAppData minStakeRequired parse error ${type} ${stringify(removeNodeCert)}, cachedNetworkAccount: ${stringify(AccountsStorage.cachedNetworkAccount)} `)
             return fail
           }
@@ -6419,10 +6426,10 @@ const shardusSetup = (): void => {
       const numTotalNodes = latestCycle.active + latestCycle.syncing // total number of nodes in the network
       if (numTotalNodes < ShardeumFlags.minActiveNodesForStaking) {
         isReadyToJoinLatestValue = true
-        /* prettier-ignore */ nestedCountersInstance.countEvent( 'shardeum-staking', 'numTotalNodes < ShardeumFlags.minActiveNodesForStaking, isReadyToJoin = true' )
+        /* prettier-ignore */ nestedCountersInstance.countEvent('shardeum-staking', 'numTotalNodes < ShardeumFlags.minActiveNodesForStaking, isReadyToJoin = true')
         return true
       }
-      /* prettier-ignore */ if (logFlags.important_as_error) console.log( `active: ${latestCycle.active}, syncing: ${latestCycle.syncing}, flag: ${ShardeumFlags.AdminCertEnabled}` )
+      /* prettier-ignore */ if (logFlags.important_as_error) console.log(`active: ${latestCycle.active}, syncing: ${latestCycle.syncing}, flag: ${ShardeumFlags.AdminCertEnabled}`)
       // check for ShardeumFlags for mode + check if mode is not equal to processing and validate adminCert
       if (ShardeumFlags.AdminCertEnabled === true && mode !== 'processing') {
         /* prettier-ignore */ if (logFlags.important_as_error) console.log('entered admin cert conditon mode:' + mode)
@@ -6456,7 +6463,7 @@ const shardusSetup = (): void => {
       // handle first time staking setup
       if (lastCertTimeTxTimestamp === 0) {
         // inject setCertTimeTx for the first time
-        /* prettier-ignore */ nestedCountersInstance.countEvent( 'shardeum-staking', 'lastCertTimeTxTimestamp === 0 first time or expired' )
+        /* prettier-ignore */ nestedCountersInstance.countEvent('shardeum-staking', 'lastCertTimeTxTimestamp === 0 first time or expired')
 
         const response = await injectSetCertTimeTx(shardus, publicKey, activeNodes)
         if (response == null) {
@@ -6570,7 +6577,7 @@ const shardusSetup = (): void => {
             }
           }
 
-          /* prettier-ignore */ nestedCountersInstance.countEvent( 'shardeum-staking', `call to queryCertificate failed with reason: ${(res as ValidatorError).reason}` )
+          /* prettier-ignore */ nestedCountersInstance.countEvent('shardeum-staking', `call to queryCertificate failed with reason: ${(res as ValidatorError).reason}`)
 
           if (ShardeumFlags.fixCertExpTiming) {
             // if we injected setCertTimeTx more than 3 cycles ago but still cannot get new cert, we need to inject it again
@@ -7061,7 +7068,7 @@ const shardusSetup = (): void => {
         const wrappedEVMAccount = account.data as WrappedEVMAccount
         return wrappedEVMAccount.account.nonce
       }
-    }
+    },
   })
 
   shardus.registerExceptionHandler()
