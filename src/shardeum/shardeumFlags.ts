@@ -117,6 +117,7 @@ interface ShardeumFlags {
   startInArchiveMode: boolean
   collectorUrl: string
   aalgWarmupSleep: number
+  internalTxTimestampFix: boolean
 }
 
 export const ShardeumFlags: ShardeumFlags = {
@@ -266,6 +267,8 @@ export const ShardeumFlags: ShardeumFlags = {
   collectorUrl: 'http://0.0.0.0:6001',
 
   aalgWarmupSleep: 100,
+
+  internalTxTimestampFix: false,
 }
 
 export function updateShardeumFlag(key: string, value: string | number | boolean): void {
