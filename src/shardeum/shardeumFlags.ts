@@ -268,7 +268,7 @@ export const ShardeumFlags: ShardeumFlags = {
 
   aalgWarmupSleep: 100,
 
-  internalTxTimestampFix: false,
+  internalTxTimestampFix: true,
 }
 
 export function updateShardeumFlag(key: string, value: string | number | boolean): void {
