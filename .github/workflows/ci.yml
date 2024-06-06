@@ -20,7 +20,7 @@ on:
 jobs:
   ci-dev:
     if: ${{ github.event.inputs.workflowBranch == 'dev' }}
-    uses: shardeum/github-automation/.github/workflows/node-ci-shared.yml@dev
+    uses: shardeum/github-automation/.github/workflows/node-ci-shared.yml@RED-120
     with:
       node-version: '18.16.1' 
       lint-required: true
