@@ -11,7 +11,7 @@ on:
       - main
 
 jobs:
-  set-branch:
+  set-branch: # Job to determine the branch name and set it as an output
     runs-on: ubuntu-latest
     outputs:
       branch: ${{ steps.set-branch.outputs.branch }}
