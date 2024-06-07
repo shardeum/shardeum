@@ -32,10 +32,10 @@ jobs:
     uses: shardeum/github-automation/.github/workflows/node-ci-shared.yml@RED-120
     with:
       node-version: '18.16.1' 
-      lint-required: false
-      format-check-required: false
+      lint-required: false # TODO: enable lint check after lint is fixed
+      format-check-required: false # TODO: enable format check after format is fixed
       apply-patches-required: true
-      unit-tests-required: false
+      unit-tests-required: false # TODO: enable unit tests after unit tests are fixed
 
   ci-main:
     needs: set-branch
@@ -43,7 +43,8 @@ jobs:
     uses: shardeum/github-automation/.github/workflows/node-ci-shared.yml@RED-120
     with:
       node-version: '18.16.1' 
-      lint-required: false
-      format-check-required: false
+      lint-required: false # TODO: enable lint check after lint is fixed
+      format-check-required: false # TODO: enable format check after format is fixed
       apply-patches-required: true
-      unit-tests-required: false
+      unit-tests-required: false # TODO: enable unit tests after unit tests are fixed
+
