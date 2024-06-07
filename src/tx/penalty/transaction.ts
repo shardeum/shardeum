@@ -87,7 +87,10 @@ export async function injectPenaltyTX(
   recordPenaltyTX(txId, signedTx)
 
   // Limit the nodes that send this to the 5 closest to the node id
-  const closestNodes = shardus.getClosestNodes(eventData.nodeId, 5)
+  const closestNodes = shardus.getClosestNodes(
+    eventData.publicKey,
+    ShardeumFlags.numberOfNodesToInjectPenaltyTx
+  )
   const ourId = shardus.getNodeId()
   for (const id of closestNodes) {
     if (id === ourId) {
