@@ -25,46 +25,26 @@ jobs:
           else
             echo "::set-output name=branch::dev"
           fi
-
+  
   ci-dev:
     needs: set-branch
     if: ${{ needs.set-branch.outputs.branch == 'dev' }}
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v2
-      - name: Cache Node modules
-        uses: actions/cache@v2
-        with:
-          path: ~/.npm
-          key: ${{ runner.os }}-node-${{ hashFiles('**/package-lock.json') }}
-          restore-keys: |
-            ${{ runner.os }}-node-
-      - uses: shardeum/github-automation/.github/workflows/node-ci-shared.yml@RED-120
-        with:
-          node-version: '18.16.1' 
-          lint-required: false
-          format-check-required: false
-          apply-patches-required: true
-          unit-tests-required: false
+    uses: shardeum/github-automation/.github/workflows/node-ci-shared.yml@RED-120
+    with:
+      node-version: '18.16.1' 
+      lint-required: false # TODO: enable lint check after lint is fixed
+      format-check-required: false # TODO: enable format check after format is fixed
+      apply-patches-required: true
+      unit-tests-required: false # TODO: enable unit tests after unit tests are fixed
 
   ci-main:
     needs: set-branch
     if: ${{ needs.set-branch.outputs.branch == 'main' }}
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v2
-      - name: Cache Node modules
-        uses: actions/cache@v2
-        with:
-          path: ~/.npm
-          key: ${{ runner.os }}-node-${{ hashFiles('**/package-lock.json') }}
-          restore-keys: |
-            ${{ runner.os }}-node-
-      - uses: shardeum/github-automation/.github/workflows/node-ci-shared.yml@RED-120
-        with:
-          node-version: '18.16.1' 
-          lint-required: false
-          format-check-required: false
-          apply-patches-required: true
-          unit-tests-required: false
+    uses: shardeum/github-automation/.github/workflows/node-ci-shared.yml@RED-120
+    with:
+      node-version: '18.16.1' 
+      lint-required: false # TODO: enable lint check after lint is fixed
+      format-check-required: false # TODO: enable format check after format is fixed
+      apply-patches-required: true
+      unit-tests-required: false # TODO: enable unit tests after unit tests are fixed
 
