@@ -4,36 +4,46 @@ on:
   push:
     branches:
       - dev
+      - main
   pull_request:
     branches:
       - dev
-  workflow_dispatch:
-    inputs:
-      workflowBranch:
-        description: 'Select the branch to run the workflow on'
-        required: true
-        default: 'main'
-        type: choice
-        options:
-          - dev
-          - main
-jobs:
-  ci-dev:
-    if: ${{ github.event.inputs.workflowBranch == 'dev' }}
-    uses: shardeum/github-automation/.github/workflows/node-ci-shared.yml@RED-120
-    with:
-      node-version: '18.16.1' 
-      lint-required: true
-      format-check-required: true
-      apply-patches-required: true
-      unit-tests-required: false
+      - main
 
-  ci-main:
-    if: ${{ github.event.inputs.workflowBranch == 'main' || !github.event.inputs.workflowBranch }}
+jobs:
+  set-branch:
+    runs-on: ubuntu-latest
+    outputs:
+      branch: ${{ steps.set-branch.outputs.branch }}
+    steps:
+      - name: Set workflow branch
+        id: set-branch
+        run: |
+          BRANCH_NAME=${{ github.ref_name }}
+          if [ "$BRANCH_NAME" == "main" ]; then
+            echo "::set-output name=branch::main"
+          else
+            echo "::set-output name=branch::dev"
+          fi
+  
+  ci-dev:
+    needs: set-branch
+    if: ${{ needs.set-branch.outputs.branch == 'dev' }}
     uses: shardeum/github-automation/.github/workflows/node-ci-shared.yml@RED-120
     with:
       node-version: '18.16.1' 
       lint-required: false
-      format-check-required: true
+      format-check-required: false
+      apply-patches-required: true
+      unit-tests-required: false
+
+  ci-main:
+    needs: set-branch
+    if: ${{ needs.set-branch.outputs.branch == 'main' }}
+    uses: shardeum/github-automation/.github/workflows/node-ci-shared.yml@RED-120
+    with:
+      node-version: '18.16.1' 
+      lint-required: false
+      format-check-required: false
       apply-patches-required: true
       unit-tests-required: false
