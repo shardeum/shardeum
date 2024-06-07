@@ -21,9 +21,9 @@ jobs:
         run: |
           BRANCH_NAME=${{ github.ref_name }}
           if [ "$BRANCH_NAME" == "main" ]; then
-            echo "::set-output name=branch::main"
+            echo "branch=main" >> $GITHUB_OUTPUT
           else
-            echo "::set-output name=branch::dev"
+            echo "branch=dev" >> $GITHUB_OUTPUT
           fi
   
   ci-dev:
