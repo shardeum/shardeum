@@ -29,22 +29,20 @@ jobs:
   ci-dev:
     needs: set-branch
     if: ${{ needs.set-branch.outputs.branch == 'dev' }}
-    uses: shardeum/github-automation/.github/workflows/node-ci-shared.yml@RED-120
+    uses: shardeum/github-automation/.github/workflows/node-ci-shared.yml@dev
     with:
       node-version: '18.16.1' 
       lint-required: false # TODO: enable lint check after lint is fixed
       format-check-required: false # TODO: enable format check after format is fixed
       apply-patches-required: true
       unit-tests-required: false # TODO: enable unit tests after unit tests are fixed
-
   ci-main:
     needs: set-branch
     if: ${{ needs.set-branch.outputs.branch == 'main' }}
-    uses: shardeum/github-automation/.github/workflows/node-ci-shared.yml@RED-120
+    uses: shardeum/github-automation/.github/workflows/node-ci-shared.yml@main
     with:
       node-version: '18.16.1' 
       lint-required: false # TODO: enable lint check after lint is fixed
       format-check-required: false # TODO: enable format check after format is fixed
       apply-patches-required: true
       unit-tests-required: false # TODO: enable unit tests after unit tests are fixed
-
