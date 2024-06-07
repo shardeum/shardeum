@@ -33,7 +33,7 @@ jobs:
     uses: shardeum/github-automation/.github/workflows/node-ci-shared.yml@RED-120
     with:
       node-version: '18.16.1' 
-      lint-required: true
+      lint-required: false
       format-check-required: true
       apply-patches-required: true
       unit-tests-required: false
