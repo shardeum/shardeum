@@ -8,12 +8,10 @@ import * as crypto from '@shardus/crypto-utils'
 import { toBuffer } from 'ethereumjs-util'
 import { ShardeumFlags } from '../shardeum/shardeumFlags'
 import { InternalTx, InternalTXType } from '../shardeum/shardeumTypes'
-import { stringify, cryptoStringify } from '../utils/stringify'
-
-// console.log(crypto.)
+import { Utils } from '@shardus/types'
 
 crypto.init('69fa4195670576c0160d660c3be36556ff8d504725be8a59b5a96509e0c994bc')
-crypto.setCustomStringifier(cryptoStringify, 'shardeum_crypto_stringify')
+crypto.setCustomStringifier(Utils.safeStringify, 'shardus_safeStringify')
 export { crypto }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any

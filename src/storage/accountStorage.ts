@@ -2,7 +2,7 @@ import { NetworkAccount, WrappedEVMAccount, WrappedEVMAccountMap } from '../shar
 
 import { ShardeumFlags } from '../shardeum/shardeumFlags'
 import Storage from '../storage/storage'
-import { DeSerializeFromJsonString, fixBigIntLiteralsToBigInt } from '../utils'
+import { fixBigIntLiteralsToBigInt } from '../utils'
 import { networkAccount } from '../shardeum/shardeumConstants'
 import { isArchiverMode, isServiceMode } from '..'
 import { logFlags } from '..'
@@ -10,6 +10,7 @@ import { setCachedRIAccount } from './riAccountsCache'
 import { getContextValue } from '../utils/RequestContext'
 import { shardusGet } from '../utils/requests'
 import { Block } from '@ethereumjs/block'
+import { Utils } from '@shardus/types'
 
 //WrappedEVMAccount
 export let accounts: WrappedEVMAccountMap = {}
@@ -72,7 +73,7 @@ export async function getAccount(address: string): Promise<WrappedEVMAccount> {
     if (!account) return
 
     if (typeof account.data === 'string') {
-      account.data = DeSerializeFromJsonString<WrappedEVMAccount>(account.data)
+      account.data = Utils.safeJsonParse(account.data) as WrappedEVMAccount
     }
 
     setCachedRIAccount(account)
@@ -194,7 +195,7 @@ export async function queryAccountsEntryByRanges(
     const results = await storage.queryAccountsEntryByRanges(accountStart, accountEnd, maxRecords)
     for (const result of results) {
       if (typeof result.data === 'string') {
-        result.data = DeSerializeFromJsonString(result.data)
+        result.data = Utils.safeJsonParse(result.data)
       }
       processedResults.push(result.data)
     }
@@ -239,7 +240,7 @@ export async function queryAccountsEntryByRanges2(
 
     for (const result of results) {
       if (typeof result.data === 'string') {
-        result.data = DeSerializeFromJsonString(result.data)
+        result.data = Utils.safeJsonParse(result.data)
       }
       processedResults.push(result.data)
     }

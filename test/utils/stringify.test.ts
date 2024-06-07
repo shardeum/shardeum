@@ -1,16 +1,14 @@
-import {stringify} from '../../src/utils/stringify'
-import {DeSerializeFromJsonString, SerializeToJsonString} from '../../src/utils/serialization'
 import * as crypto from '@shardus/crypto-utils'
+import { Utils } from '@shardus/types'
 
 crypto.init('69fa4195670576c0160d660c3be36556ff8d504725be8a59b5a96509e0c994bc')
-// @ts-ignore
-crypto.setCustomStringifier(stringify)
+crypto.setCustomStringifier(Utils.safeStringify, 'shardus_safeStringify')
 const data = {
   address: '0x1f1545Eb7EE5C3C1c4784ee9ddE5D26A9f76F77C',
   timestamp: Date.now(),
   nonce: BigInt(123),
-  codeHash: new Uint8Array([10, 20, 30, 40])
-};
+  codeHash: new Uint8Array([10, 20, 30, 40]),
+}
 
 // const data ={
 //   id: '0000000000000000000000000000000000000000000000000000000000000000',
@@ -42,11 +40,11 @@ function test1() {
   console.log(`Original data`, data)
   const hashBefore = crypto.hashObj(data)
 
-  const jsonString = SerializeToJsonString(data)
-  console.log("JSON String:", jsonString);
+  const jsonString = Utils.safeStringify(data)
+  console.log('JSON String:', jsonString)
 
-  const parsedObject = DeSerializeFromJsonString(jsonString);
-  console.log("Parsed Object:", parsedObject);
+  const parsedObject = Utils.safeJsonParse(jsonString)
+  console.log('Parsed Object:', parsedObject)
 
   const hashAfter = crypto.hashObj(parsedObject)
 
@@ -60,28 +58,28 @@ function test2() {
 
   const replacer = (key: string, value: any) => {
     if (typeof value === 'bigint') {
-      return {_BigInt_: value.toString()};
+      return { _BigInt_: value.toString() }
     }
     if (value instanceof Uint8Array) {
-      return {__Uint8Array__: Array.from(value)};
+      return { __Uint8Array__: Array.from(value) }
     }
-    return value;
+    return value
   }
   const reviver = (key: string, value: any) => {
     if (value && value._BigInt_) {
-      return BigInt(value.__BigInt__);
+      return BigInt(value.__BigInt__)
     }
     if (value && value.__Uint8Array__ instanceof Array) {
-      return new Uint8Array(value.__Uint8Array__);
+      return new Uint8Array(value.__Uint8Array__)
     }
-    return value;
+    return value
   }
 
   const jsonString = JSON.stringify(data, replacer)
-  console.log("JSON String:", jsonString);
+  console.log('JSON String:', jsonString)
 
-  const parsedObject = JSON.parse(jsonString, reviver);
-  console.log("Parsed Object:", parsedObject);
+  const parsedObject = JSON.parse(jsonString, reviver)
+  console.log('Parsed Object:', parsedObject)
 
   const hashAfter = crypto.hashObj(parsedObject)
 

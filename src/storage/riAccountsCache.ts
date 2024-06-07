@@ -2,10 +2,10 @@ import { nestedCountersInstance } from '@shardus/core'
 import { isServiceMode, logFlags } from '..'
 import { ShardeumFlags } from '../shardeum/shardeumFlags'
 import { AccountType, WrappedEVMAccount } from '../shardeum/shardeumTypes'
-import { DeSerializeFromJsonString } from '../utils'
 import { accounts, storage } from './accountStorage'
 import { AccountsEntry } from './storage'
 import * as WrappedEVMAccountFunctions from '../shardeum/wrappedEVMAccountFunctions'
+import { Utils } from '@shardus/types'
 
 export async function getCachedRIAccount(address: string): Promise<WrappedEVMAccount> {
   if (ShardeumFlags.enableRIAccountsCache === false || isServiceMode()) return
@@ -15,7 +15,7 @@ export async function getCachedRIAccount(address: string): Promise<WrappedEVMAcc
       if (!account) return
 
       if (typeof account.data === 'string') {
-        account.data = DeSerializeFromJsonString<WrappedEVMAccount>(account.data)
+        account.data = Utils.safeJsonParse(account.data) as WrappedEVMAccount
       }
       return account.data
     } else {
@@ -31,7 +31,7 @@ export async function setCachedRIAccount(account: AccountsEntry): Promise<void> 
   if (ShardeumFlags.enableRIAccountsCache === false || isServiceMode()) return
   try {
     if (typeof account.data === 'string') {
-      account.data = DeSerializeFromJsonString<WrappedEVMAccount>(account.data)
+      account.data = Utils.safeJsonParse(account.data) as WrappedEVMAccount
     }
     if (account.data.accountType !== AccountType.ContractCode) {
       return

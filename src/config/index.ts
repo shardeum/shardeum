@@ -4,6 +4,7 @@ import merge from 'deepmerge'
 import { ShardeumFlags } from '../shardeum/shardeumFlags'
 import { DevSecurityLevel } from '@shardus/core'
 import { FilePaths } from '../shardeum/shardeumFlags';
+import { Utils } from '@shardus/types'
 
 const overwriteMerge = (target: any[], source: any[]): any[] => source // eslint-disable-line @typescript-eslint/no-explicit-any
 
@@ -37,7 +38,7 @@ let config: Config = {
 // eslint-disable-next-line security/detect-non-literal-fs-filename
 if (fs.existsSync(path.join(process.cwd(), FilePaths.CONFIG))) {
   // eslint-disable-next-line security/detect-non-literal-fs-filename
-  const fileConfig = JSON.parse(fs.readFileSync(path.join(process.cwd(), FilePaths.CONFIG)).toString())
+  const fileConfig = Utils.safeJsonParse(fs.readFileSync(path.join(process.cwd(), FilePaths.CONFIG)).toString())
   config = merge(config, fileConfig, { arrayMerge: overwriteMerge })
 }
 
@@ -48,7 +49,7 @@ if (process.env.BASE_DIR) {
   // eslint-disable-next-line security/detect-non-literal-fs-filename
   if (fs.existsSync(path.join(baseDir, FilePaths.CONFIG))) {
     // eslint-disable-next-line security/detect-non-literal-fs-filename
-    baseDirFileConfig = JSON.parse(fs.readFileSync(path.join(baseDir, FilePaths.CONFIG)).toString())
+    baseDirFileConfig = Utils.safeJsonParse(fs.readFileSync(path.join(baseDir, FilePaths.CONFIG)).toString())
   }
   config = merge(config, baseDirFileConfig, { arrayMerge: overwriteMerge })
   config.server.baseDir = process.env.BASE_DIR
@@ -78,7 +79,7 @@ if (process.env.APP_SEEDLIST) {
 
 // EXISTING_ARCHIVERS env has to be passed in string format!
 if (process.env.EXISTING_ARCHIVERS) {
-  const existingArchivers = JSON.parse(process.env.EXISTING_ARCHIVERS)
+  const existingArchivers = Utils.safeJsonParse(process.env.EXISTING_ARCHIVERS)
   if (existingArchivers.length > 0) {
     config = merge(
       config,

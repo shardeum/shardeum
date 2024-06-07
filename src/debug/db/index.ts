@@ -2,6 +2,7 @@ import fs from 'fs'
 import { AccountType, WrappedEVMAccount } from '../../shardeum/shardeumTypes'
 import { isValidAddress } from 'ethereumjs-util'
 import { toShardusAddress, toShardusAddressWithKey } from '../utils/evmAddress'
+import { Utils } from '@shardus/types'
 
 export type jsonState = {
   accountId: string
@@ -23,7 +24,7 @@ export function addCreatedAccount(address: string, account: WrappedEVMAccount): 
 export function loadStatesFromJson(fileName: string): boolean {
   // LOAD BEFORE STATES (CS)
   // eslint-disable-next-line security/detect-non-literal-fs-filename
-  const data = JSON.parse(fs.readFileSync(fileName, 'utf8'))
+  const data = Utils.safeJsonParse(fs.readFileSync(fileName, 'utf8'))
   const estimateOnly = !!data.txData
 
   if (!data.beforeStateAccounts) {
@@ -45,7 +46,7 @@ export function loadStatesFromJson(fileName: string): boolean {
 
   // eslint-disable-next-line security/detect-non-literal-fs-filename
   const fileContent = fs.readFileSync(fileName, 'utf8')
-  const stateArray: jsonState[] = JSON.parse(fileContent)
+  const stateArray: jsonState[] = Utils.safeJsonParse(fileContent)
 
   // Iterate through all states in stateArray
   // eslint-disable-next-line security/detect-object-injection

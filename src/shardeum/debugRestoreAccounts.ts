@@ -7,6 +7,7 @@ import * as readline from 'readline'
 import { once } from 'events'
 import { AccountType } from './shardeumTypes'
 import { Shardus } from '@shardus/core'
+import { Utils } from '@shardus/types'
 export interface LoadOptions {
   file: string
 }
@@ -57,7 +58,7 @@ export async function loadAccountDataFromDB(shardus: Shardus, options: LoadOptio
       rl.on('line', async (line) => {
         if (line != '') {
           try {
-            const account = JSON.parse(line)
+            const account = Utils.safeJsonParse(line)
             if (account != null) {
               accountArray.push(account)
               totalAccounts++
@@ -95,7 +96,7 @@ export async function loadAccountDataFromDB(shardus: Shardus, options: LoadOptio
       rl.on('line', (line) => {
         if (line != '') {
           try {
-            const account = JSON.parse(line)
+            const account = Utils.safeJsonParse(line)
             if (account != null) {
               accountArray.push(account)
             }
@@ -119,7 +120,7 @@ export async function loadAccountDataFromDB(shardus: Shardus, options: LoadOptio
     //accountsCopy.json
   } catch (error) {
     report.fatal = true
-    if (logVerbose) shardus.log(`loadAccountDataFromDB ${JSON.stringify(error)}`)
+    if (logVerbose) shardus.log(`loadAccountDataFromDB ${Utils.safeStringify(error)}`)
 
     throw new Error(`loadAccountDataFromDB:` + error.name + ': ' + error.message + ' at ' + error.stack)
   }
@@ -136,7 +137,7 @@ export const processAccountsData = async (shardus, report: LoadReport, accountAr
   for (const account of accountArray) {
     //account.isGlobal = (account.isGlobal === 1)? true : false
     try {
-      account.data = JSON.parse(account.data)
+      account.data = Utils.safeJsonParse(account.data)
       // skip account with accountIds starting with "0x"
       if (account.accountId.indexOf('0x') >= 0) continue
     } catch (error) {
@@ -202,7 +203,7 @@ export const processAccountsData = async (shardus, report: LoadReport, accountAr
 
   if (report.loadCount === 0) {
     const firstAccount = accountArrayClean.accounts[0]
-    if (logVerbose) shardus.log(`loadAccountDataFromDB ${JSON.stringify(firstAccount)}`)
+    if (logVerbose) shardus.log(`loadAccountDataFromDB ${Utils.safeStringify(firstAccount)}`)
   }
 
   if (ShardeumFlags.forwardGenesisAccounts) {

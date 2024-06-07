@@ -21,6 +21,7 @@ import type { Journal } from './journal.js'
 import type { AsyncOpHandler, OpHandler, Opcode } from './opcodes/index.js'
 import type { Block, Blockchain, EVMResult, Log } from './types.js'
 import type { Common, EVMStateManagerInterface } from '@ethereumjs/common'
+import { Utils } from '@shardus/types'
 import type { Address } from '@ethereumjs/util'
 const { debug: createDebugLogger } = debugDefault
 
@@ -356,7 +357,7 @@ export class Interpreter {
       if (!(name in this.opDebuggers)) {
         this.opDebuggers[name] = createDebugLogger(`evm:ops:${name}`)
       }
-      this.opDebuggers[name](JSON.stringify(opTrace))
+      this.opDebuggers[name](Utils.safeStringify(opTrace))
     }
 
     /**

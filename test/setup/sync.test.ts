@@ -1,7 +1,6 @@
 import Common, { Chain } from '@ethereumjs/common'
 import { Shardus, shardusFactory } from '@shardus/core'
 import config from '../../src/config'
-import { SerializeToJsonString } from '../../src/utils'
 import { ShardeumFlags } from '../../src/shardeum/shardeumFlags'
 import { sync } from '../../src/setup/sync'
 import * as crypto from '@shardus/crypto-utils'
@@ -67,9 +66,7 @@ describe('sync', () => {
   beforeEach(() => {
     evmCommon = new Common({ chain: Chain.Mainnet })
     // @ts-ignore
-    shardus = shardusFactory(config, {
-      customStringifier: SerializeToJsonString,
-    })
+    shardus = shardusFactory(config)
   })
 
   afterEach(() => {

@@ -1,3 +1,5 @@
+import { Utils } from '@shardus/types'
+
 const fs = require('fs')
 const path = require('path')
 
@@ -10,10 +12,10 @@ fs.readdir(directory, (err, files) => {
     try {
       let filepath = path.resolve(directory, file)
       let fileText = fs.readFileSync(filepath)
-      let fileObj = JSON.parse(fileText)
+      let fileObj = Utils.safeJsonParse(fileText)
       console.log(file)
 
-      var prettyPrint = JSON.stringify(fileObj, null, 2)
+      var prettyPrint = Utils.safeStringify(fileObj, null, 2)
       let filepath2 = path.resolve(directory, file + '.update.json')
       console.log(filepath2)
       fs.writeFileSync(filepath2, prettyPrint)

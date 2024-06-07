@@ -1,4 +1,5 @@
 import { NetworkAccount } from '../shardeum/shardeumTypes'
+import { Utils } from '@shardus/types'
 
 export function calculateGasPrice(
   baselineTxFee: string,
@@ -137,7 +138,7 @@ export function formatErrorMessage(err: unknown): string {
     //     errMsg += `${key}: ${errObj[key]}\n`
     //   }
     // } else {
-    errMsg = `Unknown error: ${JSON.stringify(err)}`
+    errMsg = `Unknown error: ${Utils.safeStringify(err)}`
     // }
   } else {
     errMsg = `Unknown error: ${err}`
@@ -197,25 +198,25 @@ export function findMajorityResult<T>(
 
 export function comparePropertiesTypes(A: any, B: any): boolean {
   for (const key in A) {
-      if (key in A) {
-          if (!(key in B)) {
-              // Property exists in A but not in B
-              return false;
-          }
-
-          // If both properties are objects (and not null), compare recursively
-          if (typeof A[key] === 'object' && A[key] !== null &&
-              typeof B[key] === 'object' && B[key] !== null) {
-              if (!comparePropertiesTypes(A[key], B[key])) {
-                  return false;
-              }
-          } else {
-              // For non-object properties, check if types are different
-              if (typeof A[key] !== typeof B[key]) {
-                  return false;
-              }
-          }
+    if (key in A) {
+      if (!(key in B)) {
+        // Property exists in A but not in B
+        return false;
       }
+
+      // If both properties are objects (and not null), compare recursively
+      if (typeof A[key] === 'object' && A[key] !== null &&
+              typeof B[key] === 'object' && B[key] !== null) {
+        if (!comparePropertiesTypes(A[key], B[key])) {
+          return false;
+        }
+      } else {
+        // For non-object properties, check if types are different
+        if (typeof A[key] !== typeof B[key]) {
+          return false;
+        }
+      }
+    }
   }
   return true;
 }

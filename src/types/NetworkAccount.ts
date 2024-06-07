@@ -1,8 +1,8 @@
 import { VectorBufferStream } from '@shardus/core'
 import { Change, NetworkParameters } from '../shardeum/shardeumTypes'
-import { DeSerializeFromJsonString, SerializeToJsonString } from '../utils'
 import { BaseAccount, deserializeBaseAccount, serializeBaseAccount } from './BaseAccount'
 import { TypeIdentifierEnum } from './enum/TypeIdentifierEnum'
+import { Utils } from '@shardus/types'
 
 const cNetworkAccountVersion = 1
 
@@ -27,15 +27,15 @@ export function serializeNetworkAccount(stream: VectorBufferStream, obj: Network
   serializeBaseAccount(stream, obj, false)
   stream.writeString(obj.id)
 
-  const currentJson = SerializeToJsonString(obj.current)
+  const currentJson = Utils.safeStringify(obj.current)
   stream.writeString(currentJson)
-  const nextJson = SerializeToJsonString(obj.next)
+  const nextJson = Utils.safeStringify(obj.next)
   stream.writeString(nextJson)
 
   stream.writeUInt16(obj.listOfChanges.length)
   for (const changeObj of obj.listOfChanges) {
     stream.writeUInt32(changeObj.cycle)
-    const changeJson = SerializeToJsonString(changeObj.change)
+    const changeJson = Utils.safeStringify(changeObj.change)
     stream.writeString(changeJson)
   }
 
@@ -52,14 +52,14 @@ export function deserializeNetworkAccount(stream: VectorBufferStream): NetworkAc
   const baseAccount = deserializeBaseAccount(stream)
   const id = stream.readString()
 
-  const current = DeSerializeFromJsonString<NetworkParameters>(stream.readString())
-  const next = DeSerializeFromJsonString(stream.readString())
+  const current = Utils.safeJsonParse(stream.readString()) as NetworkParameters
+  const next = Utils.safeJsonParse(stream.readString())
 
   const changesCount = stream.readUInt16()
   const listOfChanges = []
   for (let i = 0; i < changesCount; i++) {
     const cycle = stream.readUInt32()
-    const change = DeSerializeFromJsonString<Change>(stream.readString())
+    const change = Utils.safeJsonParse(stream.readString()) as Change
     listOfChanges.push({ cycle, change })
   }
 

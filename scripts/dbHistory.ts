@@ -4,6 +4,7 @@ const sqlite3 = require('sqlite3').verbose()
 import * as crypto from '@shardus/crypto-utils'
 import { DBHistoryFile, AccountHistoryModel } from './types'
 import { FilePaths } from '../src/shardeum/shardeumFlags'
+import { Utils } from '@shardus/types'
 
 crypto.init('69fa4195670576c0160d660c3be36556ff8d504725be8a59b5a96509e0c994bc')
 
@@ -161,12 +162,12 @@ async function getNewestAccountsFromDB(dbPath, isOld) {
     ? `SELECT a.accountId, a.data, a.timestamp, a.hash, a.isGlobal, a.cycleNumber FROM accountsCopy a INNER JOIN (SELECT accountId, MAX(timestamp) timestamp FROM accountsCopy GROUP BY accountId) b ON a.accountId = b.accountId AND a.timestamp = b.timestamp ORDER BY a.accountId ASC`
     : `SELECT a.accountId, a.data, a.timestamp FROM accountsEntry a INNER JOIN (SELECT accountId, MAX(timestamp) timestamp FROM accountsEntry GROUP BY accountId) b ON a.accountId = b.accountId AND a.timestamp = b.timestamp ORDER BY a.accountId ASC`
   let accounts = await runQuery(db, queryString)
-  accounts = accounts.map((acc) => ({ ...acc, data: JSON.parse(acc.data), isOld }))
+  accounts = accounts.map((acc) => ({ ...acc, data: Utils.safeJsonParse(acc.data), isOld }))
   return accounts
 }
 
 function sleep(ms) {
-  return new Promise(resolve => {
+  return new Promise((resolve) => {
     setTimeout(resolve, ms)
   })
 }

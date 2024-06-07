@@ -9,11 +9,11 @@ import { AccountType, DevAccount, InternalTXType, WrappedEVMAccount } from '../s
 import * as WrappedEVMAccountFunctions from '../shardeum/wrappedEVMAccountFunctions'
 import { ShardeumState, TransactionState } from '../state'
 import * as AccountsStorage from '../storage/accountStorage'
-import { SerializeToJsonString } from '../utils'
 import { sleep } from '../utils'
 // import { StateManager } from '../vm/state'
 import { DefaultStateManager } from '@ethereumjs/statemanager'
 import { logFlags, shardeumGetTime } from '..'
+import { Utils } from '@shardus/types'
 
 function isDebugMode(): boolean {
   // eslint-disable-next-line @typescript-eslint/ban-ts-comment
@@ -45,7 +45,7 @@ export const sync = (shardus: Shardus, evmCommon: any) => async (): Promise<void
           file: ShardeumFlags.DebugRestoreFile,
         }
         const report = await loadAccountDataFromDB(shardus, loadOptions)
-        /* prettier-ignore */ if (logFlags.important_as_error) console.log('loadAccountDataFromDB:' + JSON.stringify(report))
+        /* prettier-ignore */ if (logFlags.important_as_error) console.log('loadAccountDataFromDB:' + Utils. safeStringify(report))
       }
 
       //create genesis accounts before network account since nodes will wait for the network account
@@ -85,10 +85,7 @@ export const sync = (shardus: Shardus, evmCommon: any) => async (): Promise<void
         //TODO we need to brainstorm a way to allow migration of keys on a live network
         const maxLevelDevKey = shardus.getDevPublicKeyMaxLevel()
         if (maxLevelDevKey) {
-          const { account, cycle } = createDevAccount(
-            maxLevelDevKey,
-            shardus.getLatestCycles()
-          )
+          const { account, cycle } = createDevAccount(maxLevelDevKey, shardus.getLatestCycles())
           const devAccount: any = account // eslint-disable-line @typescript-eslint/no-explicit-any
           await AccountsStorage.setAccount(devAccount.id, devAccount)
           const accountCopy: ShardusTypes.AccountsCopy = {
@@ -104,7 +101,7 @@ export const sync = (shardus: Shardus, evmCommon: any) => async (): Promise<void
         await shardus.debugCommitAccountCopies(accountCopies)
         if (ShardeumFlags.forwardGenesisAccounts) {
           accountCopies = accountCopies.map((account) => {
-            return JSON.parse(SerializeToJsonString(account))
+            return Utils.safeJsonParse(Utils.safeStringify(account))
           })
           await shardus.forwardAccounts({ accounts: accountCopies, receipts: [] })
         }

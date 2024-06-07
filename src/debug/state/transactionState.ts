@@ -17,7 +17,7 @@ import { fixDeserializedWrappedEVMAccount } from '../utils/wrappedEVMAccountFunc
 import { Trie } from '@ethereumjs/trie'
 import { keccak256 } from 'ethereum-cryptography/keccak.js'
 import { RLP } from '@ethereumjs/rlp'
-import { stringify } from '../../utils/stringify'
+import { Utils } from '@shardus/types'
 
 export type accountEvent = (transactionState: TransactionState, address: string) => Promise<boolean>
 export type contractStorageEvent = (
@@ -469,13 +469,14 @@ export default class TransactionState {
       //todo need to insert it into a map of new / virtual accounts?
       if (this.debugTrace)
         this.debugTraceLog(
-          `getAccount: initialized new account addr:${addressString} v:${stringify(account)}`
+          `getAccount: initialized new account addr:${addressString} v:${Utils.safeStringify(account)}`
         )
 
       return account
     }
 
-    if (this.debugTrace) this.debugTraceLog(`getAccount: addr:${addressString} v:${stringify(account)}`)
+    if (this.debugTrace)
+      this.debugTraceLog(`getAccount: addr:${addressString} v:${Utils.safeStringify(account)}`)
     // storage hit!!! data exists in this shard
     //put this in our first reads map
     this.firstAccountReads.set(addressString, storedRlp)
@@ -511,7 +512,8 @@ export default class TransactionState {
     const accountObj = Account.fromAccountData(account)
     const storedRlp = accountObj.serialize()
 
-    if (this.debugTrace) this.debugTraceLog(`putAccount: addr:${addressString} v:${stringify(accountObj)}`)
+    if (this.debugTrace)
+      this.debugTraceLog(`putAccount: addr:${addressString} v:${Utils.safeStringify(accountObj)}`)
 
     //this.allAccountWrites.set(addressString, storedRlp)
 

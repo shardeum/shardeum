@@ -7,6 +7,7 @@ import * as AccountsStorage from '../storage/accountStorage'
 import { logFlags } from '..'
 import config from '../config'
 import { comparePropertiesTypes } from '../utils'
+import { Utils } from '@shardus/types'
 
 type Response = {
   result: string
@@ -43,7 +44,7 @@ export const validateTransaction =
           return { result: 'fail', reason: 'Unauthorized User' }
         } else {
           if (tx.internalTXType === InternalTXType.ChangeConfig) {
-            const givenConfig = JSON.parse(tx.config)
+            const givenConfig = Utils.safeJsonParse(tx.config)
             if (
               comparePropertiesTypes(omitDevKeys(givenConfig), config.server) &&
               isValidDevKeyAddition(givenConfig)
@@ -153,4 +154,3 @@ function isValidHexKey(key: string): boolean {
   const hexPattern = /^[a-f0-9]{64}$/i
   return hexPattern.test(key)
 }
-

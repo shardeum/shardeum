@@ -1,5 +1,5 @@
 // ts-nocheck
-
+import { Utils } from '@shardus/types'
 const fs = require('fs');
 const readline = require ('readline');
 const path = require('path');
@@ -27,7 +27,7 @@ const rl = readline.createInterface({
 // Read the file line by line
 rl.on('line', (line) => {
   // Parse the stringified JSON object from each line
-  const { port, cycleNumber, cycleRecord } = JSON.parse(line);
+  const { port, cycleNumber, cycleRecord } = Utils.safeJsonParse(line);
 
   // Ensure the completeCycles array is large enough
   while (completeCycles.length <= cycleNumber) {
