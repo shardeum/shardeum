@@ -78,7 +78,6 @@ export async function injectPenaltyTX(
   while (futureTimestamp < shardeumGetTime()) {
     futureTimestamp += 30 * 1000
   }
-  const waitTime = futureTimestamp - shardeumGetTime()
   unsignedTx.timestamp = futureTimestamp
 
   const signedTx = shardus.signAsNode(unsignedTx) as PenaltyTX
@@ -86,23 +85,29 @@ export async function injectPenaltyTX(
   // store the unsignedTx to local map for later use
   recordPenaltyTX(txId, signedTx)
 
-  // Limit the nodes that send this to the 5 closest to the node id
+  // Limit the nodes that send this to the <ShardeumFlags.numberOfNodesToInjectPenaltyTx> closest to the node address ( publicKey )
   const closestNodes = shardus.getClosestNodes(
     eventData.publicKey,
     ShardeumFlags.numberOfNodesToInjectPenaltyTx
   )
   const ourId = shardus.getNodeId()
-  for (const id of closestNodes) {
-    if (id === ourId) {
-      // since we have to pick a future timestamp, we need to wait until it is time to submit the signedTx
-      await sleep(waitTime)
-      if (ShardeumFlags.VerboseLogs) {
-        console.log(`injectPenaltyTX: tx.timestamp: ${signedTx.timestamp} txid: ${txId}`, signedTx)
-      }
-      const result = await shardus.put(signedTx)
-      /* prettier-ignore */ if (logFlags.dapp_verbose) console.log('INJECTED_PENALTY_TX', result)
-    }
+  const isLuckyNode = closestNodes.some((nodeId) => nodeId === ourId)
+  if (!isLuckyNode) {
+    if (ShardeumFlags.VerboseLogs)
+      console.log(`injectPenaltyTX: not lucky node, skipping injection`, signedTx)
+    return
   }
+  const waitTime = futureTimestamp - shardeumGetTime()
+  // since we have to pick a future timestamp, we need to wait until it is time to submit the signedTx
+  await sleep(waitTime)
+
+  if (ShardeumFlags.VerboseLogs) {
+    console.log(`injectPenaltyTX: tx.timestamp: ${signedTx.timestamp} txid: ${txId}`, signedTx)
+  }
+
+  const result = await shardus.put(signedTx)
+  /* prettier-ignore */ if (logFlags.dapp_verbose) console.log('INJECTED_PENALTY_TX', result)
+  return result
 }
 
 function recordPenaltyTX(txId: string, tx: PenaltyTX): void {
