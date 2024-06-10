@@ -279,6 +279,8 @@ config = merge(config, {
 
       removeStuckTxsFromQueue: false,
       removeStuckChallengedTXs: false,
+
+      stuckTxMoveTime: 3600000,
     },
   },
 })
