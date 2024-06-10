@@ -1,5 +1,5 @@
 name: Node CI Workflow
-
+# The parameters are defaulted at the org level but can be overridden on the repository.
 on:
   push:
     branches:
@@ -9,40 +9,34 @@ on:
     branches:
       - dev
       - main
+  workflow_dispatch:
+    inputs:
+      workflowBranch:
+        description: 'Branch of the reusable workflow. Defaults to main, select dev for testing only.'
+        required: true
+        default: 'main'
+        type: choice
+        options:
+          - dev
+          - main
+env:     
+  IS_LINT_REQUIRED: false
+  IS_FORMAT_CHECK_REQUIRED: false
+  IS_UNIT_TESTS_REQUIRED: false
+
+permissions:
+  issues: write
+  pull-requests: write
 
 jobs:
-  set-branch: # Job to determine the branch name and set it as an output
-    runs-on: ubuntu-latest
-    outputs:
-      branch: ${{ steps.set-branch.outputs.branch }}
-    steps:
-      - name: Set workflow branch
-        id: set-branch
-        run: |
-          BRANCH_NAME=${{ github.ref_name }}
-          if [ "$BRANCH_NAME" == "main" ]; then
-            echo "branch=main" >> $GITHUB_OUTPUT
-          else
-            echo "branch=dev" >> $GITHUB_OUTPUT
-          fi
-  
   ci-dev:
-    needs: set-branch
-    if: ${{ needs.set-branch.outputs.branch == 'dev' }}
-    uses: shardeum/github-automation/.github/workflows/node-ci-shared.yml@RED-120
-    with:
-      node-version: '18.16.1'
-      lint-required: false # TODO: enable lint check after lint is fixed
-      format-check-required: false # TODO: enable format check after format is fixed
-      apply-patches-required: true
-      unit-tests-required: false # TODO: enable unit tests after unit tests are fixed
+    if: ${{ github.event.inputs.workflowBranch == 'dev' }}
+    uses: shardeum/github-automation/.github/workflows/node-ci-shared.yml@dev
+    secrets: inherit
+
   ci-main:
-    needs: set-branch
-    if: ${{ needs.set-branch.outputs.branch == 'main' }}
-    uses: shardeum/github-automation/.github/workflows/node-ci-shared.yml@RED-120
-    with:
-      node-version: '18.16.1'
-      lint-required: false # TODO: enable lint check after lint is fixed
-      format-check-required: false # TODO: enable format check after format is fixed
-      apply-patches-required: true
-      unit-tests-required: false # TODO: enable unit tests after unit tests are fixed
+    if: ${{ github.event.inputs.workflowBranch == 'main' || !github.event.inputs.workflowBranch }}
+    uses: shardeum/github-automation/.github/workflows/node-ci-shared.yml@main
+    secrets: inherit
+
+  
