@@ -190,7 +190,7 @@ export let logFlags = {
 
 // Read the CLI and GUI versions and save them in memory
 readOperatorVersions()
-initAjvSchemas()
+// initAjvSchemas()
 console.log('Shardeum validator started')
 console.log('Shardeum Flags:')
 console.log(JSON.stringify(ShardeumFlags, null, 2))
