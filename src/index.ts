@@ -152,6 +152,8 @@ import { isLowStake } from './tx/penalty/penaltyFunctions'
 import { accountDeserializer, accountSerializer } from './types/Helpers'
 import { runWithContextAsync } from './utils/RequestContext'
 import { Utils } from '@shardus/types'
+import { initAjvSchemas } from './types/ajv/Helpers'
+import { deserializeInjectReq, serializeInjectReq } from './types/InjectReq'
 
 let latestBlock = 0
 export const blocks: BlockMap = {}
@@ -188,7 +190,7 @@ export let logFlags = {
 
 // Read the CLI and GUI versions and save them in memory
 readOperatorVersions()
-
+initAjvSchemas()
 console.log('Shardeum validator started')
 console.log('Shardeum Flags:')
 console.log(JSON.stringify(ShardeumFlags, null, 2))
@@ -1116,7 +1118,9 @@ const configShardusEndpoints = (): void => {
   })
 
   shardus.registerExternalPost('inject', externalApiMiddleware, async (req, res) => {
-    const tx = req.body
+    let tx = req.body
+    tx = serializeInjectReq(tx)
+    tx = deserializeInjectReq(tx)
     // if timestamp is a float, round it down to nearest millisecond
     if (tx.timestamp && typeof tx.timestamp === 'number') {
       tx.timestamp = Math.floor(tx.timestamp)
@@ -4653,7 +4657,7 @@ const shardusSetup = (): void => {
             /* prettier-ignore */ if (logFlags.error) console.log('Error: while doing preCrack for stake related tx', e)
           }
         }
-        /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log( `txPreCrackData final result: txNonce: ${appData.txNonce}, currentNonce: ${ appData.nonce }, queueCount: ${appData.queueCount}, appData ${Utils.safeStringify(appData)}` )
+        /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`txPreCrackData final result: txNonce: ${appData.txNonce}, currentNonce: ${appData.nonce}, queueCount: ${appData.queueCount}, appData ${Utils.safeStringify(appData)}`)
       }
       return { status: true, reason: 'Passed' }
     },
@@ -5683,7 +5687,7 @@ const shardusSetup = (): void => {
         }
       }
 
-      /* prettier-ignore */ if (logFlags.dapp_verbose) shardus.log( `getAccountDataByRange: extra:${extra} ${Utils.safeStringify({ accountStart, accountEnd, tsStart, tsEnd, maxRecords, offset, })}` )
+      /* prettier-ignore */ if (logFlags.dapp_verbose) shardus.log(`getAccountDataByRange: extra:${extra} ${Utils.safeStringify({ accountStart, accountEnd, tsStart, tsEnd, maxRecords, offset, })}`)
 
       for (const wrappedEVMAccount of cappedResults) {
         // Process and add to finalResults
@@ -5746,7 +5750,7 @@ const shardusSetup = (): void => {
           /* prettier-ignore */ nestedCountersInstance.countEvent('cache', 'getCachedRIAccountData-hit')
         }
       }
-      /* prettier-ignore */ if (logFlags.dapp_verbose) console.log('getCachedRIAccountData results', Utils. safeStringify(results))
+      /* prettier-ignore */ if (logFlags.dapp_verbose) console.log('getCachedRIAccountData results', Utils.safeStringify(results))
       return results
     },
     async setCachedRIAccountData(accountRecords) {
@@ -5891,7 +5895,7 @@ const shardusSetup = (): void => {
             )
           } catch (e) {
             /* prettier-ignore */ nestedCountersInstance.countEvent('shardeum-remove-node', 'signAppData' +
-              ' stakeRequiredUsd parse error')
+            ' stakeRequiredUsd parse error')
             /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`signAppData minStakeRequiredUsd parse error ${type} ${Utils.safeStringify(removeNodeCert)}, cachedNetworkAccount: ${Utils.safeStringify(AccountsStorage.cachedNetworkAccount)} `)
             return fail
           }
@@ -5902,7 +5906,7 @@ const shardusSetup = (): void => {
             )
           } catch (e) {
             /* prettier-ignore */ nestedCountersInstance.countEvent('shardeum-remove-node', 'signAppData' +
-              ' minStakeRequired parse error')
+            ' minStakeRequired parse error')
             /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`signAppData minStakeRequired parse error ${type} ${Utils.safeStringify(removeNodeCert)}, cachedNetworkAccount: ${Utils.safeStringify(AccountsStorage.cachedNetworkAccount)} `)
             return fail
           }
@@ -5919,7 +5923,7 @@ const shardusSetup = (): void => {
             }
           } catch (e) {
             /* prettier-ignore */ nestedCountersInstance.countEvent('shardeum-remove-node', 'signAppData' +
-              ' minStakeRequired parse error')
+            ' minStakeRequired parse error')
             /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`signAppData minStakeRequired parse error ${type} ${Utils.safeStringify(removeNodeCert)}, cachedNetworkAccount: ${Utils.safeStringify(AccountsStorage.cachedNetworkAccount)} `)
             return fail
           }
@@ -6109,7 +6113,7 @@ const shardusSetup = (): void => {
               fatal: false,
             }
           }
-          /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`validateJoinRequest: adminCert ${Utils. safeStringify(adminCert)}`)
+          /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`validateJoinRequest: adminCert ${Utils.safeStringify(adminCert)}`)
 
           // check for adminCert nominee
           const nodeAcc = data.sign.owner
@@ -6170,7 +6174,7 @@ const shardusSetup = (): void => {
               fatal: false,
             }
           }
-          /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`validateJoinRequest: adminCert ${Utils. safeStringify(adminCert)}`)
+          /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`validateJoinRequest: adminCert ${Utils.safeStringify(adminCert)}`)
 
           // check for adminCert nominee
           const nodeAcc = data.sign.owner
@@ -6332,7 +6336,7 @@ const shardusSetup = (): void => {
     },
     validateArchiverJoinRequest(data) {
       try {
-        /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`validateArchiverJoinRequest ${Utils. safeStringify(data)}`)
+        /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`validateArchiverJoinRequest ${Utils.safeStringify(data)}`)
         if (!data.appData) {
           /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`validateArchiverJoinRequest fail: !data.appData`)
           return {
@@ -6388,14 +6392,14 @@ const shardusSetup = (): void => {
       if (currentTime < cacheExpirationTimestamp && cachedNetworkAccount) {
         // Use cached result if it's still valid
         networkAccount = cachedNetworkAccount
-        /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`isReadyToJoin using cached network account ${Utils. safeStringify(networkAccount)}`)
+        /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`isReadyToJoin using cached network account ${Utils.safeStringify(networkAccount)}`)
       } else {
         // Fetch new network account data
         networkAccount = await fetchNetworkAccountFromArchiver()
         // Update cache with new result
         cachedNetworkAccount = networkAccount
         cacheExpirationTimestamp = currentTime + ShardeumFlags.networkAccountCacheDuration * 1000
-        /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`isReadyToJoin fetched new network account ${Utils. safeStringify(networkAccount)}`)
+        /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`isReadyToJoin fetched new network account ${Utils.safeStringify(networkAccount)}`)
       }
 
       if (initialNetworkParamters && networkAccount) {
@@ -6442,7 +6446,7 @@ const shardusSetup = (): void => {
       if (ShardeumFlags.AdminCertEnabled === true && mode !== 'processing') {
         /* prettier-ignore */ if (logFlags.important_as_error) console.log('entered admin cert conditon mode:' + mode)
         if (adminCert) {
-          /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`checkAdminCert ${Utils. safeStringify(adminCert)}`)
+          /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`checkAdminCert ${Utils.safeStringify(adminCert)}`)
           if (adminCert.certExp > shardeumGetTime()) {
             isReadyToJoinLatestValue = true
             mustUseAdminCert = true
