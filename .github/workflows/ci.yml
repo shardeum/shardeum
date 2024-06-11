@@ -19,10 +19,6 @@ on:
         options:
           - dev
           - main
-env:     
-  IS_LINT_REQUIRED: false
-  IS_FORMAT_CHECK_REQUIRED: false
-  IS_UNIT_TESTS_REQUIRED: false
 
 permissions:
   issues: write
@@ -31,12 +27,22 @@ permissions:
 jobs:
   ci-dev:
     if: ${{ github.event.inputs.workflowBranch == 'dev' }}
-    uses: shardeum/github-automation/.github/workflows/node-ci-shared.yml@dev
+    uses: shardeum/github-automation/.github/workflows/node-ci-shared.yml@RED-120
+    with:
+      lint-required: false
+      format-check-required: false
+      apply-patches-required: false
+      unit-tests-required: true
+      jenkins-qa-required: false
     secrets: inherit
 
   ci-main:
     if: ${{ github.event.inputs.workflowBranch == 'main' || !github.event.inputs.workflowBranch }}
-    uses: shardeum/github-automation/.github/workflows/node-ci-shared.yml@main
+    uses: shardeum/github-automation/.github/workflows/node-ci-shared.yml@RED-120
+    with:
+      lint-required: false
+      format-check-required: false
+      apply-patches-required: false
+      unit-tests-required: true
+      jenkins-qa-required: false
     secrets: inherit
-
-  
