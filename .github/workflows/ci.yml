@@ -27,7 +27,7 @@ permissions:
 jobs:
   ci-dev:
     if: ${{ github.event.inputs.workflowBranch == 'dev' }}
-    uses: shardeum/github-automation/.github/workflows/node-ci-shared.yml@RED-120
+    uses: shardeum/github-automation/.github/workflows/node-ci-shared.yml@dev
     with:
       lint-required: false
       format-check-required: false
@@ -38,7 +38,7 @@ jobs:
 
   ci-main:
     if: ${{ github.event.inputs.workflowBranch == 'main' || !github.event.inputs.workflowBranch }}
-    uses: shardeum/github-automation/.github/workflows/node-ci-shared.yml@RED-120
+    uses: shardeum/github-automation/.github/workflows/node-ci-shared.yml@main
     with:
       lint-required: false # TODO: enable linting after linting is fixed
       format-check-required: false # TODO: enable format-check after format-check is fixed
