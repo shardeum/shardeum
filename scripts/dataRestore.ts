@@ -1,7 +1,8 @@
 import fs from 'fs'
 import path from 'path'
-import { DeSerializeFromJsonString } from '../src/utils'
 import { FilePaths } from '../src/shardeum/shardeumFlags'
+import { Utils } from '@shardus/types'
+
 const { Sequelize } = require('sequelize')
 const sqlite3 = require('sqlite3').verbose()
 
@@ -90,7 +91,7 @@ async function writeDBToTarget(dbFile, targetDB, batchSize) {
 
       await run(targetDB, 'BEGIN TRANSACTION')
       for (let account of accounts) {
-        const dataStr = JSON.stringify(DeSerializeFromJsonString(account.data)).replace(/'/g, "''")
+        const dataStr = Utils.safeStringify(Utils.safeJsonParse(account.data)).replace(/'/g, "''")
         let insertQuery = `INSERT INTO accountsEntry (accountId, timestamp, data) VALUES (?, ?, ?)`
         await run(targetDB, insertQuery, [account.accountId, account.timestamp, dataStr])
         latestAccountId = account.accountId
@@ -128,9 +129,9 @@ async function exportToJSON(targetDbPath, targetJsonPath, batchSize) {
       let accounts = await targetDB.query(queryString)
       accounts = accounts[0]
       for (const account of accounts) {
-        const dataObj = JSON.parse(account.data)
+        const dataObj = Utils.safeJsonParse(account.data)
         dataObj.timestamp = 1
-        const dataStr = JSON.stringify(dataObj).replace(/"/g, '\\"')
+        const dataStr = Utils.safeStringify(dataObj).replace(/"/g, '\\"')
         const jsonString = `{ "accountId" : "${account.accountId}", "timestamp" : 1, "data": "${dataStr}" }`
         writableStream.write(jsonString)
         writableStream.write('\n')
@@ -203,7 +204,7 @@ function run(db, query, params = []) {
 }
 
 function sleep(ms) {
-  return new Promise(resolve => {
+  return new Promise((resolve) => {
     setTimeout(resolve, ms)
   })
 }
