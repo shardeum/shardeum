@@ -42,7 +42,7 @@ jobs:
     with:
       lint-required: false # TODO: enable linting after linting is fixed
       format-check-required: false # TODO: enable format-check after format-check is fixed
-      apply-patches-required: true # TODO: enable apply-patches after apply-patches is fixed
+      apply-patches-required: true 
       unit-tests-required: false # TODO: enable unit-tests after unit-tests are fixed
       jenkins-qa-required: true
     secrets: inherit
