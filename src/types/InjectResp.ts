@@ -3,24 +3,14 @@ import { verifyPayload } from './ajv/Helpers'
 import { TypeIdentifierEnum } from './enum/TypeIdentifierEnum'
 
 export type InjectResp = {
-  success: number
+  success: boolean
   reason: string
   status: number
   txId?: string
 }
+//TODO: work with response version
 export const cInjectRespVersion = 1
 
-// export const serializeInjectReq = (
-//     // stream: VectorBufferStream,
-//     inp: InjectReq,
-//     // root = false
-// ): void => {
-//     const errors = verifyPayload('InjectReq', inp)
-//     if (errors && errors.length > 0) {
-//         throw new Error('Data validation error')
-//     }
-
-// }
 export function serializeInjectResp(data: InjectResp): string {
   const errors = verifyPayload('InjectResp', data)
   if (errors && errors.length > 0) {
@@ -31,4 +21,12 @@ export function serializeInjectResp(data: InjectResp): string {
 
 export function deserializeInjectResp(data: string): InjectResp {
   return JSON.parse(data)
+}
+
+export function verifyInjectResp(data: InjectResp): boolean {
+  const errors = verifyPayload('InjectResp', data)
+  if (errors && errors.length > 0) {
+    return false
+  }
+  return true
 }

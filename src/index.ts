@@ -153,7 +153,8 @@ import { accountDeserializer, accountSerializer } from './types/Helpers'
 import { runWithContextAsync } from './utils/RequestContext'
 import { Utils } from '@shardus/types'
 import { initAjvSchemas } from './types/ajv/Helpers'
-import { deserializeInjectReq, serializeInjectReq } from './types/InjectReq'
+import { deserializeInjectReq, serializeInjectReq, verifyInjectReq } from './types/InjectReq'
+import { InjectResp, verifyInjectResp } from './types/InjectResp'
 
 let latestBlock = 0
 export const blocks: BlockMap = {}
@@ -190,7 +191,6 @@ export let logFlags = {
 
 // Read the CLI and GUI versions and save them in memory
 readOperatorVersions()
-// initAjvSchemas()
 console.log('Shardeum validator started')
 console.log('Shardeum Flags:')
 console.log(JSON.stringify(ShardeumFlags, null, 2))
@@ -1047,6 +1047,9 @@ const configShardusEndpoints = (): void => {
   //const debugMiddlewareHigh = shardus.getDebugModeMiddlewareHigh()
   const externalApiMiddleware = getExternalApiMiddleware()
 
+  // init the AJV schemas work
+  initAjvSchemas()
+
   //TODO request needs a signature and a timestamp.  or make it a real TX from a faucet account..
   //?id=<accountID>
   // shardus.registerExternalGet('faucet-all', debugMiddleware, async (req, res) => {
@@ -1119,8 +1122,15 @@ const configShardusEndpoints = (): void => {
 
   shardus.registerExternalPost('inject', externalApiMiddleware, async (req, res) => {
     let tx = req.body
-    tx = serializeInjectReq(tx)
-    tx = deserializeInjectReq(tx)
+    // AJV verify request of this endpoint
+    let verified = verifyInjectReq(tx)
+    if (!verified) {
+      return res.json({
+        success: false,
+        reason: `Data of Request Inject Endpoint validation error`,
+        status: 500,
+      })
+    }
     // if timestamp is a float, round it down to nearest millisecond
     if (tx.timestamp && typeof tx.timestamp === 'number') {
       tx.timestamp = Math.floor(tx.timestamp)
@@ -1221,6 +1231,15 @@ const configShardusEndpoints = (): void => {
       } else {
         //normal case, we will put this transaction into the shardus queue
         const response = await shardus.put(tx, false, false, appData)
+        // AJV verify request of this endpoint
+        let verifiedResp = verifyInjectResp(response)
+        if (!verifiedResp) {
+          return res.json({
+            success: false,
+            reason: `Data of Response Inject Endpoint validation error`,
+            status: 500,
+          })
+        }
         res.json(response)
       }
     } catch (err) {
