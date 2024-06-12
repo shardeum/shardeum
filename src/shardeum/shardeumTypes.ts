@@ -209,7 +209,8 @@ export interface PenaltyTX extends InternalTxBase {
   reportedNodePublickKey: string
   operatorEVMAddress: string
   violationType: ViolationType
-  violationData: LeftNetworkEarlyViolationData // will add more types later
+  violationData: LeftNetworkEarlyViolationData | SyncingTimeoutViolationData | NodeRefutedViolationData
+  // will add more types later
   timestamp: number
   sign: ShardusTypes.Sign
 }
@@ -369,7 +370,8 @@ export interface NodeAccountStats {
   totalPenalty: bigint
   //push begin and end times when rewarded
   history: { b: number; e: number }[]
-
+  lastPenaltyTime: number
+  penaltyHistory: { type: ViolationType; amount: bigint; timestamp: number }[]
   //set when first staked
   isShardeumRun: boolean
 }

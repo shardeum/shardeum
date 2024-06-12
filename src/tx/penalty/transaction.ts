@@ -78,7 +78,6 @@ export async function injectPenaltyTX(
   while (futureTimestamp < shardeumGetTime()) {
     futureTimestamp += 30 * 1000
   }
-  const waitTime = futureTimestamp - shardeumGetTime()
   unsignedTx.timestamp = futureTimestamp
 
   const signedTx = shardus.signAsNode(unsignedTx) as PenaltyTX
@@ -86,32 +85,19 @@ export async function injectPenaltyTX(
   // store the unsignedTx to local map for later use
   recordPenaltyTX(txId, signedTx)
 
-  // inject the unsignedTx if we are lucky node
-  const consensusNodes = shardus.getConsenusGroupForAccount(signedTx.reportedNodePublickKey)
-  const consensusNodeIdsAndRanks: { nodeId: string; rank: bigint }[] = consensusNodes.map((n) => {
-    return {
-      nodeId: n.id,
-      rank: shardus.computeNodeRank(n.id, txId, signedTx.timestamp),
-    }
-  })
-  const sortedNodeIdsAndRanks = consensusNodeIdsAndRanks.sort((a, b): number => {
-    return b.rank > a.rank ? 1 : -1
-  })
-  const ourNodeId = shardus.getNodeId()
-
-  let isLuckyNode = false
-  for (let i = 0; i < ShardeumFlags.numberOfNodesToInjectPenaltyTx; i++) {
-    if (sortedNodeIdsAndRanks[i].nodeId === ourNodeId) {
-      isLuckyNode = true
-      break
-    }
-  }
-
+  // Limit the nodes that send this to the <ShardeumFlags.numberOfNodesToInjectPenaltyTx> closest to the node address ( publicKey )
+  const closestNodes = shardus.getClosestNodes(
+    eventData.publicKey,
+    ShardeumFlags.numberOfNodesToInjectPenaltyTx
+  )
+  const ourId = shardus.getNodeId()
+  const isLuckyNode = closestNodes.some((nodeId) => nodeId === ourId)
   if (!isLuckyNode) {
     if (ShardeumFlags.VerboseLogs)
       console.log(`injectPenaltyTX: not lucky node, skipping injection`, signedTx)
     return
   }
+  const waitTime = futureTimestamp - shardeumGetTime()
   // since we have to pick a future timestamp, we need to wait until it is time to submit the signedTx
   await sleep(waitTime)
 
@@ -119,12 +105,51 @@ export async function injectPenaltyTX(
     console.log(`injectPenaltyTX: tx.timestamp: ${signedTx.timestamp} txid: ${txId}`, signedTx)
   }
 
-  return await shardus.put(signedTx)
+  const result = await shardus.put(signedTx)
+  /* prettier-ignore */ if (logFlags.dapp_verbose) console.log('INJECTED_PENALTY_TX', result)
+  return result
 }
 
 function recordPenaltyTX(txId: string, tx: PenaltyTX): void {
   if (penaltyTxsMap.has(txId) === false) {
     penaltyTxsMap.set(txId, tx)
+  }
+}
+
+/**
+ * Compares the event timestamp of the penalty tx with the timestamp of the last saved penalty tx
+ */
+function isProcessedPenaltyTx(
+  tx: PenaltyTX,
+  nodeAccount: NodeAccount2
+): { isProcessed: boolean; eventTime: number } {
+  switch (tx.violationType) {
+    case ViolationType.LeftNetworkEarly:
+      return {
+        isProcessed:
+          nodeAccount.nodeAccountStats.lastPenaltyTime >=
+          (tx.violationData as LeftNetworkEarlyViolationData).nodeDroppedTime,
+        eventTime: (tx.violationData as LeftNetworkEarlyViolationData).nodeDroppedTime,
+      }
+
+    case ViolationType.NodeRefuted:
+      return {
+        isProcessed:
+          nodeAccount.nodeAccountStats.lastPenaltyTime >=
+          (tx.violationData as NodeRefutedViolationData).nodeRefutedTime,
+        eventTime: (tx.violationData as NodeRefutedViolationData).nodeRefutedTime,
+      }
+
+    case ViolationType.SyncingTooLong:
+      return {
+        isProcessed:
+          nodeAccount.nodeAccountStats.lastPenaltyTime >=
+          (tx.violationData as SyncingTimeoutViolationData).nodeDroppedTime,
+        eventTime: (tx.violationData as SyncingTimeoutViolationData).nodeDroppedTime,
+      }
+
+    default:
+      throw new Error(`Unknown Violation type: , ${tx.violationType}`)
   }
 }
 
@@ -285,17 +310,38 @@ export async function applyPenaltyTX(
     operatorAccount = wrappedStates[operatorShardusAddress].data as WrappedEVMAccount
   }
 
-
+  const { isProcessed, eventTime } = isProcessedPenaltyTx(tx, nodeAccount)
+  if (isProcessed) {
+    /* prettier-ignore */ if (logFlags.dapp_verbose) console.log(`Processed penaltyTX: , TxId: ${txId}, reportedNode ${tx.reportedNodePublickKey}, ${{lastPenaltyTime: nodeAccount.nodeAccountStats.lastPenaltyTime, eventTime}}`)
+    shardus.applyResponseSetFailed(
+      applyResponse,
+      `applyPenaltyTX failed isProcessedPenaltyTx reportedNode: ${tx.reportedNodePublickKey}`
+    )
+    return
+  }
 
   //TODO should we check if it was already penalized?
   const penaltyAmount = getPenaltyForViolation(tx, nodeAccount.stakeLock)
   applyPenalty(nodeAccount, operatorAccount, penaltyAmount)
-  if (tx.violationType === ViolationType.LeftNetworkEarly) {
-    nodeAccount.rewardEndTime = tx.violationData?.nodeDroppedTime || Math.floor(tx.timestamp / 1000)
-    nodeAccount.nodeAccountStats.history.push({ b: nodeAccount.rewardStartTime, e: nodeAccount.rewardEndTime })
+  nodeAccount.nodeAccountStats.penaltyHistory.push({
+    type: tx.violationType,
+    amount: penaltyAmount,
+    timestamp: eventTime,
+  })
+  if (tx.violationType === ViolationType.LeftNetworkEarly && nodeAccount.rewardStartTime > 0) {
+    nodeAccount.rewardEndTime = (tx.violationData as LeftNetworkEarlyViolationData)?.nodeDroppedTime
+    nodeAccount.nodeAccountStats.history.push({
+      b: nodeAccount.rewardStartTime,
+      e: nodeAccount.rewardEndTime,
+    })
+    operatorAccount.operatorAccountInfo.operatorStats.history.push({
+      b: nodeAccount.rewardStartTime,
+      e: nodeAccount.rewardEndTime,
+    })
   }
 
   nodeAccount.timestamp = txTimestamp
+  nodeAccount.nodeAccountStats.lastPenaltyTime = eventTime
   operatorAccount.timestamp = txTimestamp
 
   const shardeumState = getApplyTXState(txId)
