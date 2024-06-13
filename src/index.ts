@@ -152,6 +152,7 @@ import { isLowStake } from './tx/penalty/penaltyFunctions'
 import { accountDeserializer, accountSerializer } from './types/Helpers'
 import { runWithContextAsync } from './utils/RequestContext'
 import { Utils } from '@shardus/types'
+import { SafeBalance } from './utils/safeMath'
 import { verifyStakeTx, verifyUnstakeTx } from './tx/staking/verifyStake'
 
 let latestBlock = 0
@@ -3834,7 +3835,7 @@ const shardusSetup = (): void => {
           operatorEVMAccount.operatorAccountInfo.certExp = 0
         fixDeserializedWrappedEVMAccount(operatorEVMAccount)
 
-        operatorEVMAccount.account.balance = operatorEVMAccount.account.balance - totalAmountToDeduct
+        operatorEVMAccount.account.balance = SafeBalance.subtractBigintBalance(operatorEVMAccount.account.balance, totalAmountToDeduct)
         operatorEVMAccount.account.nonce = operatorEVMAccount.account.nonce + BigInt(1)
 
         const operatorEVMAddress: Address = Address.fromString(stakeCoinsTx.nominator)
@@ -4040,7 +4041,7 @@ const shardusSetup = (): void => {
 
           /* prettier-ignore */ if (logFlags.dapp_verbose) console.log('discarding staking rewards due to zero rewardEndTime')
         }
-        const newBalance = currentBalance + stake + reward - penalty - txFee
+        const newBalance = SafeBalance.addBigintBalance(currentBalance, stake + reward - penalty - txFee)
         operatorEVMAccount.account.balance = newBalance
         operatorEVMAccount.account.nonce = operatorEVMAccount.account.nonce + BigInt(1)
 

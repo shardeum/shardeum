@@ -115,6 +115,7 @@ interface ShardeumFlags {
   collectorUrl: string
   aalgWarmupSleep: number
   internalTxTimestampFix: boolean
+  unifiedAccountBalanceEnabled: boolean
   debugExtraNonceLookup: boolean
   cleanStaleShardeumStateMap: boolean
   beta1_11_2: boolean
@@ -274,6 +275,7 @@ export const ShardeumFlags: ShardeumFlags = {
   cleanStaleShardeumStateMap: false,
   beta1_11_2: true,
 
+  unifiedAccountBalanceEnabled: true,
   failedStakeReceipt: true,
 }
 
