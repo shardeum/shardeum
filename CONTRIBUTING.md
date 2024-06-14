@@ -12,9 +12,8 @@ Welcome to the Shardeum project! We're thrilled to have you here and appreciate 
 7. [Using ESLint and Prettier](#using-eslint-and-prettier)
 8. [Code of Conduct](#code-of-conduct)
 9. [Getting Help](#getting-help)
-10. [Continuous Integration and Deployment](#continuous-integration-and-deployment)
-11. [Documentation Standards](#documentation-standards)
-12. [Security Best Practices](#security-best-practices)
+10. [Documentation Standards](#documentation-standards)
+11. [Security Best Practices](#security-best-practices)
 
 ## Branch Organization
 
@@ -72,22 +71,8 @@ Good commit messages help reviewers understand the context and history of change
 
 ### Installation
 
-1. **Clone the Repository**:
-    ```bash
-    git clone https://github.com/shardeum/shardeum.git
-    cd shardeum
-    ```
+Instructions for installation are covered in [Readme.md]([https://twitter.com/Shardeum](https://github.com/shardeum/shardeum/blob/dev/README.md))
 
-2. **Install Dependencies**:
-    ```bash
-    npm install
-    ```
-
-3. **Setup Environment Variables**:
-    Copy the `.env_example` to `.env` and customize the settings as needed.
-    ```bash
-    cp .env_example .env
-    ```
 
 ### Node.js and NVM
 
@@ -173,53 +158,6 @@ Ensure consistent code style using ESLint and Prettier. We use the following con
     ```
 
 5. **Install ESLint extension for VS Code** for linting and auto-fixing on save.
-
-## Continuous Integration and Deployment
-
-We use GitLab CI/CD for continuous integration and deployment. Ensure your code passes all stages in the `.gitlab-ci.yml` file:
-
-### Stages
-- **build**: Compiles the code.
-- **appsec**: Runs application security checks.
-- **lint**: Runs ESLint to ensure code quality.
-
-### Example `.gitlab-ci.yml`
-```yaml
-include:
-  - remote: 'https://gitlab.com/pod_security/shared-ci/-/raw/main/security.yml'
-  
-image: 'registry.gitlab.com/shardus/dev-container:latest_node18'
-
-before_script:
-  - node -v
-
-stages:
-  - build
-  - appsec
-  - lint
-
-build-job:
-  cache:
-    paths:
-      - node_modules/
-  stage: build
-  script:
-    - echo "Compiling the code..."
-    - npm install --silent
-    - npm run compile
-    - echo "Compile complete."
-
-lint-job:
-  cache:
-    paths:
-      - node_modules/
-  stage: lint
-  script:
-    - echo "Running ESlint..."
-    - npm install @typescript-eslint/eslint-plugin@5.48.0 --save-dev
-    - npm run lint
-    - echo "Running ESlint complete."
-```
 
 ## Documentation Standards
 
