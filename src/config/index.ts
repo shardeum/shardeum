@@ -211,12 +211,13 @@ config = merge(config, {
       formingNodesPerCycle: 7, //how many nodes can be add in a cycle while in forming mode
 
       downNodeFilteringEnabled: false, //turning down node filtering off for diagnostics purposes
+      
+      enableBinarySearchOptimization: false, // Enable optimized binary search and sorted insertion logic
     },
     features: {
-
       //This feature will restrict transactions to only coin transfers
-      dappFeature1enabled : true,  //enabled for betanext 1.11.0
-    }
+      dappFeature1enabled: true, //enabled for betanext 1.11.0
+    },
   },
 })
 
