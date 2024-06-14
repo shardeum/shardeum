@@ -266,14 +266,14 @@ config = merge(config, {
     sharding: {
       nodesPerConsensusGroup: process.env.nodesPerConsensusGroup
         ? parseInt(process.env.nodesPerConsensusGroup)
-        : 10, //128 is the final goal
+        : 32, //128 is the final goal
       nodesPerEdge: process.env.nodesPerEdge ? parseInt(process.env.nodesPerEdge) : 5,
       executeInOneShard: true,
     },
     stateManager: {
       accountBucketSize: 200, // todo: we need to re-test with higher numbers after some recent improvements
       includeBeforeStatesInReceipts: true, // 1.5.3 migration
-      useNewPOQ: true, // 1.10.0 enabled required by archive server updates
+      useNewPOQ: false, // 1.10.0 enabled required by archive server updates
 
       forwardToLuckyNodes: false, // 1.11.0 we seem to have more issues with this on.  can turn off for local testing
 
