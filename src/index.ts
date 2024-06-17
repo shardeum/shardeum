@@ -7048,11 +7048,27 @@ const shardusSetup = (): void => {
         const wrappedEVMAccount = wrappedData.data as WrappedEVMAccount
         return wrappedEVMAccount.account.nonce
       }
-      const account: ShardusTypes.WrappedDataFromQueue = await shardus.getLocalOrRemoteAccount(accountId)
-      if (account != null) {
-        const wrappedEVMAccount = account.data as WrappedEVMAccount
-        return wrappedEVMAccount.account.nonce
+
+      let exceptionCount = 0
+      const getAccountNonceRetries = 3
+      for(let i=0; i<getAccountNonceRetries; i++){
+        try{
+          const account: ShardusTypes.WrappedDataFromQueue = await shardus.getLocalOrRemoteAccount(accountId, {useRICache:false, canThrowException:true})
+          if (account != null) {
+            const wrappedEVMAccount = account.data as WrappedEVMAccount
+            return wrappedEVMAccount.account.nonce
+          }
+          //if we did not get an exeption we could return null, but seems better to retry 
+        }catch(e) {
+          exceptionCount++
+          //This has the potential to spam our counters if message has a format string. may have to dial it back
+          //or disable after we fix issues 
+          /* prettier-ignore */ nestedCountersInstance.countEvent('getAccountNonce', `getAccountNonce: ${e.message}`)
+        }
       }
+      nestedCountersInstance.countEvent('getAccountNonce', `getAccountNonce: out of retries exceptionCount: ${exceptionCount}`)
+
+      return undefined
     },
   })
 
