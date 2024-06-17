@@ -7049,8 +7049,13 @@ const shardusSetup = (): void => {
         return wrappedEVMAccount.account.nonce
       }
 
+      let getAccountNonceRetries = 3
+      if(ShardeumFlags.debugExtraNonceLookup){
+        getAccountNonceRetries = config.server.sharding.nodesPerConsensusGroup
+      }
+
       let exceptionCount = 0
-      const getAccountNonceRetries = 3
+
       for(let i=0; i<getAccountNonceRetries; i++){
         try{
           const account: ShardusTypes.WrappedDataFromQueue = await shardus.getLocalOrRemoteAccount(accountId, {useRICache:false, canThrowException:true})
@@ -7066,6 +7071,7 @@ const shardusSetup = (): void => {
           /* prettier-ignore */ nestedCountersInstance.countEvent('getAccountNonce', `getAccountNonce: ${e.message}`)
         }
       }
+
       nestedCountersInstance.countEvent('getAccountNonce', `getAccountNonce: out of retries exceptionCount: ${exceptionCount}`)
 
       return undefined

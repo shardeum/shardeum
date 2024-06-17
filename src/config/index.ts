@@ -24,6 +24,9 @@ export interface Config {
     }
     baseDir: string
     mode?: 'debug' | 'release'
+    sharding?: {
+      nodesPerConsensusGroup:number, 
+    }
   }
 }
 
