@@ -5998,16 +5998,19 @@ const shardusSetup = (): void => {
     transactionReceiptPass(
       timestampedTx: ShardusTypes.OpaqueTransaction,
       wrappedStates: { [id: string]: WrappedAccount },
-      applyResponse: ShardusTypes.ApplyResponse
+      applyResponse: ShardusTypes.ApplyResponse,
+      isExecutionGroup: boolean
     ) {
       //@ts-ignore
       const { tx } = timestampedTx
       const txId: string = generateTxId(tx)
 
-      //This next log is usefull but very heavy on the output lines:
-      //Updating to be on only with verbose logs
-      /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log('running transactionReceiptPass', txId, tx, wrappedStates, applyResponse)
-      _transactionReceiptPass(tx, txId, wrappedStates, applyResponse)
+      if(isExecutionGroup){
+        //This next log is usefull but very heavy on the output lines:
+        //Updating to be on only with verbose logs
+        /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log('running transactionReceiptPass', txId, tx, wrappedStates, applyResponse)
+        _transactionReceiptPass(tx, txId, wrappedStates, applyResponse)        
+      }
 
       //clear this out of the shardeum state map
       if (shardeumStateTXMap.has(txId)) {
@@ -7081,6 +7084,10 @@ const shardusSetup = (): void => {
   shardus.registerExceptionHandler()
 }
 
+
+//Note, this functionality was disabled 10 months ago.
+//now that we are moving away from TX expiration we would need to be safe if we ever 
+//turn this back on.  (note, disabled by having setTimeout not called again)
 function periodicMemoryCleanup(): void {
   const keys = shardeumStateTXMap.keys()
   //todo any provisions needed for TXs that can hop and extend the timer
