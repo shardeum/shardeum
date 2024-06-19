@@ -8,8 +8,8 @@ index 192a4b4..72a245c 100644
        minNodesToAllowTxs: 1, // to allow single node networks
 -      baselineNodes: process.env.baselineNodes ? parseInt(process.env.baselineNodes) : 300, // config used for baseline for entering recovery, restore, and safety. Should be equivalient to minNodes on network startup
 -      minNodes: process.env.minNodes ? parseInt(process.env.minNodes) : 300,
-+      baselineNodes: process.env.baselineNodes ? parseInt(process.env.baselineNodes) : 320, // config used for baseline for entering recovery, restore, and safety. Should be equivalient to minNodes on network startup
-+      minNodes: process.env.minNodes ? parseInt(process.env.minNodes) : 320,
++      baselineNodes: process.env.baselineNodes ? parseInt(process.env.baselineNodes) : 160, // config used for baseline for entering recovery, restore, and safety. Should be equivalient to minNodes on network startup
++      minNodes: process.env.minNodes ? parseInt(process.env.minNodes) : 160,
        maxNodes: process.env.maxNodes ? parseInt(process.env.maxNodes) : 1100,
        maxJoinedPerCycle: 10,
        maxSyncingPerCycle: 10,
@@ -18,7 +18,7 @@ index 192a4b4..72a245c 100644
        nodesPerConsensusGroup: process.env.nodesPerConsensusGroup
          ? parseInt(process.env.nodesPerConsensusGroup)
 -        : 32, //128 is the final goal
-+        : 64, //128 is the final goal
++        : 32, //128 is the final goal
        nodesPerEdge: process.env.nodesPerEdge ? parseInt(process.env.nodesPerEdge) : 5,
        executeInOneShard: true,
      },
