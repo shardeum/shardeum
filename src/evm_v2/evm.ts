@@ -179,10 +179,7 @@ export class EVM implements EVMInterface {
 
     this.journal = new Journal(this.stateManager, this.common)
 
-    this.common.events.on('hardforkChanged', () => {
-      this.getActiveOpcodes()
-      this._precompiles = getActivePrecompiles(this.common, this._customPrecompiles)
-    })
+    this.common.events.on('hardforkChanged', this.hardforkChangedHandler)
 
     // Initialize the opcode data
     this.getActiveOpcodes()
@@ -196,6 +193,15 @@ export class EVM implements EVMInterface {
     // Additional window check is to prevent vite browser bundling (and potentially other) to break
     this.DEBUG =
       typeof window === 'undefined' ? process?.env?.DEBUG?.includes('ethjs') ?? false : false
+  }
+
+  hardforkChangedHandler():void {
+    this.getActiveOpcodes();
+    this._precompiles = getActivePrecompiles(this.common, this._customPrecompiles);
+  }
+
+  cleanUp(): void{
+    this.common.events.removeListener('hardforkChanged', this.hardforkChangedHandler)
   }
 
   /**
