@@ -1,3 +1,3 @@
 [submodule ".husky"]
 	path = .husky
-	url = git@github.com:shardeum/husky-hooks
+	url = git@github.com:shardeum/git-hooks
