@@ -208,6 +208,8 @@ shardus start 20
 
 This command will start a Shardeum network of 20 nodes, 1 archiver server and 1 monitor server exposed through port number 3000. You can inspect the nodes via `shardus pm2 list` command.
 
+> **Note:** If one of the services fails to start, it might be that the port is still in use from a previous session.
+
 For usage instructions and available options for the shardus command-line tool, run `shardus --help`
 
 ## Stopping the Running Network and Cleanup
