@@ -29,7 +29,8 @@
     "build-docker-production": "docker build -f dev.Dockerfile -t registry.gitlab.com/shardeum/server .",
     "push-docker-production": "docker push registry.gitlab.com/shardeum/server",
     "tsc": "tsc",
-    "dcr": "node scripts/debugCycleRecords.ts"
+    "dcr": "node scripts/debugCycleRecords.ts",
+    "test-ajv": "jest"
   },
   "author": "",
   "dependencies": {

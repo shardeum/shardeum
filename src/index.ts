@@ -152,9 +152,7 @@ import { isLowStake } from './tx/penalty/penaltyFunctions'
 import { accountDeserializer, accountSerializer } from './types/Helpers'
 import { runWithContextAsync } from './utils/RequestContext'
 import { Utils } from '@shardus/types'
-import { initAjvSchemas } from './types/ajv/Helpers'
-import { deserializeInjectReq, serializeInjectReq, verifyInjectReq } from './types/InjectReq'
-import { InjectResp, verifyInjectResp } from './types/InjectResp'
+import { initAjvSchemas, verifyPayload } from './types/ajv/Helpers'
 
 let latestBlock = 0
 export const blocks: BlockMap = {}
@@ -1123,7 +1121,7 @@ const configShardusEndpoints = (): void => {
   shardus.registerExternalPost('inject', externalApiMiddleware, async (req, res) => {
     let tx = req.body
     // AJV verify request of this endpoint
-    let verified = verifyInjectReq(tx)
+    let verified = verifyPayload('InjectReq', tx)
     if (!verified) {
       return res.json({
         success: false,
@@ -1232,7 +1230,7 @@ const configShardusEndpoints = (): void => {
         //normal case, we will put this transaction into the shardus queue
         const response = await shardus.put(tx, false, false, appData)
         // AJV verify request of this endpoint
-        let verifiedResp = verifyInjectResp(response)
+        let verifiedResp = verifyPayload('InjectResp', response)
         if (!verifiedResp) {
           return res.json({
             success: false,
