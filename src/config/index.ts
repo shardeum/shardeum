@@ -252,7 +252,7 @@ config = merge(config, {
                               // Example: if you a have a limit of 160 and we expect TXs to take 4 sec in consensus after a 6 second wait
                               // then we look at 160 / 10 to see that 10tps sustained or more will give us a 1.0 load.
                               // note that executeQueueLength value of 0.6 means we start rejecting TXs at 60% of the limit
-      desiredTxTime: 15, // this is the average age of a TX in the queue.  we will only detect this if there are at least 20 txes in the queue
+      desiredTxTime: 10000000, // this is the average age of a TX in the queue.  we will only detect this if there are at least 20 txes in the queue
       highThreshold: 0.5, // This is mainly used to detect if any of of our three parameters above are getting too high
                           // if any of the the three external load factors are above highload we will raise a high load 
                           // event and vote to the network if we are in the voter set for that cycle
