@@ -58,6 +58,8 @@ export const validateTxnFields =
       reason: string
       txnTimestamp: number
     } => {
+      if (AccountsStorage.cachedNetworkAccount.current.utilityFlags.enableRewardTXs === false) return
+
       const { tx } = timestampedTx
       const txnTimestamp: number = getInjectedOrGeneratedTimestamp(timestampedTx)
       const appData = fixBigIntLiteralsToBigInt(originalAppData)

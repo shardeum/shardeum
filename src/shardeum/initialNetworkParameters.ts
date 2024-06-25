@@ -35,5 +35,8 @@ export const initialNetworkParamters: NetworkParameters = {
     leftNetworkEarlyPenaltyPercent: 0.2,
     syncTimeoutPenaltyPercent: 0.2,
     nodeRefutedPenaltyPercent: 0.2,
+  },
+  utilityFlags: {
+    enableRewardTXs: true,
   }
 }

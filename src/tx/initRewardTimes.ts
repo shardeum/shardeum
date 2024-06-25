@@ -13,6 +13,7 @@ import {
 import * as WrappedEVMAccountFunctions from '../shardeum/wrappedEVMAccountFunctions'
 import { sleep, generateTxId } from '../utils'
 import { createInternalTxReceipt, shardeumGetTime, logFlags } from '..'
+import * as AccountsStorage from '../storage/accountStorage'
 
 export async function injectInitRewardTimesTx(
   shardus,
@@ -184,6 +185,8 @@ export function apply(
   wrappedStates: WrappedStates,
   applyResponse: ShardusTypes.ApplyResponse
 ): void {
+  if (AccountsStorage.cachedNetworkAccount.current.utilityFlags.enableRewardTXs === false) return
+
   let nodeAccount: NodeAccount2
   const acct = wrappedStates[tx.nominee].data
   if (isNodeAccount2(acct)) {
