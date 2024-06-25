@@ -7194,7 +7194,7 @@ const shardusSetup = (): void => {
       const currentlyActivatedNode = currentCycle.activated.includes(nodeId)
       if (currentlyActivatedNode) return
 
-      if (eventType === 'node-activated') {
+      if (eventType === 'node-activated' && AccountsStorage.cachedNetworkAccount.current.utilityFlags.enableRewardTXs) {
         const closestNodes = shardus.getClosestNodes(data.publicKey, 5)
         const ourId = shardus.getNodeId()
         for (const id of closestNodes) {
@@ -7208,7 +7208,7 @@ const shardusSetup = (): void => {
             shardus.addNetworkTx('nodeInitReward', shardus.signAsNode(txData), data.publicKey)
           }
         }
-      } else if (eventType === 'node-deactivated') {
+      } else if (eventType === 'node-deactivated' && AccountsStorage.cachedNetworkAccount.current.utilityFlags.enableRewardTXs) {
         // todo: aamir check the timestamp and cycle the first time we see this event
         // Limit the nodes that send this to the 5 closest to the node id
         const closestNodes = shardus.getClosestNodes(data.publicKey, 5)
