@@ -1,5 +1,5 @@
 // ts-nocheck
-import { Utils } from '@shardus/types'
+const { Utils }  = require('@shardus/types')
 const fs = require('fs');
 const readline = require ('readline');
 const path = require('path');
