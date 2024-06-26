@@ -1088,6 +1088,7 @@ const configShardusEndpoints = (): void => {
     // if(isDebugMode()){
     //   return res.json(`endpoint not available`)
     // }
+
     // Start verify request data
     let verified = verifyPayload('DebugPointsReq', req)
     if (!verified) {
@@ -1576,7 +1577,7 @@ const configShardusEndpoints = (): void => {
 
   shardus.registerExternalGet('eth_getCode', externalApiMiddleware, async (req, res) => {
     // Start verify request data
-    let verified = verifyPayload('EthGetCode', req)
+    let verified = verifyPayload('EthGetCodeReq', req)
     if (!verified) {
       return res.json({ error: `AJV verify error` })
     }
@@ -1632,13 +1633,6 @@ const configShardusEndpoints = (): void => {
   })
 
   shardus.registerExternalGet('eth_gasPrice', externalApiMiddleware, async (req, res) => {
-    // // Start verify request data
-    // let verified = verifyPayload("EthGasPrice", req)
-    // if (!verified) {
-    //   return res.json({ error: `AJV verify error` })
-    // }
-    // // End verify request data
-
     if (trySpendServicePoints(ShardeumFlags.ServicePoints['eth_gasPrice'], req, 'account') === false) {
       return res.json({ error: 'node busy' })
     }

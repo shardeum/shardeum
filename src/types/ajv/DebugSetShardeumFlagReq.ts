@@ -6,7 +6,7 @@ export const schemaDebugSetShardeumFlagReq = {
       type: 'object',
       properties: {
         key: { type: 'string' },
-        value: { type: 'string' },
+        value: { type: ['string', 'boolean', 'number'] },
       },
       required: [],
     },

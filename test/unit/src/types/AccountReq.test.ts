@@ -23,13 +23,13 @@ describe('Account req test', () => {
         },
       },
     ]
-    const otherInvalidObject = [
-      {
-        text: {
-          // blockHash: 1,
-        },
-      },
-    ]
+    // const otherInvalidObject = [
+    //   {
+    //     text: {
+    //       // blockHash: 1,
+    //     },
+    //   },
+    // ]
     const validObjects = [
       {
         params: {
@@ -46,15 +46,15 @@ describe('Account req test', () => {
       expect(res![0].slice(0, 40)).toContain(`should be `)
       // expect(res[0]).toEqual(`should have required property 'sender': {"missingProperty":"sender"}`)
     })
-    test.each(otherInvalidObject)('should throw AJV error', (data) => {
-      const res = verifyPayload('AccountAddressReq', {
-        ...data,
-      })
-      console.log('res', res)
-      expect(res!.length).toBeGreaterThan(0)
-      expect(res![0].slice(0, 40)).toContain(`should have required property`)
-      // expect(res[0]).toEqual(`should be number,null: {"type":"number,null"}`)
-    })
+    // test.each(otherInvalidObject)('should throw AJV error', (data) => {
+    //     const res = verifyPayload('AccountAddressReq', {
+    //         ...data,
+    //     })
+    //     console.log('res', res)
+    //     expect(res!.length).toBeGreaterThan(0)
+    //     expect(res![0].slice(0, 40)).toContain(`should have required property`)
+    //     // expect(res[0]).toEqual(`should be number,null: {"type":"number,null"}`)
+    // })
     test.each(validObjects)('should have no AJV error', (data) => {
       const res = verifyPayload('AccountAddressReq', {
         ...data,

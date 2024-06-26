@@ -7,7 +7,7 @@ export const schemaDebugSetServicePointReq = {
       properties: {
         key1: { type: 'string' },
         key2: { type: 'string' },
-        value: { type: 'string' },
+        value: { type: ['string', 'null'] },
       },
       required: [],
     },

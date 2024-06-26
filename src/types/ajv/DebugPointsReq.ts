@@ -7,7 +7,7 @@ export const schemaDebugPointsReq = {
       properties: {
         points: { type: ['string', 'number'] },
       },
-      required: ['points'],
+      required: [],
     },
   },
   required: ['query'],

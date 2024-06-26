@@ -10,7 +10,7 @@ export const schemaAccountAddressReq = {
       required: [],
     },
   },
-  required: ['params'],
+  required: [],
 }
 
 export function initAccountReq(): void {
