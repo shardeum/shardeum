@@ -1,5 +1,5 @@
 import { addSchema } from '../../utils/serialization/SchemaHelpers'
-export const schemaAccountReq = {
+export const schemaAccountAddressReq = {
   type: 'object',
   properties: {
     params: {
@@ -24,5 +24,5 @@ function addSchemaDependencies(): void {
 
 // Function to register the schema
 function addSchemas(): void {
-  addSchema('AccountReq', schemaAccountReq)
+  addSchema('AccountAddressReq', schemaAccountAddressReq)
 }

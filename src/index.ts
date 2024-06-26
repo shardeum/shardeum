@@ -152,6 +152,7 @@ import { isLowStake } from './tx/penalty/penaltyFunctions'
 import { accountDeserializer, accountSerializer } from './types/Helpers'
 import { runWithContextAsync } from './utils/RequestContext'
 import { Utils } from '@shardus/types'
+import { initAjvSchemas, verifyPayload } from './types/ajv/Helpers'
 
 let latestBlock = 0
 export const blocks: BlockMap = {}
@@ -488,7 +489,7 @@ async function initEVMSingletons(): Promise<void> {
         evm: customEVM,
         // blockchain: shardeumBlock,
       })
-    } finally{
+    } finally {
       customEVM.cleanUp()
     }
   } else {
@@ -1049,6 +1050,9 @@ const configShardusEndpoints = (): void => {
   //const debugMiddlewareHigh = shardus.getDebugModeMiddlewareHigh()
   const externalApiMiddleware = getExternalApiMiddleware()
 
+  // init the AJV schemas work
+  initAjvSchemas()
+
   //TODO request needs a signature and a timestamp.  or make it a real TX from a faucet account..
   //?id=<accountID>
   // shardus.registerExternalGet('faucet-all', debugMiddleware, async (req, res) => {
@@ -1084,6 +1088,13 @@ const configShardusEndpoints = (): void => {
     // if(isDebugMode()){
     //   return res.json(`endpoint not available`)
     // }
+    // Start verify request data
+    let verified = verifyPayload('DebugPointsReq', req)
+    if (!verified) {
+      return res.json({ error: `AJV verify error` })
+    }
+    // End verify request data
+
     if (Number.isNaN(Number(req.query.points as string))) {
       /* prettier-ignore */ if (logFlags.error) console.log(`Invalid input debug-points number`)
       return res.json({ error: `Invalid input debug-points number` })
@@ -1261,6 +1272,13 @@ const configShardusEndpoints = (): void => {
   })
 
   shardus.registerExternalGet('eth_getBlockHashes', externalApiMiddleware, async (req, res) => {
+    // Start verify request data
+    let verified = verifyPayload('EthGetBlockHashesReq', req)
+    if (!verified) {
+      return res.json({ error: `AJV verify error` })
+    }
+    // End verify request data
+
     let fromBlock: any = req.query.fromBlock
     let toBlock: any = req.query.toBlock
 
@@ -1283,6 +1301,13 @@ const configShardusEndpoints = (): void => {
   })
 
   shardus.registerExternalGet('eth_getBlockByNumber', externalApiMiddleware, async (req, res) => {
+    // Start verify request data
+    let verified = verifyPayload('EthGetBlockByNumberReq', req)
+    if (!verified) {
+      return res.json({ error: `AJV verify error` })
+    }
+    // End verify request data
+
     const blockNumberParam = req.query.blockNumber as string
     let blockNumber: number | string
 
@@ -1308,6 +1333,13 @@ const configShardusEndpoints = (): void => {
   })
 
   shardus.registerExternalGet('eth_getBlockByHash', externalApiMiddleware, async (req, res) => {
+    // Start verify request data
+    let verified = verifyPayload('EthGetBlockByHashReq', req)
+    if (!verified) {
+      return res.json({ error: `AJV verify error` })
+    }
+    // End verify request data
+
     /* eslint-disable security/detect-object-injection */
     let blockHash = req.query.blockHash as string
     if (blockHash === 'latest') blockHash = readableBlocks[latestBlock].hash
@@ -1335,6 +1367,13 @@ const configShardusEndpoints = (): void => {
     // if(isDebugMode()){
     //   return res.json(`endpoint not available`)
     // }
+
+    // Start verify request data
+    let verified = verifyPayload('DumpStorageReq', req)
+    if (!verified) {
+      return res.json({ error: `AJV verify error` })
+    }
+    // End verify request data
 
     let id
     try {
@@ -1401,6 +1440,13 @@ const configShardusEndpoints = (): void => {
   })
 
   shardus.registerExternalGet('debug-set-shardeum-flag', debugMiddleware, async (req, res) => {
+    // Start verify request data
+    let verified = verifyPayload('DebugSetShardeumFlagReq', req)
+    if (!verified) {
+      return res.json({ error: `AJV verify error` })
+    }
+    // End verify request data
+
     let value
     let key
     try {
@@ -1427,6 +1473,13 @@ const configShardusEndpoints = (): void => {
     }
   })
   shardus.registerExternalGet('debug-set-service-point', debugMiddleware, async (req, res) => {
+    // Start verify request data
+    let verified = verifyPayload('DebugSetServicePointReq', req)
+    if (!verified) {
+      return res.json({ error: `AJV verify error` })
+    }
+    // End verify request data
+
     let value
     let key1
     let key2
@@ -1453,6 +1506,13 @@ const configShardusEndpoints = (): void => {
   })
 
   shardus.registerExternalGet('account/:address', externalApiMiddleware, async (req, res) => {
+    // Start verify request data
+    let verified = verifyPayload('AccountAddressReq', req)
+    if (!verified) {
+      return res.json({ error: `AJV verify error` })
+    }
+    // End verify request data
+
     if (trySpendServicePoints(ShardeumFlags.ServicePoints['account/:address'], req, 'account') === false) {
       return res.json({ error: 'node busy' })
     }
@@ -1515,6 +1575,13 @@ const configShardusEndpoints = (): void => {
   })
 
   shardus.registerExternalGet('eth_getCode', externalApiMiddleware, async (req, res) => {
+    // Start verify request data
+    let verified = verifyPayload('EthGetCode', req)
+    if (!verified) {
+      return res.json({ error: `AJV verify error` })
+    }
+    // End verify request data
+
     if (trySpendServicePoints(ShardeumFlags.ServicePoints['eth_getCode'], req, 'account') === false) {
       return res.json({ error: 'node busy' })
     }
@@ -1565,6 +1632,13 @@ const configShardusEndpoints = (): void => {
   })
 
   shardus.registerExternalGet('eth_gasPrice', externalApiMiddleware, async (req, res) => {
+    // // Start verify request data
+    // let verified = verifyPayload("EthGasPrice", req)
+    // if (!verified) {
+    //   return res.json({ error: `AJV verify error` })
+    // }
+    // // End verify request data
+
     if (trySpendServicePoints(ShardeumFlags.ServicePoints['eth_gasPrice'], req, 'account') === false) {
       return res.json({ error: 'node busy' })
     }
@@ -1586,6 +1660,14 @@ const configShardusEndpoints = (): void => {
     // if(isDebugMode()){
     //   return res.json(`endpoint not available`)
     // }
+
+    // Start verify request data
+    let verified = verifyPayload('ContractCallReq', req)
+    if (!verified) {
+      return res.json({ error: `AJV verify error` })
+    }
+    // End verify request data
+
     if (
       trySpendServicePoints(ShardeumFlags.ServicePoints['contract/call'].endpoint, req, 'call-endpoint') ===
       false
@@ -1714,7 +1796,6 @@ const configShardusEndpoints = (): void => {
         opt['block'] = blocks[latestBlock] // eslint-disable-line security/detect-object-injection
       }
 
-      
       const customEVM = new EthereumVirtualMachine({
         common: evmCommon,
         stateManager: callTxState,
@@ -1724,7 +1805,7 @@ const configShardusEndpoints = (): void => {
         block: opt['block'],
       }
       let callResult: EVMResult
-      try{
+      try {
         if (isArchiverMode() && useLatestState === false) {
           await runWithContextAsync(async () => {
             callResult = await customEVM.runCall(opt)
@@ -1732,10 +1813,9 @@ const configShardusEndpoints = (): void => {
         } else {
           callResult = await customEVM.runCall(opt)
         }
-      } finally{
+      } finally {
         customEVM.cleanUp()
       }
-
 
       let returnedValue = bytesToHex(callResult.execResult.returnValue)
       if (returnedValue && returnedValue.indexOf('0x') === 0) {
@@ -1784,6 +1864,13 @@ const configShardusEndpoints = (): void => {
   })
 
   shardus.registerExternalPost('contract/accesslist', externalApiMiddleware, async (req, res) => {
+    // Start verify request data
+    let verified = verifyPayload('ContractAccessListReq', req)
+    if (!verified) {
+      return res.json({ error: `AJV verify error` })
+    }
+    // End verify request data
+
     if (
       trySpendServicePoints(
         ShardeumFlags.ServicePoints['contract/accesslist'].endpoint,
@@ -1832,6 +1919,13 @@ const configShardusEndpoints = (): void => {
   })
 
   shardus.registerExternalPost('contract/estimateGas', externalApiMiddleware, async (req, res) => {
+    // Start verify request data
+    let verified = verifyPayload('ContractEstimateGasReq', req)
+    if (!verified) {
+      return res.json({ error: `AJV verify error` })
+    }
+    // End verify request data
+
     if (
       trySpendServicePoints(
         ShardeumFlags.ServicePoints['contract/estimateGas'].endpoint,
@@ -1867,6 +1961,13 @@ const configShardusEndpoints = (): void => {
   })
 
   shardus.registerExternalGet('tx/:hash', externalApiMiddleware, async (req, res) => {
+    // Start verify request data
+    let verified = verifyPayload('TxHashReq', req)
+    if (!verified) {
+      return res.json({ error: `AJV verify error` })
+    }
+    // End verify request data
+
     if (trySpendServicePoints(ShardeumFlags.ServicePoints['tx/:hash'], req, 'tx') === false) {
       return res.json({ error: 'node busy' })
     }
@@ -1915,6 +2016,13 @@ const configShardusEndpoints = (): void => {
   })
 
   shardus.registerExternalGet('debug-appdata/:hash', debugMiddleware, async (req, res) => {
+    // Start verify request data
+    let verified = verifyPayload('DebugAppDataHashReq', req)
+    if (!verified) {
+      return res.json({ error: `AJV verify error` })
+    }
+    // End verify request data
+
     // if(isDebugMode()){
     //   return res.json(`endpoint not available`)
     // }
@@ -2007,6 +2115,13 @@ const configShardusEndpoints = (): void => {
   })
 
   shardus.registerExternalGet('genesis_accounts', externalApiMiddleware, async (req, res) => {
+    // Start verify request data
+    let verified = verifyPayload('GenesisAccountsReq', req)
+    if (!verified) {
+      return res.json({ error: `AJV verify error` })
+    }
+    // End verify request data
+
     const { start } = req.query
     if (!start) {
       return res.json({ success: false, reason: 'start value is not defined!' })
@@ -2050,6 +2165,12 @@ const configShardusEndpoints = (): void => {
     externalApiMiddleware,
     async (req: Request, res: Response) => {
       nestedCountersInstance.countEvent('shardeum-penalty', 'called query-certificate')
+      // Start verify request data
+      let verified = verifyPayload('QueryCertificateReq', req)
+      if (!verified) {
+        return res.json({ error: `AJV verify error` })
+      }
+      // End verify request data
 
       const queryCertRes = await queryCertificateHandler(req, shardus)
       if (ShardeumFlags.VerboseLogs) console.log('queryCertRes', queryCertRes)
@@ -2075,6 +2196,13 @@ const configShardusEndpoints = (): void => {
 
   // Changes the threshold for the blocked-At function
   shardus.registerExternalGet('debug-set-event-block-threshold', debugMiddleware, async (req, res) => {
+    // Start verify request data
+    let verified = verifyPayload('DebugSetEventBlockThresholdReq', req)
+    if (!verified) {
+      return res.json({ error: `AJV verify error` })
+    }
+    // End verify request data
+
     try {
       const threshold = Number(req.query.threshold)
 
@@ -2839,7 +2967,7 @@ async function estimateGas(
 
   let runTxResult
   try {
-      runTxResult = await EVM.runTx(
+    runTxResult = await EVM.runTx(
       {
         block: blocks[latestBlock],
         tx: transaction,
@@ -2850,7 +2978,7 @@ async function estimateGas(
       customEVM,
       txId
     )
-  } finally{
+  } finally {
     customEVM.cleanUp()
   }
 
@@ -3062,7 +3190,7 @@ async function generateAccessList(
     const txStart = Date.now()
 
     let runTxResult
-    try{
+    try {
       runTxResult = await EVM.runTx(
         {
           block: blocks[latestBlock],
@@ -3075,7 +3203,7 @@ async function generateAccessList(
         customEVM,
         txId
       )
-    } finally{
+    } finally {
       customEVM.cleanUp()
     }
 
@@ -4003,7 +4131,7 @@ const shardusSetup = (): void => {
         EVM.stateManager = shardeumState
         shardus.setDebugSetLastAppAwait(`apply():runTx`)
 
-        try{
+        try {
           runTxResult = await EVM.runTx(
             {
               block: blockForTx,
@@ -4014,7 +4142,7 @@ const shardusSetup = (): void => {
             customEVM,
             txId
           )
-        } finally{
+        } finally {
           customEVM.cleanUp()
         }
 
@@ -4682,7 +4810,7 @@ const shardusSetup = (): void => {
             /* prettier-ignore */ if (logFlags.error) console.log('Error: while doing preCrack for stake related tx', e)
           }
         }
-        /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log( `txPreCrackData final result: txNonce: ${appData.txNonce}, currentNonce: ${ appData.nonce }, queueCount: ${appData.queueCount}, appData ${Utils.safeStringify(appData)}` )
+        /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`txPreCrackData final result: txNonce: ${appData.txNonce}, currentNonce: ${appData.nonce}, queueCount: ${appData.queueCount}, appData ${Utils.safeStringify(appData)}`)
       }
       return { status: true, reason: 'Passed' }
     },
@@ -5712,7 +5840,7 @@ const shardusSetup = (): void => {
         }
       }
 
-      /* prettier-ignore */ if (logFlags.dapp_verbose) shardus.log( `getAccountDataByRange: extra:${extra} ${Utils.safeStringify({ accountStart, accountEnd, tsStart, tsEnd, maxRecords, offset, })}` )
+      /* prettier-ignore */ if (logFlags.dapp_verbose) shardus.log(`getAccountDataByRange: extra:${extra} ${Utils.safeStringify({ accountStart, accountEnd, tsStart, tsEnd, maxRecords, offset, })}`)
 
       for (const wrappedEVMAccount of cappedResults) {
         // Process and add to finalResults
@@ -5775,7 +5903,7 @@ const shardusSetup = (): void => {
           /* prettier-ignore */ nestedCountersInstance.countEvent('cache', 'getCachedRIAccountData-hit')
         }
       }
-      /* prettier-ignore */ if (logFlags.dapp_verbose) console.log('getCachedRIAccountData results', Utils. safeStringify(results))
+      /* prettier-ignore */ if (logFlags.dapp_verbose) console.log('getCachedRIAccountData results', Utils.safeStringify(results))
       return results
     },
     async setCachedRIAccountData(accountRecords) {
@@ -5920,7 +6048,7 @@ const shardusSetup = (): void => {
             )
           } catch (e) {
             /* prettier-ignore */ nestedCountersInstance.countEvent('shardeum-remove-node', 'signAppData' +
-              ' stakeRequiredUsd parse error')
+            ' stakeRequiredUsd parse error')
             /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`signAppData minStakeRequiredUsd parse error ${type} ${Utils.safeStringify(removeNodeCert)}, cachedNetworkAccount: ${Utils.safeStringify(AccountsStorage.cachedNetworkAccount)} `)
             return fail
           }
@@ -5931,7 +6059,7 @@ const shardusSetup = (): void => {
             )
           } catch (e) {
             /* prettier-ignore */ nestedCountersInstance.countEvent('shardeum-remove-node', 'signAppData' +
-              ' minStakeRequired parse error')
+            ' minStakeRequired parse error')
             /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`signAppData minStakeRequired parse error ${type} ${Utils.safeStringify(removeNodeCert)}, cachedNetworkAccount: ${Utils.safeStringify(AccountsStorage.cachedNetworkAccount)} `)
             return fail
           }
@@ -5948,7 +6076,7 @@ const shardusSetup = (): void => {
             }
           } catch (e) {
             /* prettier-ignore */ nestedCountersInstance.countEvent('shardeum-remove-node', 'signAppData' +
-              ' minStakeRequired parse error')
+            ' minStakeRequired parse error')
             /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`signAppData minStakeRequired parse error ${type} ${Utils.safeStringify(removeNodeCert)}, cachedNetworkAccount: ${Utils.safeStringify(AccountsStorage.cachedNetworkAccount)} `)
             return fail
           }
@@ -6033,11 +6161,11 @@ const shardusSetup = (): void => {
       const { tx } = timestampedTx
       const txId: string = generateTxId(tx)
 
-      if(isExecutionGroup){
+      if (isExecutionGroup) {
         //This next log is usefull but very heavy on the output lines:
         //Updating to be on only with verbose logs
         /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log('running transactionReceiptPass', txId, tx, wrappedStates, applyResponse)
-        _transactionReceiptPass(tx, txId, wrappedStates, applyResponse)        
+        _transactionReceiptPass(tx, txId, wrappedStates, applyResponse)
       }
 
       //clear this out of the shardeum state map
@@ -6141,7 +6269,7 @@ const shardusSetup = (): void => {
               fatal: false,
             }
           }
-          /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`validateJoinRequest: adminCert ${Utils. safeStringify(adminCert)}`)
+          /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`validateJoinRequest: adminCert ${Utils.safeStringify(adminCert)}`)
 
           // check for adminCert nominee
           const nodeAcc = data.sign.owner
@@ -6202,7 +6330,7 @@ const shardusSetup = (): void => {
               fatal: false,
             }
           }
-          /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`validateJoinRequest: adminCert ${Utils. safeStringify(adminCert)}`)
+          /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`validateJoinRequest: adminCert ${Utils.safeStringify(adminCert)}`)
 
           // check for adminCert nominee
           const nodeAcc = data.sign.owner
@@ -6364,7 +6492,7 @@ const shardusSetup = (): void => {
     },
     validateArchiverJoinRequest(data) {
       try {
-        /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`validateArchiverJoinRequest ${Utils. safeStringify(data)}`)
+        /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`validateArchiverJoinRequest ${Utils.safeStringify(data)}`)
         if (!data.appData) {
           /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`validateArchiverJoinRequest fail: !data.appData`)
           return {
@@ -6420,14 +6548,14 @@ const shardusSetup = (): void => {
       if (currentTime < cacheExpirationTimestamp && cachedNetworkAccount) {
         // Use cached result if it's still valid
         networkAccount = cachedNetworkAccount
-        /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`isReadyToJoin using cached network account ${Utils. safeStringify(networkAccount)}`)
+        /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`isReadyToJoin using cached network account ${Utils.safeStringify(networkAccount)}`)
       } else {
         // Fetch new network account data
         networkAccount = await fetchNetworkAccountFromArchiver()
         // Update cache with new result
         cachedNetworkAccount = networkAccount
         cacheExpirationTimestamp = currentTime + ShardeumFlags.networkAccountCacheDuration * 1000
-        /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`isReadyToJoin fetched new network account ${Utils. safeStringify(networkAccount)}`)
+        /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`isReadyToJoin fetched new network account ${Utils.safeStringify(networkAccount)}`)
       }
 
       if (initialNetworkParamters && networkAccount) {
@@ -6474,7 +6602,7 @@ const shardusSetup = (): void => {
       if (ShardeumFlags.AdminCertEnabled === true && mode !== 'processing') {
         /* prettier-ignore */ if (logFlags.important_as_error) console.log('entered admin cert conditon mode:' + mode)
         if (adminCert) {
-          /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`checkAdminCert ${Utils. safeStringify(adminCert)}`)
+          /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`checkAdminCert ${Utils.safeStringify(adminCert)}`)
           if (adminCert.certExp > shardeumGetTime()) {
             isReadyToJoinLatestValue = true
             mustUseAdminCert = true
@@ -7081,29 +7209,35 @@ const shardusSetup = (): void => {
       }
 
       let getAccountNonceRetries = 3
-      if(ShardeumFlags.debugExtraNonceLookup){
+      if (ShardeumFlags.debugExtraNonceLookup) {
         getAccountNonceRetries = config.server.sharding.nodesPerConsensusGroup
       }
 
       let exceptionCount = 0
 
-      for(let i=0; i<getAccountNonceRetries; i++){
-        try{
-          const account: ShardusTypes.WrappedDataFromQueue = await shardus.getLocalOrRemoteAccount(accountId, {useRICache:false, canThrowException:true})
+      for (let i = 0; i < getAccountNonceRetries; i++) {
+        try {
+          const account: ShardusTypes.WrappedDataFromQueue = await shardus.getLocalOrRemoteAccount(
+            accountId,
+            { useRICache: false, canThrowException: true }
+          )
           if (account != null) {
             const wrappedEVMAccount = account.data as WrappedEVMAccount
             return wrappedEVMAccount.account.nonce
           }
-          //if we did not get an exeption we could return null, but seems better to retry 
-        }catch(e) {
+          //if we did not get an exeption we could return null, but seems better to retry
+        } catch (e) {
           exceptionCount++
           //This has the potential to spam our counters if message has a format string. may have to dial it back
-          //or disable after we fix issues 
+          //or disable after we fix issues
           /* prettier-ignore */ nestedCountersInstance.countEvent('getAccountNonce', `getAccountNonce: ${e.message}`)
         }
       }
 
-      nestedCountersInstance.countEvent('getAccountNonce', `getAccountNonce: out of retries exceptionCount: ${exceptionCount}`)
+      nestedCountersInstance.countEvent(
+        'getAccountNonce',
+        `getAccountNonce: out of retries exceptionCount: ${exceptionCount}`
+      )
 
       return undefined
     },
@@ -7112,9 +7246,8 @@ const shardusSetup = (): void => {
   shardus.registerExceptionHandler()
 }
 
-
 //Note, this functionality was disabled 10 months ago.
-//now that we are moving away from TX expiration we would need to be safe if we ever 
+//now that we are moving away from TX expiration we would need to be safe if we ever
 //turn this back on.  (note, disabled by having setTimeout not called again)
 function periodicMemoryCleanup(): void {
   const keys = shardeumStateTXMap.keys()

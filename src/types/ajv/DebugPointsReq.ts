@@ -1,19 +1,19 @@
 import { addSchema } from '../../utils/serialization/SchemaHelpers'
-export const schemaDebugAppDataHashReq = {
+export const schemaDebugPointsReq = {
   type: 'object',
   properties: {
-    params: {
+    query: {
       type: 'object',
       properties: {
-        hash: { type: 'string' },
+        points: { type: ['string', 'number'] },
       },
-      required: ['hash'],
+      required: ['points'],
     },
   },
-  required: ['params'],
+  required: ['query'],
 }
 
-export function initDebugAppDataHashReq(): void {
+export function initDebugPointsReq(): void {
   addSchemaDependencies()
   addSchemas()
 }
@@ -24,5 +24,5 @@ function addSchemaDependencies(): void {
 
 // Function to register the schema
 function addSchemas(): void {
-  addSchema('DebugAppDataHashReq', schemaDebugAppDataHashReq)
+  addSchema('DebugPointsReq', schemaDebugPointsReq)
 }
