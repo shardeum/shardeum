@@ -234,11 +234,11 @@ Click [here](https://metamask.io/download/). to install the MetaMask extension o
 
 | Field | Details |
 | ---      | ---      |
-| Network Name   | Shardeum Sphinx |
-| New RPC URL | <http://localhost:8080> |
+| Network Name   | Shardeum Atonium |
+| New RPC URL | <https://atomium.shardeum.org> |
 | Chain ID   | 8082 |
 | Currency Symbol | SHM |
-| Block Explorer URL (optional) | none or <http://localhost:6001/> |
+| Block Explorer URL (optional) | none or <https://explorer-atomium.shardeum.org> |
 
 ### Starting the JSON-RPC Server
 
