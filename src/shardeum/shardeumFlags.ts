@@ -120,6 +120,7 @@ interface ShardeumFlags {
   internalTxTimestampFix: boolean
   debugExtraNonceLookup: boolean
   cleanStaleShardeumStateMap: boolean
+  beta1_11_2: boolean
 }
 
 export const ShardeumFlags: ShardeumFlags = {
@@ -276,6 +277,7 @@ export const ShardeumFlags: ShardeumFlags = {
 
   //1.1.2 migration
   cleanStaleShardeumStateMap: false,
+  beta1_11_2: true,
 }
 
 export function updateShardeumFlag(key: string, value: string | number | boolean): void {
