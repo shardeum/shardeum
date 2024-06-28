@@ -6925,20 +6925,22 @@ const shardusSetup = (): void => {
         }
       }
     },
+    // Note: this logic is added to the archive server; any changes here should have to be done in the archive server as well
     async updateNetworkChangeQueue(account: WrappedAccount, appData: any) {
       /* eslint-disable security/detect-object-injection */
       if (account.accountId === networkAccount) {
         const networkAccount: NetworkAccount = account.data
         await this.patchAndUpdate(networkAccount.current, appData)
-        //Never ok to use Date.now() or any non consensed time for an account timestamp this needs to be deterministic
-        account.timestamp = Date.now()
+        // Increase the timestamp by 1 second
+        networkAccount.timestamp += ONE_SECOND
         networkAccount.hash = WrappedEVMAccountFunctions._calculateAccountHash(networkAccount)
         account.stateId = networkAccount.hash
+        account.timestamp = networkAccount.timestamp
         return [account]
       }
       /* eslint-enable security/detect-object-injection */
     },
-    async patchAndUpdate(existingObject: any, changeObj: any, parentPath: '') {
+    async patchAndUpdate(existingObject: any, changeObj: any, parentPath = '') {
       /* eslint-disable security/detect-object-injection */
       for (const [key, value] of Object.entries(changeObj)) {
         if (existingObject[key] != null) {
@@ -6946,7 +6948,7 @@ const shardusSetup = (): void => {
             await this.patchAndUpdate(
               existingObject[key],
               value,
-              (parentPath === '' ? '' : parentPath + '.') + key
+              parentPath === '' ? key : parentPath + '.' + key
             )
           } else {
             if (key === 'activeVersion') {
@@ -6958,6 +6960,7 @@ const shardusSetup = (): void => {
       }
       /* eslint-enable security/detect-object-injection */
     },
+    // Note: this logic is added to the archive server; any changes here should have to be done in the archive server as well
     async pruneNetworkChangeQueue(account: WrappedAccount, currentCycle: number) {
       if (account.accountId === networkAccount) {
         /* eslint-disable security/detect-object-injection */
@@ -6996,10 +6999,11 @@ const shardusSetup = (): void => {
             listOfChanges.splice(i, 1)
           }
         }
-        //Never ok to use Date.now() or any non consensed time for an account timestamp this needs to be deterministic
-        account.timestamp = Date.now()
+        // Increase the timestamp by 1 second
+        networkAccount.timestamp += ONE_SECOND
         networkAccount.hash = WrappedEVMAccountFunctions._calculateAccountHash(networkAccount)
         account.stateId = networkAccount.hash
+        account.timestamp = networkAccount.timestamp
         return [account]
         /* eslint-enable security/detect-object-injection */
       }
@@ -7019,7 +7023,6 @@ const shardusSetup = (): void => {
           paths.push(prefix + key)
         }
       }
-
       return paths
       /* eslint-enable security/detect-object-injection */
     },
