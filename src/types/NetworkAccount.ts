@@ -12,8 +12,10 @@ export interface NetworkAccount extends BaseAccount {
   listOfChanges: Array<{
     cycle: number
     change: Change
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    appData: any
   }>
-  next
+  next: NetworkParameters | object
   hash: string
   timestamp: number
 }
@@ -37,6 +39,8 @@ export function serializeNetworkAccount(stream: VectorBufferStream, obj: Network
     stream.writeUInt32(changeObj.cycle)
     const changeJson = Utils.safeStringify(changeObj.change)
     stream.writeString(changeJson)
+    const appDataJson = Utils.safeStringify(changeObj.appData)
+    stream.writeString(appDataJson)
   }
 
   stream.writeString(obj.hash)
@@ -60,7 +64,8 @@ export function deserializeNetworkAccount(stream: VectorBufferStream): NetworkAc
   for (let i = 0; i < changesCount; i++) {
     const cycle = stream.readUInt32()
     const change = Utils.safeJsonParse(stream.readString()) as Change
-    listOfChanges.push({ cycle, change })
+    const appData = Utils.safeJsonParse(stream.readString())
+    listOfChanges.push({ cycle, change, appData })
   }
 
   const hash = stream.readString()
