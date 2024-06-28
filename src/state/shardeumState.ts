@@ -77,6 +77,7 @@ export interface DefaultStateManagerOpts {
 export default class ShardeumState implements EVMStateManagerInterface {
   common: Common
 
+  usedByApply: boolean //mark that this state has been used once by apply.  we need to prevent using it twice
   protected _debug: Debugger
   // protected _accountCache?: AccountCache
   // protected _storageCache?: StorageCache
@@ -133,6 +134,8 @@ export default class ShardeumState implements EVMStateManagerInterface {
       common = new Common({ chain: Chain.Mainnet, hardfork: Hardfork.Istanbul })
     }
     this.common = common
+
+    this.usedByApply = false
 
     this.originalStorageCache = new OriginalStorageCache(this.getContractStorage.bind(this))
 

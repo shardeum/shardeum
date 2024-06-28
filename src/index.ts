@@ -995,6 +995,18 @@ export function getApplyTXState(txId: string): ShardeumState {
   return shardeumState
 }
 
+/**
+ * deleteApplyTXState
+ * @param txId 
+ * @param context must be a non format string to avoid counter spam
+ */
+function deleteApplyTXState(txId: string, context:string): void {
+  if(shardeumStateTXMap.has(txId)){
+    nestedCountersInstance.countEvent('shardeum', `deleteApplyTXState ${context}`)
+    shardeumStateTXMap.delete(txId)
+  } 
+}
+
 function _containsProtocol(url: string): boolean {
   if (!url.match('https?://*')) return false
   return true
@@ -3473,7 +3485,17 @@ const shardusSetup = (): void => {
       //   //to allow shardus to pass in this extra data blob (unless we find a way to run it through wrapped states??)
       // }
 
-      const shardeumState = getApplyTXState(txId)
+      let shardeumState = getApplyTXState(txId)
+      if(shardeumState.usedByApply === true){
+        //if this TX state was used before it is critical to start clean
+        //this is because our map is based on TXID
+        //and the same TXID can pass through the system twice in certain cases
+        /* prettier-ignore */ if (logFlags.error) console.error( `shardeumState.usedByApply === true clearing shardeumState! ${txId}` )
+        deleteApplyTXState(txId, 'apply')
+        shardeumState = getApplyTXState(txId)
+      }
+      shardeumState.usedByApply = true //mark this as used by our apply function
+
       shardeumState._transactionState.appData = appData
 
       if (appData.internalTx && appData.internalTXType === InternalTXType.Stake) {
@@ -6042,7 +6064,7 @@ const shardusSetup = (): void => {
 
       //clear this out of the shardeum state map
       if (shardeumStateTXMap.has(txId)) {
-        shardeumStateTXMap.delete(txId)
+        deleteApplyTXState(txId, 'receiptPass')
       }
     },
     transactionReceiptFail(
@@ -6061,7 +6083,7 @@ const shardusSetup = (): void => {
       if (shardeumStateTXMap.has(txId)) {
         if (ShardeumFlags.VerboseLogs)
           console.log('transactionReceiptFail: deleting txId from shardeumStateTXMap', txId)
-        shardeumStateTXMap.delete(txId)
+        deleteApplyTXState(txId, 'receiptFail')
       }
     },
     getJoinData() {
