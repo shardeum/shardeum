@@ -326,7 +326,10 @@ export const validateTxnFields =
           }
           if (appData.nomineeAccount) {
             const nodeAccount = appData.nomineeAccount as NodeAccount2
-            if (nodeAccount.nominator && nodeAccount.nominator !== stakeCoinsTx.nominator) {
+            if (
+              nodeAccount.nominator &&
+              nodeAccount.nominator.toLowerCase() !== stakeCoinsTx.nominator.toLowerCase()
+            ) {
               return {
                 success: false,
                 reason: `This node is already staked by another account!`,
@@ -338,7 +341,10 @@ export const validateTxnFields =
             const wrappedEVMAccount = appData.nominatorAccount as WrappedEVMAccount
             if (wrappedEVMAccount.operatorAccountInfo) {
               if (wrappedEVMAccount.operatorAccountInfo.nominee) {
-                if (wrappedEVMAccount.operatorAccountInfo.nominee !== stakeCoinsTx.nominee)
+                if (
+                  wrappedEVMAccount.operatorAccountInfo.nominee.toLowerCase() !==
+                  stakeCoinsTx.nominee.toLowerCase()
+                )
                   return {
                     success: false,
                     reason: `This account has already staked to a different node.`,
@@ -378,7 +384,7 @@ export const validateTxnFields =
             } else if (_base16BNParser(nodeAccount.stakeLock) === BigInt(0)) {
               success = false
               reason = `There is no staked amount in this node!`
-            } else if (nodeAccount.nominator !== unstakeCoinsTX.nominator) {
+            } else if (nodeAccount.nominator.toLowerCase() !== unstakeCoinsTX.nominator.toLowerCase()) {
               success = false
               reason = `This node is staked by another account. You can't unstake it!`
             } else if (shardus.isOnStandbyList(nodeAccount.id) === true) {
