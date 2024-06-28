@@ -3487,12 +3487,17 @@ const shardusSetup = (): void => {
 
       let shardeumState = getApplyTXState(txId)
       if(shardeumState.usedByApply === true){
-        //if this TX state was used before it is critical to start clean
-        //this is because our map is based on TXID
-        //and the same TXID can pass through the system twice in certain cases
-        /* prettier-ignore */ if (logFlags.error) console.error( `shardeumState.usedByApply === true clearing shardeumState! ${txId}` )
-        deleteApplyTXState(txId, 'apply')
-        shardeumState = getApplyTXState(txId)
+        if(ShardeumFlags.cleanStaleShardeumStateMap){
+          //if this TX state was used before it is critical to start clean
+          //this is because our map is based on TXID
+          //and the same TXID can pass through the system twice in certain cases
+          /* prettier-ignore */ if (logFlags.error) console.error( `shardeumState.usedByApply === true clearing shardeumState! ${txId}` )
+          deleteApplyTXState(txId, 'apply')
+          shardeumState = getApplyTXState(txId)
+        } else {
+          // logging to know if we could have prevented a problem, however we need to wait for full rotation to turn on the fix
+          /* prettier-ignore */ if (logFlags.error) console.error( `shardeumState.usedByApply === true fix not enabled. using stale state. shardeumState! ${txId}` )
+        }
       }
       shardeumState.usedByApply = true //mark this as used by our apply function
 
