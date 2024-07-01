@@ -1,8 +1,8 @@
 diff --git a/src/config/index.ts b/src/config/index.ts
-index a25462d..48df0d3 100644
+index 80446e7..2193c88 100644
 --- a/src/config/index.ts
 +++ b/src/config/index.ts
-@@ -277,8 +277,8 @@ config = merge(config, {
+@@ -258,8 +258,8 @@ config = merge(config, {
  
        forwardToLuckyNodes: false, // 1.11.0 we seem to have more issues with this on.  can turn off for local testing
  
@@ -10,7 +10,6 @@ index a25462d..48df0d3 100644
 -      removeStuckChallengedTXs: false,
 +      removeStuckTxsFromQueue: true,
 +      removeStuckChallengedTXs: true,
- 
-       stuckTxMoveTime: 3600000,
      },
-
+   },
+ })
