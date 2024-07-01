@@ -9,7 +9,9 @@
     "stop": "node scripts/stop.js",
     "clean": "node scripts/clean.js",
     "compile": "tsc -p .",
-    "lint": "eslint './src/**/*.ts'",
+    "lint": "eslint \"./src/**/*.ts\"",
+    "format-check": "prettier --check \"./src/**/*.ts\"",
+    "build": "npm run compile",
     "lint-windows": "eslint ./src/**/*.ts",
     "prepare": "git submodule update --init && husky",
     "postprepare": "npm run compile",
@@ -31,6 +33,10 @@
     "push-docker-production": "docker push registry.gitlab.com/shardeum/server",
     "tsc": "tsc",
     "dcr": "node scripts/debugCycleRecords.ts"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/shardeum/shardeum.git"
   },
   "author": "",
   "dependencies": {
