@@ -488,7 +488,7 @@ async function initEVMSingletons(): Promise<void> {
         evm: customEVM,
         // blockchain: shardeumBlock,
       })
-    } finally{
+    } finally {
       customEVM.cleanUp()
     }
   } else {
@@ -707,7 +707,8 @@ async function tryGetRemoteAccountCB(
 ): Promise<WrappedEVMAccount> {
   let retry = 0
   let maxRetry = 1 // default for contract storage accounts
-  if (type === AccountType.Account) maxRetry = 2 // for CA accounts
+  if (type === AccountType.Account)
+    maxRetry = 2 // for CA accounts
   else if (type === AccountType.ContractCode && key != emptyCodeHash) maxRetry = 3 // for codebytes
 
   const shardusAddress = toShardusAddressWithKey(address, key, type)
@@ -1714,7 +1715,6 @@ const configShardusEndpoints = (): void => {
         opt['block'] = blocks[latestBlock] // eslint-disable-line security/detect-object-injection
       }
 
-      
       const customEVM = new EthereumVirtualMachine({
         common: evmCommon,
         stateManager: callTxState,
@@ -1724,7 +1724,7 @@ const configShardusEndpoints = (): void => {
         block: opt['block'],
       }
       let callResult: EVMResult
-      try{
+      try {
         if (isArchiverMode() && useLatestState === false) {
           await runWithContextAsync(async () => {
             callResult = await customEVM.runCall(opt)
@@ -1732,10 +1732,9 @@ const configShardusEndpoints = (): void => {
         } else {
           callResult = await customEVM.runCall(opt)
         }
-      } finally{
+      } finally {
         customEVM.cleanUp()
       }
-
 
       let returnedValue = bytesToHex(callResult.execResult.returnValue)
       if (returnedValue && returnedValue.indexOf('0x') === 0) {
@@ -2839,7 +2838,7 @@ async function estimateGas(
 
   let runTxResult
   try {
-      runTxResult = await EVM.runTx(
+    runTxResult = await EVM.runTx(
       {
         block: blocks[latestBlock],
         tx: transaction,
@@ -2850,7 +2849,7 @@ async function estimateGas(
       customEVM,
       txId
     )
-  } finally{
+  } finally {
     customEVM.cleanUp()
   }
 
@@ -3062,7 +3061,7 @@ async function generateAccessList(
     const txStart = Date.now()
 
     let runTxResult
-    try{
+    try {
       runTxResult = await EVM.runTx(
         {
           block: blocks[latestBlock],
@@ -3075,7 +3074,7 @@ async function generateAccessList(
         customEVM,
         txId
       )
-    } finally{
+    } finally {
       customEVM.cleanUp()
     }
 
@@ -3989,9 +3988,8 @@ const shardusSetup = (): void => {
       let runTxResult: RunTxResult
       let wrappedReceiptAccount: WrappedEVMAccount
       /* prettier-ignore */ shardus.setDebugSetLastAppAwait(`apply():getLocalOrRemoteAccount(${networkAccount})`)
-      const wrappedNetworkAccount: ShardusTypes.WrappedData = await shardus.getLocalOrRemoteAccount(
-        networkAccount
-      )
+      const wrappedNetworkAccount: ShardusTypes.WrappedData =
+        await shardus.getLocalOrRemoteAccount(networkAccount)
       /* prettier-ignore */ shardus.setDebugSetLastAppAwait(`apply():getLocalOrRemoteAccount(${networkAccount})`, DebugComplete.Completed)
       try {
         const customEVM = new EthereumVirtualMachine({
@@ -4003,7 +4001,7 @@ const shardusSetup = (): void => {
         EVM.stateManager = shardeumState
         shardus.setDebugSetLastAppAwait(`apply():runTx`)
 
-        try{
+        try {
           runTxResult = await EVM.runTx(
             {
               block: blockForTx,
@@ -4014,7 +4012,7 @@ const shardusSetup = (): void => {
             customEVM,
             txId
           )
-        } finally{
+        } finally {
           customEVM.cleanUp()
         }
 
@@ -5072,9 +5070,8 @@ const shardusSetup = (): void => {
         let accountCreated = false
         //let wrappedEVMAccount = accounts[accountId]
         shardus.setDebugSetLastAppAwait('getRelevantData.AccountsStorage.getAccount 4')
-        let wrappedEVMAccount: NetworkAccount | WrappedEVMAccount = await AccountsStorage.getAccount(
-          accountId
-        )
+        let wrappedEVMAccount: NetworkAccount | WrappedEVMAccount =
+          await AccountsStorage.getAccount(accountId)
         shardus.setDebugSetLastAppAwait(
           'getRelevantData.AccountsStorage.getAccount 4',
           DebugComplete.Completed
@@ -5563,6 +5560,7 @@ const shardusSetup = (): void => {
       //accounts[accountId] = updatedEVMAccount
       /* prettier-ignore */ shardus.setDebugSetLastAppAwait(`updateAccountFull.AccountsStorage.setAccount(${accountId})`)
       await AccountsStorage.setAccount(accountId, updatedEVMAccount)
+      console.log('RED-153 setAccount', accountId, 'hash:', updatedEVMAccount.hash, 'trace:', new Error())
       /* prettier-ignore */ shardus.setDebugSetLastAppAwait(`updateAccountFull.AccountsStorage.setAccount(${accountId})`, DebugComplete.Completed)
 
       if (ShardeumFlags.AppliedTxsMaps) {
@@ -6033,11 +6031,11 @@ const shardusSetup = (): void => {
       const { tx } = timestampedTx
       const txId: string = generateTxId(tx)
 
-      if(isExecutionGroup){
+      if (isExecutionGroup) {
         //This next log is usefull but very heavy on the output lines:
         //Updating to be on only with verbose logs
         /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log('running transactionReceiptPass', txId, tx, wrappedStates, applyResponse)
-        _transactionReceiptPass(tx, txId, wrappedStates, applyResponse)        
+        _transactionReceiptPass(tx, txId, wrappedStates, applyResponse)
       }
 
       //clear this out of the shardeum state map
@@ -7081,29 +7079,35 @@ const shardusSetup = (): void => {
       }
 
       let getAccountNonceRetries = 3
-      if(ShardeumFlags.debugExtraNonceLookup){
+      if (ShardeumFlags.debugExtraNonceLookup) {
         getAccountNonceRetries = config.server.sharding.nodesPerConsensusGroup
       }
 
       let exceptionCount = 0
 
-      for(let i=0; i<getAccountNonceRetries; i++){
-        try{
-          const account: ShardusTypes.WrappedDataFromQueue = await shardus.getLocalOrRemoteAccount(accountId, {useRICache:false, canThrowException:true})
+      for (let i = 0; i < getAccountNonceRetries; i++) {
+        try {
+          const account: ShardusTypes.WrappedDataFromQueue = await shardus.getLocalOrRemoteAccount(
+            accountId,
+            { useRICache: false, canThrowException: true }
+          )
           if (account != null) {
             const wrappedEVMAccount = account.data as WrappedEVMAccount
             return wrappedEVMAccount.account.nonce
           }
-          //if we did not get an exeption we could return null, but seems better to retry 
-        }catch(e) {
+          //if we did not get an exeption we could return null, but seems better to retry
+        } catch (e) {
           exceptionCount++
           //This has the potential to spam our counters if message has a format string. may have to dial it back
-          //or disable after we fix issues 
+          //or disable after we fix issues
           /* prettier-ignore */ nestedCountersInstance.countEvent('getAccountNonce', `getAccountNonce: ${e.message}`)
         }
       }
 
-      nestedCountersInstance.countEvent('getAccountNonce', `getAccountNonce: out of retries exceptionCount: ${exceptionCount}`)
+      nestedCountersInstance.countEvent(
+        'getAccountNonce',
+        `getAccountNonce: out of retries exceptionCount: ${exceptionCount}`
+      )
 
       return undefined
     },
@@ -7112,9 +7116,8 @@ const shardusSetup = (): void => {
   shardus.registerExceptionHandler()
 }
 
-
 //Note, this functionality was disabled 10 months ago.
-//now that we are moving away from TX expiration we would need to be safe if we ever 
+//now that we are moving away from TX expiration we would need to be safe if we ever
 //turn this back on.  (note, disabled by having setTimeout not called again)
 function periodicMemoryCleanup(): void {
   const keys = shardeumStateTXMap.keys()
