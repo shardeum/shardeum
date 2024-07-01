@@ -23,6 +23,7 @@ export async function init(baseDir: string, dbPath: string): Promise<void> {
   storage = new Storage(baseDir, dbPath)
 
   //we have to lazy init storage, because this init happens very early
+  lazyInit()
 }
 
 export async function lazyInit(): Promise<void> {
