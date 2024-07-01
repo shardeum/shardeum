@@ -66,7 +66,7 @@ function compareAccountHashes(logEntries, startCycle) {
 }
 
 function main() {
-  const startCycle = parseInt(process.argv[2], 10)
+  const startCycle = parseInt(process.argv[2], 10) || 0
 
   if (isNaN(startCycle)) {
     console.error('Please provide a valid start cycle as a command-line argument.')
