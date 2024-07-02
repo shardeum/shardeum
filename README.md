@@ -234,7 +234,7 @@ Click [here](https://metamask.io/download/). to install the MetaMask extension o
 
 | Field | Details |
 | ---      | ---      |
-| Network Name   | Shardeum Sphinx |
+| Network Name   | Shardeum Atomium |
 | New RPC URL | <http://localhost:8080> |
 | Chain ID   | 8082 |
 | Currency Symbol | SHM |
