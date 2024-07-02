@@ -1,0 +1,48 @@
+name: Node CI Workflow
+# The parameters are defaulted at the org level but can be overridden on the repository.
+on:
+  push:
+    branches:
+      - dev
+      - main
+  pull_request:
+    branches:
+      - dev
+      - main
+  workflow_dispatch:
+    inputs:
+      workflowBranch:
+        description: 'Branch of the reusable workflow. Defaults to main, select dev for testing only.'
+        required: true
+        default: 'main'
+        type: choice
+        options:
+          - dev
+          - main
+
+permissions:
+  issues: write
+  pull-requests: write
+
+jobs:
+  ci-dev:
+    if: ${{ github.event.inputs.workflowBranch == 'dev' }}
+    uses: shardeum/github-automation/.github/workflows/node-ci-shared.yml@dev
+    with:
+      lint-required: false
+      format-check-required: false
+      apply-patches-required: false
+      unit-tests-required: true
+      jenkins-qa-required: false
+    secrets: inherit
+
+  ci-main:
+    if: ${{ github.event.inputs.workflowBranch == 'main' || !github.event.inputs.workflowBranch }}
+    uses: shardeum/github-automation/.github/workflows/node-ci-shared.yml@main
+    with:
+      lint-required: false # TODO: enable linting after linting is fixed
+      format-check-required: false # TODO: enable format-check after format-check is fixed
+      apply-patches-required: true 
+      unit-tests-required: false # TODO: enable unit-tests after unit-tests are fixed
+      jenkins-qa-required: true
+    secrets: inherit
