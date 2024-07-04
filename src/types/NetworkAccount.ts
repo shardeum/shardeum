@@ -8,7 +8,7 @@ import { ShardeumFlags } from '../shardeum/shardeumFlags'
 const cNetworkAccountVersion = 1
 
 // Delete this and the corresponding flag post upgrade to 1.11.2
-const Beta1_11_2NetworkAccountJson = '{"accountType":5,"current":{"activeVersion":"1.11.0","archiver":{"activeVersion":"3.4.12","latestVersion":"3.4.12","minVersion":"3.4.12"},"certCycleDuration":30,"description":"These are the initial network parameters Shardeum started with","latestVersion":"1.11.2","maintenanceFee":0,"maintenanceInterval":86400000,"minVersion":"1.11.2","nodePenaltyUsd":{"dataType":"bi","value":"8ac7230489e80000"},"nodeRewardAmountUsd":{"dataType":"bi","value":"de0b6b3a7640000"},"nodeRewardInterval":3600000,"stabilityScaleDiv":1000,"stabilityScaleMul":1000,"stakeRequiredUsd":{"dataType":"bi","value":"8ac7230489e80000"},"title":"Initial parameters","txPause":false},"hash":"6e60d839eabcb7578ae7a172288c3e2fc9c9fa8e7753e70534329f61561fb95d","id":"1000000000000000000000000000000000000000000000000000000000000001","listOfChanges":[{"appData":{"latestVersion":"1.11.2"},"change":{},"cycle":3807},{"appData":{"minVersion":"1.11.2"},"change":{},"cycle":3808},{"appData":{"minVersion":"1.11.2"},"change":{},"cycle":3809},{"appData":{"minVersion":"1.11.2"},"change":{},"cycle":3813}],"next":{},"timestamp":1719612186585}'
+// const Beta1_11_2NetworkAccountJson = '{"accountType":5,"current":{"activeVersion":"1.11.0","archiver":{"activeVersion":"3.4.12","latestVersion":"3.4.12","minVersion":"3.4.12"},"certCycleDuration":30,"description":"These are the initial network parameters Shardeum started with","latestVersion":"1.11.2","maintenanceFee":0,"maintenanceInterval":86400000,"minVersion":"1.11.2","nodePenaltyUsd":{"dataType":"bi","value":"8ac7230489e80000"},"nodeRewardAmountUsd":{"dataType":"bi","value":"de0b6b3a7640000"},"nodeRewardInterval":3600000,"stabilityScaleDiv":1000,"stabilityScaleMul":1000,"stakeRequiredUsd":{"dataType":"bi","value":"8ac7230489e80000"},"title":"Initial parameters","txPause":false},"hash":"6e60d839eabcb7578ae7a172288c3e2fc9c9fa8e7753e70534329f61561fb95d","id":"1000000000000000000000000000000000000000000000000000000000000001","listOfChanges":[{"appData":{"latestVersion":"1.11.2"},"change":{},"cycle":3807},{"appData":{"minVersion":"1.11.2"},"change":{},"cycle":3808},{"appData":{"minVersion":"1.11.2"},"change":{},"cycle":3809},{"appData":{"minVersion":"1.11.2"},"change":{},"cycle":3813}],"next":{},"timestamp":1719612186585}'
 
 export interface NetworkAccount extends BaseAccount {
   id: string
@@ -53,7 +53,8 @@ export function serializeNetworkAccount(stream: VectorBufferStream, obj: Network
 
 export function deserializeNetworkAccount(stream: VectorBufferStream): NetworkAccount {
   if (ShardeumFlags.beta1_11_2) {
-    return Utils.safeJsonParse(Beta1_11_2NetworkAccountJson) as NetworkAccount
+    //Manualy disable this hack after 1.11.2
+  //  return Utils.safeJsonParse(Beta1_11_2NetworkAccountJson) as NetworkAccount
   }
 
   const version = stream.readUInt8()
