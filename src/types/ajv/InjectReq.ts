@@ -1,4 +1,5 @@
 import { addSchema } from '../../utils/serialization/SchemaHelpers'
+import { InjectReqRespEnum } from '../enum/InjectReqRespEnum'
 export const schemaInjectReq = {
   type: 'object',
   properties: {
@@ -18,5 +19,5 @@ function addSchemaDependencies(): void {
 
 // Function to register the schema
 function addSchemas(): void {
-  addSchema('InjectReq', schemaInjectReq)
+  addSchema(InjectReqRespEnum.InjectReq, schemaInjectReq)
 }
