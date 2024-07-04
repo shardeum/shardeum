@@ -1,4 +1,5 @@
 import { addSchema } from '../../utils/serialization/SchemaHelpers'
+import { ValidatorAjvTypeReqRespEnum } from '../enum/ValidatorAjvTypeReqRespEnum'
 export const schemaContractCallReq = {
   type: 'object',
   properties: {
@@ -28,5 +29,5 @@ function addSchemaDependencies(): void {
 
 // Function to register the schema
 function addSchemas(): void {
-  addSchema('ContractCallReq', schemaContractCallReq)
+  addSchema(ValidatorAjvTypeReqRespEnum.ContractCallReq, schemaContractCallReq)
 }

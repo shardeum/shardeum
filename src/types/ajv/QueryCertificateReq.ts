@@ -1,4 +1,6 @@
 import { addSchema } from '../../utils/serialization/SchemaHelpers'
+import { ValidatorAjvTypeReqRespEnum } from '../enum/ValidatorAjvTypeReqRespEnum'
+
 export const schemaQueryCertificateReq = {
   type: 'object',
   properties: {
@@ -33,5 +35,5 @@ function addSchemaDependencies(): void {
 
 // Function to register the schema
 function addSchemas(): void {
-  addSchema('QueryCertificateReq', schemaQueryCertificateReq)
+  addSchema(ValidatorAjvTypeReqRespEnum.QueryCertificateReq, schemaQueryCertificateReq)
 }

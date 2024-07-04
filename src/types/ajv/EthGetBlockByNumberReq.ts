@@ -1,4 +1,6 @@
 import { addSchema } from '../../utils/serialization/SchemaHelpers'
+import { ValidatorAjvTypeReqRespEnum } from '../enum/ValidatorAjvTypeReqRespEnum'
+
 export const schemaEthGetBlockByNumberReq = {
   type: 'object',
   properties: {
@@ -24,5 +26,5 @@ function addSchemaDependencies(): void {
 
 // Function to register the schema
 function addSchemas(): void {
-  addSchema('EthGetBlockByNumberReq', schemaEthGetBlockByNumberReq)
+  addSchema(ValidatorAjvTypeReqRespEnum.EthGetBlockByNumberReq, schemaEthGetBlockByNumberReq)
 }
