@@ -1297,13 +1297,6 @@ const configShardusEndpoints = (): void => {
   })
 
   shardus.registerExternalGet('eth_getBlockByNumber', externalApiMiddleware, async (req, res) => {
-    // Start verify request data
-    let verified = verifyPayload(ValidatorAjvTypeReqRespEnum.EthGetBlockByNumberReq, req)
-    if (!verified) {
-      return res.json({ error: `AJV verify error` })
-    }
-    // End verify request data
-
     const blockNumberParam = req.query.blockNumber as string
     let blockNumber: number | string
 

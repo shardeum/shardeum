@@ -1,8 +1,7 @@
 export enum ValidatorAjvTypeReqRespEnum {
-  ContractCallReq = "ContractCallReq",
+  ContractCallReq = 'ContractCallReq',
   DebugAppDataHashReq = 'DebugAppDataHashReq',
   EthGetBlockByHashReq = 'EthGetBlockByHashReq',
-  EthGetBlockByNumberReq = 'EthGetBlockByNumberReq',
   EthGetBlockHashesReq = 'EthGetBlockHashesReq',
   EthGetBlockHashesResp = 'EthGetBlockHashesResp',
   GenesisAccountsReq = 'GenesisAccountsReq',

@@ -4,7 +4,6 @@ import { Utils } from '@shardus/types'
 import { initEthGetBlockByHashReq } from './EthGetBlockByHashReq'
 import { initContractCallReq } from './ContractCallReq'
 import { initDebugAppDataHashReq } from './DebugAppDataHashReq'
-import { initEthGetBlockByNumberReq } from './EthGetBlockByNumberReq'
 import { initEthGetBlockHashesReq } from './EthGetBlockHashesReq'
 import { initEthGetBlockHashesResp } from './EthGetBlockHashesResp'
 import { initGenesisAccountsReq } from './GenesisAccountsReq'
@@ -15,7 +14,6 @@ export function initAjvSchemas(): void {
   initContractCallReq()
   initDebugAppDataHashReq()
   initEthGetBlockByHashReq()
-  initEthGetBlockByNumberReq()
   initEthGetBlockHashesReq()
   initEthGetBlockHashesResp()
   initGenesisAccountsReq()
