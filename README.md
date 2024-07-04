@@ -162,7 +162,7 @@ git apply debug-10-nodes.patch
 
 For instance, `debug-10-nodes.patch` configures a network with debug settings, requiring 10 nodes to begin processing. These patches are designed to streamline the setup process for specific network configurations, eliminating the need for manual configuration to the following settings.
 
-### Advanced Mode
+### Manual Mode
 
 The default settings included are intended to be used on the live network, so to configure the Shardeum network for local development, there are a few changes that need to be made:
 
