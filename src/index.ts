@@ -1,6 +1,8 @@
 /* eslint-disable @typescript-eslint/ban-ts-comment */
 import { exec } from 'child_process'
 import { arch, cpus, freemem, totalmem, platform } from 'os'
+import { ValidatorAjvTypeReqRespEnum } from './types/enum/ValidatorAjvTypeReqRespEnum'
+
 import {
   Account,
   Address,
@@ -1089,13 +1091,6 @@ const configShardusEndpoints = (): void => {
     //   return res.json(`endpoint not available`)
     // }
 
-    // Start verify request data
-    let verified = verifyPayload('DebugPointsReq', req)
-    if (!verified) {
-      return res.json({ error: `AJV verify error` })
-    }
-    // End verify request data
-
     if (Number.isNaN(Number(req.query.points as string))) {
       /* prettier-ignore */ if (logFlags.error) console.log(`Invalid input debug-points number`)
       return res.json({ error: `Invalid input debug-points number` })
@@ -1274,7 +1269,7 @@ const configShardusEndpoints = (): void => {
 
   shardus.registerExternalGet('eth_getBlockHashes', externalApiMiddleware, async (req, res) => {
     // Start verify request data
-    let verified = verifyPayload('EthGetBlockHashesReq', req)
+    let verified = verifyPayload(ValidatorAjvTypeReqRespEnum.EthGetBlockHashesReq, req)
     if (!verified) {
       return res.json({ error: `AJV verify error` })
     }
@@ -1303,7 +1298,7 @@ const configShardusEndpoints = (): void => {
 
   shardus.registerExternalGet('eth_getBlockByNumber', externalApiMiddleware, async (req, res) => {
     // Start verify request data
-    let verified = verifyPayload('EthGetBlockByNumberReq', req)
+    let verified = verifyPayload(ValidatorAjvTypeReqRespEnum.EthGetBlockByNumberReq, req)
     if (!verified) {
       return res.json({ error: `AJV verify error` })
     }
@@ -1335,7 +1330,7 @@ const configShardusEndpoints = (): void => {
 
   shardus.registerExternalGet('eth_getBlockByHash', externalApiMiddleware, async (req, res) => {
     // Start verify request data
-    let verified = verifyPayload('EthGetBlockByHashReq', req)
+    let verified = verifyPayload(ValidatorAjvTypeReqRespEnum.EthGetBlockByHashReq, req)
     if (!verified) {
       return res.json({ error: `AJV verify error` })
     }
@@ -1368,14 +1363,6 @@ const configShardusEndpoints = (): void => {
     // if(isDebugMode()){
     //   return res.json(`endpoint not available`)
     // }
-
-    // Start verify request data
-    let verified = verifyPayload('DumpStorageReq', req)
-    if (!verified) {
-      return res.json({ error: `AJV verify error` })
-    }
-    // End verify request data
-
     let id
     try {
       id = req.query.id as string
@@ -1441,13 +1428,6 @@ const configShardusEndpoints = (): void => {
   })
 
   shardus.registerExternalGet('debug-set-shardeum-flag', debugMiddleware, async (req, res) => {
-    // Start verify request data
-    let verified = verifyPayload('DebugSetShardeumFlagReq', req)
-    if (!verified) {
-      return res.json({ error: `AJV verify error` })
-    }
-    // End verify request data
-
     let value
     let key
     try {
@@ -1474,13 +1454,6 @@ const configShardusEndpoints = (): void => {
     }
   })
   shardus.registerExternalGet('debug-set-service-point', debugMiddleware, async (req, res) => {
-    // Start verify request data
-    let verified = verifyPayload('DebugSetServicePointReq', req)
-    if (!verified) {
-      return res.json({ error: `AJV verify error` })
-    }
-    // End verify request data
-
     let value
     let key1
     let key2
@@ -1507,13 +1480,6 @@ const configShardusEndpoints = (): void => {
   })
 
   shardus.registerExternalGet('account/:address', externalApiMiddleware, async (req, res) => {
-    // Start verify request data
-    let verified = verifyPayload('AccountAddressReq', req)
-    if (!verified) {
-      return res.json({ error: `AJV verify error` })
-    }
-    // End verify request data
-
     if (trySpendServicePoints(ShardeumFlags.ServicePoints['account/:address'], req, 'account') === false) {
       return res.json({ error: 'node busy' })
     }
@@ -1576,13 +1542,6 @@ const configShardusEndpoints = (): void => {
   })
 
   shardus.registerExternalGet('eth_getCode', externalApiMiddleware, async (req, res) => {
-    // Start verify request data
-    let verified = verifyPayload('EthGetCodeReq', req)
-    if (!verified) {
-      return res.json({ error: `AJV verify error` })
-    }
-    // End verify request data
-
     if (trySpendServicePoints(ShardeumFlags.ServicePoints['eth_getCode'], req, 'account') === false) {
       return res.json({ error: 'node busy' })
     }
@@ -1656,7 +1615,7 @@ const configShardusEndpoints = (): void => {
     // }
 
     // Start verify request data
-    let verified = verifyPayload('ContractCallReq', req)
+    let verified = verifyPayload(ValidatorAjvTypeReqRespEnum.ContractCallReq, req)
     if (!verified) {
       return res.json({ error: `AJV verify error` })
     }
@@ -1858,13 +1817,6 @@ const configShardusEndpoints = (): void => {
   })
 
   shardus.registerExternalPost('contract/accesslist', externalApiMiddleware, async (req, res) => {
-    // Start verify request data
-    let verified = verifyPayload('ContractAccessListReq', req)
-    if (!verified) {
-      return res.json({ error: `AJV verify error` })
-    }
-    // End verify request data
-
     if (
       trySpendServicePoints(
         ShardeumFlags.ServicePoints['contract/accesslist'].endpoint,
@@ -1913,13 +1865,6 @@ const configShardusEndpoints = (): void => {
   })
 
   shardus.registerExternalPost('contract/estimateGas', externalApiMiddleware, async (req, res) => {
-    // Start verify request data
-    let verified = verifyPayload('ContractEstimateGasReq', req)
-    if (!verified) {
-      return res.json({ error: `AJV verify error` })
-    }
-    // End verify request data
-
     if (
       trySpendServicePoints(
         ShardeumFlags.ServicePoints['contract/estimateGas'].endpoint,
@@ -1956,7 +1901,7 @@ const configShardusEndpoints = (): void => {
 
   shardus.registerExternalGet('tx/:hash', externalApiMiddleware, async (req, res) => {
     // Start verify request data
-    let verified = verifyPayload('TxHashReq', req)
+    let verified = verifyPayload(ValidatorAjvTypeReqRespEnum.TxHashReq, req)
     if (!verified) {
       return res.json({ error: `AJV verify error` })
     }
@@ -2010,13 +1955,6 @@ const configShardusEndpoints = (): void => {
   })
 
   shardus.registerExternalGet('debug-appdata/:hash', debugMiddleware, async (req, res) => {
-    // Start verify request data
-    let verified = verifyPayload('DebugAppDataHashReq', req)
-    if (!verified) {
-      return res.json({ error: `AJV verify error` })
-    }
-    // End verify request data
-
     // if(isDebugMode()){
     //   return res.json(`endpoint not available`)
     // }
@@ -2110,7 +2048,7 @@ const configShardusEndpoints = (): void => {
 
   shardus.registerExternalGet('genesis_accounts', externalApiMiddleware, async (req, res) => {
     // Start verify request data
-    let verified = verifyPayload('GenesisAccountsReq', req)
+    let verified = verifyPayload(ValidatorAjvTypeReqRespEnum.GenesisAccountsReq, req)
     if (!verified) {
       return res.json({ error: `AJV verify error` })
     }
@@ -2160,7 +2098,7 @@ const configShardusEndpoints = (): void => {
     async (req: Request, res: Response) => {
       nestedCountersInstance.countEvent('shardeum-penalty', 'called query-certificate')
       // Start verify request data
-      let verified = verifyPayload('QueryCertificateReq', req)
+      let verified = verifyPayload(ValidatorAjvTypeReqRespEnum.QueryCertificateReq, req)
       if (!verified) {
         return res.json({ error: `AJV verify error` })
       }
@@ -2190,13 +2128,6 @@ const configShardusEndpoints = (): void => {
 
   // Changes the threshold for the blocked-At function
   shardus.registerExternalGet('debug-set-event-block-threshold', debugMiddleware, async (req, res) => {
-    // Start verify request data
-    let verified = verifyPayload('DebugSetEventBlockThresholdReq', req)
-    if (!verified) {
-      return res.json({ error: `AJV verify error` })
-    }
-    // End verify request data
-
     try {
       const threshold = Number(req.query.threshold)
 
