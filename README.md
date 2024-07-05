@@ -119,7 +119,7 @@ Now that the environment is setup, let’s install the project source code and s
 
 ```bash
 git clone https://github.com/shardeum/shardeum.git
-cd server
+cd shardeum
 git switch dev
 ```
 
@@ -150,19 +150,19 @@ npm update @shardus/archiver
 
 ## Local Configuration
 
-You have two ways to configure your local environment either easy mode or advanced mode
+There are two ways to configure your local environment, Automatic or Manual mode
 
-### Easy Mode
+### Automatic Mode
 
 You have the option to quickly configure your local environment by applying one of the patches located in the /server/ folder, such as:
 
 ```bash
-git apply debug-20-nodes.patch
+git apply debug-10-nodes.patch
 ```
 
-For instance, `debug-20-nodes.patch` configures a network with debug settings, requiring 20 nodes to begin processing. These patches are designed to streamline the setup process for specific network configurations, eliminating the need for manual configuration to the following settings.
+For instance, `debug-10-nodes.patch` configures a network with debug settings, requiring 10 nodes to begin processing. These patches are designed to streamline the setup process for specific network configurations, eliminating the need for manual configuration to the following settings.
 
-### Advanced Mode
+### Manual Mode
 
 The default settings included are intended to be used on the live network, so to configure the Shardeum network for local development, there are a few changes that need to be made:
 
@@ -203,10 +203,10 @@ After completing the above steps, compile again with `npm run prepare`.
 Now we’re ready to create the network from within the Shardeum validator repo
 
 ```bash
-shardus start 20
+shardus start 10
 ```
 
-This command will start a Shardeum network of 20 nodes, 1 archiver server and 1 monitor server exposed through port number 3000. You can inspect the nodes via `shardus pm2 list` command.
+This command will start a Shardeum network of 10 nodes, 1 archive server and 1 monitor server exposed through port number 4000 and 3000 respectively. You can inspect the nodes via the `shardus pm2 list` command.
 
 > **Note:** If one of the services fails to start, it might be that the port is still in use from a previous session.
 
