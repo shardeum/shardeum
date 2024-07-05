@@ -153,6 +153,7 @@ import { accountDeserializer, accountSerializer } from './types/Helpers'
 import { runWithContextAsync } from './utils/RequestContext'
 import { Utils } from '@shardus/types'
 import { initAjvSchemas, verifyPayload } from './types/ajv/Helpers'
+import { InjectReqRespEnum } from './types/enum/InjectReqRespEnum'
 
 let latestBlock = 0
 export const blocks: BlockMap = {}
@@ -1121,14 +1122,15 @@ const configShardusEndpoints = (): void => {
   shardus.registerExternalPost('inject', externalApiMiddleware, async (req, res) => {
     let tx = req.body
     // AJV verify request of this endpoint
-    let verified = verifyPayload('InjectReq', tx)
-    if (!verified) {
+    let verified = verifyPayload(InjectReqRespEnum.InjectReq, req)
+    if (verified != null) {
       return res.json({
         success: false,
         reason: `Data of Request Inject Endpoint validation error`,
         status: 500,
       })
     }
+
     // if timestamp is a float, round it down to nearest millisecond
     if (tx.timestamp && typeof tx.timestamp === 'number') {
       tx.timestamp = Math.floor(tx.timestamp)
@@ -1230,8 +1232,8 @@ const configShardusEndpoints = (): void => {
         //normal case, we will put this transaction into the shardus queue
         const response = await shardus.put(tx, false, false, appData)
         // AJV verify request of this endpoint
-        let verifiedResp = verifyPayload('InjectResp', response)
-        if (!verifiedResp) {
+        let verifiedResp = verifyPayload(InjectReqRespEnum.InjectResp, response)
+        if (verifiedResp != null) {
           return res.json({
             success: false,
             reason: `Data of Response Inject Endpoint validation error`,

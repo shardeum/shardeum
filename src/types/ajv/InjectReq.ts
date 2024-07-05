@@ -3,9 +3,13 @@ import { InjectReqRespEnum } from '../enum/InjectReqRespEnum'
 export const schemaInjectReq = {
   type: 'object',
   properties: {
-    timestamp: { type: 'number' },
+    body: {
+      type: 'object',
+      properties: {
+        timestamp: { type: ['number', 'null'] },
+      },
+    },
   },
-  required: ['timestamp'],
 }
 
 export function initInjectReq(): void {

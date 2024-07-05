@@ -1,4 +1,4 @@
 export enum InjectReqRespEnum {
-    InjectReq = "InjectReq",
-    InjectResp = "InjectResp",
+  InjectReq = 'InjectReq',
+  InjectResp = 'InjectResp',
 }
