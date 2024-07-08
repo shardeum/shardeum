@@ -1,0 +1,13 @@
+# CODEOWNERS file
+# To add additional teams to any approval, include them on the same line separated by spaces
+# It is best practice to assign a team as a code owner and not an invidual.
+# Please submit requests for new teams to Systems and Automation
+
+# Global approval (all files)
+# * @shardeum/team-name
+
+# Directory-level approval
+/.github/ @shardeum/systems-and-automation
+
+# Specific file rules
+# README.md @shardeum/team-name
