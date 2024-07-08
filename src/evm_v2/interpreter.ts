@@ -1095,7 +1095,7 @@ export class Interpreter {
     }
 
     if (topics.length !== numberOfTopics) {
-      trap(ERROR.INTERNAL_ERROR)
+      trap(ERROR.TOPIC_COUNT_MISMATCH + `Expected ${numberOfTopics} topics, got ${topics.length}`)
     }
 
     const log: Log = [this._env.address.bytes, topics, data]

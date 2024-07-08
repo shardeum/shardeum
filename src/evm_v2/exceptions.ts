@@ -10,6 +10,8 @@ export enum ERROR {
   REVERT = 'revert',
   STATIC_STATE_CHANGE = 'static state change',
   INTERNAL_ERROR = 'internal error',
+  TOPIC_COUNT_MISMATCH = 'topic count mismatch',
+  STACK_PUSHED_NON_BIGINT = 'stack pushed non-bigint',
   CREATE_COLLISION = 'create collision',
   STOP = 'stop',
   REFUND_EXHAUSTED = 'refund exhausted',
@@ -42,9 +44,11 @@ export enum ERROR {
 export class EvmError {
   error: ERROR
   errorType: string
+  errorDetails: string
 
-  constructor(error: ERROR) {
+  constructor(error: ERROR, errorDetails = '') {
     this.error = error
     this.errorType = 'EvmError'
+    this.errorDetails = errorDetails
   }
 }

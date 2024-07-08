@@ -20,7 +20,7 @@ export class Stack {
 
   push(value: bigint): void {
     if (typeof value !== 'bigint') {
-      throw new EvmError(ERROR.INTERNAL_ERROR)
+      throw new EvmError(ERROR.STACK_PUSHED_NON_BIGINT)
     }
 
     if (value > MAX_INTEGER_BIGINT) {
