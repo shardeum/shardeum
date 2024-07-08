@@ -309,8 +309,8 @@ config = merge(
       mode: 'release', // todo: must set this to "release" for public networks or get security on endpoints. use "debug"
       // for easier debugging
       debug: {
-        startInFatalsLogMode: false, // true setting good for big aws test with nodes joining under stress.
-        startInErrorLogMode: true,
+        startInFatalsLogMode: true, // true setting good for big aws test with nodes joining under stress.
+        startInErrorLogMode: false,
         robustQueryDebug: false,
         fakeNetworkDelay: 0,
         disableSnapshots: true, // do not check in if set to false
