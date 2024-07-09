@@ -1,0 +1,77 @@
+name: Node CI Workflow
+#
+#  The parameters are defaulted at the org level but can be overridden on the repository.
+#  See the github-automation repo for more documentation
+#
+on:
+  push:
+    branches:
+      - dev
+      - main
+  pull_request:
+    branches:
+      - dev
+      - main
+  issue_comment:
+    inputs:
+      workflowBranch:
+        description: 'Branch of the reusable workflow. Defaults to main, select dev for testing only.'
+        required: true
+        default: 'main'
+        type: choice
+        options:
+          - dev
+          - main
+  workflow_dispatch:
+    inputs:
+      workflowBranch:
+        description: 'Branch of the reusable workflow. Defaults to main, select dev for testing only.'
+        required: true
+        default: 'main'
+        type: choice
+        options:
+          - dev
+          - main
+jobs:
+  echo-inputs:
+    name: Repo Workflow Debugging
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check Repo Vars
+        run: |
+          echo "*** Start - Check inputs in repo workflow ***"
+          echo "Node Version: ${{ vars.NODE_VERSION }}"
+          echo "Lint Required: ${{ vars.IS_LINT_REQUIRED }}"
+          echo "Format Check Required: ${{ vars.IS_FORMAT_CHECK_REQUIRED }}"
+          echo "Apply Patches Required: ${{ vars.IS_APPLY_PATCHES_REQUIRED }}"
+          echo "Unit Tests Required: ${{ vars.IS_UNIT_TESTS_REQUIRED }}"
+          echo "*** End - Check inputs in repo workflow ***"
+  ci-dev:
+    if: ${{ github.event.inputs.workflowBranch == 'dev' }}
+    uses: shardeum/github-automation/.github/workflows/reusable-node-ci.yml@dev
+    permissions:
+      issues: write
+      pull-requests: write
+      contents: write
+    with:
+      node-version: ${{ vars.NODE_VERSION }}
+      lint-required: ${{ vars.IS_LINT_REQUIRED == 'true' }}
+      format-check-required: ${{ vars.IS_FORMAT_CHECK_REQUIRED == 'true' }}
+      apply-patches-required: ${{ vars.IS_APPLY_PATCHES_REQUIRED == 'true' }}
+      unit-tests-required: ${{ vars.IS_UNIT_TESTS_REQUIRED == 'true' }}
+    secrets: inherit
+
+  ci-main:
+    if: ${{ github.event.inputs.workflowBranch == 'main' || !github.event.inputs.workflowBranch }}
+    uses: shardeum/github-automation/.github/workflows/reusable-node-ci.yml@main
+    permissions:
+      issues: write
+      pull-requests: write
+      contents: write
+    with:
+      node-version: ${{ vars.NODE_VERSION }}
+      lint-required: ${{ vars.IS_LINT_REQUIRED == 'true' }}
+      format-check-required: ${{ vars.IS_FORMAT_CHECK_REQUIRED == 'true' }}
+      apply-patches-required: ${{ vars.IS_APPLY_PATCHES_REQUIRED == 'true' }}
+      unit-tests-required: ${{ vars.IS_UNIT_TESTS_REQUIRED == 'true' }}
+    secrets: inherit
