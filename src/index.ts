@@ -1796,7 +1796,7 @@ const configShardusEndpoints = (): void => {
               `${consensusNode.externalIp}:${consensusNode.externalPort}/contract/call`,
               callObj
             )
-            if (postResp.body != null && postResp.body != '') {
+            if (postResp != null && postResp.body != null && postResp.body != '') {
               //getResp.body
 
               /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`Node is in remote shard: gotResp:${Utils.safeStringify(postResp.body)}`)
@@ -2953,7 +2953,7 @@ async function estimateGas(
           originalInjectedTx
         )
         /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log('EstimateGas response from node', consensusNode.externalPort, postResp.body)
-        if (postResp.body != null && postResp.body != '' && postResp.body.estimateGas != null) {
+        if (postResp != null && postResp.body != null && postResp.body != '' && postResp.body.estimateGas != null) {
           const estimateResultFromNode = postResp.body.estimateGas
 
           /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`Node is in remote shard: gotResp:`, estimateResultFromNode)
@@ -3093,7 +3093,7 @@ async function generateAccessList(
             { injectedTx, warmupList }
           )
           /* prettier-ignore */ if (logFlags.dapp_verbose || logFlags.aalg) console.log('Accesslist response from node', consensusNode.externalPort, postResp.body)
-          if (postResp.body != null && postResp.body != '' && postResp.body.accessList != null) {
+          if (postResp != null && postResp.body != null && postResp.body != '' && postResp.body.accessList != null) {
             /* prettier-ignore */ if (logFlags.dapp_verbose || logFlags.aalg) console.log(`Node is in remote shard: gotResp:${Utils.safeStringify(postResp.body)}`)
             if (Array.isArray(postResp.body.accessList) && postResp.body.accessList.length > 0) {
               /* prettier-ignore */ nestedCountersInstance.countEvent('accesslist', `remote shard accessList: ${postResp.body.accessList.length} items, success: ${postResp.body.failedAccessList != true}`)
@@ -7490,16 +7490,22 @@ async function fetchNetworkAccountFromArchiver(): Promise<WrappedAccount> {
     /* prettier-ignore */ nestedCountersInstance.countEvent('network-config-operation', 'failure: no majority found for archivers get-network-account result. Use default configs.')
     throw new Error(`no majority found for archivers get-network-account result `)
   }
+  try {
+    const res = await axios.get<{ networkAccount: WrappedAccount }>(
+      `http://${majorityValue.archiver.ip}:${majorityValue.archiver.port}/get-network-account?hash=false`
+    )
+    if (!res.data) {
+      /* prettier-ignore */ nestedCountersInstance.countEvent('network-config-operation', 'failure: did not get network account from archiver private key, returned null. Use default configs.')
+      throw new Error(
+        `get-network-account from archiver pk:${majorityValue.archiver.publicKey} returned null`
+      )
+    }
 
-  const res = await axios.get<{ networkAccount: WrappedAccount }>(
-    `http://${majorityValue.archiver.ip}:${majorityValue.archiver.port}/get-network-account?hash=false`
-  )
-  if (!res.data) {
-    /* prettier-ignore */ nestedCountersInstance.countEvent('network-config-operation', 'failure: did not get network account from archiver private key, returned null. Use default configs.')
-    throw new Error(`get-network-account from archiver pk:${majorityValue.archiver.publicKey} returned null`)
+    return res.data.networkAccount as WrappedAccount
+  } catch (ex) {
+    /* prettier-ignore */ nestedCountersInstance.countEvent('network-config-operation', `error: ${ex?.message}`)
+    throw new Error(`Not able to fetch get-network-account result from archiver `)
   }
-
-  return res.data.networkAccount as WrappedAccount
 }
 
 async function updateConfigFromNetworkAccount(inputConfig: Config, account: WrappedAccount): Promise<Config> {
