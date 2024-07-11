@@ -104,27 +104,46 @@ export const validateTxnFields =
         } else if (tx.internalTXType === InternalTXType.ChangeConfig ||
           tx.internalTXType === InternalTXType.ChangeNetworkParam) {
           try {
+            // DEFINATION: 
+            // Valid signature is a cryptocraphically valid signature 
+            // that is signed by a key which is defined on the server and has enough security clearance
+            console.log("[GOLD]", tx)
+            if(!tx.sign){
+              success = false
+              reason = 'No signature found'
+            }
+
+            const is_array_sig = Array.isArray(tx.sign) === true
+            let sigs = tx.sign
+
+            if (!is_array_sig) sigs = [tx.sign]
 
             const devPublicKeys = shardus.getDevPublicKeys()
-            let isUserVerified = false
-            for (const devPublicKey in devPublicKeys) {
-              const verificationStatus = verify(tx, devPublicKey)
-              if (verificationStatus) {
-                isUserVerified = true
-                break
+
+            // in any case we should expect at least valid/good 1 signature
+            const requiredSigs = Math.max(1, ShardeumFlags.minSignaturesRequiredForGlobalTxs)
+
+            let validSigs = 0
+            for(let i = 0; i < sigs.length; i++){
+
+              // skip: dev key not exist
+              if(!devPublicKeys[sigs[i].owner]) continue
+
+              // skip: dev key don't have enough perm
+              if(devPublicKeys[sigs[i].owner] >= DevSecurityLevel.High) continue
+
+              if(verify(tx, sigs[i].owner)){
+                validSigs++
               }
+
             }
-            if (!isUserVerified) {
+
+            if(validSigs < requiredSigs){
               success = false
-              reason = 'Dev key is not defined on the server!'
-            }
-            const authorized = shardus.ensureKeySecurity(tx.sign.owner, DevSecurityLevel.High)
-            if (!authorized) {
-              success = false
-              reason = 'Unauthorized User'
-            } else {
+              reason = 'Not enough signatures, required at least: ' + requiredSigs
+            }else{
               success = true
-              reason = 'valid'
+              reason = 'Valid'
             }
           } catch (e) {
             reason = 'Invalid signature for internal tx'
