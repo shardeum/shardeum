@@ -9,6 +9,7 @@ import { toBuffer } from 'ethereumjs-util'
 import { ShardeumFlags } from '../shardeum/shardeumFlags'
 import { InternalTx, InternalTXType } from '../shardeum/shardeumTypes'
 import { Utils } from '@shardus/types'
+import { DevSecurityLevel, Sign } from '@shardus/core/dist/shardus/shardus-types'
 
 crypto.init('69fa4195670576c0160d660c3be36556ff8d504725be8a59b5a96509e0c994bc')
 crypto.setCustomStringifier(Utils.safeStringify, 'shardus_safeStringify')
@@ -106,4 +107,42 @@ export function hashSignedObj(obj): string {
     return crypto.hashObj(obj)
   }
   return crypto.hashObj(obj, true)
+}
+
+/**
+@param rawPayload: any - The original payload stripped of the signatures
+@param sigs: Sign[] - The signatures to verify
+@param allowedPubkeys: {[pubkey: string]: DevSecurityLevel} - The public keys that are allowed to sign the payload
+@param minSigRequired: number - The minimum number of signatures required
+@param requiredSecurityLevel: DevSecurityLevel - The minimum security level required to sign the payload
+@returns boolean - True if the payload is signed by the required number of authorized public keys with the required security level
+**/
+export function verifyMultiSigs(
+  rawPayload: {}, 
+  sigs: Sign[], 
+  allowedPubkeys: {[pubkey: string]: DevSecurityLevel}, 
+  minSigRequired: number, 
+  requiredSecurityLevel: DevSecurityLevel
+): boolean {
+
+  let validSigs = 0
+  const payload_hash = crypto.hashObj(rawPayload)
+  for(let i = 0; i < sigs.length; i++){
+
+    // The sig owner is listed on the server and
+    // The sig owner has enough security clearance
+    // The signature is valid
+    if(
+        allowedPubkeys[sigs[i].owner] && 
+        allowedPubkeys[sigs[i].owner] >= requiredSecurityLevel && 
+        crypto.verify(payload_hash, sigs[i].sig, sigs[i].owner)
+    ){
+      validSigs++
+    }
+
+    if (validSigs >= minSigRequired) break
+
+  }
+
+  return validSigs >= minSigRequired
 }
