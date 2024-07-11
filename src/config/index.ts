@@ -214,6 +214,8 @@ config = merge(config, {
       formingNodesPerCycle: 7, //how many nodes can be add in a cycle while in forming mode
 
       downNodeFilteringEnabled: false, //turning down node filtering off for diagnostics purposes
+
+      awaitingDataCanBailOnReceipt: true, 
     },
     features: {
 
