@@ -215,7 +215,6 @@ config = merge(config, {
 
       downNodeFilteringEnabled: false, //turning down node filtering off for diagnostics purposes
 
-      awaitingDataCanBailOnReceipt: true, 
     },
     features: {
 
@@ -286,6 +285,8 @@ config = merge(config, {
       removeStuckChallengedTXs: false,
 
       stuckTxMoveTime: 3600000,
+
+      awaitingDataCanBailOnReceipt: true, 
     },
   },
 })
