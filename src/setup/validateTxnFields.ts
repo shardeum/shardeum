@@ -32,12 +32,14 @@ import {
   isInternalTx,
   isInternalTXGlobal,
   verify,
-  isDebugTx
+  isDebugTx,
+  verifyMultiSigs
 } from './helpers'
 import { fixBigIntLiteralsToBigInt } from '../utils/serialization'
 import { validatePenaltyTX } from '../tx/penalty/transaction'
 import { bytesToHex } from '@ethereumjs/util'
 import {logFlags, shardusConfig} from '..'
+import { Sign } from '@shardus/core/dist/shardus/shardus-types'
 
 /**
  * Checks that Transaction fields are valid
@@ -104,30 +106,42 @@ export const validateTxnFields =
         } else if (tx.internalTXType === InternalTXType.ChangeConfig ||
           tx.internalTXType === InternalTXType.ChangeNetworkParam) {
           try {
+            // DEFINATION: 
+            // Valid signature is a cryptocraphically valid signature 
+            // that is signed by a key which is defined on the server and has enough security clearance
+            if(!tx.sign){
+              success = false
+              reason = 'No signature found'
+            }
 
-            const devPublicKeys = shardus.getDevPublicKeys()
-            let isUserVerified = false
-            for (const devPublicKey in devPublicKeys) {
-              const verificationStatus = verify(tx, devPublicKey)
-              if (verificationStatus) {
-                isUserVerified = true
-                break
-              }
-            }
-            if (!isUserVerified) {
-              success = false
-              reason = 'Dev key is not defined on the server!'
-            }
-            const authorized = shardus.ensureKeySecurity(tx.sign.owner, DevSecurityLevel.High)
-            if (!authorized) {
-              success = false
-              reason = 'Unauthorized User'
-            } else {
+            const allowedPublicKeys = shardus.getDevPublicKeys()
+
+            const is_array_sig = Array.isArray(tx.sign) === true
+            const requiredSigs = Math.max(1, ShardeumFlags.minSignaturesRequiredForGlobalTxs)
+
+            //this'll making sure old single sig / non-array are still compitable
+            let sigs: Sign[] = is_array_sig ? tx.sign : [tx.sign]
+
+            const {sign, ...txWithoutSign} = tx
+
+            const sig_are_valid = verifyMultiSigs(
+              txWithoutSign,
+              sigs,
+              allowedPublicKeys,
+              requiredSigs,
+              DevSecurityLevel.High
+            )
+            if(sig_are_valid === true){
               success = true
-              reason = 'valid'
+              reason = 'Valid'
+            }else{
+              success = false
+              reason = 'Invalid signatures'
             }
+
           } catch (e) {
-            reason = 'Invalid signature for internal tx'
+            success = false
+            reason = 'Signature verification thrown exception'
           }
         } else if (tx.internalTXType === InternalTXType.InitRewardTimes) {
           const result = InitRewardTimesTx.validateFields(tx as InitRewardTimes, shardus)
@@ -442,3 +456,4 @@ export const validateTxnFields =
         txnTimestamp,
       }
     }
+
