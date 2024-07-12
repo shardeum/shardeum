@@ -32,7 +32,8 @@ import {
   isInternalTx,
   isInternalTXGlobal,
   verify,
-  isDebugTx
+  isDebugTx,
+  verifyMultiSig
 } from './helpers'
 import { fixBigIntLiteralsToBigInt } from '../utils/serialization'
 import { validatePenaltyTX } from '../tx/penalty/transaction'
@@ -107,47 +108,50 @@ export const validateTxnFields =
             // DEFINATION: 
             // Valid signature is a cryptocraphically valid signature 
             // that is signed by a key which is defined on the server and has enough security clearance
-            console.log("[GOLD]", tx)
             if(!tx.sign){
               success = false
               reason = 'No signature found'
             }
 
-            const is_array_sig = Array.isArray(tx.sign) === true
-            let sigs = tx.sign
-
-            if (!is_array_sig) sigs = [tx.sign]
-
             const devPublicKeys = shardus.getDevPublicKeys()
 
-            // in any case we should expect at least valid/good 1 signature
+            const is_array_sig = Array.isArray(tx.sign) === true
             const requiredSigs = Math.max(1, ShardeumFlags.minSignaturesRequiredForGlobalTxs)
 
-            let validSigs = 0
-            for(let i = 0; i < sigs.length; i++){
-
-              // The sig owner exist on the server and
-              // The sig owner has enough security clearance
-              // The signature is valid
-              if(
-                  devPublicKeys[sigs[i].owner] && 
-                  devPublicKeys[sigs[i].owner] >= DevSecurityLevel.High && 
-                  verify(tx, sigs[i].owner)
-              ){
-                validSigs++
-              }
-
-            }
-
-            if(validSigs < requiredSigs){
-              success = false
-              reason = 'Not enough signatures, required at least: ' + requiredSigs
-            }else{
+            if (
+              requiredSigs === 1 && 
+              !is_array_sig && // this mean this non-multi sig verify the old way
+              devPublicKeys[tx.sign.owner] && // sig exist in the server
+              devPublicKeys[tx.sign.owner] >= DevSecurityLevel.High && // sig has enough security clearance
+              verify(tx, tx.sign.owner) // sig is valid
+            ){
               success = true
               reason = 'Valid'
             }
+
+            else if(
+              is_array_sig && // this is a multi sig tx
+              requiredSigs > 1 
+            ){
+              const { sign, ...rawPayload } = tx
+              success = verifyMultiSig(
+                rawPayload,
+                sign,
+                devPublicKeys,
+                requiredSigs,
+                DevSecurityLevel.High
+              )
+              reason = success ? 'Valid' : 'Invalid'
+
+            }
+
+            else{
+              success = false
+              reason = 'Invalid signature'
+            }
+
           } catch (e) {
-            reason = 'Invalid signature for internal tx'
+            reason = 'Signature verification thrown exception'
           }
         } else if (tx.internalTXType === InternalTXType.InitRewardTimes) {
           const result = InitRewardTimesTx.validateFields(tx as InitRewardTimes, shardus)
@@ -441,3 +445,4 @@ export const validateTxnFields =
         txnTimestamp,
       }
     }
+
