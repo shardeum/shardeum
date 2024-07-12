@@ -33,12 +33,13 @@ import {
   isInternalTXGlobal,
   verify,
   isDebugTx,
-  verifyMultiSig
+  verifyMultiSigs
 } from './helpers'
 import { fixBigIntLiteralsToBigInt } from '../utils/serialization'
 import { validatePenaltyTX } from '../tx/penalty/transaction'
 import { bytesToHex } from '@ethereumjs/util'
 import {logFlags, shardusConfig} from '..'
+import { Sign } from '@shardus/core/dist/shardus/shardus-types'
 
 /**
  * Checks that Transaction fields are valid
@@ -113,44 +114,33 @@ export const validateTxnFields =
               reason = 'No signature found'
             }
 
-            const devPublicKeys = shardus.getDevPublicKeys()
+            const allowedPublicKeys = shardus.getDevPublicKeys()
 
             const is_array_sig = Array.isArray(tx.sign) === true
             const requiredSigs = Math.max(1, ShardeumFlags.minSignaturesRequiredForGlobalTxs)
 
-            if (
-              requiredSigs === 1 && 
-              !is_array_sig && // this mean this non-multi sig verify the old way
-              devPublicKeys[tx.sign.owner] && // sig exist in the server
-              devPublicKeys[tx.sign.owner] >= DevSecurityLevel.High && // sig has enough security clearance
-              verify(tx, tx.sign.owner) // sig is valid
-            ){
+            //this'll making sure old single sig / non-array are still compitable
+            let sigs: Sign[] = is_array_sig ? tx.sign : [tx.sign]
+
+            const {sign, ...txWithoutSign} = tx
+
+            const sig_are_valid = verifyMultiSigs(
+              txWithoutSign,
+              sigs,
+              allowedPublicKeys,
+              requiredSigs,
+              DevSecurityLevel.High
+            )
+            if(sig_are_valid === true){
               success = true
               reason = 'Valid'
-            }
-
-            else if(
-              is_array_sig && // this is a multi sig tx
-              requiredSigs > 1 
-            ){
-              const { sign, ...rawPayload } = tx
-              success = verifyMultiSig(
-                rawPayload,
-                sign,
-                devPublicKeys,
-                requiredSigs,
-                DevSecurityLevel.High
-              )
-              reason = success ? 'Valid' : 'Invalid'
-
-            }
-
-            else{
+            }else{
               success = false
-              reason = 'Invalid signature'
+              reason = 'Invalid signatures'
             }
 
           } catch (e) {
+            success = false
             reason = 'Signature verification thrown exception'
           }
         } else if (tx.internalTXType === InternalTXType.InitRewardTimes) {

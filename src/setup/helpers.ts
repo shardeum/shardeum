@@ -117,7 +117,7 @@ export function hashSignedObj(obj): string {
 @param requiredSecurityLevel: DevSecurityLevel - The minimum security level required to sign the payload
 @returns boolean - True if the payload is signed by the required number of authorized public keys with the required security level
 **/
-export function verifyMultiSig(
+export function verifyMultiSigs(
   rawPayload: {}, 
   sigs: Sign[], 
   allowedPubkeys: {[pubkey: string]: DevSecurityLevel}, 
