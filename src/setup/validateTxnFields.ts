@@ -126,13 +126,14 @@ export const validateTxnFields =
             let validSigs = 0
             for(let i = 0; i < sigs.length; i++){
 
-              // skip: dev key not exist
-              if(!devPublicKeys[sigs[i].owner]) continue
-
-              // skip: dev key don't have enough perm
-              if(devPublicKeys[sigs[i].owner] >= DevSecurityLevel.High) continue
-
-              if(verify(tx, sigs[i].owner)){
+              // The sig owner exist on the server and
+              // The sig owner has enough security clearance
+              // The signature is valid
+              if(
+                  devPublicKeys[sigs[i].owner] && 
+                  devPublicKeys[sigs[i].owner] >= DevSecurityLevel.High && 
+                  verify(tx, sigs[i].owner)
+              ){
                 validSigs++
               }
 
