@@ -21,6 +21,7 @@ scripts/*.old
 scripts/*.json
 #this last one may slows things down, but not sure
 scripts/*/
+!scripts/shardeumValidatorDebuggingScript
 .idea
 consensorAccounts.json
 archiverAccounts.json
