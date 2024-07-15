@@ -1119,42 +1119,56 @@ const configShardusEndpoints = (): void => {
   // })
 
   shardus.registerExternalGet('debug-points', debugMiddleware, async (req, res) => {
-    // if(isDebugMode()){
-    //   return res.json(`endpoint not available`)
-    // }
-    if (Number.isNaN(Number(req.query.points as string))) {
-      /* prettier-ignore */ if (logFlags.error) console.log(`Invalid input debug-points number`)
-      return res.json({ error: `Invalid input debug-points number` })
-    }
-    const points = Number(req.query.points ?? ShardeumFlags.ServicePoints['debug-points'])
-    if (trySpendServicePoints(points, null, 'debug-points') === false) {
-      return res.json({ error: 'node busy', points, servicePointSpendHistory, debugLastTotalServicePoints })
-    }
+    try {
+      // if(isDebugMode()){
+      //   return res.json(`endpoint not available`)
+      // }
+      if (Number.isNaN(Number(req.query.points as string))) {
+        /* prettier-ignore */ if (logFlags.error) console.log(`Invalid input debug-points number`)
+        return res.json({ error: `Invalid input debug-points number` })
+      }
+      const points = Number(req.query.points ?? ShardeumFlags.ServicePoints['debug-points'])
+      if (trySpendServicePoints(points, null, 'debug-points') === false) {
+        return res.json({ error: 'node busy', points, servicePointSpendHistory, debugLastTotalServicePoints })
+      }
 
-    return res.json(
-      `spent points: ${points} total:${debugLastTotalServicePoints}  ${Utils.safeStringify(
-        servicePointSpendHistory
-      )} `
-    )
+      return res.json(
+        `spent points: ${points} total:${debugLastTotalServicePoints}  ${Utils.safeStringify(
+          servicePointSpendHistory
+        )} `
+      )
+    } catch (error) {
+      /* prettier-ignore */ if (logFlags.error) console.error('Error in debug-points endpoint:', error)
+      return res.json({ error: error.message})
+    }
   })
 
   shardus.registerExternalGet('debug-point-spenders', debugMiddleware, async (req, res) => {
-    const debugObj = {
-      debugTotalPointRequests: debugTotalServicePointRequests,
-      debugServiePointByType: debugServicePointsByType,
-      debugServiePointSpendersByType: debugServicePointSpendersByType,
+    try {
+      const debugObj = {
+        debugTotalPointRequests: debugTotalServicePointRequests,
+        debugServiePointByType: debugServicePointsByType,
+        debugServiePointSpendersByType: debugServicePointSpendersByType,
+      }
+      res.write(JSON.stringify(debugObj, debug_map_replacer, 2))
+      res.end()
+    } catch (error) {
+      /* prettier-ignore */ if (logFlags.error) console.error('Error in debug-point-spenders endpoint:', error)
+      res.json({ error: error.message })
     }
-    res.write(JSON.stringify(debugObj, debug_map_replacer, 2))
-    res.end()
-    return
   })
 
   shardus.registerExternalGet('debug-point-spenders-clear', debugMiddleware, async (req, res) => {
-    const totalSpends = debugTotalServicePointRequests
-    debugTotalServicePointRequests = 0
-    debugServicePointSpendersByType.clear()
-    debugServicePointsByType.clear()
-    return res.json(`point spenders cleared. totalSpendActions: ${totalSpends} `)
+    try {
+      const totalSpends = debugTotalServicePointRequests
+      debugTotalServicePointRequests = 0
+      debugServicePointSpendersByType.clear()
+      debugServicePointsByType.clear()
+      return res.json(`point spenders cleared. totalSpendActions: ${totalSpends} `)
+    } catch (error) {
+      /* prettier-ignore */ if (logFlags.error) console.error('Error in debug-point-spenders-clear endpoint:', error)
+      return res.json({ error: error.message })
+    }
   })
 
   shardus.registerExternalGet('debug-shardus-dependencies', debugMiddlewareLow, async (req, res) => {
@@ -1162,22 +1176,27 @@ const configShardusEndpoints = (): void => {
   })
 
   shardus.registerExternalPost('inject', externalApiMiddleware, async (req, res) => {
-    const tx = req.body
-    // if timestamp is a float, round it down to nearest millisecond
-    if (tx.timestamp && typeof tx.timestamp === 'number') {
-      tx.timestamp = Math.floor(tx.timestamp)
+    try {
+      const tx = req.body
+      // if timestamp is a float, round it down to nearest millisecond
+      if (tx.timestamp && typeof tx.timestamp === 'number') {
+        tx.timestamp = Math.floor(tx.timestamp)
+      }
+      const appData = null
+      const id = shardus.getNodeId()
+      const isInRotationBonds = shardus.isNodeInRotationBounds(id)
+      if (isInRotationBonds) {
+        return res.json({
+          success: false,
+          reason: `Node is too close to rotation edges. Inject to another node`,
+          status: 500,
+        })
+      }
+      await handleInject(tx, appData, res)
+    } catch (error) {
+      /* prettier-ignore */ if (logFlags.error) console.error('Error in inject endpoint:', error)
+      return res.json({ error: 'Internal Server Error' })
     }
-    const appData = null
-    const id = shardus.getNodeId()
-    const isInRotationBonds = shardus.isNodeInRotationBounds(id)
-    if (isInRotationBonds) {
-      return res.json({
-        success: false,
-        reason: `Node is too close to rotation edges. Inject to another node`,
-        status: 500,
-      })
-    }
-    await handleInject(tx, appData, res)
   })
 
   async function handleInject(tx, appData, res): Promise<void> {
@@ -1280,85 +1299,118 @@ const configShardusEndpoints = (): void => {
   }
 
   shardus.registerExternalPost('inject-with-warmup', externalApiMiddleware, async (req, res) => {
-    const id = shardus.getNodeId()
-    const isInRotationBonds = shardus.isNodeInRotationBounds(id)
-    if (isInRotationBonds) {
-      return res.json({
-        success: false,
-        reason: `Node is too close to rotation edges. Inject to another node`,
-        status: 500,
-      })
+    try {
+      const id = shardus.getNodeId()
+      const isInRotationBonds = shardus.isNodeInRotationBounds(id)
+      if (isInRotationBonds) {
+        return res.json({
+          success: false,
+          reason: `Node is too close to rotation edges. Inject to another node`,
+          status: 500,
+        })
+      }
+      const { tx, warmupList } = req.body
+      let appData = null
+      if (warmupList != null) {
+        appData = { warmupList }
+      }
+      await handleInject(tx, appData, res)
+    } catch (err) {
+      if (ShardeumFlags.VerboseLogs) console.log('Failed to inject tx: ', err)
+      try {
+        res.json({
+          success: false,
+          reason: `Failed to inject tx:  ${formatErrorMessage(err)}`,
+          status: 500,
+        })
+      } catch (e) {
+        /* prettier-ignore */ if (logFlags.error) console.log('Failed to respond to inject tx: ', e)
+      }
     }
-    const { tx, warmupList } = req.body
-    let appData = null
-    if (warmupList != null) {
-      appData = { warmupList }
-    }
-    await handleInject(tx, appData, res)
   })
 
   shardus.registerExternalGet('eth_blockNumber', externalApiMiddleware, async (req, res) => {
-    if (ShardeumFlags.VerboseLogs) console.log('Req: eth_blockNumber')
-    return res.json({ blockNumber: latestBlock ? '0x' + latestBlock.toString(16) : '0x0' })
+    try {
+      if (ShardeumFlags.VerboseLogs) console.log('Req: eth_blockNumber')
+      return res.json({ blockNumber: latestBlock ? '0x' + latestBlock.toString(16) : '0x0' })
+    } catch (err) {
+      if (ShardeumFlags.VerboseLogs) console.log('Failed to retrieve eth_blockNumber: ', err)
+      res.status(500).json({ error: 'Failed to retrieve eth_blockNumber' })
+    }
   })
 
   shardus.registerExternalGet('eth_getBlockHashes', externalApiMiddleware, async (req, res) => {
-    let fromBlock: any = req.query.fromBlock
-    let toBlock: any = req.query.toBlock
+    try {
+      let fromBlock: any = req.query.fromBlock
+      let toBlock: any = req.query.toBlock
 
-    if (fromBlock == null) return res.json({ error: 'Missing fromBlock' })
-    if (typeof fromBlock === 'string') fromBlock = parseInt(fromBlock)
-    if (fromBlock < latestBlock - ShardeumFlags.maxNumberOfOldBlocks) {
-      // return max 100 blocks
-      fromBlock = latestBlock - ShardeumFlags.maxNumberOfOldBlocks + 1 // 1 is added for safety
-    }
-    if (toBlock == null) toBlock = latestBlock
-    if (typeof toBlock === 'string') fromBlock = parseInt(toBlock)
-    if (toBlock > latestBlock) toBlock = latestBlock
+      if (fromBlock == null) return res.json({ error: 'Missing fromBlock' })
+      if (typeof fromBlock === 'string') fromBlock = parseInt(fromBlock)
+      if (fromBlock < latestBlock - ShardeumFlags.maxNumberOfOldBlocks) {
+        // return max 100 blocks
+        fromBlock = latestBlock - ShardeumFlags.maxNumberOfOldBlocks + 1 // 1 is added for safety
+      }
+      if (toBlock == null) toBlock = latestBlock
+      if (typeof toBlock === 'string') fromBlock = parseInt(toBlock)
+      if (toBlock > latestBlock) toBlock = latestBlock
 
-    const blockHashes = []
-    for (let i = fromBlock; i <= toBlock; i++) {
-      const block = readableBlocks[i]
-      if (block) blockHashes.push(block.hash)
+      const blockHashes = []
+      for (let i = fromBlock; i <= toBlock; i++) {
+        const block = readableBlocks[i]
+        if (block) blockHashes.push(block.hash)
+      }
+      return res.json({ blockHashes, fromBlock, toBlock })
+    } catch (err) {
+      if (ShardeumFlags.VerboseLogs) console.log('Failed to retrieve eth_getBlockHashes: ', err)
+      res.status(500).json({ error: 'Failed to retrieve eth_getBlockHashes' })
     }
-    return res.json({ blockHashes, fromBlock, toBlock })
   })
 
   shardus.registerExternalGet('eth_getBlockByNumber', externalApiMiddleware, async (req, res) => {
-    const blockNumberParam = req.query.blockNumber as string
-    let blockNumber: number | string
+    try {
+      const blockNumberParam = req.query.blockNumber as string
+      let blockNumber: number | string
 
-    const id = shardus.getNodeId()
-    const isInRotationBonds = shardus.isNodeInRotationBounds(id)
-    if (isInRotationBonds) {
-      return res.json({ error: 'node close to rotation edges' })
-    }
-    if (blockNumberParam === 'latest' || blockNumberParam === 'earliest') {
-      blockNumber = blockNumberParam
-    } else {
-      blockNumber = parseInt(blockNumberParam)
-      if (Number.isNaN(blockNumber) || blockNumber < 0) {
-        return res.json({ error: 'Invalid block number' })
+      const id = shardus.getNodeId()
+      const isInRotationBonds = shardus.isNodeInRotationBounds(id)
+      if (isInRotationBonds) {
+        return res.json({ error: 'node close to rotation edges' })
       }
+      if (blockNumberParam === 'latest' || blockNumberParam === 'earliest') {
+        blockNumber = blockNumberParam
+      } else {
+        blockNumber = parseInt(blockNumberParam)
+        if (Number.isNaN(blockNumber) || blockNumber < 0) {
+          return res.json({ error: 'Invalid block number' })
+        }
+      }
+      if (ShardeumFlags.VerboseLogs) console.log('Req: eth_getBlockByNumber', blockNumber, latestBlock)
+      if (blockNumber === 'latest') blockNumber = latestBlock
+      if (blockNumber === 'earliest') {
+        return res.json({ block: readableBlocks[Object.keys(readableBlocks)[0]] }) // eslint-disable-line security/detect-object-injection
+      }
+      return res.json({ block: readableBlocks[blockNumber] }) // eslint-disable-line security/detect-object-injection
+    } catch (err) {
+      if (ShardeumFlags.VerboseLogs) console.log('Failed to retrieve eth_getBlockByNumber: ', err)
+      res.status(500).json({ error: 'Failed to retrieve eth_getBlockByNumber' })
     }
-    if (ShardeumFlags.VerboseLogs) console.log('Req: eth_getBlockByNumber', blockNumber, latestBlock)
-    if (blockNumber === 'latest') blockNumber = latestBlock
-    if (blockNumber === 'earliest') {
-      return res.json({ block: readableBlocks[Object.keys(readableBlocks)[0]] }) // eslint-disable-line security/detect-object-injection
-    }
-    return res.json({ block: readableBlocks[blockNumber] }) // eslint-disable-line security/detect-object-injection
   })
 
   shardus.registerExternalGet('eth_getBlockByHash', externalApiMiddleware, async (req, res) => {
-    /* eslint-disable security/detect-object-injection */
-    let blockHash = req.query.blockHash as string
-    if (blockHash === 'latest') blockHash = readableBlocks[latestBlock].hash
-    else if (blockHash.length !== 66 || !isHexString(blockHash))
-      return res.json({ error: 'Invalid block hash' })
-    if (ShardeumFlags.VerboseLogs) console.log('Req: eth_getBlockByHash', blockHash)
-    const blockNumber = blocksByHash[blockHash]
-    return res.json({ block: readableBlocks[blockNumber] })
-    /* eslint-enable security/detect-object-injection */
+    try {
+      /* eslint-disable security/detect-object-injection */
+      let blockHash = req.query.blockHash as string
+      if (blockHash === 'latest') blockHash = readableBlocks[latestBlock].hash
+      else if (blockHash.length !== 66 || !isHexString(blockHash))
+        return res.json({ error: 'Invalid block hash' })
+      if (ShardeumFlags.VerboseLogs) console.log('Req: eth_getBlockByHash', blockHash)
+      const blockNumber = blocksByHash[blockHash]
+      return res.json({ block: readableBlocks[blockNumber] })
+      /* eslint-enable security/detect-object-injection */
+    } catch (err) {
+      if (ShardeumFlags.VerboseLogs) console.log('Failed to retrieve eth_getBlockByHash: ', err)
+      res.status(500).json({ error: 'Failed to retrieve eth_getBlockByHash' })
+    }
   })
 
   shardus.registerExternalGet('stake', async (req, res) => {
@@ -1778,7 +1830,6 @@ const configShardusEndpoints = (): void => {
         customEVM.cleanUp()
       }
 
-
       let returnedValue = bytesToHex(callResult.execResult.returnValue)
       if (returnedValue && returnedValue.indexOf('0x') === 0) {
         returnedValue = returnedValue.slice(2)
@@ -1957,30 +2008,35 @@ const configShardusEndpoints = (): void => {
   })
 
   shardus.registerExternalGet('debug-appdata/:hash', debugMiddleware, async (req, res) => {
-    // if(isDebugMode()){
-    //   return res.json(`endpoint not available`)
-    // }
-    const txHash = req.params['hash']
-    // const shardusAddress = toShardusAddressWithKey(txHash, '', AccountType.Receipt)
+    try {
+      // if(isDebugMode()){
+      //   return res.json(`endpoint not available`)
+      // }
+      const txHash = req.params['hash']
+      // const shardusAddress = toShardusAddressWithKey(txHash, '', AccountType.Receipt)
 
-    // let shardeumState = shardeumStateTXMap.get(txHash)
-    // if(shardeumState == null){
-    //   return res.json(Utils.safeStringify({result:`shardeumState not found`}))
-    // }
+      // let shardeumState = shardeumStateTXMap.get(txHash)
+      // if(shardeumState == null){
+      //   return res.json(Utils.safeStringify({result:`shardeumState not found`}))
+      // }
 
-    // let appData = shardeumState._transactionState?.appData
+      // let appData = shardeumState._transactionState?.appData
 
-    const appData = debugAppdata.get(txHash)
+      const appData = debugAppdata.get(txHash)
 
-    if (appData == null) {
-      return res.json(Utils.safeStringify({ result: `no appData` }))
+      if (appData == null) {
+        return res.json(Utils.safeStringify({ result: `no appData` }))
+      }
+
+      //return res.json(`${Utils.safeStringify(appData)}`)
+
+      res.write(`${Utils.safeStringify(appData, null)}`)
+
+      res.end()
+    } catch (error) {
+      /* prettier-ignore */ if (logFlags.error) console.error('Error in debug-appdata endpoint:', error)
+      res.status(500).json({ error: error.message})
     }
-
-    //return res.json(`${Utils.safeStringify(appData)}`)
-
-    res.write(`${Utils.safeStringify(appData, null)}`)
-
-    res.end()
   })
 
   // shardus.registerExternalGet('tx/:hash', async (req, res) => {
@@ -2033,86 +2089,111 @@ const configShardusEndpoints = (): void => {
   // })
 
   shardus.registerExternalGet('accounts', debugMiddlewareMedium, async (req, res) => {
-    // if(isDebugMode()){
-    //   return res.json(`endpoint not available`)
-    // }
-    if (ShardeumFlags.VerboseLogs) console.log('/accounts')
-    //res.json({accounts})
+    try {
+      // if(isDebugMode()){
+      //   return res.json(`endpoint not available`)
+      // }
+      if (ShardeumFlags.VerboseLogs) console.log('/accounts')
+      //res.json({accounts})
 
-    // stable sort on accounts order..  todo, may turn this off later for perf reasons.
+      // stable sort on accounts order..  todo, may turn this off later for perf reasons.
 
-    //let sorted = Utils.safeJsonParse(Utils.safeStringify(accounts))
-    const accounts = await AccountsStorage.debugGetAllAccounts()
-    const sorted = Utils.safeJsonParse(Utils.safeStringify(accounts))
+      //let sorted = Utils.safeJsonParse(Utils.safeStringify(accounts))
+      const accounts = await AccountsStorage.debugGetAllAccounts()
+      const sorted = Utils.safeJsonParse(Utils.safeStringify(accounts))
 
-    res.json({ accounts: sorted })
+      res.json({ accounts: sorted })
+    } catch (error) {
+      /* prettier-ignore */ if (logFlags.error) console.error('Error in processing accounts request:', error)
+      res.status(500).json({ error: error.message })
+    }
   })
 
   shardus.registerExternalGet('genesis_accounts', externalApiMiddleware, async (req, res) => {
-    const { start } = req.query
-    if (!start) {
-      return res.json({ success: false, reason: 'start value is not defined!' })
+    try {
+      const { start } = req.query
+      if (!start) {
+        return res.json({ success: false, reason: 'start value is not defined!' })
+      }
+      let skip: number
+      if (typeof start === 'string') {
+        skip = parseInt(start)
+      }
+      const limit = skip + 1000
+      let accounts = []
+      if (genesisAccounts.length > 0) {
+        accounts = genesisAccounts.slice(skip, limit)
+      }
+      res.json({ success: true, accounts })
+    } catch (error) {
+      /* prettier-ignore */ if (logFlags.error) console.error('Error in processing genesis_accounts request:', error)
+      res.status(500).json({ error: 'Internal Server Error' })
     }
-    let skip: number
-    if (typeof start === 'string') {
-      skip = parseInt(start)
-    }
-    const limit = skip + 1000
-    let accounts = []
-    if (genesisAccounts.length > 0) {
-      accounts = genesisAccounts.slice(skip, limit)
-    }
-    res.json({ success: true, accounts })
   })
 
   // Returns the hardware-spec of the server running the validator
   shardus.registerExternalGet('system-info', debugMiddlewareLow, async (req, res) => {
-    let result = {
-      platform: platform(),
-      arch: arch(),
-      cpu: {
-        total_cores: cpus().length,
-        cores: cpus(),
-      },
-      free_memory: `${freemem() / Math.pow(1024, 3)} GB`,
-      total_memory: `${totalmem() / Math.pow(1024, 3)} GB`,
-      disk: null,
-    }
-    exec('df -h --total|grep ^total', (err, diskData) => {
-      if (!err) {
-        const [, total, used, available, percent_used] = diskData.split(' ').filter((s) => s)
-        result = { ...result, disk: { total, used, available, percent_used } }
+    try {
+      let result = {
+        platform: platform(),
+        arch: arch(),
+        cpu: {
+          total_cores: cpus().length,
+          cores: cpus(),
+        },
+        free_memory: `${freemem() / Math.pow(1024, 3)} GB`,
+        total_memory: `${totalmem() / Math.pow(1024, 3)} GB`,
+        disk: null,
       }
-      res.json(result)
-    })
+      exec('df -h --total|grep ^total', (err, diskData) => {
+        if (!err) {
+          const [, total, used, available, percent_used] = diskData.split(' ').filter((s) => s)
+          result = { ...result, disk: { total, used, available, percent_used } }
+        }
+        res.json(result)
+      })
+    } catch (error) {
+      /* prettier-ignore */ if (logFlags.error) console.error('Error in processing system-info request:', error)
+      res.status(500).json({ error: error.message})
+    }
   })
 
   shardus.registerExternalPut(
     'query-certificate',
     externalApiMiddleware,
     async (req: Request, res: Response) => {
-      nestedCountersInstance.countEvent('shardeum-penalty', 'called query-certificate')
+      try {
+        nestedCountersInstance.countEvent('shardeum-penalty', 'called query-certificate')
 
-      const queryCertRes = await queryCertificateHandler(req, shardus)
-      if (ShardeumFlags.VerboseLogs) console.log('queryCertRes', queryCertRes)
-      if (queryCertRes.success) {
-        const successRes = queryCertRes as CertSignaturesResult
-        stakeCert = successRes.signedStakeCert
-        /* prettier-ignore */ nestedCountersInstance.countEvent('shardeum-staking', `queryCertificateHandler success`)
-      } else {
-        /* prettier-ignore */ nestedCountersInstance.countEvent('shardeum-staking', `queryCertificateHandler failed with reason: ${(queryCertRes as ValidatorError).reason}`)
+        const queryCertRes = await queryCertificateHandler(req, shardus)
+        if (ShardeumFlags.VerboseLogs) console.log('queryCertRes', queryCertRes)
+        if (queryCertRes.success) {
+          const successRes = queryCertRes as CertSignaturesResult
+          stakeCert = successRes.signedStakeCert
+          /* prettier-ignore */ nestedCountersInstance.countEvent('shardeum-staking', `queryCertificateHandler success`)
+        } else {
+          /* prettier-ignore */ nestedCountersInstance.countEvent('shardeum-staking', `queryCertificateHandler failed with reason: ${(queryCertRes as ValidatorError).reason}`)
+        }
+
+        return res.json(Utils.safeJsonParse(Utils.safeStringify(queryCertRes)))
+      } catch (error) {
+        /* prettier-ignore */ if (logFlags.error) console.error('Error in processing query-certificate request:', error)
+        res.status(500).json({ error: 'Internal Server Error' })
       }
-
-      return res.json(Utils.safeJsonParse(Utils.safeStringify(queryCertRes)))
     }
   )
 
   // Returns the latest value from isReadyToJoin call
   // TODO verify if this is used by the node operator
   shardus.registerExternalGet('debug-is-ready-to-join', async (req, res) => {
-    const publicKey = shardus.crypto.getPublicKey()
+    try {
+      const publicKey = shardus.crypto.getPublicKey()
 
-    return res.json({ isReady: isReadyToJoinLatestValue, nodePubKey: publicKey })
+      return res.json({ isReady: isReadyToJoinLatestValue, nodePubKey: publicKey })
+    } catch (error) {
+      /* prettier-ignore */ if (logFlags.error) console.error('Error in processing debug-is-ready-to-join request:', error)
+      res.status(500).json({ error: 'Internal Server Error' })
+    }
   })
 
   // Changes the threshold for the blocked-At function
@@ -2133,19 +2214,24 @@ const configShardusEndpoints = (): void => {
 
   // endpoint on joining nodes side to receive admin certificate
   shardus.registerExternalPut('admin-certificate', externalApiMiddleware, async (req, res) => {
-    nestedCountersInstance.countEvent('shardeum-admin-certificate', 'called PUT admin-certificate')
+    try {
+      nestedCountersInstance.countEvent('shardeum-admin-certificate', 'called PUT admin-certificate')
 
-    const certRes = await putAdminCertificateHandler(req, shardus)
-    /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log('certRes', certRes)
-    if (certRes.success) {
-      const successRes = certRes as PutAdminCertResult
-      adminCert = successRes.signedAdminCert
-      /* prettier-ignore */ nestedCountersInstance.countEvent('shardeum-admin-certificate', `putAdminCertificateHandler success`)
-    } else {
-      /* prettier-ignore */ nestedCountersInstance.countEvent('shardeum-admin-certificate', `putAdminCertificateHandler failed with reason: ${(certRes as ValidatorError).reason}`)
+      const certRes = await putAdminCertificateHandler(req, shardus)
+      /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log('certRes', certRes)
+      if (certRes.success) {
+        const successRes = certRes as PutAdminCertResult
+        adminCert = successRes.signedAdminCert
+        /* prettier-ignore */ nestedCountersInstance.countEvent('shardeum-admin-certificate', `putAdminCertificateHandler success`)
+      } else {
+        /* prettier-ignore */ nestedCountersInstance.countEvent('shardeum-admin-certificate', `putAdminCertificateHandler failed with reason: ${(certRes as ValidatorError).reason}`)
+      }
+
+      return res.json(certRes)
+    } catch (error) {
+      /* prettier-ignore */ if (logFlags.error) console.error('Error in processing admin-certificate request:', error)
+      res.status(500).json({ error: 'Internal Server Error' })
     }
-
-    return res.json(certRes)
   })
 }
 
