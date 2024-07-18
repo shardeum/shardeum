@@ -73,14 +73,14 @@ function processFilesAndCreateSummary() {
                     const logID = item.logID;
                     if (!summaryData[logID]) {
                         summaryData[logID] = {
-                            totalVotes: 0,
-                            goodVotes: 0,
+                            numNodesWithTxInQueue: 0,
+                            numNodesWithVotes: 0,
                             nodeResults: {}
                         };
                     }
 
                     const summaryItem = summaryData[logID];
-                    summaryItem.totalVotes += 1;
+                    summaryItem.numNodesWithTxInQueue += 1;
                     const ourVote = item.ourVote;
                     const preApplyResult = item.preApplyResult;
                     const isOurVoteTruthy = ourVote ? true : false;
@@ -92,7 +92,7 @@ function processFilesAndCreateSummary() {
                     };
 
                     if (isOurVoteTruthy && isPreApplyResultTruthy) {
-                        summaryItem.goodVotes += 1;
+                        summaryItem.numNodesWithVotes += 1;
                     }
                 });
             });
