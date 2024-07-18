@@ -139,6 +139,9 @@ export function verifyMultiSigs(
     ){
       validSigs++
     }
+
+    if (validSigs >= minSigRequired) break
+
   }
 
   return validSigs >= minSigRequired
