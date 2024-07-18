@@ -39,7 +39,7 @@ import {
   DevSecurityLevel,
 } from '@shardus/core'
 import { ContractByteWrite, WarmupStats } from './state/transactionState'
-import { version, devDependencies } from '../package.json'
+import { version, devDependencies, dependencies } from '../package.json'
 import {
   AccountType,
   AppJoinData,
@@ -212,6 +212,15 @@ export let stakeCert: StakeCert = null
 export let adminCert: AdminCert = null
 
 const uuidCounter = 1
+
+interface DependenciesVersions {
+  [key: string]: {
+    version: string
+    isDevDependency: boolean
+  }
+}
+
+let shardusDependenciesVersions: DependenciesVersions = null
 
 function isDebugMode(): boolean {
   return config.server.mode === 'debug'
@@ -400,6 +409,22 @@ function createBlock(timestamp: number, blockNumber: number): Block {
 
 export function setGenesisAccounts(accounts = []): void {
   genesisAccounts = accounts
+}
+
+
+function getShardusDependenciesVersions(){
+  const isShardus = ([key, value] ) => key.startsWith('@shardus')
+
+  if (shardusDependenciesVersions === null) {
+    shardusDependenciesVersions = {}
+    Object.entries(dependencies).filter(isShardus).forEach(([key, value]) => {
+      shardusDependenciesVersions[key] = { version: value, isDevDependency: false }
+    })
+    Object.entries(devDependencies).filter(isShardus).forEach(([key, value]) => {
+      shardusDependenciesVersions[key] = { version: value, isDevDependency: true }
+    })
+  }
+  return shardusDependenciesVersions
 }
 
 /***
@@ -997,14 +1022,14 @@ export function getApplyTXState(txId: string): ShardeumState {
 
 /**
  * deleteApplyTXState
- * @param txId 
+ * @param txId
  * @param context must be a non format string to avoid counter spam
  */
 function deleteApplyTXState(txId: string, context:string): void {
   if(shardeumStateTXMap.has(txId)){
     nestedCountersInstance.countEvent('shardeum', `deleteApplyTXState ${context}`)
     shardeumStateTXMap.delete(txId)
-  } 
+  }
 }
 
 function _containsProtocol(url: string): boolean {
@@ -1129,6 +1154,10 @@ const configShardusEndpoints = (): void => {
     debugServicePointSpendersByType.clear()
     debugServicePointsByType.clear()
     return res.json(`point spenders cleared. totalSpendActions: ${totalSpends} `)
+  })
+
+  shardus.registerExternalGet('debug-shardus-dependencies', debugMiddlewareLow, async (req, res) => {
+    return res.json(getShardusDependenciesVersions())
   })
 
   shardus.registerExternalPost('inject', externalApiMiddleware, async (req, res) => {
@@ -1726,7 +1755,7 @@ const configShardusEndpoints = (): void => {
         opt['block'] = blocks[latestBlock] // eslint-disable-line security/detect-object-injection
       }
 
-      
+
       const customEVM = new EthereumVirtualMachine({
         common: evmCommon,
         stateManager: callTxState,
@@ -6064,7 +6093,7 @@ const shardusSetup = (): void => {
         //This next log is usefull but very heavy on the output lines:
         //Updating to be on only with verbose logs
         /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log('running transactionReceiptPass', txId, tx, wrappedStates, applyResponse)
-        _transactionReceiptPass(tx, txId, wrappedStates, applyResponse)        
+        _transactionReceiptPass(tx, txId, wrappedStates, applyResponse)
       }
 
       //clear this out of the shardeum state map
@@ -7121,11 +7150,11 @@ const shardusSetup = (): void => {
             const wrappedEVMAccount = account.data as WrappedEVMAccount
             return wrappedEVMAccount.account.nonce
           }
-          //if we did not get an exeption we could return null, but seems better to retry 
+          //if we did not get an exeption we could return null, but seems better to retry
         }catch(e) {
           exceptionCount++
           //This has the potential to spam our counters if message has a format string. may have to dial it back
-          //or disable after we fix issues 
+          //or disable after we fix issues
           /* prettier-ignore */ nestedCountersInstance.countEvent('getAccountNonce', `getAccountNonce: ${e.message}`)
         }
       }
@@ -7141,7 +7170,7 @@ const shardusSetup = (): void => {
 
 
 //Note, this functionality was disabled 10 months ago.
-//now that we are moving away from TX expiration we would need to be safe if we ever 
+//now that we are moving away from TX expiration we would need to be safe if we ever
 //turn this back on.  (note, disabled by having setTimeout not called again)
 function periodicMemoryCleanup(): void {
   const keys = shardeumStateTXMap.keys()
