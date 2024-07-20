@@ -1,4 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
+
+import { TraceStorageMap } from "./traceStorageMap"
+
 /* eslint-disable @typescript-eslint/explicit-function-return-type */
 let stringify: (buffer: Buffer, start: number, end: number) => string
 if (typeof (Buffer.prototype as any).latin1Slice === 'function') {
@@ -30,6 +33,18 @@ function bufferToMinHexKey(buffer: Buffer): string {
     }
   }
   return ''
+}
+
+export type structLog = {
+  depth: number,
+  error: string,
+  gas: bigint,
+  gasCost: bigint,
+  memory: ITraceData[],
+  op: string,
+  pc: number,
+  stack: ITraceData[],
+  storage: TraceStorageMap,
 }
 
 export interface ITraceData {

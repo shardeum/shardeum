@@ -31,6 +31,10 @@ interface ShardeumFlags {
     ['contract/estimateGas']: {
       endpoint: number
       direct: number
+    },
+    ['contract/debugTraceTransaction']: {
+      endpoint: number
+      direct: number
     }
     ['tx/:hash']: number
   }
@@ -173,6 +177,7 @@ export const ShardeumFlags: ShardeumFlags = {
     ['contract/call']: { endpoint: 5, direct: 20 },
     ['contract/accesslist']: { endpoint: 5, direct: 20 },
     ['contract/estimateGas']: { endpoint: 5, direct: 20 },
+    ['contract/debugTraceTransaction']: {endpoint: 5, direct: 20},
     ['tx/:hash']: 5,
   },
   generateMemoryPatternData: true,
@@ -248,6 +253,7 @@ export const ShardeumFlags: ShardeumFlags = {
 
   startInServiceMode: false,
   allowedEndpointsInServiceMode: [
+    'POST /contract/debugTraceTransaction',
     'POST /contract/estimateGas',
     'POST /contract/call',
     'POST /contract/accesslist',

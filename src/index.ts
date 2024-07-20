@@ -152,6 +152,9 @@ import { isLowStake } from './tx/penalty/penaltyFunctions'
 import { accountDeserializer, accountSerializer } from './types/Helpers'
 import { runWithContextAsync } from './utils/RequestContext'
 import { Utils } from '@shardus/types'
+import { ITraceData, structLog, TraceDataFactory } from './debug/trace/traceDataFactory'
+import { TraceStorageMap } from './debug/trace/traceStorageMap'
+import type { InterpreterStep } from '@ethereumjs/evm'
 
 let latestBlock = 0
 export const blocks: BlockMap = {}
@@ -1843,6 +1846,36 @@ const configShardusEndpoints = (): void => {
     }
   })
 
+  shardus.registerExternalPost('contract/debugTraceTransaction', externalApiMiddleware, async (req, res) => {
+    // Only allow in service mode
+    if (isServiceMode() === false)
+      return res.json({ result: null, error: 'debugTraceTransaction only supported in service mode' })
+    const injectedTx = req.body
+    if (ShardeumFlags.VerboseLogs) console.log('debugTraceTransaction endpoint injectedTx', injectedTx)
+
+    try {
+      const txBody = req.body
+      if (!txBody) {
+        return res.json({ result: null, error: 'txHash is required' })
+      }
+      // TODO: Fetch the tx body from the txreceipt of this transaction
+      if (ShardeumFlags.VerboseLogs) console.log('debugTraceTransaction endpoint injectedTx', injectedTx)
+
+      const result = await estimateGas(txBody.originalTxdata, txBody.blockNumber)
+      res.json(result.structLogs)
+    } catch (e) {
+      if (ShardeumFlags.VerboseLogs) console.log('Error debugTraceTransaction', e)
+      return res.json({
+        result: {
+          error: {
+            code: -32000,
+            message: 'gas required exceeds allowance or always failing transaction',
+          },
+        },
+      })
+    }
+  })
+
   shardus.registerExternalPost('contract/estimateGas', externalApiMiddleware, async (req, res) => {
     if (
       trySpendServicePoints(
@@ -2716,8 +2749,9 @@ const getOrCreateBlockFromTimestamp = (timestamp: number, scheduleNextBlock = fa
 }
 
 async function estimateGas(
-  injectedTx: { from: string; maxFeePerGas: string; gas: number } & LegacyTxData
-): Promise<{ estimateGas: string }> {
+  injectedTx: { from: string; maxFeePerGas: string; gas: number } & LegacyTxData,
+  traceTransactionBlockNumber?: number,
+): Promise<{ estimateGas: string, structLogs?: structLog[] }> {
   const originalInjectedTx = { ...injectedTx }
   const maxUint256 = BigInt(2) ** BigInt(256) - BigInt(1)
   if (ShardeumFlags.VerboseLogs) console.log('injectedTx to estimateGas', injectedTx)
@@ -2849,19 +2883,163 @@ async function estimateGas(
     )
   }
 
+  const structLogs: structLog[] = []
+  if (traceTransactionBlockNumber) {
+    let gas = BigInt(0)
+    const TraceData = TraceDataFactory()
+    const options = {
+      disableMemory: false,
+      disableStack: false,
+      disableStorage: false,
+    }
+    let currentDepth = -1
+    const storageStack: TraceStorageMap[] = []
+
+    const stepListener = async (
+      event: InterpreterStep,
+      next: (error?: Error | null, cb?: () => void) => void
+    ): Promise<void> => {
+      try {
+        const totalGasUsedAfterThisStep = transaction.gasLimit - event.gasLeft
+        const gasUsedPreviousStep = totalGasUsedAfterThisStep - gas
+        gas += gasUsedPreviousStep
+
+        const memory: ITraceData[] = []
+        if (options.disableMemory !== true) {
+          // We get the memory as one large array.
+          // Let's cut it up into 32 byte chunks as required by the spec.
+          let index = 0
+          while (index < event.memory.length) {
+            const slice = event.memory.slice(index, index + 32)
+            memory.push(TraceData.from(Buffer.from(slice)))
+            index += 32
+          }
+        }
+
+        const stack: ITraceData[] = []
+        if (options.disableStack !== true) {
+          for (const stackItem of event.stack) {
+            const traceData = TraceData.from(Buffer.from(stackItem.toString(16), 'hex'))
+            stack.push(traceData)
+          }
+        }
+
+        const structLog: structLog = {
+          depth: event.depth + 1,
+          error: '',
+          gas: event.gasLeft,
+          gasCost: BigInt(0),
+          memory,
+          op: event.opcode.name,
+          pc: event.pc,
+          stack,
+          storage: null,
+        }
+
+        // The gas difference calculated for each step is indicative of gas consumed in
+        // the previous step. Gas consumption in the final step will always be zero.
+        if (structLogs.length) {
+          structLogs[structLogs.length - 1].gasCost = gasUsedPreviousStep
+        }
+
+        if (options.disableStorage === true) {
+          // Add the struct log as is - nothing more to do.
+          structLogs.push(structLog)
+          next()
+        } else {
+          const { depth: eventDepth } = event
+          if (currentDepth > eventDepth) {
+            storageStack.pop()
+          } else if (currentDepth < eventDepth) {
+            storageStack.push(new TraceStorageMap())
+          }
+
+          currentDepth = eventDepth
+
+          switch (event.opcode.name) {
+            case 'SSTORE': {
+              const key = stack[stack.length - 1]
+              const value = stack[stack.length - 2]
+
+              // new TraceStorageMap() here creates a shallow clone, to prevent other steps from overwriting
+              // eslint-disable-next-line security/detect-object-injection
+              structLog.storage = new TraceStorageMap(storageStack[eventDepth])
+
+              // Tell vm to move on to the next instruction. See below.
+              structLogs.push(structLog)
+              next()
+
+              // assign after callback because this storage change actually takes
+              // effect _after_ this opcode executes
+              // eslint-disable-next-line security/detect-object-injection
+              storageStack[eventDepth].set(key, value)
+              break
+            }
+            case 'SLOAD': {
+              const key = stack[stack.length - 1]
+              const result = await EVM.stateManager.getContractStorage(event.address, key.toBuffer())
+              const value = TraceData.from(result)
+              // eslint-disable-next-line security/detect-object-injection
+              storageStack[eventDepth].set(key, value)
+
+              // new TraceStorageMap() here creates a shallow clone, to prevent other steps from overwriting
+              // eslint-disable-next-line security/detect-object-injection
+              structLog.storage = new TraceStorageMap(storageStack[eventDepth])
+              structLogs.push(structLog)
+              next()
+              break
+            }
+            default:
+              // new TraceStorageMap() here creates a shallow clone, to prevent other steps from overwriting
+              // eslint-disable-next-line security/detect-object-injection
+              structLog.storage = new TraceStorageMap(storageStack[eventDepth])
+              structLogs.push(structLog)
+              next()
+          }
+        }
+      } catch (e) {
+        console.log('Error in stepListener', e)
+      }
+    }
+
+    customEVM.events.on('step', stepListener)
+  }
+
   let runTxResult
   try {
+    if (traceTransactionBlockNumber) {
+      const requestContext = {
+        block: traceTransactionBlockNumber,
+      }
+      await runWithContextAsync(
+        async () => {
+          runTxResult = await EVM.runTx(
+            {
+              block: blocks[latestBlock],
+              tx: transaction,
+              skipNonce: true,
+              skipBalance: true,
+              networkAccount: await AccountsStorage.getCachedNetworkAccount(),
+            },
+            customEVM,
+            txId
+          )
+        },
+        requestContext
+      )
+    } else {
       runTxResult = await EVM.runTx(
-      {
-        block: blocks[latestBlock],
-        tx: transaction,
-        skipNonce: true,
-        skipBalance: true,
-        networkAccount: await AccountsStorage.getCachedNetworkAccount(),
-      },
-      customEVM,
-      txId
-    )
+        {
+          block: blocks[latestBlock],
+          tx: transaction,
+          skipNonce: true,
+          skipBalance: true,
+          networkAccount: await AccountsStorage.getCachedNetworkAccount(),
+        },
+        customEVM,
+        txId
+      )
+    }
   } finally{
     customEVM.cleanUp()
   }
@@ -2879,6 +3057,7 @@ async function estimateGas(
   // For the estimate, we add the gasRefund to the gasUsed because gasRefund is subtracted after execution.
   // That can lead to higher gasUsed during execution than the actual gasUsed
   const estimate = runTxResult.totalGasSpent + (runTxResult.execResult.gasRefund ?? BigInt(0))
+  if (traceTransactionBlockNumber) return { estimateGas: bigIntToHex(estimate), structLogs }
   return { estimateGas: bigIntToHex(estimate) }
 }
 
