@@ -6931,8 +6931,9 @@ const shardusSetup = (): void => {
       if (account.accountId === networkAccount) {
         const networkAccount: NetworkAccount = account.data
         await this.patchAndUpdate(networkAccount.current, appData)
+        // TODO: look into updating the timestamp also
         // Increase the timestamp by 1 second
-        networkAccount.timestamp += ONE_SECOND
+        // networkAccount.timestamp += ONE_SECOND ( this has issue when a newly joined node updates its config ) 
         networkAccount.hash = WrappedEVMAccountFunctions._calculateAccountHash(networkAccount)
         account.stateId = networkAccount.hash
         account.timestamp = networkAccount.timestamp
@@ -6999,8 +7000,9 @@ const shardusSetup = (): void => {
             listOfChanges.splice(i, 1)
           }
         }
+        // TODO: look into updating the timestamp also
         // Increase the timestamp by 1 second
-        networkAccount.timestamp += ONE_SECOND
+        // networkAccount.timestamp += ONE_SECOND ( this has issue when a newly joined node updates its config ) 
         networkAccount.hash = WrappedEVMAccountFunctions._calculateAccountHash(networkAccount)
         account.stateId = networkAccount.hash
         account.timestamp = networkAccount.timestamp
