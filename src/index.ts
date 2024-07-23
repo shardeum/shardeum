@@ -6878,13 +6878,26 @@ const shardusSetup = (): void => {
         ShardeumFlags.enableNodeSlashing === true &&
         ShardeumFlags.enableSyncTimeoutSlashing
       ) {
-        const violationData: SyncingTimeoutViolationData = {
-          nodeLostCycle: data.cycleNumber,
-          nodeDroppedTime: data.time,
-        }
-        nestedCountersInstance.countEvent('shardeum-staking', `node-sync-timeout: injectPenaltyTx`)
+        let violationData: SyncingTimeoutViolationData
+        for (let i = 0; i < latestCycles.length; i++) {
+          const cycle = latestCycles[i]
+          if (cycle == null) continue
+          if (cycle.lostSyncing.includes(data.nodeId) && cycle.counter === data.cycleNumber) {
+            violationData = {
+              nodeLostCycle: data.cycleNumber,
+              nodeDroppedTime: data.time,
+            }
+            nestedCountersInstance.countEvent('shardeum-staking', `node-sync-timeout: injectPenaltyTx`)
 
-        await PenaltyTx.injectPenaltyTX(shardus, data, violationData)
+            await PenaltyTx.injectPenaltyTX(shardus, data, violationData)
+          }
+        }
+        if (!violationData) {
+          console.log(
+            `node-sync-timeout validation failed: Node-ID: (${data.nodeId}) not found in lostSyncing`
+          )
+          return
+        }
       } else if (
         eventType === 'node-refuted' &&
         ShardeumFlags.enableNodeSlashing === true &&
