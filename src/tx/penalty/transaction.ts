@@ -19,7 +19,7 @@ import { toShardusAddress } from '../../shardeum/evmAddress'
 import { getPenaltyForViolation } from './violation'
 import * as WrappedEVMAccountFunctions from '../../shardeum/wrappedEVMAccountFunctions'
 import { _readableSHM, generateTxId, sleep } from '../../utils'
-import { Address } from '@ethereumjs/util'
+import { Address, bigIntToHex } from '@ethereumjs/util'
 import { applyPenalty } from './penaltyFunctions'
 import * as AccountsStorage from '../../storage/accountStorage'
 import config from '../../config'
@@ -394,7 +394,8 @@ export async function applyPenaltyTX(
       tx.reportedNodePublickKey,
       tx.reportedNodePublickKey,
       txTimestamp,
-      txId
+      txId,
+      bigIntToHex(penaltyAmount)
     )
   }
 
