@@ -288,6 +288,8 @@ export interface ReadableReceipt {
   v?: string
   r?: string
   s?: string
+  penaltyAmount?: string,
+  rewardedAmount?: string
 }
 
 // This is used in stake/unstake tx receipt
