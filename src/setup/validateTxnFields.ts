@@ -122,8 +122,12 @@ export const validateTxnFields =
             //this'll making sure old single sig / non-array are still compitable
             let sigs: Sign[] = is_array_sig ? tx.sign : [tx.sign]
 
+
             const {sign, ...txWithoutSign} = tx
 
+
+            // if the signatures in the payload is larger than the allowed public keys, it is invalid
+            // this prevent loop exhaustion abuses
             const sig_are_valid = verifyMultiSigs(
               txWithoutSign,
               sigs,
