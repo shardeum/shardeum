@@ -395,6 +395,8 @@ export async function applyPenaltyTX(
       tx.reportedNodePublickKey,
       txTimestamp,
       txId,
+      bigIntToHex(BigInt(0)), // 0 amountSpent,
+      undefined,
       bigIntToHex(penaltyAmount)
     )
   }
