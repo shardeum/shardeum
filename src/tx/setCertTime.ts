@@ -294,8 +294,6 @@ export function applySetCertTimeTx(
       tx.nominator,
       txTimestamp,
       txId,
-      undefined,
-      undefined,
       amountSpent
     )
   }
