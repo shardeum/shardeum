@@ -3533,6 +3533,7 @@ const shardusSetup = (): void => {
       shardeumState._transactionState.appData = appData
 
       if (appData.internalTx && appData.internalTXType === InternalTXType.Stake) {
+    
         if (ShardeumFlags.VerboseLogs) console.log('applying stake tx', wrappedStates, appData)
 
         // get stake tx from appData.internalTx
@@ -3546,6 +3547,10 @@ const shardusSetup = (): void => {
         if (stakeCoinsTx.timestamp < operatorEVMAccount.timestamp) {
           throw new Error('Stake transaction timestamp is too old')
         }
+
+        if (operatorEVMAccount.operatorAccountInfo?.nominee?.length > 0 ) {
+          throw new Error(`This node is already staked by another account!`)
+        }  
 
         // // Validate tx timestamp against certExp (I thin)
         // if (operatorEVMAccount.operatorAccountInfo && operatorEVMAccount.operatorAccountInfo.certExp > 0) {
