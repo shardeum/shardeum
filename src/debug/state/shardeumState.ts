@@ -513,7 +513,7 @@ export default class ShardeumState implements EVMStateManagerInterface {
    * Dumps the RLP-encoded storage values for an `account` specified by `address`.
    * @param address - The address of the `account` to return storage for
    * @returns {Promise<StorageDump>} - The state of the account as an `Object` map.
-   * Keys are are the storage keys, values are the storage values as strings.
+   * Keys are the storage keys, values are the storage values as strings.
    * Both are represented as hex strings without the `0x` prefix.
    */
   async dumpStorage(): Promise<StorageDump> {
