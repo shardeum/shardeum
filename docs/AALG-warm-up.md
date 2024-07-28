@@ -1,7 +1,7 @@
 
 
 
-Access lists are are a difficult topic with multiple constraints.
+Access lists are a difficult topic with multiple constraints.
 
 
 EIP2930 is an Ethereum standard for providing an access list to a transaction.

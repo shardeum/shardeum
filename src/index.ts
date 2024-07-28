@@ -3728,8 +3728,8 @@ const shardusSetup = (): void => {
 
       //Now we need to get a transaction state object.  For single sharded networks this will be a new object.
       //When we have multiple shards we could have some blob data that wrapped up read accounts.  We will read these accounts
-      //Into the the transaction state init at some point (possibly not here).  This will allow the EVM to run and not have
-      //A storage miss for accounts that were read on previous shard attempts to exectute this TX
+      //Into the transaction state init at some point (possibly not here).  This will allow the EVM to run and not have
+      //A storage miss for accounts that were read on previous shard attempts to execute this TX
       // let transactionState = transactionStateMap.get(txId)
       // if (transactionState == null) {
       //   transactionState = new TransactionState()
