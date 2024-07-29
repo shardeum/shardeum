@@ -2291,6 +2291,15 @@ const configShardusEndpoints = (): void => {
   })
 }
 
+const configShardusNetworkTransactions = (): void => {
+  shardus.registerBeforeAddVerify('rewardTx', () => {
+    return true
+  })
+  shardus.registerBeforeRemoveVerify('rewardTx', () => {
+    return true
+  })
+}
+
 /***
  *    #### ##    ## ######## ######## ########  ##    ##    ###    ##          ######## ##     ##
  *     ##  ###   ##    ##    ##       ##     ## ###   ##   ## ##   ##             ##     ##   ##
@@ -3027,7 +3036,7 @@ async function estimateGas(
 
   let runTxResult
   try {
-      runTxResult = await EVM.runTx(
+    runTxResult = await EVM.runTx(
       {
         block: blocks[latestBlock],
         tx: transaction,
@@ -7082,16 +7091,18 @@ const shardusSetup = (): void => {
       } else if (eventType === 'node-deactivated') {
         // todo: aamir check the timestamp and cycle the first time we see this event
         nestedCountersInstance.countEvent('shardeum-staking', `node-deactivated: injectClaimRewardTx`)
+        const dummyData = { start: 0, end: 0, publicKey: '', nodeId: '' }
+        shardus.addNetworkTx('claimReward', dummyData)
 
-        // Limit the nodes that send this to the 5 closest to the node id
-        const closestNodes = shardus.getClosestNodes(data.publicKey, 5)
-        const ourId = shardus.getNodeId()
-        for (const id of closestNodes) {
-          if (id === ourId) {
-            const result = await injectClaimRewardTxWithRetry(shardus, data)
-            /* prettier-ignore */ if (logFlags.dapp_verbose) console.log('INJECTED_CLAIM_REWARD_TX', result)
-          }
-        }
+        // // Limit the nodes that send this to the 5 closest to the node id
+        // const closestNodes = shardus.getClosestNodes(data.publicKey, 5)
+        // const ourId = shardus.getNodeId()
+        // for (const id of closestNodes) {
+        //   if (id === ourId) {
+        //     const result = await injectClaimRewardTxWithRetry(shardus, data)
+        //     /* prettier-ignore */ if (logFlags.dapp_verbose) console.log('INJECTED_CLAIM_REWARD_TX', result)
+        //   }
+        // }
       } else if (
         eventType === 'node-left-early' &&
         ShardeumFlags.enableNodeSlashing === true &&
@@ -7614,6 +7625,7 @@ export function shardeumGetTime(): number {
 
   profilerInstance = shardus.getShardusProfiler()
   configShardusEndpoints()
+  configShardusNetworkTransactions()
   if (isServiceMode())
     AccountsStorage.setAccount(networkAccount, await AccountsStorage.getAccount(networkAccount))
   shardusSetup()
