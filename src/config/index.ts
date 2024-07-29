@@ -324,10 +324,6 @@ config = merge(
           // These are production keys.  Use 'git apply use_test_key.patch' for unsafe local test keys
           // Never merge a commit with changes to these lines without approval.
           // always prefix with prettier ignore
-          /* prettier-ignore */ 'a45f9a87e10d6dbd88c141e4fb293f96ab30441cbb77a4b04c577ba18d393505': DevSecurityLevel.Low,
-          /* prettier-ignore */ 'b51124e6d01e0684ff2b86eac9433d585a17319f15b393c8e4426af19117f704': DevSecurityLevel.Medium,
-          /* prettier-ignore */ 'c980f4dbdd40a9d334b3815b223e83d27e227892a109413e4bc114e8220bd281': DevSecurityLevel.High,
-          // new keys below here.   Remove the above keys for ITN phase 2
           /* prettier-ignore */ '26d8bc01edc8cbc11175551174f5b75962e205aa815cdeb4a2d9bdd40c444913': DevSecurityLevel.High,
           /* prettier-ignore */ '285f2e1519e2de572d3564dc08eed4dffc9c6497879d7609fbb8c28e75915ec3': DevSecurityLevel.High,
           /* prettier-ignore */ 'cd38e866813e063423adf2b1bb7608eef7f62c306c3b8007db925a6aafb3c0f5': DevSecurityLevel.High,
@@ -365,6 +361,7 @@ config = merge(
           /* prettier-ignore */ '1337e51d288a6ae240c5e91ecffba812d6baff3d643de559604a8f13d63f03d9': DevSecurityLevel.High,
           /* prettier-ignore */ '5988415bc8675f94e0059099ddf1c414ca737562f33e6f1091e8fee307d3352c': DevSecurityLevel.High,
           /* prettier-ignore */ '3daff5f118da18f7133fc8b8f74da7fa4c73b3569f9d4cc8ac48a73aeb886b3a': DevSecurityLevel.High,
+          /* prettier-ignore */ 'b2865c37fc9234921b10fe8e27cd782807adb09e1490489765ed7f18a4c2fa13': DevSecurityLevel.High,
           // always prefix with prettier ignore
         },
         checkAddressFormat: true, //enabled for 1.10.0
