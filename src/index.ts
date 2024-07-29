@@ -153,6 +153,7 @@ import { accountDeserializer, accountSerializer } from './types/Helpers'
 import { runWithContextAsync } from './utils/RequestContext'
 import { Utils } from '@shardus/types'
 import { verifyStakeTx, verifyUnstakeTx } from './tx/staking/verifyStake'
+import { safeStringify } from '@shardus/types/build/src/utils/functions/stringify'
 
 let latestBlock = 0
 export const blocks: BlockMap = {}
@@ -7170,6 +7171,9 @@ const shardusSetup = (): void => {
           nestedCountersInstance.countEvent('shardeum-staking', `node-refuted: event skipped`)
           /* prettier-ignore */ if (logFlags.dapp_verbose) console.log(`Shardeum node-refuted event skipped`, data, nodeRefutedCycle)
         }
+      } else if (eventType === 'try-network-transaction') {
+        console.log('shardeum-event', `try-network-transaction`, safeStringify(data))
+        nestedCountersInstance.countEvent('shardeum-event', `try-network-transaction`)
       }
     },
     // Note: this logic is added to the archive server; any changes here should have to be done in the archive server as well
