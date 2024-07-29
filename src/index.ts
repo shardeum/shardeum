@@ -6839,8 +6839,15 @@ const shardusSetup = (): void => {
       } else if (eventType === 'node-deactivated') {
         // todo: aamir check the timestamp and cycle the first time we see this event
         nestedCountersInstance.countEvent('shardeum-staking', `node-deactivated: injectClaimRewardTx`)
-        const dummyData = { start: 0, end: 0, publicKey: '', nodeId: '' }
-        shardus.addNetworkTx('claimReward', dummyData)
+        const dummyData = {
+          start: Math.floor(Math.random() * 21),
+          end: Math.floor(Math.random() * 21),
+          publicKey: shardus.crypto.getPublicKey(),
+          nodeId: shardus.getNodeId(),
+          id: '',
+        }
+        dummyData.id = crypto.hashObj(dummyData)
+        shardus.addNetworkTx('rewardTx', dummyData)
 
         // // Limit the nodes that send this to the 5 closest to the node id
         // const closestNodes = shardus.getClosestNodes(data.publicKey, 5)
