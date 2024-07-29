@@ -152,6 +152,7 @@ import { isLowStake } from './tx/penalty/penaltyFunctions'
 import { accountDeserializer, accountSerializer } from './types/Helpers'
 import { runWithContextAsync } from './utils/RequestContext'
 import { Utils } from '@shardus/types'
+import { safeStringify } from '@shardus/types/build/src/utils/functions/stringify'
 
 let latestBlock = 0
 export const blocks: BlockMap = {}
@@ -6905,6 +6906,9 @@ const shardusSetup = (): void => {
           nestedCountersInstance.countEvent('shardeum-staking', `node-refuted: event skipped`)
           /* prettier-ignore */ if (logFlags.dapp_verbose) console.log(`Shardeum node-refuted event skipped`, data, nodeRefutedCycle)
         }
+      } else if (eventType === 'try-network-transaction') {
+        console.log('shardeum-event', `try-network-transaction`, safeStringify(data))
+        nestedCountersInstance.countEvent('shardeum-event', `try-network-transaction`)
       }
     },
     async updateNetworkChangeQueue(account: WrappedAccount, appData: any) {
