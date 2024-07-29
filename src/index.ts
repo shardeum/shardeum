@@ -6839,10 +6839,8 @@ const shardusSetup = (): void => {
       } else if (eventType === 'node-deactivated') {
         // todo: aamir check the timestamp and cycle the first time we see this event
         nestedCountersInstance.countEvent('shardeum-staking', `node-deactivated: injectClaimRewardTx`)
-        const ourId = shardus.getNodeId()
-        const node = shardus.getNode(ourId)
         const txData = {
-          start: node.activeCycle,
+          start: 0, //we will likely need to pass this in the event data because at this point the node is not in our nodelist
           end: data.cycleNumber,
           publicKey: data.publicKey,
           nodeId: data.nodeId,
