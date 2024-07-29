@@ -1339,32 +1339,76 @@ const configShardusEndpoints = (): void => {
     }
   })
 
-  shardus.registerExternalGet('eth_getBlockHashes', externalApiMiddleware, async (req, res) => {
+  shardus.registerExternalGet('eth_getBlockHashes', externalApiMiddleware, async (req: Request, res: Response) => {
     try {
-      let fromBlock: any = req.query.fromBlock
-      let toBlock: any = req.query.toBlock
-
-      if (fromBlock == null) return res.json({ error: 'Missing fromBlock' })
-      if (typeof fromBlock === 'string') fromBlock = parseInt(fromBlock)
+      // Helper function to parse and validate block numbers
+      const parseBlockNumber = (block: string | null, defaultValue?: number): number => {
+        if (block === null) {
+          if (defaultValue !== undefined) {
+            return defaultValue;
+          }
+          throw new Error('missing');
+        }
+        const num = parseInt(block, 10);
+        if (isNaN(num) || num < 0) {
+          throw new Error('invalid');
+        }
+        return num;
+      };
+  
+      // Safely assign fromBlock using an IIFE to handle the throw within an expression context
+      let fromBlock: number = req.query.fromBlock ? parseBlockNumber(req.query.fromBlock as string) : (() => { throw new Error('Missing fromBlock'); })();
+      let toBlock: number = req.query.toBlock ? parseBlockNumber(req.query.toBlock as string, latestBlock) : latestBlock;
+  
+      // Ensure fromBlock is not set to a negative value
+      // Adjust fromBlock to within the allowed range if it's too old
       if (fromBlock < latestBlock - ShardeumFlags.maxNumberOfOldBlocks) {
-        // return max 100 blocks
-        fromBlock = latestBlock - ShardeumFlags.maxNumberOfOldBlocks + 1 // 1 is added for safety
-      }
-      if (toBlock == null) toBlock = latestBlock
-      if (typeof toBlock === 'string') fromBlock = parseInt(toBlock)
-      if (toBlock > latestBlock) toBlock = latestBlock
+        // Calculate the minimum allowable fromBlock based on configuration
+        const minAllowedBlock = latestBlock - ShardeumFlags.maxNumberOfOldBlocks + 1;
 
-      const blockHashes = []
-      for (let i = fromBlock; i <= toBlock; i++) {
-        const block = readableBlocks[i]
-        if (block) blockHashes.push(block.hash)
+        // Ensure fromBlock is not set to a negative value if minAllowedBlock calculation is negative
+        fromBlock = Math.max(minAllowedBlock, 0);
+        toBlock = latestBlock;
       }
-      return res.json({ blockHashes, fromBlock, toBlock })
-    } catch (err) {
-      if (ShardeumFlags.VerboseLogs) console.log('Failed to retrieve eth_getBlockHashes: ', err)
-      res.status(500).json({ error: 'Failed to retrieve eth_getBlockHashes' })
+
+  
+      // Cap toBlock at latestBlock
+      if (toBlock > latestBlock) {
+        toBlock = latestBlock;
+      }
+  
+      // Validate block range
+      if (fromBlock > toBlock) {
+        return res.status(400).json({ error: 'fromBlock cannot be greater than toBlock' });
+      }
+  
+      // Assuming readableBlocks is an array of objects with a 'hash' property
+      const blockHashes = [];
+      for (let i = fromBlock; i <= toBlock; i++) {
+          const block = readableBlocks[i];
+          if (block !== null && block !== undefined) {
+              blockHashes.push(block.hash);
+          }
+      }
+
+  
+      return res.json({ blockHashes, fromBlock, toBlock });
+  
+    } catch (error) {
+      console.error('Failed to process eth_getBlockHashes:', error.message);
+  
+      const errorMessages: { [key: string]: string } = {
+        missing: 'Missing required parameter',
+        invalid: 'Parameter must be a non-negative integer'
+      };
+  
+      return res.status(500).json({
+        success: false,
+        error: errorMessages[error.message] || 'Internal server error while processing block hashes'
+      });
     }
-  })
+  });
+  
 
   shardus.registerExternalGet('eth_getBlockByNumber', externalApiMiddleware, async (req, res) => {
     try {
