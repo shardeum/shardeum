@@ -2151,6 +2151,46 @@ const configShardusEndpoints = (): void => {
 
 const configShardusNetworkTransactions = (): void => {
   shardus.registerBeforeAddVerify('rewardTx', (tx: any) => {
+    console.log('Validating rewardTx fields', tx)
+    /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log('Validating rewardTx fields', tx)
+    if (!tx.publicKey || tx.publicKey === '' || tx.publicKey.length !== 64) {
+      /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log('registerBeforeAddVerify rewardTx fail invalid publicKey field', tx)
+      /* prettier-ignore */ nestedCountersInstance.countEvent(
+        'shardeum-staking',
+        `registerBeforeAddVerify rewardTx fail invalid publicKey field`
+      )
+      return false
+    }
+    if (tx.start === undefined) {
+      /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log('registerBeforeAddVerify rewardTx fail start field missing', tx)
+      /* prettier-ignore */ nestedCountersInstance.countEvent(
+        'shardeum-staking',
+        `registerBeforeAddVerify rewardTx fail start field missing`
+      )
+      return false
+    }
+    const latestCycles = shardus.getLatestCycles(5)
+    if (tx.start < 0 || tx.start > latestCycles[0].counter) {
+      /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log('registerBeforeAddVerify rewardTx fail start value is not correct ', tx)
+      /* prettier-ignore */ nestedCountersInstance.countEvent(
+        'shardeum-staking',
+        `registerBeforeAddVerify rewardTx fail start value is not correct `
+      )
+      return false
+    }
+
+    const nodeRemovedCycle = latestCycles.find((cycle) => cycle.removed.includes(tx.nodeId))
+    /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log('nodeRemovedCycle', nodeRemovedCycle)
+    if (!nodeRemovedCycle) {
+      /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log('registerBeforeAddVerify rewardTx fail !nodeRemovedCycle', tx)
+      /* prettier-ignore */ nestedCountersInstance.countEvent(
+        'shardeum-staking',
+        `registerBeforeAddVerify rewardTx fail !nodeRemovedCycle`
+      )
+      return false
+    }
+
+    /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log('registerBeforeAddVerify rewardTx success', tx)
     return true
   })
   shardus.registerBeforeRemoveVerify('rewardTx', (tx: any) => {
