@@ -2336,7 +2336,7 @@ const configShardusNetworkTransactions = (): void => {
     return true
   })
   shardus.registerBeforeRemoveVerify('rewardTx', (tx: any) => {
-    return true
+    return false
   })
 }
 
