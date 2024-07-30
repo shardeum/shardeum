@@ -2153,8 +2153,11 @@ const configShardusNetworkTransactions = (): void => {
   shardus.registerBeforeAddVerify('rewardTx', () => {
     return true
   })
-  shardus.registerBeforeRemoveVerify('rewardTx', () => {
-    return true
+  let alternate = true
+  shardus.registerBeforeRemoveVerify('rewardTx', (tx: any) => {
+    alternate = !alternate
+    console.log(`registerBeforeRemoveVerify. tx: ${safeStringify(tx)}.  return value: ${alternate}`)
+    return alternate
   })
 }
 
