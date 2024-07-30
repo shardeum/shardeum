@@ -7096,9 +7096,7 @@ const shardusSetup = (): void => {
           end: data.cycleNumber,
           publicKey: data.publicKey,
           nodeId: data.nodeId,
-          id: '',
         }
-        txData.id = crypto.hashObj(txData)
         shardus.addNetworkTx('rewardTx', txData)
 
         // // Limit the nodes that send this to the 5 closest to the node id
