@@ -397,7 +397,7 @@ export async function applyPenaltyTX(
       txId,
       bigIntToHex(BigInt(0)), // 0 amountSpent,
       undefined,
-      bigIntToHex(penaltyAmount)
+      penaltyAmount
     )
   }
 
