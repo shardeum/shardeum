@@ -152,6 +152,7 @@ import { isLowStake } from './tx/penalty/penaltyFunctions'
 import { accountDeserializer, accountSerializer } from './types/Helpers'
 import { runWithContextAsync } from './utils/RequestContext'
 import { Utils } from '@shardus/types'
+import { verifyStakeTx, verifyUnstakeTx } from './tx/staking/verifyStake'
 
 let latestBlock = 0
 export const blocks: BlockMap = {}
@@ -3488,6 +3489,87 @@ const shardusSetup = (): void => {
       /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log('DBG', new Date(), 'attempting to apply tx', txId, ethTxId, tx, wrappedStates, appData)
       const applyResponse = shardus.createApplyResponse(txId, txTimestamp)
 
+      // Verify Stake and Unstake transactions. If failed, the verify functions return false
+      let verifyResult = {
+        success: true,
+        reason: ''
+      }
+      try {
+        if (appData.internalTx && appData.internalTXType === InternalTXType.Stake) {
+          verifyResult = verifyStakeTx(appData.internalTx, senderAddress, wrappedStates)
+        }
+        if (appData.internalTx && appData.internalTXType === InternalTXType.Unstake) {
+          verifyResult = verifyUnstakeTx(appData.internalTx, senderAddress, wrappedStates, shardus);
+        }
+      } catch (error) {
+        if (ShardeumFlags.VerboseLogs) console.log(`Stake/Unstake tx verification failed, reason: ${error}`)
+        verifyResult = {
+          success: false,
+          reason: error
+        }
+      }
+      
+      if (!verifyResult.success) {
+        if (ShardeumFlags.failedStakeReceipt) {
+          const blockForReceipt = getOrCreateBlockFromTimestamp(txTimestamp)
+          const blockNumberForTx = blockForReceipt.header.number.toString()
+          // generate a failed receipt for stake/unstake tx
+          const readableReceipt: ReadableReceipt = {
+            status: 0, //FAILED
+            transactionHash: ethTxId,
+            transactionIndex: '0x1',
+            // eslint-disable-next-line security/detect-object-injection
+            blockNumber: bigIntToHex(blocks[blockForReceipt.header.number.toString()].header.number),
+            nonce: bigIntToHex(transaction.nonce),
+            blockHash: readableBlocks[blockNumberForTx].hash, // eslint-disable-line security/detect-object-injection
+            cumulativeGasUsed: '0x0', // NO GAS USED
+            gasUsed: '0x0',
+            gasRefund: '0x0',
+            gasPrice: bigIntToHex(transaction.gasPrice),
+            gasLimit: bigIntToHex(transaction.gasLimit),
+            maxFeePerGas: undefined,
+            maxPriorityFeePerGas: undefined,
+            logs: [],
+            logsBloom: '',
+            contractAddress: null,
+            from: senderAddress.toString(),
+            to: transaction.to ? transaction.to.toString() : null,
+            chainId: '0x' + ShardeumFlags.ChainID.toString(16),
+            reason: verifyResult.reason,
+            value: bigIntToHex(transaction.value),
+            type: '0x' + transaction.type.toString(16),
+            data: bytesToHex(transaction.data),
+            v: bigIntToHex(transaction.v),
+            r: bigIntToHex(transaction.r),
+            s: bigIntToHex(transaction.s),
+          }
+          console.log(`Atharva: GENERATED FAKE RECEIPT`)
+
+          const wrappedReceiptAccount: WrappedEVMAccount = {
+            timestamp: txTimestamp,
+            ethAddress: ethTxId,
+            hash: '',
+            readableReceipt,
+            amountSpent: '0x0',
+            txId,
+            accountType: AccountType.StakeReceipt,
+            txFrom: appData.internalTx.nominator,
+          }
+
+          const receiptShardusAccount =
+            WrappedEVMAccountFunctions._shardusWrappedAccount(wrappedReceiptAccount)
+          shardus.applyResponseAddReceiptData(
+            applyResponse,
+            receiptShardusAccount,
+            crypto.hashObj(receiptShardusAccount)
+          )
+
+          return applyResponse
+        } else {
+          throw new Error(`Stake/Unstake transaction failed, reason: ${verifyResult.reason}`)
+        }
+      }
+
       //Now we need to get a transaction state object.  For single sharded networks this will be a new object.
       //When we have multiple shards we could have some blob data that wrapped up read accounts.  We will read these accounts
       //Into the the transaction state init at some point (possibly not here).  This will allow the EVM to run and not have
@@ -4925,6 +5007,7 @@ const shardusSetup = (): void => {
         ) {
           const transformedTargetKey = appData.internalTx.nominee // no need to convert to shardus address
           result.targetKeys.push(transformedTargetKey)
+          result.sourceKeys.push(networkAccount)
         }
 
         if (transaction.to && transaction.to.toString() !== ShardeumFlags.stakeTargetAddress) {
