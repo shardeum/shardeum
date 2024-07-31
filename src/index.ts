@@ -38,7 +38,7 @@ import {
   Shardus,
   DevSecurityLevel,
 } from '@shardeum-foundation/core'
-import { ContractByteWrite, WarmupStats } from './state/transactionState'
+import { ContractByteWrite, WarmupStats, RunType } from './state/transactionState'
 import { version, devDependencies, dependencies } from '../package.json'
 import {
   AccountType,
@@ -1001,7 +1001,8 @@ function getCallTXState(): ShardeumState {
     },
     txId,
     undefined,
-    undefined
+    undefined,
+    RunType.Call
   )
   shardeumState.setTransactionState(transactionState)
   return shardeumState
@@ -1024,7 +1025,8 @@ function getPreRunTXState(txId: string): ShardeumState {
     },
     txId,
     undefined,
-    undefined
+    undefined,
+    RunType.PreRun
   )
   shardeumState.setTransactionState(transactionState)
   return shardeumState
@@ -1048,7 +1050,8 @@ export function getApplyTXState(txId: string): ShardeumState {
       },
       txId,
       undefined,
-      undefined
+      undefined,
+      RunType.Apply
     )
     shardeumState.setTransactionState(transactionState)
     shardeumStateTXMap.set(txId, shardeumState)
