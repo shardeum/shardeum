@@ -7208,7 +7208,7 @@ const shardusSetup = (): void => {
             shardus.addNetworkTx('nodeInitReward', shardus.signAsNode(txData), data.publicKey)
           }
         }
-      } else if (eventType === 'node-deactivated') {
+      } else if (eventType === 'node-deactivated' || eventType === 'node-left-early') {
         // todo: aamir check the timestamp and cycle the first time we see this event
         // Limit the nodes that send this to the 5 closest to the node id
         const closestNodes = shardus.getClosestNodes(data.publicKey, 5)
@@ -7226,26 +7226,12 @@ const shardusSetup = (): void => {
             shardus.addNetworkTx('nodeReward', shardus.signAsNode(txData), data.publicKey)
           }
         }
-      } else if (
+      }
+      if (
         eventType === 'node-left-early' &&
         AccountsStorage.cachedNetworkAccount.current.enableNodeSlashing === true &&
         AccountsStorage.cachedNetworkAccount.current.slashing.enableLeftNetworkEarlySlashing
       ) {
-        // Limit the nodes that send this to the 5 closest to the node id
-        const closestNodes = shardus.getClosestNodes(data.publicKey, 5)
-        const ourId = shardus.getNodeId()
-        for (const id of closestNodes) {
-          if (id === ourId) {
-            nestedCountersInstance.countEvent('shardeum-staking', `node-left-early: injectClaimRewardTx`)
-            const txData = {
-              start: 0, //we will likely need to pass this in the event data because at this point the node is not in our nodelist
-              end: data.cycleNumber,
-              publicKey: data.publicKey,
-              nodeId: data.nodeId,
-            }
-            shardus.addNetworkTx('rewardTx', txData)
-          }
-        }
         let nodeLostCycle
         let nodeDroppedCycle
         for (let i = 0; i < latestCycles.length; i++) {
