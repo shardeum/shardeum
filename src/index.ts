@@ -3030,10 +3030,14 @@ async function generateAccessList(
       const accountIsRemote = isServiceMode() ? false : shardus.isAccountRemote(address)
       //ShardeumFlags.debugLocalAALG === false means that we will skip the remote attempt and run it locally
       if (accountIsRemote && ShardeumFlags.debugLocalAALG === false) {
+        let success = false
+        let retry = 0
+        while (success === false && retry < ShardeumFlags.numberOfAccessListRetry) {
+          retry++
         const consensusNode = shardus.getRandomConsensusNodeForAccount(address)
         /* prettier-ignore */ if (logFlags.dapp_verbose || logFlags.aalg) console.log(`Node is in remote shard: ${consensusNode?.externalIp}:${consensusNode?.externalPort}`)
         if (consensusNode != null) {
-          /* prettier-ignore */ if (logFlags.dapp_verbose || logFlags.aalg) console.log(`Node is in remote shard: requesting`)
+            /* prettier-ignore */ if (logFlags.dapp_verbose || logFlags.aalg) console.log(`Node is in remote shard: requesting ${consensusNode.externalIp} ${consensusNode.externalPort} count: ${retry}`)
 
           const postResp = await _internalHackPostWithResp(
             `${consensusNode.externalIp}:${consensusNode.externalPort}/contract/accesslist-warmup`,
@@ -3048,6 +3052,7 @@ async function generateAccessList(
               if (postResp.body.codeHashes == null || postResp.body.codeHashes.length == 0) {
                 failed = true
               }
+                if (failed === false) success = true
               return {
                 accessList: postResp.body.accessList,
                 shardusMemoryPatterns: postResp.body.shardusMemoryPatterns,
@@ -3056,14 +3061,16 @@ async function generateAccessList(
               }
             } else {
               nestedCountersInstance.countEvent('accesslist', `remote shard accessList: empty`)
-              return { accessList: [], shardusMemoryPatterns: null, codeHashes: [], failedAccessList: true }
             }
           }
         } else {
           nestedCountersInstance.countEvent('accesslist', `remote shard found no consensus node`)
           /* prettier-ignore */ if (logFlags.dapp_verbose || logFlags.aalg) console.log(`Node is in remote shard: consensusNode = null`)
-          return { accessList: [], shardusMemoryPatterns: null, codeHashes: [], failedAccessList: true }
         }
+        }
+        nestedCountersInstance.countEvent('accesslist', `give up after ${ShardeumFlags.numberOfAccessListRetry} tries`)
+        /* prettier-ignore */ if (logFlags.dapp_verbose || logFlags.aalg) console.log(`AccessList: give up after ${ShardeumFlags.numberOfAccessListRetry} tries`)
+        return { accessList: [], shardusMemoryPatterns: null, codeHashes: [], failedAccessList: true }
       } else {
         /* prettier-ignore */ if (logFlags.dapp_verbose || logFlags.aalg) console.log(`Node is in remote shard: false`)
       }

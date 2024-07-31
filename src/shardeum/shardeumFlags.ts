@@ -119,6 +119,7 @@ interface ShardeumFlags {
   cleanStaleShardeumStateMap: boolean
   beta1_11_2: boolean
   evmFailOnUnexpectedAccount: boolean
+  numberOfAccessListRetry: number
   failedStakeReceipt: boolean // For stake/unstake TXs that fail the checks in apply(), create an EVM receipt marked as failed
 }
 
@@ -276,6 +277,7 @@ export const ShardeumFlags: ShardeumFlags = {
   beta1_11_2: true,
 
   evmFailOnUnexpectedAccount: false,
+  numberOfAccessListRetry: 1,
   failedStakeReceipt: true,
 }
 
