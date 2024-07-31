@@ -19,6 +19,9 @@ import { keccak256 } from 'ethereum-cryptography/keccak.js'
 import { RLP } from '@ethereumjs/rlp'
 import { Utils } from '@shardus/types'
 import { shardeumGetTime } from '..'
+import {
+  nestedCountersInstance,
+} from '@shardus/core'
 
 export type accountEvent = (transactionState: TransactionState, address: string) => Promise<boolean>
 export type contractStorageEvent = (
@@ -79,12 +82,20 @@ export interface WarmupStats {
   cacheEmptyReqMiss: number
 }
 
+export enum RunType {
+  Apply = 'Apply',
+  PreRun = 'PreRun',
+  Call = 'Call',
+}
+
 export default class TransactionState {
   //Shardus TXID
   linkedTX: string
 
   // link to the shardeumState singleton (todo refactor this as non member instance)
   shardeumState: ShardeumState
+
+  runType: RunType
 
   // account data
   firstAccountReads: Map<string, Uint8Array>
@@ -197,13 +208,16 @@ export default class TransactionState {
     callbacks: ShardeumStorageCallbacks,
     linkedTX,
     firstReads: Map<string, Uint8Array>,
-    firstContractStorageReads: Map<string, Map<string, Uint8Array>>
+    firstContractStorageReads: Map<string, Map<string, Uint8Array>>,
+    runType: RunType
   ): void {
     this.createdTimestamp = shardeumGetTime()
 
     this.linkedTX = linkedTX
 
     this.shardeumState = shardeumState
+
+    this.runType = runType
 
     //callbacks for storage events
     this.accountMissCB = callbacks.storageMiss
@@ -418,6 +432,17 @@ export default class TransactionState {
       throw new Error(`unable to proceed, cant involve account for txId ${this.linkedTX}`)
     }
 
+    //  check this before trying to read from local db at this point
+    // we need an extra check if this is executeCreate or executeCall (not a simple SHM transfer)
+    const codeBytesInvolved = this.firstContractBytesReads.size > 0 || this.allContractBytesWrites.size > 0
+    if (this.runType === RunType.Apply && ShardeumFlags.evmFailOnUnexpectedAccount && codeBytesInvolved) {
+      if (this.debugTrace) {
+        this.debugTraceLog(`getAccount: addr:${addressString} v:notFound. failOnUnexpected EOA/CA account`)
+      }
+      nestedCountersInstance.countEvent('transactionState', 'getAccountFailOnUnexpectedAccount')
+      throw new Error('EOA/CA account miss during apply()')
+    }
+
     let storedRlp: Uint8Array
 
     //get from accounts
@@ -450,6 +475,9 @@ export default class TransactionState {
         addressString,
         null
       )
+      if (this.runType === RunType.Apply && ShardeumFlags.evmFailOnUnexpectedAccount) {
+        throw new Error('storage account miss during apply()')
+      }
       if (wrappedEVMAccount != undefined) {
         //get account aout of the wrapped evm account
         account = wrappedEVMAccount.account
@@ -598,6 +626,18 @@ export default class TransactionState {
 
     if (this.accountInvolvedCB(this, addressString, true) === false) {
       throw new Error(`unable to proceed, cant involve contract bytes account for txId ${this.linkedTX}`)
+    }
+    //  check this before trying to read from local db at this point
+    // we need an extra check if this is executeCreate or executeCall (not a simple SHM transfer)
+    const codeBytesInvolved = this.firstContractBytesReads.size > 0 || this.allContractBytesWrites.size > 0
+    // also need to check if it is querying empty code byte
+    const isEmptyCode = equalsBytes(codeHash, KECCAK256_NULL)
+    if (this.runType === RunType.Apply && ShardeumFlags.evmFailOnUnexpectedAccount && codeBytesInvolved && isEmptyCode === false) {
+      if (this.debugTrace) {
+        this.debugTraceLog(`getContractCode: addr:${addressString} codeHash: ${codeHashStr} v:notFound. failOnUnexpected codeByte account`)
+      }
+      nestedCountersInstance.countEvent('transactionState', 'getContractCodeFailOnUnexpectedAccount')
+      throw new Error('codebyte miss during apply()')
     }
 
     let storedCodeByte: Uint8Array
@@ -756,6 +796,14 @@ export default class TransactionState {
 
     if (this.contractStorageInvolvedCB(this, addressString, keyString, false) === false) {
       throw new Error('unable to proceed, cant involve contract storage')
+    }
+    //  check this before trying to read from local db at this point
+    if (this.runType === RunType.Apply && ShardeumFlags.evmFailOnUnexpectedAccount) {
+      if (this.debugTrace) {
+        this.debugTraceLog(`getContractStorage: addr:${addressString} key:${keyString} v:notFound. failOnUnexpected storage account`)
+      }
+      nestedCountersInstance.countEvent('transactionState', 'getContractStorageFailOnUnexpected')
+      throw new Error('storage account miss during apply()')
     }
 
     let storedRlp

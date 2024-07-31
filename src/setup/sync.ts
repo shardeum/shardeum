@@ -11,9 +11,9 @@ import { ShardeumState, TransactionState } from '../state'
 import * as AccountsStorage from '../storage/accountStorage'
 import { sleep } from '../utils'
 // import { StateManager } from '../vm/state'
-import { DefaultStateManager } from '@ethereumjs/statemanager'
 import { logFlags, shardeumGetTime } from '..'
 import { Utils } from '@shardus/types'
+import { RunType } from '../state/transactionState'
 
 function isDebugMode(): boolean {
   // eslint-disable-next-line @typescript-eslint/ban-ts-comment
@@ -238,7 +238,8 @@ function getDebugTXState(evmCommon: any): ShardeumState {
       },
       txId,
       undefined,
-      undefined
+      undefined,
+      RunType.Apply
     )
     shardeumState.setTransactionState(transactionState)
   } else {
