@@ -2441,8 +2441,8 @@ export const createInternalTxReceipt = (
   txTimestamp: number,
   txId: string,
   amountSpent = bigIntToHex(BigInt(0)),
-  penaltyAmount?: string,
-  rewardAmount?: string,
+  rewardAmount?: bigint,
+  penaltyAmount?: bigint,
 ): void => {
   const blockForReceipt = getOrCreateBlockFromTimestamp(txTimestamp)
   const blockNumberForTx = blockForReceipt.header.number.toString()
@@ -2466,8 +2466,8 @@ export const createInternalTxReceipt = (
     data: '0x0',
     isInternalTx: true,
     internalTx: { ...internalTx, sign: null },
-    ...(penaltyAmount !== undefined && { penaltyAmount }),
     ...(rewardAmount !== undefined && { rewardAmount }),
+    ...(penaltyAmount !== undefined && { penaltyAmount }),
   }
   const wrappedReceiptAccount = {
     timestamp: txTimestamp,

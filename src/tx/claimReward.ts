@@ -428,7 +428,7 @@ export async function applyClaimRewardTx(
       txTimestamp,
       txId,
       bigIntToHex(BigInt(0)), // 0 amountSpent
-      bigIntToHex(rewardedAmount)
+      rewardedAmount
     )
   }
 
