@@ -6878,29 +6878,41 @@ const shardusSetup = (): void => {
         }
       } else if (eventType === 'node-deactivated') {
         // todo: aamir check the timestamp and cycle the first time we see this event
-        nestedCountersInstance.countEvent('shardeum-staking', `node-deactivated: injectClaimRewardTx`)
-        const txData = {
-          start: 0, //we will likely need to pass this in the event data because at this point the node is not in our nodelist
-          end: data.cycleNumber,
-          publicKey: data.publicKey,
-          nodeId: data.nodeId,
+        // Limit the nodes that send this to the 5 closest to the node id
+        const closestNodes = shardus.getClosestNodes(data.publicKey, 5)
+        const ourId = shardus.getNodeId()
+        for (const id of closestNodes) {
+          if (id === ourId) {
+            nestedCountersInstance.countEvent('shardeum-staking', `node-deactivated: injectClaimRewardTx`)
+            const txData = {
+              start: 0, //we will likely need to pass this in the event data because at this point the node is not in our nodelist
+              end: data.cycleNumber,
+              publicKey: data.publicKey,
+              nodeId: data.nodeId,
+            }
+            shardus.addNetworkTx('rewardTx', txData)
+          }
         }
-        shardus.addNetworkTx('rewardTx', txData)
-
-        // // Limit the nodes that send this to the 5 closest to the node id
-        // const closestNodes = shardus.getClosestNodes(data.publicKey, 5)
-        // const ourId = shardus.getNodeId()
-        // for (const id of closestNodes) {
-        //   if (id === ourId) {
-        //     const result = await injectClaimRewardTxWithRetry(shardus, data)
-        //     /* prettier-ignore */ if (logFlags.dapp_verbose) console.log('INJECTED_CLAIM_REWARD_TX', result)
-        //   }
-        // }
       } else if (
         eventType === 'node-left-early' &&
         ShardeumFlags.enableNodeSlashing === true &&
         ShardeumFlags.enableLeftNetworkEarlySlashing
       ) {
+        // Limit the nodes that send this to the 5 closest to the node id
+        const closestNodes = shardus.getClosestNodes(data.publicKey, 5)
+        const ourId = shardus.getNodeId()
+        for (const id of closestNodes) {
+          if (id === ourId) {
+            nestedCountersInstance.countEvent('shardeum-staking', `node-left-early: injectClaimRewardTx`)
+            const txData = {
+              start: 0, //we will likely need to pass this in the event data because at this point the node is not in our nodelist
+              end: data.cycleNumber,
+              publicKey: data.publicKey,
+              nodeId: data.nodeId,
+            }
+            shardus.addNetworkTx('rewardTx', txData)
+          }
+        }
         let nodeLostCycle
         let nodeDroppedCycle
         for (let i = 0; i < latestCycles.length; i++) {
