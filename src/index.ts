@@ -38,7 +38,7 @@ import {
   Shardus,
   DevSecurityLevel,
 } from '@shardeum-foundation/core'
-import { ContractByteWrite, WarmupStats } from './state/transactionState'
+import { ContractByteWrite, WarmupStats, RunType } from './state/transactionState'
 import { version, devDependencies, dependencies } from '../package.json'
 import {
   AccountType,
@@ -528,7 +528,11 @@ async function initEVMSingletons(): Promise<void> {
 
   // setting up only to 'istanbul' hardfork for now
   // https://github.com/ethereumjs/ethereumjs-monorepo/blob/master/packages/common/src/chains/mainnet.json
+  if (ShardeumFlags.supportDenCunFork) {
+    evmCommon = new Common({ chain: 'mainnet', hardfork: Hardfork.Cancun, eips: [3855, 5656, 1153] })
+  } else {
   evmCommon = new Common({ chain: 'mainnet', hardfork: Hardfork.Istanbul, eips: [3855] })
+  }
 
   //hack override this function.  perhaps a nice thing would be to use forCustomChain to create a custom common object
   evmCommon.chainId = (): bigint => {
@@ -1002,7 +1006,8 @@ function getCallTXState(): ShardeumState {
     },
     txId,
     undefined,
-    undefined
+    undefined,
+    RunType.Call
   )
   shardeumState.setTransactionState(transactionState)
   return shardeumState
@@ -1025,7 +1030,8 @@ function getPreRunTXState(txId: string): ShardeumState {
     },
     txId,
     undefined,
-    undefined
+    undefined,
+    RunType.PreRun
   )
   shardeumState.setTransactionState(transactionState)
   return shardeumState
@@ -1049,7 +1055,8 @@ export function getApplyTXState(txId: string): ShardeumState {
       },
       txId,
       undefined,
-      undefined
+      undefined,
+      RunType.Apply
     )
     shardeumState.setTransactionState(transactionState)
     shardeumStateTXMap.set(txId, shardeumState)
@@ -3592,10 +3599,14 @@ async function generateAccessList(
       const accountIsRemote = isServiceMode() ? false : shardus.isAccountRemote(address)
       //ShardeumFlags.debugLocalAALG === false means that we will skip the remote attempt and run it locally
       if (accountIsRemote && ShardeumFlags.debugLocalAALG === false) {
+        let success = false
+        let retry = 0
+        while (success === false && retry < ShardeumFlags.numberOfAccessListRetry) {
+          retry++
         const consensusNode = shardus.getRandomConsensusNodeForAccount(address)
         /* prettier-ignore */ if (logFlags.dapp_verbose || logFlags.aalg) console.log(`Node is in remote shard: ${consensusNode?.externalIp}:${consensusNode?.externalPort}`)
         if (consensusNode != null) {
-          /* prettier-ignore */ if (logFlags.dapp_verbose || logFlags.aalg) console.log(`Node is in remote shard: requesting`)
+            /* prettier-ignore */ if (logFlags.dapp_verbose || logFlags.aalg) console.log(`Node is in remote shard: requesting ${consensusNode.externalIp} ${consensusNode.externalPort} count: ${retry}`)
 
           const postResp = await _internalHackPostWithResp(
             `${consensusNode.externalIp}:${consensusNode.externalPort}/contract/accesslist-warmup`,
@@ -3610,6 +3621,7 @@ async function generateAccessList(
               if (postResp.body.codeHashes == null || postResp.body.codeHashes.length == 0) {
                 failed = true
               }
+                if (failed === false) success = true
               return {
                 accessList: postResp.body.accessList,
                 shardusMemoryPatterns: postResp.body.shardusMemoryPatterns,
@@ -3618,14 +3630,16 @@ async function generateAccessList(
               }
             } else {
               nestedCountersInstance.countEvent('accesslist', `remote shard accessList: empty`)
-              return { accessList: [], shardusMemoryPatterns: null, codeHashes: [], failedAccessList: true }
             }
           }
         } else {
           nestedCountersInstance.countEvent('accesslist', `remote shard found no consensus node`)
           /* prettier-ignore */ if (logFlags.dapp_verbose || logFlags.aalg) console.log(`Node is in remote shard: consensusNode = null`)
-          return { accessList: [], shardusMemoryPatterns: null, codeHashes: [], failedAccessList: true }
         }
+        }
+        nestedCountersInstance.countEvent('accesslist', `give up after ${ShardeumFlags.numberOfAccessListRetry} tries`)
+        /* prettier-ignore */ if (logFlags.dapp_verbose || logFlags.aalg) console.log(`AccessList: give up after ${ShardeumFlags.numberOfAccessListRetry} tries`)
+        return { accessList: [], shardusMemoryPatterns: null, codeHashes: [], failedAccessList: true }
       } else {
         /* prettier-ignore */ if (logFlags.dapp_verbose || logFlags.aalg) console.log(`Node is in remote shard: false`)
       }
@@ -3755,9 +3769,17 @@ async function generateAccessList(
 
     let runTxResult
     try {
+      let latestBlockForAccessList = blocks[latestBlock]
+      if (ShardeumFlags.useFutureBlockForAccessList) {
+        latestBlockForAccessList = getOrCreateBlockFromTimestamp(
+          shardeumGetTime() + 1000 * 7,
+          false
+        )
+      }
+      console.log(`generating access list for tx ${txId} with block`, latestBlockForAccessList.header)
       runTxResult = await EVM.runTx(
         {
-          block: blocks[latestBlock],
+          block: latestBlockForAccessList,
           tx: transaction,
           // skipNonce: !ShardeumFlags.CheckNonce,
           skipNonce: true,

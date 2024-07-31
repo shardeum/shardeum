@@ -14,6 +14,7 @@ import { sleep } from '../utils'
 import { DefaultStateManager } from '@ethereumjs/statemanager'
 import { createNetworkAccount, logFlags, shardeumGetTime } from '..'
 import { Utils } from '@shardeum-foundation/lib-types'
+import { RunType } from '../state/transactionState'
 import { initializeSecureAccount, SecureAccountConfig } from '../shardeum/secureAccounts'
 import fs from 'fs'
 import path from 'path'
@@ -323,7 +324,8 @@ function getDebugTXState(evmCommon: any): ShardeumState {
       },
       txId,
       undefined,
-      undefined
+      undefined,
+      RunType.Apply
     )
     shardeumState.setTransactionState(transactionState)
   } else {
