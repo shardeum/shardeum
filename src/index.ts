@@ -6039,9 +6039,13 @@ const shardusSetup = (): void => {
     getSimpleTxDebugValue(timestampedTx) {
       //console.log(`getSimpleTxDebugValue: ${Utils.safeStringify(tx)}`)
 
+      if(timestampedTx == null){
+        return 'null'
+      }
+
       try {
         //@ts-ignore
-        const { tx } = timestampedTx
+        const tx = timestampedTx?.tx;
         if (isInternalTx(tx)) {
           const internalTx = tx as InternalTx
           return `internalTX: ${InternalTXType[internalTx.internalTXType]} `
@@ -6059,8 +6063,9 @@ const shardusSetup = (): void => {
         }
       } catch (e) {
         //@ts-ignore
-        const { tx } = timestampedTx
+        const tx = timestampedTx?.tx;
         /* prettier-ignore */ if (logFlags.error) console.log(`getSimpleTxDebugValue failed: ${formatErrorMessage(e)}  tx:${Utils.safeStringify(tx)}`)
+        return `error: ${e.message}`
       }
     },
     close: async (): Promise<void> => {
