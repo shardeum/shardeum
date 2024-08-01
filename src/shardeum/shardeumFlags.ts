@@ -121,6 +121,7 @@ interface ShardeumFlags {
   evmFailOnUnexpectedAccount: boolean
   numberOfAccessListRetry: number
   useFutureBlockForAccessList: boolean
+  extraTimeForAccessListBlock: number
   failedStakeReceipt: boolean // For stake/unstake TXs that fail the checks in apply(), create an EVM receipt marked as failed
 }
 
@@ -280,6 +281,7 @@ export const ShardeumFlags: ShardeumFlags = {
   evmFailOnUnexpectedAccount: true,
   numberOfAccessListRetry: 3,
   useFutureBlockForAccessList: true,
+  extraTimeForAccessListBlock: 7000,
   failedStakeReceipt: true,
 }
 
