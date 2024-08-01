@@ -3501,6 +3501,12 @@ const shardusSetup = (): void => {
         if (appData.internalTx && appData.internalTXType === InternalTXType.Unstake) {
           verifyResult = verifyUnstakeTx(appData.internalTx, senderAddress, wrappedStates, shardus);
         }
+        if(verifyResult == null){
+          verifyResult = {
+            success: false,
+            reason: 'verify result undefined'
+          }
+        }
       } catch (error) {
         if (ShardeumFlags.VerboseLogs) console.log(`Stake/Unstake tx verification failed, reason: ${error}`)
         verifyResult = {
@@ -3509,6 +3515,9 @@ const shardusSetup = (): void => {
         }
       }
       
+      //Note this currently only applies to stake and unstake, if you expand to deal with other 
+      //TX types please take care that the code in this block below is still correct.
+      //for example a counter assumes this will be related to stake/unstake
       if (!verifyResult.success) {
         if (ShardeumFlags.failedStakeReceipt) {
           const blockForReceipt = getOrCreateBlockFromTimestamp(txTimestamp)
@@ -3543,7 +3552,6 @@ const shardusSetup = (): void => {
             r: bigIntToHex(transaction.r),
             s: bigIntToHex(transaction.s),
           }
-          console.log(`Atharva: GENERATED FAKE RECEIPT`)
 
           const wrappedReceiptAccount: WrappedEVMAccount = {
             timestamp: txTimestamp,
@@ -3563,6 +3571,8 @@ const shardusSetup = (): void => {
             receiptShardusAccount,
             crypto.hashObj(receiptShardusAccount)
           )
+
+          nestedCountersInstance.countEvent('shardeum-staking', `failed type:${appData.internalTXType} ${verifyResult.reason}`)
 
           return applyResponse
         } else {
@@ -5140,6 +5150,10 @@ const shardusSetup = (): void => {
         // for smart contract calls the contract will be the target.  For simple coin transfers it wont matter
         // insert otherAccountKeys second, because we need the CA addres at the front of the list for contract deploy
         // There wont be a target key in when we deploy a contract
+
+        // update: looks like POQ-LS work switched source key to be first, and thus the execution group
+        // center. 
+        // TODO ARCH-6.  as mentioned in other post we should move to an explicit key for picking the execution group
         result.allKeys = result.allKeys.concat(
           result.sourceKeys,
           result.targetKeys,
