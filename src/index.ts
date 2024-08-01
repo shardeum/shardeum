@@ -7137,7 +7137,7 @@ const shardusSetup = (): void => {
           if (id === ourId) {
             nestedCountersInstance.countEvent('shardeum-staking', `${eventType}: injectClaimRewardTx`)
             const txData = {
-              start: 0, //we will likely need to pass this in the event data because at this point the node is not in our nodelist
+              start: data.activeCycle,
               end: data.cycleNumber,
               publicKey: data.publicKey,
               nodeId: data.nodeId,
