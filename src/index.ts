@@ -6890,7 +6890,7 @@ const shardusSetup = (): void => {
               publicKey: data.publicKey,
               nodeId: data.nodeId,
             }
-            shardus.addNetworkTx('rewardTx', txData)
+            shardus.addNetworkTx('nodeReward', txData)
           }
         }
       }
@@ -6964,13 +6964,12 @@ const shardusSetup = (): void => {
         console.log('shardeum-event', `try-network-transaction`, safeStringify(data))
         nestedCountersInstance.countEvent('shardeum-event', `try-network-transaction`)
         if (data?.additionalData.type === 'nodeReward') {
-          data = data.additionalData
           console.log(
             'shardeum-event',
             `running injectClaimrewardTxWithRetry nodeReward`,
             safeStringify(data)
           )
-          const closestNodes = shardus.getClosestNodes(data.txData.publicKey, 5)
+          const closestNodes = shardus.getClosestNodes(data.publicKey, 5)
           const ourId = shardus.getNodeId()
           for (const id of closestNodes) {
             if (id === ourId) {

@@ -34,10 +34,10 @@ export async function injectClaimRewardTx(
 }> {
   const duration = (eventData.txData.end - eventData.txData.start) * config.server.p2p.cycleDuration
   let tx = {
-    nominee: eventData.txData.publicKey,
+    nominee: eventData.publicKey,
     nominator: nodeAccount.nominator,
     timestamp: shardeumGetTime(),
-    deactivatedNodeId: eventData.txData.nodeId,
+    deactivatedNodeId: eventData.nodeId,
     duration,
     cycle: eventData.cycle,
     isInternalTx: true,
@@ -47,8 +47,8 @@ export async function injectClaimRewardTx(
   if (ShardeumFlags.txHashingFix) {
     // to make sure that differnt nodes all submit an equivalent tx that is counted as the same tx,
     // we need to make sure that we have a determinstic timestamp
-    const cycleEndTime = shardeumGetTime() - 10000
-    let futureTimestamp = cycleEndTime
+    const cycleEndTime = eventData.time
+    let futureTimestamp = cycleEndTime * 1000
     while (futureTimestamp < shardeumGetTime()) {
       futureTimestamp += 30 * 1000
     }
@@ -77,15 +77,13 @@ export async function injectClaimRewardTxWithRetry(
   shardus,
   eventData: ShardusTypes.ShardusEvent | any
 ): Promise<unknown> {
-  let wrappedData: ShardusTypes.WrappedData = await shardus.getLocalOrRemoteAccount(
-    eventData.txData.publicKey
-  )
+  let wrappedData: ShardusTypes.WrappedData = await shardus.getLocalOrRemoteAccount(eventData.publicKey)
 
   if (wrappedData == null || wrappedData.data == null) {
     //try one more time
-    wrappedData = await shardus.getLocalOrRemoteAccount(eventData.txData.publicKey)
+    wrappedData = await shardus.getLocalOrRemoteAccount(eventData.publicKey)
     if (wrappedData == null || wrappedData.data == null) {
-      /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`injectClaimRewardTx failed cant find : ${eventData.txData.publicKey}`)
+      /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`injectClaimRewardTx failed cant find : ${eventData.publicKey}`)
       /* prettier-ignore */ nestedCountersInstance.countEvent('shardeum-staking', `injectClaimRewardTx failed cant find node`)
       return
     }
@@ -127,7 +125,7 @@ export async function injectClaimRewardTxWithRetry(
     }
 
     if (result.success) {
-      const nodeAccount = await shardus.getLocalOrRemoteAccount(eventData.txData.publicKey)
+      const nodeAccount = await shardus.getLocalOrRemoteAccount(eventData.publicKey)
       if (!nodeAccount) {
         return true
       }
