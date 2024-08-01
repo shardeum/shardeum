@@ -32,7 +32,9 @@ export async function injectClaimRewardTx(
   reason: string
   status: number
 }> {
-  const duration = (eventData.txData.end - eventData.txData.start) * config.server.p2p.cycleDuration
+  const duration =
+    (eventData.additionalData.txData.end - eventData.additionalData.txData.start) *
+    config.server.p2p.cycleDuration
   let tx = {
     nominee: eventData.publicKey,
     nominator: nodeAccount.nominator,
@@ -316,14 +318,14 @@ export async function applyClaimRewardTx(
   const nodeRewardAmount = scaleByStabilityFactor(nodeRewardAmountUsd, AccountsStorage.cachedNetworkAccount)
   const nodeRewardInterval = BigInt(network.current.nodeRewardInterval)
 
-  if (nodeAccount.rewardStartTime <= 0) {
-    nestedCountersInstance.countEvent('shardeum-staking', `applyClaimRewardTx fail rewardStartTime <= 0`)
-    shardus.applyResponseSetFailed(
-      applyResponse,
-      `applyClaimReward failed because rewardStartTime is less than or equal 0`
-    )
-    return
-  }
+  // if (nodeAccount.rewardStartTime <= 0) {
+  //   nestedCountersInstance.countEvent('shardeum-staking', `applyClaimRewardTx fail rewardStartTime <= 0`)
+  //   shardus.applyResponseSetFailed(
+  //     applyResponse,
+  //     `applyClaimReward failed because rewardStartTime is less than or equal 0`
+  //   )
+  //   return
+  // }
 
   const durationInNetwork = tx.duration
   if (durationInNetwork <= 0) {
