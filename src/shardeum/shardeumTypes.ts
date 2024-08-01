@@ -171,7 +171,7 @@ export interface ClaimRewardTX extends InternalTxBase {
   nominator: string
   timestamp: number
   deactivatedNodeId: string
-  nodeDeactivatedTime: number
+  duration: number
   sign: ShardusTypes.Sign
 }
 

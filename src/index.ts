@@ -2292,31 +2292,31 @@ const configShardusEndpoints = (): void => {
 }
 
 const configShardusNetworkTransactions = (): void => {
-  shardus.registerBeforeAddVerify('rewardTx', (tx: any) => {
-    console.log('Validating rewardTx fields', tx)
-    /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log('Validating rewardTx fields', tx)
+  shardus.registerBeforeAddVerify('nodeReward', (tx: any) => {
+    console.log('Validating nodeReward fields', tx)
+    /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log('Validating nodeReward fields', tx)
     if (!tx.publicKey || tx.publicKey === '' || tx.publicKey.length !== 64) {
-      /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log('registerBeforeAddVerify rewardTx fail invalid publicKey field', tx)
+      /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log('registerBeforeAddVerify nodeReward fail invalid publicKey field', tx)
       /* prettier-ignore */ nestedCountersInstance.countEvent(
         'shardeum-staking',
-        `registerBeforeAddVerify rewardTx fail invalid publicKey field`
+        `registerBeforeAddVerify nodeReward fail invalid publicKey field`
       )
       return false
     }
     if (tx.start === undefined) {
-      /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log('registerBeforeAddVerify rewardTx fail start field missing', tx)
+      /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log('registerBeforeAddVerify nodeReward fail start field missing', tx)
       /* prettier-ignore */ nestedCountersInstance.countEvent(
         'shardeum-staking',
-        `registerBeforeAddVerify rewardTx fail start field missing`
+        `registerBeforeAddVerify nodeReward fail start field missing`
       )
       return false
     }
     const latestCycles = shardus.getLatestCycles(5)
     if (tx.start < 0 || tx.start > latestCycles[0].counter) {
-      /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log('registerBeforeAddVerify rewardTx fail start value is not correct ', tx)
+      /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log('registerBeforeAddVerify nodeReward fail start value is not correct ', tx)
       /* prettier-ignore */ nestedCountersInstance.countEvent(
         'shardeum-staking',
-        `registerBeforeAddVerify rewardTx fail start value is not correct `
+        `registerBeforeAddVerify nodeReward fail start value is not correct `
       )
       return false
     }
@@ -2324,23 +2324,23 @@ const configShardusNetworkTransactions = (): void => {
     const nodeRemovedCycle = latestCycles.find((cycle) => cycle.removed.includes(tx.nodeId))
     /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log('nodeRemovedCycle', nodeRemovedCycle)
     if (!nodeRemovedCycle) {
-      /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log('registerBeforeAddVerify rewardTx fail !nodeRemovedCycle', tx)
+      /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log('registerBeforeAddVerify nodeReward fail !nodeRemovedCycle', tx)
       /* prettier-ignore */ nestedCountersInstance.countEvent(
         'shardeum-staking',
-        `registerBeforeAddVerify rewardTx fail !nodeRemovedCycle`
+        `registerBeforeAddVerify nodeReward fail !nodeRemovedCycle`
       )
       return false
     }
 
-    /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log('registerBeforeAddVerify rewardTx success', tx)
+    /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log('registerBeforeAddVerify nodeReward success', tx)
     return true
   })
-  shardus.registerBeforeRemoveVerify('rewardTx', (tx: any) => {
+  shardus.registerBeforeRemoveVerify('nodeReward', (tx: any) => {
     return false
   })
 }
 
-/***
+/*** |an
  *    #### ##    ## ######## ######## ########  ##    ##    ###    ##          ######## ##     ##
  *     ##  ###   ##    ##    ##       ##     ## ###   ##   ## ##   ##             ##     ##   ##
  *     ##  ####  ##    ##    ##       ##     ## ####  ##  ##   ##  ##             ##      ## ##
@@ -7228,6 +7228,22 @@ const shardusSetup = (): void => {
       } else if (eventType === 'try-network-transaction') {
         console.log('shardeum-event', `try-network-transaction`, safeStringify(data))
         nestedCountersInstance.countEvent('shardeum-event', `try-network-transaction`)
+        if (data?.additionalData.type === 'nodeReward') {
+          data = data.additionalData
+          console.log(
+            'shardeum-event',
+            `running injectClaimrewardTxWithRetry nodeReward`,
+            safeStringify(data)
+          )
+          const closestNodes = shardus.getClosestNodes(data.txData.publicKey, 5)
+          const ourId = shardus.getNodeId()
+          for (const id of closestNodes) {
+            if (id === ourId) {
+              const result = await injectClaimRewardTxWithRetry(shardus, data)
+              /* prettier-ignore */ if (logFlags.dapp_verbose) console.log('INJECTED_CLAIM_REWARD_TX', result)
+            }
+          }
+        }
       }
     },
     // Note: this logic is added to the archive server; any changes here should have to be done in the archive server as well
