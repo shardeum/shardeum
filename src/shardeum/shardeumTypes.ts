@@ -344,6 +344,11 @@ export interface NetworkParameters {
   }
   txPause: boolean
   certCycleDuration: number
+  slashing: {
+    enableLeftNetworkEarly: boolean
+    enableSyncTimeout: boolean
+    enableNodeRefuted: boolean
+  }
 }
 
 export interface NodeAccount2 extends BaseAccount {

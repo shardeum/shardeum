@@ -186,9 +186,6 @@ config = merge(config, {
 
       // 1.10.0 todo podA smoke/functional test with these on:
       // numberOfNodesToInjectPenaltyTx: 5, //this may not need a change but we should probably go ahead and include it
-      // enableLeftNetworkEarlySlashing: true,
-      // enableSyncTimeoutSlashing: true,
-      // enableNodeRefutedSlashing: true
       rotationCountMultiply: 3,
       // 1.10.0
       standbyListCyclesTTL: 1440, //nodes only need to refresh once every 24 hours (which is 1440 60s cycles!)

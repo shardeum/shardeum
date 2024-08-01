@@ -21,6 +21,7 @@ import * as WrappedEVMAccountFunctions from '../../shardeum/wrappedEVMAccountFun
 import { _readableSHM, generateTxId, sleep } from '../../utils'
 import { Address } from '@ethereumjs/util'
 import { applyPenalty } from './penaltyFunctions'
+import * as AccountsStorage from '../../storage/accountStorage'
 import config from '../../config'
 
 const penaltyTxsMap: Map<string, PenaltyTX> = new Map()
@@ -250,13 +251,13 @@ export function validatePenaltyTX(txId: string, tx: PenaltyTX): { isValid: boole
     if (ShardeumFlags.VerboseLogs) console.log('validatePenaltyTX fail tx.timestamp', tx)
     return { isValid: false, reason: 'Duration in tx must be > 0' }
   }
-  if (tx.violationType === ViolationType.LeftNetworkEarly && ShardeumFlags.enableLeftNetworkEarlySlashing === false) {
+  if (tx.violationType === ViolationType.LeftNetworkEarly && AccountsStorage.cachedNetworkAccount.current.slashing.enableLeftNetworkEarly === false) {
     return { isValid: false, reason: 'LeftNetworkEarly slashing is disabled' }
   }
-  if (tx.violationType === ViolationType.SyncingTooLong && ShardeumFlags.enableSyncTimeoutSlashing === false) {
+  if (tx.violationType === ViolationType.SyncingTooLong && AccountsStorage.cachedNetworkAccount.current.slashing.enableSyncTimeout === false) {
     return { isValid: false, reason: 'Sync timeout slashing is disabled' }
   }
-  if (tx.violationType === ViolationType.NodeRefuted && ShardeumFlags.enableNodeRefutedSlashing === false) {
+  if (tx.violationType === ViolationType.NodeRefuted && AccountsStorage.cachedNetworkAccount.current.slashing.enableNodeRefuted === false) {
     return { isValid: false, reason: 'Refuted node slashing is disabled' }
   }
   try {

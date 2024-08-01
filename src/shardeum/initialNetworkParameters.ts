@@ -27,4 +27,9 @@ export const initialNetworkParamters: NetworkParameters = {
   stabilityScaleDiv: 1000,
   txPause: false,
   certCycleDuration: 30,
+  slashing: {
+    enableLeftNetworkEarly: true,
+    enableSyncTimeout: true,
+    enableNodeRefuted: true,
+  }
 }
