@@ -257,9 +257,9 @@ export const ShardeumFlags: ShardeumFlags = {
   ],
 
   numberOfNodesToInjectPenaltyTx: 5,
-  enableLeftNetworkEarlySlashing: true,
-  enableSyncTimeoutSlashing: true,
-  enableNodeRefutedSlashing: true,
+  enableLeftNetworkEarlySlashing: false,
+  enableSyncTimeoutSlashing: false,
+  enableNodeRefutedSlashing: false,
   loadGenesisNodeNetworkConfigToNetworkAccount: false,
   networkAccountCacheDuration: 3600, // 60 minutes
   enableClaimRewardAdminCert: true,
