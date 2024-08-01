@@ -6949,7 +6949,7 @@ const shardusSetup = (): void => {
       } else if (
         eventType === 'node-left-early' &&
         ShardeumFlags.enableNodeSlashing === true &&
-        ShardeumFlags.enableLeftNetworkEarlySlashing
+        AccountsStorage.cachedNetworkAccount.current.slashing.enableLeftNetworkEarly
       ) {
         let nodeLostCycle
         let nodeDroppedCycle
@@ -6978,7 +6978,7 @@ const shardusSetup = (): void => {
       } else if (
         eventType === 'node-sync-timeout' &&
         ShardeumFlags.enableNodeSlashing === true &&
-        ShardeumFlags.enableSyncTimeoutSlashing
+        AccountsStorage.cachedNetworkAccount.current.slashing.enableSyncTimeout
       ) {
         let violationData: SyncingTimeoutViolationData
         for (let i = 0; i < latestCycles.length; i++) {
@@ -7003,7 +7003,7 @@ const shardusSetup = (): void => {
       } else if (
         eventType === 'node-refuted' &&
         ShardeumFlags.enableNodeSlashing === true &&
-        ShardeumFlags.enableNodeRefutedSlashing
+        AccountsStorage.cachedNetworkAccount.current.slashing.enableNodeRefuted
       ) {
         let nodeRefutedCycle
         for (let i = 0; i < latestCycles.length; i++) {

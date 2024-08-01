@@ -105,9 +105,6 @@ interface ShardeumFlags {
   riAccountsCacheSize: number
   riAccountsDeleteBatchSize: number
   numberOfNodesToInjectPenaltyTx: number
-  enableLeftNetworkEarlySlashing: boolean
-  enableSyncTimeoutSlashing: boolean
-  enableNodeRefutedSlashing: boolean
   loadGenesisNodeNetworkConfigToNetworkAccount: boolean
   networkAccountCacheDuration: number
   enableClaimRewardAdminCert: boolean
@@ -258,9 +255,6 @@ export const ShardeumFlags: ShardeumFlags = {
   ],
 
   numberOfNodesToInjectPenaltyTx: 5,
-  enableLeftNetworkEarlySlashing: false,
-  enableSyncTimeoutSlashing: false,
-  enableNodeRefutedSlashing: false,
   loadGenesisNodeNetworkConfigToNetworkAccount: false,
   networkAccountCacheDuration: 3600, // 60 minutes
   enableClaimRewardAdminCert: true,
