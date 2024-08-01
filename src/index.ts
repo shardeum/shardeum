@@ -3205,9 +3205,17 @@ async function generateAccessList(
 
     let runTxResult
     try{
+      let latestBlockForAccessList = blocks[latestBlock]
+      if (ShardeumFlags.useFutureBlockForAccessList) {
+        latestBlockForAccessList = getOrCreateBlockFromTimestamp(
+          shardeumGetTime() + 1000 * 7,
+          false
+        )
+      }
+      console.log(`generating access list for tx ${txId} with block`, latestBlockForAccessList.header)
       runTxResult = await EVM.runTx(
         {
-          block: blocks[latestBlock],
+          block: latestBlockForAccessList,
           tx: transaction,
           // skipNonce: !ShardeumFlags.CheckNonce,
           skipNonce: true,
