@@ -123,6 +123,7 @@ export interface ShardeumFlags {
   beta1_11_2: boolean
   evmFailOnUnexpectedAccount: boolean
   numberOfAccessListRetry: number
+  useFutureBlockForAccessList: boolean
   failedStakeReceipt: boolean // For stake/unstake TXs that fail the checks in apply(), create an EVM receipt marked as failed
   debugDefaultBalance: string
   disableSmartContractEndpoints: boolean
@@ -289,8 +290,9 @@ export const ShardeumFlags: ShardeumFlags = {
   cleanStaleShardeumStateMap: false,
   beta1_11_2: true,
 
-  evmFailOnUnexpectedAccount: false,
-  numberOfAccessListRetry: 1,
+  evmFailOnUnexpectedAccount: true,
+  numberOfAccessListRetry: 3,
+  useFutureBlockForAccessList: true,
   failedStakeReceipt: true,
   debugDefaultBalance: '100', //In debug mode the default value is 100 SHM.  This is needed for certain load test operations
   disableSmartContractEndpoints: false, // Disable smart contract read endpoints by default. This should be promoted to a network parameter. do not release this feature as a flag.
