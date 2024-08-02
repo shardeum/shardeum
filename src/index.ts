@@ -2298,6 +2298,7 @@ async function applyInternalTx(
   const applyResponse: ShardusTypes.ApplyResponse = shardus.createApplyResponse(txId, txTimestamp)
   const internalTx = tx as InternalTx
   if (internalTx.internalTXType === InternalTXType.SetGlobalCodeBytes) {
+    nestedCountersInstance.countEvent('InternalTXType', 'InternalTXType.SetGlobalCodeBytes')
     // eslint-disable-next-line security/detect-object-injection
     const wrappedEVMAccount: WrappedEVMAccount = wrappedStates[internalTx.from].data
     //just update the timestamp?
@@ -2321,6 +2322,7 @@ async function applyInternalTx(
 
   if (internalTx.internalTXType === InternalTXType.InitNetwork) {
     // eslint-disable-next-line security/detect-object-injection
+    nestedCountersInstance.countEvent('InternalTXType', 'InternalTXType.InitNetwork')
     const network: NetworkAccount = wrappedStates[networkAccount].data
     if (ShardeumFlags.useAccountWrites) {
       // eslint-disable-next-line security/detect-object-injection
@@ -2356,7 +2358,7 @@ async function applyInternalTx(
     // const network: NetworkAccount = wrappedStates[networkAccount].data
     // const devAccount: DevAccount = wrappedStates[internalTx.from].data
     /* eslint-enable security/detect-object-injection */
-
+    nestedCountersInstance.countEvent('InternalTXType', 'InternalTXType.ChangeConfig')
     let changeOnCycle
     let cycleData: ShardusTypes.Cycle
 
@@ -2428,7 +2430,7 @@ async function applyInternalTx(
   if (internalTx.internalTXType === InternalTXType.ApplyChangeConfig) {
     // eslint-disable-next-line security/detect-object-injection
     const network: NetworkAccount = wrappedStates[networkAccount].data
-
+    nestedCountersInstance.countEvent('InternalTXType', 'InternalTXType.ApplyChangeConfig')
     if (ShardeumFlags.useAccountWrites) {
       // eslint-disable-next-line security/detect-object-injection
       const networkAccountCopy = wrappedStates[networkAccount]
@@ -2463,6 +2465,7 @@ async function applyInternalTx(
   if (internalTx.internalTXType === InternalTXType.ChangeNetworkParam) {
     let changeOnCycle
     let cycleData: ShardusTypes.Cycle
+    nestedCountersInstance.countEvent('InternalTXType', 'InternalTXType.ChangeNetworkParam')
 
     if (internalTx.cycle === -1) {
       ;[cycleData] = shardus.getLatestCycles()
@@ -2503,6 +2506,7 @@ async function applyInternalTx(
   if (internalTx.internalTXType === InternalTXType.ApplyNetworkParam) {
     // eslint-disable-next-line security/detect-object-injection
     const network: NetworkAccount = wrappedStates[networkAccount].data
+    nestedCountersInstance.countEvent('InternalTXType', 'InternalTXType.ApplyNetworkParam')
 
     if (ShardeumFlags.useAccountWrites) {
       // eslint-disable-next-line security/detect-object-injection
@@ -2538,12 +2542,15 @@ async function applyInternalTx(
   if (internalTx.internalTXType === InternalTXType.SetCertTime) {
     const setCertTimeTx = internalTx as SetCertTime
     applySetCertTimeTx(shardus, setCertTimeTx, wrappedStates, txId, txTimestamp, applyResponse)
+    nestedCountersInstance.countEvent('InternalTXType', 'InternalTXType.SetCertTime')
   }
   if (internalTx.internalTXType === InternalTXType.InitRewardTimes) {
     const rewardTimesTx = internalTx as InitRewardTimes
     InitRewardTimesTx.apply(shardus, rewardTimesTx, txId, txTimestamp, wrappedStates, applyResponse)
+    nestedCountersInstance.countEvent('InternalTXType', 'InternalTXType.InitRewardTimes')
   }
   if (internalTx.internalTXType === InternalTXType.ClaimReward) {
+    nestedCountersInstance.countEvent('InternalTXType', 'InternalTXType.ClaimReward')
     const claimRewardTx = internalTx as ClaimRewardTX
     applyClaimRewardTx(
       shardus,
@@ -2556,6 +2563,7 @@ async function applyInternalTx(
     )
   }
   if (internalTx.internalTXType === InternalTXType.Penalty) {
+    nestedCountersInstance.countEvent('InternalTXType', 'InternalTXType.Penalty')
     const penaltyTx = internalTx as PenaltyTX
     applyPenaltyTX(shardus, penaltyTx, wrappedStates, txId, txTimestamp, applyResponse)
   }
@@ -3759,7 +3767,7 @@ const shardusSetup = (): void => {
       shardeumState._transactionState.appData = appData
 
       if (appData.internalTx && appData.internalTXType === InternalTXType.Stake) {
-    
+        nestedCountersInstance.countEvent('InternalTXType', 'InternalTXType.Stake')
         if (ShardeumFlags.VerboseLogs) console.log('applying stake tx', wrappedStates, appData)
 
         // get stake tx from appData.internalTx
@@ -3975,6 +3983,7 @@ const shardusSetup = (): void => {
       if (appData.internalTx && appData.internalTXType === InternalTXType.Unstake) {
         nestedCountersInstance.countEvent('shardeum-unstaking', 'applying unstake transaction')
         if (ShardeumFlags.VerboseLogs) console.log('applying unstake tx', wrappedStates, appData)
+          nestedCountersInstance.countEvent('InternalTXType', 'InternalTXType.Unstake')
 
         // get unstake tx from appData.internalTx
         const unstakeCoinsTX: UnstakeCoinsTX = appData.internalTx
