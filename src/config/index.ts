@@ -272,7 +272,7 @@ config = merge(config, {
       executeInOneShard: true,
     },
     stateManager: {
-      accountBucketSize: 200, // todo: we need to re-test with higher numbers after some recent improvements
+      accountBucketSize: 250, // todo: we need to re-test with higher numbers after some recent improvements
       includeBeforeStatesInReceipts: true, // 1.5.3 migration
       useNewPOQ: false, // 1.10.0 enabled required by archive server updates
 
