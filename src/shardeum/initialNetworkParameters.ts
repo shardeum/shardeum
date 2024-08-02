@@ -19,17 +19,17 @@ export const initialNetworkParamters: NetworkParameters = {
   activeVersion: '1.12.1',
   latestVersion: '1.12.1',
   archiver: {
-    minVersion: '3.4.22',
-    activeVersion: '3.4.22',
-    latestVersion: '3.4.22',
+    minVersion: '3.4.23',
+    activeVersion: '3.4.23',
+    latestVersion: '3.4.23',
   },
   stabilityScaleMul: 1000,
   stabilityScaleDiv: 1000,
   txPause: false,
   certCycleDuration: 30,
   slashing: {
-    enableLeftNetworkEarly: true,
-    enableSyncTimeout: true,
-    enableNodeRefuted: true,
+    enableLeftNetworkEarly: false,
+    enableSyncTimeout: false,
+    enableNodeRefuted: false,
   }
 }
