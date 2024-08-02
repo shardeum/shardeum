@@ -90,7 +90,6 @@ interface ShardeumFlags {
   baselineTxFee: string
   lowStakePercent: number
   removeTokenBalanceCache: boolean
-  enableNodeSlashing: boolean
   penaltyPercent: number
   receiptLogIndexFix: boolean
   blockedAtVerbose: boolean
@@ -227,7 +226,6 @@ export const ShardeumFlags: ShardeumFlags = {
 
   // 1.4.1 migration
   removeTokenBalanceCache: true,
-  enableNodeSlashing: true,
 
   //  This setting is not part of 1.4.1 migration
   penaltyPercent: 0.2, //this is just a setting and does not need to be adjusted for migration

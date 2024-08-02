@@ -1,7 +1,7 @@
 import { PenaltyTX, ViolationType } from '../../shardeum/shardeumTypes'
-import { ShardeumFlags } from '../../shardeum/shardeumFlags'
 import { _base16BNParser } from '../../utils'
 import { nestedCountersInstance } from '@shardus/core'
+import { cachedNetworkAccount } from '../../storage/accountStorage'
 import { logFlags } from '../..'
 
 export function getPenaltyForViolation(tx: PenaltyTX, stakeLock: bigint): bigint {
@@ -24,11 +24,11 @@ export function getPenaltyForViolation(tx: PenaltyTX, stakeLock: bigint): bigint
 
   switch (tx.violationType) {
     case ViolationType.LeftNetworkEarly:
-      return (stakeLock * BigInt(ShardeumFlags.penaltyPercent * 100)) / BigInt(100) // 20% of stakeLock
+      return (stakeLock * BigInt(cachedNetworkAccount.current.slashing.leftNetworkEarlyPenaltyPercent * 100)) / BigInt(100) // 20% of stakeLock
     case ViolationType.NodeRefuted:
-      return (stakeLock * BigInt(ShardeumFlags.penaltyPercent * 100)) / BigInt(100) // 20% of stakeLock
+      return (stakeLock * BigInt(cachedNetworkAccount.current.slashing.nodeRefutedPenaltyPercent * 100)) / BigInt(100) // 20% of stakeLock
     case ViolationType.SyncingTooLong:
-      return (stakeLock * BigInt(ShardeumFlags.penaltyPercent * 100)) / BigInt(100) // 20% of stakeLock
+      return (stakeLock * BigInt(cachedNetworkAccount.current.slashing.syncTimeoutPenaltyPercent * 100)) / BigInt(100) // 20% of stakeLock
     case ViolationType.DoubleVote:
       throw new Error('Violation type: ' + tx.violationType + ' Not implemented')
     default:
