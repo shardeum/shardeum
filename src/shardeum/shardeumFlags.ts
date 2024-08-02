@@ -268,7 +268,7 @@ export const ShardeumFlags: ShardeumFlags = {
 
   aalgWarmupSleep: 100,
 
-  internalTxTimestampFix: true,
+  internalTxTimestampFix: false,
 
   debugExtraNonceLookup: false,
 
