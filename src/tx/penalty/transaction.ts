@@ -391,8 +391,8 @@ export async function applyPenaltyTX(
       shardus,
       applyResponse,
       tx,
-      tx.reportedNodePublickKey,
-      tx.reportedNodePublickKey,
+      tx.reportedNodePublickKey, // nominee
+      tx.operatorEVMAddress, // nominator
       txTimestamp,
       txId,
       bigIntToHex(BigInt(0)), // 0 amountSpent,
