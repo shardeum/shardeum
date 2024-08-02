@@ -424,7 +424,7 @@ export async function applyClaimRewardTx(
       applyResponse,
       tx,
       tx.nominee,
-      tx.nominee,
+      tx.nominator,
       txTimestamp,
       txId,
       bigIntToHex(BigInt(0)), // 0 amountSpent
