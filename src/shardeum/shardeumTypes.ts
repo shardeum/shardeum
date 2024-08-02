@@ -368,10 +368,14 @@ export interface NetworkParameters {
   }
   txPause: boolean
   certCycleDuration: number
+  enableNodeSlashing: boolean
   slashing: {
-    enableLeftNetworkEarly: boolean
-    enableSyncTimeout: boolean
-    enableNodeRefuted: boolean
+    enableLeftNetworkEarlySlashing: boolean,
+    enableSyncTimeoutSlashing: boolean,
+    enableNodeRefutedSlashing: boolean,
+    leftNetworkEarlyPenaltyPercent: number,
+    syncTimeoutPenaltyPercent: number,
+    nodeRefutedPenaltyPercent: number,
   }
 }
 

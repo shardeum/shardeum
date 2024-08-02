@@ -255,13 +255,13 @@ export function validatePenaltyTX(txId: string, tx: PenaltyTX, isApply = false):
     if (ShardeumFlags.VerboseLogs) console.log('validatePenaltyTX fail tx.timestamp', tx)
     return { isValid: false, reason: 'Duration in tx must be > 0' }
   }
-  if (tx.violationType === ViolationType.LeftNetworkEarly && AccountsStorage.cachedNetworkAccount.current.slashing.enableLeftNetworkEarly === false) {
+  if (tx.violationType === ViolationType.LeftNetworkEarly && AccountsStorage.cachedNetworkAccount.current.slashing.enableLeftNetworkEarlySlashing === false) {
     return { isValid: false, reason: 'LeftNetworkEarly slashing is disabled' }
   }
-  if (tx.violationType === ViolationType.SyncingTooLong && AccountsStorage.cachedNetworkAccount.current.slashing.enableSyncTimeout === false) {
+  if (tx.violationType === ViolationType.SyncingTooLong && AccountsStorage.cachedNetworkAccount.current.slashing.enableSyncTimeoutSlashing === false) {
     return { isValid: false, reason: 'Sync timeout slashing is disabled' }
   }
-  if (tx.violationType === ViolationType.NodeRefuted && AccountsStorage.cachedNetworkAccount.current.slashing.enableNodeRefuted === false) {
+  if (tx.violationType === ViolationType.NodeRefuted && AccountsStorage.cachedNetworkAccount.current.slashing.enableNodeRefutedSlashing === false) {
     return { isValid: false, reason: 'Refuted node slashing is disabled' }
   }
   try {
