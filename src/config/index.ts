@@ -186,9 +186,6 @@ config = merge(config, {
 
       // 1.10.0 todo podA smoke/functional test with these on:
       // numberOfNodesToInjectPenaltyTx: 5, //this may not need a change but we should probably go ahead and include it
-      // enableLeftNetworkEarlySlashing: true,
-      // enableSyncTimeoutSlashing: true,
-      // enableNodeRefutedSlashing: true
       rotationCountMultiply: 3,
       // 1.10.0
       standbyListCyclesTTL: 1440, //nodes only need to refresh once every 24 hours (which is 1440 60s cycles!)
@@ -275,7 +272,7 @@ config = merge(config, {
       executeInOneShard: true,
     },
     stateManager: {
-      accountBucketSize: 200, // todo: we need to re-test with higher numbers after some recent improvements
+      accountBucketSize: 250, // todo: we need to re-test with higher numbers after some recent improvements
       includeBeforeStatesInReceipts: true, // 1.5.3 migration
       useNewPOQ: false, // 1.10.0 enabled required by archive server updates
 

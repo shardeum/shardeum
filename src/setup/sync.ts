@@ -1,4 +1,4 @@
-import { Shardus, ShardusTypes } from '@shardus/core'
+import { DevSecurityLevel, Shardus, ShardusTypes } from '@shardus/core'
 import { Account, Address } from '@ethereumjs/util'
 import config from '../config'
 import genesis from '../config/genesis.json'
@@ -83,20 +83,24 @@ export const sync = (shardus: Shardus, evmCommon: any) => async (): Promise<void
         }
         /* prettier-ignore */ if (logFlags.important_as_error) console.log(`Skipped ${skippedAccountCount} genesis accounts`)
         //TODO we need to brainstorm a way to allow migration of keys on a live network
-        const maxLevelDevKey = shardus.getDevPublicKeyMaxLevel()
-        if (maxLevelDevKey) {
-          const { account, cycle } = createDevAccount(maxLevelDevKey, shardus.getLatestCycles())
-          const devAccount: any = account // eslint-disable-line @typescript-eslint/no-explicit-any
-          await AccountsStorage.setAccount(devAccount.id, devAccount)
-          const accountCopy: ShardusTypes.AccountsCopy = {
-            cycleNumber: cycle.counter,
-            accountId: devAccount.id,
-            data: devAccount,
-            hash: devAccount.hash,
-            isGlobal: false,
-            timestamp: devAccount.timestamp,
+        const devPublicKeys = shardus.getDevPublicKeys()
+        for(const devPublicKey of Object.keys(devPublicKeys)) {
+          // eslint-disable-next-line security/detect-object-injection
+          const level = devPublicKeys[devPublicKey]
+          if (level >= DevSecurityLevel.Low) {
+            const { account, cycle } = createDevAccount(devPublicKey, shardus.getLatestCycles())
+            const devAccount: any = account // eslint-disable-line @typescript-eslint/no-explicit-any
+            await AccountsStorage.setAccount(devAccount.id, devAccount)
+            const accountCopy: ShardusTypes.AccountsCopy = {
+              cycleNumber: cycle.counter,
+              accountId: devAccount.id,
+              data: devAccount,
+              hash: devAccount.hash,
+              isGlobal: false,
+              timestamp: devAccount.timestamp,
+            }
+            accountCopies.push(accountCopy)
           }
-          accountCopies.push(accountCopy)
         }
         await shardus.debugCommitAccountCopies(accountCopies)
         if (ShardeumFlags.forwardGenesisAccounts) {

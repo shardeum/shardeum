@@ -105,9 +105,6 @@ interface ShardeumFlags {
   riAccountsCacheSize: number
   riAccountsDeleteBatchSize: number
   numberOfNodesToInjectPenaltyTx: number
-  enableLeftNetworkEarlySlashing: boolean
-  enableSyncTimeoutSlashing: boolean
-  enableNodeRefutedSlashing: boolean
   loadGenesisNodeNetworkConfigToNetworkAccount: boolean
   networkAccountCacheDuration: number
   enableClaimRewardAdminCert: boolean
@@ -121,6 +118,7 @@ interface ShardeumFlags {
   debugExtraNonceLookup: boolean
   cleanStaleShardeumStateMap: boolean
   beta1_11_2: boolean
+  failedStakeReceipt: boolean // For stake/unstake TXs that fail the checks in apply(), create an EVM receipt marked as failed
 }
 
 export const ShardeumFlags: ShardeumFlags = {
@@ -257,9 +255,6 @@ export const ShardeumFlags: ShardeumFlags = {
   ],
 
   numberOfNodesToInjectPenaltyTx: 5,
-  enableLeftNetworkEarlySlashing: true,
-  enableSyncTimeoutSlashing: true,
-  enableNodeRefutedSlashing: true,
   loadGenesisNodeNetworkConfigToNetworkAccount: false,
   networkAccountCacheDuration: 3600, // 60 minutes
   enableClaimRewardAdminCert: true,
@@ -278,6 +273,8 @@ export const ShardeumFlags: ShardeumFlags = {
   //1.1.2 migration
   cleanStaleShardeumStateMap: false,
   beta1_11_2: true,
+
+  failedStakeReceipt: true,
 }
 
 export function updateShardeumFlag(key: string, value: string | number | boolean): void {

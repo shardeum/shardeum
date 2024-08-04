@@ -152,6 +152,7 @@ import { isLowStake } from './tx/penalty/penaltyFunctions'
 import { accountDeserializer, accountSerializer } from './types/Helpers'
 import { runWithContextAsync } from './utils/RequestContext'
 import { Utils } from '@shardus/types'
+import { verifyStakeTx, verifyUnstakeTx } from './tx/staking/verifyStake'
 
 let latestBlock = 0
 export const blocks: BlockMap = {}
@@ -2439,7 +2440,9 @@ export const createInternalTxReceipt = (
   to: string,
   txTimestamp: number,
   txId: string,
-  amountSpent = bigIntToHex(BigInt(0))
+  amountSpent = bigIntToHex(BigInt(0)),
+  rewardAmount?: bigint,
+  penaltyAmount?: bigint,
 ): void => {
   const blockForReceipt = getOrCreateBlockFromTimestamp(txTimestamp)
   const blockNumberForTx = blockForReceipt.header.number.toString()
@@ -2463,6 +2466,8 @@ export const createInternalTxReceipt = (
     data: '0x0',
     isInternalTx: true,
     internalTx: { ...internalTx, sign: null },
+    ...(rewardAmount !== undefined && { rewardAmount }),
+    ...(penaltyAmount !== undefined && { penaltyAmount }),
   }
   const wrappedReceiptAccount = {
     timestamp: txTimestamp,
@@ -3487,6 +3492,97 @@ const shardusSetup = (): void => {
       // Create an applyResponse which will be used to tell Shardus that the tx has been applied
       /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log('DBG', new Date(), 'attempting to apply tx', txId, ethTxId, tx, wrappedStates, appData)
       const applyResponse = shardus.createApplyResponse(txId, txTimestamp)
+
+      // Verify Stake and Unstake transactions. If failed, the verify functions return false
+      let verifyResult = {
+        success: true,
+        reason: ''
+      }
+      try {
+        if (appData.internalTx && appData.internalTXType === InternalTXType.Stake) {
+          verifyResult = verifyStakeTx(appData.internalTx, senderAddress, wrappedStates)
+        }
+        if (appData.internalTx && appData.internalTXType === InternalTXType.Unstake) {
+          verifyResult = verifyUnstakeTx(appData.internalTx, senderAddress, wrappedStates, shardus);
+        }
+        if(verifyResult == null){
+          verifyResult = {
+            success: false,
+            reason: 'verify result undefined'
+          }
+        }
+      } catch (error) {
+        if (ShardeumFlags.VerboseLogs) console.log(`Stake/Unstake tx verification failed, reason: ${error}`)
+        verifyResult = {
+          success: false,
+          reason: error
+        }
+      }
+      
+      //Note this currently only applies to stake and unstake, if you expand to deal with other 
+      //TX types please take care that the code in this block below is still correct.
+      //for example a counter assumes this will be related to stake/unstake
+      if (!verifyResult.success) {
+        if (ShardeumFlags.failedStakeReceipt) {
+          const blockForReceipt = getOrCreateBlockFromTimestamp(txTimestamp)
+          const blockNumberForTx = blockForReceipt.header.number.toString()
+          // generate a failed receipt for stake/unstake tx
+          const readableReceipt: ReadableReceipt = {
+            status: 0, //FAILED
+            transactionHash: ethTxId,
+            transactionIndex: '0x1',
+            // eslint-disable-next-line security/detect-object-injection
+            blockNumber: bigIntToHex(blocks[blockForReceipt.header.number.toString()].header.number),
+            nonce: bigIntToHex(transaction.nonce),
+            blockHash: readableBlocks[blockNumberForTx].hash, // eslint-disable-line security/detect-object-injection
+            cumulativeGasUsed: '0x0', // NO GAS USED
+            gasUsed: '0x0',
+            gasRefund: '0x0',
+            gasPrice: bigIntToHex(transaction.gasPrice),
+            gasLimit: bigIntToHex(transaction.gasLimit),
+            maxFeePerGas: undefined,
+            maxPriorityFeePerGas: undefined,
+            logs: [],
+            logsBloom: '',
+            contractAddress: null,
+            from: senderAddress.toString(),
+            to: transaction.to ? transaction.to.toString() : null,
+            chainId: '0x' + ShardeumFlags.ChainID.toString(16),
+            reason: verifyResult.reason,
+            value: bigIntToHex(transaction.value),
+            type: '0x' + transaction.type.toString(16),
+            data: bytesToHex(transaction.data),
+            v: bigIntToHex(transaction.v),
+            r: bigIntToHex(transaction.r),
+            s: bigIntToHex(transaction.s),
+          }
+
+          const wrappedReceiptAccount: WrappedEVMAccount = {
+            timestamp: txTimestamp,
+            ethAddress: ethTxId,
+            hash: '',
+            readableReceipt,
+            amountSpent: '0x0',
+            txId,
+            accountType: AccountType.StakeReceipt,
+            txFrom: appData.internalTx.nominator,
+          }
+
+          const receiptShardusAccount =
+            WrappedEVMAccountFunctions._shardusWrappedAccount(wrappedReceiptAccount)
+          shardus.applyResponseAddReceiptData(
+            applyResponse,
+            receiptShardusAccount,
+            crypto.hashObj(receiptShardusAccount)
+          )
+
+          nestedCountersInstance.countEvent('shardeum-staking', `failed type:${appData.internalTXType} ${verifyResult.reason}`)
+
+          return applyResponse
+        } else {
+          throw new Error(`Stake/Unstake transaction failed, reason: ${verifyResult.reason}`)
+        }
+      }
 
       //Now we need to get a transaction state object.  For single sharded networks this will be a new object.
       //When we have multiple shards we could have some blob data that wrapped up read accounts.  We will read these accounts
@@ -4925,6 +5021,7 @@ const shardusSetup = (): void => {
         ) {
           const transformedTargetKey = appData.internalTx.nominee // no need to convert to shardus address
           result.targetKeys.push(transformedTargetKey)
+          result.sourceKeys.push(networkAccount)
         }
 
         if (transaction.to && transaction.to.toString() !== ShardeumFlags.stakeTargetAddress) {
@@ -5057,6 +5154,10 @@ const shardusSetup = (): void => {
         // for smart contract calls the contract will be the target.  For simple coin transfers it wont matter
         // insert otherAccountKeys second, because we need the CA addres at the front of the list for contract deploy
         // There wont be a target key in when we deploy a contract
+
+        // update: looks like POQ-LS work switched source key to be first, and thus the execution group
+        // center. 
+        // TODO ARCH-6.  as mentioned in other post we should move to an explicit key for picking the execution group
         result.allKeys = result.allKeys.concat(
           result.sourceKeys,
           result.targetKeys,
@@ -6039,9 +6140,13 @@ const shardusSetup = (): void => {
     getSimpleTxDebugValue(timestampedTx) {
       //console.log(`getSimpleTxDebugValue: ${Utils.safeStringify(tx)}`)
 
+      if(timestampedTx == null){
+        return 'null'
+      }
+
       try {
         //@ts-ignore
-        const { tx } = timestampedTx
+        const tx = timestampedTx?.tx;
         if (isInternalTx(tx)) {
           const internalTx = tx as InternalTx
           return `internalTX: ${InternalTXType[internalTx.internalTXType]} `
@@ -6059,8 +6164,9 @@ const shardusSetup = (): void => {
         }
       } catch (e) {
         //@ts-ignore
-        const { tx } = timestampedTx
+        const tx = timestampedTx?.tx;
         /* prettier-ignore */ if (logFlags.error) console.log(`getSimpleTxDebugValue failed: ${formatErrorMessage(e)}  tx:${Utils.safeStringify(tx)}`)
+        return `error: ${e.message}`
       }
     },
     close: async (): Promise<void> => {
@@ -6847,7 +6953,7 @@ const shardusSetup = (): void => {
       } else if (
         eventType === 'node-left-early' &&
         ShardeumFlags.enableNodeSlashing === true &&
-        ShardeumFlags.enableLeftNetworkEarlySlashing
+        AccountsStorage.cachedNetworkAccount.current.slashing.enableLeftNetworkEarly
       ) {
         let nodeLostCycle
         let nodeDroppedCycle
@@ -6876,7 +6982,7 @@ const shardusSetup = (): void => {
       } else if (
         eventType === 'node-sync-timeout' &&
         ShardeumFlags.enableNodeSlashing === true &&
-        ShardeumFlags.enableSyncTimeoutSlashing
+        AccountsStorage.cachedNetworkAccount.current.slashing.enableSyncTimeout
       ) {
         let violationData: SyncingTimeoutViolationData
         for (let i = 0; i < latestCycles.length; i++) {
@@ -6901,7 +7007,7 @@ const shardusSetup = (): void => {
       } else if (
         eventType === 'node-refuted' &&
         ShardeumFlags.enableNodeSlashing === true &&
-        ShardeumFlags.enableNodeRefutedSlashing
+        AccountsStorage.cachedNetworkAccount.current.slashing.enableNodeRefuted
       ) {
         let nodeRefutedCycle
         for (let i = 0; i < latestCycles.length; i++) {
