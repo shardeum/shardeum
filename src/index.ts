@@ -59,7 +59,7 @@ import {
   NodeAccount2,
   NodeInfoAppData,
   NodeRefutedViolationData,
-  OperatorAccountInfo,
+  OperatorAccountInfo, OperatorStats,
   OurAppDefinedData,
   PenaltyTX,
   ReadableReceipt,
@@ -882,7 +882,7 @@ async function getReadableAccountInfo(account: WrappedEVMAccount): Promise<{
   balance: string
   storageRoot: string
   codeHash: string
-  operatorAccountInfo: unknown
+  operatorAccountInfo: OperatorStats
 }> {
   try {
     //todo this code needs additional support for account type contract storage or contract code
@@ -2150,8 +2150,7 @@ const configShardusEndpoints = (): void => {
 }
 
 const configShardusNetworkTransactions = (): void => {
-  shardus.registerBeforeAddVerify('nodeReward', (tx: any) => {
-    console.log('Validating nodeReward fields', tx)
+  shardus.registerBeforeAddVerifier('nodeReward', async (tx: any) => {
     /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log('Validating nodeReward fields', tx)
     if (!tx.publicKey || tx.publicKey === '' || tx.publicKey.length !== 64) {
       /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log('registerBeforeAddVerify nodeReward fail invalid publicKey field', tx)
@@ -2193,8 +2192,18 @@ const configShardusNetworkTransactions = (): void => {
     /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log('registerBeforeAddVerify nodeReward success', tx)
     return true
   })
-  shardus.registerBeforeRemoveVerify('nodeReward', (tx: any) => {
-    return false
+  shardus.registerApplyVerifier('nodeReward', async (tx: any) => {
+    /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log('Validating nodeReward applied', tx)
+    const shardusAddress = tx.publicKey?.toLowerCase()
+    const account = await shardus.getLocalOrRemoteAccount(shardusAddress)
+    if (!account) {
+      throw new Error(`Account for shardus address ${shardusAddress} not found`)
+    }
+    const data = account.data as NodeAccount2
+    const appliedEntry = data?.nodeAccountStats?.history?.find(({startCycle, endCycle}) =>
+      (startCycle === tx.start && endCycle === tx.end))
+    /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log('registerApplyVerify nodeReward appliedEntry', appliedEntry)
+    return appliedEntry != null
   })
 }
 
@@ -2728,6 +2737,8 @@ const createNodeAccount2 = (accountId: string): NodeAccount2 => {
     nominator: '',
     stakeLock: BigInt(0),
     reward: BigInt(0),
+    rewardStartCycle: 0,
+    rewardEndCycle: 0,
     rewardStartTime: 0,
     rewardEndTime: 0,
     penalty: BigInt(0),
@@ -3898,6 +3909,8 @@ const shardusSetup = (): void => {
         nodeAccount2.reward = BigInt(0)
         nodeAccount2.rewardStartTime = 0
         nodeAccount2.rewardEndTime = 0
+        nodeAccount2.rewardStartCycle = 0
+        nodeAccount2.rewardEndCycle = 0
         nodeAccount2.rewarded = false
 
         if (ShardeumFlags.useAccountWrites) {

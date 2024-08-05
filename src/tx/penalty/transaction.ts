@@ -330,13 +330,18 @@ export async function applyPenaltyTX(
   })
   if (tx.violationType === ViolationType.LeftNetworkEarly && nodeAccount.rewardStartTime > 0) {
     nodeAccount.rewardEndTime = (tx.violationData as LeftNetworkEarlyViolationData)?.nodeDroppedTime
+    nodeAccount.rewardEndCycle = (tx.violationData as LeftNetworkEarlyViolationData)?.nodeDroppedCycle
     nodeAccount.nodeAccountStats.history.push({
       b: nodeAccount.rewardStartTime,
       e: nodeAccount.rewardEndTime,
+      startCycle: nodeAccount.rewardStartCycle,
+      endCycle: nodeAccount.rewardEndCycle
     })
     operatorAccount.operatorAccountInfo.operatorStats.history.push({
       b: nodeAccount.rewardStartTime,
       e: nodeAccount.rewardEndTime,
+      startCycle: nodeAccount.rewardStartCycle,
+      endCycle: nodeAccount.rewardEndCycle
     })
   }
 

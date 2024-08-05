@@ -204,6 +204,8 @@ export function apply(
 
   nodeAccount.rewardStartTime = tx.nodeActivatedTime
   nodeAccount.rewardEndTime = 0
+  nodeAccount.rewardStartCycle = 0
+  nodeAccount.rewardEndCycle = 0
   nodeAccount.timestamp = txTimestamp
   if (ShardeumFlags.rewardedFalseInInitRewardTx) nodeAccount.rewarded = false
   if (ShardeumFlags.useAccountWrites) {

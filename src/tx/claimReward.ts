@@ -3,7 +3,6 @@ import * as crypto from '@shardus/crypto-utils'
 import { Address } from '@ethereumjs/util'
 import { networkAccount } from '../shardeum/shardeumConstants'
 import { createInternalTxReceipt, getApplyTXState, logFlags, shardeumGetTime } from '../index'
-import { hashSignedObj } from '../setup/helpers'
 import { toShardusAddress } from '../shardeum/evmAddress'
 import { ShardeumFlags } from '../shardeum/shardeumFlags'
 import {
@@ -44,7 +43,9 @@ export async function injectClaimRewardTx(
     cycle: eventData.cycle,
     isInternalTx: true,
     internalTXType: InternalTXType.ClaimReward,
-  }
+    rewardStartCycle: eventData.additionalData.txData.start,
+    rewardEndCycle: eventData.additionalData.txData.end
+  } as Omit<ClaimRewardTX, 'sign'>
 
   if (ShardeumFlags.txHashingFix) {
     // to make sure that differnt nodes all submit an equivalent tx that is counted as the same tx,
@@ -173,6 +174,16 @@ export function validateClaimRewardTx(
     /* prettier-ignore */ nestedCountersInstance.countEvent('shardeum-staking', `validateClaimRewardTx fail tx.duration <= 0`)
     /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log('validateClaimRewardTx fail tx.duration <= 0', tx)
     return { isValid: false, reason: 'duration must be > 0' }
+  }
+  if (tx.rewardStartCycle <= 0) {
+    /* prettier-ignore */ nestedCountersInstance.countEvent('shardeum-staking', `validateClaimRewardTx fail tx.start <= 0`)
+    /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log('validateClaimRewardTx fail tx.start <= 0', tx)
+    return { isValid: false, reason: 'start must be > 0' }
+  }
+  if (tx.rewardEndCycle <= 0 || tx.rewardEndCycle < tx.rewardStartCycle) {
+    /* prettier-ignore */ nestedCountersInstance.countEvent('shardeum-staking', `validateClaimRewardTx fail tx.end <= 0 || tx.end < tx.start`)
+    /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log('validateClaimRewardTx fail tx.end <= 0 || tx.end < tx.start', tx)
+    return { isValid: false, reason: 'end must be > 0 and >= start' }
   }
   if (tx.timestamp <= 0) {
     /* prettier-ignore */ nestedCountersInstance.countEvent('shardeum-staking', `validateClaimRewardTx fail tx.timestamp`)
@@ -362,7 +373,11 @@ export async function applyClaimRewardTx(
   // update the node account historical stats
   nodeAccount.nodeAccountStats.totalReward =
     _base16BNParser(nodeAccount.nodeAccountStats.totalReward) + rewardedAmount
-  nodeAccount.nodeAccountStats.history.push({ b: nodeAccount.rewardStartTime, e: nodeAccount.rewardEndTime })
+  nodeAccount.nodeAccountStats.history.push({
+    b: nodeAccount.rewardStartTime, e: nodeAccount.rewardEndTime,
+    startCycle: tx.rewardStartCycle,
+    endCycle: tx.rewardEndCycle
+  })
 
   const shardeumState = getApplyTXState(txId)
   shardeumState._transactionState.appData = {}
@@ -383,6 +398,8 @@ export async function applyClaimRewardTx(
   operatorAccount.operatorAccountInfo.operatorStats.history.push({
     b: nodeAccount.rewardStartTime,
     e: nodeAccount.rewardEndTime,
+    startCycle:  tx.rewardStartCycle,
+    endCycle: tx.rewardEndCycle,
   })
   operatorAccount.operatorAccountInfo.operatorStats.totalNodeReward =
     _base16BNParser(operatorAccount.operatorAccountInfo.operatorStats.totalNodeReward) + rewardedAmount
