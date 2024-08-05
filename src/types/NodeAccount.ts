@@ -15,6 +15,8 @@ export interface NodeAccount extends BaseAccount {
   reward: bigint
   rewardStartTime: number
   rewardEndTime: number
+  rewardStartCycle: number,
+  rewardEndCycle: number,
   penalty: bigint
   nodeAccountStats: NodeAccountStats
   rewarded: boolean
@@ -48,6 +50,8 @@ export function serializeNodeAccount(
   stream.writeString(obj.reward.toString())
   stream.writeBigUInt64(BigInt(obj.rewardStartTime))
   stream.writeBigUInt64(BigInt(obj.rewardEndTime))
+  stream.writeBigUInt64(BigInt(obj.rewardStartCycle))
+  stream.writeBigUInt64(BigInt(obj.rewardEndCycle))
   stream.writeString(obj.penalty.toString())
 
   stream.writeString(Utils.safeStringify(obj.nodeAccountStats))
@@ -76,6 +80,8 @@ export function deserializeNodeAccount(stream: VectorBufferStream): NodeAccount 
   const reward = BigInt(stream.readString())
   const rewardStartTime = Number(stream.readBigUInt64())
   const rewardEndTime = Number(stream.readBigUInt64())
+  const rewardStartCycle = Number(stream.readBigUInt64())
+  const rewardEndCycle = Number(stream.readBigUInt64())
   const penalty = BigInt(stream.readString())
 
   const nodeAccountStats = Utils.safeJsonParse(stream.readString()) as NodeAccountStats
@@ -90,6 +96,8 @@ export function deserializeNodeAccount(stream: VectorBufferStream): NodeAccount 
     nominator,
     stakeLock,
     reward,
+    rewardStartCycle,
+    rewardEndCycle,
     rewardStartTime,
     rewardEndTime,
     penalty,

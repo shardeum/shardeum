@@ -171,6 +171,8 @@ export interface ClaimRewardTX extends InternalTxBase {
   nominator: string
   timestamp: number
   deactivatedNodeId: string
+  rewardStartCycle: number
+  rewardEndCycle: number
   duration: number
   sign: ShardusTypes.Sign
 }
@@ -360,6 +362,8 @@ export interface NodeAccount2 extends BaseAccount {
   nominator: string | null
   stakeLock: bigint //amount of coins in stake
   reward: bigint
+  rewardStartCycle: number
+  rewardEndCycle: number
   rewardStartTime: number
   rewardEndTime: number
   penalty: bigint
@@ -378,7 +382,7 @@ export interface NodeAccountStats {
   totalReward: bigint
   totalPenalty: bigint
   //push begin and end times when rewarded
-  history: { b: number; e: number }[]
+  history: { b: number; e: number, startCycle: number, endCycle: number }[]
   lastPenaltyTime: number
   penaltyHistory: { type: ViolationType; amount: bigint; timestamp: number }[]
   //set when first staked
@@ -404,7 +408,7 @@ export interface OperatorStats {
   totalNodePenalty: bigint
   totalNodeTime: number
   //push begin and end times when rewarded
-  history: { b: number; e: number }[]
+  history: { b: number; e: number, startCycle: number, endCycle: number }[]
 
   //update then unstaked
   totalUnstakeReward: bigint
