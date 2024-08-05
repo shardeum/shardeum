@@ -186,8 +186,11 @@ export const validateTxnFields =
       try {
         const transaction = getTransactionObj(tx)
         const isSigned = transaction.isSigned()
-        const { address: senderAddress, isValid } = getTxSenderAddress(transaction,txId) // ensures that tx is valid
-        const isSignatureValid = isValid
+        const {
+          address: senderAddress,
+          isValid: isSignatureValid,
+          gasValid,
+        } = getTxSenderAddress(transaction, txId) // ensures that tx is valid
         if (ShardeumFlags.VerboseLogs) console.log('validate evm tx', isSigned, isSignatureValid)
 
         //const txId = '0x' + crypto.hashObj(timestampedTx.tx)
@@ -199,12 +202,19 @@ export const validateTxnFields =
         }
         debugAppdata.set(txHash, appData)
 
-        if (isSigned && isSignatureValid) {
+        if (!gasValid) {
+          success = false
+          reason = 'Not enough gas to execute transaction'
+          nestedCountersInstance.countEvent('shardeum', 'validate - insufficient gas')
+        } else if (!isSigned) {
+          reason = 'Transaction is not signed'
+          nestedCountersInstance.countEvent('shardeum', 'validate - sign missing')
+        } else if (!isSignatureValid) {
+          reason = 'Transaction signature is invalid'
+          nestedCountersInstance.countEvent('shardeum', 'validate - sign failed')
+        } else {
           success = true
           reason = ''
-        } else {
-          reason = 'Transaction is not signed or signature is not valid'
-          nestedCountersInstance.countEvent('shardeum', 'validate - sign ' + isSigned ? 'failed' : 'missing')
         }
 
         if (ShardeumFlags.txBalancePreCheck && appData != null) {
