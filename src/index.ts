@@ -7141,7 +7141,7 @@ const shardusSetup = (): void => {
             /* prettier-ignore */ if (logFlags.dapp_verbose) console.log('INJECTED_INIT_REWARD_TIMES_TX', result)
           }
         }
-      } else if (eventType === 'node-deactivated' || eventType === 'node-left-early') {
+      } else if (eventType === 'node-deactivated') {
         // todo: aamir check the timestamp and cycle the first time we see this event
         // Limit the nodes that send this to the 5 closest to the node id
         const closestNodes = shardus.getClosestNodes(data.publicKey, 5)
@@ -7158,8 +7158,7 @@ const shardusSetup = (): void => {
             shardus.addNetworkTx('nodeReward', txData)
           }
         }
-      }
-      if (
+      } else if (
         eventType === 'node-left-early' &&
         ShardeumFlags.enableNodeSlashing === true &&
         AccountsStorage.cachedNetworkAccount.current.slashing.enableLeftNetworkEarly
