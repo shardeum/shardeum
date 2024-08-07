@@ -27,6 +27,10 @@ export const validateTransaction =
         tx.internalTXType === InternalTXType.ChangeConfig ||
         internalTx.internalTXType === InternalTXType.ChangeNetworkParam
       ) {
+        const networkAccount = AccountsStorage.cachedNetworkAccount
+        if ((networkAccount.nonce - BigInt(1)) != BigInt(tx.nonce)) {
+          return { result: 'fail', reason: 'Invalid nonce' }
+        }
         const devPublicKeys = shardus.getDevPublicKeys()
         const is_array_sig = Array.isArray(tx.sign) === true
         const requiredSigs = Math.max(1, ShardeumFlags.minSignaturesRequiredForGlobalTxs)

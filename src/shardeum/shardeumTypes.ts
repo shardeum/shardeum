@@ -128,6 +128,8 @@ export interface InternalTx extends InternalTxBase {
   config?: string // change config
   nominee?: string // Node Account2
   nominator?: string // EVM Account (OperAcc)
+  nonce?: bigint // Network Account
+  networkId?: string // Network Account
   sign: ShardusTypes.Sign
 }
 
@@ -317,6 +319,8 @@ export interface NetworkAccount extends BaseAccount {
   next: NetworkParameters | object //todo potentially improve this, but will need functional changes
   hash: string
   timestamp: number
+  nonce: bigint
+  networkId: string
 }
 
 //type guard
