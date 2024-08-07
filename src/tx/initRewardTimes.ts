@@ -18,11 +18,12 @@ export async function injectInitRewardTimesTx(
   shardus,
   eventData: ShardusTypes.ShardusEvent
 ): Promise<unknown> {
+  const startTime = eventData.additionalData.txData.startTime
   let tx = {
     isInternalTx: true,
     internalTXType: InternalTXType.InitRewardTimes,
     nominee: eventData.publicKey,
-    nodeActivatedTime: eventData.time,
+    nodeActivatedTime: startTime,
     timestamp: shardeumGetTime(),
   } as InitRewardTimes
 

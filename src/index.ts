@@ -6879,18 +6879,33 @@ const shardusSetup = (): void => {
         if (!stakingEnabled) {
           return
         }
-        nestedCountersInstance.countEvent('shardeum-staking', `node-activated: injectInitRewardTimesTx`)
 
-        //TODO need retry on this also
-        // Limit the nodes that send this to the 5 closest to the node id
         const closestNodes = shardus.getClosestNodes(data.publicKey, 5)
         const ourId = shardus.getNodeId()
         for (const id of closestNodes) {
           if (id === ourId) {
-            const result = await InitRewardTimesTx.injectInitRewardTimesTx(shardus, data)
-            /* prettier-ignore */ if (logFlags.dapp_verbose) console.log('INJECTED_INIT_REWARD_TIMES_TX', result)
+            nestedCountersInstance.countEvent('shardeum-staking', `${eventType}: injectInitRewardTimesTx`)
+            const txData = {
+              cycle: data.cycleNumber,
+              startTime: data.time,
+              publicKey: data.publicKey,
+              nodeId: data.nodeId,
+            }
+            shardus.addNetworkTx('nodeInitReward', txData)
           }
         }
+        // nestedCountersInstance.countEvent('shardeum-staking', `node-activated: injectInitRewardTimesTx`)
+
+        // //TODO need retry on this also
+        // // Limit the nodes that send this to the 5 closest to the node id
+        // const closestNodes = shardus.getClosestNodes(data.publicKey, 5)
+        // const ourId = shardus.getNodeId()
+        // for (const id of closestNodes) {
+        //   if (id === ourId) {
+        //     const result = await InitRewardTimesTx.injectInitRewardTimesTx(shardus, data)
+        //     /* prettier-ignore */ if (logFlags.dapp_verbose) console.log('INJECTED_INIT_REWARD_TIMES_TX', result)
+        //   }
+        // }
       } else if (eventType === 'node-deactivated') {
         // todo: aamir check the timestamp and cycle the first time we see this event
         // Limit the nodes that send this to the 5 closest to the node id
@@ -6902,10 +6917,12 @@ const shardusSetup = (): void => {
             const txData = {
               start: data.activeCycle,
               end: data.cycleNumber,
+              endTime: data.time,
               publicKey: data.publicKey,
               nodeId: data.nodeId,
             } as NodeRewardTxData
-            shardus.addNetworkTx('nodeReward', txData)
+
+            shardus.addNetworkTx('nodeClaimReward', txData)
           }
         }
       } else if (
@@ -6977,10 +6994,10 @@ const shardusSetup = (): void => {
       } else if (eventType === 'try-network-transaction') {
         console.log('shardeum-event', `try-network-transaction`, safeStringify(data))
         nestedCountersInstance.countEvent('shardeum-event', `try-network-transaction`)
-        if (data?.additionalData.type === 'nodeReward') {
+        if (data?.additionalData.type === 'nodeClaimReward') {
           console.log(
             'shardeum-event',
-            `running injectClaimrewardTxWithRetry nodeReward`,
+            `running injectClaimrewardTxWithRetry nodeClaimReward`,
             safeStringify(data)
           )
           const closestNodes = shardus.getClosestNodes(data.publicKey, 5)
@@ -6989,6 +7006,16 @@ const shardusSetup = (): void => {
             if (id === ourId) {
               const result = await injectClaimRewardTxWithRetry(shardus, data)
               /* prettier-ignore */ if (logFlags.dapp_verbose) console.log('INJECTED_CLAIM_REWARD_TX', result)
+            }
+          }
+        } else if (data?.additionalData.type === 'nodeInitReward') {
+          console.log('shardeum-event', `running injectInitRewardTimesTx nodeInitReward`, safeStringify(data))
+          const closestNodes = shardus.getClosestNodes(data.publicKey, 5)
+          const ourId = shardus.getNodeId()
+          for (const id of closestNodes) {
+            if (id === ourId) {
+              const result = await InitRewardTimesTx.injectInitRewardTimesTx(shardus, data)
+              /* prettier-ignore */ if (logFlags.dapp_verbose) console.log('INJECTED_INIT_REWARD_TIMES_TX', result)
             }
           }
         }

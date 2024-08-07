@@ -31,20 +31,17 @@ export async function injectClaimRewardTx(
   reason: string
   status: number
 }> {
-  const duration =
-    (eventData.additionalData.txData.end - eventData.additionalData.txData.start) *
-    config.server.p2p.cycleDuration
   let tx = {
     nominee: eventData.publicKey,
     nominator: nodeAccount.nominator,
     timestamp: shardeumGetTime(),
     deactivatedNodeId: eventData.nodeId,
-    duration,
+    nodeDeactivatedTime: eventData.additionalData.txData.endTime,
     cycle: eventData.cycle,
     isInternalTx: true,
     internalTXType: InternalTXType.ClaimReward,
     rewardStartCycle: eventData.additionalData.txData.start,
-    rewardEndCycle: eventData.additionalData.txData.end
+    rewardEndCycle: eventData.additionalData.txData.end,
   } as Omit<ClaimRewardTX, 'sign'>
 
   if (ShardeumFlags.txHashingFix) {
@@ -93,17 +90,17 @@ export async function injectClaimRewardTxWithRetry(
   }
   const nodeAccount = wrappedData.data as NodeAccount2
   // check if the rewardStartTime is non-zero
-  // if (nodeAccount.rewardStartTime <= 0) {
-  //   /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`injectClaimRewardTx failed rewardStartTime <= 0`)
-  //   /* prettier-ignore */ nestedCountersInstance.countEvent('shardeum-staking', `injectClaimRewardTx failed rewardStartTime <= 0`)
-  //   return
-  // }
-  // // check if nodeAccount.rewardEndTime is already set to eventData.time
-  // if (nodeAccount.rewardEndTime >= eventData.time) {
-  //   /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`injectClaimRewardTx failed rewardEndTime already set : ${eventData.publicKey}`, nodeAccount)
-  //   /* prettier-ignore */ nestedCountersInstance.countEvent('shardeum-staking', `injectClaimRewardTx failed rewardEndTime already set`)
-  //   return
-  // }
+  if (nodeAccount.rewardStartTime <= 0) {
+    /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`injectClaimRewardTx failed rewardStartTime <= 0`)
+    /* prettier-ignore */ nestedCountersInstance.countEvent('shardeum-staking', `injectClaimRewardTx failed rewardStartTime <= 0`)
+    return
+  }
+  // check if nodeAccount.rewardEndTime is already set to eventData.time
+  if (nodeAccount.rewardEndTime >= eventData.additionalData.txData.endTime) {
+    /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`injectClaimRewardTx failed rewardEndTime already set : ${eventData.publicKey}`, nodeAccount)
+    /* prettier-ignore */ nestedCountersInstance.countEvent('shardeum-staking', `injectClaimRewardTx failed rewardEndTime already set`)
+    return
+  }
 
   let rewardEndTimeBeforeInjection = nodeAccount.rewardEndTime
   if (!rewardEndTimeBeforeInjection) {
@@ -170,7 +167,7 @@ export function validateClaimRewardTx(
     /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log('validateClaimRewardTx fail tx.deactivatedNodeId address invalid', tx)
     return { isValid: false, reason: 'Invalid deactivatedNodeId' }
   }
-  if (tx.duration <= 0) {
+  if (tx.nodeDeactivatedTime <= 0) {
     /* prettier-ignore */ nestedCountersInstance.countEvent('shardeum-staking', `validateClaimRewardTx fail tx.duration <= 0`)
     /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log('validateClaimRewardTx fail tx.duration <= 0', tx)
     return { isValid: false, reason: 'duration must be > 0' }
@@ -243,11 +240,11 @@ export function validateClaimRewardState(
   }
 
   // check if nodeAccount.rewardEndTime is already set to tx.nodeDeactivatedTime
-  // if (nodeAccount.rewardEndTime >= tx.nodeDeactivatedTime) {
-  //   /* prettier-ignore */ nestedCountersInstance.countEvent('shardeum-staking', `validateClaimRewardState fail rewardEndTime already set`)
-  //   /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log('validateClaimRewardState fail rewardEndTime already set', tx)
-  //   return { result: 'fail', reason: 'rewardEndTime is already set' }
-  // }
+  if (nodeAccount.rewardEndTime >= tx.nodeDeactivatedTime) {
+    /* prettier-ignore */ nestedCountersInstance.countEvent('shardeum-staking', `validateClaimRewardState fail rewardEndTime already set`)
+    /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log('validateClaimRewardState fail rewardEndTime already set', tx)
+    return { result: 'fail', reason: 'rewardEndTime is already set' }
+  }
 
   const latestCycles = shardus.getLatestCycles(5)
 
@@ -338,7 +335,7 @@ export async function applyClaimRewardTx(
   //   return
   // }
 
-  const durationInNetwork = tx.duration
+  const durationInNetwork = tx.nodeDeactivatedTime - nodeAccount.rewardStartTime
   if (durationInNetwork <= 0) {
     nestedCountersInstance.countEvent('shardeum-staking', `applyClaimRewardTx fail durationInNetwork <= 0`)
     //throw new Error(`applyClaimReward failed because durationInNetwork is less than or equal 0`)
@@ -356,7 +353,7 @@ export async function applyClaimRewardTx(
     return
   }
 
-  // nodeAccount.rewardEndTime = tx.nodeDeactivatedTime
+  nodeAccount.rewardEndTime = tx.nodeDeactivatedTime
 
   //we multiply fist then devide to preserve precision
   let rewardedAmount = nodeRewardAmount * BigInt(durationInNetwork * 1000) // Convert from seconds to milliseconds
@@ -374,9 +371,10 @@ export async function applyClaimRewardTx(
   nodeAccount.nodeAccountStats.totalReward =
     _base16BNParser(nodeAccount.nodeAccountStats.totalReward) + rewardedAmount
   nodeAccount.nodeAccountStats.history.push({
-    b: nodeAccount.rewardStartTime, e: nodeAccount.rewardEndTime,
+    b: nodeAccount.rewardStartTime,
+    e: nodeAccount.rewardEndTime,
     startCycle: tx.rewardStartCycle,
-    endCycle: tx.rewardEndCycle
+    endCycle: tx.rewardEndCycle,
   })
 
   const shardeumState = getApplyTXState(txId)
@@ -398,7 +396,7 @@ export async function applyClaimRewardTx(
   operatorAccount.operatorAccountInfo.operatorStats.history.push({
     b: nodeAccount.rewardStartTime,
     e: nodeAccount.rewardEndTime,
-    startCycle:  tx.rewardStartCycle,
+    startCycle: tx.rewardStartCycle,
     endCycle: tx.rewardEndCycle,
   })
   operatorAccount.operatorAccountInfo.operatorStats.totalNodeReward =
