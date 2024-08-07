@@ -177,6 +177,13 @@ export interface ClaimRewardTX extends InternalTxBase {
   sign: ShardusTypes.Sign
 }
 
+export interface NodeRewardTxData {
+  publicKey: string
+  nodeId: string
+  start: number
+  end: number
+}
+
 export enum ViolationType {
   ShardusCoreMaxID = 999,
   ShardeumMinID = 1000,

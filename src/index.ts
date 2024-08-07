@@ -59,7 +59,9 @@ import {
   NodeAccount2,
   NodeInfoAppData,
   NodeRefutedViolationData,
-  OperatorAccountInfo, OperatorStats,
+  NodeRewardTxData,
+  OperatorAccountInfo,
+  OperatorStats,
   OurAppDefinedData,
   PenaltyTX,
   ReadableReceipt,
@@ -2150,7 +2152,7 @@ const configShardusEndpoints = (): void => {
 }
 
 const configShardusNetworkTransactions = (): void => {
-  shardus.registerBeforeAddVerifier('nodeReward', async (tx: any) => {
+  shardus.registerBeforeAddVerifier('nodeReward', async (tx: NodeRewardTxData) => {
     /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log('Validating nodeReward fields', tx)
     if (!tx.publicKey || tx.publicKey === '' || tx.publicKey.length !== 64) {
       /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log('registerBeforeAddVerify nodeReward fail invalid publicKey field', tx)
@@ -2192,7 +2194,7 @@ const configShardusNetworkTransactions = (): void => {
     /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log('registerBeforeAddVerify nodeReward success', tx)
     return true
   })
-  shardus.registerApplyVerifier('nodeReward', async (tx: any) => {
+  shardus.registerApplyVerifier('nodeReward', async (tx: NodeRewardTxData) => {
     /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log('Validating nodeReward applied', tx)
     const shardusAddress = tx.publicKey?.toLowerCase()
     const account = await shardus.getLocalOrRemoteAccount(shardusAddress)
@@ -6902,7 +6904,7 @@ const shardusSetup = (): void => {
               end: data.cycleNumber,
               publicKey: data.publicKey,
               nodeId: data.nodeId,
-            }
+            } as NodeRewardTxData
             shardus.addNetworkTx('nodeReward', txData)
           }
         }
