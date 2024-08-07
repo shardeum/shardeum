@@ -67,6 +67,7 @@ import {
   ReadableReceipt,
   SetCertTime,
   ShardeumBlockOverride,
+  SignedNodeRewardTxData,
   StakeCoinsTX,
   StakeInfo,
   SyncingTimeoutViolationData,
@@ -2152,8 +2153,18 @@ const configShardusEndpoints = (): void => {
 }
 
 const configShardusNetworkTransactions = (): void => {
-  shardus.registerBeforeAddVerifier('nodeReward', async (tx: NodeRewardTxData) => {
+  shardus.registerBeforeAddVerifier('nodeReward', async (tx: SignedNodeRewardTxData) => {
     /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log('Validating nodeReward fields', tx)
+    try {
+      if (!crypto.verifyObj(tx)) {
+        /* prettier-ignore */
+        if (ShardeumFlags.VerboseLogs) console.log('registerBeforeAddVerifier - nodeReward: fail Invalid signature', tx)
+        return false
+      }
+    } catch (e) {
+      /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log('Invalid signature for internal tx', tx)
+      return false
+    }
     if (!tx.publicKey || tx.publicKey === '' || tx.publicKey.length !== 64) {
       /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log('registerBeforeAddVerify nodeReward fail invalid publicKey field', tx)
       /* prettier-ignore */ nestedCountersInstance.countEvent(
@@ -2194,7 +2205,7 @@ const configShardusNetworkTransactions = (): void => {
     /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log('registerBeforeAddVerify nodeReward success', tx)
     return true
   })
-  shardus.registerApplyVerifier('nodeReward', async (tx: NodeRewardTxData) => {
+  shardus.registerApplyVerifier('nodeReward', async (tx: SignedNodeRewardTxData) => {
     /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log('Validating nodeReward applied', tx)
     const shardusAddress = tx.publicKey?.toLowerCase()
     const account = await shardus.getLocalOrRemoteAccount(shardusAddress)
@@ -2212,7 +2223,7 @@ const configShardusNetworkTransactions = (): void => {
   })
   shardus.registerApplyVerifier('nodeInitReward', async (tx: NodeRewardTxData) => {
     return true
-  })  
+  })
 }
 
 /*** |an
@@ -6927,8 +6938,7 @@ const shardusSetup = (): void => {
               publicKey: data.publicKey,
               nodeId: data.nodeId,
             } as NodeRewardTxData
-
-            shardus.addNetworkTx('nodeReward', txData)
+            shardus.addNetworkTx('nodeReward', shardus.signAsNode(txData), data.publicKey)
           }
         }
       } else if (
