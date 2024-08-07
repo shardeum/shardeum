@@ -19,10 +19,11 @@
 - [Getting Started](#getting-started)
   - [Prerequisites](#prerequisites)
   - [Installation](#installation)
-- [Running the Network](#running-the-network)
+- [Running the Network Locally](#running-the-network-locally)
   - [Running the JSON-RPC Server](#running-the-json-rpc-server)
 - [Testing with MetaMask](#testing-with-metamask)
 - [Stopping and Cleaning Up](#stopping-and-cleaning-up)
+- [Health Checks](#health-checks)
 - [Contributing](#contributing)
 - [Community](#community)
 - [License](#license)
@@ -69,7 +70,9 @@ npm ci
 ```bash
 git apply debug-10-nodes.patch
 ```
+
 Learn more about the different config options [here](local)
+
 4. Compile project
 
 ```bash
@@ -83,7 +86,7 @@ npm install -g shardus
 npm update @shardus/archiver
 ```
 
-## Running the Network
+## Running the Network Locally
 
 To start a local Shardeum network with 10 nodes, run:
 
@@ -115,18 +118,26 @@ To test your local Shardeum network using MetaMask:
 
 1. Install the [MetaMask extension](https://metamask.io/download/).
 2. Add the Shardeum network to MetaMask:
-- Network Name: Shardeum 
+
+- Network Name: Shardeum
 - RPC URL: http://localhost:8080
 - Chain ID: 8082
 - Currency Symbol: SHM
 - Block Explorer URL: http://localhost:6001/
 
 ## Stopping and Cleaning Up
+
 To stop the network and clean up resources:
 
 ```bash
 shardus stop && shardus clean && rm -rf instances
 ```
+
+## Health Checks
+Diagnostic endpoints to check the health of the node
+
+- GET `/is-alive` this endpoint returns 200 if the server is running.
+- GET `/is-healthy` currently the same as `/is-alive` but will be expanded.
 
 ## Contributing
 
