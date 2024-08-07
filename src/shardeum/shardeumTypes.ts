@@ -184,6 +184,10 @@ export interface NodeRewardTxData {
   end: number
 }
 
+export interface SignedNodeRewardTxData extends NodeRewardTxData {
+  sign: ShardusTypes.Sign
+}
+
 export enum ViolationType {
   ShardusCoreMaxID = 999,
   ShardeumMinID = 1000,
