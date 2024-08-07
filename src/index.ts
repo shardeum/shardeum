@@ -6922,7 +6922,7 @@ const shardusSetup = (): void => {
               nodeId: data.nodeId,
             } as NodeRewardTxData
 
-            shardus.addNetworkTx('nodeClaimReward', txData)
+            shardus.addNetworkTx('nodeReward', txData)
           }
         }
       } else if (
@@ -6994,10 +6994,10 @@ const shardusSetup = (): void => {
       } else if (eventType === 'try-network-transaction') {
         console.log('shardeum-event', `try-network-transaction`, safeStringify(data))
         nestedCountersInstance.countEvent('shardeum-event', `try-network-transaction`)
-        if (data?.additionalData.type === 'nodeClaimReward') {
+        if (data?.additionalData.type === 'nodeReward') {
           console.log(
             'shardeum-event',
-            `running injectClaimrewardTxWithRetry nodeClaimReward`,
+            `running injectClaimrewardTxWithRetry nodeReward`,
             safeStringify(data)
           )
           const closestNodes = shardus.getClosestNodes(data.publicKey, 5)
