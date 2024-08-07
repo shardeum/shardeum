@@ -168,7 +168,7 @@ export function clearOldPenaltyTxs(shardus: Shardus): void {
   /* prettier-ignore */ nestedCountersInstance.countEvent('shardeum-penalty', `clearOldPenaltyTxs deleteCount: ${deleteCount}`)
 }
 
-export function validatePenaltyTX(txId: string, tx: PenaltyTX): { isValid: boolean; reason: string } {
+export function validatePenaltyTX(txId: string, tx: PenaltyTX, isApply = false): { isValid: boolean; reason: string } {
   if (!tx.reportedNodeId || tx.reportedNodeId === '' || tx.reportedNodeId.length !== 64) {
     /* prettier-ignore */
     nestedCountersInstance.countEvent('shardeum-penalty', `validatePenaltyTX fail tx.reportedNode address invalid`)
@@ -206,12 +206,16 @@ export function validatePenaltyTX(txId: string, tx: PenaltyTX): { isValid: boole
     return { isValid: false, reason: 'Invalid Violation data ' }
   }
 
+  // this check should happen only for exe nodes applying the penalty tx
+  if (isApply) {
   // check if we have this penalty tx stored in the Map
   const preRecordedfPenaltyTX = penaltyTxsMap.get(txId)
 
   if (preRecordedfPenaltyTX == null) {
-    return { isValid: false, reason: 'Penalty TX not found in penaltyTxsMap' }
+      return { isValid: false, reason: 'Penalty TX not found in penaltyTxsMap of exe node' }
   }
+  }
+
 
   // validate node-left-early violation
   // if (tx.violationType === ViolationType.LeftNetworkEarly) {
@@ -289,7 +293,7 @@ export async function applyPenaltyTX(
   applyResponse: ShardusTypes.ApplyResponse
 ): Promise<void> {
   if (ShardeumFlags.VerboseLogs) console.log(`Running applyPenaltyTX`, tx, wrappedStates)
-  const isValidRequest = validatePenaltyTX(txId, tx)
+  const isValidRequest = validatePenaltyTX(txId, tx, true)
   if (!isValidRequest) {
     /* prettier-ignore */ if (logFlags.dapp_verbose) console.log(`Invalid penaltyTX, reportedNode ${tx.reportedNodePublickKey}, reason: ${isValidRequest.reason}`)
     nestedCountersInstance.countEvent('shardeum-penalty', `applyPenaltyTX fail `)
