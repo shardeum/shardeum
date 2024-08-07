@@ -182,9 +182,20 @@ export interface NodeRewardTxData {
   nodeId: string
   start: number
   end: number
+  endTime: number
 }
 
 export interface SignedNodeRewardTxData extends NodeRewardTxData {
+  sign: ShardusTypes.Sign
+}
+
+export interface NodeInitTxData {
+  publicKey: string
+  nodeId: string
+  startTime: number
+}
+
+export interface SignedNodeInitTxData extends NodeInitTxData {
   sign: ShardusTypes.Sign
 }
 

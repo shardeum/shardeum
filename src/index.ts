@@ -58,6 +58,7 @@ import {
   NetworkAccount,
   NodeAccount2,
   NodeInfoAppData,
+  NodeInitTxData,
   NodeRefutedViolationData,
   NodeRewardTxData,
   OperatorAccountInfo,
@@ -67,6 +68,7 @@ import {
   ReadableReceipt,
   SetCertTime,
   ShardeumBlockOverride,
+  SignedNodeInitTxData,
   SignedNodeRewardTxData,
   StakeCoinsTX,
   StakeInfo,
@@ -426,7 +428,7 @@ function getShardusDependenciesVersions(){
     })
     Object.entries(devDependencies).filter(isShardus).forEach(([key, value]) => {
       shardusDependenciesVersions[key] = { version: value, isDevDependency: true }
-    })
+      })
   }
   return shardusDependenciesVersions
 }
@@ -2214,15 +2216,57 @@ const configShardusNetworkTransactions = (): void => {
     }
     const data = account.data as NodeAccount2
     const appliedEntry = data?.nodeAccountStats?.history?.find(({startCycle, endCycle}) =>
-      (startCycle === tx.start && endCycle === tx.end))
+    const appliedEntry = data.rewardEndTime === tx.endTime
     /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log('registerApplyVerify nodeReward appliedEntry', appliedEntry)
     return appliedEntry != null
   })
-  shardus.registerBeforeAddVerifier('nodeInitReward', async (tx: NodeRewardTxData) => {
+  shardus.registerBeforeAddVerifier('nodeInitReward', async (tx: SignedNodeInitTxData) => {
+    /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log('Validating nodeInitReward', tx)
+
+    const isValid = crypto.verifyObj(tx)
+    if (!isValid) {
+      /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log('validate nodeInitReward fail Invalid signature', tx)
+      /* prettier-ignore */ nestedCountersInstance.countEvent('shardeum-staking', `validate nodeInitReward fail Invalid signature`)
+      return false
+    }
+    const latestCycles = shardus.getLatestCycles(5)
+    const nodeActivedCycle = latestCycles.find((cycle) => cycle.activatedPublicKeys.includes(tx.publicKey))
+    /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log('nodeActivedCycle', nodeActivedCycle)
+    if (!nodeActivedCycle) {
+      /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log('validate nodeInitReward fail !nodeActivedCycle', tx)
+      /* prettier-ignore */ nestedCountersInstance.countEvent('shardeum-staking', `validate nodeInitReward fail !nodeActivedCycle`)
+      return false
+    }
+    if (nodeActivedCycle.start !== tx.startTime) {
+      /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log('validate nodeInitReward fail nodeActivedCycle.start !== tx.nodeActivatedTime', tx)
+      /* prettier-ignore */ nestedCountersInstance.countEvent(
+        'shardeum-staking',
+        `validate nodeInitReward fail nodeActivedCycle.start !== tx.nodeActivatedTime`
+      )
+      return false
+    }
+
+    /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log('validate nodeInitReward success', tx)
     return true
   })
-  shardus.registerApplyVerifier('nodeInitReward', async (tx: NodeRewardTxData) => {
-    return true
+  shardus.registerApplyVerifier('nodeInitReward', async (tx: SignedNodeInitTxData) => {
+    /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log('Validating nodeInitReward applied', tx)
+    const shardusAddress = tx.publicKey?.toLowerCase()
+    const account = await shardus.getLocalOrRemoteAccount(shardusAddress)
+    if (!account) {
+      throw new Error(`Account for shardus address ${shardusAddress} not found`)
+    }
+    const data = account.data as NodeAccount2
+
+    // check if nodeAccount.rewardStartTime is already set to tx.nodeActivatedTime
+    if (data.rewardStartTime >= tx.startTime) {
+      /* prettier-ignore */ nestedCountersInstance.countEvent('shardeum-staking', `validateInitRewardState success rewardStartTime already set`)
+      /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log('registerApplyVerify nodeInitReward data.rewardStartTime >= tx.startTime')
+      return true
+    }
+
+    /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log('registerApplyVerify nodeInitReward node.rewardStartTime not applied yet')
+    return false
   })
 }
 
@@ -6903,26 +6947,13 @@ const shardusSetup = (): void => {
           if (id === ourId) {
             nestedCountersInstance.countEvent('shardeum-staking', `${eventType}: injectInitRewardTimesTx`)
             const txData = {
-              cycle: data.cycleNumber,
               startTime: data.time,
               publicKey: data.publicKey,
               nodeId: data.nodeId,
-            }
-            shardus.addNetworkTx('nodeInitReward', txData)
+            } as NodeInitTxData
+            shardus.addNetworkTx('nodeInitReward', shardus.signAsNode(txData), data.publicKey)
           }
         }
-        // nestedCountersInstance.countEvent('shardeum-staking', `node-activated: injectInitRewardTimesTx`)
-
-        // //TODO need retry on this also
-        // // Limit the nodes that send this to the 5 closest to the node id
-        // const closestNodes = shardus.getClosestNodes(data.publicKey, 5)
-        // const ourId = shardus.getNodeId()
-        // for (const id of closestNodes) {
-        //   if (id === ourId) {
-        //     const result = await InitRewardTimesTx.injectInitRewardTimesTx(shardus, data)
-        //     /* prettier-ignore */ if (logFlags.dapp_verbose) console.log('INJECTED_INIT_REWARD_TIMES_TX', result)
-        //   }
-        // }
       } else if (eventType === 'node-deactivated') {
         // todo: aamir check the timestamp and cycle the first time we see this event
         // Limit the nodes that send this to the 5 closest to the node id
