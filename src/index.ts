@@ -2349,6 +2349,12 @@ const configShardusNetworkTransactions = (): void => {
     /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log('registerApplyVerify nodeReward appliedEntry', appliedEntry)
     return appliedEntry != null
   })
+  shardus.registerBeforeAddVerifier('nodeInitReward', async (tx: NodeRewardTxData) => {
+    return true
+  })
+  shardus.registerApplyVerifier('nodeInitReward', async (tx: NodeRewardTxData) => {
+    return true
+  })  
 }
 
 /*** |an
