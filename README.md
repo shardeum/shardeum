@@ -139,7 +139,7 @@ To stop the network and clean up resources:
 shardus stop && shardus clean && rm -rf instances
 ```
 
-### Health Checks
+## Health Checks
 Diagnostic endpoints to check the health of the node
 
 - GET `/is-alive` this endpoint returns 200 if the server is running.
