@@ -27,6 +27,10 @@ export const validateTransaction =
         tx.internalTXType === InternalTXType.ChangeConfig ||
         internalTx.internalTXType === InternalTXType.ChangeNetworkParam
       ) {
+        const networkAccount = AccountsStorage.cachedNetworkAccount
+        if ((networkAccount.nonce - BigInt(1)) != BigInt(tx.nonce)) {
+          return { result: 'fail', reason: 'Invalid nonce' }
+        }
         const devPublicKeys = shardus.getDevPublicKeys()
         let isUserVerified = false
         for (const devPublicKey in devPublicKeys) {

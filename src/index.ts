@@ -2509,6 +2509,7 @@ async function applyInternalTx(
       const networkAccountCopy = wrappedStates[networkAccount]
       networkAccountCopy.data.timestamp = txTimestamp
       networkAccountCopy.data.listOfChanges.push(internalTx.change)
+      networkAccountCopy.data.nonce = BigInt(networkAccountCopy.data.nonce) + BigInt(1)
       const wrappedChangedAccount = WrappedEVMAccountFunctions._shardusWrappedAccount(networkAccountCopy.data)
       shardus.applyResponseAddChangedAccount(
         applyResponse,
@@ -2520,6 +2521,7 @@ async function applyInternalTx(
     } else {
       network.timestamp = txTimestamp
       network.listOfChanges.push(internalTx.change)
+      network.nonce = BigInt(network.nonce) + BigInt(1)
     }
     if (ShardeumFlags.supportInternalTxReceipt) {
       createInternalTxReceipt(
