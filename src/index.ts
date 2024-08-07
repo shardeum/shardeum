@@ -5416,7 +5416,8 @@ const shardusSetup = (): void => {
             if (accountId === networkAccount) {
               throw Error(`Network Account is not allowed to sign this ${accountId}`)
             } else if (shardus.getDevPublicKey(accountId)) {
-              throw Error(`Dev Account is not found ${accountId}`)
+              wrappedEVMAccount = await createNetworkAccount(accountId, config, shardus.p2p.isFirstSeed)
+              accountCreated = true
             }
             // I think we don't need it now, the dev Key is checked on the validateTxnFields
             // else {
