@@ -2277,6 +2277,17 @@ const configShardusEndpoints = (): void => {
       res.status(500).json({ error: 'Internal Server Error' })
     }
   })
+  
+  shardus.registerExternalGet('is-alive', async (req, res) => {
+    nestedCountersInstance.countEvent('endpoint', 'is-alive')
+    return res.sendStatus(200)
+  })
+  
+  shardus.registerExternalGet('is-healthy', async (req, res) => {
+    // TODO: Add actual health check logic
+    nestedCountersInstance.countEvent('endpoint', 'health-check')
+    return res.sendStatus(200)
+  })
 }
 
 /***
