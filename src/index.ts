@@ -2809,6 +2809,8 @@ const createNetworkAccount = async (
     next: {},
     hash: '',
     timestamp: 0,
+    nonce: BigInt(0),
+    networkId: "",
   }
   account.hash = WrappedEVMAccountFunctions._calculateAccountHash(account)
   /* prettier-ignore */ if (logFlags.important_as_error) console.log('INITIAL_HASH: ', account.hash)
