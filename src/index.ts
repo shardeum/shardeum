@@ -2184,7 +2184,7 @@ const configShardusNetworkTransactions = (): void => {
       return false
     }
     const latestCycles = shardus.getLatestCycles(5)
-    if (tx.start < 0 || tx.start > latestCycles[0].counter) {
+    if (tx.start < 0 || !latestCycles.some((cycle) => tx.start <= cycle.counter)) {
       /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log('registerBeforeAddVerify nodeReward fail start value is not correct ', tx)
       /* prettier-ignore */ nestedCountersInstance.countEvent(
         'shardeum-staking',
@@ -2215,7 +2215,6 @@ const configShardusNetworkTransactions = (): void => {
       throw new Error(`Account for shardus address ${shardusAddress} not found`)
     }
     const data = account.data as NodeAccount2
-    const appliedEntry = data?.nodeAccountStats?.history?.find(({startCycle, endCycle}) =>
     const appliedEntry = data.rewardEndTime === tx.endTime
     /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log('registerApplyVerify nodeReward appliedEntry', appliedEntry)
     return appliedEntry != null
