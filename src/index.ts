@@ -7186,13 +7186,6 @@ const shardusSetup = (): void => {
       if (currentlyActivatedNode) return
 
       if (eventType === 'node-activated') {
-        const activeNodesCount = currentCycle.active
-        const stakingEnabled = activeNodesCount >= ShardeumFlags.minActiveNodesForStaking
-        // Skip initRewardTimes if activeNodesCount is less than minActiveNodesForStaking
-        if (!stakingEnabled) {
-          return
-        }
-
         const closestNodes = shardus.getClosestNodes(data.publicKey, 5)
         const ourId = shardus.getNodeId()
         for (const id of closestNodes) {
