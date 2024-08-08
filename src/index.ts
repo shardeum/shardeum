@@ -2359,7 +2359,7 @@ const configShardusNetworkTransactions = (): void => {
     const data = account.data as NodeAccount2
     const appliedEntry = data.rewardEndTime === tx.endTime
     /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log('registerApplyVerify nodeReward appliedEntry', appliedEntry)
-    return appliedEntry != null
+    return appliedEntry
   })
   shardus.registerBeforeAddVerifier('nodeInitReward', async (tx: SignedNodeInitTxData) => {
     /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log('Validating nodeInitReward', tx)
@@ -2397,6 +2397,7 @@ const configShardusNetworkTransactions = (): void => {
     if (!account) {
       throw new Error(`Account for shardus address ${shardusAddress} not found`)
     }
+    console.log('account data poooo', account)
     const data = account.data as NodeAccount2
 
     // check if nodeAccount.rewardStartTime is already set to tx.nodeActivatedTime
