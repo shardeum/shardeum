@@ -79,7 +79,7 @@ Learn more about the different config options [here](local)
 npm run prepare
 ```
 
-4. Install the Shardus CLI:
+5. Install the Shardus CLI:
 
 ```bash
 npm install -g shardus
