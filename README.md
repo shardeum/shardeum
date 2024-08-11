@@ -32,6 +32,8 @@
 
 Shardeum is an innovative EVM-compliant blockchain platform that leverages dynamic state sharding to achieve unprecedented scalability. By implementing a sharding model, Shardeum ensures faster processing times and lower transaction costs without compromising security or decentralization.
 
+Our commitment to the Ethereum Virtual Machine (EVM) ensures compatibility with a wide range of existing applications and developer tools, facilitating an easy transition for projects and developers looking to benefit from Shardeum’s infrastructure.
+
 ## Features
 
 - **Scalability**: Horizontal scalability through sharding
