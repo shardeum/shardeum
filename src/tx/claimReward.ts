@@ -106,6 +106,13 @@ export async function injectClaimRewardTxWithRetry(
   }
 
   const retryFunc = async (): Promise<unknown> => {
+    if (ShardeumFlags.failClaimRewardInjection) {
+      return {
+        success: false,
+        reason: 'Failing claim reward injection for testing',
+        status: 500 
+      };
+    }
     return await injectClaimRewardTx(shardus, eventData, nodeAccount)
   }
 

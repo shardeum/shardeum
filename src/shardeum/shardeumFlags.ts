@@ -121,6 +121,7 @@ interface ShardeumFlags {
   debugExtraNonceLookup: boolean
   cleanStaleShardeumStateMap: boolean
   beta1_11_2: boolean
+  failClaimRewardInjection: boolean
 }
 
 export const ShardeumFlags: ShardeumFlags = {
@@ -278,6 +279,8 @@ export const ShardeumFlags: ShardeumFlags = {
   //1.1.2 migration
   cleanStaleShardeumStateMap: false,
   beta1_11_2: true,
+
+  failClaimRewardInjection: false,
 }
 
 export function updateShardeumFlag(key: string, value: string | number | boolean): void {
