@@ -2155,119 +2155,137 @@ const configShardusEndpoints = (): void => {
 }
 
 const configShardusNetworkTransactions = (): void => {
-  shardus.registerBeforeAddVerifier('nodeReward', async (tx: SignedNodeRewardTxData) => {
-    /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log('Validating nodeReward fields', tx)
-    try {
-      if (!crypto.verifyObj(tx)) {
-        /* prettier-ignore */
-        if (ShardeumFlags.VerboseLogs) console.log('registerBeforeAddVerifier - nodeReward: fail Invalid signature', tx)
+  shardus.registerBeforeAddVerifier(
+    'nodeReward',
+    async (txEntry: P2P.ServiceQueueTypes.AddNetworkTx<SignedNodeRewardTxData>) => {
+      const tx = txEntry.txData
+      /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log('Validating nodeReward fields', Utils.safeStringify(tx))
+      try {
+        if (!crypto.verifyObj(tx)) {
+          /* prettier-ignore */
+          if (ShardeumFlags.VerboseLogs) console.log('registerBeforeAddVerifier - nodeReward: fail Invalid signature', Utils.safeStringify(tx))
+          return false
+        }
+      } catch (e) {
+        /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log('Invalid signature for internal tx', Utils.safeStringify(tx))
         return false
       }
-    } catch (e) {
-      /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log('Invalid signature for internal tx', tx)
-      return false
-    }
-    if (!tx.publicKey || tx.publicKey === '' || tx.publicKey.length !== 64) {
-      /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log('registerBeforeAddVerify nodeReward fail invalid publicKey field', tx)
-      /* prettier-ignore */ nestedCountersInstance.countEvent(
-        'shardeum-staking',
-        `registerBeforeAddVerify nodeReward fail invalid publicKey field`
-      )
-      return false
-    }
-    if (tx.start === undefined) {
-      /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log('registerBeforeAddVerify nodeReward fail start field missing', tx)
-      /* prettier-ignore */ nestedCountersInstance.countEvent(
+      if (txEntry.subQueueKey == null || txEntry.subQueueKey != tx.publicKey) {
+        /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log('registerBeforeAddVerifier - nodeReward: fail Invalid subQueueKey', Utils.safeStringify(tx))
+        return false
+      }
+      if (!tx.publicKey || tx.publicKey === '' || tx.publicKey.length !== 64) {
+        /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log('registerBeforeAddVerify nodeReward fail invalid publicKey field', Utils.safeStringify(tx))
+        /* prettier-ignore */ nestedCountersInstance.countEvent('shardeum-staking', `registerBeforeAddVerify nodeReward fail invalid publicKey field`)
+        return false
+      }
+      if (tx.start === undefined) {
+        /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log('registerBeforeAddVerify nodeReward fail start field missing', Utils.safeStringify(tx))
+        /* prettier-ignore */ nestedCountersInstance.countEvent(
         'shardeum-staking',
         `registerBeforeAddVerify nodeReward fail start field missing`
       )
-      return false
-    }
-    const latestCycles = shardus.getLatestCycles(5)
-    if (tx.start < 0 || !latestCycles.some((cycle) => tx.start <= cycle.counter)) {
-      /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log('registerBeforeAddVerify nodeReward fail start value is not correct ', tx)
-      /* prettier-ignore */ nestedCountersInstance.countEvent(
+        return false
+      }
+      const latestCycles = shardus.getLatestCycles(5)
+      if (tx.start < 0 || !latestCycles.some((cycle) => tx.start <= cycle.counter)) {
+        /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log('registerBeforeAddVerify nodeReward fail start value is not correct ', Utils.safeStringify(tx))
+        /* prettier-ignore */ nestedCountersInstance.countEvent(
         'shardeum-staking',
         `registerBeforeAddVerify nodeReward fail start value is not correct `
       )
-      return false
-    }
+        return false
+      }
 
-    const nodeRemovedCycle = latestCycles.find((cycle) => cycle.removed.includes(tx.nodeId))
-    /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log('nodeRemovedCycle', nodeRemovedCycle)
-    if (!nodeRemovedCycle) {
-      /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log('registerBeforeAddVerify nodeReward fail !nodeRemovedCycle', tx)
-      /* prettier-ignore */ nestedCountersInstance.countEvent(
+      const nodeRemovedCycle = latestCycles.find((cycle) => cycle.removed.includes(tx.nodeId))
+      /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log('nodeRemovedCycle', nodeRemovedCycle)
+      if (!nodeRemovedCycle) {
+        /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log('registerBeforeAddVerify nodeReward fail !nodeRemovedCycle', Utils.safeStringify(tx))
+        /* prettier-ignore */ nestedCountersInstance.countEvent(
         'shardeum-staking',
         `registerBeforeAddVerify nodeReward fail !nodeRemovedCycle`
       )
-      return false
-    }
+        return false
+      }
 
-    /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log('registerBeforeAddVerify nodeReward success', tx)
-    return true
-  })
-  shardus.registerApplyVerifier('nodeReward', async (tx: SignedNodeRewardTxData) => {
-    /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log('Validating nodeReward applied', tx)
-    const shardusAddress = tx.publicKey?.toLowerCase()
-    const account = await shardus.getLocalOrRemoteAccount(shardusAddress)
-    if (!account) {
-      throw new Error(`Account for shardus address ${shardusAddress} not found`)
-    }
-    const data = account.data as NodeAccount2
-    const appliedEntry = data.rewardEndTime === tx.endTime
-    /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log('registerApplyVerify nodeReward appliedEntry', appliedEntry)
-    return appliedEntry
-  })
-  shardus.registerBeforeAddVerifier('nodeInitReward', async (tx: SignedNodeInitTxData) => {
-    /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log('Validating nodeInitReward', tx)
-
-    const isValid = crypto.verifyObj(tx)
-    if (!isValid) {
-      /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log('validate nodeInitReward fail Invalid signature', tx)
-      /* prettier-ignore */ nestedCountersInstance.countEvent('shardeum-staking', `validate nodeInitReward fail Invalid signature`)
-      return false
-    }
-    const latestCycles = shardus.getLatestCycles(5)
-    const nodeActivedCycle = latestCycles.find((cycle) => cycle.activatedPublicKeys.includes(tx.publicKey))
-    /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log('nodeActivedCycle', nodeActivedCycle)
-    if (!nodeActivedCycle) {
-      /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log('validate nodeInitReward fail !nodeActivedCycle', tx)
-      /* prettier-ignore */ nestedCountersInstance.countEvent('shardeum-staking', `validate nodeInitReward fail !nodeActivedCycle`)
-      return false
-    }
-    if (nodeActivedCycle.start !== tx.startTime) {
-      /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log('validate nodeInitReward fail nodeActivedCycle.start !== tx.nodeActivatedTime', tx)
-      /* prettier-ignore */ nestedCountersInstance.countEvent(
-        'shardeum-staking',
-        `validate nodeInitReward fail nodeActivedCycle.start !== tx.nodeActivatedTime`
-      )
-      return false
-    }
-
-    /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log('validate nodeInitReward success', tx)
-    return true
-  })
-  shardus.registerApplyVerifier('nodeInitReward', async (tx: SignedNodeInitTxData) => {
-    /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log('Validating nodeInitReward applied', tx)
-    const shardusAddress = tx.publicKey?.toLowerCase()
-    const account = await shardus.getLocalOrRemoteAccount(shardusAddress)
-    if (!account) {
-      throw new Error(`Account for shardus address ${shardusAddress} not found`)
-    }
-    console.log('account data poooo', account)
-    const data = account.data as NodeAccount2
-
-    // check if nodeAccount.rewardStartTime is already set to tx.nodeActivatedTime
-    if (data.rewardStartTime >= tx.startTime) {
-      /* prettier-ignore */ nestedCountersInstance.countEvent('shardeum-staking', `validateInitRewardState success rewardStartTime already set`)
-      /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log('registerApplyVerify nodeInitReward data.rewardStartTime >= tx.startTime')
+      /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log('registerBeforeAddVerify nodeReward success', Utils.safeStringify(tx))
       return true
     }
+  )
+  shardus.registerApplyVerifier(
+    'nodeReward',
+    async (txEntry: P2P.ServiceQueueTypes.AddNetworkTx<SignedNodeRewardTxData>) => {
+      const tx = txEntry.txData
+      /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log('Validating nodeReward applied', Utils.safeStringify(tx))
+      const shardusAddress = tx.publicKey?.toLowerCase()
+      const account = await shardus.getLocalOrRemoteAccount(shardusAddress)
+      if (!account) {
+        throw new Error(`Account for shardus address ${shardusAddress} not found`)
+      }
+      const data = account.data as NodeAccount2
+      const appliedEntry = data.rewardEndTime === tx.endTime
+      /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log('registerApplyVerify nodeReward appliedEntry', appliedEntry)
+      return appliedEntry
+    }
+  )
+  shardus.registerBeforeAddVerifier(
+    'nodeInitReward',
+    async (txEntry: P2P.ServiceQueueTypes.AddNetworkTx<SignedNodeInitTxData>) => {
+      const tx = txEntry.txData
+      /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log('Validating nodeInitReward', safeStringify(tx))
 
-    /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log('registerApplyVerify nodeInitReward node.rewardStartTime not applied yet')
-    return false
-  })
+      const isValid = crypto.verifyObj(tx)
+      if (!isValid) {
+        /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log('validate nodeInitReward fail Invalid signature', Utils.safeStringify(tx))
+        /* prettier-ignore */ nestedCountersInstance.countEvent('shardeum-staking', `validate nodeInitReward fail Invalid signature`)
+        return false
+      }
+      if (txEntry.subQueueKey == null || txEntry.subQueueKey != tx.publicKey) {
+        /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log('registerBeforeAddVerifier - nodeInitReward: fail Invalid subQueueKey', Utils.safeStringify(tx))
+        return false
+      }
+      const latestCycles = shardus.getLatestCycles(5)
+      const nodeActivedCycle = latestCycles.find((cycle) => cycle.activatedPublicKeys.includes(tx.publicKey))
+      /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log('nodeActivedCycle', nodeActivedCycle)
+      if (!nodeActivedCycle) {
+        /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log('validate nodeInitReward fail !nodeActivedCycle', Utils.safeStringify(tx))
+        /* prettier-ignore */ nestedCountersInstance.countEvent('shardeum-staking', `validate nodeInitReward fail !nodeActivedCycle`)
+        return false
+      }
+      if (nodeActivedCycle.start !== tx.startTime) {
+        /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log('validate nodeInitReward fail nodeActivedCycle.start !== tx.nodeActivatedTime', Utils.safeStringify(tx))
+        /* prettier-ignore */ nestedCountersInstance.countEvent('shardeum-staking', `validate nodeInitReward fail nodeActivedCycle.start !== tx.nodeActivatedTime`)
+        return false
+      }
+
+      /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log('validate nodeInitReward success', Utils.safeStringify(tx))
+      return true
+    }
+  )
+  shardus.registerApplyVerifier(
+    'nodeInitReward',
+    async (txEntry: P2P.ServiceQueueTypes.AddNetworkTx<SignedNodeInitTxData>) => {
+      const tx = txEntry.txData
+      /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log('Validating nodeInitReward applied', Utils.safeStringify(tx))
+      const shardusAddress = tx.publicKey?.toLowerCase()
+      const account = await shardus.getLocalOrRemoteAccount(shardusAddress)
+      if (!account) {
+        throw new Error(`Account for shardus address ${shardusAddress} not found`)
+      }
+      console.log('account data poooo', account)
+      const data = account.data as NodeAccount2
+
+      // check if nodeAccount.rewardStartTime is already set to tx.nodeActivatedTime
+      if (data.rewardStartTime >= tx.startTime) {
+        /* prettier-ignore */ nestedCountersInstance.countEvent('shardeum-staking', `validateInitRewardState success rewardStartTime already set`)
+        /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log('registerApplyVerify nodeInitReward data.rewardStartTime >= tx.startTime')
+        return true
+      }
+
+      /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log('registerApplyVerify nodeInitReward node.rewardStartTime not applied yet')
+      return false
+    }
+  )
 }
 
 /*** |an
