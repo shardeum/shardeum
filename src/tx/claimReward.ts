@@ -89,10 +89,10 @@ export async function injectClaimRewardTxWithRetry(
     }
   }
   const nodeAccount = wrappedData.data as NodeAccount2
-  // check if the rewardStartTime is non-zero
-  if (nodeAccount.rewardStartTime <= 0) {
-    /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`injectClaimRewardTx failed rewardStartTime <= 0`)
-    /* prettier-ignore */ nestedCountersInstance.countEvent('shardeum-staking', `injectClaimRewardTx failed rewardStartTime <= 0`)
+  // check if the rewardStartTime is negative
+  if (nodeAccount.rewardStartTime < 0) {
+    /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`injectClaimRewardTx failed rewardStartTime < 0`)
+    /* prettier-ignore */ nestedCountersInstance.countEvent('shardeum-staking', `injectClaimRewardTx failed rewardStartTime < 0`)
     return
   }
   // check if nodeAccount.rewardEndTime is already set to eventData.time
@@ -232,11 +232,11 @@ export function validateClaimRewardState(
   if (isNodeAccount2(wrappedStates[tx.nominee].data)) {
     nodeAccount = wrappedStates[tx.nominee].data as NodeAccount2
   }
-  // check if the rewardStartTime is non-zero
-  if (nodeAccount.rewardStartTime <= 0) {
-    /* prettier-ignore */ nestedCountersInstance.countEvent('shardeum-staking', `validateClaimRewardState fail rewardStartTime <= 0`)
-    /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log('validateClaimRewardState fail rewardStartTime <= 0', tx)
-    return { result: 'fail', reason: 'rewardStartTime is less than or equal 0' }
+  // check if the rewardStartTime is negative
+  if (nodeAccount.rewardStartTime < 0) {
+    /* prettier-ignore */ nestedCountersInstance.countEvent('shardeum-staking', `validateClaimRewardState fail rewardStartTime < 0`)
+    /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log('validateClaimRewardState fail rewardStartTime < 0', tx)
+    return { result: 'fail', reason: 'rewardStartTime is less than 0' }
   }
 
   // check if nodeAccount.rewardEndTime is already set to tx.nodeDeactivatedTime
@@ -335,7 +335,7 @@ export async function applyClaimRewardTx(
   //   return
   // }
 
-  const durationInNetwork = tx.nodeDeactivatedTime - nodeAccount.rewardStartTime
+  let durationInNetwork = tx.nodeDeactivatedTime - nodeAccount.rewardStartTime
   if (durationInNetwork <= 0) {
     nestedCountersInstance.countEvent('shardeum-staking', `applyClaimRewardTx fail durationInNetwork <= 0`)
     //throw new Error(`applyClaimReward failed because durationInNetwork is less than or equal 0`)
@@ -344,6 +344,13 @@ export async function applyClaimRewardTx(
       `applyClaimReward failed because durationInNetwork is less than or equal 0`
     )
     return
+  }
+
+  // special case for seed nodes:
+  // they have 0 rewardStartTime and will not be rewarded but the claim tx should still be applied
+  if (nodeAccount.rewardStartTime === 0) {
+    nestedCountersInstance.countEvent('shardeum-staking', `seed node claim reward ${nodeAccount.id}`)
+    durationInNetwork = 0
   }
 
   if (nodeAccount.rewarded === true) {
