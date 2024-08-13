@@ -15,11 +15,10 @@ export interface NodeAccount extends BaseAccount {
   reward: bigint
   rewardStartTime: number
   rewardEndTime: number
-  rewardStartCycle: number,
-  rewardEndCycle: number,
   penalty: bigint
   nodeAccountStats: NodeAccountStats
   rewarded: boolean
+  rewardRate: bigint
 }
 
 export function serializeNodeAccount(
@@ -50,13 +49,12 @@ export function serializeNodeAccount(
   stream.writeString(obj.reward.toString())
   stream.writeBigUInt64(BigInt(obj.rewardStartTime))
   stream.writeBigUInt64(BigInt(obj.rewardEndTime))
-  stream.writeBigUInt64(BigInt(obj.rewardStartCycle))
-  stream.writeBigUInt64(BigInt(obj.rewardEndCycle))
   stream.writeString(obj.penalty.toString())
 
   stream.writeString(Utils.safeStringify(obj.nodeAccountStats))
 
   stream.writeUInt8(obj.rewarded ? 1 : 0) // Serialize boolean as UInt8
+  stream.writeBigUInt64(BigInt(obj.rewardRate.toString()))
 }
 
 export function deserializeNodeAccount(stream: VectorBufferStream): NodeAccount {
@@ -80,13 +78,12 @@ export function deserializeNodeAccount(stream: VectorBufferStream): NodeAccount 
   const reward = BigInt(stream.readString())
   const rewardStartTime = Number(stream.readBigUInt64())
   const rewardEndTime = Number(stream.readBigUInt64())
-  const rewardStartCycle = Number(stream.readBigUInt64())
-  const rewardEndCycle = Number(stream.readBigUInt64())
   const penalty = BigInt(stream.readString())
 
   const nodeAccountStats = Utils.safeJsonParse(stream.readString()) as NodeAccountStats
 
   const rewarded = stream.readUInt8() === 1
+  const rewardRate = BigInt(stream.readBigUInt64())
 
   return {
     ...baseAccount,
@@ -96,12 +93,11 @@ export function deserializeNodeAccount(stream: VectorBufferStream): NodeAccount 
     nominator,
     stakeLock,
     reward,
-    rewardStartCycle,
-    rewardEndCycle,
     rewardStartTime,
     rewardEndTime,
     penalty,
     nodeAccountStats,
     rewarded,
+    rewardRate,
   }
 }
