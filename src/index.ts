@@ -7632,7 +7632,7 @@ export function shardeumGetTime(): number {
       // THIS CODE IS CALLED ON EVERY NODE ON EVERY CYCLE
       async function networkMaintenance(): Promise<NodeJS.Timeout> {
         /* prettier-ignore */
-        if (logFlags.dapp_verbose) shardus.log('New maintainence cycle has started')
+        if (logFlags.dapp_verbose) shardus.log('New maintenance cycle has started')
         clearOldPenaltyTxs(shardus)
         drift = shardeumGetTime() - expected
 
