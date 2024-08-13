@@ -6,13 +6,16 @@ import {
   InitRewardTimes,
   InternalTx,
   InternalTXType,
+  isNetworkAccount,
   isNodeAccount2,
+  NetworkAccount,
   NodeAccount2,
   WrappedStates,
 } from '../shardeum/shardeumTypes'
 import * as WrappedEVMAccountFunctions from '../shardeum/wrappedEVMAccountFunctions'
-import { sleep, generateTxId } from '../utils'
+import { sleep, generateTxId, _base16BNParser } from '../utils'
 import { createInternalTxReceipt, shardeumGetTime, logFlags } from '..'
+import { networkAccount } from '../shardeum/shardeumConstants'
 
 export async function injectInitRewardTimesTx(
   shardus,
@@ -189,11 +192,15 @@ export function apply(
     return
   }
 
+  let network: NetworkAccount
+  if (wrappedStates[networkAccount]?.data && isNetworkAccount(wrappedStates[networkAccount].data)) {
+    network = wrappedStates[networkAccount].data as NetworkAccount
+  }
+
   nodeAccount.rewardStartTime = tx.nodeActivatedTime
   nodeAccount.rewardEndTime = 0
-  nodeAccount.rewardStartCycle = 0
-  nodeAccount.rewardEndCycle = 0
   nodeAccount.timestamp = txTimestamp
+  nodeAccount.rewardRate = network ? _base16BNParser(network.current.nodeRewardAmountUsd) : BigInt(0)
   if (ShardeumFlags.rewardedFalseInInitRewardTx) nodeAccount.rewarded = false
   if (ShardeumFlags.useAccountWrites) {
     const wrappedAccount: NodeAccount2 = nodeAccount // eslint-disable-line @typescript-eslint/no-explicit-any

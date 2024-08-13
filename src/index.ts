@@ -2272,7 +2272,6 @@ const configShardusNetworkTransactions = (): void => {
       if (!account) {
         throw new Error(`Account for shardus address ${shardusAddress} not found`)
       }
-      console.log('account data poooo', account)
       const data = account.data as NodeAccount2
 
       // check if nodeAccount.rewardStartTime is already set to tx.nodeActivatedTime
@@ -2818,8 +2817,6 @@ const createNodeAccount2 = (accountId: string): NodeAccount2 => {
     nominator: '',
     stakeLock: BigInt(0),
     reward: BigInt(0),
-    rewardStartCycle: 0,
-    rewardEndCycle: 0,
     rewardStartTime: 0,
     rewardEndTime: 0,
     penalty: BigInt(0),
@@ -2833,6 +2830,7 @@ const createNodeAccount2 = (accountId: string): NodeAccount2 => {
       isShardeumRun: false,
     },
     rewarded: false,
+    rewardRate: BigInt(0),
   }
   WrappedEVMAccountFunctions.updateEthAccountHash(nodeAccount)
   return nodeAccount
@@ -3033,7 +3031,7 @@ async function estimateGas(
       customEVM,
       txId
     )
-  } finally{
+  } finally {
     customEVM.cleanUp()
   }
 
@@ -3245,7 +3243,7 @@ async function generateAccessList(
     const txStart = Date.now()
 
     let runTxResult
-    try{
+    try {
       runTxResult = await EVM.runTx(
         {
           block: blocks[latestBlock],
@@ -3258,7 +3256,7 @@ async function generateAccessList(
         customEVM,
         txId
       )
-    } finally{
+    } finally {
       customEVM.cleanUp()
     }
 
@@ -3990,8 +3988,6 @@ const shardusSetup = (): void => {
         nodeAccount2.reward = BigInt(0)
         nodeAccount2.rewardStartTime = 0
         nodeAccount2.rewardEndTime = 0
-        nodeAccount2.rewardStartCycle = 0
-        nodeAccount2.rewardEndCycle = 0
         nodeAccount2.rewarded = false
 
         if (ShardeumFlags.useAccountWrites) {
@@ -4925,6 +4921,7 @@ const shardusSetup = (): void => {
           keys.targetKeys = [toShardusAddress(tx.nominator, AccountType.Account), networkAccount]
         } else if (internalTx.internalTXType === InternalTXType.InitRewardTimes) {
           keys.sourceKeys = [tx.nominee]
+          keys.targetKeys = [networkAccount]
 
           // //force all TXs for the same reward to have the same hash
           // let tempTimestamp = tx.timestamp
@@ -7050,7 +7047,7 @@ const shardusSetup = (): void => {
           /* prettier-ignore */ if (logFlags.dapp_verbose) console.log(`Shardeum node-refuted event skipped`, data, nodeRefutedCycle)
         }
       } else if (eventType === 'try-network-transaction') {
-        console.log('shardeum-event', `try-network-transaction`, safeStringify(data))
+        /* prettier-ignore */ if (logFlags.dapp_verbose) console.log('shardeum-event', `try-network-transaction`, safeStringify(data))
         nestedCountersInstance.countEvent('shardeum-event', `try-network-transaction`)
         if (data?.additionalData.type === 'nodeReward') {
           console.log(
@@ -7067,7 +7064,7 @@ const shardusSetup = (): void => {
             }
           }
         } else if (data?.additionalData.type === 'nodeInitReward') {
-          console.log('shardeum-event', `running injectInitRewardTimesTx nodeInitReward`, safeStringify(data))
+          /* prettier-ignore */ if (logFlags.dapp_verbose) console.log('shardeum-event', `running injectInitRewardTimesTx nodeInitReward`, safeStringify(data))
           const closestNodes = shardus.getClosestNodes(data.publicKey, 5)
           const ourId = shardus.getNodeId()
           for (const id of closestNodes) {
