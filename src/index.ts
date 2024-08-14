@@ -4689,7 +4689,7 @@ const shardusSetup = (): void => {
         return { status: true, reason: 'UseTXPreCrack is false' }
       }
 
-      if (ShardeumFlags.internalTxTimestampFix === false) appData.requestNewTimestamp = true // force all txs to generate a new timestamp
+      if (shardusConfig.p2p.networkGeneratedTimestampFixes) appData.requestNewTimestamp = true // force all txs to generate a new timestamp
       // Check if we are active
 
       if (isInternalTx(tx) === false && isDebugTx(tx) === false) {
