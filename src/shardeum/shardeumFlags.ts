@@ -132,6 +132,7 @@ export interface ShardeumFlags {
   debugTxEnabled: boolean
   enableArchiverNetworkAccountValidation: boolean
   accessListSizeLimit: number
+  supportDenCunFork: boolean
 }
 
 export const ShardeumFlags: ShardeumFlags = {
@@ -301,6 +302,7 @@ export const ShardeumFlags: ShardeumFlags = {
   debugTxEnabled: false,
   enableArchiverNetworkAccountValidation: false, //  Enable/disable network account basic validations from archiver
   accessListSizeLimit: 5,
+  supportDenCunFork: true
 }
 
 export function updateShardeumFlag(key: string, value: string | number | boolean): void {
