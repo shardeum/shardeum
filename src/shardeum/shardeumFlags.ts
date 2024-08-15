@@ -122,6 +122,7 @@ interface ShardeumFlags {
   numberOfAccessListRetry: number
   useFutureBlockForAccessList: boolean
   failedStakeReceipt: boolean // For stake/unstake TXs that fail the checks in apply(), create an EVM receipt marked as failed
+  supportDenCunFork: boolean
 }
 
 export const ShardeumFlags: ShardeumFlags = {
@@ -281,6 +282,7 @@ export const ShardeumFlags: ShardeumFlags = {
   numberOfAccessListRetry: 3,
   useFutureBlockForAccessList: true,
   failedStakeReceipt: true,
+  supportDenCunFork: true
 }
 
 export function updateShardeumFlag(key: string, value: string | number | boolean): void {
