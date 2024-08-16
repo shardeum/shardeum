@@ -153,7 +153,7 @@ import { accountDeserializer, accountSerializer } from './types/Helpers'
 import { runWithContextAsync } from './utils/RequestContext'
 import { Utils } from '@shardus/types'
 import { verifyStakeTx, verifyUnstakeTx } from './tx/staking/verifyStake'
-import { enableHeapdump, generateHeapDump, generateHeapDump2, generateHeapDump2 } from './utils/heapsnapshot'
+import { enableHeapdump, generateHeapDump, generateHeapDump2 } from './utils/heapsnapshot'
 
 let latestBlock = 0
 export const blocks: BlockMap = {}
