@@ -154,6 +154,8 @@ import { runWithContextAsync } from './utils/RequestContext'
 import { Utils } from '@shardus/types'
 import { SafeBalance } from './utils/safeMath'
 import { verifyStakeTx, verifyUnstakeTx } from './tx/staking/verifyStake'
+import { AJVSchemaEnum } from './types/enum/AJVSchemaEnum'
+import { initAjvSchemas, verifyPayload } from './types/ajv/Helpers'
 import { Sign } from '@shardus/core/dist/shardus/shardus-types'
 
 let latestBlock = 0
@@ -542,6 +544,7 @@ async function initEVMSingletons(): Promise<void> {
 }
 
 initEVMSingletons()
+initAjvSchemas()
 
 /***
  *     ######     ###    ##       ##       ########     ###     ######  ##    ##  ######
@@ -1180,10 +1183,18 @@ const configShardusEndpoints = (): void => {
   shardus.registerExternalPost('inject', externalApiMiddleware, async (req, res) => {
     try {
       const tx = req.body
-      // if timestamp is a float, round it down to nearest millisecond
-      if (tx.timestamp && typeof tx.timestamp === 'number') {
-        tx.timestamp = Math.floor(tx.timestamp)
+      const errors = verifyPayload(AJVSchemaEnum.InjectTxReq, tx)
+      if (errors !== null) {
+        nestedCountersInstance.countEvent('external', 'ajv-failed-query-certificate')
+        return res.json({
+          success: false,
+          reason: 'Invalid request body',
+          details: isDebugMode() ? errors : null,
+          status: 400,
+        })
       }
+      // if timestamp is a float, round it down to nearest millisecond
+      tx.timestamp = Math.floor(tx.timestamp)
       const appData = null
       const id = shardus.getNodeId()
       const isInRotationBonds = shardus.isNodeInRotationBounds(id)
@@ -2210,7 +2221,6 @@ const configShardusEndpoints = (): void => {
     async (req: Request, res: Response) => {
       try {
         nestedCountersInstance.countEvent('shardeum-penalty', 'called query-certificate')
-
         const queryCertRes = await queryCertificateHandler(req, shardus)
         if (ShardeumFlags.VerboseLogs) console.log('queryCertRes', queryCertRes)
         if (queryCertRes.success) {
