@@ -104,6 +104,7 @@ interface ShardeumFlags {
   enableRIAccountsCache: boolean
   riAccountsCacheSize: number
   riAccountsDeleteBatchSize: number
+  EnableHeapdump: number
   numberOfNodesToInjectPenaltyTx: number
   loadGenesisNodeNetworkConfigToNetworkAccount: boolean
   networkAccountCacheDuration: number
@@ -192,6 +193,7 @@ export const ShardeumFlags: ShardeumFlags = {
   enableRIAccountsCache: true,
   riAccountsCacheSize: 10000,
   riAccountsDeleteBatchSize: 500,
+  EnableHeapdump: 0,
 
   // 1.1.3 migration
   fixExtraStakeLessThanMin: true,
@@ -333,3 +335,5 @@ export const enum FilePaths {
   CLI_PACKAGE = '/home/node/app/cli/package.json',
   GUI_PACKAGE = '/home/node/app/gui/package.json',
 }
+
+

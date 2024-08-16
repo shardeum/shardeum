@@ -5,6 +5,16 @@
   "version": "0.2.0",
   "configurations": [
     {
+      "type": "node",
+      "request": "attach",
+      "name": "attach2",
+      "port": 9229,
+      "sourceMaps": true,
+      "skipFiles": ["<node_internals>/**"],
+      "localRoot": "${workspaceFolder}",
+      "remoteRoot": "/usr/src/app"
+    },
+    {
       "name": "runTXperf",
       "program": "${workspaceFolder}/dist/tests/runTXperf.js",
       "request": "launch",

@@ -153,6 +153,7 @@ import { accountDeserializer, accountSerializer } from './types/Helpers'
 import { runWithContextAsync } from './utils/RequestContext'
 import { Utils } from '@shardus/types'
 import { verifyStakeTx, verifyUnstakeTx } from './tx/staking/verifyStake'
+import { enableHeapdump, generateHeapDump, generateHeapDump2, generateHeapDump2 } from './utils/heapsnapshot'
 
 let latestBlock = 0
 export const blocks: BlockMap = {}
@@ -1117,6 +1118,27 @@ const configShardusEndpoints = (): void => {
   //   setupTester(id)
   //   return res.json({ success: true })
   // })
+
+  enableHeapdump(shardus)
+
+  shardus.registerExternalGet('debug-heapdump', debugMiddleware, async (req, res) => {
+    try {
+        if(ShardeumFlags.EnableHeapdump === 1){
+            console.log('generating heap dump...');
+            generateHeapDump();  
+            return res.json({success:true})           
+        } else if(ShardeumFlags.EnableHeapdump === 2){
+          console.log('generating heap dump2...');
+          generateHeapDump2();  
+          return res.json({success:true})           
+        } else {
+            return res.json({success:false})
+        }
+    } catch (e) {
+    /* prettier-ignore */ if (logFlags.error) console.log(e)
+    return { error: e.message }
+    }
+  })
 
   shardus.registerExternalGet('debug-points', debugMiddleware, async (req, res) => {
     try {
