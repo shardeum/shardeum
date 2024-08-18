@@ -288,6 +288,8 @@ export interface ReadableReceipt {
   v?: string
   r?: string
   s?: string
+  penaltyAmount?: bigint,
+  rewardedAmount?: bigint
 }
 
 // This is used in stake/unstake tx receipt
@@ -344,6 +346,11 @@ export interface NetworkParameters {
   }
   txPause: boolean
   certCycleDuration: number
+  slashing: {
+    enableLeftNetworkEarly: boolean
+    enableSyncTimeout: boolean
+    enableNodeRefuted: boolean
+  }
 }
 
 export interface NodeAccount2 extends BaseAccount {

@@ -1,6 +1,6 @@
 import { nestedCountersInstance, Shardus, ShardusTypes } from '@shardus/core'
 import * as crypto from '@shardus/crypto-utils'
-import { Address } from '@ethereumjs/util'
+import { Address, bigIntToHex } from '@ethereumjs/util'
 import { networkAccount } from '../shardeum/shardeumConstants'
 import { createInternalTxReceipt, getApplyTXState, logFlags, shardeumGetTime } from '../index'
 import { hashSignedObj } from '../setup/helpers'
@@ -336,20 +336,20 @@ export async function applyClaimRewardTx(
   nodeAccount.rewardEndTime = tx.nodeDeactivatedTime
 
   //we multiply fist then devide to preserve precision
-  let totalReward = nodeRewardAmount * BigInt(durationInNetwork * 1000) // Convert from seconds to milliseconds
+  let rewardedAmount = nodeRewardAmount * BigInt(durationInNetwork * 1000) // Convert from seconds to milliseconds
   //update total reward var so it can be logged
-  totalReward = totalReward / nodeRewardInterval
+  rewardedAmount = rewardedAmount / nodeRewardInterval
   //re-parse reward since it was saved as hex
   nodeAccount.reward = _base16BNParser(nodeAccount.reward)
   //add the reward because nodes can cycle without unstaking
-  nodeAccount.reward = nodeAccount.reward + totalReward
+  nodeAccount.reward = nodeAccount.reward + rewardedAmount
   nodeAccount.timestamp = txTimestamp
 
   nodeAccount.rewarded = true
 
   // update the node account historical stats
   nodeAccount.nodeAccountStats.totalReward =
-    _base16BNParser(nodeAccount.nodeAccountStats.totalReward) + nodeAccount.reward
+    _base16BNParser(nodeAccount.nodeAccountStats.totalReward) + rewardedAmount
   nodeAccount.nodeAccountStats.history.push({ b: nodeAccount.rewardStartTime, e: nodeAccount.rewardEndTime })
 
   const shardeumState = getApplyTXState(txId)
@@ -373,7 +373,7 @@ export async function applyClaimRewardTx(
     e: nodeAccount.rewardEndTime,
   })
   operatorAccount.operatorAccountInfo.operatorStats.totalNodeReward =
-    _base16BNParser(operatorAccount.operatorAccountInfo.operatorStats.totalNodeReward) + nodeAccount.reward
+    _base16BNParser(operatorAccount.operatorAccountInfo.operatorStats.totalNodeReward) + rewardedAmount
   operatorAccount.operatorAccountInfo.operatorStats.totalNodeTime += durationInNetwork
 
   operatorAccount.operatorAccountInfo.operatorStats.lastStakedNodeKey =
@@ -386,7 +386,7 @@ export async function applyClaimRewardTx(
   await shardeumState.commit()
 
   operatorAccount.timestamp = txTimestamp
-  /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log( `Calculating node reward. nodeRewardAmount: ${_readableSHM(nodeRewardAmount)}, nodeRewardInterval: ${ network.current.nodeRewardInterval } ms, uptime duration: ${durationInNetwork} sec, totalReward: ${_readableSHM( totalReward )}, finalReward: ${_readableSHM(nodeAccount.reward)}   nodeAccount.rewardEndTime:${ nodeAccount.rewardEndTime }  nodeAccount.rewardStartTime:${nodeAccount.rewardStartTime} ` )
+  /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log( `Calculating node reward. nodeRewardAmount: ${_readableSHM(nodeRewardAmount)}, nodeRewardInterval: ${ network.current.nodeRewardInterval } ms, uptime duration: ${durationInNetwork} sec, rewardedAmount: ${_readableSHM( rewardedAmount )}, finalReward: ${_readableSHM(nodeAccount.reward)}   nodeAccount.rewardEndTime:${ nodeAccount.rewardEndTime }  nodeAccount.rewardStartTime:${nodeAccount.rewardStartTime} ` )
 
   if (ShardeumFlags.useAccountWrites) {
     let wrappedChangedNodeAccount: ShardusTypes.WrappedData
@@ -419,7 +419,17 @@ export async function applyClaimRewardTx(
   }
 
   if (ShardeumFlags.supportInternalTxReceipt) {
-    createInternalTxReceipt(shardus, applyResponse, tx, tx.nominee, tx.nominee, txTimestamp, txId)
+    createInternalTxReceipt(
+      shardus,
+      applyResponse,
+      tx,
+      tx.nominee,
+      tx.nominator,
+      txTimestamp,
+      txId,
+      bigIntToHex(BigInt(0)), // 0 amountSpent
+      rewardedAmount
+    )
   }
 
   /* prettier-ignore */ nestedCountersInstance.countEvent('shardeum-staking', `Applied ClaimRewardTX`)

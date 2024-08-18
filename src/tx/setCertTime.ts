@@ -22,6 +22,7 @@ import { getRandom, scaleByStabilityFactor, _base16BNParser, _readableSHM } from
 import { createInternalTxReceipt, logFlags, shardeumGetTime } from '..'
 import { bigIntToHex, isValidAddress } from '@ethereumjs/util'
 import { Utils } from '@shardus/types'
+import { SafeBalance } from '../utils/safeMath'
 
 export function isSetCertTimeTx(tx): boolean {
   if (tx.isInternalTx && tx.internalTXType === InternalTXType.SetCertTime) {
@@ -267,7 +268,7 @@ export function applySetCertTimeTx(
       BigInt(ShardeumFlags.constantTxFeeUsd),
       AccountsStorage.cachedNetworkAccount
     )
-    operatorEVMAccount.account.balance = operatorEVMAccount.account.balance - costTxFee
+    operatorEVMAccount.account.balance = SafeBalance.subtractBigintBalance(operatorEVMAccount.account.balance, costTxFee)
     amountSpent = bigIntToHex(costTxFee)
   }
 

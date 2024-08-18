@@ -218,7 +218,7 @@ export function apply(
     )
   }
   if (ShardeumFlags.supportInternalTxReceipt) {
-    createInternalTxReceipt(shardus, applyResponse, tx, tx.nominee, tx.nominee, txTimestamp, txId)
+    createInternalTxReceipt(shardus, applyResponse, tx, tx.nominee, nodeAccount.nominator, txTimestamp, txId)
   }
   /* prettier-ignore */ nestedCountersInstance.countEvent('shardeum-staking', `Applied InitRewardTimesTX`)
   console.log('Applied InitRewardTimesTX for', tx.nominee)

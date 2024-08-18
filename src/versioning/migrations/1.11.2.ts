@@ -15,7 +15,7 @@ export const migrate: Migration = async () => {
 
   //this allows the auto clear of TXs that are stuck in the queue for too long
   //it is based on being in consensus phase for too long with no receipt.
-  shardusConfig.stateManager.removeStuckTxsFromQueue2 = true
+  shardusConfig.stateManager.removeStuckTxsFromQueue2 = false //set to false again for 1.12.0
 }
 
 //WARNING if you add a new one of these migration files you must add it to the migrations list in

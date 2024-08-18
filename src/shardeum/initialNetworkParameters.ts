@@ -15,16 +15,21 @@ export const initialNetworkParamters: NetworkParameters = {
   stakeRequiredUsd: oneSHM * BigInt(10),
   maintenanceInterval: ONE_DAY,
   maintenanceFee: 0,
-  minVersion: '1.11.3',
-  activeVersion: '1.11.3',
-  latestVersion: '1.11.4',
+  minVersion: '1.12.1',
+  activeVersion: '1.12.1',
+  latestVersion: '1.12.1',
   archiver: {
-    minVersion: '3.4.21',
-    activeVersion: '3.4.21',
-    latestVersion: '3.4.21',
+    minVersion: '3.4.23',
+    activeVersion: '3.4.23',
+    latestVersion: '3.4.23',
   },
   stabilityScaleMul: 1000,
   stabilityScaleDiv: 1000,
   txPause: false,
   certCycleDuration: 30,
+  slashing: {
+    enableLeftNetworkEarly: false,
+    enableSyncTimeout: false,
+    enableNodeRefuted: false,
+  }
 }
