@@ -1361,11 +1361,11 @@ const configShardusEndpoints = (): void => {
         }
         return num;
       };
-  
+
       // Safely assign fromBlock using an IIFE to handle the throw within an expression context
       let fromBlock: number = req.query.fromBlock ? parseBlockNumber(req.query.fromBlock as string) : (() => { throw new Error('Missing fromBlock'); })();
       let toBlock: number = req.query.toBlock ? parseBlockNumber(req.query.toBlock as string, latestBlock) : latestBlock;
-  
+
       // Ensure fromBlock is not set to a negative value
       // Adjust fromBlock to within the allowed range if it's too old
       if (fromBlock < latestBlock - ShardeumFlags.maxNumberOfOldBlocks) {
@@ -1377,17 +1377,17 @@ const configShardusEndpoints = (): void => {
         toBlock = latestBlock;
       }
 
-  
+
       // Cap toBlock at latestBlock
       if (toBlock > latestBlock) {
         toBlock = latestBlock;
       }
-  
+
       // Validate block range
       if (fromBlock > toBlock) {
         return res.status(400).json({ error: 'fromBlock cannot be greater than toBlock' });
       }
-  
+
       // Assuming readableBlocks is an array of objects with a 'hash' property
       const blockHashes = [];
       for (let i = fromBlock; i <= toBlock; i++) {
@@ -1397,24 +1397,24 @@ const configShardusEndpoints = (): void => {
           }
       }
 
-  
+
       return res.json({ blockHashes, fromBlock, toBlock });
-  
+
     } catch (error) {
       console.error('Failed to process eth_getBlockHashes:', error.message);
-  
+
       const errorMessages: { [key: string]: string } = {
         missing: 'Missing required parameter',
         invalid: 'Parameter must be a non-negative integer'
       };
-  
+
       return res.status(500).json({
         success: false,
         error: errorMessages[error.message] || 'Internal server error while processing block hashes'
       });
     }
   });
-  
+
 
   shardus.registerExternalGet('eth_getBlockByNumber', externalApiMiddleware, async (req, res) => {
     try {
@@ -2283,12 +2283,12 @@ const configShardusEndpoints = (): void => {
       res.status(500).json({ error: 'Internal Server Error' })
     }
   })
-  
+
   shardus.registerExternalGet('is-alive', async (req, res) => {
     nestedCountersInstance.countEvent('endpoint', 'is-alive')
     return res.sendStatus(200)
   })
-  
+
   shardus.registerExternalGet('is-healthy', async (req, res) => {
     // TODO: Add actual health check logic
     nestedCountersInstance.countEvent('endpoint', 'health-check')
@@ -3799,8 +3799,8 @@ const shardusSetup = (): void => {
           reason: error
         }
       }
-      
-      //Note this currently only applies to stake and unstake, if you expand to deal with other 
+
+      //Note this currently only applies to stake and unstake, if you expand to deal with other
       //TX types please take care that the code in this block below is still correct.
       //for example a counter assumes this will be related to stake/unstake
       if (!verifyResult.success) {
@@ -3910,7 +3910,7 @@ const shardusSetup = (): void => {
       shardeumState._transactionState.appData = appData
 
       if (appData.internalTx && appData.internalTXType === InternalTXType.Stake) {
-    
+
         if (ShardeumFlags.VerboseLogs) console.log('applying stake tx', wrappedStates, appData)
 
         // get stake tx from appData.internalTx
@@ -3927,7 +3927,7 @@ const shardusSetup = (): void => {
 
         if (operatorEVMAccount.operatorAccountInfo?.nominee?.length > 0 ) {
           throw new Error(`This node is already staked by another account!`)
-        }  
+        }
 
         // // Validate tx timestamp against certExp (I thin)
         // if (operatorEVMAccount.operatorAccountInfo && operatorEVMAccount.operatorAccountInfo.certExp > 0) {
@@ -5438,7 +5438,7 @@ const shardusSetup = (): void => {
         // There wont be a target key in when we deploy a contract
 
         // update: looks like POQ-LS work switched source key to be first, and thus the execution group
-        // center. 
+        // center.
         // TODO ARCH-6.  as mentioned in other post we should move to an explicit key for picking the execution group
         result.allKeys = result.allKeys.concat(
           result.sourceKeys,
@@ -7211,7 +7211,7 @@ const shardusSetup = (): void => {
               publicKey: data.publicKey,
               nodeId: data.nodeId,
             } as NodeInitTxData
-            shardus.addNetworkTx('nodeInitReward', shardus.signAsNode(txData), data.publicKey)
+            shardus.addNetworkTx('nodeInitReward', shardus.signAsNode(txData), data.publicKey, data.publicKey)
           }
         }
       } else if (eventType === 'node-deactivated') {
@@ -7229,7 +7229,7 @@ const shardusSetup = (): void => {
               publicKey: data.publicKey,
               nodeId: data.nodeId,
             } as NodeRewardTxData
-            shardus.addNetworkTx('nodeReward', shardus.signAsNode(txData), data.publicKey)
+            shardus.addNetworkTx('nodeReward', shardus.signAsNode(txData), data.publicKey, data.publicKey)
           }
         }
       } else if (
@@ -7349,7 +7349,7 @@ const shardusSetup = (): void => {
         await this.patchAndUpdate(networkAccount.current, appData)
         // TODO: look into updating the timestamp also
         // Increase the timestamp by 1 second
-        // networkAccount.timestamp += ONE_SECOND ( this has issue when a newly joined node updates its config ) 
+        // networkAccount.timestamp += ONE_SECOND ( this has issue when a newly joined node updates its config )
         networkAccount.hash = WrappedEVMAccountFunctions._calculateAccountHash(networkAccount)
         account.stateId = networkAccount.hash
         account.timestamp = networkAccount.timestamp
@@ -7418,7 +7418,7 @@ const shardusSetup = (): void => {
         }
         // TODO: look into updating the timestamp also
         // Increase the timestamp by 1 second
-        // networkAccount.timestamp += ONE_SECOND ( this has issue when a newly joined node updates its config ) 
+        // networkAccount.timestamp += ONE_SECOND ( this has issue when a newly joined node updates its config )
         networkAccount.hash = WrappedEVMAccountFunctions._calculateAccountHash(networkAccount)
         account.stateId = networkAccount.hash
         account.timestamp = networkAccount.timestamp
