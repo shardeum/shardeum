@@ -7337,7 +7337,12 @@ const shardusSetup = (): void => {
               nodeId: data.nodeId,
             } as NodeInitTxData
             console.log('node-activated', 'injectInitRewardTimesTx', data.publicKey, txData)
-            shardus.addNetworkTx('nodeInitReward', shardus.signAsNode(txData), data.publicKey, data.publicKey)
+            shardus.addNetworkTx({
+              type: 'nodeInitReward',
+              txData: shardus.signAsNode(txData),
+              involvedAddress: data.publicKey,
+              subQueueKey: data.publicKey
+            })
           }
         }
       } else if (eventType === 'node-deactivated') {
@@ -7356,7 +7361,12 @@ const shardusSetup = (): void => {
               nodeId: data.nodeId,
             } as NodeRewardTxData
             console.log('node-deactivates', 'injectClaimRewardTx', data.publicKey, txData)
-            shardus.addNetworkTx('nodeReward', shardus.signAsNode(txData), data.publicKey, data.publicKey)
+            shardus.addNetworkTx({
+              type: 'nodeReward',
+              txData: shardus.signAsNode(txData),
+              involvedAddress: data.publicKey,
+              subQueueKey: data.publicKey
+            })
           }
         }
       } else if (
