@@ -1329,7 +1329,7 @@ const configShardusEndpoints = (): void => {
     if (ShardeumFlags.disableSmartContractEndpoints) {
       return res.json({ result: null, error: 'Smart contract endpoints are disabled' })
     }
-    
+
     try {
       const id = shardus.getNodeId()
       const isInRotationBonds = shardus.isNodeInRotationBounds(id)
@@ -7012,7 +7012,7 @@ const shardusSetup = (): void => {
         // There are important roadblocks checks above for when we do have the network account loaded
         // we should not skip ahead until we are passing the if condition above
         /* prettier-ignore */ nestedCountersInstance.countEvent('shardeum-staking', `network account not available yet`)
-        return false 
+        return false
       }
 
       isReadyToJoinLatestValue = false
@@ -7337,7 +7337,7 @@ const shardusSetup = (): void => {
               nodeId: data.nodeId,
             } as NodeInitTxData
             console.log('node-activated', 'injectInitRewardTimesTx', data.publicKey, txData)
-            shardus.addNetworkTx('nodeInitReward', shardus.signAsNode(txData), data.publicKey)
+            shardus.addNetworkTx('nodeInitReward', shardus.signAsNode(txData), data.publicKey, data.publicKey)
           }
         }
       } else if (eventType === 'node-deactivated') {
@@ -7356,7 +7356,7 @@ const shardusSetup = (): void => {
               nodeId: data.nodeId,
             } as NodeRewardTxData
             console.log('node-deactivates', 'injectClaimRewardTx', data.publicKey, txData)
-            shardus.addNetworkTx('nodeReward', shardus.signAsNode(txData), data.publicKey)
+            shardus.addNetworkTx('nodeReward', shardus.signAsNode(txData), data.publicKey, data.publicKey)
           }
         }
       } else if (
@@ -7775,7 +7775,7 @@ async function fetchNetworkAccountFromArchiver(): Promise<WrappedAccount> {
         sign: {
           owner: string,
           sig: string
-        } 
+        }
       }>(
         `http://${archiver.ip}:${archiver.port}/get-network-account?hash=true`
       )
