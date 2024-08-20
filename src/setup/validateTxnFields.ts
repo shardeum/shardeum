@@ -203,18 +203,26 @@ export const validateTxnFields =
         debugAppdata.set(txHash, appData)
 
         if (!gasValid) {
-          success = false
-          reason = 'Not enough gas to execute transaction'
           nestedCountersInstance.countEvent('shardeum', 'validate - insufficient gas')
+          return {
+            success: false,
+            reason: 'Not enough gas to execute transaction',
+            txnTimestamp,
+          }
         } else if (!isSigned) {
-          reason = 'Transaction is not signed'
           nestedCountersInstance.countEvent('shardeum', 'validate - sign missing')
+          return {
+            success: false,
+            reason: 'Transaction is not signed',
+            txnTimestamp,
+          }
         } else if (!isSignatureValid) {
-          reason = 'Transaction signature is invalid'
           nestedCountersInstance.countEvent('shardeum', 'validate - sign failed')
-        } else {
-          success = true
-          reason = ''
+          return {
+            success: false,
+            reason: 'Transaction signature is invalid',
+            txnTimestamp,
+          }
         }
 
         if (ShardeumFlags.txBalancePreCheck && appData != null) {
