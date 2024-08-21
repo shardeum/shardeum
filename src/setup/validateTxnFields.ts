@@ -223,6 +223,9 @@ export const validateTxnFields =
             reason: 'Transaction signature is invalid',
             txnTimestamp,
           }
+        } else {
+          success = true
+          reason = ''
         }
 
         if (ShardeumFlags.txBalancePreCheck && appData != null) {
