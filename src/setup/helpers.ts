@@ -125,19 +125,31 @@ export function verifyMultiSigs(
   requiredSecurityLevel: DevSecurityLevel
 ): boolean {
 
+  if(sigs.length < minSigRequired) return false
+
+  // no reason to allow more signatures than allowedPubkeys exist
+  // this also prevent loop exhaustion
+  if(sigs.length > Object.keys(allowedPubkeys).length) return false
+
   let validSigs = 0
   const payload_hash = crypto.hashObj(rawPayload)
+
+  const seen = new Set()
+
   for(let i = 0; i < sigs.length; i++){
 
+    // The sig has already been seen
     // The sig owner is listed on the server and
     // The sig owner has enough security clearance
     // The signature is valid
     if(
+        !seen.has(sigs[i].owner) &&
         allowedPubkeys[sigs[i].owner] && 
         allowedPubkeys[sigs[i].owner] >= requiredSecurityLevel && 
         crypto.verify(payload_hash, sigs[i].sig, sigs[i].owner)
     ){
       validSigs++
+      seen.add(sigs[i].owner)
     }
 
     if (validSigs >= minSigRequired) break

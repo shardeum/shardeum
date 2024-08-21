@@ -1,7 +1,7 @@
-import { DevSecurityLevel, Shardus } from '@shardus/core'
+import { DevSecurityLevel, Shardus, ShardusTypes } from '@shardus/core'
 import { ShardeumFlags } from '../shardeum/shardeumFlags'
 import { InitRewardTimes, InternalTx, InternalTXType } from '../shardeum/shardeumTypes'
-import { crypto, getTransactionObj, isDebugTx, isInternalTx, isInternalTXGlobal, verify } from './helpers'
+import { crypto, getTransactionObj, isDebugTx, isInternalTx, isInternalTXGlobal, verifyMultiSigs } from './helpers'
 import * as InitRewardTimesTx from '../tx/initRewardTimes'
 import * as AccountsStorage from '../storage/accountStorage'
 import { logFlags } from '..'
@@ -28,18 +28,18 @@ export const validateTransaction =
         internalTx.internalTXType === InternalTXType.ChangeNetworkParam
       ) {
         const devPublicKeys = shardus.getDevPublicKeys()
-        let isUserVerified = false
-        for (const devPublicKey in devPublicKeys) {
-          const verificationStatus = verify(tx, devPublicKey)
-          if (verificationStatus) {
-            isUserVerified = true
-            break
-          }
-        }
-        if (!isUserVerified) {
-          return { result: 'fail', reason: 'Dev key is not defined on the server!' }
-        }
-        const authorized = shardus.ensureKeySecurity(tx.sign.owner, DevSecurityLevel.High)
+        const is_array_sig = Array.isArray(tx.sign) === true
+        const requiredSigs = Math.max(1, ShardeumFlags.minSignaturesRequiredForGlobalTxs)
+        //Ensure old single sig / non-array are still compitable
+        let sigs: ShardusTypes.Sign[] = is_array_sig ? tx.sign : [tx.sign]
+        const { sign, ...txWithoutSign } = tx
+        const authorized = verifyMultiSigs(
+          txWithoutSign,
+          sigs,
+          devPublicKeys,
+          requiredSigs,
+          DevSecurityLevel.High
+        )
         if (!authorized) {
           return { result: 'fail', reason: 'Unauthorized User' }
         } else {
