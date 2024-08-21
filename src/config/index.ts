@@ -3,7 +3,7 @@ import path from 'path'
 import merge from 'deepmerge'
 import { ShardeumFlags } from '../shardeum/shardeumFlags'
 import { DevSecurityLevel } from '@shardus/core'
-import { FilePaths } from '../shardeum/shardeumFlags';
+import { FilePaths } from '../shardeum/shardeumFlags'
 import { Utils } from '@shardus/types'
 
 const overwriteMerge = (target: any[], source: any[]): any[] => source // eslint-disable-line @typescript-eslint/no-explicit-any
@@ -25,7 +25,7 @@ export interface Config {
     baseDir: string
     mode?: 'debug' | 'release'
     sharding?: {
-      nodesPerConsensusGroup:number, 
+      nodesPerConsensusGroup: number
     }
   }
 }
@@ -41,7 +41,9 @@ let config: Config = {
 // eslint-disable-next-line security/detect-non-literal-fs-filename
 if (fs.existsSync(path.join(process.cwd(), FilePaths.CONFIG))) {
   // eslint-disable-next-line security/detect-non-literal-fs-filename
-  const fileConfig = Utils.safeJsonParse(fs.readFileSync(path.join(process.cwd(), FilePaths.CONFIG)).toString())
+  const fileConfig = Utils.safeJsonParse(
+    fs.readFileSync(path.join(process.cwd(), FilePaths.CONFIG)).toString()
+  )
   config = merge(config, fileConfig, { arrayMerge: overwriteMerge })
 }
 
@@ -211,13 +213,11 @@ config = merge(config, {
       formingNodesPerCycle: 7, //how many nodes can be add in a cycle while in forming mode
 
       downNodeFilteringEnabled: false, //turning down node filtering off for diagnostics purposes
-
     },
     features: {
-
       //This feature will restrict transactions to only coin transfers
-      dappFeature1enabled : true,  //enabled for betanext 1.11.0
-    }
+      dappFeature1enabled: true, //enabled for betanext 1.11.0
+    },
   },
 })
 
@@ -236,8 +236,8 @@ config = merge(config, {
         external: 0.6,
         //these are multipliers three external load factors that can influence network scale up/down votes
         //however these multipler are used for rate limiting and it is highThreshold / lowThreshold that are used for voting
-        //having a super fast computer will not impact this, it is about the collaborative health of the network based on 
-        //what is in our queue.  even though our queue may be different than other node it is similar because of overalp in 
+        //having a super fast computer will not impact this, it is about the collaborative health of the network based on
+        //what is in our queue.  even though our queue may be different than other node it is similar because of overalp in
         //dynamic sharding ranges
         txTimeInQueue: 0.6,
         queueLength: 0.6,
@@ -247,16 +247,16 @@ config = merge(config, {
     loadDetection: {
       queueLimit: 320, // EXSS does the main limiting now queue limit is a secondary limit.  It should be higher that the exeutute queue limit
       executeQueueLimit: 160, // This limit how many items can be in the queue that will execute (apply) on our node
-                              // Example: if you a have a limit of 160 and we expect TXs to take 4 sec in consensus after a 6 second wait
-                              // then we look at 160 / 10 to see that 10tps sustained or more will give us a 1.0 load.
-                              // note that executeQueueLength value of 0.6 means we start rejecting TXs at 60% of the limit
+      // Example: if you a have a limit of 160 and we expect TXs to take 4 sec in consensus after a 6 second wait
+      // then we look at 160 / 10 to see that 10tps sustained or more will give us a 1.0 load.
+      // note that executeQueueLength value of 0.6 means we start rejecting TXs at 60% of the limit
       desiredTxTime: 10000000, // this is the average age of a TX in the queue.  we will only detect this if there are at least 20 txes in the queue
       highThreshold: 0.5, // This is mainly used to detect if any of our three parameters above are getting too high
-                          // if any of the three external load factors are above highload we will raise a high load
-                          // event and vote to the network if we are in the voter set for that cycle
-                          // if enough nodes vote or up, then desired node count will go up (although there is a limit based on current active nodes)
-      lowThreshold: 0.2,  // similar to highThreshold but for low values. 
-                          // load below this will trigger a network scale down vote.
+      // if any of the three external load factors are above highload we will raise a high load
+      // event and vote to the network if we are in the voter set for that cycle
+      // if enough nodes vote or up, then desired node count will go up (although there is a limit based on current active nodes)
+      lowThreshold: 0.2, // similar to highThreshold but for low values.
+      // load below this will trigger a network scale down vote.
     },
   },
 })
@@ -283,7 +283,7 @@ config = merge(config, {
 
       stuckTxMoveTime: 3600000,
 
-      awaitingDataCanBailOnReceipt: true, 
+      awaitingDataCanBailOnReceipt: true,
     },
   },
 })
@@ -360,6 +360,9 @@ config = merge(
           /* prettier-ignore */ '3daff5f118da18f7133fc8b8f74da7fa4c73b3569f9d4cc8ac48a73aeb886b3a': DevSecurityLevel.High,
           /* prettier-ignore */ 'b2865c37fc9234921b10fe8e27cd782807adb09e1490489765ed7f18a4c2fa13': DevSecurityLevel.High,
           // always prefix with prettier ignore
+        },
+        multisigKeys: {
+          '0x002D3a2BfE09E3E29b6d38d58CaaD16EEe4C9BC5': DevSecurityLevel.High, // test key
         },
         checkAddressFormat: true, //enabled for 1.10.0
         enableCycleRecordDebugTool: false, // only enable if you want to debug variant cycle records

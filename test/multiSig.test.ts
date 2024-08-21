@@ -1,175 +1,158 @@
-import { DevSecurityLevel } from "@shardus/core"
-import * as crypto from "@shardus/crypto-utils"
-import { verifyMultiSigs } from "../src/setup/helpers"
-import { Utils } from "@shardus/types"
+import { verifyMultiSigs } from '../src/setup/helpers'
+import { ethers, Wallet } from 'ethers'
+import { expect, test, afterAll } from '@jest/globals'
 
-crypto.init('69fa4195670576c0160d660c3be36556ff8d504725be8a59b5a96509e0c994bc')
+const DevSecurityLevel = {
+  Low: 0,
+  Medium: 1,
+  High: 2,
+}
 
-crypto.setCustomStringifier(Utils.safeStringify, 'shardus_safeStringify')
-
-const KEYPAIRS: crypto.Keypair[]  = new Array(10)
-
-for(let i = 0; i < 10; i++) {
-  KEYPAIRS[i] = crypto.generateKeypair()
-} 
-
+const wallet = Wallet.createRandom()
 const changeConfigTx: any = {
   isInternalTx: true,
   internalTXType: 3,
   timestamp: Date.now(),
-  from: KEYPAIRS[0].publicKey,
+  from: wallet.publicKey,
   config: '{"p2p":{"useBinarySerializedEndpoints":true}}',
   cycle: -1,
 }
 
-const tx_hash = crypto.hashObj(changeConfigTx)
+const tx_hash = ethers.keccak256(ethers.toUtf8Bytes(JSON.stringify(changeConfigTx)))
 
-test('should validate the internal tx with multi sig', () => {
-
+test('should validate the internal tx with multi sig', async () => {
   const sign: any = []
-  for(let i = 0; i < 3; i++) {
-    const signature = crypto.sign(tx_hash, KEYPAIRS[i].secretKey)
-    sign.push({
-      owner: KEYPAIRS[i].publicKey,
-      sig: signature
-    })
-  }
-  const mockAllowedDevKeys = {
-    [KEYPAIRS[0].publicKey]: DevSecurityLevel.High,
-    [KEYPAIRS[1].publicKey]: DevSecurityLevel.High,
-    [KEYPAIRS[2].publicKey]: DevSecurityLevel.High
-  }
-  const result = verifyMultiSigs(
-    changeConfigTx,
-    sign,
-    mockAllowedDevKeys,
-    3,
-    DevSecurityLevel.High
-  )
-
-  expect(result).toBe(true)
-})
-
-test('should fail without min approval', ()=>{
-
-  const sign: any = []
-  for(let i = 0; i < 3; i++) {
-    const signature = crypto.sign(tx_hash, KEYPAIRS[i].secretKey)
-    sign.push({
-      owner: KEYPAIRS[i].publicKey,
-      sig: signature
-    })
-  }
-  const mockAllowedDevKeys = {
-    [KEYPAIRS[0].publicKey]: DevSecurityLevel.High,
-    [KEYPAIRS[1].publicKey]: DevSecurityLevel.High,
-    [KEYPAIRS[2].publicKey]: DevSecurityLevel.High
-  }
-  const result = verifyMultiSigs(
-    changeConfigTx,
-    sign,
-    mockAllowedDevKeys,
-    4,
-    DevSecurityLevel.High
-  )
-
-  expect(result).toBe(false)
-})
-
-test('should fail without min security level', ()=>{
-
-  const sign: any = []
-  for(let i = 0; i < 3; i++) {
-    const signature = crypto.sign(tx_hash, KEYPAIRS[i].secretKey)
-    sign.push({
-      owner: KEYPAIRS[i].publicKey,
-      sig: signature
-    })
-  }
-  const mockAllowedDevKeys = {
-    [KEYPAIRS[0].publicKey]: DevSecurityLevel.High,
-    [KEYPAIRS[1].publicKey]: DevSecurityLevel.Medium,
-    [KEYPAIRS[2].publicKey]: DevSecurityLevel.High
-  }
-  const result = verifyMultiSigs(
-    changeConfigTx,
-    sign,
-    mockAllowedDevKeys,
-    3,
-    DevSecurityLevel.High
-  )
-
-  expect(result).toBe(false)
-})
-
-test('should fail when pubkey is not recognized', ()=>{
-
-  const sign: any = []
-  for(let i = 0; i < 3; i++) {
-    const signature = crypto.sign(tx_hash, KEYPAIRS[i].secretKey)
-    sign.push({
-      owner: KEYPAIRS[i].publicKey,
-      sig: signature
-    })
-  }
-  const mockAllowedDevKeys = {
-    [KEYPAIRS[8].publicKey]: DevSecurityLevel.High,
-    [KEYPAIRS[9].publicKey]: DevSecurityLevel.Medium,
-  }
-  const result = verifyMultiSigs(
-    changeConfigTx,
-    sign,
-    mockAllowedDevKeys,
-    1,
-    DevSecurityLevel.High
-  )
-
-  expect(result).toBe(false)
-})
-
-test('should fail when signature is invalid', ()=>{
-  const sign: any = []
-  const signature = crypto.sign(tx_hash, KEYPAIRS[0].secretKey)
+  const signature = await wallet.signMessage(tx_hash)
   sign.push({
-    owner: KEYPAIRS[2].publicKey,
-    sig: signature // temper with the signature signature
+    owner: wallet.address,
+    sig: signature,
   })
   const mockAllowedDevKeys = {
-    [KEYPAIRS[0].publicKey]: DevSecurityLevel.High,
+    [wallet.address]: DevSecurityLevel.High,
   }
-  const result = verifyMultiSigs(
-    changeConfigTx,
-    sign,
-    mockAllowedDevKeys,
-    1,
-    DevSecurityLevel.High
-  )
+  const result = verifyMultiSigs(changeConfigTx, sign, mockAllowedDevKeys, 1, DevSecurityLevel.High)
+  expect(result).toBe(true)
+})
+
+test('should validate the internal tx with multi sig 2', async () => {
+  const sign: any = []
+  for (let i = 0; i < 3; i++) {
+    const wallet = Wallet.createRandom()
+    const signature = await wallet.signMessage(tx_hash)
+    sign.push({
+      owner: wallet.address,
+      sig: signature,
+    })
+  }
+  const mockAllowedDevKeys = {
+    [sign[0].owner]: DevSecurityLevel.High,
+    [sign[1].owner]: DevSecurityLevel.High,
+    [sign[2].owner]: DevSecurityLevel.High,
+  }
+  const result = verifyMultiSigs(changeConfigTx, sign, mockAllowedDevKeys, 3, DevSecurityLevel.High)
+
+  expect(result).toBe(true)
+})
+
+test('should fail without min approval', async () => {
+  const sign: any = []
+  for (let i = 0; i < 3; i++) {
+    const wallet = Wallet.createRandom()
+    const signature = await wallet.signMessage(tx_hash)
+    sign.push({
+      owner: wallet.address,
+      sig: signature,
+    })
+  }
+  const mockAllowedDevKeys = {
+    [sign[0].owner]: DevSecurityLevel.High,
+    [sign[1].owner]: DevSecurityLevel.High,
+    [sign[2].owner]: DevSecurityLevel.High,
+  }
+  const result = verifyMultiSigs(changeConfigTx, sign, mockAllowedDevKeys, 4, DevSecurityLevel.High)
 
   expect(result).toBe(false)
 })
 
-test('backward compitible with single sig payloads', ()=>{
-  const tx_copy = changeConfigTx
-  const tx_hash = crypto.hashObj(changeConfigTx)
-  const hashed_sig = crypto.sign(tx_hash, KEYPAIRS[0].secretKey)
-
-  crypto.signObj(tx_copy, KEYPAIRS[0].secretKey, KEYPAIRS[0].publicKey)
-
-  const mockAllowedDevKeys = {
-    [KEYPAIRS[0].publicKey]: DevSecurityLevel.High,
+test('should fail without min security level', async () => {
+  const sign: any = []
+  for (let i = 0; i < 3; i++) {
+    const wallet = Wallet.createRandom()
+    const signature = await wallet.signMessage(tx_hash)
+    sign.push({
+      owner: wallet.address,
+      sig: signature,
+    })
   }
-  const {sign, ...txWithoutSign} = tx_copy
-  const result = verifyMultiSigs(
-    txWithoutSign,
-    [tx_copy.sign],
-    mockAllowedDevKeys,
-    1,
-    DevSecurityLevel.High
-  )
-  
-  expect(result).toBe(true)
-  
-  expect(tx_copy.sign.sig).toBe(hashed_sig)
+  const mockAllowedDevKeys = {
+    [sign[0].owner]: DevSecurityLevel.High,
+    [sign[1].owner]: DevSecurityLevel.Medium,
+    [sign[2].owner]: DevSecurityLevel.High,
+  }
+  const result = verifyMultiSigs(changeConfigTx, sign, mockAllowedDevKeys, 3, DevSecurityLevel.High)
 
+  expect(result).toBe(false)
 })
 
+test('should fail when pubkey is not recognized', async () => {
+  const sign: any = []
+  for (let i = 0; i < 3; i++) {
+    const wallet = Wallet.createRandom()
+    const signature = await wallet.signMessage(tx_hash)
+    sign.push({
+      owner: wallet.address,
+      sig: signature,
+    })
+  }
+  const mockAllowedDevKeys = {
+    [Wallet.createRandom().address]: DevSecurityLevel.High,
+    [Wallet.createRandom().address]: DevSecurityLevel.Medium,
+  }
+  const result = verifyMultiSigs(changeConfigTx, sign, mockAllowedDevKeys, 1, DevSecurityLevel.High)
+
+  expect(result).toBe(false)
+})
+
+test('should fail when signature is invalid', async () => {
+  const sign: any = []
+  const wallet = Wallet.createRandom()
+  const signature = await wallet.signMessage(tx_hash)
+  sign.push({
+    owner: Wallet.createRandom().address,
+    sig: signature, // temper with the signature signature
+  })
+  const mockAllowedDevKeys = {
+    [wallet.address]: DevSecurityLevel.High,
+  }
+  const result = verifyMultiSigs(changeConfigTx, sign, mockAllowedDevKeys, 1, DevSecurityLevel.High)
+
+  expect(result).toBe(false)
+})
+
+test('backward compatible with single sig payloads', async () => {
+  const tx_copy = { ...changeConfigTx }
+  const tx_hash = ethers.keccak256(ethers.toUtf8Bytes(JSON.stringify(changeConfigTx)))
+  const wallet = Wallet.createRandom()
+  const hashed_sig = await wallet.signMessage(tx_hash)
+
+  const signature = await wallet.signMessage(tx_hash)
+  tx_copy.sign = {
+    owner: wallet.address,
+    sig: signature,
+  }
+
+  const mockAllowedDevKeys = {
+    [wallet.address]: DevSecurityLevel.High,
+  }
+  const { sign, ...txWithoutSign } = tx_copy
+  const result = verifyMultiSigs(txWithoutSign, [tx_copy.sign], mockAllowedDevKeys, 1, DevSecurityLevel.High)
+
+  expect(result).toBe(true)
+
+  expect(tx_copy.sign.sig).toBe(hashed_sig)
+})
+
+afterAll(async () => {
+  // Ensure all asynchronous operations are completed
+  await new Promise((resolve) => setTimeout(resolve, 1000))
+})

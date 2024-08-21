@@ -114,13 +114,14 @@ export const validateTxnFields =
               reason = 'No signature found'
             }
 
-            const allowedPublicKeys = shardus.getDevPublicKeys()
+            // Use multisig keys for validation
+            const allowedPublicKeys = shardus.getMultisigPublicKeys()
 
             const is_array_sig = Array.isArray(tx.sign) === true
             const requiredSigs = Math.max(1, ShardeumFlags.minSignaturesRequiredForGlobalTxs)
 
             //this'll making sure old single sig / non-array are still compitable
-            let sigs: Sign[] = is_array_sig ? tx.sign : [tx.sign]
+            const sigs: Sign[] = is_array_sig ? tx.sign : [tx.sign]
 
 
             const {sign, ...txWithoutSign} = tx
