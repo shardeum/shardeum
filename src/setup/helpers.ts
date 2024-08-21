@@ -10,6 +10,7 @@ import { ShardeumFlags } from '../shardeum/shardeumFlags'
 import { InternalTx, InternalTXType } from '../shardeum/shardeumTypes'
 import { Utils } from '@shardus/types'
 import { DevSecurityLevel, Sign } from '@shardus/core/dist/shardus/shardus-types'
+import { ethers } from 'ethers'
 
 crypto.init('69fa4195670576c0160d660c3be36556ff8d504725be8a59b5a96509e0c994bc')
 crypto.setCustomStringifier(Utils.safeStringify, 'shardus_safeStringify')
@@ -118,42 +119,38 @@ export function hashSignedObj(obj): string {
 @returns boolean - True if the payload is signed by the required number of authorized public keys with the required security level
 **/
 export function verifyMultiSigs(
-  rawPayload: {}, 
-  sigs: Sign[], 
-  allowedPubkeys: {[pubkey: string]: DevSecurityLevel}, 
-  minSigRequired: number, 
+  rawPayload: object,
+  sigs: Sign[],
+  allowedPubkeys: { [pubkey: string]: DevSecurityLevel },
+  minSigRequired: number,
   requiredSecurityLevel: DevSecurityLevel
 ): boolean {
-
-  if(sigs.length < minSigRequired) return false
+  if (sigs.length < minSigRequired) return false
 
   // no reason to allow more signatures than allowedPubkeys exist
   // this also prevent loop exhaustion
-  if(sigs.length > Object.keys(allowedPubkeys).length) return false
+  if (sigs.length > Object.keys(allowedPubkeys).length) return false
 
   let validSigs = 0
-  const payload_hash = crypto.hashObj(rawPayload)
-
+  const payload_hash = ethers.keccak256(ethers.toUtf8Bytes(JSON.stringify(rawPayload)))
   const seen = new Set()
 
-  for(let i = 0; i < sigs.length; i++){
-
+  for (let i = 0; i < sigs.length; i++) {
     // The sig has already been seen
     // The sig owner is listed on the server and
     // The sig owner has enough security clearance
     // The signature is valid
-    if(
-        !seen.has(sigs[i].owner) &&
-        allowedPubkeys[sigs[i].owner] && 
-        allowedPubkeys[sigs[i].owner] >= requiredSecurityLevel && 
-        crypto.verify(payload_hash, sigs[i].sig, sigs[i].owner)
-    ){
+    if (
+      !seen.has(sigs[i].owner) &&
+      allowedPubkeys[sigs[i].owner] &&
+      allowedPubkeys[sigs[i].owner] >= requiredSecurityLevel &&
+      ethers.verifyMessage(payload_hash, sigs[i].sig) === sigs[i].owner
+    ) {
       validSigs++
       seen.add(sigs[i].owner)
     }
 
     if (validSigs >= minSigRequired) break
-
   }
 
   return validSigs >= minSigRequired
