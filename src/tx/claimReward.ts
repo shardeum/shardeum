@@ -279,6 +279,19 @@ export async function applyClaimRewardTx(
   mustUseAdminCert = false
 ): Promise<void> {
   if (ShardeumFlags.VerboseLogs) console.log(`Running applyClaimRewardTx`, tx, wrappedStates)
+
+
+  if (ShardeumFlags.failClaimRewardApply) {
+    nestedCountersInstance.countEvent('shardeum-staking', `applyClaimRewardTx fail for testing`)
+    console.log(`applyClaimRewardTx fail for testing; deactivatedNodeId: ${tx.deactivatedNodeId}`)
+    
+    shardus.applyResponseSetFailed(
+      applyResponse,
+      `applyClaimReward failed for testing purposes`
+    )
+    return
+  }
+
   // const isValidRequest = validateClaimRewardState(tx, wrappedStates, shardus, mustUseAdminCert)
   // if (isValidRequest.result === 'fail') {
   //   /* prettier-ignore */

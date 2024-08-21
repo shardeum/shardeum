@@ -2409,6 +2409,15 @@ const configShardusNetworkTransactions = (): void => {
     async (txEntry: P2P.ServiceQueueTypes.AddNetworkTx<SignedNodeInitTxData>) => {
       const tx = txEntry.txData
       /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log('Validating nodeInitReward applied', Utils.safeStringify(tx))
+      
+
+      if (ShardeumFlags.failNodeInitRewardApply) {
+        nestedCountersInstance.countEvent('shardeum-staking', `applyNodeInitReward fail for testing`)
+        console.log(`applyNodeInitReward failed for testing purposes; publicKey: ${tx.publicKey}`)
+        
+        return false
+      }
+      
       const shardusAddress = tx.publicKey?.toLowerCase()
       const account = await shardus.getLocalOrRemoteAccount(shardusAddress)
       if (!account) {
