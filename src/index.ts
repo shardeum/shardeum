@@ -7341,6 +7341,17 @@ const shardusSetup = (): void => {
         }
       }
     },
+    getDeactivatedTxData(txParams: ShardusTypes.ShardusEvent) {
+      const txData = {
+        start: txParams.activeCycle,
+        end: txParams.cycleNumber,
+        endTime: txParams.time,
+        publicKey: txParams.publicKey,
+        nodeId: txParams.nodeId,
+      } as NodeRewardTxData
+      const pubKey = txParams.publicKey
+      return { txData, pubKey }
+    },
     // Note: this logic is added to the archive server; any changes here should have to be done in the archive server as well
     async updateNetworkChangeQueue(account: WrappedAccount, appData: any) {
       /* eslint-disable security/detect-object-injection */
