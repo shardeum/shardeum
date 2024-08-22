@@ -128,7 +128,7 @@ import {
 } from './handlers/queryCertificate'
 import * as InitRewardTimesTx from './tx/initRewardTimes'
 import * as PenaltyTx from './tx/penalty/transaction'
-import { isDebugTx, isInternalTx, crypto, getInjectedOrGeneratedTimestamp } from './setup/helpers'
+import { isDebugTx, isInternalTx, crypto, getInjectedOrGeneratedTimestamp, verifyMultiSigs } from './setup/helpers'
 import { onActiveVersionChange } from './versioning'
 import { shardusFactory } from '@shardus/core'
 import { unsafeGetClientIp } from './utils/requests'
@@ -154,6 +154,7 @@ import { runWithContextAsync } from './utils/RequestContext'
 import { Utils } from '@shardus/types'
 import { SafeBalance } from './utils/safeMath'
 import { verifyStakeTx, verifyUnstakeTx } from './tx/staking/verifyStake'
+import { Sign } from '@shardus/core/dist/shardus/shardus-types'
 
 let latestBlock = 0
 export const blocks: BlockMap = {}
@@ -7435,6 +7436,21 @@ const shardusSetup = (): void => {
 
       return undefined
     },
+    verifyMultiSigs: (
+      rawPayload: object,
+      sigs: Sign[],
+      allowedPubkeys: { [pubkey: string]: DevSecurityLevel },
+      minSigRequired: number,
+      requiredSecurityLevel: DevSecurityLevel
+    ): boolean => {
+      return verifyMultiSigs(
+        rawPayload,
+        sigs,
+        allowedPubkeys,
+        minSigRequired,
+        requiredSecurityLevel
+      )
+    }
   })
 
   shardus.registerExceptionHandler()
