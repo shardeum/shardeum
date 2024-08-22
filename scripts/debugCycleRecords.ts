@@ -28,7 +28,7 @@ const rl = readline.createInterface({
 // Read the file line by line
 rl.on('line', (line) => {
   // Parse the stringified JSON object from each line
-  const { port, cycleNumber, cycleRecord } = JSON.parse(fss(JSON.parse(line)))
+  const { port, cycleNumber, cycleRecord } = Utils.safeJsonParse(line)
   //const { port, cycleNumber, cycleRecord } = JSON.parse(line)
 
   // Ensure the completeCycles array is large enough
