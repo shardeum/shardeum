@@ -1,9 +1,4 @@
-import {
-  AccessListEIP2930Transaction,
-  Transaction,
-  TransactionFactory,
-  TransactionType,
-} from '@ethereumjs/tx'
+import { Transaction, TransactionFactory, TransactionType } from '@ethereumjs/tx'
 import * as crypto from '@shardus/crypto-utils'
 import { toBuffer } from 'ethereumjs-util'
 import { ShardeumFlags } from '../shardeum/shardeumFlags'
@@ -132,12 +127,12 @@ export function verifyMultiSigs(
   if (sigs.length > Object.keys(allowedPubkeys).length) return false
 
   let validSigs = 0
-  const payload_hash = ethers.keccak256(ethers.toUtf8Bytes(JSON.stringify(rawPayload)))
+  const payload_hash = ethers.keccak256(ethers.toUtf8Bytes(Utils.safeStringify(rawPayload)))
   const seen = new Set()
 
   for (let i = 0; i < sigs.length; i++) {
-    // The sig has already been seen
-    // The sig owner is listed on the server and
+    // The sig owner has not been seen before
+    // The sig owner is listed on the server
     // The sig owner has enough security clearance
     // The signature is valid
     if (

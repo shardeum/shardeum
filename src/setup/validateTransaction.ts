@@ -1,14 +1,21 @@
 import { DevSecurityLevel, Shardus, ShardusTypes } from '@shardus/core'
 import { ShardeumFlags } from '../shardeum/shardeumFlags'
 import { InitRewardTimes, InternalTx, InternalTXType } from '../shardeum/shardeumTypes'
-import { crypto, getTransactionObj, isDebugTx, isInternalTx, isInternalTXGlobal, verifyMultiSigs } from './helpers'
+import {
+  crypto,
+  getTransactionObj,
+  isDebugTx,
+  isInternalTx,
+  isInternalTXGlobal,
+  verifyMultiSigs,
+} from './helpers'
 import * as InitRewardTimesTx from '../tx/initRewardTimes'
 import * as AccountsStorage from '../storage/accountStorage'
-import { logFlags } from '..'
 import config from '../config'
 import { comparePropertiesTypes } from '../utils'
 import { Utils } from '@shardus/types'
 import { ethers } from 'ethers'
+import { shardusConfig } from '..'
 
 type Response = {
   result: string
@@ -30,7 +37,7 @@ export const validateTransaction =
       ) {
         const devPublicKeys = shardus.getMultisigPublicKeys()
         const is_array_sig = Array.isArray(tx.sign) === true
-        const requiredSigs = Math.max(1, ShardeumFlags.minSignaturesRequiredForGlobalTxs)
+        const requiredSigs = Math.max(1, shardusConfig.debug.minMultiSigRequiredForGlobalTxs)
         //Ensure old single sig / non-array are still compitable
         const sigs: ShardusTypes.Sign[] = is_array_sig ? tx.sign : [tx.sign]
         const { sign, ...txWithoutSign } = tx

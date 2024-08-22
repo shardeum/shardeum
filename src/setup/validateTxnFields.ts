@@ -23,7 +23,8 @@ import {
   isWithinRange,
   generateTxId,
   getTxSenderAddress,
-  emptyCodeHash, isStakingEVMTx
+  emptyCodeHash,
+  isStakingEVMTx,
 } from '../utils'
 import {
   crypto,
@@ -33,12 +34,12 @@ import {
   isInternalTXGlobal,
   verify,
   isDebugTx,
-  verifyMultiSigs
+  verifyMultiSigs,
 } from './helpers'
 import { fixBigIntLiteralsToBigInt } from '../utils/serialization'
 import { validatePenaltyTX } from '../tx/penalty/transaction'
 import { bytesToHex } from '@ethereumjs/util'
-import {logFlags, shardusConfig} from '..'
+import { logFlags, shardusConfig } from '..'
 import { Sign } from '@shardus/core/dist/shardus/shardus-types'
 
 /**
@@ -103,13 +104,15 @@ export const validateTxnFields =
             reason: '',
             txnTimestamp,
           }
-        } else if (tx.internalTXType === InternalTXType.ChangeConfig ||
-          tx.internalTXType === InternalTXType.ChangeNetworkParam) {
+        } else if (
+          tx.internalTXType === InternalTXType.ChangeConfig ||
+          tx.internalTXType === InternalTXType.ChangeNetworkParam
+        ) {
           try {
-            // DEFINATION: 
-            // Valid signature is a cryptocraphically valid signature 
+            // DEFINATION:
+            // Valid signature is a cryptocraphically valid signature
             // that is signed by a key which is defined on the server and has enough security clearance
-            if(!tx.sign){
+            if (!tx.sign) {
               success = false
               reason = 'No signature found'
             }
@@ -118,14 +121,12 @@ export const validateTxnFields =
             const allowedPublicKeys = shardus.getMultisigPublicKeys()
 
             const is_array_sig = Array.isArray(tx.sign) === true
-            const requiredSigs = Math.max(1, ShardeumFlags.minSignaturesRequiredForGlobalTxs)
+            const requiredSigs = Math.max(1, shardusConfig.debug.minMultiSigRequiredForGlobalTxs)
 
             //this'll making sure old single sig / non-array are still compitable
             const sigs: Sign[] = is_array_sig ? tx.sign : [tx.sign]
 
-
-            const {sign, ...txWithoutSign} = tx
-
+            const { sign, ...txWithoutSign } = tx
 
             // if the signatures in the payload is larger than the allowed public keys, it is invalid
             // this prevent loop exhaustion abuses
@@ -136,14 +137,13 @@ export const validateTxnFields =
               requiredSigs,
               DevSecurityLevel.High
             )
-            if(sig_are_valid === true){
+            if (sig_are_valid === true) {
               success = true
               reason = 'Valid'
-            }else{
+            } else {
               success = false
               reason = 'Invalid signatures'
             }
-
           } catch (e) {
             success = false
             reason = 'Signature verification thrown exception'
@@ -170,7 +170,7 @@ export const validateTxnFields =
             }
           }
           const cycle = latestCycles[0]
-          if(cycle.counter > 1){
+          if (cycle.counter > 1) {
             return {
               success: false,
               reason,
@@ -257,7 +257,9 @@ export const validateTxnFields =
           const accountBalance = appData.balance
           if (accountBalance < minBalance) {
             success = false
-            reason = `Sender Insufficient Balance. Sender: ${senderAddress.toString()}, MinBalance: ${minBalance.toString()}, Account balance: ${accountBalance.toString()}, Difference: ${(minBalance - accountBalance).toString()}`
+            reason = `Sender Insufficient Balance. Sender: ${senderAddress.toString()}, MinBalance: ${minBalance.toString()}, Account balance: ${accountBalance.toString()}, Difference: ${(
+              minBalance - accountBalance
+            ).toString()}`
             /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`balance fail: sender ${senderAddress.toString()} does not have enough balance. Min balance: ${minBalance.toString()}, Account balance: ${accountBalance.toString()}`)
             nestedCountersInstance.countEvent('shardeum', 'validate - insufficient balance')
           } else {
@@ -304,9 +306,18 @@ export const validateTxnFields =
         }
 
         const isStakeRelatedTx: boolean = isStakingEVMTx(transaction)
-        if (shardusConfig.features.dappFeature1enabled && appData && !appData.internalTx && !isStakeRelatedTx) {
-          const isCoinTransfer = transaction.value != null && transaction.to != null
-            && (transaction.data == null || transaction.data.length === 0 || bytesToHex(transaction.data) === emptyCodeHash)
+        if (
+          shardusConfig.features.dappFeature1enabled &&
+          appData &&
+          !appData.internalTx &&
+          !isStakeRelatedTx
+        ) {
+          const isCoinTransfer =
+            transaction.value != null &&
+            transaction.to != null &&
+            (transaction.data == null ||
+              transaction.data.length === 0 ||
+              bytesToHex(transaction.data) === emptyCodeHash)
           if (!isCoinTransfer) {
             nestedCountersInstance.countEvent('shardeum', 'validate - coin-transfer-only mode fail')
             return {
@@ -461,4 +472,3 @@ export const validateTxnFields =
         txnTimestamp,
       }
     }
-
