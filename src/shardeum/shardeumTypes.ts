@@ -377,9 +377,6 @@ export interface NetworkParameters {
     syncTimeoutPenaltyPercent: number,
     nodeRefutedPenaltyPercent: number,
   }
-  utilityFlags: {
-    enableRewardTXs: boolean
-  }
 }
 
 export interface NodeAccount2 extends BaseAccount {

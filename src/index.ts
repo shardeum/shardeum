@@ -7208,7 +7208,7 @@ const shardusSetup = (): void => {
             shardus.addNetworkTx('nodeInitReward', shardus.signAsNode(txData), data.publicKey)
           }
         }
-      } else if (eventType === 'node-deactivated' && AccountsStorage.cachedNetworkAccount.current.utilityFlags.enableRewardTXs) {
+      } else if (eventType === 'node-deactivated') {
         // todo: aamir check the timestamp and cycle the first time we see this event
         // Limit the nodes that send this to the 5 closest to the node id
         const closestNodes = shardus.getClosestNodes(data.publicKey, 5)
