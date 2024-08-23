@@ -5438,7 +5438,7 @@ const shardusSetup = (): void => {
         // There wont be a target key in when we deploy a contract
 
         // update: looks like POQ-LS work switched source key to be first, and thus the execution group
-        // center. 
+        // center.
         // TODO ARCH-6.  as mentioned in other post we should move to an explicit key for picking the execution group
         result.allKeys = result.allKeys.concat(
           result.sourceKeys,
@@ -7341,17 +7341,6 @@ const shardusSetup = (): void => {
         }
       }
     },
-    getDeactivatedTxData(txParams: ShardusTypes.ShardusEvent) {
-      const txData = {
-        start: txParams.activeCycle,
-        end: txParams.cycleNumber,
-        endTime: txParams.time,
-        publicKey: txParams.publicKey,
-        nodeId: txParams.nodeId,
-      } as NodeRewardTxData
-      const pubKey = txParams.publicKey
-      return { txData, pubKey }
-    },
     // Note: this logic is added to the archive server; any changes here should have to be done in the archive server as well
     async updateNetworkChangeQueue(account: WrappedAccount, appData: any) {
       /* eslint-disable security/detect-object-injection */
@@ -7360,7 +7349,7 @@ const shardusSetup = (): void => {
         await this.patchAndUpdate(networkAccount.current, appData)
         // TODO: look into updating the timestamp also
         // Increase the timestamp by 1 second
-        // networkAccount.timestamp += ONE_SECOND ( this has issue when a newly joined node updates its config ) 
+        // networkAccount.timestamp += ONE_SECOND ( this has issue when a newly joined node updates its config )
         networkAccount.hash = WrappedEVMAccountFunctions._calculateAccountHash(networkAccount)
         account.stateId = networkAccount.hash
         account.timestamp = networkAccount.timestamp
@@ -7429,7 +7418,7 @@ const shardusSetup = (): void => {
         }
         // TODO: look into updating the timestamp also
         // Increase the timestamp by 1 second
-        // networkAccount.timestamp += ONE_SECOND ( this has issue when a newly joined node updates its config ) 
+        // networkAccount.timestamp += ONE_SECOND ( this has issue when a newly joined node updates its config )
         networkAccount.hash = WrappedEVMAccountFunctions._calculateAccountHash(networkAccount)
         account.stateId = networkAccount.hash
         account.timestamp = networkAccount.timestamp
