@@ -162,7 +162,7 @@ export function apply(
   wrappedStates: WrappedStates,
   applyResponse: ShardusTypes.ApplyResponse
 ): void {
-  if (AccountsStorage.cachedNetworkAccount.current.utilityFlags.enableRewardTXs === false) return
+  if (AccountsStorage.cachedNetworkAccount?.current.utilityFlags.enableRewardTXs === false) return
 
   let nodeAccount: NodeAccount2
   const acct = wrappedStates[tx.nominee].data
