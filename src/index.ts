@@ -7161,21 +7161,13 @@ const shardusSetup = (): void => {
       const node = shardus.getNode(nodeId)
 
       // skip for own node
-      if (data.nodeId === nodeId) {
+      if (!shardus.p2p.isFirstSeed && data.nodeId === nodeId && data.type !== 'node-activated') {
         return
       }
 
       if (node == null) {
         if (ShardeumFlags.VerboseLogs) console.log(`node is null`, nodeId)
         return
-      }
-
-      // We can skip staking related txs for the first node
-      if (shardus.p2p.isFirstSeed) {
-        //only skip events for our node, test redundant now
-        if (data.nodeId === nodeId) {
-          return
-        }
       }
 
       if (node.status !== 'active') {
