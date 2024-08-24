@@ -61,8 +61,6 @@ export const validateTxnFields =
       reason: string
       txnTimestamp: number
     } => {
-      if (AccountsStorage.cachedNetworkAccount?.current.utilityFlags.enableRewardTXs === false) return
-
       const { tx } = timestampedTx
       const txnTimestamp: number = getInjectedOrGeneratedTimestamp(timestampedTx)
       const appData = fixBigIntLiteralsToBigInt(originalAppData)
@@ -151,10 +149,12 @@ export const validateTxnFields =
             reason = 'Signature verification thrown exception'
           }
         } else if (tx.internalTXType === InternalTXType.InitRewardTimes) {
+          if (AccountsStorage.cachedNetworkAccount.current.utilityFlags.enableRewardTXs === false) return
           const result = InitRewardTimesTx.validateFields(tx as InitRewardTimes, shardus)
           success = result.success
           reason = result.reason
         } else if (tx.internalTXType === InternalTXType.ClaimReward) {
+          if (AccountsStorage.cachedNetworkAccount.current.utilityFlags.enableRewardTXs === false) return
           const result = validateClaimRewardTx(tx as ClaimRewardTX, shardus)
           success = result.isValid
           reason = result.reason

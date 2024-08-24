@@ -7300,6 +7300,12 @@ const shardusSetup = (): void => {
         return
       }
 
+      // skip if cachedNetworkAccount is not available
+      if (!AccountsStorage.cachedNetworkAccount) {
+        if (ShardeumFlags.VerboseLogs) console.log(`cachedNetworkAccount is undefined`)
+        return
+      }
+      
       if (node.status !== 'active' && data.type !== 'node-activated') {
         /* prettier-ignore */ if (logFlags.dapp_verbose) console.log('This node is not active yet')
         console.log('eventNotify', 'This node is not active yet', data.publicKey)
@@ -7342,7 +7348,7 @@ const shardusSetup = (): void => {
             shardus.addNetworkTx('nodeInitReward', shardus.signAsNode(txData), data.publicKey)
           }
         }
-      } else if (eventType === 'node-deactivated' && AccountsStorage.cachedNetworkAccount?.current.utilityFlags.enableRewardTXs) {
+      } else if (eventType === 'node-deactivated' && AccountsStorage.cachedNetworkAccount.current.utilityFlags.enableRewardTXs) {
         // todo: aamir check the timestamp and cycle the first time we see this event
         // Limit the nodes that send this to the 5 closest to the node id
         const closestNodes = shardus.getClosestNodes(data.publicKey, 5)
