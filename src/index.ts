@@ -7194,7 +7194,7 @@ const shardusSetup = (): void => {
       const currentlyActivatedNode = currentCycle.activated.includes(nodeId)
       if (currentlyActivatedNode) return
 
-      if (eventType === 'node-activated' && AccountsStorage.cachedNetworkAccount.current.utilityFlags.enableRewardTXs) {
+      if (eventType === 'node-activated') {
         const closestNodes = shardus.getClosestNodes(data.publicKey, 5)
         const ourId = shardus.getNodeId()
         for (const id of closestNodes) {

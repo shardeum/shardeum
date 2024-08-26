@@ -15,6 +15,7 @@ import {
 import * as WrappedEVMAccountFunctions from '../shardeum/wrappedEVMAccountFunctions'
 import { sleep, generateTxId, _base16BNParser } from '../utils'
 import { createInternalTxReceipt, shardeumGetTime, logFlags } from '..'
+import { networkAccount } from '../shardeum/shardeumConstants'
 
 export async function injectInitRewardTimesTx(
   shardus,
