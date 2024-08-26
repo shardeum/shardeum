@@ -19,18 +19,40 @@ import {
 import * as WrappedEVMAccountFunctions from '../shardeum/wrappedEVMAccountFunctions'
 import * as AccountsStorage from '../storage/accountStorage'
 import { scaleByStabilityFactor, sleep, _base16BNParser, _readableSHM, generateTxId } from '../utils'
-import { retry } from '../utils/retry'
-import config from '../config'
 
 export async function injectClaimRewardTx(
   shardus,
   eventData: ShardusTypes.ShardusEvent | any,
-  nodeAccount: NodeAccount2
 ): Promise<{
   success: boolean
   reason: string
   status: number
 }> {
+  let wrappedData: ShardusTypes.WrappedData = await shardus.getLocalOrRemoteAccount(eventData.publicKey)
+
+  if (wrappedData == null || wrappedData.data == null) {
+    //try one more time
+    wrappedData = await shardus.getLocalOrRemoteAccount(eventData.publicKey)
+    if (wrappedData == null || wrappedData.data == null) {
+      /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`injectClaimRewardTx failed cant find : ${eventData.publicKey}`)
+      /* prettier-ignore */ nestedCountersInstance.countEvent('shardeum-staking', `injectClaimRewardTx failed cant find node`)
+      return
+    }
+  }
+  const nodeAccount = wrappedData.data as NodeAccount2
+  // check if the rewardStartTime is negative
+  if (nodeAccount.rewardStartTime < 0) {
+    /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`injectClaimRewardTx failed rewardStartTime < 0`)
+    /* prettier-ignore */ nestedCountersInstance.countEvent('shardeum-staking', `injectClaimRewardTx failed rewardStartTime < 0`)
+    return
+  }
+  // check if nodeAccount.rewardEndTime is already set to eventData.time
+  if (nodeAccount.rewardEndTime >= eventData.additionalData.txData.endTime) {
+    /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`injectClaimRewardTx failed rewardEndTime already set : ${eventData.publicKey}`, nodeAccount)
+    /* prettier-ignore */ nestedCountersInstance.countEvent('shardeum-staking', `injectClaimRewardTx failed rewardEndTime already set`)
+    return
+  }
+
   let tx = {
     nominee: eventData.publicKey,
     nominator: nodeAccount.nominator,
@@ -69,86 +91,6 @@ export async function injectClaimRewardTx(
   }
   const injectResult = await shardus.put(tx)
   return injectResult
-}
-
-export async function injectClaimRewardTxWithRetry(
-  shardus,
-  eventData: ShardusTypes.ShardusEvent | any
-): Promise<unknown> {
-  let wrappedData: ShardusTypes.WrappedData = await shardus.getLocalOrRemoteAccount(eventData.publicKey)
-
-  if (wrappedData == null || wrappedData.data == null) {
-    //try one more time
-    wrappedData = await shardus.getLocalOrRemoteAccount(eventData.publicKey)
-    if (wrappedData == null || wrappedData.data == null) {
-      /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`injectClaimRewardTx failed cant find : ${eventData.publicKey}`)
-      /* prettier-ignore */ nestedCountersInstance.countEvent('shardeum-staking', `injectClaimRewardTx failed cant find node`)
-      return
-    }
-  }
-  const nodeAccount = wrappedData.data as NodeAccount2
-  // check if the rewardStartTime is negative
-  if (nodeAccount.rewardStartTime < 0) {
-    /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`injectClaimRewardTx failed rewardStartTime < 0`)
-    /* prettier-ignore */ nestedCountersInstance.countEvent('shardeum-staking', `injectClaimRewardTx failed rewardStartTime < 0`)
-    return
-  }
-  // check if nodeAccount.rewardEndTime is already set to eventData.time
-  if (nodeAccount.rewardEndTime >= eventData.additionalData.txData.endTime) {
-    /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`injectClaimRewardTx failed rewardEndTime already set : ${eventData.publicKey}`, nodeAccount)
-    /* prettier-ignore */ nestedCountersInstance.countEvent('shardeum-staking', `injectClaimRewardTx failed rewardEndTime already set`)
-    return
-  }
-
-  let rewardEndTimeBeforeInjection = nodeAccount.rewardEndTime
-  if (!rewardEndTimeBeforeInjection) {
-    rewardEndTimeBeforeInjection = 0
-  }
-
-  const retryFunc = async (): Promise<unknown> => {
-    return await injectClaimRewardTx(shardus, eventData, nodeAccount)
-  }
-
-  const shouldRetryFunc = async (result): Promise<boolean> => {
-    if (result == null) {
-      /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`injectClaimRewardTxWithRetry failed response was null`)
-      /* prettier-ignore */ nestedCountersInstance.countEvent('shardeum-staking', `injectClaimRewardTxWithRetry failed response was null`)
-      return true
-    }
-    if (result.status === 400) {
-      /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`injectClaimRewardTxWithRetry 400 error: ${result.reason}`)
-      /* prettier-ignore */ nestedCountersInstance.countEvent('shardeum-staking', `injectClaimRewardTxWithRetry 400 error: ${result.reason}`)
-      //note we want to go ahead and not retry, because 400 == bad request
-      return false
-    }
-
-    if (result.success) {
-      const nodeAccount = await shardus.getLocalOrRemoteAccount(eventData.publicKey)
-      if (!nodeAccount) {
-        return true
-      }
-      const data = nodeAccount.data
-      // Reward end time is updated do not retry
-      if (data.rewardEndTime > rewardEndTimeBeforeInjection) {
-        // tx is applied already
-        return false
-      }
-      return true
-    }
-    return true
-  }
-
-  const res = await retry(
-    retryFunc,
-    shouldRetryFunc,
-    ShardeumFlags.ClaimRewardRetryCount,
-    ShardeumFlags.FailedTxLinearBackOffConstantInSecs
-  )
-  if (!res) {
-    /* prettier-ignore */ nestedCountersInstance.countRareEvent('linear-back-off-retry', 'fail: retries exhausted without success in injectClaimRewardTxWithRetry')
-    return null
-  }
-  return res
 }
 
 export function validateClaimRewardTx(
