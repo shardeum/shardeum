@@ -234,30 +234,6 @@ export function validateClaimRewardState(
     return { result: 'fail', reason: 'rewardEndTime is already set' }
   }
 
-  const latestCycles = shardus.getLatestCycles(5)
-
-  // This still needs to consider for lost cases, but we have to be careful for refuted back cases
-  let nodeApopedCycle
-  const nodeRemovedCycle = latestCycles.find((cycle) => cycle.removed.includes(tx.deactivatedNodeId))
-  /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log('nodeRemovedCycle', nodeRemovedCycle)
-  if (!nodeRemovedCycle) {
-    nodeApopedCycle = latestCycles.find((cycle) => cycle.apoptosized.includes(tx.deactivatedNodeId))
-    /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log('nodeApopedCycle', nodeApopedCycle)
-    if (!nodeApopedCycle) {
-      /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log('validateClaimRewardState fail not found on both removed or apoped lists', tx)
-      /* prettier-ignore */ nestedCountersInstance.countEvent('shardeum-staking', `validateClaimRewardState fail not found on both removed or apoped lists`)
-      return { result: 'fail', reason: 'The nodeId is not found in the recently removed or apoped nodes!' }
-    }
-  }
-  // if (
-  //   (nodeRemovedCycle && nodeRemovedCycle.start !== tx.nodeDeactivatedTime) ||
-  //   (nodeApopedCycle && nodeApopedCycle.start !== tx.nodeDeactivatedTime)
-  // ) {
-  //   /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log('validate InitRewardTimes fail nodeActivedCycle.start !== tx.nodeActivatedTime', tx)
-  //   /* prettier-ignore */ nestedCountersInstance.countEvent('shardeum-staking', `validate InitRewardTimes fail nodeActivedCycle.start !== tx.nodeActivatedTime`)
-  //   return { result: 'fail', reason: 'The cycle start time and nodeActivatedTime does not match!' }
-  // }
-
   const nominee_nodeAcc = wrappedStates[tx.nominee].data as NodeAccount2
   if (nominee_nodeAcc.nominator !== tx.nominator) {
     /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log('validateClaimRewardState fail tx.nominator does not match', tx)
@@ -279,20 +255,20 @@ export async function applyClaimRewardTx(
   mustUseAdminCert = false
 ): Promise<void> {
   if (ShardeumFlags.VerboseLogs) console.log(`Running applyClaimRewardTx`, tx, wrappedStates)
-  // const isValidRequest = validateClaimRewardState(tx, wrappedStates, shardus, mustUseAdminCert)
-  // if (isValidRequest.result === 'fail') {
-  //   /* prettier-ignore */
-  //   /* prettier-ignore */ if (logFlags.dapp_verbose) console.log(`Invalid claimRewardTx, nominee ${tx.nominee}, reason: ${isValidRequest.reason}`)
-  //   nestedCountersInstance.countEvent('shardeum-staking', `applyClaimRewardTx fail `)
-  //   // throw new Error(
-  //   //   `applyClaimReward failed validateClaimRewardState nominee ${tx.nominee} ${isValidRequest.reason}`
-  //   // )
-  //   shardus.applyResponseSetFailed(
-  //     applyResponse,
-  //     `applyClaimReward failed validateClaimRewardState nominee ${tx.nominee} ${isValidRequest.reason}`
-  //   )
-  //   return
-  // }
+  const isValidRequest = validateClaimRewardState(tx, wrappedStates, shardus, mustUseAdminCert)
+  if (isValidRequest.result === 'fail') {
+    /* prettier-ignore */
+    /* prettier-ignore */ if (logFlags.dapp_verbose) console.log(`Invalid claimRewardTx, nominee ${tx.nominee}, reason: ${isValidRequest.reason}`)
+    nestedCountersInstance.countEvent('shardeum-staking', `applyClaimRewardTx fail `)
+    // throw new Error(
+    //   `applyClaimReward failed validateClaimRewardState nominee ${tx.nominee} ${isValidRequest.reason}`
+    // )
+    shardus.applyResponseSetFailed(
+      applyResponse,
+      `applyClaimReward failed validateClaimRewardState nominee ${tx.nominee} ${isValidRequest.reason}`
+    )
+    return
+  }
   const operatorShardusAddress = toShardusAddress(tx.nominator, AccountType.Account)
   /* eslint-disable security/detect-object-injection */
   let nodeAccount: NodeAccount2
@@ -314,14 +290,14 @@ export async function applyClaimRewardTx(
   const nodeRewardAmount = scaleByStabilityFactor(rate, AccountsStorage.cachedNetworkAccount)
   const nodeRewardInterval = BigInt(network.current.nodeRewardInterval)
 
-  // if (nodeAccount.rewardStartTime <= 0) {
-  //   nestedCountersInstance.countEvent('shardeum-staking', `applyClaimRewardTx fail rewardStartTime <= 0`)
-  //   shardus.applyResponseSetFailed(
-  //     applyResponse,
-  //     `applyClaimReward failed because rewardStartTime is less than or equal 0`
-  //   )
-  //   return
-  // }
+  if (nodeAccount.rewardStartTime < 0) {
+    nestedCountersInstance.countEvent('shardeum-staking', `applyClaimRewardTx fail rewardStartTime < 0`)
+    shardus.applyResponseSetFailed(
+      applyResponse,
+      `applyClaimReward failed because rewardStartTime is less than 0`
+    )
+    return
+  }
 
   let durationInNetwork = tx.nodeDeactivatedTime - nodeAccount.rewardStartTime
   if (durationInNetwork <= 0) {
