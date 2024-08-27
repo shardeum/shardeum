@@ -7325,14 +7325,10 @@ const shardusSetup = (): void => {
             safeStringify(data)
           )
           console.log('nodereward tx data 1', data.additionalData.hash)
-          const closestNodes = shardus.getClosestNodes(data.publicKey, 5)
-          const ourId = shardus.getNodeId()
-          for (const id of closestNodes) {
-            if (id === ourId) {
-              console.log('nodereward tx data 2', data.additionalData.hash)
-              const result = await injectClaimRewardTx(shardus, data)
-              /* prettier-ignore */ if (logFlags.dapp_verbose) console.log('INJECTED_CLAIM_REWARD_TX',result)
-            }
+          if (shardus.fastIsPicked(1)) {
+            console.log('nodereward tx data 2', data.additionalData.hash)
+            const result = await injectClaimRewardTx(shardus, data)
+            /* prettier-ignore */ if (logFlags.dapp_verbose) console.log('INJECTED_CLAIM_REWARD_TX',result)
           }
         } else if (data?.additionalData.type === 'nodeInitReward') {
           /* prettier-ignore */ if (logFlags.dapp_verbose) console.log('shardeum-event', `running injectInitRewardTimesTx nodeInitReward`, safeStringify(data))
