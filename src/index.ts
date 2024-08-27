@@ -7162,18 +7162,22 @@ const shardusSetup = (): void => {
       const nodeId = shardus.getNodeId()
       const node = shardus.getNode(nodeId)
 
+      console.log('eventNotify', data.type, data.publicKey)
       // skip for own node
       if (!shardus.p2p.isFirstSeed && data.nodeId === nodeId && data.type !== 'node-activated') {
+        console.log('eventNotify', 'skipping for own node', data.type, data.publicKey)
         return
       }
 
       if (node == null) {
-        if (ShardeumFlags.VerboseLogs) console.log(`node is null`, nodeId)
+        if (ShardeumFlags.VerboseLogs) console.log(`node is null`, data.publicKey)
+        console.log('eventNotify', 'node is null', data.publicKey)
         return
       }
 
-      if (node.status !== 'active') {
+      if (node.status !== 'active' && data.type !== 'node-activated') {
         /* prettier-ignore */ if (logFlags.dapp_verbose) console.log('This node is not active yet')
+        console.log('eventNotify', 'This node is not active yet', data.publicKey)
         return
       }
 
@@ -7186,13 +7190,17 @@ const shardusSetup = (): void => {
       const currentCycle = latestCycles[0]
       if (!currentCycle) {
         /* prettier-ignore */ if (logFlags.error) console.log('No cycle records found', latestCycles)
+        console.log('eventNotify', 'No cycle records found', latestCycles, eventType, data.publicKey)
         return
       }
 
       // TODO: see if it's fine; what if getClosestNodes gives only recently activatd nodes
       // skip if this node is also activated in the same cycle
       const currentlyActivatedNode = currentCycle.activated.includes(nodeId)
-      if (currentlyActivatedNode) return
+      if (currentlyActivatedNode) {
+        console.log('eventNotify', 'skipping for currentlyActivatedNode', data.publicKey, eventType)
+        return
+      }
 
       if (eventType === 'node-activated') {
         const closestNodes = shardus.getClosestNodes(data.publicKey, 5)
@@ -7205,6 +7213,7 @@ const shardusSetup = (): void => {
               publicKey: data.publicKey,
               nodeId: data.nodeId,
             } as NodeInitTxData
+            console.log('node-activated', 'injectInitRewardTimesTx', data.publicKey, txData)
             shardus.addNetworkTx('nodeInitReward', shardus.signAsNode(txData), data.publicKey)
           }
         }
@@ -7223,6 +7232,7 @@ const shardusSetup = (): void => {
               publicKey: data.publicKey,
               nodeId: data.nodeId,
             } as NodeRewardTxData
+            console.log('node-deactivates', 'injectClaimRewardTx', data.publicKey, txData)
             shardus.addNetworkTx('nodeReward', shardus.signAsNode(txData), data.publicKey)
           }
         }
@@ -7314,20 +7324,24 @@ const shardusSetup = (): void => {
             `running injectClaimrewardTxWithRetry nodeReward`,
             safeStringify(data)
           )
+          console.log('nodereward tx data 1', data.additionalData.hash)
           const closestNodes = shardus.getClosestNodes(data.publicKey, 5)
           const ourId = shardus.getNodeId()
           for (const id of closestNodes) {
             if (id === ourId) {
+              console.log('nodereward tx data 2', data.additionalData.hash)
               const result = await injectClaimRewardTx(shardus, data)
-              /* prettier-ignore */ if (logFlags.dapp_verbose) console.log('INJECTED_CLAIM_REWARD_TX', result)
+              /* prettier-ignore */ if (logFlags.dapp_verbose) console.log('INJECTED_CLAIM_REWARD_TX',result)
             }
           }
         } else if (data?.additionalData.type === 'nodeInitReward') {
           /* prettier-ignore */ if (logFlags.dapp_verbose) console.log('shardeum-event', `running injectInitRewardTimesTx nodeInitReward`, safeStringify(data))
           const closestNodes = shardus.getClosestNodes(data.publicKey, 5)
           const ourId = shardus.getNodeId()
+          console.log('nodeInitReward tx data 1', data.additionalData.hash)
           for (const id of closestNodes) {
             if (id === ourId) {
+              console.log('nodeInitReward tx data 2', data.additionalData.hash)
               const result = await InitRewardTimesTx.injectInitRewardTimesTx(shardus, data)
               /* prettier-ignore */ if (logFlags.dapp_verbose) console.log('INJECTED_INIT_REWARD_TIMES_TX', result)
             }
