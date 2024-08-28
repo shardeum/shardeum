@@ -7517,9 +7517,12 @@ async function fetchNetworkAccountFromArchiver(): Promise<WrappedAccount> {
         /* prettier-ignore */ nestedCountersInstance.countEvent('network-config-operation', 'failure: did not get network account from archiver private key. Use default configs.')
         throw new Error(`fetchNetworkAccountFromArchiver() from pk:${archiver.publicKey} returned null`)
       }
-      const isResponseVerified = shardus.crypto.verify(res.data)
       const isFromArchiver = archiver.publicKey === res.data.sign.owner
-      if (!isResponseVerified || !isFromArchiver) {
+      if (!isFromArchiver) {
+        throw new Error(`The response signature is not the same from archiver pk:${archiver.publicKey}`)
+      }
+      const isResponseVerified = shardus.crypto.verify(res.data)
+      if (!isResponseVerified) {
         throw new Error(`The response signature is not the same from archiver pk:${archiver.publicKey}`)
       }
       values.push({
