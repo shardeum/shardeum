@@ -7332,15 +7332,10 @@ const shardusSetup = (): void => {
           }
         } else if (data?.additionalData.type === 'nodeInitReward') {
           /* prettier-ignore */ if (logFlags.dapp_verbose) console.log('shardeum-event', `running injectInitRewardTimesTx nodeInitReward`, safeStringify(data))
-          const closestNodes = shardus.getClosestNodes(data.publicKey, 5)
-          const ourId = shardus.getNodeId()
-          console.log('nodeInitReward tx data 1', data.additionalData.hash)
-          for (const id of closestNodes) {
-            if (id === ourId) {
-              console.log('nodeInitReward tx data 2', data.additionalData.hash)
-              const result = await InitRewardTimesTx.injectInitRewardTimesTx(shardus, data)
-              /* prettier-ignore */ if (logFlags.dapp_verbose) console.log('INJECTED_INIT_REWARD_TIMES_TX', result)
-            }
+          if (shardus.fastIsPicked(1)) {
+            console.log('nodeInitReward tx data 2', data.additionalData.hash)
+            const result = await InitRewardTimesTx.injectInitRewardTimesTx(shardus, data)
+            /* prettier-ignore */ if (logFlags.dapp_verbose) console.log('INJECTED_INIT_REWARD_TIMES_TX', result)
           }
         }
       }
