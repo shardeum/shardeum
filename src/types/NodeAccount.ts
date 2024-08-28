@@ -18,6 +18,7 @@ export interface NodeAccount extends BaseAccount {
   penalty: bigint
   nodeAccountStats: NodeAccountStats
   rewarded: boolean
+  rewardRate: bigint
 }
 
 export function serializeNodeAccount(
@@ -53,6 +54,7 @@ export function serializeNodeAccount(
   stream.writeString(Utils.safeStringify(obj.nodeAccountStats))
 
   stream.writeUInt8(obj.rewarded ? 1 : 0) // Serialize boolean as UInt8
+  stream.writeBigUInt64(BigInt(obj.rewardRate.toString()))
 }
 
 export function deserializeNodeAccount(stream: VectorBufferStream): NodeAccount {
@@ -81,6 +83,7 @@ export function deserializeNodeAccount(stream: VectorBufferStream): NodeAccount 
   const nodeAccountStats = Utils.safeJsonParse(stream.readString()) as NodeAccountStats
 
   const rewarded = stream.readUInt8() === 1
+  const rewardRate = BigInt(stream.readBigUInt64())
 
   return {
     ...baseAccount,
@@ -95,5 +98,6 @@ export function deserializeNodeAccount(stream: VectorBufferStream): NodeAccount 
     penalty,
     nodeAccountStats,
     rewarded,
+    rewardRate,
   }
 }

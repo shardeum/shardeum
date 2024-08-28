@@ -6,23 +6,27 @@ import {
   InitRewardTimes,
   InternalTx,
   InternalTXType,
+  isNetworkAccount,
   isNodeAccount2,
+  NetworkAccount,
   NodeAccount2,
   WrappedStates,
 } from '../shardeum/shardeumTypes'
 import * as WrappedEVMAccountFunctions from '../shardeum/wrappedEVMAccountFunctions'
-import { sleep, generateTxId } from '../utils'
+import { sleep, generateTxId, _base16BNParser } from '../utils'
 import { createInternalTxReceipt, shardeumGetTime, logFlags } from '..'
+import { networkAccount } from '../shardeum/shardeumConstants'
 
 export async function injectInitRewardTimesTx(
   shardus,
   eventData: ShardusTypes.ShardusEvent
 ): Promise<unknown> {
+  const startTime = eventData.additionalData.txData.startTime
   let tx = {
     isInternalTx: true,
     internalTXType: InternalTXType.InitRewardTimes,
     nominee: eventData.publicKey,
-    nodeActivatedTime: eventData.time,
+    nodeActivatedTime: startTime,
     timestamp: shardeumGetTime(),
   } as InitRewardTimes
 
@@ -96,19 +100,6 @@ export function validateFields(tx: InitRewardTimes, shardus: Shardus): { success
     /* prettier-ignore */ nestedCountersInstance.countEvent('shardeum-staking', `validateFields InitRewardTimes fail Invalid signature`)
     return { success: false, reason: 'Invalid signature' }
   }
-  const latestCycles = shardus.getLatestCycles(5)
-  const nodeActivedCycle = latestCycles.find((cycle) => cycle.activatedPublicKeys.includes(tx.nominee))
-  /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log('nodeActivedCycle', nodeActivedCycle)
-  if (!nodeActivedCycle) {
-    /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log('validateFields InitRewardTimes fail !nodeActivedCycle', tx)
-    /* prettier-ignore */ nestedCountersInstance.countEvent('shardeum-staking', `validateFields InitRewardTimes fail !nodeActivedCycle`)
-    return { success: false, reason: 'The node publicKey is not found in the recently actived nodes!' }
-  }
-  if (nodeActivedCycle.start !== tx.nodeActivatedTime) {
-    /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log('validateFields InitRewardTimes fail start !== tx.nodeActivatedTime', tx)
-    /* prettier-ignore */ nestedCountersInstance.countEvent('shardeum-staking', `validateFields InitRewardTimes fail start !== tx.nodeActivatedTime`)
-    return { success: false, reason: 'The cycle start time and nodeActivatedTime does not match!' }
-  }
 
   /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log('validateFields InitRewardTimes success', tx)
   return { success: true, reason: 'valid' }
@@ -123,20 +114,6 @@ export function validate(tx: InitRewardTimes, shardus: Shardus): { result: strin
     /* prettier-ignore */ nestedCountersInstance.countEvent('shardeum-staking', `validate InitRewardTimes fail Invalid signature`)
     return { result: 'fail', reason: 'Invalid signature' }
   }
-  const latestCycles = shardus.getLatestCycles(5)
-  const nodeActivedCycle = latestCycles.find((cycle) => cycle.activatedPublicKeys.includes(tx.nominee))
-  /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log('nodeActivedCycle', nodeActivedCycle)
-  if (!nodeActivedCycle) {
-    /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log('validate InitRewardTimes fail !nodeActivedCycle', tx)
-    /* prettier-ignore */ nestedCountersInstance.countEvent('shardeum-staking', `validate InitRewardTimes fail !nodeActivedCycle`)
-    return { result: 'fail', reason: 'The node publicKey is not found in the recently actived nodes!' }
-  }
-  if (nodeActivedCycle.start !== tx.nodeActivatedTime) {
-    /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log('validate InitRewardTimes fail nodeActivedCycle.start !== tx.nodeActivatedTime', tx)
-    /* prettier-ignore */ nestedCountersInstance.countEvent('shardeum-staking', `validate InitRewardTimes fail nodeActivedCycle.start !== tx.nodeActivatedTime`)
-    return { result: 'fail', reason: 'The cycle start time and nodeActivatedTime does not match!' }
-  }
-
   /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log('validate InitRewardTimes success', tx)
   return { result: 'pass', reason: 'valid' }
 }
@@ -202,9 +179,15 @@ export function apply(
     return
   }
 
+  let network: NetworkAccount
+  if (wrappedStates[networkAccount]?.data && isNetworkAccount(wrappedStates[networkAccount].data)) {
+    network = wrappedStates[networkAccount].data as NetworkAccount
+  }
+
   nodeAccount.rewardStartTime = tx.nodeActivatedTime
   nodeAccount.rewardEndTime = 0
   nodeAccount.timestamp = txTimestamp
+  nodeAccount.rewardRate = network ? _base16BNParser(network.current.nodeRewardAmountUsd) : BigInt(0)
   if (ShardeumFlags.rewardedFalseInInitRewardTx) nodeAccount.rewarded = false
   if (ShardeumFlags.useAccountWrites) {
     const wrappedAccount: NodeAccount2 = nodeAccount // eslint-disable-line @typescript-eslint/no-explicit-any
