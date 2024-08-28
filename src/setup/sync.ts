@@ -123,7 +123,7 @@ export const sync = (shardus: Shardus, evmCommon: any) => async (): Promise<void
         timestamp: when,
         network: networkAccount,
       }
-      shardus.setGlobal(networkAccount, value, when, networkAccount)
+      shardus.setGlobal(networkAccount, '', value, when, networkAccount) // need to set addressHash = '' because it's not created yet.
     } else {
       while (!(await shardus.getLocalOrRemoteAccount(networkAccount))) {
         /* prettier-ignore */ if (logFlags.important_as_error) console.log('waiting..')
