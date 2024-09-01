@@ -6776,6 +6776,11 @@ const shardusSetup = (): void => {
           shardus.shutdownFromDapp(tag, message, false)
           return false
         }
+      } else {
+        // There are important roadblocks checks above for when we do have the network account loaded
+        // we should not skip ahead until we are passing the if condition above
+        /* prettier-ignore */ nestedCountersInstance.countEvent('shardeum-staking', `network account not available yet`)
+        return false 
       }
 
       isReadyToJoinLatestValue = false
@@ -7016,6 +7021,10 @@ const shardusSetup = (): void => {
           return true
         }
       }
+
+      // avoid returning undefined, what if the calling code was refactored to check "=== false"...
+      /* prettier-ignore */ nestedCountersInstance.countEvent('shardeum-staking', `end of function with no earlier return`)
+      return false
     },
     getNodeInfoAppData() {
       let minVersion = ''
