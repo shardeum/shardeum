@@ -4068,7 +4068,7 @@ const shardusSetup = (): void => {
 
           /* prettier-ignore */ if (logFlags.dapp_verbose) console.log('discarding staking rewards due to zero rewardEndTime')
         }
-        const newBalance = SafeBalance.addBigintBalance(currentBalance, stake + reward - penalty - txFee)
+        const newBalance = SafeBalance.addBigintBalance(currentBalance, stake + reward - txFee)
         operatorEVMAccount.account.balance = newBalance
         operatorEVMAccount.account.nonce = operatorEVMAccount.account.nonce + BigInt(1)
 
@@ -4099,7 +4099,7 @@ const shardusSetup = (): void => {
             stake,
             reward,
             penalty,
-            totalUnstakeAmount: stake + reward - penalty,
+            totalUnstakeAmount: stake + reward,
           }
         } else {
           stakeInfo = {
