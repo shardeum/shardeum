@@ -84,7 +84,8 @@ export function expmod(a: bigint, power: bigint, modulo: bigint): bigint {
 }
 
 export function precompile05(opts: PrecompileInput): ExecResult {
-  const data = opts.data
+  // Pad the input data to 96 bytes if it's shorter
+  const data = opts.data.length < 96 ? setLengthRight(opts.data, 96) : opts.data;
 
   let adjustedELen = getAdjustedExponentLength(data)
   if (adjustedELen < BigInt(1)) {
