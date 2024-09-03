@@ -120,6 +120,7 @@ interface ShardeumFlags {
   beta1_11_2: boolean
   failedStakeReceipt: boolean // For stake/unstake TXs that fail the checks in apply(), create an EVM receipt marked as failed
   debugDefaultBalance: string
+  maxUint8ArrayLength: number // For WrappedEVMAccount input validation
 }
 
 export const ShardeumFlags: ShardeumFlags = {
@@ -277,6 +278,7 @@ export const ShardeumFlags: ShardeumFlags = {
   unifiedAccountBalanceEnabled: true,
   failedStakeReceipt: true,
   debugDefaultBalance: '100', //In debug mode the default value is 100 SHM.  This is needed for certain load test operations
+  maxUint8ArrayLength: 1048576, // 1MB
 }
 
 export function updateShardeumFlag(key: string, value: string | number | boolean): void {

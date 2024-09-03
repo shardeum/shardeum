@@ -3,12 +3,41 @@ import { TransactionState } from '../state'
 import { fixBigIntLiteralsToBigInt } from '../../utils'
 import { Account, bigIntToBytes, generateAddress } from '@ethereumjs/util'
 import * as crypto from '@shardus/crypto-utils'
+import { ShardeumFlags } from '../../shardeum/shardeumFlags'
+
+function isValidUint8ArrayField(field: any): boolean {
+  return (
+    field instanceof Uint8Array || (Array.isArray(field) && field.length <= ShardeumFlags.maxUint8ArrayLength)
+  )
+}
+/**
+ * Sanitize the wrappedEVMAccount object to ensure all fields are valid Uint8Array fields or objects that can be converted to Uint8Array
+ * @param wrappedEVMAccount - The WrappedEVMAccount object to sanitize
+ * @throws Will throw an error if any field is not a valid Uint8Array
+ */
+function sanitizeWrappedEVMAccount(wrappedEVMAccount: WrappedEVMAccount): void {
+  if (!isValidUint8ArrayField(wrappedEVMAccount.codeHash)) {
+    throw new Error('Invalid codeHash field')
+  }
+  if (!isValidUint8ArrayField(wrappedEVMAccount.codeByte)) {
+    throw new Error('Invalid codeByte field')
+  }
+  if (!isValidUint8ArrayField(wrappedEVMAccount.value)) {
+    throw new Error('Invalid value field')
+  }
+}
 
 /**
  * make in place repairs to deserialized wrappedEVMAccount
  * @param wrappedEVMAccount
  */
 export function fixDeserializedWrappedEVMAccount(wrappedEVMAccount: WrappedEVMAccount): void {
+  try {
+    sanitizeWrappedEVMAccount(wrappedEVMAccount)
+  } catch (error) {
+    console.error('Error sanitizing wrappedEVMAccount:', error.message)
+    return // Exit the function if sanitization fails
+  }
   if (wrappedEVMAccount.accountType === AccountType.Account) {
     TransactionState.fixAccountFields(wrappedEVMAccount.account)
     wrappedEVMAccount.account = Account.fromAccountData(wrappedEVMAccount.account)
