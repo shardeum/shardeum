@@ -100,6 +100,7 @@ interface ShardeumFlags {
   supportEstimateGas: boolean
   startInServiceMode: boolean
   allowedEndpointsInServiceMode: string[]
+  controlledRPCEndpoints: string[] // Controlled by the network parameters
   enableRIAccountsCache: boolean
   riAccountsCacheSize: number
   riAccountsDeleteBatchSize: number
@@ -253,7 +254,7 @@ export const ShardeumFlags: ShardeumFlags = {
     'GET /account/*',
     'GET /eth_getCode',
   ],
-
+  controlledRPCEndpoints: ['contract/estimateGas'],
   numberOfNodesToInjectPenaltyTx: 5,
   loadGenesisNodeNetworkConfigToNetworkAccount: false,
   networkAccountCacheDuration: 3600, // 60 minutes

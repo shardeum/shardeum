@@ -1982,6 +1982,22 @@ const configShardusEndpoints = (): void => {
   })
 
   shardus.registerExternalPost('contract/estimateGas', externalApiMiddleware, async (req, res) => {
+    if (ShardeumFlags.supportEstimateGas === false) {
+      return res.json({ result: null, error: 'estimateGas not supported' })
+    }
+    if (!isServiceMode()) {
+      const response = { success: false, reason: '', status: 500 }
+      if (AccountsStorage.cachedNetworkAccount === undefined)
+        return res.json({ ...response, reason: `Network account not available yet` })
+      if (AccountsStorage.cachedNetworkAccount.current.enableRPCEndpoints === false) {
+        if (ShardeumFlags.controlledRPCEndpoints.includes('contract/estimateGas')) {
+          return res.json({
+            ...response,
+            reason: `The current RPC endpoint is disabled in the production network`,
+          })
+        }
+      }
+    }
     if (
       trySpendServicePoints(
         ShardeumFlags.ServicePoints['contract/estimateGas'].endpoint,
@@ -1990,10 +2006,6 @@ const configShardusEndpoints = (): void => {
       ) === false
     ) {
       return res.json({ result: null, error: 'node busy' })
-    }
-
-    if (ShardeumFlags.supportEstimateGas === false) {
-      return res.json({ result: null, error: 'estimateGas not supported' })
     }
 
     try {

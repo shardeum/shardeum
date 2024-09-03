@@ -356,6 +356,7 @@ export interface NetworkParameters {
     syncTimeoutPenaltyPercent: number,
     nodeRefutedPenaltyPercent: number,
   }
+  enableRPCEndpoints: boolean
 }
 
 export interface NodeAccount2 extends BaseAccount {
