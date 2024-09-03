@@ -5,26 +5,62 @@ import { Account, bigIntToBytes, generateAddress } from '@ethereumjs/util'
 import * as crypto from '@shardus/crypto-utils'
 import { ShardeumFlags } from '../../shardeum/shardeumFlags'
 
+/**
+ * Check if a field is a valid Uint8Array or can be converted to a Uint8Array
+ * @param field - The field to check
+ * @returns True if the field is a valid Uint8Array or can be converted to a Uint8Array, false otherwise
+ */
 function isValidUint8ArrayField(field: any): boolean {
-  return (
-    field instanceof Uint8Array || (Array.isArray(field) && field.length <= ShardeumFlags.maxUint8ArrayLength)
-  )
+  if (field instanceof Uint8Array) {
+    return true
+  }
+  if (
+    Array.isArray(field) &&
+    field.length <= ShardeumFlags.maxUint8ArrayLength &&
+    field.every((item) => typeof item === 'number')
+  ) {
+    return true
+  }
+  if (typeof field === 'object' && Object.values(field).every((item) => typeof item === 'number')) {
+    return true
+  }
+  return false
 }
+
+/**
+ * Check if a value is a scalar value
+ * @param value - The value to check
+ * @returns True if the value is a scalar value, false otherwise
+ */
+function isScalarValue(value: any): boolean {
+  return typeof value === 'number' || typeof value === 'string' || typeof value === 'boolean'
+}
+
 /**
  * Sanitize the wrappedEVMAccount object to ensure all fields are valid Uint8Array fields or objects that can be converted to Uint8Array
  * @param wrappedEVMAccount - The WrappedEVMAccount object to sanitize
  * @throws Will throw an error if any field is not a valid Uint8Array
  */
 function sanitizeWrappedEVMAccount(wrappedEVMAccount: WrappedEVMAccount): void {
-  if (!isValidUint8ArrayField(wrappedEVMAccount.codeHash)) {
-    throw new Error('Invalid codeHash field')
+  function sanitizeFields(obj: any): void {
+    Object.entries(obj).forEach(([key, value]) => {
+      if (isScalarValue(value)) {
+        // Keep scalar values as-is
+        return
+      } else if (typeof value === 'bigint') {
+        obj[key] = value.toString()
+      } else if (typeof value === 'object' && value !== null) {
+        if (isValidUint8ArrayField(value)) {
+          obj[key] = Uint8Array.from(Object.values(value))
+        } else {
+          sanitizeFields(value)
+        }
+      } else {
+        throw new Error(`Invalid field: ${key}`)
+      }
+    })
   }
-  if (!isValidUint8ArrayField(wrappedEVMAccount.codeByte)) {
-    throw new Error('Invalid codeByte field')
-  }
-  if (!isValidUint8ArrayField(wrappedEVMAccount.value)) {
-    throw new Error('Invalid value field')
-  }
+  sanitizeFields(wrappedEVMAccount)
 }
 
 /**
@@ -33,7 +69,8 @@ function sanitizeWrappedEVMAccount(wrappedEVMAccount: WrappedEVMAccount): void {
  */
 export function fixDeserializedWrappedEVMAccount(wrappedEVMAccount: WrappedEVMAccount): void {
   try {
-    sanitizeWrappedEVMAccount(wrappedEVMAccount)
+    const sanitizedAccount = wrappedEVMAccount
+    sanitizeWrappedEVMAccount(sanitizedAccount)
   } catch (error) {
     console.error('Error sanitizing wrappedEVMAccount:', error.message)
     return // Exit the function if sanitization fails
