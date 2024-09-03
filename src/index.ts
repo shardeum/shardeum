@@ -1312,6 +1312,10 @@ const configShardusEndpoints = (): void => {
   }
 
   shardus.registerExternalPost('inject-with-warmup', externalApiMiddleware, async (req, res) => {
+    if (ShardeumFlags.disableSmartContractEndpoints) {
+      return res.json({ result: null, error: 'Smart contract endpoints are disabled' })
+    }
+    
     try {
       const id = shardus.getNodeId()
       const isInRotationBonds = shardus.isNodeInRotationBounds(id)
@@ -1666,6 +1670,10 @@ const configShardusEndpoints = (): void => {
   })
 
   shardus.registerExternalGet('eth_getCode', externalApiMiddleware, async (req, res) => {
+    if (ShardeumFlags.disableSmartContractEndpoints) {
+      return res.json({ contractCode: '0x' })
+    }
+
     if (trySpendServicePoints(ShardeumFlags.ServicePoints['eth_getCode'], req, 'account') === false) {
       return res.json({ error: 'node busy' })
     }
@@ -1737,6 +1745,9 @@ const configShardusEndpoints = (): void => {
     // if(isDebugMode()){
     //   return res.json(`endpoint not available`)
     // }
+    if (ShardeumFlags.disableSmartContractEndpoints) {
+      return res.json({ result: null, error: 'Smart contract endpoints are disabled' })
+    }
     if (
       trySpendServicePoints(ShardeumFlags.ServicePoints['contract/call'].endpoint, req, 'call-endpoint') ===
       false
@@ -1934,6 +1945,9 @@ const configShardusEndpoints = (): void => {
   })
 
   shardus.registerExternalPost('contract/accesslist', externalApiMiddleware, async (req, res) => {
+    if (ShardeumFlags.disableSmartContractEndpoints) {
+      return res.json({ result: null, error: 'Smart contract endpoints are disabled' })
+    }
     if (
       trySpendServicePoints(
         ShardeumFlags.ServicePoints['contract/accesslist'].endpoint,
@@ -1958,6 +1972,9 @@ const configShardusEndpoints = (): void => {
   })
 
   shardus.registerExternalPost('contract/accesslist-warmup', externalApiMiddleware, async (req, res) => {
+    if (ShardeumFlags.disableSmartContractEndpoints) {
+      return res.json({ result: null, error: 'Smart contract endpoints are disabled' })
+    }
     if (
       trySpendServicePoints(
         ShardeumFlags.ServicePoints['contract/accesslist'].endpoint,
