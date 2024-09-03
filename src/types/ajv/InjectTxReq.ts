@@ -10,7 +10,7 @@ const schemaInjectTxReq = {
     isInternalTx: { type: 'boolean' },
   },
   required: [],
-  additionalProperties: false,
+  additionalProperties: true, //allow this until we can create narrow schemas for each internal TX type
 }
 
 export function initInjectTxReq(): void {
