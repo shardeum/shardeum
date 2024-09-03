@@ -12,6 +12,7 @@ export interface NodeAccount extends BaseAccount {
   timestamp: number
   nominator: string | null
   stakeLock: bigint
+  stakeTimestamp: number
   reward: bigint
   rewardStartTime: number
   rewardEndTime: number
@@ -45,6 +46,7 @@ export function serializeNodeAccount(
   }
 
   stream.writeString(obj.stakeLock.toString())
+  stream.writeBigUInt64(BigInt(obj.stakeTimestamp.toString()))
   stream.writeString(obj.reward.toString())
   stream.writeBigUInt64(BigInt(obj.rewardStartTime))
   stream.writeBigUInt64(BigInt(obj.rewardEndTime))
@@ -73,6 +75,7 @@ export function deserializeNodeAccount(stream: VectorBufferStream): NodeAccount 
     nominator = stream.readString()
   }
   const stakeLock = BigInt(stream.readString())
+  const stakeTimestamp = Number(stream.readBigUInt64())
   const reward = BigInt(stream.readString())
   const rewardStartTime = Number(stream.readBigUInt64())
   const rewardEndTime = Number(stream.readBigUInt64())
@@ -89,6 +92,7 @@ export function deserializeNodeAccount(stream: VectorBufferStream): NodeAccount 
     timestamp,
     nominator,
     stakeLock,
+    stakeTimestamp,
     reward,
     rewardStartTime,
     rewardEndTime,

@@ -333,6 +333,7 @@ export interface NetworkParameters {
   nodeRewardAmountUsd: bigint
   nodePenaltyUsd: bigint
   stakeRequiredUsd: bigint
+  restakeCooldown: number
   maintenanceInterval: number
   maintenanceFee: number
   stabilityScaleMul: number
@@ -364,7 +365,8 @@ export interface NodeAccount2 extends BaseAccount {
   hash: string
   timestamp: number
   nominator: string | null
-  stakeLock: bigint //amount of coins in stake
+  stakeLock: bigint //amount of coins in
+  stakeTimestamp: number
   reward: bigint
   rewardStartTime: number
   rewardEndTime: number

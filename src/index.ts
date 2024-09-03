@@ -2848,6 +2848,7 @@ const createNodeAccount2 = (accountId: string): NodeAccount2 => {
     timestamp: 0,
     nominator: '',
     stakeLock: BigInt(0),
+    stakeTimestamp: 0,
     reward: BigInt(0),
     rewardStartTime: 0,
     rewardEndTime: 0,
@@ -3051,7 +3052,7 @@ async function estimateGas(
 
   let runTxResult
   try {
-      runTxResult = await EVM.runTx(
+    runTxResult = await EVM.runTx(
       {
         block: blocks[latestBlock],
         tx: transaction,
@@ -3874,6 +3875,8 @@ const shardusSetup = (): void => {
         if (typeof nodeAccount2.stakeLock === 'string') {
           nodeAccount2.stakeLock = BigInt('0x' + nodeAccount2.stakeLock)
         }
+
+        nodeAccount2.stakeTimestamp = stakeCoinsTx.timestamp
         nodeAccount2.nominator = stakeCoinsTx.nominator
         nodeAccount2.stakeLock += stakeCoinsTx.stake
         nodeAccount2.timestamp = txTimestamp

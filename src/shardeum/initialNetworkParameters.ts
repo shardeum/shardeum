@@ -1,6 +1,6 @@
 import { BN } from 'ethereumjs-util'
 import { NetworkParameters } from './shardeumTypes'
-import { ONE_HOUR, oneSHM, ONE_DAY } from './shardeumConstants'
+import { ONE_HOUR, oneSHM, ONE_DAY, THIRTY_MINUTES } from './shardeumConstants'
 
 // INITIAL NETWORK PARAMETERS FOR Shardeum
 
@@ -13,6 +13,7 @@ export const initialNetworkParamters: NetworkParameters = {
   nodeRewardAmountUsd: oneSHM,
   nodePenaltyUsd: oneSHM * BigInt(10),
   stakeRequiredUsd: oneSHM * BigInt(10),
+  restakeCooldown: THIRTY_MINUTES,
   maintenanceInterval: ONE_DAY,
   maintenanceFee: 0,
   minVersion: '1.13.0',

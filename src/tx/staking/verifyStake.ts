@@ -31,6 +31,7 @@ export function verifyStakeTx(
   const networkAccount: NetworkAccount = wrappedStates[globalAccount].data
   const minStakeAmountUsd = networkAccount.current.stakeRequiredUsd
   const minStakeAmount = scaleByStabilityFactor(minStakeAmountUsd, AccountsStorage.cachedNetworkAccount)
+  const nomineeAccount = wrappedStates[stakeCoinsTx.nominee].data as NodeAccount2
   if (typeof stakeCoinsTx.stake === 'object') stakeCoinsTx.stake = BigInt(stakeCoinsTx.stake)
   if (stakeCoinsTx.nominator == null || stakeCoinsTx.nominator.toLowerCase() !== senderAddress.toString()) {
     /* prettier-ignore */ if (logFlags.dapp_verbose) console.log(`nominator vs tx signer`, stakeCoinsTx.nominator, senderAddress.toString())
@@ -43,6 +44,14 @@ export function verifyStakeTx(
     //TODO: NEED to potentially write a custom faster test that avoids regex so we can avoid a regex-dos attack
     success = false
     reason = 'Invalid nominee address in stake coins tx'
+  } else if (
+    nomineeAccount &&
+    nomineeAccount.stakeTimestamp + AccountsStorage.cachedNetworkAccount.current.restakeCooldown > Date.now()
+  ) {
+    success = false
+    reason = `This node was staked within the last ${
+      AccountsStorage.cachedNetworkAccount.current.restakeCooldown / 60000
+    } minutes. You can't stake more to this node yet!`
   } else if (stakeCoinsTx.stake < minStakeAmount) {
     success = false
     reason = `Stake amount is less than minimum required stake amount`
@@ -74,7 +83,6 @@ export function verifyStakeTx(
     }
   }
 
-  const nomineeAccount = wrappedStates[stakeCoinsTx.nominee].data as NodeAccount2
   const nominatorAccount = wrappedStates[toShardusAddress(stakeCoinsTx.nominator, AccountType.Account)]
     .data as WrappedEVMAccount
   if (nomineeAccount) {
