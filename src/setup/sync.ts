@@ -26,8 +26,7 @@ const oneEth = BigInt(10) ** BigInt(18)
 export const networkAccount = config.server.globalAccount
 
 //In debug mode the default value is 100 SHM.  This is needed for certain load test operations
-const defaultBalance = isDebugMode() ? oneEth * BigInt(100) : BigInt(0)
-
+const defaultBalance = isDebugMode() ? oneEth * BigInt(ShardeumFlags.debugDefaultBalance) : BigInt(0)
 const debugShardeumState: ShardeumState = null
 
 export const ONE_SECOND = 1000

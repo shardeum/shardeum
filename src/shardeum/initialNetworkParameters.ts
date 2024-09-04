@@ -15,9 +15,9 @@ export const initialNetworkParamters: NetworkParameters = {
   stakeRequiredUsd: oneSHM * BigInt(10),
   maintenanceInterval: ONE_DAY,
   maintenanceFee: 0,
-  minVersion: '1.12.1',
-  activeVersion: '1.12.1',
-  latestVersion: '1.12.1',
+  minVersion: '1.13.0',
+  activeVersion: '1.13.0',
+  latestVersion: '1.13.0',
   archiver: {
     minVersion: '3.4.23',
     activeVersion: '3.4.23',
@@ -27,9 +27,14 @@ export const initialNetworkParamters: NetworkParameters = {
   stabilityScaleDiv: 1000,
   txPause: false,
   certCycleDuration: 30,
+  enableNodeSlashing: false,
   slashing: {
-    enableLeftNetworkEarly: false,
-    enableSyncTimeout: false,
-    enableNodeRefuted: false,
-  }
+    enableLeftNetworkEarlySlashing: false,
+    enableSyncTimeoutSlashing: false,
+    enableNodeRefutedSlashing: false,
+    leftNetworkEarlyPenaltyPercent: 0.2,
+    syncTimeoutPenaltyPercent: 0.2,
+    nodeRefutedPenaltyPercent: 0.2,
+  },
+  enableRPCEndpoints: false,
 }

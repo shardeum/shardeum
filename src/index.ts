@@ -128,7 +128,7 @@ import {
 } from './handlers/queryCertificate'
 import * as InitRewardTimesTx from './tx/initRewardTimes'
 import * as PenaltyTx from './tx/penalty/transaction'
-import { isDebugTx, isInternalTx, crypto, getInjectedOrGeneratedTimestamp } from './setup/helpers'
+import { isDebugTx, isInternalTx, crypto, getInjectedOrGeneratedTimestamp, verifyMultiSigs } from './setup/helpers'
 import { onActiveVersionChange } from './versioning'
 import { shardusFactory } from '@shardus/core'
 import { unsafeGetClientIp } from './utils/requests'
@@ -152,7 +152,11 @@ import { isLowStake } from './tx/penalty/penaltyFunctions'
 import { accountDeserializer, accountSerializer } from './types/Helpers'
 import { runWithContextAsync } from './utils/RequestContext'
 import { Utils } from '@shardus/types'
+import { SafeBalance } from './utils/safeMath'
 import { verifyStakeTx, verifyUnstakeTx } from './tx/staking/verifyStake'
+import { AJVSchemaEnum } from './types/enum/AJVSchemaEnum'
+import { initAjvSchemas, verifyPayload } from './types/ajv/Helpers'
+import { Sign, ServerMode } from '@shardus/core/dist/shardus/shardus-types'
 
 let latestBlock = 0
 export const blocks: BlockMap = {}
@@ -540,6 +544,7 @@ async function initEVMSingletons(): Promise<void> {
 }
 
 initEVMSingletons()
+initAjvSchemas()
 
 /***
  *     ######     ###    ##       ##       ########     ###     ######  ##    ##  ######
@@ -1178,10 +1183,18 @@ const configShardusEndpoints = (): void => {
   shardus.registerExternalPost('inject', externalApiMiddleware, async (req, res) => {
     try {
       const tx = req.body
-      // if timestamp is a float, round it down to nearest millisecond
-      if (tx.timestamp && typeof tx.timestamp === 'number') {
-        tx.timestamp = Math.floor(tx.timestamp)
+      const errors = verifyPayload(AJVSchemaEnum.InjectTxReq, tx)
+      if (errors !== null) {
+        nestedCountersInstance.countEvent('external', 'ajv-failed-query-certificate')
+        return res.json({
+          success: false,
+          reason: 'Invalid request body',
+          details: isDebugMode() ? errors : null,
+          status: 400,
+        })
       }
+      // if timestamp is a float, round it down to nearest millisecond
+      tx.timestamp = Math.floor(tx.timestamp)
       const appData = null
       const id = shardus.getNodeId()
       const isInRotationBonds = shardus.isNodeInRotationBounds(id)
@@ -1795,7 +1808,7 @@ const configShardusEndpoints = (): void => {
               `${consensusNode.externalIp}:${consensusNode.externalPort}/contract/call`,
               callObj
             )
-            if (postResp.body != null && postResp.body != '') {
+            if (postResp != null && postResp.body != null && postResp.body != '') {
               //getResp.body
 
               /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`Node is in remote shard: gotResp:${Utils.safeStringify(postResp.body)}`)
@@ -1969,6 +1982,22 @@ const configShardusEndpoints = (): void => {
   })
 
   shardus.registerExternalPost('contract/estimateGas', externalApiMiddleware, async (req, res) => {
+    if (ShardeumFlags.supportEstimateGas === false) {
+      return res.json({ result: null, error: 'estimateGas not supported' })
+    }
+    if (!isServiceMode()) {
+      const response = { success: false, reason: '', status: 500 }
+      if (AccountsStorage.cachedNetworkAccount === undefined)
+        return res.json({ ...response, reason: `Network account not available yet` })
+      if (AccountsStorage.cachedNetworkAccount.current.enableRPCEndpoints === false) {
+        if (ShardeumFlags.controlledRPCEndpoints.includes('contract/estimateGas')) {
+          return res.json({
+            ...response,
+            reason: `The current RPC endpoint is disabled in the production network`,
+          })
+        }
+      }
+    }
     if (
       trySpendServicePoints(
         ShardeumFlags.ServicePoints['contract/estimateGas'].endpoint,
@@ -1977,10 +2006,6 @@ const configShardusEndpoints = (): void => {
       ) === false
     ) {
       return res.json({ result: null, error: 'node busy' })
-    }
-
-    if (ShardeumFlags.supportEstimateGas === false) {
-      return res.json({ result: null, error: 'estimateGas not supported' })
     }
 
     try {
@@ -2208,7 +2233,6 @@ const configShardusEndpoints = (): void => {
     async (req: Request, res: Response) => {
       try {
         nestedCountersInstance.countEvent('shardeum-penalty', 'called query-certificate')
-
         const queryCertRes = await queryCertificateHandler(req, shardus)
         if (ShardeumFlags.VerboseLogs) console.log('queryCertRes', queryCertRes)
         if (queryCertRes.success) {
@@ -2810,6 +2834,7 @@ const createNetworkAccount = async (
     next: {},
     hash: '',
     timestamp: 0,
+    mode: config.server.mode as ServerMode,
   }
   account.hash = WrappedEVMAccountFunctions._calculateAccountHash(account)
   /* prettier-ignore */ if (logFlags.important_as_error) console.log('INITIAL_HASH: ', account.hash)
@@ -2952,7 +2977,7 @@ async function estimateGas(
           originalInjectedTx
         )
         /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log('EstimateGas response from node', consensusNode.externalPort, postResp.body)
-        if (postResp.body != null && postResp.body != '' && postResp.body.estimateGas != null) {
+        if (postResp != null && postResp.body != null && postResp.body != '' && postResp.body.estimateGas != null) {
           const estimateResultFromNode = postResp.body.estimateGas
 
           /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`Node is in remote shard: gotResp:`, estimateResultFromNode)
@@ -3092,7 +3117,7 @@ async function generateAccessList(
             { injectedTx, warmupList }
           )
           /* prettier-ignore */ if (logFlags.dapp_verbose || logFlags.aalg) console.log('Accesslist response from node', consensusNode.externalPort, postResp.body)
-          if (postResp.body != null && postResp.body != '' && postResp.body.accessList != null) {
+          if (postResp != null && postResp.body != null && postResp.body != '' && postResp.body.accessList != null) {
             /* prettier-ignore */ if (logFlags.dapp_verbose || logFlags.aalg) console.log(`Node is in remote shard: gotResp:${Utils.safeStringify(postResp.body)}`)
             if (Array.isArray(postResp.body.accessList) && postResp.body.accessList.length > 0) {
               /* prettier-ignore */ nestedCountersInstance.countEvent('accesslist', `remote shard accessList: ${postResp.body.accessList.length} items, success: ${postResp.body.failedAccessList != true}`)
@@ -3727,8 +3752,8 @@ const shardusSetup = (): void => {
 
       //Now we need to get a transaction state object.  For single sharded networks this will be a new object.
       //When we have multiple shards we could have some blob data that wrapped up read accounts.  We will read these accounts
-      //Into the the transaction state init at some point (possibly not here).  This will allow the EVM to run and not have
-      //A storage miss for accounts that were read on previous shard attempts to exectute this TX
+      //Into the transaction state init at some point (possibly not here).  This will allow the EVM to run and not have
+      //A storage miss for accounts that were read on previous shard attempts to execute this TX
       // let transactionState = transactionStateMap.get(txId)
       // if (transactionState == null) {
       //   transactionState = new TransactionState()
@@ -3834,7 +3859,7 @@ const shardusSetup = (): void => {
           operatorEVMAccount.operatorAccountInfo.certExp = 0
         fixDeserializedWrappedEVMAccount(operatorEVMAccount)
 
-        operatorEVMAccount.account.balance = operatorEVMAccount.account.balance - totalAmountToDeduct
+        operatorEVMAccount.account.balance = SafeBalance.subtractBigintBalance(operatorEVMAccount.account.balance, totalAmountToDeduct)
         operatorEVMAccount.account.nonce = operatorEVMAccount.account.nonce + BigInt(1)
 
         const operatorEVMAddress: Address = Address.fromString(stakeCoinsTx.nominator)
@@ -4040,7 +4065,7 @@ const shardusSetup = (): void => {
 
           /* prettier-ignore */ if (logFlags.dapp_verbose) console.log('discarding staking rewards due to zero rewardEndTime')
         }
-        const newBalance = currentBalance + stake + reward - penalty - txFee
+        const newBalance = SafeBalance.addBigintBalance(currentBalance, stake + reward - penalty - txFee)
         operatorEVMAccount.account.balance = newBalance
         operatorEVMAccount.account.nonce = operatorEVMAccount.account.nonce + BigInt(1)
 
@@ -5415,7 +5440,8 @@ const shardusSetup = (): void => {
             if (accountId === networkAccount) {
               throw Error(`Network Account is not allowed to sign this ${accountId}`)
             } else if (shardus.getDevPublicKey(accountId)) {
-              throw Error(`Dev Account is not found ${accountId}`)
+              wrappedEVMAccount = await createNetworkAccount(accountId, config, shardus.p2p.isFirstSeed)
+              accountCreated = true
             }
             // I think we don't need it now, the dev Key is checked on the validateTxnFields
             // else {
@@ -6751,6 +6777,22 @@ const shardusSetup = (): void => {
           shardus.shutdownFromDapp(tag, message, false)
           return false
         }
+
+        //error out nodes in debug mode for production networks to prevent joining
+        if (
+          networkAccount.data.mode === ServerMode.Release &&
+          config.server.mode !== ServerMode.Release
+        ) {
+          const tag = 'wrong mode; please update and restart'
+          const message = 'node mode must be release; please update the node mode'
+          shardus.shutdownFromDapp(tag, message, false)
+          return false
+        }
+      } else {
+        // There are important roadblocks checks above for when we do have the network account loaded
+        // we should not skip ahead until we are passing the if condition above
+        /* prettier-ignore */ nestedCountersInstance.countEvent('shardeum-staking', `network account not available yet`)
+        return false 
       }
 
       isReadyToJoinLatestValue = false
@@ -6991,6 +7033,10 @@ const shardusSetup = (): void => {
           return true
         }
       }
+
+      // avoid returning undefined, what if the calling code was refactored to check "=== false"...
+      /* prettier-ignore */ nestedCountersInstance.countEvent('shardeum-staking', `end of function with no earlier return`)
+      return false
     },
     getNodeInfoAppData() {
       let minVersion = ''
@@ -7093,8 +7139,8 @@ const shardusSetup = (): void => {
         }
       } else if (
         eventType === 'node-left-early' &&
-        ShardeumFlags.enableNodeSlashing === true &&
-        AccountsStorage.cachedNetworkAccount.current.slashing.enableLeftNetworkEarly
+        AccountsStorage.cachedNetworkAccount.current.enableNodeSlashing === true &&
+        AccountsStorage.cachedNetworkAccount.current.slashing.enableLeftNetworkEarlySlashing
       ) {
         let nodeLostCycle
         let nodeDroppedCycle
@@ -7122,8 +7168,8 @@ const shardusSetup = (): void => {
         }
       } else if (
         eventType === 'node-sync-timeout' &&
-        ShardeumFlags.enableNodeSlashing === true &&
-        AccountsStorage.cachedNetworkAccount.current.slashing.enableSyncTimeout
+        AccountsStorage.cachedNetworkAccount.current.enableNodeSlashing === true &&
+        AccountsStorage.cachedNetworkAccount.current.slashing.enableSyncTimeoutSlashing
       ) {
         let violationData: SyncingTimeoutViolationData
         for (let i = 0; i < latestCycles.length; i++) {
@@ -7147,8 +7193,8 @@ const shardusSetup = (): void => {
         }
       } else if (
         eventType === 'node-refuted' &&
-        ShardeumFlags.enableNodeSlashing === true &&
-        AccountsStorage.cachedNetworkAccount.current.slashing.enableNodeRefuted
+        AccountsStorage.cachedNetworkAccount.current.enableNodeSlashing === true &&
+        AccountsStorage.cachedNetworkAccount.current.slashing.enableNodeRefutedSlashing
       ) {
         let nodeRefutedCycle
         for (let i = 0; i < latestCycles.length; i++) {
@@ -7433,6 +7479,21 @@ const shardusSetup = (): void => {
 
       return undefined
     },
+    verifyMultiSigs: (
+      rawPayload: object,
+      sigs: Sign[],
+      allowedPubkeys: { [pubkey: string]: DevSecurityLevel },
+      minSigRequired: number,
+      requiredSecurityLevel: DevSecurityLevel
+    ): boolean => {
+      return verifyMultiSigs(
+        rawPayload,
+        sigs,
+        allowedPubkeys,
+        minSigRequired,
+        requiredSecurityLevel
+      )
+    }
   })
 
   shardus.registerExceptionHandler()
@@ -7465,14 +7526,26 @@ async function fetchNetworkAccountFromArchiver(): Promise<WrappedAccount> {
   }[] = []
   for (const archiver of archiverList) {
     try {
-      const res = await axios.get<{ networkAccountHash: string }>(
+      const res = await axios.get<{ networkAccountHash: string,
+        sign: {
+          owner: string,
+          sig: string
+        } 
+      }>(
         `http://${archiver.ip}:${archiver.port}/get-network-account?hash=true`
       )
       if (!res.data) {
         /* prettier-ignore */ nestedCountersInstance.countEvent('network-config-operation', 'failure: did not get network account from archiver private key. Use default configs.')
         throw new Error(`fetchNetworkAccountFromArchiver() from pk:${archiver.publicKey} returned null`)
       }
-
+      const isFromArchiver = archiver.publicKey === res.data.sign.owner
+      if (!isFromArchiver) {
+        throw new Error(`The response signature is not the same from archiver pk:${archiver.publicKey}`)
+      }
+      const isResponseVerified = shardus.crypto.verify(res.data)
+      if (!isResponseVerified) {
+        throw new Error(`The response signature is not the same from archiver pk:${archiver.publicKey}`)
+      }
       values.push({
         hash: res.data.networkAccountHash as string,
         archiver,
@@ -7489,16 +7562,22 @@ async function fetchNetworkAccountFromArchiver(): Promise<WrappedAccount> {
     /* prettier-ignore */ nestedCountersInstance.countEvent('network-config-operation', 'failure: no majority found for archivers get-network-account result. Use default configs.')
     throw new Error(`no majority found for archivers get-network-account result `)
   }
+  try {
+    const res = await axios.get<{ networkAccount: WrappedAccount }>(
+      `http://${majorityValue.archiver.ip}:${majorityValue.archiver.port}/get-network-account?hash=false`
+    )
+    if (!res.data) {
+      /* prettier-ignore */ nestedCountersInstance.countEvent('network-config-operation', 'failure: did not get network account from archiver private key, returned null. Use default configs.')
+      throw new Error(
+        `get-network-account from archiver pk:${majorityValue.archiver.publicKey} returned null`
+      )
+    }
 
-  const res = await axios.get<{ networkAccount: WrappedAccount }>(
-    `http://${majorityValue.archiver.ip}:${majorityValue.archiver.port}/get-network-account?hash=false`
-  )
-  if (!res.data) {
-    /* prettier-ignore */ nestedCountersInstance.countEvent('network-config-operation', 'failure: did not get network account from archiver private key, returned null. Use default configs.')
-    throw new Error(`get-network-account from archiver pk:${majorityValue.archiver.publicKey} returned null`)
+    return res.data.networkAccount as WrappedAccount
+  } catch (ex) {
+    /* prettier-ignore */ nestedCountersInstance.countEvent('network-config-operation', `error: ${ex?.message}`)
+    throw new Error(`Not able to fetch get-network-account result from archiver `)
   }
-
-  return res.data.networkAccount as WrappedAccount
 }
 
 async function updateConfigFromNetworkAccount(inputConfig: Config, account: WrappedAccount): Promise<Config> {
@@ -7631,7 +7710,7 @@ export function shardeumGetTime(): number {
       // THIS CODE IS CALLED ON EVERY NODE ON EVERY CYCLE
       async function networkMaintenance(): Promise<NodeJS.Timeout> {
         /* prettier-ignore */
-        if (logFlags.dapp_verbose) shardus.log('New maintainence cycle has started')
+        if (logFlags.dapp_verbose) shardus.log('New maintenance cycle has started')
         clearOldPenaltyTxs(shardus)
         drift = shardeumGetTime() - expected
 

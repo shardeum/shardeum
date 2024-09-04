@@ -317,6 +317,7 @@ export interface NetworkAccount extends BaseAccount {
   next: NetworkParameters | object //todo potentially improve this, but will need functional changes
   hash: string
   timestamp: number
+  mode: ShardusTypes.ServerMode
 }
 
 //type guard
@@ -346,11 +347,16 @@ export interface NetworkParameters {
   }
   txPause: boolean
   certCycleDuration: number
+  enableNodeSlashing: boolean
   slashing: {
-    enableLeftNetworkEarly: boolean
-    enableSyncTimeout: boolean
-    enableNodeRefuted: boolean
+    enableLeftNetworkEarlySlashing: boolean,
+    enableSyncTimeoutSlashing: boolean,
+    enableNodeRefutedSlashing: boolean,
+    leftNetworkEarlyPenaltyPercent: number,
+    syncTimeoutPenaltyPercent: number,
+    nodeRefutedPenaltyPercent: number,
   }
+  enableRPCEndpoints: boolean
 }
 
 export interface NodeAccount2 extends BaseAccount {

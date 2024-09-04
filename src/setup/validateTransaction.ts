@@ -1,13 +1,21 @@
-import { DevSecurityLevel, Shardus } from '@shardus/core'
+import { DevSecurityLevel, Shardus, ShardusTypes } from '@shardus/core'
 import { ShardeumFlags } from '../shardeum/shardeumFlags'
 import { InitRewardTimes, InternalTx, InternalTXType } from '../shardeum/shardeumTypes'
-import { crypto, getTransactionObj, isDebugTx, isInternalTx, isInternalTXGlobal, verify } from './helpers'
+import {
+  crypto,
+  getTransactionObj,
+  isDebugTx,
+  isInternalTx,
+  isInternalTXGlobal,
+  verifyMultiSigs,
+} from './helpers'
 import * as InitRewardTimesTx from '../tx/initRewardTimes'
 import * as AccountsStorage from '../storage/accountStorage'
-import { logFlags } from '..'
 import config from '../config'
 import { comparePropertiesTypes } from '../utils'
 import { Utils } from '@shardus/types'
+import { ethers } from 'ethers'
+import { shardusConfig } from '..'
 
 type Response = {
   result: string
@@ -27,19 +35,19 @@ export const validateTransaction =
         tx.internalTXType === InternalTXType.ChangeConfig ||
         internalTx.internalTXType === InternalTXType.ChangeNetworkParam
       ) {
-        const devPublicKeys = shardus.getDevPublicKeys()
-        let isUserVerified = false
-        for (const devPublicKey in devPublicKeys) {
-          const verificationStatus = verify(tx, devPublicKey)
-          if (verificationStatus) {
-            isUserVerified = true
-            break
-          }
-        }
-        if (!isUserVerified) {
-          return { result: 'fail', reason: 'Dev key is not defined on the server!' }
-        }
-        const authorized = shardus.ensureKeySecurity(tx.sign.owner, DevSecurityLevel.High)
+        const devPublicKeys = shardus.getMultisigPublicKeys()
+        const is_array_sig = Array.isArray(tx.sign) === true
+        const requiredSigs = Math.max(1, shardusConfig.debug.minMultiSigRequiredForGlobalTxs)
+        //Ensure old single sig / non-array are still compitable
+        const sigs: ShardusTypes.Sign[] = is_array_sig ? tx.sign : [tx.sign]
+        const { sign, ...txWithoutSign } = tx
+        const authorized = verifyMultiSigs(
+          txWithoutSign,
+          sigs,
+          devPublicKeys,
+          requiredSigs,
+          DevSecurityLevel.High
+        )
         if (!authorized) {
           return { result: 'fail', reason: 'Unauthorized User' }
         } else {
@@ -47,7 +55,8 @@ export const validateTransaction =
             const givenConfig = Utils.safeJsonParse(tx.config)
             if (
               comparePropertiesTypes(omitDevKeys(givenConfig), config.server) &&
-              isValidDevKeyAddition(givenConfig)
+              isValidDevKeyAddition(givenConfig) &&
+              isValidMultisigKeyAddition(givenConfig)
             ) {
               return { result: 'pass', reason: 'valid' }
             } else {
@@ -116,12 +125,12 @@ export const validateTransaction =
   }
 
 function omitDevKeys(givenConfig: any): any {
-  if (!givenConfig.debug?.devPublicKeys) {
+  if (!givenConfig.debug?.devPublicKeys || !givenConfig.debug?.multisigKeys) {
     return givenConfig
   }
 
   const { debug, ...restOfConfig } = givenConfig
-  const { devPublicKeys, ...restOfDebug } = debug
+  const { devPublicKeys, multisigKeys, ...restOfDebug } = debug
 
   if (Object.keys(restOfDebug).length > 0) {
     return { ...restOfConfig, debug: restOfDebug }
@@ -143,6 +152,26 @@ function isValidDevKeyAddition(givenConfig: any): boolean {
 
     // eslint-disable-next-line security/detect-object-injection
     const securityLevel = devPublicKeys[key]
+    if (!Object.values(DevSecurityLevel).includes(securityLevel)) {
+      return false
+    }
+  }
+  return true
+}
+
+function isValidMultisigKeyAddition(givenConfig: any): boolean {
+  const multisigKeys = givenConfig.debug?.multisigKeys
+  if (!multisigKeys) {
+    return true
+  }
+
+  for (const key in multisigKeys) {
+    if (!ethers.isAddress(key)) {
+      return false
+    }
+
+    // eslint-disable-next-line security/detect-object-injection
+    const securityLevel = multisigKeys[key]
     if (!Object.values(DevSecurityLevel).includes(securityLevel)) {
       return false
     }

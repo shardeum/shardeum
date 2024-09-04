@@ -5,7 +5,9 @@ import { hashSignedObj } from '../setup/helpers'
 import { logFlags } from '..'
 import {ShardeumFlags} from "../shardeum/shardeumFlags";
 
-const txSenderCache: Map<string, { address: Address; isValid: boolean }> = new Map()
+type GetTxSenderAddressResult = { address: Address; isValid: boolean; gasValid: boolean }
+
+const txSenderCache: Map<string, GetTxSenderAddressResult> = new Map()
 let simpleTTL = 0
 const cacheMaxSize = 20000
 
@@ -38,10 +40,10 @@ export function getTxSenderAddress(
   tx: TypedTransaction,
   txid: string = undefined,
   overrideSender: Address = undefined
-): { address: Address; isValid: boolean } {
+): GetTxSenderAddressResult {
   try {
     if (overrideSender != null) {
-      const res = { address: overrideSender, isValid: true }
+      const res = { address: overrideSender, isValid: true, gasValid: true }
       if (txid != null) {
         txSenderCache.set(txid, res)
       }
@@ -56,9 +58,9 @@ export function getTxSenderAddress(
     }
 
     const rawTx = '0x' + toHexString(tx.serialize())
-    const { address, isValid } = getSenderAddress(rawTx)
+    const { address, isValid, gasValid } = getSenderAddress(rawTx)
     if (logFlags.dapp_verbose) console.log('Sender address retrieved from signed txn', address)
-    const res = { address: Address.fromString(address), isValid }
+    const res = { address: Address.fromString(address), isValid, gasValid }
     if (txid != null) {
       simpleTTL++
       if (simpleTTL > cacheMaxSize) {
@@ -70,7 +72,7 @@ export function getTxSenderAddress(
     return res
   } catch (e) {
     if (logFlags.dapp_verbose) console.error('Error getting sender address from tx', e)
-    const res = { address: null, isValid: false }
+    const res = { address: null, isValid: false, gasValid: false }
     if (txid != null) {
       txSenderCache.set(txid, res)
     }

@@ -90,7 +90,6 @@ interface ShardeumFlags {
   baselineTxFee: string
   lowStakePercent: number
   removeTokenBalanceCache: boolean
-  enableNodeSlashing: boolean
   penaltyPercent: number
   receiptLogIndexFix: boolean
   blockedAtVerbose: boolean
@@ -101,6 +100,7 @@ interface ShardeumFlags {
   supportEstimateGas: boolean
   startInServiceMode: boolean
   allowedEndpointsInServiceMode: string[]
+  controlledRPCEndpoints: string[] // Controlled by the network parameters
   enableRIAccountsCache: boolean
   riAccountsCacheSize: number
   riAccountsDeleteBatchSize: number
@@ -115,10 +115,12 @@ interface ShardeumFlags {
   collectorUrl: string
   aalgWarmupSleep: number
   internalTxTimestampFix: boolean
+  unifiedAccountBalanceEnabled: boolean
   debugExtraNonceLookup: boolean
   cleanStaleShardeumStateMap: boolean
   beta1_11_2: boolean
   failedStakeReceipt: boolean // For stake/unstake TXs that fail the checks in apply(), create an EVM receipt marked as failed
+  debugDefaultBalance: string
 }
 
 export const ShardeumFlags: ShardeumFlags = {
@@ -225,7 +227,6 @@ export const ShardeumFlags: ShardeumFlags = {
 
   // 1.4.1 migration
   removeTokenBalanceCache: true,
-  enableNodeSlashing: true,
 
   //  This setting is not part of 1.4.1 migration
   penaltyPercent: 0.2, //this is just a setting and does not need to be adjusted for migration
@@ -253,7 +254,7 @@ export const ShardeumFlags: ShardeumFlags = {
     'GET /account/*',
     'GET /eth_getCode',
   ],
-
+  controlledRPCEndpoints: ['contract/estimateGas'],
   numberOfNodesToInjectPenaltyTx: 5,
   loadGenesisNodeNetworkConfigToNetworkAccount: false,
   networkAccountCacheDuration: 3600, // 60 minutes
@@ -274,7 +275,9 @@ export const ShardeumFlags: ShardeumFlags = {
   cleanStaleShardeumStateMap: false,
   beta1_11_2: true,
 
+  unifiedAccountBalanceEnabled: true,
   failedStakeReceipt: true,
+  debugDefaultBalance: '100', //In debug mode the default value is 100 SHM.  This is needed for certain load test operations
 }
 
 export function updateShardeumFlag(key: string, value: string | number | boolean): void {

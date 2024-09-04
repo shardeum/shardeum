@@ -1,12 +1,12 @@
-import { retry } from '../../src/utils/retry'
+import { retry } from '../../../../src/utils/retry'
 
 describe('retry', () => {
-  const successFunc = async () => 'success'
-  const errorFunc = async () => {
+  const successFunc = async (): Promise<string> => 'success'
+  const errorFunc = async (): Promise<void> => {
     throw new Error('error')
   }
-  const trueShouldRetry = async () => true
-  const falseShouldRetry = async () => false
+  const trueShouldRetry = async (): Promise<boolean> => true
+  const falseShouldRetry = async (): Promise<boolean> => false
 
   it('should return the result of a successful function call', async () => {
     const result = await retry(successFunc, falseShouldRetry, 3, 0)

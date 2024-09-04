@@ -1,5 +1,4 @@
 import { nestedCountersInstance, Shardus, ShardusTypes } from '@shardus/core'
-import * as crypto from '@shardus/crypto-utils'
 import { ONE_SECOND } from '../shardeum/shardeumConstants'
 import config from '../config'
 import { getNodeAccountWithRetry, InjectTxToConsensor } from '../handlers/queryCertificate'
@@ -22,6 +21,8 @@ import { getRandom, scaleByStabilityFactor, _base16BNParser, _readableSHM } from
 import { createInternalTxReceipt, logFlags, shardeumGetTime } from '..'
 import { bigIntToHex, isValidAddress } from '@ethereumjs/util'
 import { Utils } from '@shardus/types'
+import { SafeBalance } from '../utils/safeMath'
+import { verify } from '../setup/helpers'
 
 export function isSetCertTimeTx(tx): boolean {
   if (tx.isInternalTx && tx.internalTXType === InternalTXType.SetCertTime) {
@@ -102,7 +103,7 @@ export function validateSetCertTimeTx(tx: SetCertTime): { isValid: boolean; reas
     return { isValid: false, reason: 'Timestamp in cert tx must be > 0' }
   }
   try {
-    if (!crypto.verifyObj(tx)) return { isValid: false, reason: 'Invalid signature for SetCertTime tx' }
+    if (!verify(tx, tx.nominee)) return { isValid: false, reason: 'Invalid signature for SetCertTime tx' }
   } catch (e) {
     return { isValid: false, reason: 'Invalid signature for SetCertTime tx' }
   }
@@ -267,7 +268,10 @@ export function applySetCertTimeTx(
       BigInt(ShardeumFlags.constantTxFeeUsd),
       AccountsStorage.cachedNetworkAccount
     )
-    operatorEVMAccount.account.balance = operatorEVMAccount.account.balance - costTxFee
+    operatorEVMAccount.account.balance = SafeBalance.subtractBigintBalance(
+      operatorEVMAccount.account.balance,
+      costTxFee
+    )
     amountSpent = bigIntToHex(costTxFee)
   }
 
