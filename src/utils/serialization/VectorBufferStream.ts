@@ -22,14 +22,6 @@ export class VectorBufferStream {
     return this.buffer.length
   }
 
-  public getDebugString(numBytes: number, offset = 0): string {
-    let str = ''
-    for (let i = 0; i < numBytes; i++) {
-      str += this.buffer[i + offset].toString(16) + ' '
-    }
-    return str
-  }
-
   public isAtOrPastEnd(): boolean {
     return this.position >= this.buffer.length
   }
