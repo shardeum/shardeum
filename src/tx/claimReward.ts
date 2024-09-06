@@ -198,7 +198,7 @@ export async function applyClaimRewardTx(
 ): Promise<void> {
   if (ShardeumFlags.VerboseLogs) console.log(`Running applyClaimRewardTx`, tx, wrappedStates)
 
-  if (AccountsStorage.cachedNetworkAccount?.current.utilityFlags.enableRewardTXs == false) return
+  if (!AccountsStorage.cachedNetworkAccount?.current.utilityFlags.enableRewardTXs) return
 
   const isValidRequest = validateClaimRewardState(tx, wrappedStates, shardus, mustUseAdminCert)
   if (isValidRequest.result === 'fail') {
