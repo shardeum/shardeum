@@ -133,6 +133,14 @@ To test your local Shardeum network using MetaMask:
 - Currency Symbol: SHM
 - Block Explorer URL: http://localhost:6001/
 
+3. Obtaining Test Tokens and Configuring the Genesis File: To receive SHM tokens for testing on your local Shardeum network, you need to add your wallet address to the [src/config/genesis.json](src/config/genesis.json) file. Open this file in a text editor and add an entry for your wallet address with the desired SHM balance like this:
+
+```json
+"YOUR-WALLET-ADDRESS": {
+    "wei": "200000000000000000000000000"
+},
+```
+
 ## Stopping and Cleaning Up
 
 To stop the network and clean up resources:
