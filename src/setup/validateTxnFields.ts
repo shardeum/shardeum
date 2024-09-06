@@ -247,6 +247,18 @@ export const validateTxnFields =
           reason = ''
         }
 
+        // Chain ID validation
+        let chainId = BigInt(-1)
+        if (transaction && transaction.common.chainId) {
+          chainId = transaction.common.chainId()
+        }
+        if (chainId !== BigInt(ShardeumFlags.ChainID)) {
+          nestedCountersInstance.countEvent('shardeum', 'validate - invalid chain ID')
+          success = false
+          reason = `Transaction chain ID is invalid.`
+          /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`chain ID fail: chain ID: ${chainId}, Shardus Chain ID: ${ShardeumFlags.ChainID}`)
+        }
+
         if (ShardeumFlags.txBalancePreCheck && appData != null) {
           let minBalance: bigint // Calculate the minimun balance with the transaction value added in
           if (ShardeumFlags.chargeConstantTxFee) {

@@ -130,6 +130,19 @@ export async function runTx(this: VM, opts: RunTxOpts, evm: EthereumVirtualMachi
     }
   }
 
+  // chainId validation
+  const chainId = opts.tx.common.chainId()
+  if (BigInt(chainId) !== BigInt(ShardeumFlags.ChainID)) {
+    await evm.journal.revert()
+    const msg = _errorMsg(
+      `Invalid chainId: expected ${ShardeumFlags.ChainID}, got ${chainId}`,
+      this,
+      opts.block,
+      opts.tx
+    )
+    throw new Error(msg)
+  }
+
   try {
     const result = await _runTx.bind(this)(opts, evm, txid)
     await evm.journal.commit()
