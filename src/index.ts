@@ -4639,6 +4639,7 @@ const shardusSetup = (): void => {
         }
         if (runTxResult.execResult.exceptionError) {
           readableReceipt.reason = runTxResult.execResult.exceptionError.error
+          readableReceipt.returnValue = bytesToHex(runTxResult.execResult.returnValue)
         }
         wrappedReceiptAccount = {
           timestamp: txTimestamp,

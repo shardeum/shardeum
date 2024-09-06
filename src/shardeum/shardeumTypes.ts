@@ -280,6 +280,7 @@ export interface ReadableReceipt {
   data: string
   chainId?: string
   reason?: string // Added this to add the evm error reason
+  returnValue?: string // Contains the return value if an error occurred
   stakeInfo?: StakeInfo
   isInternalTx?: boolean
   internalTx?: InternalTx
