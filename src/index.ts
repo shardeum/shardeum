@@ -6465,7 +6465,7 @@ const shardusSetup = (): void => {
           ShardeumFlags.StakingEnabled && numActiveNodes >= ShardeumFlags.minActiveNodesForStaking
 
         //Checks for golden ticket
-        if (appJoinData.adminCert?.goldenTicket === true && appJoinData.mustUseAdminCert === true) {
+        if (appJoinData.adminCert?.goldenTicket === true || appJoinData.mustUseAdminCert === true) {
           const adminCert: AdminCert = appJoinData.adminCert
           /* prettier-ignore */ nestedCountersInstance.countEvent('shardeum-mode', 'validateJoinRequest: Golden ticket is enabled, node about to enter processing check')
 
