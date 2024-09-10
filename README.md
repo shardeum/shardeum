@@ -44,8 +44,8 @@ Shardeum is an innovative EVM-compliant blockchain platform that leverages dynam
 
 ### Prerequisites
 
-- Node.js (v18.16.1)
-- npm (v9.5.1)
+- Node.js (v18.19.1)
+- npm (v10.2.4)
 - Rust (v1.74.1)
 - Docker (optional, for containerized deployment)
 
