@@ -8,7 +8,7 @@
 # Useful for development, but don't ship it. Use 'Dockerfile' instead.
 
 # Node.js LTS 12.x.x from Docker Hub
-FROM node:18.16.1
+FROM node:18.19.1
 
 # Link this Dockerfile to the image in the GHCR
 LABEL "org.opencontainers.image.source"="https://github.com/shardeum/shardeum"
