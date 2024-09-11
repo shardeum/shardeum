@@ -2460,7 +2460,7 @@ const configShardusNetworkTransactions = (): void => {
       // get latest entry for node in txList. and if it is init then we inject otherwise continue
       // first iterate over txlist backwards and get first entry that has public key of node
       const txListEntry = shardus.getLatestNetworkTxEntryForSubqueueKey(node.publicKey)
-      if (txListEntry && txListEntry.tx.type !== 'nodeInitReward') {
+      if (txListEntry && txListEntry.tx.type === 'nodeReward') {
         /** prettier-ignore */ if (logFlags.verbose) console.log(`Skipping creation of shutdown reward tx (last entry already is of type ${txListEntry.tx.type})`, Utils.safeStringify(txListEntry))
         return
       }
