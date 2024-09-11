@@ -162,7 +162,7 @@ import { verifyStakeTx, verifyUnstakeTx } from './tx/staking/verifyStake'
 import { AJVSchemaEnum } from './types/enum/AJVSchemaEnum'
 import { initAjvSchemas, verifyPayload } from './types/ajv/Helpers'
 import { Sign, ServerMode } from '@shardus/core/dist/shardus/shardus-types'
-import { SafeBalance } from './utils/safeMath'
+
 import { safeStringify } from '@shardus/types/build/src/utils/functions/stringify'
 
 let latestBlock = 0
