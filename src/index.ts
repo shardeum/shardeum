@@ -7736,7 +7736,7 @@ async function fetchNetworkAccountFromArchiver(): Promise<WrappedAccount> {
       if (!isFromArchiver) {
         throw new Error(`The response signature is not the same from archiver pk:${archiver.publicKey}`)
       }
-      const isResponseVerified = verify(res.data)
+      const isResponseVerified = verify(res.data, archiver.publicKey)
       if (!isResponseVerified) {
         throw new Error(`The response signature is not the same from archiver pk:${archiver.publicKey}`)
       }
