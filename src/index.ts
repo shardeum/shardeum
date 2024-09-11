@@ -2467,13 +2467,13 @@ const configShardusNetworkTransactions = (): void => {
       /** prettier-ignore */ if (logFlags.verbose) console.log(`Creating a shutdown reward tx`, Utils.safeStringify(txListEntry), Utils.safeStringify(node))
       return {
         type: 'nodeReward',
-        txData: shardus.signAsNode({
+        txData: {
           start: node.activeCycle,
           end: record.counter,
           endTime: record.start,
           publicKey: node.publicKey,
           nodeId: node.id,
-        }),
+        },
         priority: 0,
         subQueueKey: node.publicKey,
       }
