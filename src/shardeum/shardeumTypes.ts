@@ -426,6 +426,7 @@ export interface OperatorAccountInfo {
   stake: bigint
   nominee: string
   certExp: number
+  lastStakeTimestamp: number
   operatorStats: OperatorStats
 }
 
