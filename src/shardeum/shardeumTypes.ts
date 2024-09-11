@@ -175,6 +175,28 @@ export interface ClaimRewardTX extends InternalTxBase {
   sign: ShardusTypes.Sign
 }
 
+export interface NodeRewardTxData {
+  publicKey: string
+  nodeId: string
+  start: number
+  end: number
+  endTime: number
+}
+
+export interface SignedNodeRewardTxData extends NodeRewardTxData {
+  sign: ShardusTypes.Sign
+}
+
+export interface NodeInitTxData {
+  publicKey: string
+  nodeId: string
+  startTime: number
+}
+
+export interface SignedNodeInitTxData extends NodeInitTxData {
+  sign: ShardusTypes.Sign
+}
+
 export enum ViolationType {
   ShardusCoreMaxID = 999,
   ShardeumMinID = 1000,
@@ -373,6 +395,7 @@ export interface NodeAccount2 extends BaseAccount {
   penalty: bigint
   nodeAccountStats: NodeAccountStats
   rewarded: boolean
+  rewardRate: bigint
 }
 
 //type guard

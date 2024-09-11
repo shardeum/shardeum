@@ -268,10 +268,7 @@ export function applySetCertTimeTx(
       BigInt(ShardeumFlags.constantTxFeeUsd),
       AccountsStorage.cachedNetworkAccount
     )
-    operatorEVMAccount.account.balance = SafeBalance.subtractBigintBalance(
-      operatorEVMAccount.account.balance,
-      costTxFee
-    )
+    operatorEVMAccount.account.balance = SafeBalance.subtractBigintBalance(operatorEVMAccount.account.balance, costTxFee)
     amountSpent = bigIntToHex(costTxFee)
   }
 
