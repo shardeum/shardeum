@@ -133,7 +133,14 @@ import {
 } from './handlers/queryCertificate'
 import * as InitRewardTimesTx from './tx/initRewardTimes'
 import * as PenaltyTx from './tx/penalty/transaction'
-import { isDebugTx, isInternalTx, crypto, getInjectedOrGeneratedTimestamp, verifyMultiSigs } from './setup/helpers'
+import {
+  isDebugTx,
+  isInternalTx,
+  crypto,
+  getInjectedOrGeneratedTimestamp,
+  verifyMultiSigs,
+  verify,
+} from './setup/helpers'
 import { onActiveVersionChange } from './versioning'
 import { shardusFactory } from '@shardus/core'
 import { unsafeGetClientIp } from './utils/requests'
@@ -7729,7 +7736,7 @@ async function fetchNetworkAccountFromArchiver(): Promise<WrappedAccount> {
       if (!isFromArchiver) {
         throw new Error(`The response signature is not the same from archiver pk:${archiver.publicKey}`)
       }
-      const isResponseVerified = shardus.crypto.verify(res.data)
+      const isResponseVerified = verify(res.data)
       if (!isResponseVerified) {
         throw new Error(`The response signature is not the same from archiver pk:${archiver.publicKey}`)
       }
