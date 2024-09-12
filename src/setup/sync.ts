@@ -34,6 +34,11 @@ export const ONE_SECOND = 1000
 export const sync = (shardus: Shardus, evmCommon: any) => async (): Promise<void> => {
   if (ShardeumFlags.useAccountWrites) shardus.useAccountWrites()
   if (ShardeumFlags.GlobalNetworkAccount) {
+    const existingNetworkAccount = await shardus.getLocalOrRemoteAccount(networkAccount)
+    if (existingNetworkAccount || shardus.getNetworkMode() === 'restore') {
+      /* prettier-ignore */ if (logFlags.important_as_error) shardus.log('NETWORK_ACCOUNT ALREADY EXISTED: ', existingNetworkAccount)
+      return
+    }
     if (shardus.p2p.isFirstSeed) {
       await sleep(ONE_SECOND * 5)
 
@@ -110,21 +115,14 @@ export const sync = (shardus: Shardus, evmCommon: any) => async (): Promise<void
         }
       }
       await sleep(ONE_SECOND * 10)
-
       const when = shardeumGetTime()
-      const existingNetworkAccount = await shardus.getLocalOrRemoteAccount(networkAccount)
-      if (existingNetworkAccount) {
-        /* prettier-ignore */ if (logFlags.important_as_error) shardus.log('NETWORK_ACCOUNT ALREADY EXISTED: ', existingNetworkAccount)
-        await sleep(ONE_SECOND * 5)
-      } else {
-        const value = {
-          isInternalTx: true,
-          internalTXType: InternalTXType.InitNetwork,
-          timestamp: when,
-          network: networkAccount,
-        }
-        shardus.setGlobal(networkAccount, value, when, networkAccount)
+      const value = {
+        isInternalTx: true,
+        internalTXType: InternalTXType.InitNetwork,
+        timestamp: when,
+        network: networkAccount,
       }
+      shardus.setGlobal(networkAccount, value, when, networkAccount)
     } else {
       while (!(await shardus.getLocalOrRemoteAccount(networkAccount))) {
         /* prettier-ignore */ if (logFlags.important_as_error) console.log('waiting..')
