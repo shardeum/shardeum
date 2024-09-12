@@ -37,6 +37,7 @@ export const sync = (shardus: Shardus, evmCommon: any) => async (): Promise<void
     const existingNetworkAccount = await shardus.getLocalOrRemoteAccount(networkAccount)
     if (existingNetworkAccount || shardus.getNetworkMode() === 'restore') {
       /* prettier-ignore */ if (logFlags.important_as_error) shardus.log('NETWORK_ACCOUNT ALREADY EXISTED: ', existingNetworkAccount)
+      await sleep(ONE_SECOND * 5)
       return
     }
     if (shardus.p2p.isFirstSeed) {
