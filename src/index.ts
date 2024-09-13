@@ -2361,6 +2361,10 @@ const configShardusNetworkTransactions = (): void => {
         /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log('Invalid signature for internal tx', Utils.safeStringify(tx))
         return false
       }
+      if (txEntry.priority !== 0) {
+        /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log('registerBeforeAddVerifier - nodeReward: fail Invalid priority', Utils.safeStringify(tx))
+        return false
+      }
       if (txEntry.subQueueKey == null || txEntry.subQueueKey != tx.publicKey) {
         /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log('registerBeforeAddVerifier - nodeReward: fail Invalid subQueueKey', Utils.safeStringify(tx))
         return false
@@ -2481,7 +2485,7 @@ const configShardusNetworkTransactions = (): void => {
     (node: P2P.NodeListTypes.Node, record: P2P.CycleCreatorTypes.CycleRecord) => {
       if (record.activated.includes(node.id)) {
         if (record.txadd.some((entry) => entry.txData.nodeId === node.id && entry.type === 'nodeInitReward')) {
-          console.warn(`shutdown condition: active node with id ${node.id} is already in txadd (nodeInitReward); this should not happen`)
+          /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`shutdown condition: active node with id ${node.id} is already in txadd (nodeInitReward); this should not happen`)
         } else {
           return {
             type: 'nodeInitReward',
@@ -2501,7 +2505,7 @@ const configShardusNetworkTransactions = (): void => {
     'nodeReward',
     (node: P2P.NodeListTypes.Node, record: P2P.CycleCreatorTypes.CycleRecord) => {
       if (record.txadd.some((entry) => entry.txData.nodeId === node.id && entry.type === 'nodeReward')) {
-        console.log(`shutdown condition: active node with id ${node.id} is already in txadd; this should not happen`)
+        /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`shutdown condition: active node with id ${node.id} is already in txadd; this should not happen`)
         return
       }
 
@@ -2509,10 +2513,10 @@ const configShardusNetworkTransactions = (): void => {
       // first iterate over txlist backwards and get first entry that has public key of node
       const txListEntry = shardus.getLatestNetworkTxEntryForSubqueueKey(node.publicKey)
       if (txListEntry && txListEntry.tx.type === 'nodeReward') {
-        /** prettier-ignore */ if (logFlags.verbose) console.log(`Skipping creation of shutdown reward tx (last entry already is of type ${txListEntry.tx.type})`, Utils.safeStringify(txListEntry))
+        /** prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`Skipping creation of shutdown reward tx (last entry already is of type ${txListEntry.tx.type})`, Utils.safeStringify(txListEntry))
         return
       }
-      /** prettier-ignore */ if (logFlags.verbose) console.log(`Creating a shutdown reward tx`, Utils.safeStringify(txListEntry), Utils.safeStringify(node))
+      /** prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`Creating a shutdown reward tx`, Utils.safeStringify(txListEntry), Utils.safeStringify(node))
       return {
         type: 'nodeReward',
         txData: {
