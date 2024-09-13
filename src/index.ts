@@ -2476,6 +2476,57 @@ const configShardusNetworkTransactions = (): void => {
       return false
     }
   )
+  shardus.registerShutdownHandler(
+    'nodeInitReward',
+    (node: P2P.NodeListTypes.Node, record: P2P.CycleCreatorTypes.CycleRecord) => {
+      if (record.activated.includes(node.id)) {
+        if (record.txadd.some((entry) => entry.txData.nodeId === node.id && entry.type === 'nodeInitReward')) {
+          console.warn(`shutdown condition: active node with id ${node.id} is already in txadd (nodeInitReward); this should not happen`)
+        } else {
+          return {
+            type: 'nodeInitReward',
+            txData: {
+              startTime: record.start,
+              publicKey: node.publicKey,
+              nodeId: node.id,
+            },
+            priority: 1,
+            subQueueKey: node.publicKey,
+          }
+        }
+      }
+    }
+  )
+  shardus.registerShutdownHandler(
+    'nodeReward',
+    (node: P2P.NodeListTypes.Node, record: P2P.CycleCreatorTypes.CycleRecord) => {
+      if (record.txadd.some((entry) => entry.txData.nodeId === node.id && entry.type === 'nodeReward')) {
+        console.log(`shutdown condition: active node with id ${node.id} is already in txadd; this should not happen`)
+        return
+      }
+
+      // get latest entry for node in txList. and if it is init then we inject otherwise continue
+      // first iterate over txlist backwards and get first entry that has public key of node
+      const txListEntry = shardus.getLatestNetworkTxEntryForSubqueueKey(node.publicKey)
+      if (txListEntry && txListEntry.tx.type === 'nodeReward') {
+        /** prettier-ignore */ if (logFlags.verbose) console.log(`Skipping creation of shutdown reward tx (last entry already is of type ${txListEntry.tx.type})`, Utils.safeStringify(txListEntry))
+        return
+      }
+      /** prettier-ignore */ if (logFlags.verbose) console.log(`Creating a shutdown reward tx`, Utils.safeStringify(txListEntry), Utils.safeStringify(node))
+      return {
+        type: 'nodeReward',
+        txData: {
+          start: node.activeCycle,
+          end: record.counter,
+          endTime: record.start,
+          publicKey: node.publicKey,
+          nodeId: node.id,
+        },
+        priority: 0,
+        subQueueKey: node.publicKey,
+      }
+    }
+  )
 }
 
 /*** |an
