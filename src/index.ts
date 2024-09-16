@@ -5935,6 +5935,7 @@ const shardusSetup = (): void => {
                 stake: BigInt(0),
                 nominee: '',
                 certExp: 0,
+                lastStakeTimestamp: 0,
                 operatorStats: {
                   totalNodeReward: BigInt(0),
                   totalNodePenalty: BigInt(0),
