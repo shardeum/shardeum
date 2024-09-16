@@ -2494,6 +2494,7 @@ const configShardusNetworkTransactions = (): void => {
               publicKey: node.publicKey,
               nodeId: node.id,
             },
+            involvedAddress: node.publicKey,
             priority: 1,
             subQueueKey: node.publicKey,
           }
@@ -2526,6 +2527,7 @@ const configShardusNetworkTransactions = (): void => {
           publicKey: node.publicKey,
           nodeId: node.id,
         },
+        involvedAddress: node.publicKey,
         priority: 0,
         subQueueKey: node.publicKey,
       }
@@ -7337,7 +7339,8 @@ const shardusSetup = (): void => {
               type: 'nodeInitReward',
               txData: shardus.signAsNode(txData),
               involvedAddress: data.publicKey,
-              subQueueKey: data.publicKey
+              subQueueKey: data.publicKey,
+              priority: 0
             })
 
       } else if (eventType === 'node-deactivated') {
@@ -7354,7 +7357,8 @@ const shardusSetup = (): void => {
               type: 'nodeReward',
               txData: shardus.signAsNode(txData),
               involvedAddress: data.publicKey,
-              subQueueKey: data.publicKey
+              subQueueKey: data.publicKey,
+              priority: 0
             })
 
       } else if (
