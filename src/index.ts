@@ -2374,6 +2374,11 @@ const configShardusNetworkTransactions = (): void => {
         /* prettier-ignore */ nestedCountersInstance.countEvent('shardeum-staking', `registerBeforeAddVerify nodeReward fail invalid publicKey field`)
         return false
       }
+      if (txEntry.involvedAddress !== tx.publicKey) {
+        /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log('validate nodeInitReward fail Invalid involvedAddress', Utils.safeStringify(tx))
+        /* prettier-ignore */ nestedCountersInstance.countEvent('shardeum-staking', `validate nodeInitReward fail Invalid involvedAddress`)
+        return false
+      }
       if (tx.start === undefined) {
         /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log('registerBeforeAddVerify nodeReward fail start field missing', Utils.safeStringify(tx))
         /* prettier-ignore */ nestedCountersInstance.countEvent(
@@ -2433,6 +2438,11 @@ const configShardusNetworkTransactions = (): void => {
       if (!isValid) {
         /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log('validate nodeInitReward fail Invalid signature', Utils.safeStringify(tx))
         /* prettier-ignore */ nestedCountersInstance.countEvent('shardeum-staking', `validate nodeInitReward fail Invalid signature`)
+        return false
+      }
+      if (txEntry.involvedAddress !== tx.publicKey) {
+        /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log('validate nodeInitReward fail Invalid involvedAddress', Utils.safeStringify(tx))
+        /* prettier-ignore */ nestedCountersInstance.countEvent('shardeum-staking', `validate nodeInitReward fail Invalid involvedAddress`)
         return false
       }
       if (txEntry.subQueueKey == null || txEntry.subQueueKey != tx.publicKey) {
