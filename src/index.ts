@@ -2440,6 +2440,10 @@ const configShardusNetworkTransactions = (): void => {
         /* prettier-ignore */ nestedCountersInstance.countEvent('shardeum-staking', `validate nodeInitReward fail Invalid signature`)
         return false
       }
+      if (txEntry.priority !== 0) {
+        /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log('registerBeforeAddVerifier - nodeInitReward: fail Invalid priority', Utils.safeStringify(tx))
+        return false
+      }
       if (txEntry.involvedAddress !== tx.publicKey) {
         /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log('validate nodeInitReward fail Invalid involvedAddress', Utils.safeStringify(tx))
         /* prettier-ignore */ nestedCountersInstance.countEvent('shardeum-staking', `validate nodeInitReward fail Invalid involvedAddress`)
