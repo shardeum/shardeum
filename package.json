@@ -1,6 +1,6 @@
 {
   "name": "shardeum",
-  "version": "1.14.1",
+  "version": "1.14.0",
   "description": "",
   "main": "dist/src/index.js",
   "scripts": {
