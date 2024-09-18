@@ -372,6 +372,7 @@ config = merge(
           '0x390878B18DeBe2A9f0d5c0252a109c84243D3beb': DevSecurityLevel.High, // test key
           '0x32B6f2C027D4c9D99Ca07d047D17987390a5EB39': DevSecurityLevel.High, // test key
           '0x80aF8E195B56aCC3b4ec8e2C99EC38957258635a': DevSecurityLevel.High, // Atharva
+          '0x3d3E0A9DdCC3348Fc81daDED2e72eC0CaC870ABD': DevSecurityLevel.High, // test key ( Jai )
         },
         checkAddressFormat: true, //enabled for 1.10.0
         enableCycleRecordDebugTool: false, // only enable if you want to debug variant cycle records
