@@ -367,12 +367,19 @@ config = merge(
           // always prefix with prettier ignore
         },
         multisigKeys: {
-          '0x002D3a2BfE09E3E29b6d38d58CaaD16EEe4C9BC5': DevSecurityLevel.High, // test key
-          '0x0a0844DA5e01E391d12999ca859Da8a897D5979A': DevSecurityLevel.High, // test key
-          '0x390878B18DeBe2A9f0d5c0252a109c84243D3beb': DevSecurityLevel.High, // test key
-          '0x32B6f2C027D4c9D99Ca07d047D17987390a5EB39': DevSecurityLevel.High, // test key
-          '0x80aF8E195B56aCC3b4ec8e2C99EC38957258635a': DevSecurityLevel.High, // Atharva
-          '0x3d3E0A9DdCC3348Fc81daDED2e72eC0CaC870ABD': DevSecurityLevel.High, // test key ( Jai )
+          // always prefix with prettier ignore
+          /* prettier-ignore */ '0x002D3a2BfE09E3E29b6d38d58CaaD16EEe4C9BC5': DevSecurityLevel.High, // test key
+          /* prettier-ignore */ '0x0a0844DA5e01E391d12999ca859Da8a897D5979A': DevSecurityLevel.High, // test key
+          /* prettier-ignore */ '0x390878B18DeBe2A9f0d5c0252a109c84243D3beb': DevSecurityLevel.High, // test key
+          /* prettier-ignore */ '0x32B6f2C027D4c9D99Ca07d047D17987390a5EB39': DevSecurityLevel.High, // test key
+          /* prettier-ignore */ '0x80aF8E195B56aCC3b4ec8e2C99EC38957258635a': DevSecurityLevel.High, // Atharva
+          /* prettier-ignore */ '0x3d3E0A9DdCC3348Fc81daDED2e72eC0CaC870ABD': DevSecurityLevel.High, // test key ( Jai )
+          /* prettier-ignore */ '0x7Efbb31431ac7C405E8eEba99531fF1254fCA3B6': DevSecurityLevel.High, // test key ( M1 )
+          /* prettier-ignore */ '0xCc74bf387F6C102b5a7F828796C57A6D2D19Cb00': DevSecurityLevel.High, // test key ( M2 )
+          /* prettier-ignore */ '0x4ed5C053BF2dA5F694b322EA93dce949F3276B85': DevSecurityLevel.High, // test key ( M3 )
+          /* prettier-ignore */ '0xd31aBC7497aD8bC9fe8555C9eDe45DFd7FB3Bf6F': DevSecurityLevel.High, // test key ( M4 )
+          /* prettier-ignore */ '0xe7e4cc292b424C6D50d16F1Bb5BAB2032c486980': DevSecurityLevel.High, // test key ( M5 )
+          // always prefix with prettier ignore
         },
         checkAddressFormat: true, //enabled for 1.10.0
         enableCycleRecordDebugTool: false, // only enable if you want to debug variant cycle records
