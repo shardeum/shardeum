@@ -163,7 +163,7 @@ We welcome contributions! Please see our [Contribution Guidelines](CONTRIBUTING.
 
 - [GitHub Discussions](https://github.com/shardeum/shardeum/discussions)
 - [Discord](https://discord.com/invite/shardeum)
-- [X formerly (Twitter)](https://x.com/Shardeum)
+- [X (formerly Twitter)](https://x.com/Shardeum)
 
 ## License
 
