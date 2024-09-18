@@ -278,10 +278,15 @@ config = merge(config, {
 
       forwardToLuckyNodes: false, // 1.11.0 we seem to have more issues with this on.  can turn off for local testing
 
-      removeStuckTxsFromQueue: false,
+      removeStuckTxsFromQueue: true,
+      removeStuckTxsFromQueue3: true,
+
       removeStuckChallengedTXs: false,
 
       stuckTxMoveTime: 3600000,
+
+      stuckTxRemoveTime: 600000, // 10 min
+      stuckTxRemoveTime3: 300000, // 5 min
 
       awaitingDataCanBailOnReceipt: true,
     },
