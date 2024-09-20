@@ -5105,33 +5105,34 @@ const shardusSetup = (): void => {
           }
         }
 
+        //early pass on balance check to avoid expensive access list generation.
+        if (ShardeumFlags.txBalancePreCheck && appData != null) {
+          let minBalance: bigint // Calculate the minimun balance with the transaction value added in
+          if (ShardeumFlags.chargeConstantTxFee) {
+            const minBalanceUsd = BigInt(ShardeumFlags.constantTxFeeUsd)
+            minBalance =
+              scaleByStabilityFactor(minBalanceUsd, AccountsStorage.cachedNetworkAccount) + transaction.value
+          } else minBalance = transaction.getUpfrontCost() // tx.gasLimit * tx.gasPrice + tx.value
+          const accountBalance = appData.balance
+          if (accountBalance < minBalance) {
+            /* prettier-ignore */
+            if (ShardeumFlags.VerboseLogs) console.log(`precrack balance fail: sender ${senderAddress.toString()} does not have enough balance. Min balance: ${minBalance.toString()}, Account balance: ${accountBalance.toString()}`)
+            nestedCountersInstance.countEvent('shardeum', 'precrack - insufficient balance')
+            return {
+              status: false,
+              reason: `Sender Insufficient Balance. Sender: ${senderAddress.toString()}, MinBalance: ${minBalance.toString()}, Account balance: ${accountBalance.toString()}, Difference: ${(
+                minBalance - accountBalance
+              ).toString()}`,
+            }
+          } else {
+            /* prettier-ignore */
+            if (ShardeumFlags.VerboseLogs) console.log(`precrack balance pass: sender ${senderAddress.toString()} has balance of ${accountBalance.toString()}`)
+          }
+        }
+
         //also run access list generation if needed
         if (shouldGenerateAccesslist) {
           let success = true
-          //early pass on balance check to avoid expensive access list generation.
-          if (ShardeumFlags.txBalancePreCheck && appData != null) {
-            let minBalance: bigint // Calculate the minimun balance with the transaction value added in
-            if (ShardeumFlags.chargeConstantTxFee) {
-              const minBalanceUsd = BigInt(ShardeumFlags.constantTxFeeUsd)
-              minBalance =
-                scaleByStabilityFactor(minBalanceUsd, AccountsStorage.cachedNetworkAccount) +
-                transaction.value
-            } else minBalance = transaction.getUpfrontCost() // tx.gasLimit * tx.gasPrice + tx.value
-            const accountBalance = appData.balance
-            if (accountBalance < minBalance) {
-              success = false
-              /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`precrack balance fail: sender ${senderAddress.toString()} does not have enough balance. Min balance: ${minBalance.toString()}, Account balance: ${accountBalance.toString()}`)
-              nestedCountersInstance.countEvent('shardeum', 'precrack - insufficient balance')
-              return {
-                status: false,
-                reason: `Sender Insufficient Balance. Sender: ${senderAddress.toString()}, MinBalance: ${minBalance.toString()}, Account balance: ${accountBalance.toString()}, Difference: ${(
-                  minBalance - accountBalance
-                ).toString()}`,
-              }
-            } else {
-              /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`precrack balance pass: sender ${senderAddress.toString()} has balance of ${accountBalance.toString()}`)
-            }
-          }
 
           if (ShardeumFlags.txNoncePreCheck && appData != null) {
             const txNonce = parseInt(transaction.nonce.toString(16), 16)
