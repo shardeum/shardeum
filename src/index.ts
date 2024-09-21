@@ -4031,10 +4031,6 @@ const shardusSetup = (): void => {
           throw new Error('Stake transaction timestamp is too old')
         }
 
-        if (operatorEVMAccount.operatorAccountInfo?.nominee?.length > 0 ) {
-          throw new Error(`This node is already staked by another account!`)
-        }
-
         // // Validate tx timestamp against certExp (I thin)
         // if (operatorEVMAccount.operatorAccountInfo && operatorEVMAccount.operatorAccountInfo.certExp > 0) {
         //   if (stakeCoinsTx.timestamp > operatorEVMAccount.operatorAccountInfo.certExp) {
