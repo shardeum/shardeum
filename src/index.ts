@@ -7301,7 +7301,6 @@ const shardusSetup = (): void => {
       const nodeId = shardus.getNodeId()
       const node = shardus.getNode(nodeId)
 
-      console.log('eventNotify', data.type, data.publicKey)
       // skip for own node
       if (!shardus.p2p.isFirstSeed && data.nodeId === nodeId && data.type !== 'node-activated') {
         console.log('eventNotify', 'skipping for own node', data.type, data.publicKey)
@@ -7348,15 +7347,14 @@ const shardusSetup = (): void => {
           publicKey: data.publicKey,
           nodeId: data.nodeId,
         } as NodeInitTxData
-        console.log('node-activated', 'injectInitRewardTimesTx', data.publicKey, txData)
-            shardus.addNetworkTx({
-              type: 'nodeInitReward',
-              txData: shardus.signAsNode(txData),
-              involvedAddress: data.publicKey,
-              subQueueKey: data.publicKey,
-              priority: 0
-            })
-
+        /* prettier-ignore */ if (logFlags.dapp_verbose)console.log('node-activated', 'injectInitRewardTimesTx', data.publicKey, txData)
+        shardus.addNetworkTx({
+          type: 'nodeInitReward',
+          txData: shardus.signAsNode(txData),
+          involvedAddress: data.publicKey,
+          subQueueKey: data.publicKey,
+          priority: 0,
+        })
       } else if (eventType === 'node-deactivated') {
         nestedCountersInstance.countEvent('shardeum-staking', `${eventType}: injectClaimRewardTx`)
         const txData = {
@@ -7366,15 +7364,14 @@ const shardusSetup = (): void => {
           publicKey: data.publicKey,
           nodeId: data.nodeId,
         } as NodeRewardTxData
-        console.log('node-deactivates', 'injectClaimRewardTx', data.publicKey, txData)
-            shardus.addNetworkTx({
-              type: 'nodeReward',
-              txData: shardus.signAsNode(txData),
-              involvedAddress: data.publicKey,
-              subQueueKey: data.publicKey,
-              priority: 0
-            })
-
+        /* prettier-ignore */ if (logFlags.dapp_verbose) console.log('node-deactivates', 'injectClaimRewardTx', data.publicKey, txData)
+        shardus.addNetworkTx({
+          type: 'nodeReward',
+          txData: shardus.signAsNode(txData),
+          involvedAddress: data.publicKey,
+          subQueueKey: data.publicKey,
+          priority: 0,
+        })
       } else if (
         eventType === 'node-left-early' &&
         AccountsStorage.cachedNetworkAccount.current.enableNodeSlashing === true &&
