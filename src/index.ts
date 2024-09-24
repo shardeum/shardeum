@@ -2392,7 +2392,9 @@ const configShardusNetworkTransactions = (): void => {
         return false
       }
 
-      const nodeRemovedCycle = latestCycles.find((cycle) => cycle.removed.includes(tx.nodeId))
+      const nodeRemovedCycle = latestCycles.find(
+        (cycle) => cycle.removed.includes(tx.nodeId) || cycle.lost.includes(tx.nodeId)
+      )
       /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log('nodeRemovedCycle', nodeRemovedCycle)
       if (!nodeRemovedCycle) {
         /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log('registerBeforeAddVerify nodeReward fail !nodeRemovedCycle', Utils.safeStringify(tx))
