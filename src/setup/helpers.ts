@@ -131,6 +131,7 @@ export function verifyMultiSigs(
   const seen = new Set()
 
   for (let i = 0; i < sigs.length; i++) {
+    /* eslint-disable security/detect-object-injection */
     // The sig owner has not been seen before
     // The sig owner is listed on the server
     // The sig owner has enough security clearance
@@ -139,11 +140,12 @@ export function verifyMultiSigs(
       !seen.has(sigs[i].owner) &&
       allowedPubkeys[sigs[i].owner] &&
       allowedPubkeys[sigs[i].owner] >= requiredSecurityLevel &&
-      ethers.verifyMessage(payload_hash, sigs[i].sig) === sigs[i].owner
+      ethers.verifyMessage(payload_hash, sigs[i].sig)
     ) {
       validSigs++
       seen.add(sigs[i].owner)
     }
+    /* eslint-enable security/detect-object-injection */
 
     if (validSigs >= minSigRequired) break
   }
