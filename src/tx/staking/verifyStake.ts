@@ -192,6 +192,12 @@ function isStakeUnlocked(
     return false
   }
 
+  // SLT from when node was selected to go active (started syncing)
+  const node = shardus.getNode(nomineeAccount.id)
+  if (node && shardus.shardusGetTime() - node.syncingTimestamp * 1000 < stakeLockTime) {
+    return false
+  }
+
   // SLT from time of last went active
   // THIS MAY BE REDUNDANT as we check for active status in verifyUnstakeTx
   if (shardus.shardusGetTime() - nomineeAccount.rewardStartTime * 1000 < stakeLockTime) {
