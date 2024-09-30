@@ -38,4 +38,5 @@ export const initialNetworkParamters: NetworkParameters = {
     nodeRefutedPenaltyPercent: 0.2,
   },
   enableRPCEndpoints: false,
+  stakeLockTime: 1000 * 60 * 60 * 3, // 3 hours in milliseconds
 }

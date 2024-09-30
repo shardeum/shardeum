@@ -185,7 +185,7 @@ function isStakeUnlocked(
   nomineeAccount: NodeAccount2,
   shardus: Shardus
 ): boolean {
-  const stakeLockTime = ShardeumFlags.stakeLockTime
+  const stakeLockTime = AccountsStorage.cachedNetworkAccount.current.stakeLockTime
 
   // SLT from time of last staking or unstaking
   if (shardus.shardusGetTime() - nominatorAccount.operatorAccountInfo.lastStakeTimestamp < stakeLockTime) {
