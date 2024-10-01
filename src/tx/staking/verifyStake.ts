@@ -193,7 +193,7 @@ function isStakeUnlocked(
   }
 
   // SLT from when node was selected to go active (started syncing)
-  const node = shardus.getNode(nomineeAccount.id)
+  const node = shardus.getNodeByPubKey(nomineeAccount.id)
   if (node && shardus.shardusGetTime() - node.syncingTimestamp * 1000 < stakeLockTime) {
     return false
   }
