@@ -2392,7 +2392,9 @@ const configShardusNetworkTransactions = (): void => {
         return false
       }
 
-      const nodeRemovedCycle = latestCycles.find((cycle) => cycle.removed.includes(tx.nodeId))
+      const nodeRemovedCycle = latestCycles.find(
+        (cycle) => cycle.removed.includes(tx.nodeId) || cycle.lost.includes(tx.nodeId)
+      )
       /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log('nodeRemovedCycle', nodeRemovedCycle)
       if (!nodeRemovedCycle) {
         /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log('registerBeforeAddVerify nodeReward fail !nodeRemovedCycle', Utils.safeStringify(tx))
@@ -4029,10 +4031,6 @@ const shardusSetup = (): void => {
         // validate tx timestamp, compare timestamp against account's timestamp
         if (stakeCoinsTx.timestamp < operatorEVMAccount.timestamp) {
           throw new Error('Stake transaction timestamp is too old')
-        }
-
-        if (operatorEVMAccount.operatorAccountInfo?.nominee?.length > 0 ) {
-          throw new Error(`This node is already staked by another account!`)
         }
 
         // // Validate tx timestamp against certExp (I thin)

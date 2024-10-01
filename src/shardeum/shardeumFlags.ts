@@ -257,7 +257,7 @@ export const ShardeumFlags: ShardeumFlags = {
   ],
   controlledRPCEndpoints: ['contract/estimateGas'],
   numberOfNodesToInjectPenaltyTx: 5,
-  loadGenesisNodeNetworkConfigToNetworkAccount: false,
+  loadGenesisNodeNetworkConfigToNetworkAccount: true,
   networkAccountCacheDuration: 3600, // 60 minutes
   enableClaimRewardAdminCert: true,
   debugLocalAALG: false,
