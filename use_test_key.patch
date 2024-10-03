@@ -1,8 +1,8 @@
 diff --git a/src/config/index.ts b/src/config/index.ts
-index a587472..8892fe8 100644
+index edbc0c8c..165365e3 100644
 --- a/src/config/index.ts
 +++ b/src/config/index.ts
-@@ -320,6 +320,7 @@ config = merge(
+@@ -322,6 +322,7 @@ config = merge(
          countEndpointStart: -1,
          hashedDevAuth: '',
          devPublicKeys: {
@@ -10,3 +10,17 @@ index a587472..8892fe8 100644
            // '': DevSecurityLevel.Unauthorized,
            // These are production keys.  Use 'git apply use_test_key.patch' for unsafe local test keys
            // Never merge a commit with changes to these lines without approval.
+@@ -367,7 +368,12 @@ config = merge(
+           // always prefix with prettier ignore
+         },
+         multisigKeys: {
+-          // always prefix with prettier ignore
++          // always prefix with prettier ignore          
++          /* prettier-ignore */ '0x742B4c2F0b34cd552b085d712b89e9f9FBc992B5': DevSecurityLevel.High, // qa test key
++          /* prettier-ignore */ '0x219C30Fcf44641a8e76eC0b55E61E58E939618c4': DevSecurityLevel.High, // qa test key
++          /* prettier-ignore */ '0x4eBb54d412024B87efeDdE9BD90Ad85A43BC351D': DevSecurityLevel.High, // qa test key
++          /* prettier-ignore */ '0xb1f6DCC14325B75a4326d3931C43C093Ce7756Cc': DevSecurityLevel.Medium, // qa test key
++          /* prettier-ignore */ '0x51A5564ebd44baa0C24a639f95d791B34482b4bf': DevSecurityLevel.Low, // qa test key
+           /* prettier-ignore */ '0x002D3a2BfE09E3E29b6d38d58CaaD16EEe4C9BC5': DevSecurityLevel.High, // test key
+           /* prettier-ignore */ '0x0a0844DA5e01E391d12999ca859Da8a897D5979A': DevSecurityLevel.High, // test key
+           /* prettier-ignore */ '0x390878B18DeBe2A9f0d5c0252a109c84243D3beb': DevSecurityLevel.High, // test key
