@@ -380,6 +380,7 @@ export interface NetworkParameters {
     nodeRefutedPenaltyPercent: number,
   }
   enableRPCEndpoints: boolean
+  stakeLockTime: number
 }
 
 export interface NodeAccount2 extends BaseAccount {
@@ -426,6 +427,7 @@ export interface OperatorAccountInfo {
   stake: bigint
   nominee: string
   certExp: number
+  lastStakeTimestamp: number
   operatorStats: OperatorStats
 }
 
