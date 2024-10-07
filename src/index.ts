@@ -468,7 +468,7 @@ const appliedTxs = {} //this appears to be unused. will it still be unused if we
 const shardusTxIdToEthTxId = {} //this appears to only support appliedTxs
 
 //In debug mode the default value is 100 SHM.  This is needed for certain load test operations
-const defaultBalance = isDebugMode() ? oneSHM * BigInt(100) : BigInt(0)
+const defaultBalance = isDebugMode() ? oneSHM * BigInt(ShardeumFlags.debugDefaultBalance) : BigInt(0)
 
 // TODO move this to a db table
 // const transactionFailHashMap: any = {}
