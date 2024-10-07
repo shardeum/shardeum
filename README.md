@@ -9,7 +9,7 @@
 <p align="center">
   <a href="https://github.com/shardeum/shardeum/blob/main/LICENSE"><img src="https://img.shields.io/badge/License-MIT-blue.svg" alt="License"></a>
   <a href="https://discord.com/invite/shardeum"><img src="https://img.shields.io/discord/933959587462254612?logo=discord" alt="Discord"></a>
-  <a href="https://twitter.com/Shardeum"><img src="https://img.shields.io/twitter/follow/Shardeum?style=social" alt="Twitter"></a>
+  <a href="https://x.com/Shardeum"><img src="https://img.shields.io/twitter/follow/Shardeum?style=social" alt="Twitter"></a>
 </p>
 
 ## Table of Contents
@@ -163,7 +163,7 @@ We welcome contributions! Please see our [Contribution Guidelines](CONTRIBUTING.
 
 - [GitHub Discussions](https://github.com/shardeum/shardeum/discussions)
 - [Discord](https://discord.com/invite/shardeum)
-- [Twitter](https://twitter.com/Shardeum)
+- [X (formerly Twitter)](https://x.com/Shardeum)
 
 ## License
 
