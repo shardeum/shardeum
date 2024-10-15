@@ -380,6 +380,9 @@ export interface NetworkParameters {
     nodeRefutedPenaltyPercent: number,
   }
   enableRPCEndpoints: boolean
+  utilityFlags: {
+    enableRewardTXs: boolean
+  }
 }
 
 export interface NodeAccount2 extends BaseAccount {

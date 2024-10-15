@@ -38,4 +38,7 @@ export const initialNetworkParamters: NetworkParameters = {
     nodeRefutedPenaltyPercent: 0.2,
   },
   enableRPCEndpoints: false,
+  utilityFlags: {
+    enableRewardTXs: true,
+  }
 }
