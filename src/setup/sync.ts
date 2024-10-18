@@ -2,6 +2,7 @@ import { DevSecurityLevel, Shardus, ShardusTypes } from '@shardus/core'
 import { Account, Address } from '@ethereumjs/util'
 import config from '../config'
 import genesis from '../config/genesis.json'
+import genesisSecureAccounts from '../config/genesis-secure-accounts.json'
 import { loadAccountDataFromDB } from '../shardeum/debugRestoreAccounts'
 import { toShardusAddress } from '../shardeum/evmAddress'
 import { ShardeumFlags } from '../shardeum/shardeumFlags'
@@ -14,6 +15,7 @@ import { sleep } from '../utils'
 import { DefaultStateManager } from '@ethereumjs/statemanager'
 import { logFlags, shardeumGetTime } from '..'
 import { Utils } from '@shardus/types'
+import { randomBytes } from "crypto";
 
 function isDebugMode(): boolean {
   // eslint-disable-next-line @typescript-eslint/ban-ts-comment
@@ -30,6 +32,19 @@ const defaultBalance = isDebugMode() ? oneEth * BigInt(ShardeumFlags.debugDefaul
 const debugShardeumState: ShardeumState = null
 
 export const ONE_SECOND = 1000
+
+async function makeSecureAccountAddress(shardus) {
+  let shardusAccountID;
+  let existingAccount;
+  let address;
+  do {
+    address = '0x' + randomBytes(20).toString('hex');
+    shardusAccountID = toShardusAddress(address, AccountType.SecureAccount);
+    existingAccount = await shardus.getLocalOrRemoteAccount(shardusAccountID);
+  } while (existingAccount);
+
+  return { shardusAccountID, address };
+}
 
 export const sync = (shardus: Shardus, evmCommon: any) => async (): Promise<void> => {
   if (ShardeumFlags.useAccountWrites) shardus.useAccountWrites()
@@ -50,12 +65,13 @@ export const sync = (shardus: Shardus, evmCommon: any) => async (): Promise<void
           file: ShardeumFlags.DebugRestoreFile,
         }
         const report = await loadAccountDataFromDB(shardus, loadOptions)
-        /* prettier-ignore */ if (logFlags.important_as_error) console.log('loadAccountDataFromDB:' + Utils. safeStringify(report))
+        /* prettier-ignore */ if (logFlags.important_as_error) console.log('loadAccountDataFromDB:' + Utils.safeStringify(report))
       }
 
       //create genesis accounts before network account since nodes will wait for the network account
       /* prettier-ignore */ if (logFlags.important_as_error) shardus.log(`node ${nodeId} GENERATED_A_NEW_NETWORK_ACCOUNT: `)
       if (ShardeumFlags.SetupGenesisAccount) {
+        console.log('SETTING UP Genesis accounts');
         let skippedAccountCount = 0
         let accountCopies = []
         for (const address in genesis) {
@@ -86,10 +102,33 @@ export const sync = (shardus: Shardus, evmCommon: any) => async (): Promise<void
           accountCopies.push(accountCopy)
           /* prettier-ignore */ if (logFlags.important_as_error) shardus.log(`node ${nodeId} SETUP GENESIS ACCOUNT: ${address}  amt: ${amount}`)
         }
+
+        for (const secureAccountConfig of genesisSecureAccounts) {
+          const { shardusAccountID, address } = await makeSecureAccountAddress(shardus);
+
+          const ethAccountID = Address.fromString(address).toString()
+          const { wrappedEVMAccount, accountId, cycle } = await manuallyCreateSecureAccount(
+            ethAccountID,
+            shardusAccountID,
+            secureAccountConfig,
+            evmCommon,
+            shardus.getLatestCycles()
+          )
+          const accountCopy: ShardusTypes.AccountsCopy = {
+            cycleNumber: cycle.counter,
+            accountId,
+            data: wrappedEVMAccount,
+            hash: wrappedEVMAccount.hash,
+            isGlobal: false,
+            timestamp: wrappedEVMAccount.timestamp,
+          }
+          accountCopies.push(accountCopy)
+          /* prettier-ignore */ if (logFlags.important_as_error) shardus.log(`node ${nodeId} SETUP GENESIS SECUREACCOUNT: ${address}  startingLockedFunds: ${secureAccountConfig.startingLockedFunds}`)
+        }
         /* prettier-ignore */ if (logFlags.important_as_error) console.log(`Skipped ${skippedAccountCount} genesis accounts`)
         //TODO we need to brainstorm a way to allow migration of keys on a live network
         const devPublicKeys = shardus.getDevPublicKeys()
-        for(const devPublicKey of Object.keys(devPublicKeys)) {
+        for (const devPublicKey of Object.keys(devPublicKeys)) {
           // eslint-disable-next-line security/detect-object-injection
           const level = devPublicKeys[devPublicKey]
           if (level >= DevSecurityLevel.Low) {
@@ -115,6 +154,7 @@ export const sync = (shardus: Shardus, evmCommon: any) => async (): Promise<void
           await shardus.forwardAccounts({ accounts: accountCopies, receipts: [] })
         }
       }
+
       await sleep(ONE_SECOND * 10)
       const when = shardeumGetTime()
       const value = {
@@ -131,6 +171,69 @@ export const sync = (shardus: Shardus, evmCommon: any) => async (): Promise<void
       }
     }
   }
+}
+
+/**
+ * This creates a SecureAccount outside of any EVM transaction
+ */
+async function manuallyCreateSecureAccount(
+  ethAccountID: string,
+  shardusAccountID: string,
+  secureAccountConfig: any,
+  evmCommon: any,
+  latestCycles: any // eslint-disable-line @typescript-eslint/no-explicit-any
+): Promise<{
+  accountId: string
+  wrappedEVMAccount: {
+    timestamp: number
+    account: Account
+    ethAddress: string
+    hash: string
+    accountType: AccountType
+  }
+  cycle: { counter: number }
+}> {
+  const debugTXState = getDebugTXState(evmCommon) //this isn't so great..
+  debugTXState.checkpoint()
+  const newAccount = await createSecureAccount(ethAccountID, debugTXState, secureAccountConfig)
+  debugTXState.commit()
+
+  const { accounts: accountWrites } = debugTXState._transactionState.getWrittenAccounts()
+
+  //need to commit the account now... this is such a hack!!
+  for (const account of accountWrites.entries()) {
+    //1. wrap and save/update this to shardeum accounts[] map
+    const addressStr = account[0]
+    const accountObj = Account.fromRlpSerializedAccount(account[1])
+
+    const ethAccount = accountObj
+    debugTXState._transactionState.commitAccount(addressStr, ethAccount) //yikes this wants an await.
+  }
+
+  if (ShardeumFlags.VerboseLogs) console.log('Tester account created', newAccount)
+  const address = Address.fromString(ethAccountID)
+  const account = await debugTXState.getAccount(address)
+
+  let cycleStart = 0
+  if (latestCycles != null && latestCycles.length > 0) {
+    cycleStart = latestCycles[0].start * 1000
+    /* prettier-ignore */ if (logFlags.important_as_error) console.log('Tester account created time: ', cycleStart)
+  }
+
+  const wrappedEVMAccount = {
+    ...secureAccountConfig,
+    timestamp: cycleStart,
+    account,
+    ethAddress: ethAccountID,
+    hash: '',
+    accountType: AccountType.SecureAccount,
+    mintedFunds: 0,
+    lockedFunds: secureAccountConfig.startingLockedFunds,
+    lastUnlockTime: 0,
+  }
+
+  WrappedEVMAccountFunctions.updateEthAccountHash(wrappedEVMAccount)
+  return { accountId: shardusAccountID, wrappedEVMAccount, cycle: latestCycles[0] }
 }
 
 /**
@@ -232,7 +335,7 @@ function getDebugTXState(evmCommon: any): ShardeumState {
         accountInvolved: accountInvolvedNoOp,
         contractStorageInvolved: contractStorageInvolvedNoOp,
         tryGetRemoteAccountCB: tryGetRemoteAccountCBNoOp,
-        monitorEventCB: () => {}, // eslint-disable-line @typescript-eslint/no-empty-function
+        monitorEventCB: () => { }, // eslint-disable-line @typescript-eslint/no-empty-function
       },
       txId,
       undefined,
@@ -275,6 +378,41 @@ async function createAccount(
     ethAddress: addressStr,
     hash: '',
     accountType: AccountType.Account,
+  }
+  WrappedEVMAccountFunctions.updateEthAccountHash(wrappedEVMAccount)
+  return wrappedEVMAccount
+}
+
+async function createSecureAccount(
+  addressStr: string,
+  stateManager: any,
+  secureAccountsConfig: any,
+): Promise<WrappedEVMAccount> {
+  if (ShardeumFlags.VerboseLogs) console.log('Creating new account', addressStr)
+  const accountAddress = Address.fromString(addressStr)
+
+  const acctData = {
+    //balance: 0, might need this?? at time of writing i dont know yet
+    nonce: 0,
+  }
+
+  //I think this will have to change in the future!
+  // shardeumStateManager.setTransactionState(transactionState)
+
+  const account = Account.fromAccountData(acctData)
+  await stateManager.putAccount(accountAddress, account)
+  const updatedAccount: Account = await stateManager.getAccount(accountAddress)
+
+  const wrappedEVMAccount = {
+    ...secureAccountsConfig,
+    accountType: AccountType.SecureAccount,
+    timestamp: 0,
+    account: updatedAccount,
+    ethAddress: addressStr,
+    hash: '',
+    mintedFunds: 0,
+    lockedFunds: secureAccountsConfig.startingLockedFunds,
+    lastUnlockTime: 0,
   }
   WrappedEVMAccountFunctions.updateEthAccountHash(wrappedEVMAccount)
   return wrappedEVMAccount
