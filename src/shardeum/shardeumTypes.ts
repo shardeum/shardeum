@@ -264,11 +264,11 @@ export interface WrappedStates {
 export interface OurAppDefinedData {
   globalMsg: {
     address: string
+    addressHash: string
     value: {
       isInternalTx: boolean
       internalTXType: InternalTXType
       timestamp: number
-      accountData?: WrappedEVMAccount
       from?: string
       change?: {
         cycle: ShardusTypes.Cycle

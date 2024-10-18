@@ -2636,12 +2636,6 @@ async function applyInternalTx(
       change: { cycle: changeOnCycle, change: Utils.safeJsonParse(internalTx.config) },
     }
 
-    //value = shardus.signAsNode(value)
-
-    const ourAppDefinedData = applyResponse.appDefinedData as OurAppDefinedData
-    // network will consens that this is the correct value
-    ourAppDefinedData.globalMsg = { address: networkAccount, value, when, source: value.from }
-
     // if (ShardeumFlags.useAccountWrites) {
     //   /* eslint-disable security/detect-object-injection */
     //   const networkAccountCopy = wrappedStates[networkAccount]
@@ -2667,6 +2661,13 @@ async function applyInternalTx(
     //   network.timestamp = txTimestamp
     //   devAccount.timestamp = txTimestamp
     // }
+
+    // eslint-disable-next-line security/detect-object-injection
+    const addressHash = wrappedStates[networkAccount].stateId
+
+    const ourAppDefinedData = applyResponse.appDefinedData as OurAppDefinedData
+    // network will consens that this is the correct value
+    ourAppDefinedData.globalMsg = { address: networkAccount, addressHash, value, when, source: value.from }
     if (ShardeumFlags.supportInternalTxReceipt) {
       createInternalTxReceipt(
         shardus,
@@ -2738,9 +2739,12 @@ async function applyInternalTx(
       change: { cycle: changeOnCycle, change: {}, appData: Utils.safeJsonParse(internalTx.config) },
     }
 
+    // eslint-disable-next-line security/detect-object-injection
+    const addressHash = wrappedStates[networkAccount].stateId
+
     const ourAppDefinedData = applyResponse.appDefinedData as OurAppDefinedData
     // network will consens that this is the correct value
-    ourAppDefinedData.globalMsg = { address: networkAccount, value, when, source: value.from }
+    ourAppDefinedData.globalMsg = { address: networkAccount, addressHash, value, when, source: value.from }
 
     if (ShardeumFlags.supportInternalTxReceipt) {
       createInternalTxReceipt(
@@ -2925,8 +2929,10 @@ function setGlobalCodeByteUpdate(
 
   //value = shardus.signAsNode(value)
 
+  const addressHash = '' // just a placeholder; we don't use `setGlobalCodeByteUpdate` anymore, so it's fine.
+
   const ourAppDefinedData = applyResponse.appDefinedData as OurAppDefinedData
-  ourAppDefinedData.globalMsg = { address: globalAddress, value, when, source: globalAddress }
+  ourAppDefinedData.globalMsg = { address: globalAddress, addressHash, value, when, source: globalAddress }
 }
 
 async function _transactionReceiptPass(
@@ -2964,12 +2970,11 @@ async function _transactionReceiptPass(
 
   //If this apply response has a global message defined then call setGlobal()
   if (ourAppDefinedData.globalMsg) {
-    const { address, value, when, source } = ourAppDefinedData.globalMsg
+    const { address, addressHash, value, when, source } = ourAppDefinedData.globalMsg
     //delete value.sign
-    shardus.setGlobal(address, value, when, source)
+    shardus.setGlobal(address, addressHash, value, when, source)
     if (ShardeumFlags.VerboseLogs) {
-      const tx = { address, value, when, source }
-      const txHash = generateTxId(tx)
+      const txHash = generateTxId(value)
       console.log(`transactionReceiptPass setglobal: ${txHash} ${Utils.safeStringify(tx)}  `)
     }
   }
