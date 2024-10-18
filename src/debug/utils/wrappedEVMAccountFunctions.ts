@@ -80,6 +80,7 @@ export function accountSpecificHash(account: WrappedEVMAccount | InternalAccount
     account.accountType === AccountType.NetworkAccount ||
     account.accountType === AccountType.NodeAccount ||
     account.accountType === AccountType.NodeAccount2 ||
+    account.accountType === AccountType.SecureAccount ||
     account.accountType === AccountType.NodeRewardReceipt ||
     account.accountType === AccountType.StakeReceipt ||
     account.accountType === AccountType.UnstakeReceipt ||

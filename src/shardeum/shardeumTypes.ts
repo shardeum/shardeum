@@ -4,6 +4,10 @@ import { Block } from '@ethereumjs/block'
 import { StakeCert } from '../handlers/queryCertificate'
 import { TxReceipt } from '../vm_v7/types'
 import { AdminCert } from '../handlers/adminCertificate'
+import { SecureAccount, isSecureAccount } from './secureAccounts'
+
+// Reexport for convenience
+export { SecureAccount, isSecureAccount }
 
 export enum AccountType {
   Account = 0, //  EOA or CA
@@ -19,6 +23,7 @@ export enum AccountType {
   StakeReceipt = 10,
   UnstakeReceipt = 11,
   InternalTxReceipt = 12,
+  SecureAccount = 13,
 }
 
 export interface BaseAccount {
@@ -100,6 +105,7 @@ export enum InternalTXType {
   ChangeNetworkParam = 10,
   ApplyNetworkParam = 11,
   Penalty = 12,
+  TransferFromSecureAccount = 13,
 }
 
 export enum DebugTXType {
@@ -128,6 +134,13 @@ export interface InternalTx extends InternalTxBase {
   config?: string // change config
   nominee?: string // Node Account2
   nominator?: string // EVM Account (OperAcc)
+  accountName?: string // TransferFromSecureAccount
+  nonce?: number // TransferFromSecureAccount
+  amount?: string // TransferFromSecureAccount
+  sign: ShardusTypes.Sign | ShardusTypes.Sign[] // Array of signatures for multisig
+}
+
+export interface InternalTxWithSingleSign extends InternalTxBase {
   sign: ShardusTypes.Sign
 }
 
@@ -246,7 +259,7 @@ export interface WrappedAccount {
   // this affects src/index.ts which is being worked on in another branch
   // I don't want to merge this branch until that one is merged
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  data: any //NetworkAccount | NodeAccount2 | WrappedEVMAccount
+  data: any //NetworkAccount | NodeAccount2 | WrappedEVMAccount | SecureAccount
   timestamp: number
   accountCreated?: boolean
 }
@@ -297,6 +310,7 @@ export interface ReadableReceipt {
   chainId?: string
   reason?: string // Added this to add the evm error reason
   stakeInfo?: StakeInfo
+  secureAccountInfo?: SecureAccountInfo
   isInternalTx?: boolean
   internalTx?: InternalTx
   maxFeePerGas?: string
@@ -306,6 +320,12 @@ export interface ReadableReceipt {
   s?: string
   penaltyAmount?: bigint,
   rewardedAmount?: bigint
+}
+
+// This is used in the transfer from secure account receipt
+export interface SecureAccountInfo {
+  amount: string
+  accountName: string
 }
 
 // This is used in stake/unstake tx receipt
@@ -472,7 +492,7 @@ export interface ApplyNetworkParam {
 
 // export interface InternalAccount extends NodeAccount, NetworkAccount, DevAccount {}
 
-export type InternalAccount = NodeAccount2 | NetworkAccount | DevAccount
+export type InternalAccount = NodeAccount2 | NetworkAccount | DevAccount | SecureAccount
 
 export interface NodeAccountQueryResponse {
   success: boolean
@@ -507,3 +527,6 @@ export interface AppJoinData {
   adminCert: AdminCert
   isAdminCertUnexpired: boolean
 }
+
+
+export type AccountMap = Map<string, WrappedEVMAccount>;

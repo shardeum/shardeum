@@ -1,4 +1,4 @@
-import { VectorBufferStream } from '@shardus/core'
+import { VectorBufferStream, ShardusTypes } from '@shardus/core'
 import { Utils } from '@shardus/types'
 import {
   NetworkAccount,
@@ -20,6 +20,7 @@ describe('NetworkAccount Serialization', () => {
       next: { test: 'test' } as any,
       hash: 'test',
       timestamp: 1,
+      mode: 'testnet' as ShardusTypes.ServerMode,
     }
     const stream = new VectorBufferStream(0)
     serializeNetworkAccount(stream, obj, true)

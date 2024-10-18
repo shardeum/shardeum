@@ -1,4 +1,4 @@
-import { AccountType, NetworkAccount, WrappedEVMAccount, InternalAccount } from './shardeumTypes'
+import { AccountType, NetworkAccount, WrappedEVMAccount, InternalAccount, SecureAccount } from './shardeumTypes'
 import { isWrappedEVMAccount, isInternalAccount } from './wrappedEVMAccountFunctions'
 
 import { ShardeumFlags } from './shardeumFlags'
@@ -52,6 +52,8 @@ export function getAccountShardusAddress(account: WrappedEVMAccount | InternalAc
       account.accountType === AccountType.DevAccount
     ) {
       return (account as unknown as NetworkAccount).id
+    } else if (account.accountType === AccountType.SecureAccount) {
+      return (account as unknown as SecureAccount).id.toLowerCase()
     }
   }
 }
@@ -178,6 +180,7 @@ export function toShardusAddressWithKey(
     accountType === AccountType.NetworkAccount ||
     accountType === AccountType.NodeAccount ||
     accountType === AccountType.NodeAccount2 ||
+    accountType === AccountType.SecureAccount ||
     accountType === AccountType.NodeRewardReceipt ||
     accountType === AccountType.DevAccount
   ) {
@@ -223,6 +226,14 @@ export function toShardusAddress(addressStr: string, accountType: AccountType): 
     //change this:0x665eab3be2472e83e3100b4233952a16eed20c76
     //    to this:  665eab3be2472e83e3100b4233952a16eed20c76000000000000000000000000
     return addressStr.slice(2).toLowerCase() + '0'.repeat(24)
+  }
+
+  if (accountType === AccountType.SecureAccount) {
+    if (addressStr.length === 64) {
+      return addressStr.toLowerCase()
+    } else {
+      throw new Error('must pass in a 64 character hex addressStr AccountType.Receipt')
+    }
   }
 
   if (

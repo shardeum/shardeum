@@ -66,6 +66,7 @@ import {
   OurAppDefinedData,
   PenaltyTX,
   ReadableReceipt,
+  SecureAccountInfo,
   SetCertTime,
   ShardeumBlockOverride,
   SignedNodeInitTxData,
@@ -173,6 +174,12 @@ import { Sign, ServerMode } from '@shardus/core/dist/shardus/shardus-types'
 import { safeStringify } from '@shardus/types/build/src/utils/functions/stringify'
 import { initializeSerialization } from './utils/serialization/SchemaHelpers';
 import { getAccountData } from './utils/account'
+import {
+  crack as crackTransferFromSecureAccount, 
+  apply as applyTransferFromSecureAccount, 
+  verify as verifyTransferFromSecureAccount,
+  secureAccountDataMap 
+} from './shardeum/secureAccounts'
 
 let latestBlock = 0
 export const blocks: BlockMap = {}
@@ -2207,6 +2214,24 @@ const configShardusEndpoints = (): void => {
     }
   })
 
+  shardus.registerExternalGet('secure_accounts', externalApiMiddleware, async (req, res) => {
+    try {
+      const secureAccounts = []
+      for (const secureAccountConfig of secureAccountDataMap.values()) {
+        const [secureAccount, sourceAccount, recipientAccount] = await Promise.all([
+          AccountsStorage.getAccount(secureAccountConfig.SecureAccountAddress),
+          AccountsStorage.getAccount(secureAccountConfig.SourceFundsAddress),
+          AccountsStorage.getAccount(secureAccountConfig.RecipientFundsAddress),
+        ])
+        secureAccounts.push({ secureAccount, sourceAccount, recipientAccount, secureAccountConfig })
+      }
+      res.json({ success: true, accounts: secureAccounts })
+    } catch (error) {
+      /* prettier-ignore */ if (logFlags.error) console.error('Error in processing secure_accounts request:', error)
+      res.status(500).json({ success: false, reason: 'Internal Server Error' })
+    }
+  })
+
   // Returns the hardware-spec of the server running the validator
   shardus.registerExternalGet('system-info', debugMiddlewareLow, async (req, res) => {
     try {
@@ -2813,6 +2838,16 @@ async function applyInternalTx(
       /* prettier-ignore */ if (logFlags.error) console.error('Error in applyPenaltyTX', error)
     })
   }
+  if (internalTx.internalTXType === InternalTXType.TransferFromSecureAccount) {
+    await applyTransferFromSecureAccount(
+      internalTx,
+      txId,
+      txTimestamp,
+      wrappedStates,
+      shardus,
+      applyResponse
+    );
+  }
   return applyResponse
 }
 
@@ -2827,6 +2862,7 @@ export const createInternalTxReceipt = (
   amountSpent = bigIntToHex(BigInt(0)),
   rewardAmount?: bigint,
   penaltyAmount?: bigint,
+  secureAccountName?: string
 ): void => {
   const blockForReceipt = getOrCreateBlockFromTimestamp(txTimestamp)
   const blockNumberForTx = blockForReceipt.header.number.toString()
@@ -2852,7 +2888,9 @@ export const createInternalTxReceipt = (
     internalTx: { ...internalTx, sign: null },
     ...(rewardAmount !== undefined && { rewardAmount }),
     ...(penaltyAmount !== undefined && { penaltyAmount }),
+    ...(secureAccountName !== undefined && { secureAccountName }),
   }
+  
   const wrappedReceiptAccount = {
     timestamp: txTimestamp,
     ethAddress: '0x' + txId,
@@ -3893,6 +3931,9 @@ const shardusSetup = (): void => {
         if (appData.internalTx && appData.internalTXType === InternalTXType.Unstake) {
           verifyResult = verifyUnstakeTx(appData.internalTx, senderAddress, wrappedStates, shardus);
         }
+        if (appData.internalTx && appData.internalTXType === InternalTXType.TransferFromSecureAccount) {
+          verifyResult = verifyTransferFromSecureAccount(appData.internalTx, wrappedStates, shardus)
+        }
         if(verifyResult == null){
           verifyResult = {
             success: false,
@@ -4923,7 +4964,6 @@ const shardusSetup = (): void => {
       return generateTxId(tx)
     },
     async txPreCrackData(tx, appData): Promise<{ status: boolean; reason: string }> {
-      if (ShardeumFlags.VerboseLogs) console.log('Running txPreCrackData', tx, appData)
       if (ShardeumFlags.UseTXPreCrack === false) {
         return { status: true, reason: 'UseTXPreCrack is false' }
       }
@@ -5318,6 +5358,10 @@ const shardusSetup = (): void => {
         } else if (internalTx.internalTXType === InternalTXType.Penalty) {
           keys.sourceKeys = [tx.reportedNodePublickKey]
           keys.targetKeys = [toShardusAddress(tx.operatorEVMAddress, AccountType.Account), networkAccount]
+        } else if (internalTx.internalTXType === InternalTXType.TransferFromSecureAccount) {
+          const { sourceKeys, targetKeys } = crackTransferFromSecureAccount(tx)
+          keys.sourceKeys = sourceKeys
+          keys.targetKeys = targetKeys
         }
         keys.allKeys = keys.allKeys.concat(keys.sourceKeys, keys.targetKeys, keys.storageKeys)
         // temporary hack for creating a receipt of node reward tx
@@ -5599,6 +5643,7 @@ const shardusSetup = (): void => {
           wrappedEVMAccount.accountType !== AccountType.NetworkAccount &&
           wrappedEVMAccount.accountType !== AccountType.NodeAccount &&
           wrappedEVMAccount.accountType !== AccountType.NodeAccount2 &&
+          wrappedEVMAccount.accountType !== AccountType.SecureAccount &&
           wrappedEVMAccount.accountType !== AccountType.NodeRewardReceipt &&
           wrappedEVMAccount.accountType !== AccountType.DevAccount
         )
@@ -6062,6 +6107,7 @@ const shardusSetup = (): void => {
         updatedEVMAccount.accountType !== AccountType.NetworkAccount &&
         updatedEVMAccount.accountType !== AccountType.NodeAccount &&
         updatedEVMAccount.accountType !== AccountType.NodeAccount2 &&
+        updatedEVMAccount.accountType !== AccountType.SecureAccount &&
         updatedEVMAccount.accountType !== AccountType.NodeRewardReceipt &&
         updatedEVMAccount.accountType !== AccountType.DevAccount
       ) {
@@ -7631,7 +7677,7 @@ const shardusSetup = (): void => {
             return Buffer.from(Utils.safeStringify(obj), 'utf8')
         }
       } catch (e) {
-        /* prettier-ignore */ if (logFlags.error) console.log('binarySerializeObject error:', e)
+        /* prettier-ignore */ if (logFlags.error) console.log('binarySerializeObject error:', e, 'obj: ', obj)
         nestedCountersInstance.countEvent('binarySerializeObject', 'error')
         return Buffer.from(Utils.safeStringify(obj), 'utf8')
       }

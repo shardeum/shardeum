@@ -386,6 +386,8 @@ config = merge(
           /* prettier-ignore */ '0x84C55a4bFfff1ADadb9C46e2B60979F519dAf874': DevSecurityLevel.High,
           /* prettier-ignore */ '0x4563303BCE96D3f8d9C7fB94b36dfFC9d831871d': DevSecurityLevel.High,
           /* prettier-ignore */ '0xdA058F9c7Ce86C1D21DD5DBDeBad5ab5c785520a': DevSecurityLevel.High,
+          /* prettier-ignore */ '0x0950C3Ecc7d1c4dd093C9652F335F9391d83Ee99': DevSecurityLevel.High, // test secure account 1
+          /* prettier-ignore */ '0x05b67C84bf88d93E795039d5bBA9CeC9Dcd93087': DevSecurityLevel.High, // test secure account 2
           // always prefix with prettier ignore
         },
         checkAddressFormat: true, //enabled for 1.10.0

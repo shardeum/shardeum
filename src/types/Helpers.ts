@@ -1,5 +1,5 @@
 import { VectorBufferStream, nestedCountersInstance } from '@shardus/core'
-import { AccountType, NodeAccount2 } from '../shardeum/shardeumTypes'
+import { AccountType, NodeAccount2, SecureAccount } from '../shardeum/shardeumTypes'
 import { BaseAccount } from './BaseAccount'
 import { DevAccount, deserializeDevAccount, serializeDevAccount } from './DevAccount'
 import { NetworkAccount, deserializeNetworkAccount, serializeNetworkAccount } from './NetworkAccount'
@@ -11,6 +11,7 @@ import {
 } from './WrappedEVMAccount'
 import { TypeIdentifierEnum } from './enum/TypeIdentifierEnum'
 import { Utils } from '@shardus/types'
+import { deserializeSecureAccount, serializeSecureAccount } from './SecureAccount'
 
 export const binarySerializer = <T>(
   data: T,
@@ -60,6 +61,14 @@ export const accountSerializer = <T extends BaseAccount>(data: T): VectorBufferS
         true
       )
       break
+    case AccountType.SecureAccount:
+      nestedCountersInstance.countEvent('binarySerialize', 'SecureAccount')
+      serializeSecureAccount(
+        serializedPayload,
+        data as unknown as SecureAccount,
+        true
+      )
+      break
     case AccountType.Account:
     case AccountType.ContractCode:
     case AccountType.ContractStorage:
@@ -92,6 +101,9 @@ export const accountDeserializer = <T extends BaseAccount>(data: Buffer): T => {
     case TypeIdentifierEnum.cNodeAccount2:
       nestedCountersInstance.countEvent('binaryDeserialize', 'NodeAccount2')
       return deserializeNodeAccount(payloadStream) as unknown as T
+    case TypeIdentifierEnum.cSecureAccount:
+      nestedCountersInstance.countEvent('binaryDeserialize', 'SecureAccount')
+      return deserializeSecureAccount(payloadStream) as unknown as T
     case TypeIdentifierEnum.cWrappedEVMAccount:
       nestedCountersInstance.countEvent('binaryDeserialize', 'WrappedEVMAccount')
       return deserializeWrappedEVMAccount(payloadStream) as unknown as T
