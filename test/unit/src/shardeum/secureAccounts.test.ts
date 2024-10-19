@@ -7,7 +7,7 @@ jest.mock('../../../../src/shardeum/wrappedEVMAccountFunctions', () => ({
 }));
 
 import * as WrappedEVMAccountFunctions from '../../../../src/shardeum/wrappedEVMAccountFunctions'
-describe.only('secureAccounts', () => {
+describe('secureAccounts', () => {
   describe('isSecureAccount', () => {
     it('should return true for a valid SecureAccount', () => {
       const validAccount = {
