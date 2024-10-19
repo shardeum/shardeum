@@ -4,6 +4,10 @@ import { Block } from '@ethereumjs/block'
 import { StakeCert } from '../handlers/queryCertificate'
 import { TxReceipt } from '../vm_v7/types'
 import { AdminCert } from '../handlers/adminCertificate'
+import { SecureAccount, isSecureAccount } from './secureAccounts'
+
+// Reexport for convenience
+export { SecureAccount, isSecureAccount }
 
 export enum AccountType {
   Account = 0, //  EOA or CA
@@ -381,29 +385,6 @@ export interface NetworkParameters {
     nodeRefutedPenaltyPercent: number,
   }
   enableRPCEndpoints: boolean
-}
-
-export interface SecureAccount extends BaseAccount {
-  id: string //this is the address
-  hash: string //the latest hash after changes were applied.
-  timestamp: number //the last timestamp of a transaction when this account was applied   default 0 is fine. 
-  name: string // name of the 'bucket'
-  startingLockedFunds: number // total amount of funds that could be unlocked ever for this bucket   i.e. for Sale:  91,440,000 SHM
-  unlockRecipient: string // target MPC foundation EOA that will get the funds when we unlock()
-  unlockLimit: number // max amount that can be unlocked for a given action
-  unlockDelay: number // time delay between unlocking actions , expected to be 1-2 days as the rate/constant below are the
-  //  primary means of locking things out.
-  unlockInitalConstant: number // constant amount of funds unlockable at genesis time
-  unlockRate: number // rate of how many funds can be unlocked per 30 days, just a rate, there is not a 30 day lockup
-  // these are live values that get updated each time we unlock funds (initially 0)
-  mintedFunds: number // the amount of funds unlocked so far.  Must be <= TotalFunds
-  lockedFunds: number //  count down from StartingLockedFunds and stop at 0
-  lastUnlockTime: number // the last time we unlocked funds   starts at 0
-  nonce: number // increments with each transaction  starts at 0
-}
-
-export function isSecureAccount(obj: any): obj is SecureAccount {
-  return 'name' in obj && 'unlockRecipient' in obj
 }
 
 export interface NodeAccount2 extends BaseAccount {
