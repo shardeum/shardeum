@@ -162,6 +162,14 @@ export function validateSetCertTimeState(
     network = wrappedStates[networkAccount].data as NetworkAccount
   }
 
+  if (network == null) {
+    /* prettier-ignore */ nestedCountersInstance.countEvent('shardeum-staking', 'validateSetCertTimeState' + ' Network account is null')
+    return {
+      result: 'fail',
+      reason: `Network account is null`,
+    }
+  }
+
   const minStakeRequiredUsd = network.current.stakeRequiredUsd
   const minStakeRequired = scaleByStabilityFactor(minStakeRequiredUsd, network)
 
