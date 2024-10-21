@@ -14,7 +14,7 @@ const changeConfigTx: any = {
   internalTXType: 3,
   timestamp: Date.now(),
   from: wallet.publicKey,
-  config: '{"p2p":{"useBinarySerializedEndpoints":true}}',
+  config: '{"p2p":{"cycleDuration":60}}',
   cycle: -1,
 }
 
