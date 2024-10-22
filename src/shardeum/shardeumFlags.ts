@@ -122,7 +122,6 @@ interface ShardeumFlags {
   failedStakeReceipt: boolean // For stake/unstake TXs that fail the checks in apply(), create an EVM receipt marked as failed
   debugDefaultBalance: string
   disableSmartContractEndpoints: boolean
-  stakeLockTime: number
 }
 
 export const ShardeumFlags: ShardeumFlags = {
