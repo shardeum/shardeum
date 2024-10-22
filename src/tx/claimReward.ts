@@ -229,7 +229,7 @@ export async function applyClaimRewardTx(
   /* eslint-enable security/detect-object-injection */
   const currentRate = _base16BNParser(network.current.nodeRewardAmountUsd) //BigInt(Number('0x' +
   const rate = nodeAccount.rewardRate > currentRate ? nodeAccount.rewardRate : currentRate
-  const nodeRewardAmount = scaleByStabilityFactor(rate, AccountsStorage.cachedNetworkAccount)
+  const nodeRewardAmount = scaleByStabilityFactor(rate, network)
   const nodeRewardInterval = BigInt(network.current.nodeRewardInterval)
 
   if (nodeAccount.rewardStartTime < 0) {

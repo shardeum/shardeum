@@ -30,7 +30,7 @@ export function verifyStakeTx(
   // eslint-disable-next-line security/detect-object-injection
   const networkAccount: NetworkAccount = wrappedStates[globalAccount].data
   const minStakeAmountUsd = networkAccount.current.stakeRequiredUsd
-  const minStakeAmount = scaleByStabilityFactor(minStakeAmountUsd, AccountsStorage.cachedNetworkAccount)
+  const minStakeAmount = scaleByStabilityFactor(minStakeAmountUsd, networkAccount)
   const nomineeAccount = wrappedStates[stakeCoinsTx.nominee].data as NodeAccount2
   if (typeof stakeCoinsTx.stake === 'object') stakeCoinsTx.stake = BigInt(stakeCoinsTx.stake)
   if (stakeCoinsTx.nominator == null || stakeCoinsTx.nominator.toLowerCase() !== senderAddress.toString()) {
@@ -46,11 +46,11 @@ export function verifyStakeTx(
     reason = 'Invalid nominee address in stake coins tx'
   } else if (
     nomineeAccount &&
-    nomineeAccount.stakeTimestamp + AccountsStorage.cachedNetworkAccount.current.restakeCooldown > Date.now()
+    nomineeAccount.stakeTimestamp + networkAccount.current.restakeCooldown > Date.now()
   ) {
     success = false
     reason = `This node was staked within the last ${
-      AccountsStorage.cachedNetworkAccount.current.restakeCooldown / 60000
+      networkAccount.current.restakeCooldown / 60000
     } minutes. You can't stake more to this node yet!`
   } else if (stakeCoinsTx.stake < minStakeAmount) {
     success = false

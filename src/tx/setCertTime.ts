@@ -1,5 +1,5 @@
 import { nestedCountersInstance, Shardus, ShardusTypes } from '@shardus/core'
-import { ONE_SECOND } from '../shardeum/shardeumConstants'
+import { networkAccount, ONE_SECOND } from '../shardeum/shardeumConstants'
 import config from '../config'
 import { getNodeAccountWithRetry, InjectTxToConsensor } from '../handlers/queryCertificate'
 import { toShardusAddress } from '../shardeum/evmAddress'
@@ -12,6 +12,7 @@ import {
   WrappedEVMAccount,
   WrappedStates,
   InjectTxResponse,
+  isNetworkAccount,
 } from '../shardeum/shardeumTypes'
 import * as WrappedEVMAccountFunctions from '../shardeum/wrappedEVMAccountFunctions'
 import { fixDeserializedWrappedEVMAccount } from '../shardeum/wrappedEVMAccountFunctions'
@@ -23,6 +24,7 @@ import { bigIntToHex, isValidAddress } from '@ethereumjs/util'
 import { Utils } from '@shardus/types'
 import { SafeBalance } from '../utils/safeMath'
 import { verify } from '../setup/helpers'
+import { NetworkAccount } from '../types/NetworkAccount';
 
 export function isSetCertTimeTx(tx): boolean {
   if (tx.isInternalTx && tx.internalTXType === InternalTXType.SetCertTime) {
@@ -153,16 +155,23 @@ export function validateSetCertTimeState(
     }
   }
 
-  if (AccountsStorage.cachedNetworkAccount == null && ShardeumFlags.fixCertExpTiming) {
-    /* prettier-ignore */ nestedCountersInstance.countEvent('shardeum-staking', 'validateSetCertTimeState' + ' Cached network account is null')
+  let network: NetworkAccount
+  // eslint-disable-next-line security/detect-object-injection
+  if (wrappedStates[networkAccount]?.data && isNetworkAccount(wrappedStates[networkAccount].data)) {
+    // eslint-disable-next-line security/detect-object-injection
+    network = wrappedStates[networkAccount].data as NetworkAccount
+  }
+
+  if (network == null) {
+    /* prettier-ignore */ nestedCountersInstance.countEvent('shardeum-staking', 'validateSetCertTimeState' + ' Network account is null')
     return {
       result: 'fail',
-      reason: `Cached network account is null`,
+      reason: `Network account is null`,
     }
   }
 
-  const minStakeRequiredUsd = AccountsStorage.cachedNetworkAccount.current.stakeRequiredUsd
-  const minStakeRequired = scaleByStabilityFactor(minStakeRequiredUsd, AccountsStorage.cachedNetworkAccount)
+  const minStakeRequiredUsd = network.current.stakeRequiredUsd
+  const minStakeRequired = scaleByStabilityFactor(minStakeRequiredUsd, network)
 
   /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log( 'validate operator stake', _readableSHM(committedStake), _readableSHM(minStakeRequired), ' committedStake < minStakeRequired : ', committedStake < minStakeRequired )
 
@@ -262,11 +271,17 @@ export function applySetCertTimeTx(
   // deduct tx fee if certExp is not set yet or far from expiration
   /* prettier-ignore */ if (logFlags.dapp_verbose) console.log(`applySetCertTimeTx shouldChargeTxFee: ${shouldChargeTxFee}`)
 
+  let network: NetworkAccount
+  // eslint-disable-next-line security/detect-object-injection
+  if (wrappedStates[networkAccount]?.data && isNetworkAccount(wrappedStates[networkAccount].data)) {
+    // eslint-disable-next-line security/detect-object-injection
+    network = wrappedStates[networkAccount].data as NetworkAccount
+  }
   let amountSpent = bigIntToHex(BigInt(0))
   if (shouldChargeTxFee) {
     const costTxFee = scaleByStabilityFactor(
       BigInt(ShardeumFlags.constantTxFeeUsd),
-      AccountsStorage.cachedNetworkAccount
+      network
     )
     operatorEVMAccount.account.balance = SafeBalance.subtractBigintBalance(operatorEVMAccount.account.balance, costTxFee)
     amountSpent = bigIntToHex(costTxFee)
