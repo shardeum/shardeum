@@ -2929,7 +2929,7 @@ function setGlobalCodeByteUpdate(
 
   //value = shardus.signAsNode(value)
 
-  const addressHash = '' // just a placeholder; we don't use `setGlobalCodeByteUpdate` anymore, so it's fine.
+  const addressHash = WrappedEVMAccountFunctions._calculateAccountHash(wrappedEVMAccount)
 
   const ourAppDefinedData = applyResponse.appDefinedData as OurAppDefinedData
   ourAppDefinedData.globalMsg = { address: globalAddress, addressHash, value, when, source: globalAddress }
