@@ -27,7 +27,6 @@ jobs:
       # Apply both patches
       - name: Apply patches
         run: |
-          # cd x-shardeum-helm-charts
           git apply patch-files/validator/validator-ports-env.patch
           git apply patch-files/validator/validator-and-svc-validator-both.patch
 
