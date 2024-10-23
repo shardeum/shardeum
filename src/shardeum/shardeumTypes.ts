@@ -105,6 +105,7 @@ export enum InternalTXType {
   ChangeNetworkParam = 10,
   ApplyNetworkParam = 11,
   Penalty = 12,
+  TransferFromSecureAccount = 13,
 }
 
 export enum DebugTXType {
@@ -516,3 +517,13 @@ export interface AppJoinData {
   adminCert: AdminCert
   mustUseAdminCert: boolean
 }
+
+export interface TransferFromSecureAccount extends InternalTxBase {
+  txType: InternalTXType.TransferFromSecureAccount
+  amount: string // Whole number of SHM tokens
+  accountName: string
+  nonce: number
+  sign?: ShardusTypes.Sign[]
+}
+
+export type AccountMap = Map<string, WrappedEVMAccount>;

@@ -16,6 +16,8 @@ import { comparePropertiesTypes } from '../utils'
 import { Utils } from '@shardus/types'
 import { ethers } from 'ethers'
 import { shardusConfig } from '..'
+import { validateTransferFromSecureAccount } from '../shardeum/secureAccounts'
+import { TransferFromSecureAccount } from '../shardeum/shardeumTypes'
 
 type Response = {
   result: string
@@ -69,6 +71,9 @@ export const validateTransaction =
         return { result: 'pass', reason: 'valid' }
       } else if (tx.internalTXType === InternalTXType.InitRewardTimes) {
         return InitRewardTimesTx.validate(tx as InitRewardTimes, shardus)
+      } else if (tx.internalTXType === InternalTXType.TransferFromSecureAccount) {
+        const verifyResult = validateTransferFromSecureAccount(tx as TransferFromSecureAccount, shardus)
+        return { result: verifyResult.success ? 'pass' : 'fail', reason: verifyResult.reason }
       } else {
         //todo validate internal TX
         const isValid = crypto.verifyObj(internalTx)

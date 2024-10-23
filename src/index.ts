@@ -73,6 +73,7 @@ import {
   StakeCoinsTX,
   StakeInfo,
   SyncingTimeoutViolationData,
+  TransferFromSecureAccount,
   UnstakeCoinsTX,
   WrappedAccount,
   WrappedEVMAccount,
@@ -171,6 +172,7 @@ import { initAjvSchemas, verifyPayload } from './types/ajv/Helpers'
 import { Sign, ServerMode } from '@shardus/core/dist/shardus/shardus-types'
 
 import { safeStringify } from '@shardus/types/build/src/utils/functions/stringify'
+import { isTransferFromSecureAccount, crack as crackTransferFromSecureAccount, apply as applyTransferFromSecureAccount } from './shardeum/secureAccounts'
 
 let latestBlock = 0
 export const blocks: BlockMap = {}
@@ -2815,6 +2817,12 @@ async function applyInternalTx(
     const penaltyTx = internalTx as PenaltyTX
     applyPenaltyTX(shardus, penaltyTx, wrappedStates, txId, txTimestamp, applyResponse)
   }
+  if (internalTx.internalTXType === InternalTXType.TransferFromSecureAccount) {  
+    await applyTransferFromSecureAccount(
+      internalTx as TransferFromSecureAccount, 
+      wrappedStates, { crackedData }, shardus, applyResponse);
+    return applyResponse;
+  }
   return applyResponse
 }
 
@@ -5227,6 +5235,16 @@ const shardusSetup = (): void => {
           }
         }
         /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log( `txPreCrackData final result: txNonce: ${appData.txNonce}, currentNonce: ${ appData.nonce }, queueCount: ${appData.queueCount}, appData ${Utils.safeStringify(appData)}` )
+      }
+      if (isTransferFromSecureAccount(tx)) {
+        try {
+          const crackedData = crackTransferFromSecureAccount(tx as TransferFromSecureAccount)
+          appData.crackedData = crackedData
+          appData.involvedAccounts = crackedData.involvedAccounts
+          return { status: true, reason: 'TransferFromSecureAccount cracked successfully' }
+        } catch (error) {
+          return { status: false, reason: `Failed to crack TransferFromSecureAccount: ${error.message}` }
+        }
       }
       return { status: true, reason: 'Passed' }
     },

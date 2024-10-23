@@ -12,6 +12,7 @@ import {
   UnstakeCoinsTX,
   WrappedEVMAccount,
   NetworkAccount,
+  TransferFromSecureAccount,
 } from '../shardeum/shardeumTypes'
 import * as AccountsStorage from '../storage/accountStorage'
 import { validateClaimRewardTx } from '../tx/claimReward'
@@ -41,6 +42,7 @@ import { validatePenaltyTX } from '../tx/penalty/transaction'
 import { bytesToHex } from '@ethereumjs/util'
 import { logFlags, shardusConfig } from '..'
 import { Sign } from '@shardus/core/dist/shardus/shardus-types'
+import { verify as verifyTransferFromSecureAccount } from '../shardeum/secureAccounts'
 
 /**
  * Checks that Transaction fields are valid
@@ -182,6 +184,23 @@ export const validateTxnFields =
             success,
             reason,
             txnTimestamp: txnTimestamp,
+          }
+        } else if (tx.internalTXType === InternalTXType.TransferFromSecureAccount) {
+          const transferTx = tx as TransferFromSecureAccount
+          // Perform thorough verification
+          const verifyResult = verifyTransferFromSecureAccount(transferTx, appData.wrappedStates, shardus)
+          if (!verifyResult) {
+            return {
+              success: false,
+              reason: verifyResult.reason,
+              txnTimestamp,
+            }
+          }
+
+          return {
+            success: true,
+            reason: 'Valid TransferFromSecureAccount transaction',
+            txnTimestamp,
           }
         } else {
           try {
@@ -484,3 +503,7 @@ export const validateTxnFields =
         txnTimestamp,
       }
     }
+
+
+
+
