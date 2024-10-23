@@ -79,7 +79,7 @@ interface SecureAccountData {
   SecureAccountAddress: string
 }
 
-const secureAccountDataMap: Map<string, SecureAccountData> = new Map(
+export const secureAccountDataMap: Map<string, SecureAccountData> = new Map(
   genesisSecureAccounts.map(account => [account.Name, account])
 )
 

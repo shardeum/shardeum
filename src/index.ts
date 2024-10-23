@@ -172,7 +172,7 @@ import { initAjvSchemas, verifyPayload } from './types/ajv/Helpers'
 import { Sign, ServerMode } from '@shardus/core/dist/shardus/shardus-types'
 
 import { safeStringify } from '@shardus/types/build/src/utils/functions/stringify'
-import { isTransferFromSecureAccount, crack as crackTransferFromSecureAccount, apply as applyTransferFromSecureAccount } from './shardeum/secureAccounts'
+import { isTransferFromSecureAccount, crack as crackTransferFromSecureAccount, apply as applyTransferFromSecureAccount, secureAccountDataMap } from './shardeum/secureAccounts'
 
 let latestBlock = 0
 export const blocks: BlockMap = {}
@@ -5334,6 +5334,15 @@ const shardusSetup = (): void => {
         } else if (internalTx.internalTXType === InternalTXType.Penalty) {
           keys.sourceKeys = [tx.reportedNodePublickKey]
           keys.targetKeys = [toShardusAddress(tx.operatorEVMAddress, AccountType.Account), networkAccount]
+        } else if (internalTx.internalTXType === InternalTXType.TransferFromSecureAccount) {
+          keys.sourceKeys = [
+            // get the address from the 
+            secureAccountDataMap.get(tx.accountName).SourceFundsAddress,
+            secureAccountDataMap.get(tx.accountName).SecureAccountAddress,
+          ]
+          keys.targetKeys = [
+            secureAccountDataMap.get(tx.accountName).RecipientFundsAddress
+          ]
         }
         keys.allKeys = keys.allKeys.concat(keys.sourceKeys, keys.targetKeys, keys.storageKeys)
         // temporary hack for creating a receipt of node reward tx
