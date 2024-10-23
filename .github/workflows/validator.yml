@@ -5,6 +5,7 @@ on:
     branches:
       - dev-pipeline
 
+
 jobs:
   build-and-push:
     runs-on: ubuntu-latest
@@ -13,6 +14,25 @@ jobs:
       # Checkout the repository
       - name: Checkout code
         uses: actions/checkout@v3
+
+      # Clone the shardeum/x-shardeum-helm-charts repository and checkout the appropriate branch
+      - name: Clone shardeum/x-shardeum-helm-charts repo
+        run: |
+          git clone https://github.com/shardeum/x-shardeum-helm-charts.git
+          cd x-shardeum-helm-charts
+          git checkout archiver-validator-chart
+
+      # Apply the validator-ports-env.patch
+      - name: Apply validator-ports-env.patch
+        run: |
+          cd x-shardeum-helm-charts
+          git apply patch-files/validator/validator-ports-env.patch
+
+      # Apply the validator-and-svc-validator-both.patch
+      - name: Apply validator-and-svc-validator-both.patch
+        run: |
+          cd x-shardeum-helm-charts
+          git apply patch-files/validator/validator-and-svc-validator-both.patch
 
       # Set up Docker Buildx
       - name: Set up Docker Buildx
@@ -30,18 +50,6 @@ jobs:
       - name: Get short SHA
         id: vars
         run: echo "SHORT_SHA=${GITHUB_SHA::7}" >> $GITHUB_ENV
-
-      # Download and apply validator-ports-env.patch
-      - name: Download and apply validator-ports-env.patch
-        run: |
-          curl -o validator-ports-env.patch https://raw.githubusercontent.com/shardeum/x-shardeum-helm-charts/archiver-validator-chart/patch-files/validator/validator-ports-env.patch
-          git apply validator-ports-env.patch
-
-      # Download and apply validator-and-svc-validator-both.patch
-      - name: Download and apply validator-and-svc-validator-both.patch
-        run: |
-          curl -o validator-and-svc-validator-both.patch https://raw.githubusercontent.com/shardeum/x-shardeum-helm-charts/archiver-validator-chart/patch-files/validator/validator-and-svc-validator-both.patch
-          git apply validator-and-svc-validator-both.patch
 
       # Build and push the Docker image
       - name: Build and push Docker image
