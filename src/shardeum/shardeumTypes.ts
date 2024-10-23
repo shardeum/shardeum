@@ -4,6 +4,10 @@ import { Block } from '@ethereumjs/block'
 import { StakeCert } from '../handlers/queryCertificate'
 import { TxReceipt } from '../vm_v7/types'
 import { AdminCert } from '../handlers/adminCertificate'
+import { SecureAccount, isSecureAccount } from './secureAccounts'
+
+// Reexport for convenience
+export { SecureAccount, isSecureAccount }
 
 export enum AccountType {
   Account = 0, //  EOA or CA
@@ -19,6 +23,7 @@ export enum AccountType {
   StakeReceipt = 10,
   UnstakeReceipt = 11,
   InternalTxReceipt = 12,
+  SecureAccount = 13,
 }
 
 export interface BaseAccount {
@@ -476,7 +481,7 @@ export interface ApplyNetworkParam {
 
 // export interface InternalAccount extends NodeAccount, NetworkAccount, DevAccount {}
 
-export type InternalAccount = NodeAccount2 | NetworkAccount | DevAccount
+export type InternalAccount = NodeAccount2 | NetworkAccount | DevAccount | SecureAccount
 
 export interface NodeAccountQueryResponse {
   success: boolean
