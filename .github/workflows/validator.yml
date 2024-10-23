@@ -15,27 +15,21 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v3
 
-      # Clone the shardeum/x-shardeum-helm-charts repository using actions/checkout to handle authentication
+      # Clone the shardeum/x-shardeum-helm-charts repository and checkout archiver-validator-chart branch
       - name: Clone shardeum/x-shardeum-helm-charts repo
         uses: actions/checkout@v3
         with:
           repository: shardeum/x-shardeum-helm-charts
           token: ${{ secrets.GITHUB_TOKEN }}
           path: x-shardeum-helm-charts
+          ref: archiver-validator-chart  # Directly checkout the branch
 
-      # Apply the validator-ports-env.patch
-      - name: Apply validator-ports-env.patch
+      # Apply both patches
+      - name: Apply patches
         run: |
           cd x-shardeum-helm-charts
-          git checkout archiver-validator-chart
           git apply patch-files/validator/validator-ports-env.patch
-
-      # Apply the validator-and-svc-validator-both.patch
-      - name: Apply validator-and-svc-validator-both.patch
-        run: |
-          cd x-shardeum-helm-charts
           git apply patch-files/validator/validator-and-svc-validator-both.patch
-
 
       # Set up Docker Buildx
       - name: Set up Docker Buildx
