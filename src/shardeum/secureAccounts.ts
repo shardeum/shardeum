@@ -7,31 +7,27 @@ export interface SecureAccount extends BaseAccount {
   hash: string
   timestamp: number
   name: string
-  startingLockedFunds: number
-  unlockRecipient: string
-  unlockLimit: number
-  unlockDelay: number
-  unlockInitalConstant: number
-  unlockRate: number
-  mintedFunds: number
-  lockedFunds: number
-  lastUnlockTime: number
+  nextTransferAmount: bigint
+  nextTransferTime: number
   nonce: number
 }
 
 export interface SecureAccountConfig {
-  id: string
-  name: string
-  startingLockedFunds: number
-  unlockRecipient: string
-  unlockLimit: number
-  unlockDelay: number
-  unlockInitalConstant: number
-  unlockRate: number
+  Name: string;
+  SourceFundsAddress: string;
+  RecipientFundsAddress: string;
+  SecureAccountAddress: string; // This will be the 32-byte address format
+  SourceFundsBalance: string;
 }
 
 export function isSecureAccount(obj: unknown): obj is SecureAccount {
-  return typeof obj === 'object' && obj !== null && 'name' in obj && 'unlockRecipient' in obj
+  return (
+    typeof obj === 'object' &&
+    obj !== null &&
+    'name' in obj &&
+    'nextTransferAmount' in obj &&
+    'nextTransferTime' in obj
+  )
 }
 
 export function initializeSecureAccount(
@@ -44,20 +40,13 @@ export function initializeSecureAccount(
   }
 
   const secureAccount: SecureAccount = {
-    id: secureAccountConfig.id,
+    id: secureAccountConfig.SecureAccountAddress, // Use SecureAccountAddress as id
     hash: '',
     timestamp: cycleStart,
     accountType: AccountType.SecureAccount,
-    name: secureAccountConfig.name,
-    startingLockedFunds: secureAccountConfig.startingLockedFunds,
-    unlockRecipient: secureAccountConfig.unlockRecipient,
-    unlockLimit: secureAccountConfig.unlockLimit,
-    unlockDelay: secureAccountConfig.unlockDelay,
-    unlockInitalConstant: secureAccountConfig.unlockInitalConstant,
-    unlockRate: secureAccountConfig.unlockRate,
-    mintedFunds: 0,
-    lockedFunds: secureAccountConfig.startingLockedFunds,
-    lastUnlockTime: cycleStart,
+    name: secureAccountConfig.Name,
+    nextTransferAmount: BigInt(0),
+    nextTransferTime: 0,
     nonce: 0
   }
 
@@ -66,4 +55,11 @@ export function initializeSecureAccount(
   if (ShardeumFlags.VerboseLogs) console.log('SecureAccount created', secureAccount)
 
   return secureAccount
+}
+
+export function serializeSecureAccount(account: SecureAccount): any {
+  return {
+    ...account,
+    nextTransferAmount: account.nextTransferAmount.toString(),
+  };
 }

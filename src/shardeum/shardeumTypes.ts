@@ -481,7 +481,7 @@ export interface ApplyNetworkParam {
 
 // export interface InternalAccount extends NodeAccount, NetworkAccount, DevAccount {}
 
-export type InternalAccount = NodeAccount2 | NetworkAccount | DevAccount
+export type InternalAccount = NodeAccount2 | NetworkAccount | DevAccount | SecureAccount
 
 export interface NodeAccountQueryResponse {
   success: boolean

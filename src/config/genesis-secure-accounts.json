@@ -1,52 +1,37 @@
 [
   {
-    "id": "7f9c1f3a8b0e2d4c6a5b9d0f2e1c3a4b5d6e7f8a9b0c1d2e3f4a5b6c7d8e9f0a",
-    "name": "Foundation",
-    "startingLockedFunds": 55880000,
-    "unlockRecipient": "0x1f1545Eb7EE5C3C1c4784ee9ddE5D26A9f76F77C",
-    "unlockLimit": 1000000,
-    "unlockDelay": 86400,
-    "unlockInitalConstant": 500000,
-    "unlockRate": 3000000
+    "Name": "Foundation",
+    "SourceFundsAddress": "0x1f1545Eb7EE5C3C1c4784ee9ddE5D26A9f76F77C",
+    "RecipientFundsAddress": "0x1f1545Eb7EE5C3C1c4784ee9ddE5D26A9f76F77C",
+    "SecureAccountAddress": "1f1545Eb7EE5C3C1c4784ee9ddE5D26A9f76F77C000000000000000000000000",
+    "SourceFundsBalance": "55880000000000000000000000"
   },
   {
-    "id": "a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0c1d2e3f4a5b6c7d8e9f0a1b2",
-    "name": "Team",
-    "startingLockedFunds": 71120000,
-    "unlockRecipient": "0x1923a1eb8e4da49604affd34de1b478580cf8698",
-    "unlockLimit": 1500000,
-    "unlockDelay": 86400,
-    "unlockInitalConstant": 1000000,
-    "unlockRate": 5000000
+    "Name": "Team",
+    "SourceFundsAddress": "0x1923a1eb8e4da49604affd34de1b478580cf8698",
+    "RecipientFundsAddress": "0x1923a1eb8e4da49604affd34de1b478580cf8698",
+    "SecureAccountAddress": "1923a1eb8e4da49604affd34de1b478580cf8698000000000000000000000000",
+    "SourceFundsBalance": "71120000000000000000000000"
   },
   {
-    "id": "b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0c1d2e3f4a5b6c7d8e9f0a1b2c3",
-    "name": "Ecosystem",
-    "startingLockedFunds": 25400000,
-    "unlockRecipient": "0xF151bBcDD3754A675a2F6CdE1c97A03a9972d0BB",
-    "unlockLimit": 750000,
-    "unlockDelay": 86400,
-    "unlockInitalConstant": 300000,
-    "unlockRate": 1500000
+    "Name": "Ecosystem",
+    "SourceFundsAddress": "0xF151bBcDD3754A675a2F6CdE1c97A03a9972d0BB",
+    "RecipientFundsAddress": "0xF151bBcDD3754A675a2F6CdE1c97A03a9972d0BB",
+    "SecureAccountAddress": "F151bBcDD3754A675a2F6CdE1c97A03a9972d0BB000000000000000000000000",
+    "SourceFundsBalance": "25400000000000000000000000"
   },
   {
-    "id": "c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0c1d2e3f4a5b6c7d8e9f0a1b2c3d4",
-    "name": "Sale",
-    "startingLockedFunds": 91440000,
-    "unlockRecipient": "0x166eAB1aec68881690f11571064444753a519F72",
-    "unlockLimit": 2000000,
-    "unlockDelay": 86400,
-    "unlockInitalConstant": 1000000,
-    "unlockRate": 6000000
+    "Name": "Sale",
+    "SourceFundsAddress": "0x166eAB1aec68881690f11571064444753a519F72",
+    "RecipientFundsAddress": "0x166eAB1aec68881690f11571064444753a519F72",
+    "SecureAccountAddress": "166eAB1aec68881690f11571064444753a519F72000000000000000000000000",
+    "SourceFundsBalance": "91440000000000000000000000"
   },
   {
-    "id": "d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0c1d2e3f4a5b6c7d8e9f0a1b2c3d4e5",
-    "name": "ShardusLicense",
-    "startingLockedFunds": 5080000,
-    "unlockRecipient": "0x7ccBFDE95892d699914970B9fe7EE6B9853284AD",
-    "unlockLimit": 100000,
-    "unlockDelay": 86400,
-    "unlockInitalConstant": 50000,
-    "unlockRate": 300000
+    "Name": "ShardusLicense",
+    "SourceFundsAddress": "0x7ccBFDE95892d699914970B9fe7EE6B9853284AD",
+    "RecipientFundsAddress": "0x7ccBFDE95892d699914970B9fe7EE6B9853284AD",
+    "SecureAccountAddress": "7ccBFDE95892d699914970B9fe7EE6B9853284AD000000000000000000000000",
+    "SourceFundsBalance": "5080000000000000000000000"
   }
 ]

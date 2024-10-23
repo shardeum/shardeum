@@ -1,18 +1,19 @@
 import { initializeSecureAccount, isSecureAccount, SecureAccount, SecureAccountConfig } from '../../../../src/shardeum/secureAccounts'
 import { ShardeumFlags } from '../../../../src/shardeum/shardeumFlags'
+import * as WrappedEVMAccountFunctions from '../../../../src/shardeum/wrappedEVMAccountFunctions'
+import { AccountType } from '../../../../src/shardeum/shardeumTypes'
 
 jest.mock('../../../../src/shardeum/wrappedEVMAccountFunctions', () => ({
   updateEthAccountHash: jest.fn(),
-  // Add any other functions from wrappedEVMAccountFunctions that you might be using
 }));
 
-import * as WrappedEVMAccountFunctions from '../../../../src/shardeum/wrappedEVMAccountFunctions'
 describe('secureAccounts', () => {
   describe('isSecureAccount', () => {
     it('should return true for a valid SecureAccount', () => {
       const validAccount = {
         name: 'Test',
-        unlockRecipient: '0x1234567890123456789012345678901234567890'
+        nextTransferAmount: BigInt(0),
+        nextTransferTime: 0
       }
       expect(isSecureAccount(validAccount)).toBe(true)
     })
@@ -32,41 +33,29 @@ describe('secureAccounts', () => {
   describe('initializeSecureAccount', () => {
     beforeEach(() => {
       jest.clearAllMocks();
-      (WrappedEVMAccountFunctions.updateEthAccountHash as jest.Mock).mockImplementation((arg) => {
-        return arg;
-      });
+      (WrappedEVMAccountFunctions.updateEthAccountHash as jest.Mock).mockImplementation((arg) => arg);
     });
 
     it('should initialize a SecureAccount with correct values', () => {
       const config: SecureAccountConfig = {
-        id: '0x1234567890123456789012345678901234567890',
-        name: 'Test Account',
-        startingLockedFunds: 1000000,
-        unlockRecipient: '0x0987654321098765432109876543210987654321',
-        unlockLimit: 10000,
-        unlockDelay: 86400,
-        unlockInitalConstant: 5000,
-        unlockRate: 100
+        Name: 'Test Account',
+        SourceFundsAddress: '0x1234567890123456789012345678901234567890',
+        RecipientFundsAddress: '0x0987654321098765432109876543210987654321',
+        SecureAccountAddress: '0x2468135790246813579024681357902468135790',
+        SourceFundsBalance: '1000000000000000000'
       }
       const latestCycles = [{ start: 1000 }]
 
       const result = initializeSecureAccount(config, latestCycles)
 
       expect(result).toEqual({
-        id: config.id,
+        id: config.SecureAccountAddress,
         hash: '',
         timestamp: 1000000,
-        accountType: 13,
-        name: config.name,
-        startingLockedFunds: config.startingLockedFunds,
-        unlockRecipient: config.unlockRecipient,
-        unlockLimit: config.unlockLimit,
-        unlockDelay: config.unlockDelay,
-        unlockInitalConstant: config.unlockInitalConstant,
-        unlockRate: config.unlockRate,
-        mintedFunds: 0,
-        lockedFunds: config.startingLockedFunds,
-        lastUnlockTime: 1000000,
+        accountType: AccountType.SecureAccount,
+        name: config.Name,
+        nextTransferAmount: BigInt(0),
+        nextTransferTime: 0,
         nonce: 0
       })
 
@@ -75,21 +64,17 @@ describe('secureAccounts', () => {
 
     it('should use 0 as cycleStart when latestCycles is empty', () => {
       const config: SecureAccountConfig = {
-        id: '0x1234567890123456789012345678901234567890',
-        name: 'Test Account',
-        startingLockedFunds: 1000000,
-        unlockRecipient: '0x0987654321098765432109876543210987654321',
-        unlockLimit: 10000,
-        unlockDelay: 86400,
-        unlockInitalConstant: 5000,
-        unlockRate: 100
+        Name: 'Test Account',
+        SourceFundsAddress: '0x1234567890123456789012345678901234567890',
+        RecipientFundsAddress: '0x0987654321098765432109876543210987654321',
+        SecureAccountAddress: '0x2468135790246813579024681357902468135790',
+        SourceFundsBalance: '1000000000000000000'
       }
       const latestCycles: { start: number }[] = []
 
       const result = initializeSecureAccount(config, latestCycles)
 
       expect(result.timestamp).toBe(0)
-      expect(result.lastUnlockTime).toBe(0)
     })
 
     it('should log the created SecureAccount when VerboseLogs flag is true', () => {
@@ -97,14 +82,11 @@ describe('secureAccounts', () => {
       ShardeumFlags.VerboseLogs = true
 
       const config: SecureAccountConfig = {
-        id: '0x1234567890123456789012345678901234567890',
-        name: 'Test Account',
-        startingLockedFunds: 1000000,
-        unlockRecipient: '0x0987654321098765432109876543210987654321',
-        unlockLimit: 10000,
-        unlockDelay: 86400,
-        unlockInitalConstant: 5000,
-        unlockRate: 100
+        Name: 'Test Account',
+        SourceFundsAddress: '0x1234567890123456789012345678901234567890',
+        RecipientFundsAddress: '0x0987654321098765432109876543210987654321',
+        SecureAccountAddress: '0x2468135790246813579024681357902468135790',
+        SourceFundsBalance: '1000000000000000000'
       }
       const latestCycles = [{ start: 1000 }]
 

@@ -129,7 +129,12 @@ export async function setAccount(address: string, account: WrappedEVMAccount): P
       if (account.timestamp === 0) {
         throw new Error(`setAccount timestamp should not be 0. accountId: ${address}, data: ${JSON.stringify(account, null, '  ')}`)
       }
-      await storage.createOrReplaceAccountEntry(accountEntry)
+      try {
+        await storage.createOrReplaceAccountEntry(accountEntry)
+      } catch (e) {
+        console.error("Blew up trying to set account", JSON.stringify(accountEntry, null, '  '), e);
+        throw e;
+      }
 
       setCachedRIAccount(accountEntry)
 

@@ -14,7 +14,7 @@ import { sleep } from '../utils'
 import { DefaultStateManager } from '@ethereumjs/statemanager'
 import { logFlags, shardeumGetTime } from '..'
 import { Utils } from '@shardus/types'
-import { initializeSecureAccount, SecureAccountConfig, SecureAccount } from '../shardeum/secureAccounts'
+import { initializeSecureAccount, SecureAccountConfig, SecureAccount, serializeSecureAccount } from '../shardeum/secureAccounts'
 
 function isDebugMode(): boolean {
   // eslint-disable-next-line @typescript-eslint/ban-ts-comment
@@ -60,23 +60,30 @@ export const sync = (shardus: Shardus, evmCommon: any) => async (): Promise<void
         console.log('SETTING UP Genesis accounts');
         let skippedAccountCount = 0
         let accountCopies = []
-        for (const address in genesis) {
-          const amount = BigInt(genesis[address].wei) // eslint-disable-line security/detect-object-injection
 
-          const shardusAccountID = toShardusAddress(address, AccountType.Account)
-          const existingAccount = await shardus.getLocalOrRemoteAccount(shardusAccountID)
+        // Create genesis accounts from secure accounts
+        const additionalGenesisAccounts = createGenesisAccountsFromSecureAccounts(genesisSecureAccounts);
+
+        // Merge additional genesis accounts with existing genesis accounts
+        const mergedGenesisAccounts = { ...genesis, ...additionalGenesisAccounts };
+
+        for (const address in mergedGenesisAccounts) {
+          const amount = BigInt(mergedGenesisAccounts[address].wei);
+
+          const shardusAccountID = toShardusAddress(address, AccountType.Account);
+          const existingAccount = await shardus.getLocalOrRemoteAccount(shardusAccountID);
           if (existingAccount) {
-            skippedAccountCount += 1
-            continue
+            skippedAccountCount += 1;
+            continue;
           }
 
-          const ethAccountID = Address.fromString(address).toString()
+          const ethAccountID = Address.fromString(address).toString();
           const { wrappedEVMAccount, accountId, cycle } = await manuallyCreateAccount(
             ethAccountID,
             amount,
             evmCommon,
             shardus.getLatestCycles()
-          )
+          );
           const accountCopy: ShardusTypes.AccountsCopy = {
             cycleNumber: cycle.counter,
             accountId,
@@ -84,31 +91,39 @@ export const sync = (shardus: Shardus, evmCommon: any) => async (): Promise<void
             hash: wrappedEVMAccount.hash,
             isGlobal: false,
             timestamp: wrappedEVMAccount.timestamp,
-          }
-          accountCopies.push(accountCopy)
-          /* prettier-ignore */ if (logFlags.important_as_error) shardus.log(`node ${nodeId} SETUP GENESIS ACCOUNT: ${address}  amt: ${amount}`)
+          };
+          console.log('Genesis account copy: ', Utils.safeStringify(accountCopy));
+          
+          accountCopies.push(accountCopy);
+          /* prettier-ignore */ if (logFlags.important_as_error) shardus.log(`node ${nodeId} SETUP GENESIS ACCOUNT: ${address}  amt: ${amount}`);
         }
 
-        const latestCycles = shardus.getLatestCycles()
         console.log('number of genesisSecureAccounts:', genesisSecureAccounts.length);
+
         for (const secureAccountConfig of genesisSecureAccounts) {
           console.log('SETTING UP Genesis SECURE ACCOUNTS');
+          const cycles = shardus.getLatestCycles()
           const secureAccount = initializeSecureAccount(
             secureAccountConfig as SecureAccountConfig,
-            latestCycles
-          )
-          console.log('secure account: ', JSON.stringify(secureAccount, null, '  '));
+            cycles
+          );
+          
+          console.log('secure account: ', JSON.stringify(serializeSecureAccount(secureAccount), null, '  '));
+          
+          const serializedSecureAccount = serializeSecureAccount(secureAccount);
           const accountCopy: ShardusTypes.AccountsCopy = {
-            cycleNumber: 0,
-            accountId: secureAccount.id,
-            data: secureAccount,
-            hash: secureAccount.hash,
+            cycleNumber: cycles[0].counter,
+            accountId: serializedSecureAccount.id,
+            data: serializedSecureAccount,
+            hash: serializedSecureAccount.hash,
             isGlobal: false,
-            timestamp: secureAccount.timestamp,
-          }
-          accountCopies.push(accountCopy)
-          /* prettier-ignore */ if (logFlags.important_as_error) shardus.log(`node ${nodeId} SETUP GENESIS SECUREACCOUNT: ${secureAccount.id}  startingLockedFunds: ${secureAccount.startingLockedFunds}`)
+            timestamp: serializedSecureAccount.timestamp,
+          };
+          console.log('secure account serialized: ', JSON.stringify(accountCopy, null, '  '));
+          accountCopies.push(accountCopy);
+          /* prettier-ignore */ if (logFlags.important_as_error) shardus.log(`node ${nodeId} SETUP GENESIS SECUREACCOUNT: ${serializedSecureAccount.id}`);
         }
+
         /* prettier-ignore */ if (logFlags.important_as_error) console.log(`Skipped ${skippedAccountCount} genesis accounts`)
         //TODO we need to brainstorm a way to allow migration of keys on a live network
         const devPublicKeys = shardus.getDevPublicKeys()
@@ -133,9 +148,9 @@ export const sync = (shardus: Shardus, evmCommon: any) => async (): Promise<void
         await shardus.debugCommitAccountCopies(accountCopies)
         if (ShardeumFlags.forwardGenesisAccounts) {
           accountCopies = accountCopies.map((account) => {
-            return Utils.safeJsonParse(Utils.safeStringify(account))
-          })
-          await shardus.forwardAccounts({ accounts: accountCopies, receipts: [] })
+            return Utils.safeJsonParse(Utils.safeStringify(account));
+          });
+          await shardus.forwardAccounts({ accounts: accountCopies, receipts: [] });
         }
       }
 
@@ -304,42 +319,6 @@ async function createAccount(
   return wrappedEVMAccount
 }
 
-async function createSecureAccount(
-  addressStr: string,
-  stateManager: any,
-  secureAccountsConfig: any,
-): Promise<WrappedEVMAccount> {
-  if (ShardeumFlags.VerboseLogs) console.log('Creating new account', addressStr)
-  const accountAddress = Address.fromString(addressStr)
-
-  const acctData = {
-    //balance: 0, might need this?? at time of writing i dont know yet
-    nonce: 0,
-  }
-
-  //I think this will have to change in the future!
-  // shardeumStateManager.setTransactionState(transactionState)
-
-  const account = Account.fromAccountData(acctData)
-  await stateManager.putAccount(accountAddress, account)
-  const updatedAccount: Account = await stateManager.getAccount(accountAddress)
-
-  const wrappedEVMAccount = {
-    ...secureAccountsConfig,
-    accountType: AccountType.SecureAccount,
-    timestamp: 0,
-    account: updatedAccount,
-    ethAddress: addressStr,
-    hash: '',
-    mintedFunds: 0,
-    lockedFunds: secureAccountsConfig.startingLockedFunds,
-    lastUnlockTime: 0,
-  }
-  WrappedEVMAccountFunctions.updateEthAccountHash(wrappedEVMAccount)
-  return wrappedEVMAccount
-}
-
-/* eslint-disable @typescript-eslint/no-unused-vars */
 /**
  * fake callbacks so that the debug transactionState object can work with creating test accounts
  * Probably not a good thing to have long term.
@@ -384,3 +363,13 @@ function tryGetRemoteAccountCBNoOp(
   return undefined
 }
 /* eslint-enable @typescript-eslint/no-unused-vars */
+
+function createGenesisAccountsFromSecureAccounts(secureAccounts: SecureAccountConfig[]): Record<string, { wei: string }> {
+  return secureAccounts.reduce((acc, account) => {
+    acc[account.SourceFundsAddress] = { wei: account.SourceFundsBalance };
+    return acc;
+  }, {} as Record<string, { wei: string }>);
+}
+
+
+
