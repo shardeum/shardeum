@@ -15,17 +15,19 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v3
 
-      # Clone the shardeum/x-shardeum-helm-charts repository using the GITHUB_TOKEN for authentication
+      # Clone the shardeum/x-shardeum-helm-charts repository using actions/checkout to handle authentication
       - name: Clone shardeum/x-shardeum-helm-charts repo
-        run: |
-          git clone https://${{ secrets.GITHUB_TOKEN }}@github.com/shardeum/x-shardeum-helm-charts.git
-          cd x-shardeum-helm-charts
-          git checkout archiver-validator-chart
+        uses: actions/checkout@v3
+        with:
+          repository: shardeum/x-shardeum-helm-charts
+          token: ${{ secrets.GITHUB_TOKEN }}
+          path: x-shardeum-helm-charts
 
       # Apply the validator-ports-env.patch
       - name: Apply validator-ports-env.patch
         run: |
           cd x-shardeum-helm-charts
+          git checkout archiver-validator-chart
           git apply patch-files/validator/validator-ports-env.patch
 
       # Apply the validator-and-svc-validator-both.patch
