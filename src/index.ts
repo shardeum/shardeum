@@ -73,6 +73,7 @@ import {
   StakeCoinsTX,
   StakeInfo,
   SyncingTimeoutViolationData,
+  TransferFromSecureAccount,
   UnstakeCoinsTX,
   WrappedAccount,
   WrappedEVMAccount,
@@ -171,6 +172,7 @@ import { initAjvSchemas, verifyPayload } from './types/ajv/Helpers'
 import { Sign, ServerMode } from '@shardus/core/dist/shardus/shardus-types'
 
 import { safeStringify } from '@shardus/types/build/src/utils/functions/stringify'
+import { isTransferFromSecureAccount, crack as crackTransferFromSecureAccount, apply as applyTransferFromSecureAccount, secureAccountDataMap } from './shardeum/secureAccounts'
 
 let latestBlock = 0
 export const blocks: BlockMap = {}
@@ -2815,6 +2817,12 @@ async function applyInternalTx(
     const penaltyTx = internalTx as PenaltyTX
     applyPenaltyTX(shardus, penaltyTx, wrappedStates, txId, txTimestamp, applyResponse)
   }
+  if (internalTx.internalTXType === InternalTXType.TransferFromSecureAccount) {  
+    await applyTransferFromSecureAccount(
+      internalTx as TransferFromSecureAccount, 
+      wrappedStates, { crackedData }, shardus, applyResponse);
+    return applyResponse;
+  }
   return applyResponse
 }
 
@@ -5228,6 +5236,16 @@ const shardusSetup = (): void => {
         }
         /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log( `txPreCrackData final result: txNonce: ${appData.txNonce}, currentNonce: ${ appData.nonce }, queueCount: ${appData.queueCount}, appData ${Utils.safeStringify(appData)}` )
       }
+      if (isTransferFromSecureAccount(tx)) {
+        try {
+          const crackedData = crackTransferFromSecureAccount(tx as TransferFromSecureAccount)
+          appData.crackedData = crackedData
+          appData.involvedAccounts = crackedData.involvedAccounts
+          return { status: true, reason: 'TransferFromSecureAccount cracked successfully' }
+        } catch (error) {
+          return { status: false, reason: `Failed to crack TransferFromSecureAccount: ${error.message}` }
+        }
+      }
       return { status: true, reason: 'Passed' }
     },
 
@@ -5316,6 +5334,15 @@ const shardusSetup = (): void => {
         } else if (internalTx.internalTXType === InternalTXType.Penalty) {
           keys.sourceKeys = [tx.reportedNodePublickKey]
           keys.targetKeys = [toShardusAddress(tx.operatorEVMAddress, AccountType.Account), networkAccount]
+        } else if (internalTx.internalTXType === InternalTXType.TransferFromSecureAccount) {
+          keys.sourceKeys = [
+            // get the address from the 
+            secureAccountDataMap.get(tx.accountName).SourceFundsAddress,
+            secureAccountDataMap.get(tx.accountName).SecureAccountAddress,
+          ]
+          keys.targetKeys = [
+            secureAccountDataMap.get(tx.accountName).RecipientFundsAddress
+          ]
         }
         keys.allKeys = keys.allKeys.concat(keys.sourceKeys, keys.targetKeys, keys.storageKeys)
         // temporary hack for creating a receipt of node reward tx
@@ -5597,6 +5624,7 @@ const shardusSetup = (): void => {
           wrappedEVMAccount.accountType !== AccountType.NetworkAccount &&
           wrappedEVMAccount.accountType !== AccountType.NodeAccount &&
           wrappedEVMAccount.accountType !== AccountType.NodeAccount2 &&
+          wrappedEVMAccount.accountType !== AccountType.SecureAccount &&
           wrappedEVMAccount.accountType !== AccountType.NodeRewardReceipt &&
           wrappedEVMAccount.accountType !== AccountType.DevAccount
         )
@@ -6059,6 +6087,7 @@ const shardusSetup = (): void => {
         updatedEVMAccount.accountType !== AccountType.NetworkAccount &&
         updatedEVMAccount.accountType !== AccountType.NodeAccount &&
         updatedEVMAccount.accountType !== AccountType.NodeAccount2 &&
+        updatedEVMAccount.accountType !== AccountType.SecureAccount &&
         updatedEVMAccount.accountType !== AccountType.NodeRewardReceipt &&
         updatedEVMAccount.accountType !== AccountType.DevAccount
       ) {

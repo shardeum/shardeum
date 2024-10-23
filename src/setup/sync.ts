@@ -2,6 +2,7 @@ import { DevSecurityLevel, Shardus, ShardusTypes } from '@shardus/core'
 import { Account, Address } from '@ethereumjs/util'
 import config from '../config'
 import genesis from '../config/genesis.json'
+import genesisSecureAccounts from '../config/genesis-secure-accounts.json'
 import { loadAccountDataFromDB } from '../shardeum/debugRestoreAccounts'
 import { toShardusAddress } from '../shardeum/evmAddress'
 import { ShardeumFlags } from '../shardeum/shardeumFlags'
@@ -10,10 +11,10 @@ import * as WrappedEVMAccountFunctions from '../shardeum/wrappedEVMAccountFuncti
 import { ShardeumState, TransactionState } from '../state'
 import * as AccountsStorage from '../storage/accountStorage'
 import { sleep } from '../utils'
-// import { StateManager } from '../vm/state'
 import { DefaultStateManager } from '@ethereumjs/statemanager'
 import { logFlags, shardeumGetTime } from '..'
 import { Utils } from '@shardus/types'
+import { initializeSecureAccount, SecureAccountConfig, SecureAccount, serializeSecureAccount } from '../shardeum/secureAccounts'
 
 function isDebugMode(): boolean {
   // eslint-disable-next-line @typescript-eslint/ban-ts-comment
@@ -50,31 +51,39 @@ export const sync = (shardus: Shardus, evmCommon: any) => async (): Promise<void
           file: ShardeumFlags.DebugRestoreFile,
         }
         const report = await loadAccountDataFromDB(shardus, loadOptions)
-        /* prettier-ignore */ if (logFlags.important_as_error) console.log('loadAccountDataFromDB:' + Utils. safeStringify(report))
+        /* prettier-ignore */ if (logFlags.important_as_error) console.log('loadAccountDataFromDB:' + Utils.safeStringify(report))
       }
 
       //create genesis accounts before network account since nodes will wait for the network account
       /* prettier-ignore */ if (logFlags.important_as_error) shardus.log(`node ${nodeId} GENERATED_A_NEW_NETWORK_ACCOUNT: `)
       if (ShardeumFlags.SetupGenesisAccount) {
+        console.log('SETTING UP Genesis accounts');
         let skippedAccountCount = 0
         let accountCopies = []
-        for (const address in genesis) {
-          const amount = BigInt(genesis[address].wei) // eslint-disable-line security/detect-object-injection
 
-          const shardusAccountID = toShardusAddress(address, AccountType.Account)
-          const existingAccount = await shardus.getLocalOrRemoteAccount(shardusAccountID)
+        // Create genesis accounts from secure accounts
+        const additionalGenesisAccounts = createGenesisAccountsFromSecureAccounts(genesisSecureAccounts);
+
+        // Merge additional genesis accounts with existing genesis accounts
+        const mergedGenesisAccounts = { ...genesis, ...additionalGenesisAccounts };
+
+        for (const address in mergedGenesisAccounts) {
+          const amount = BigInt(mergedGenesisAccounts[address].wei);
+
+          const shardusAccountID = toShardusAddress(address, AccountType.Account);
+          const existingAccount = await shardus.getLocalOrRemoteAccount(shardusAccountID);
           if (existingAccount) {
-            skippedAccountCount += 1
-            continue
+            skippedAccountCount += 1;
+            continue;
           }
 
-          const ethAccountID = Address.fromString(address).toString()
+          const ethAccountID = Address.fromString(address).toString();
           const { wrappedEVMAccount, accountId, cycle } = await manuallyCreateAccount(
             ethAccountID,
             amount,
             evmCommon,
             shardus.getLatestCycles()
-          )
+          );
           const accountCopy: ShardusTypes.AccountsCopy = {
             cycleNumber: cycle.counter,
             accountId,
@@ -82,14 +91,43 @@ export const sync = (shardus: Shardus, evmCommon: any) => async (): Promise<void
             hash: wrappedEVMAccount.hash,
             isGlobal: false,
             timestamp: wrappedEVMAccount.timestamp,
-          }
-          accountCopies.push(accountCopy)
-          /* prettier-ignore */ if (logFlags.important_as_error) shardus.log(`node ${nodeId} SETUP GENESIS ACCOUNT: ${address}  amt: ${amount}`)
+          };
+          console.log('Genesis account copy: ', Utils.safeStringify(accountCopy));
+          
+          accountCopies.push(accountCopy);
+          /* prettier-ignore */ if (logFlags.important_as_error) shardus.log(`node ${nodeId} SETUP GENESIS ACCOUNT: ${address}  amt: ${amount}`);
         }
+
+        console.log('number of genesisSecureAccounts:', genesisSecureAccounts.length);
+
+        for (const secureAccountConfig of genesisSecureAccounts) {
+          console.log('SETTING UP Genesis SECURE ACCOUNTS');
+          const cycles = shardus.getLatestCycles()
+          const secureAccount = initializeSecureAccount(
+            secureAccountConfig as SecureAccountConfig,
+            cycles
+          );
+          
+          console.log('secure account: ', JSON.stringify(serializeSecureAccount(secureAccount), null, '  '));
+          
+          const serializedSecureAccount = serializeSecureAccount(secureAccount);
+          const accountCopy: ShardusTypes.AccountsCopy = {
+            cycleNumber: cycles[0].counter,
+            accountId: serializedSecureAccount.id,
+            data: serializedSecureAccount,
+            hash: serializedSecureAccount.hash,
+            isGlobal: false,
+            timestamp: serializedSecureAccount.timestamp,
+          };
+          console.log('secure account serialized: ', JSON.stringify(accountCopy, null, '  '));
+          accountCopies.push(accountCopy);
+          /* prettier-ignore */ if (logFlags.important_as_error) shardus.log(`node ${nodeId} SETUP GENESIS SECUREACCOUNT: ${serializedSecureAccount.id}`);
+        }
+
         /* prettier-ignore */ if (logFlags.important_as_error) console.log(`Skipped ${skippedAccountCount} genesis accounts`)
         //TODO we need to brainstorm a way to allow migration of keys on a live network
         const devPublicKeys = shardus.getDevPublicKeys()
-        for(const devPublicKey of Object.keys(devPublicKeys)) {
+        for (const devPublicKey of Object.keys(devPublicKeys)) {
           // eslint-disable-next-line security/detect-object-injection
           const level = devPublicKeys[devPublicKey]
           if (level >= DevSecurityLevel.Low) {
@@ -110,11 +148,12 @@ export const sync = (shardus: Shardus, evmCommon: any) => async (): Promise<void
         await shardus.debugCommitAccountCopies(accountCopies)
         if (ShardeumFlags.forwardGenesisAccounts) {
           accountCopies = accountCopies.map((account) => {
-            return Utils.safeJsonParse(Utils.safeStringify(account))
-          })
-          await shardus.forwardAccounts({ accounts: accountCopies, receipts: [] })
+            return Utils.safeJsonParse(Utils.safeStringify(account));
+          });
+          await shardus.forwardAccounts({ accounts: accountCopies, receipts: [] });
         }
       }
+
       await sleep(ONE_SECOND * 10)
       const when = shardeumGetTime()
       const value = {
@@ -232,7 +271,7 @@ function getDebugTXState(evmCommon: any): ShardeumState {
         accountInvolved: accountInvolvedNoOp,
         contractStorageInvolved: contractStorageInvolvedNoOp,
         tryGetRemoteAccountCB: tryGetRemoteAccountCBNoOp,
-        monitorEventCB: () => {}, // eslint-disable-line @typescript-eslint/no-empty-function
+        monitorEventCB: () => { }, // eslint-disable-line @typescript-eslint/no-empty-function
       },
       txId,
       undefined,
@@ -280,7 +319,6 @@ async function createAccount(
   return wrappedEVMAccount
 }
 
-/* eslint-disable @typescript-eslint/no-unused-vars */
 /**
  * fake callbacks so that the debug transactionState object can work with creating test accounts
  * Probably not a good thing to have long term.
@@ -325,3 +363,13 @@ function tryGetRemoteAccountCBNoOp(
   return undefined
 }
 /* eslint-enable @typescript-eslint/no-unused-vars */
+
+function createGenesisAccountsFromSecureAccounts(secureAccounts: SecureAccountConfig[]): Record<string, { wei: string }> {
+  return secureAccounts.reduce((acc, account) => {
+    acc[account.SourceFundsAddress] = { wei: account.SourceFundsBalance };
+    return acc;
+  }, {} as Record<string, { wei: string }>);
+}
+
+
+

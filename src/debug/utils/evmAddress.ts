@@ -76,6 +76,7 @@ export function toShardusAddressWithKey(
     accountType === AccountType.NetworkAccount ||
     accountType === AccountType.NodeAccount ||
     accountType === AccountType.NodeAccount2 ||
+    accountType === AccountType.SecureAccount ||
     accountType === AccountType.NodeRewardReceipt ||
     accountType === AccountType.DevAccount
   ) {

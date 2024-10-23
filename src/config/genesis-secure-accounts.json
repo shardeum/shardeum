@@ -1,0 +1,37 @@
+[
+  {
+    "Name": "Foundation",
+    "SourceFundsAddress": "0x1f1545Eb7EE5C3C1c4784ee9ddE5D26A9f76F77C",
+    "RecipientFundsAddress": "0x1f1545Eb7EE5C3C1c4784ee9ddE5D26A9f76F77C",
+    "SecureAccountAddress": "1f1545Eb7EE5C3C1c4784ee9ddE5D26A9f76F77C000000000000000000000000",
+    "SourceFundsBalance": "55880000000000000000000000"
+  },
+  {
+    "Name": "Team",
+    "SourceFundsAddress": "0x1923a1eb8e4da49604affd34de1b478580cf8698",
+    "RecipientFundsAddress": "0x1923a1eb8e4da49604affd34de1b478580cf8698",
+    "SecureAccountAddress": "1923a1eb8e4da49604affd34de1b478580cf8698000000000000000000000000",
+    "SourceFundsBalance": "71120000000000000000000000"
+  },
+  {
+    "Name": "Ecosystem",
+    "SourceFundsAddress": "0xF151bBcDD3754A675a2F6CdE1c97A03a9972d0BB",
+    "RecipientFundsAddress": "0xF151bBcDD3754A675a2F6CdE1c97A03a9972d0BB",
+    "SecureAccountAddress": "F151bBcDD3754A675a2F6CdE1c97A03a9972d0BB000000000000000000000000",
+    "SourceFundsBalance": "25400000000000000000000000"
+  },
+  {
+    "Name": "Sale",
+    "SourceFundsAddress": "0x166eAB1aec68881690f11571064444753a519F72",
+    "RecipientFundsAddress": "0x166eAB1aec68881690f11571064444753a519F72",
+    "SecureAccountAddress": "166eAB1aec68881690f11571064444753a519F72000000000000000000000000",
+    "SourceFundsBalance": "91440000000000000000000000"
+  },
+  {
+    "Name": "ShardusLicense",
+    "SourceFundsAddress": "0x7ccBFDE95892d699914970B9fe7EE6B9853284AD",
+    "RecipientFundsAddress": "0x7ccBFDE95892d699914970B9fe7EE6B9853284AD",
+    "SecureAccountAddress": "7ccBFDE95892d699914970B9fe7EE6B9853284AD000000000000000000000000",
+    "SourceFundsBalance": "5080000000000000000000000"
+  }
+]
