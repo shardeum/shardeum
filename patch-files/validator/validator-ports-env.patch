@@ -1,0 +1,39 @@
+diff --git a/src/config/index.ts b/src/config/index.ts
+index 687b1d8..dc91c3e 100644
+--- a/src/config/index.ts
++++ b/src/config/index.ts
+@@ -123,6 +123,34 @@ if (process.env.APP_IP) {
+   )
+ }
+ 
++if (process.env.EXT_PORT) {
++  config = merge(
++    config,
++    {
++      server: {
++        ip: {
++          externalPort: Number(process.env.EXT_PORT),
++        },
++      },
++    },
++    { arrayMerge: overwriteMerge }
++  )
++}
++
++if (process.env.INT_PORT) {
++  config = merge(
++    config,
++    {
++      server: {
++        ip: {
++          internalPort: Number(process.env.INT_PORT),
++        },
++      },
++    },
++    { arrayMerge: overwriteMerge }
++  )
++}
++
+ config = merge(config, {
+   server: {
+     p2p: {
