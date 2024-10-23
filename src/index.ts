@@ -7349,6 +7349,11 @@ const shardusSetup = (): void => {
         return
       }
 
+      if (shardus.checkCycleShardData(eventType) === false) {
+        console.log('eventNotify', 'skipping for checkCycleShardData', data.publicKey, eventType)
+        return
+      }
+
       if (eventType === 'node-activated') {
         const closestNodes = shardus.getClosestNodes(data.publicKey, 5)
         const ourId = shardus.getNodeId()
