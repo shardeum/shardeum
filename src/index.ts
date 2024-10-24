@@ -1141,21 +1141,23 @@ const configShardusEndpoints = (): void => {
   enableHeapdump(shardus)
 
   shardus.registerExternalGet('debug-heapdump', debugMiddleware, async (req, res) => {
+    console.log('debug-heapdump: generating heap dump...')
     try {
         if(ShardeumFlags.EnableHeapdump === 1){
-            console.log('generating heap dump...');
-            generateHeapDump();  
-            return res.json({success:true})           
+          console.log('generating heap dump1...');
+          generateHeapDump();  
+          return res.json({success:true})           
         } else if(ShardeumFlags.EnableHeapdump === 2){
           console.log('generating heap dump2...');
           generateHeapDump2();  
           return res.json({success:true})           
         } else {
-            return res.json({success:false})
+          console.log('not generating heap dump...');
+          return res.json({success:false})
         }
     } catch (e) {
-    /* prettier-ignore */ if (logFlags.error) console.log(e)
-    return { error: e.message }
+      console.log('Error in debug-heapdump: ', e)
+      return { error: e.message }
     }
   })
 
@@ -1592,6 +1594,7 @@ const configShardusEndpoints = (): void => {
   })
 
   shardus.registerExternalGet('debug-set-shardeum-flag', debugMiddleware, async (req, res) => {
+    console.log('DEBUG: debug-set-shardeum-flag')
     let value
     let key
     try {
@@ -1609,11 +1612,12 @@ const configShardusEndpoints = (): void => {
 
       // hack to make txFee works with bn.js
       if (key === 'constantTxFee') value = String(value)
-
+      console.log('DEBUG: debug-set-shardeum-flag', key, value, typedValue)
       updateShardeumFlag(key, typedValue)
 
       return res.json({ [key]: ShardeumFlags[key] }) // eslint-disable-line security/detect-object-injection
     } catch (err) {
+      console.log('DEBUG: inside catch debug-set-shardeum-flag', err)
       return res.json(`debug-set-shardeum-flag: ${key} ${err.message} `)
     }
   })

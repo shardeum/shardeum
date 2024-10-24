@@ -285,21 +285,22 @@ export const ShardeumFlags: ShardeumFlags = {
 }
 
 export function updateShardeumFlag(key: string, value: string | number | boolean): void {
+  console.log(`DEBUG: inside updateShardeumFlag: ${key} ${value}`)
   /* eslint-disable security/detect-object-injection */
   try {
     if (ShardeumFlags[key] == null) {
-      console.log(`There is no shardeum flag for ${key}`)
+      console.log(`DEBUG: There is no shardeum flag for ${key}`)
       return
     }
     if (key === 'ServicePoints') return
     if (typeof ShardeumFlags[key] !== typeof value) {
-      console.log(`Type of new value is different from the type of existing flag ${key}`)
+      console.log(`DEBUG: Type of new value is different from the type of existing flag ${key}`)
       return
     }
     ShardeumFlags[key] = value
-    console.log(`Shardeum flag ${key} is set to ${value}`)
+    console.log(`DEBUG: Shardeum flag ${key} is set to ${value}`)
   } catch (e) {
-    console.log(`Error: updateShardeumFlag`, e)
+    console.log(`DEBUG: Error: updateShardeumFlag`, e)
   }
   /* eslint-enable security/detect-object-injection */
 }
