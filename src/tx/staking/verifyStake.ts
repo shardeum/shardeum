@@ -121,8 +121,7 @@ export function verifyUnstakeTx(
   nestedCountersInstance.countEvent('shardeum-unstaking', 'validating unstake coins tx fields')
   let success = true
   let reason = ''
-  if (ShardeumFlags.VerboseLogs)
-    console.log('verifyUnstake: Validating unstake coins tx fields', appData)
+  if (ShardeumFlags.VerboseLogs) console.log('verifyUnstake: Validating unstake coins tx fields', appData)
   const unstakeCoinsTX = appData as UnstakeCoinsTX
   if (
     unstakeCoinsTX.nominator == null ||
@@ -173,5 +172,40 @@ export function verifyUnstakeTx(
     reason = `This nominee node is not found!`
   }
 
+  if (!isStakeUnlocked(nominatorAccount, nomineeAccount, shardus)) {
+    success = false
+    reason = `The stake is not unlocked yet!`
+  }
+
   return { success, reason }
+}
+
+function isStakeUnlocked(
+  nominatorAccount: WrappedEVMAccount,
+  nomineeAccount: NodeAccount2,
+  shardus: Shardus
+): boolean {
+  const stakeLockTime = AccountsStorage.cachedNetworkAccount.current.stakeLockTime
+
+  // SLT from time of last staking or unstaking
+  if (shardus.shardusGetTime() - nominatorAccount.operatorAccountInfo.lastStakeTimestamp < stakeLockTime) {
+    return false
+  }
+
+  // SLT from when node was selected to go active (started syncing)
+  const node = shardus.getNodeByPubKey(nomineeAccount.id)
+  if (node && shardus.shardusGetTime() - node.syncingTimestamp * 1000 < stakeLockTime) {
+    return false
+  }
+
+  // SLT from time of last went active
+  // THIS MAY BE REDUNDANT as we check for active status in verifyUnstakeTx
+  if (shardus.shardusGetTime() - nomineeAccount.rewardStartTime * 1000 < stakeLockTime) {
+    return false
+  }
+
+  // SLT from time of last went inactive/exit
+  if (shardus.shardusGetTime() - nomineeAccount.rewardEndTime * 1000 < stakeLockTime) {
+    return false
+  }
 }

@@ -4050,6 +4050,7 @@ const shardusSetup = (): void => {
             stake: BigInt(0),
             nominee: '',
             certExp: null,
+            lastStakeTimestamp: txTimestamp,  // last timestamp this account made a staking transaction
             operatorStats: {
               totalNodeReward: BigInt(0),
               totalNodePenalty: BigInt(0),
@@ -4074,6 +4075,7 @@ const shardusSetup = (): void => {
         }
         operatorEVMAccount.operatorAccountInfo.stake += stakeCoinsTx.stake
         operatorEVMAccount.operatorAccountInfo.nominee = stakeCoinsTx.nominee
+        operatorEVMAccount.operatorAccountInfo.lastStakeTimestamp = txTimestamp
         if (operatorEVMAccount.operatorAccountInfo.certExp == null)
           operatorEVMAccount.operatorAccountInfo.certExp = 0
         fixDeserializedWrappedEVMAccount(operatorEVMAccount)
@@ -4293,6 +4295,7 @@ const shardusSetup = (): void => {
         operatorEVMAccount.operatorAccountInfo.stake = BigInt(0)
         operatorEVMAccount.operatorAccountInfo.nominee = null
         operatorEVMAccount.operatorAccountInfo.certExp = null
+        operatorEVMAccount.operatorAccountInfo.lastStakeTimestamp = txTimestamp
 
         // update the operator historical stats
         operatorEVMAccount.operatorAccountInfo.operatorStats.totalUnstakeReward =
@@ -5932,6 +5935,7 @@ const shardusSetup = (): void => {
                 stake: BigInt(0),
                 nominee: '',
                 certExp: 0,
+                lastStakeTimestamp: 0,
                 operatorStats: {
                   totalNodeReward: BigInt(0),
                   totalNodePenalty: BigInt(0),
