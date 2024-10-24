@@ -197,6 +197,9 @@ export async function applyClaimRewardTx(
   mustUseAdminCert = false
 ): Promise<void> {
   if (ShardeumFlags.VerboseLogs) console.log(`Running applyClaimRewardTx`, tx, wrappedStates)
+
+  if (!AccountsStorage.cachedNetworkAccount?.current.utilityFlags.enableRewardTXs) return
+
   const isValidRequest = validateClaimRewardState(tx, wrappedStates, shardus, mustUseAdminCert)
   if (isValidRequest.result === 'fail') {
     /* prettier-ignore */
