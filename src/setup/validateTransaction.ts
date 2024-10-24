@@ -125,7 +125,7 @@ export const validateTransaction =
   }
 
 function omitDevKeys(givenConfig: any): any {
-  if (!givenConfig.debug?.devPublicKeys || !givenConfig.debug?.multisigKeys) {
+  if (!givenConfig.debug?.devPublicKeys && !givenConfig.debug?.multisigKeys) {
     return givenConfig
   }
 
