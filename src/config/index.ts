@@ -354,19 +354,26 @@ config = merge(
           /* prettier-ignore */ 'abb118e65bbd834d3f9c3135f72a3ed883b5c3b85c9e4a647b142f2824663e20': DevSecurityLevel.High,
           // always prefix with prettier ignore
         },
-        multisigKeys: {
+        multisigkeys: {
           // always prefix with prettier ignore
-          /* prettier-ignore */ '0x002D3a2BfE09E3E29b6d38d58CaaD16EEe4C9BC5': DevSecurityLevel.High, // test key
-          /* prettier-ignore */ '0x0a0844DA5e01E391d12999ca859Da8a897D5979A': DevSecurityLevel.High, // test key
-          /* prettier-ignore */ '0x390878B18DeBe2A9f0d5c0252a109c84243D3beb': DevSecurityLevel.High, // test key
-          /* prettier-ignore */ '0x32B6f2C027D4c9D99Ca07d047D17987390a5EB39': DevSecurityLevel.High, // test key
-          /* prettier-ignore */ '0x80aF8E195B56aCC3b4ec8e2C99EC38957258635a': DevSecurityLevel.High, // Atharva
-          /* prettier-ignore */ '0x3d3E0A9DdCC3348Fc81daDED2e72eC0CaC870ABD': DevSecurityLevel.High, // test key ( Jai )
-          /* prettier-ignore */ '0x7Efbb31431ac7C405E8eEba99531fF1254fCA3B6': DevSecurityLevel.High, // test key ( M1 )
-          /* prettier-ignore */ '0xCc74bf387F6C102b5a7F828796C57A6D2D19Cb00': DevSecurityLevel.High, // test key ( M2 )
-          /* prettier-ignore */ '0x4ed5C053BF2dA5F694b322EA93dce949F3276B85': DevSecurityLevel.High, // test key ( M3 )
-          /* prettier-ignore */ '0xd31aBC7497aD8bC9fe8555C9eDe45DFd7FB3Bf6F': DevSecurityLevel.High, // test key ( M4 )
-          /* prettier-ignore */ '0xe7e4cc292b424C6D50d16F1Bb5BAB2032c486980': DevSecurityLevel.High, // test key ( M5 )
+          /* prettier-ignore */ '0x002d3a2bfe09e3e29b6d38d58caad16eee4c9bc5': DevSecurityLevel.High, // test key
+          /* prettier-ignore */ '0x0a0844da5e01e391d12999ca859da8a897d5979a': DevSecurityLevel.High, // test key
+          /* prettier-ignore */ '0x390878b18debe2a9f0d5c0252a109c84243d3beb': DevSecurityLevel.High, // test key
+          /* prettier-ignore */ '0x32b6f2c027d4c9d99ca07d047d17987390a5eb39': DevSecurityLevel.High, // test key
+          /* prettier-ignore */ '0x80af8e195b56acc3b4ec8e2c99ec38957258635a': DevSecurityLevel.High, // atharva
+          /* prettier-ignore */ '0x7efbb31431ac7c405e8eeba99531ff1254fca3b6': DevSecurityLevel.High, // test key ( m1 )
+          /* prettier-ignore */ '0xcc74bf387f6c102b5a7f828796c57a6d2d19cb00': DevSecurityLevel.High, // test key ( m2 )
+          /* prettier-ignore */ '0x4ed5c053bf2da5f694b322ea93dce949f3276b85': DevSecurityLevel.High, // test key ( m3 )
+          /* prettier-ignore */ '0xd31abc7497ad8bc9fe8555c9ede45dfd7fb3bf6f': DevSecurityLevel.High, // test key ( m4 )
+          /* prettier-ignore */ '0xe7e4cc292b424c6d50d16f1bb5bab2032c486980': DevSecurityLevel.High, // test key ( m5 )
+          /* prettier-ignore */ '0xd815da50966c19261b34ffa3be50a30a67d97456': DevSecurityLevel.High, // new key
+          /* prettier-ignore */ '0xe856b2365641eba73bc430aac1e8f930da513d9d': DevSecurityLevel.High, // new key
+          /* prettier-ignore */ '0x8282f755e784414697421d4b59232e5d194e2262': DevSecurityLevel.High, // new key
+          /* prettier-ignore */ '0x353ad64df4fae5efff717a1c41be6debee543129': DevSecurityLevel.High, // new key
+          /* prettier-ignore */ '0x9ce1c3c114538c625aa2488b97feb3723fdbb07b': DevSecurityLevel.High, // new key
+          /* prettier-ignore */ '0x6a83e4e4eb0a2c8f562db6bb64b02a9a6237b314': DevSecurityLevel.High, // new key
+          /* prettier-ignore */ '0x92e375e0c76cae76d9dfbab17ee7b3b4ee407715': DevSecurityLevel.High, // new key
+          /* prettier-ignore */ '0xebe173a837bc30bfef6e13c9988a4771a4d83275': DevSecurityLevel.High, // new key
           // always prefix with prettier ignore
         },
         checkAddressFormat: true, //enabled for 1.10.0
