@@ -1,7 +1,7 @@
 import { DevSecurityLevel, Shardus, ShardusTypes } from '@shardus/core'
 import { Account, Address } from '@ethereumjs/util'
 import config from '../config'
-import genesis from '../config/genesis.json'
+import genesis from '../config/genesis_accounts.json'
 import { loadAccountDataFromDB } from '../shardeum/debugRestoreAccounts'
 import { toShardusAddress } from '../shardeum/evmAddress'
 import { ShardeumFlags } from '../shardeum/shardeumFlags'

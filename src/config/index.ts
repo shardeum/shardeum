@@ -354,7 +354,7 @@ config = merge(
           /* prettier-ignore */ 'abb118e65bbd834d3f9c3135f72a3ed883b5c3b85c9e4a647b142f2824663e20': DevSecurityLevel.High,
           // always prefix with prettier ignore
         },
-        multisigkeys: {
+        multisigKeys: {
           // always prefix with prettier ignore
           /* prettier-ignore */ '0x002d3a2bfe09e3e29b6d38d58caad16eee4c9bc5': DevSecurityLevel.High, // test key
           /* prettier-ignore */ '0x0a0844da5e01e391d12999ca859da8a897d5979a': DevSecurityLevel.High, // test key
