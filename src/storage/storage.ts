@@ -187,26 +187,30 @@ class Storage {
     limit: number,
     accountOffset: string
   ): Promise<AccountsEntry[]> {
-    const accountStartNum = Number(accountStart)
-    const accountEndNum = Number(accountEnd)
     limit = Number(limit)
-    const accountOffsetNum = Number(accountOffset)
     tsStart = Number(tsStart)
     tsEnd = Number(tsEnd)
 
+    if (accountStart && !/^[0-9a-fA-F]*$/.test(accountStart)) {
+      throw new Error('accountStart should be an empty string or a string with only upper or lower case hex chars.')
+    }
+    if (accountEnd && !/^[0-9a-fA-F]*$/.test(accountEnd)) {
+      throw new Error('accountEnd should be an empty string or a string with only upper or lower case hex chars.')
+    }
+    if (accountOffset && !/^[0-9a-fA-F]*$/.test(accountOffset)) {
+      throw new Error('accountOffset should be an empty string or a string with only upper or lower case hex chars.')
+    }
+
     if (
-      isNaN(accountStartNum) ||
-      isNaN(accountEndNum) ||
-      isNaN(accountOffsetNum) ||
       isNaN(limit) ||
       isNaN(tsStart) ||
       isNaN(tsEnd)
     ) {
       throw new Error('arguments should be numbers.')
     }
-    if (accountEndNum < accountStartNum) {
-      throw new Error('accountEnd must be greater than or equal to accountStart.')
-    }
+    // if (accountEnd < accountStart) {
+    //   throw new Error('accountEnd must be greater than or equal to accountStart.')
+    // }
     if (tsStart < 0 || tsEnd < 0 || tsEnd < tsStart) {
       throw new Error('Invalid timestamp range.')
     }
