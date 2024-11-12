@@ -120,6 +120,9 @@ export function verifyMultiSigs(
   minSigRequired: number,
   requiredSecurityLevel: DevSecurityLevel
 ): boolean {
+  if (!rawPayload || !sigs || !allowedPubkeys || !Array.isArray(sigs)) {
+    return false
+  }
   if (sigs.length < minSigRequired) return false
 
   // no reason to allow more signatures than allowedPubkeys exist
