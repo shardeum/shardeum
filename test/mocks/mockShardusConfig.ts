@@ -78,6 +78,7 @@ const MOCK_SERVER_CONFIG = {
     canDataRepair: false,
     startInFatalsLogMode: false,
     startInErrorLogMode: true,
+    verboseNestedCounters: false,
     fakeNetworkDelay: 0,
     disableSnapshots: true,
     disableTxCoverageReport: true,
