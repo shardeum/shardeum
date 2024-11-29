@@ -42,7 +42,7 @@ const ticketTypeWithSilverTicket = { type: 'silver', data: [{"address": "0xd79eF
 const ticketTypeWithOutSilverTicket = { type: 'gold', data: [{"address": "0xd79eFA2f9bB9C780e4Ce05D6b8a15541915e4636"}], sign: [{"owner": "0x1e5e12568b7103E8B22cd680A6fa6256DD66ED76","sig": "0xf0853b553af26db42f9167ed68a98f584d1128e130d1aa1709e737e2ab1da995065247d3346d27c4f56a4560a84f32c3c869db46a97bd5d7d48f935a972a0b081b"}] }
 const ticketTypeWithSilverTicketAndInvalidSignature = { type: 'silver', data: [{"address": "0xd79eFA2f9bB9C780e4Ce05D6b8a15541915e4631"}], sign: [{"owner": "0x1e5e12568b7103E8B22cd680A6fa6256DD66ED76","sig": "0xf0853b553af26db42f9167ed68a98f584d1128e130d1aa1709e737e2ab1da995065247d3346d27c4f56a4560a84f32c3c869db46a97bd5d7d48f935a972a0b081b"}] }
 
-describe('Your Module Functions', () => {
+describe('Ticket Type Test Cases', () => {
 
   beforeEach(async () => {
     jest.clearAllMocks();
