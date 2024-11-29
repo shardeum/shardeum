@@ -172,8 +172,6 @@ config = merge(config, {
       lruCacheSizeForSocketMgmt: 500,
       payloadSizeLimitInBytes: 2 * 1024 * 1024, // 2 MB is the default limit for the shardus net payload size
       headerSizeLimitInBytes: 2 * 1024, // 2 KB is the default limit for the shardus net header size
-      signatureSizeLimitInBytes: 96, // 96 bytes is the default limit for the shardus net signature size
-      ownerSizeLimitInBytes: 32, // 32 bytes is the default limit for the shardus net owner size
       uniqueRemovedIdsUpdate: true, // To enable on 1.4.1
       instantForwardReceipts: true, // To enable on 1.5.3
       validateArchiverAppData: false, // To enable this on new reset network
