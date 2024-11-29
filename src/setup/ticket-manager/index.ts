@@ -1,11 +1,12 @@
 import { DevSecurityLevel, ShardusTypes } from '@shardus/core'
 import config from '../../config'
-import { logFlags, shardusConfig } from '../../index'
+import { logFlags, shardusConfig } from '../..'
 import axios from 'axios'
 import { getFinalArchiverList } from '@shardus/archiver-discovery'
 import { getRandom } from '../../utils'
 import { verifyMultiSigs } from '../helpers'
 import { Archiver } from '@shardus/archiver-discovery/dist/src/types'
+import { Address } from '@ethereumjs/util'
 
 export interface Ticket {
   address: string
@@ -31,7 +32,7 @@ export function updateTicketMapAndScheduleNextUpdate(): void {
   })
 }
 
-function scheduleUpdateTicketMap(): void {
+export function scheduleUpdateTicketMap(): void {
   const delayInMs = config.server.features.tickets.updateTicketListTimeInMs || config.server.p2p.cycleDuration * 1000
   /* prettier-ignore */ if (logFlags.debug) console.log(JSON.stringify({script: 'tickets',method: 'scheduleUpdateTicketMap',data: { delayInMs },}))
   setTimeout(() => {
@@ -60,12 +61,15 @@ async function getTicketTypesFromArchiver(archiver: Archiver): Promise<TicketTyp
   return []
 }
 
+export function clearTicketMap(): void {
+  ticketTypeMap.clear()
+}
+
 export async function updateTicketMap(): Promise<void> {
   const archiver: Archiver = getArchiverToRetrieveTicketType()
   /* prettier-ignore */ if (logFlags.debug) console.log(JSON.stringify({script: 'tickets',method: 'updateTicketMap',data: { archiver: archiver },}))
   if (archiver){
     const ticketTypes: TicketType[] = await getTicketTypesFromArchiver(archiver)
-    ticketTypeMap.clear()
 
     const devPublicKeys = shardusConfig?.debug?.multisigKeys || {}
     const requiredSigs = Math.max(1, shardusConfig?.debug?.minMultiSigRequiredForGlobalTxs || 1)
@@ -97,4 +101,52 @@ export function getTicketsByType(type: string): Ticket[] {
     return ticketTypeMap.get(type).data
   }
   return []
+}
+
+export function doesTransactionSenderHaveTicketType({ticketType, senderAddress}: { ticketType:TicketTypes, senderAddress:Address }): {
+  success: boolean
+  reason: string
+} {
+  const result: { success:boolean, reason:string } = { success: false, reason: '' }
+  /* prettier-ignore */ if (logFlags.debug) console.log(`[ticket-master][doesNominatorHaveTicketType] ticketType: ${ticketType}, senderAddress: ${senderAddress}`)
+  // Check if Silver Tickets feature is enabled in the shardus configuration
+  /* prettier-ignore */ if (logFlags.debug) console.log(`[ticket-master][doesNominatorHaveTicketType] shardusConfig: ${JSON.stringify(shardusConfig)}`)
+  const ticketTypes = shardusConfig?.features?.tickets?.ticketTypes || []
+  /* prettier-ignore */ if (logFlags.debug) console.log(`[ticket-master][doesNominatorHaveTicketType] ticketTypes: ${JSON.stringify(ticketTypes)}`)
+  const isSilverTicketsEnabled = ticketTypes?.find((tt) => tt.type === ticketType)?.enabled
+  /* prettier-ignore */ if (logFlags.debug) console.log(`[ticket-master][doesNominatorHaveTicketType] isSilverTicketsEnabled: ${isSilverTicketsEnabled}`)
+  if (isSilverTicketsEnabled) {
+    let silverTicketForNominee: Ticket | undefined
+    // Retrieve all Silver Tickets using the TicketManager
+    const silverTickets: Ticket[] = getTicketsByType(ticketType)
+    /* prettier-ignore */ if (logFlags.debug) console.log(`[ticket-master][doesNominatorHaveTicketType] silverTickets: ${JSON.stringify(silverTickets)}`)
+    if (silverTickets.length > 0) {
+      // Look for a Silver Ticket that matches the nominee's address (case-insensitive comparison)
+      silverTicketForNominee = silverTickets.find((ticket) => {
+        try {
+          return senderAddress.equals(Address.fromString(ticket.address))
+        } catch (e) {
+          console.error(
+            `[ticket-master][doesNominatorHaveTicketType] Error while checking silver ticket address ${ticket.address}`,
+            e
+          )
+        }
+        return false
+      })
+      /* prettier-ignore */ if (logFlags.debug) console.log(`[ticket-master][doesNominatorHaveTicketType] silverTicketForNominee: ${JSON.stringify(silverTicketForNominee)}`)
+      // If no matching Silver Ticket is found for the nominee, return a failure response
+      if (!silverTicketForNominee) {
+        result.reason = 'Nominee does not have a Silver Ticket'
+      } else {
+        result.success = true
+      }
+    } else {
+      // If no Silver Tickets are found at all, return a failure response
+      result.reason = 'No Silver Tickets found'
+    }
+  } else {
+    result.reason = 'Silver Tickets feature is not enabled'
+    result.success = true
+  }
+  return result
 }
