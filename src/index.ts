@@ -1512,7 +1512,17 @@ const configShardusEndpoints = (): void => {
     }
   })
 
-  shardus.registerExternalGet('canUnstake/:nominee/:nominator', async (req, res) => {
+  shardus.registerExternalGet('canUnstake/:nominee/:nominator', externalApiMiddleware, async (req, res) => {
+    if (
+      trySpendServicePoints(
+        ShardeumFlags.ServicePoints['canUnstake/:nominee/:nominator'],
+        req,
+        'canUnstake'
+      ) === false
+    ) {
+      return res.json({ error: 'node busy' })
+    }
+
     try {
       const nominator = await getAccountData(shardus, req.params['nominator'], { query: {} })
       const nominatee = await getAccountData(shardus, req.params['nominee'], { query: { type: 9 } })

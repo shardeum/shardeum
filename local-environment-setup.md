@@ -22,7 +22,7 @@ To run a Shardeum network for local development, you need to configure your mach
 
 ## Node.js and NVM
 
-Shardeum requires Node.js version 18.16.1 and npm version 9.5.1. We recommend using Node Version Manager (NVM) to manage multiple Node.js versions.
+Shardeum requires Node.js version 18.19.1 and npm version 10.2.4. We recommend using Node Version Manager (NVM) to manage multiple Node.js versions.
 
 1. Install NVM:
 
@@ -43,8 +43,8 @@ export NVM_DIR="$HOME/.nvm"
 4. Install and use the correct Node.js version
 
 ```bash
-nvm install 18.16.1
-nvm use 18.16.1
+nvm install 18.19.1
+nvm use 18.19.1
 ```
 ## Rust Toolchain
 

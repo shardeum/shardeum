@@ -23,7 +23,7 @@
         buildNodeJs = pkgs.callPackage "${nixpkgs}/pkgs/development/web/nodejs/nodejs.nix" {python = pkgs.python3;};
         custom-nodejs = buildNodeJs {
           enableNpm = true;
-          version = "18.16.1";
+          version = "18.19.1";
           sha256 = "0wp2xyz5yqcvb6949xaqpan73rfhdc3cdfsvx7vzvzc9in64yh78";
         };
 
