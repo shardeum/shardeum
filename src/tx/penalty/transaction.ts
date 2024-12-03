@@ -215,6 +215,66 @@ export function validatePenaltyTX(txId: string, tx: PenaltyTX, isApply = false):
   return { isValid: true, reason: '' }
 }
 
+function initNodeBehaviorStats(nodeAccount: NodeAccount2): void {
+  if (!nodeAccount.behaviorStats) {
+    nodeAccount.behaviorStats = {
+      lostCount: 0,
+      refuteCount: 0,
+      lastLostTime: 0,
+      lastRefuteTime: 0,
+      oscillationCount: 0,
+      lastOscillationTime: 0,
+      consecutiveLostRefutes: 0
+    };
+  }
+}
+
+function shouldRemoveNode(nodeAccount: NodeAccount2): boolean {
+  const stats = nodeAccount.behaviorStats;
+  if (!stats) return false;
+
+  // Remove if too many oscillations
+  if (stats.oscillationCount >= 5) {
+    return true;
+  }
+
+  // Remove if too many lost statuses in a short time
+  const recentLostCount = stats.lostCount;
+  if (recentLostCount >= 10) {
+    return true;
+  }
+
+  // Remove if showing persistent unstable behavior
+  if (stats.consecutiveLostRefutes >= 9) { // 3 complete oscillation cycles
+    return true;
+  }
+
+  return false;
+}
+
+function isRateLimited(nodeAccount: NodeAccount2, txTimestamp: number): boolean {
+  const stats = nodeAccount.behaviorStats;
+  if (!stats) return false;
+
+  // Rate limit based on recent activity
+  const timeSinceLastLost = txTimestamp - stats.lastLostTime;
+  const timeSinceLastRefute = txTimestamp - stats.lastRefuteTime;
+
+  // Minimum time between lost reports increases with violation count
+  const minTimeBetweenLost = Math.min(300000 * (1 + stats.lostCount), 3600000); // 5min base, up to 1hr
+  if (timeSinceLastLost < minTimeBetweenLost) {
+    return true;
+  }
+
+  // Minimum time between refutes increases with violation count
+  const minTimeBetweenRefutes = Math.min(300000 * (1 + stats.refuteCount), 3600000); // 5min base, up to 1hr
+  if (timeSinceLastRefute < minTimeBetweenRefutes) {
+    return true;
+  }
+
+  return false;
+}
+
 export async function applyPenaltyTX(
   shardus,
   tx: PenaltyTX,
@@ -256,29 +316,97 @@ export async function applyPenaltyTX(
     return
   }
 
-  //TODO should we check if it was already penalized?
-  const penaltyAmount = getPenaltyForViolation(tx, nodeAccount.stakeLock)
-  applyPenalty(nodeAccount, operatorAccount, penaltyAmount)
-  nodeAccount.nodeAccountStats.penaltyHistory.push({
-    type: tx.violationType,
-    amount: penaltyAmount,
-    timestamp: eventTime,
-  })
-  if (tx.violationType === ViolationType.LeftNetworkEarly && nodeAccount.rewardStartTime > 0) {
-    nodeAccount.rewardEndTime = (tx.violationData as LeftNetworkEarlyViolationData)?.nodeDroppedTime
-    nodeAccount.nodeAccountStats.history.push({
-      b: nodeAccount.rewardStartTime,
-      e: nodeAccount.rewardEndTime,
-    })
-    operatorAccount.operatorAccountInfo.operatorStats.history.push({
-      b: nodeAccount.rewardStartTime,
-      e: nodeAccount.rewardEndTime,
-    })
+  // Check rate limiting before processing
+  if (isRateLimited(nodeAccount, txTimestamp)) {
+    if (logFlags.dapp_verbose) console.log(
+      `Rate limited penalty TX for node ${nodeAccount.id}`,
+      {
+        lastLostTime: nodeAccount.behaviorStats?.lastLostTime,
+        lastRefuteTime: nodeAccount.behaviorStats?.lastRefuteTime,
+        txTimestamp
+      }
+    )
+    shardus.applyResponseSetFailed(
+      applyResponse,
+      `Rate limited penalty TX for node ${nodeAccount.id}`
+    )
+    return
   }
 
-  nodeAccount.timestamp = txTimestamp
+  // Initialize behavior stats if they don't exist
+  initNodeBehaviorStats(nodeAccount)
+
+  // Update behavior stats based on violation type
+  if (tx.violationType === ViolationType.LeftNetworkEarly || tx.violationType === ViolationType.SyncingTooLong) {
+    nodeAccount.behaviorStats.lostCount++
+    nodeAccount.behaviorStats.lastLostTime = txTimestamp
+    nodeAccount.behaviorStats.consecutiveLostRefutes++
+  } else if (tx.violationType === ViolationType.NodeRefuted) {
+    nodeAccount.behaviorStats.refuteCount++
+    nodeAccount.behaviorStats.lastRefuteTime = txTimestamp
+    nodeAccount.behaviorStats.consecutiveLostRefutes++
+  }
+
+  // Always apply the penalty first
+  const penalty = getPenaltyForViolation(tx, nodeAccount.stakeLock, nodeAccount)
+  applyPenalty(nodeAccount, operatorAccount, penalty)
+
+  // Then check if we should also remove the node
+  if (shouldRemoveNode(nodeAccount)) {
+    // Get the 5 closest nodes to this node
+    const closestNodes = shardus.getClosestNodes(nodeAccount.id, 5)
+    const ourId = shardus.getNodeId()
+    
+    // Only proceed if we're one of the closest nodes
+    if (closestNodes.includes(ourId)) {
+      // Create removal certificate that needs to be signed by multiple nodes
+      const unsignedCertificate = {
+        nodePublicKey: nodeAccount.id,
+        cycle: shardus.getCurrentCycle().counter,
+        reason: 'Node removed due to excessive violations',
+        timestamp: txTimestamp
+      }
+
+      // Get signatures from closest nodes (4 out of 5 required)
+      const { success, signatures } = await shardus.getAppDataSignatures(
+        'node-removal',
+        crypto.hash(JSON.stringify(unsignedCertificate)), // Hash the stringified certificate
+        4, // required signatures
+        unsignedCertificate,
+        1 // allow 1 backup node in case one is down
+      )
+
+      if (success) {
+        // Create the complete removal certificate with signatures
+        const removalCertificate = {
+          ...unsignedCertificate,
+          signs: signatures
+        }
+
+        // Emit the removal event with proper certificate
+        shardus.emit('remove-by-app', removalCertificate)
+        
+        // Clear node data after penalty is applied and removal is authorized
+        nodeAccount.nominator = null
+        nodeAccount.stakeLock = BigInt(0)
+        nodeAccount.penalty = BigInt(0)
+        nodeAccount.rewardStartTime = 0
+        nodeAccount.rewardEndTime = 0
+        nodeAccount.behaviorStats = null
+
+        if (logFlags.dapp_verbose) console.log(`Node ${nodeAccount.id} removed from network due to excessive violations`)
+      } else {
+        if (logFlags.dapp_verbose) console.log(`Failed to get consensus for removing node ${nodeAccount.id}`)
+      }
+    }
+  }
+
   nodeAccount.nodeAccountStats.lastPenaltyTime = eventTime
+  nodeAccount.timestamp = txTimestamp
   operatorAccount.timestamp = txTimestamp
+
+  // Record the transaction
+  recordPenaltyTX(txId, tx)
 
   const shardeumState = getApplyTXState(txId)
   shardeumState._transactionState.appData = {}
@@ -290,8 +418,6 @@ export async function applyPenaltyTX(
 
   /* prettier-ignore */
   if (ShardeumFlags.VerboseLogs) console.log(`Calculating updated node penalty. nodePenaltyAmount: ${_readableSHM(nodeAccount.penalty)}`)
-
-  //TODO should we check for existing funds?
 
   if (ShardeumFlags.useAccountWrites) {
     let wrappedChangedNodeAccount: ShardusTypes.WrappedData
@@ -330,13 +456,54 @@ export async function applyPenaltyTX(
       tx.operatorEVMAddress, // nominator
       txTimestamp,
       txId,
-      bigIntToHex(BigInt(0)), // 0 amountSpent,
+      bigIntToHex(BigInt(0)), // 0 amountSpent
       undefined,
-      penaltyAmount
+      penalty
     )
   }
 
   /* prettier-ignore */
   nestedCountersInstance.countEvent('shardeum-penalty', `Applied PenaltyTX`)
   /* prettier-ignore */ if (logFlags.dapp_verbose) console.log('Applied PenaltyTX', tx.reportedNodePublickKey)
+
+  initNodeBehaviorStats(nodeAccount);
+  
+  // Update behavior stats based on violation type
+  if (tx.violationType === ViolationType.NodeRefuted) {
+    nodeAccount.behaviorStats.refuteCount++;
+    nodeAccount.behaviorStats.lastRefuteTime = txTimestamp;
+    
+    // Check for oscillation pattern
+    const timeSinceLastLost = txTimestamp - nodeAccount.behaviorStats.lastLostTime;
+    if (timeSinceLastLost < 3600000) { // Within 1 hour
+      nodeAccount.behaviorStats.consecutiveLostRefutes++;
+      
+      // Every 3 quick lost-refute cycles counts as an oscillation
+      if (nodeAccount.behaviorStats.consecutiveLostRefutes >= 3) {
+        nodeAccount.behaviorStats.oscillationCount++;
+        nodeAccount.behaviorStats.lastOscillationTime = txTimestamp;
+        nodeAccount.behaviorStats.consecutiveLostRefutes = 0;
+      }
+    } else {
+      nodeAccount.behaviorStats.consecutiveLostRefutes = 1;
+    }
+  } else if (tx.violationType === ViolationType.LeftNetworkEarly) {
+    nodeAccount.behaviorStats.lostCount++;
+    nodeAccount.behaviorStats.lastLostTime = txTimestamp;
+  }
+
+  // Check if node should be removed
+  if (shouldRemoveNode(nodeAccount)) {
+    // Set stake to 0 to force removal
+    nodeAccount.stakeLock = BigInt(0);
+    nodeAccount.penalty = nodeAccount.stakeLock;
+    
+    // Log the removal
+    if (logFlags.dapp_verbose) console.log(
+      `Node ${nodeAccount.id} automatically removed due to persistent bad behavior:`,
+      `oscillations=${nodeAccount.behaviorStats.oscillationCount}`,
+      `lostCount=${nodeAccount.behaviorStats.lostCount}`,
+      `consecutiveLostRefutes=${nodeAccount.behaviorStats.consecutiveLostRefutes}`
+    );
+  }
 }

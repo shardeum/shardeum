@@ -124,6 +124,7 @@ interface ShardeumFlags {
   debugDefaultBalance: string
   disableSmartContractEndpoints: boolean
   ticketTypesEnabled: boolean
+  debugOscillatingBehavior: boolean  // Makes node oscillate between good and bad behavior for testing
 }
 
 export const ShardeumFlags: ShardeumFlags = {
@@ -146,7 +147,7 @@ export const ShardeumFlags: ShardeumFlags = {
   DebugRestoreArchiveBatch: 2000,
   CheckNonce: true,
   txNoncePreCheck: false,
-  txBalancePreCheck: true ,
+  txBalancePreCheck: false,
   autoGenerateAccessList: true,
   forwardGenesisAccounts: true,
   UseDBForAccounts: true,
@@ -180,7 +181,7 @@ export const ShardeumFlags: ShardeumFlags = {
     ['canUnstake/:nominee/:nominator']: 5,
   },
   generateMemoryPatternData: true,
-  StakingEnabled: true,
+  StakingEnabled: false,
   ModeEnabled: true,
   AdminCertEnabled: false,
   minActiveNodesForStaking: 5,
@@ -285,6 +286,7 @@ export const ShardeumFlags: ShardeumFlags = {
   debugDefaultBalance: '100', //In debug mode the default value is 100 SHM.  This is needed for certain load test operations
   disableSmartContractEndpoints: true, // Disable smart contract read endpoints by default
   ticketTypesEnabled: false,
+  debugOscillatingBehavior: false  // Disabled by default
 }
 
 export function updateShardeumFlag(key: string, value: string | number | boolean): void {

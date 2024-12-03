@@ -1,10 +1,44 @@
-import { PenaltyTX, ViolationType } from '../../shardeum/shardeumTypes'
+import { PenaltyTX, ViolationType, NodeAccount2 } from '../../shardeum/shardeumTypes'
 import { _base16BNParser } from '../../utils'
 import { nestedCountersInstance } from '@shardus/core'
 import { cachedNetworkAccount } from '../../storage/accountStorage'
 import { logFlags } from '../..'
 
-export function getPenaltyForViolation(tx: PenaltyTX, stakeLock: bigint): bigint {
+function calculateBehaviorMultiplier(nodeAccount: NodeAccount2): number {
+  const stats = nodeAccount.behaviorStats;
+  if (!stats) return 1.0;
+
+  let multiplier = 1.0;
+
+  // Increase penalty for repeated lost status
+  multiplier += Math.min(stats.lostCount * 0.2, 2.0); // Up to 3x for repeated lost status
+
+  // Increase penalty for oscillation patterns
+  multiplier += stats.oscillationCount * 0.5; // +50% per detected oscillation
+
+  // Recent violations have higher impact
+  const hoursSinceLastViolation = Math.min(
+    (Date.now() - Math.max(stats.lastLostTime, stats.lastRefuteTime)) / 3600000,
+    24
+  );
+  if (hoursSinceLastViolation < 24) {
+    multiplier *= (24 - hoursSinceLastViolation) / 24 + 1;
+  }
+
+  return Math.min(multiplier, 5.0); // Cap at 5x penalty
+}
+
+export function getPenaltyForViolation(
+  tx: PenaltyTX,
+  stakeLock: bigint,
+  nodeAccount: NodeAccount2
+): bigint {
+  const basePenalty = getBasePenaltyForViolation(tx, stakeLock);
+  const multiplier = calculateBehaviorMultiplier(nodeAccount);
+  return BigInt(Math.floor(Number(basePenalty) * multiplier));
+}
+
+function getBasePenaltyForViolation(tx: PenaltyTX, stakeLock: bigint): bigint {
   //can remove this will crash part after fix confirmed
   let willCrash = false
   if (typeof stakeLock !== 'bigint') {

@@ -411,6 +411,7 @@ export interface NodeAccount2 extends BaseAccount {
   nodeAccountStats: NodeAccountStats
   rewarded: boolean
   rewardRate: bigint
+  behaviorStats: NodeBehaviorStats
 }
 
 //type guard
@@ -530,3 +531,13 @@ export interface AppJoinData {
 
 
 export type AccountMap = Map<string, WrappedEVMAccount>;
+
+export interface NodeBehaviorStats {
+  lostCount: number;
+  refuteCount: number;
+  lastLostTime: number;
+  lastRefuteTime: number;
+  oscillationCount: number;
+  lastOscillationTime: number;
+  consecutiveLostRefutes: number;
+}
