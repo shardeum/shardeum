@@ -2430,7 +2430,11 @@ const configShardusNetworkTransactions = (): void => {
       const shardusAddress = tx.publicKey?.toLowerCase()
       const account = await shardus.getLocalOrRemoteAccount(shardusAddress)
       if (!account) {
-        console.log(`Account for shardus address ${shardusAddress} not found, do not add tx`)
+        console.log(`registerBeforeAddVerifier - nodeReward: Account for shardus address ${shardusAddress} not found, do not add tx`)
+        return false
+      }
+      if ((account.data as NodeAccount2).nominator == null) {
+        console.log(`registerBeforeAddVerifier - nodeReward: Account for shardus address ${shardusAddress} has null nominator, do not add tx`)
         return false
       }
       if (txEntry.priority !== 0) {
@@ -2489,10 +2493,14 @@ const configShardusNetworkTransactions = (): void => {
       const shardusAddress = tx.publicKey?.toLowerCase()
       const account = await shardus.getLocalOrRemoteAccount(shardusAddress)
       if (!account) {
-        console.log(`Account for shardus address ${shardusAddress} not found, removing tx`)
+        console.log(`registerApplyVerifier - nodeReward: Account for shardus address ${shardusAddress} not found, removing tx`)
         return true
       }
       const data = account.data as NodeAccount2
+      if (data.nominator == null) {
+        console.log(`registerApplyVerifier - nodeReward: Account for shardus address ${shardusAddress} has null nominator, removing tx`)
+        return true
+      }
       const appliedEntry = data.rewardEndTime === tx.endTime
       /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log('registerApplyVerify nodeReward appliedEntry', appliedEntry)
       return appliedEntry
@@ -2513,7 +2521,11 @@ const configShardusNetworkTransactions = (): void => {
       const shardusAddress = tx.publicKey?.toLowerCase()
       const account = await shardus.getLocalOrRemoteAccount(shardusAddress)
       if (!account) {
-        console.log(`Account for shardus address ${shardusAddress} not found, do not add tx`)
+        console.log(`registerBeforeAddVerifier - nodeInitReward: Account for shardus address ${shardusAddress} not found, do not add tx`)
+        return false
+      }
+      if ((account.data as NodeAccount2).nominator == null) {
+        console.log(`registerBeforeAddVerifier - nodeInitReward: Account for shardus address ${shardusAddress} has null nominator, do not add tx`)
         return false
       }
       if (txEntry.subQueueKey == null || txEntry.subQueueKey != tx.publicKey) {
@@ -2546,10 +2558,14 @@ const configShardusNetworkTransactions = (): void => {
       const shardusAddress = tx.publicKey?.toLowerCase()
       const account = await shardus.getLocalOrRemoteAccount(shardusAddress)
       if (!account) {
-        console.log(`Account for shardus address ${shardusAddress} not found, removing tx`)
+        console.log(`registerApplyVerifier - nodeInitReward: Account for shardus address ${shardusAddress} not found, removing tx`)
         return true
       }
       const data = account.data as NodeAccount2
+      if (data.nominator == null) {
+        console.log(`registerApplyVerifier - nodeInitReward: Account for shardus address ${shardusAddress} has null nominator, removing tx`)
+        return true
+      }
 
       // check if nodeAccount.rewardStartTime is already set to tx.nodeActivatedTime
       if (data.rewardStartTime >= tx.startTime) {
