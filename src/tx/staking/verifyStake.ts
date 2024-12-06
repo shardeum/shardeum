@@ -170,6 +170,15 @@ export function verifyUnstakeTx(
     } else if (shardus.isNodeActiveByPubKey(nomineeAccount.id) === true) {
       success = false
       reason = `This node is still active in the network. You can unstake only after the node leaves the network!`
+    } else if (shardus.isNodeSelectedByPubKey(nomineeAccount.id)) {
+      success = false
+      reason = `This node is still selected in the network. You can unstake only after the node leaves the network!`
+    } else if (shardus.isNodeReadyByPubKey(nomineeAccount.id)) {
+      success = false
+      reason = `This node is still in ready state in the network. You can unstake only after the node leaves the network!`
+    } else if (shardus.isNodeSyncingByPubKey(nomineeAccount.id)) {
+      success = false
+      reason = `This node is still syncing in the network. You can unstake only after the node leaves the network!`
     } else if (
       nomineeAccount.rewardEndTime === 0 &&
       nomineeAccount.rewardStartTime > 0 &&

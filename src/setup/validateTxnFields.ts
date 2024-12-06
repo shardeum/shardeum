@@ -474,7 +474,17 @@ export const validateTxnFields =
             } else if (shardus.isNodeActiveByPubKey(nodeAccount.id) === true) {
               success = false
               reason = `This node is still active in the network. You can unstake only after the node leaves the network!`
-            } else if (
+            } else if (shardus.isNodeSelectedByPubKey(nodeAccount.id)) {
+              success = false
+              reason = `This node is still selected in the network. You can unstake only after the node leaves the network!`
+            } else if (shardus.isNodeReadyByPubKey(nodeAccount.id)) {
+              success = false
+              reason = `This node is still in ready state in the network. You can unstake only after the node leaves the network!`
+            } else if (shardus.isNodeSyncingByPubKey(nodeAccount.id)) {
+              success = false
+              reason = `This node is still syncing in the network. You can unstake only after the node leaves the network!`
+            }
+            else if (
               nodeAccount.rewardEndTime === 0 &&
               nodeAccount.rewardStartTime > 0 &&
               !(unstakeCoinsTX.force && ShardeumFlags.allowForceUnstake)
