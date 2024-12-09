@@ -94,6 +94,29 @@ npm install -g shardus
 npm update @shardus/archiver
 ```
 
+### Managing shardus-core Updates
+
+The project automatically checks for shardus-core updates before every `npm install`. If updates are available, you'll see a warning message.
+
+To manually check for and apply updates to the shardus-core dependency:
+
+```bash
+# Check and update if needed
+node scripts/check-shardus-core.js
+
+# Check only (won't make any changes)
+node scripts/check-shardus-core.js --check
+```
+
+This script will:
+- Check your currently installed shardus-core commit
+- Compare it with the latest commit on the dev branch
+- In normal mode: Update package.json if a newer version is available
+- In check mode (--check): Only display a warning if updates are available
+- Exit with error code 1 in check mode if updates are needed (useful for CI/CD)
+
+After updating, run `npm install` to apply the changes.
+
 ## Running the Network Locally
 
 To start a local Shardeum network with 10 nodes, run:
