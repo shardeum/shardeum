@@ -7,7 +7,8 @@
       "forceBogonFilteringOn": false,
       "syncFloorEnabled": true,
       "syncingDesiredMinCount": 5,
-      "activeRecoveryEnabled": true
+      "activeRecoveryEnabled": true,
+      "formingNodesPerCycle": 24
     },
     "sharding": {
       "nodesPerConsensusGroup": 10

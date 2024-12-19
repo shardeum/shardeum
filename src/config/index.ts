@@ -350,28 +350,28 @@ config = merge(
 
 // load local config files
 if (process.env.LOAD_JSON_CONFIGS) {
-  console.log('env var exists ' + process.env.LOAD_JSON_CONFIGS)
   const configs = process.env.LOAD_JSON_CONFIGS.split(',')
   for (let i = 0; i < configs.length; i++) {
     configs[i] = configs[i].trim()
   }
-  console.log('configs, ', configs)
 
   for (let i = 0; i < configs.length; i++) {
-    console.log('checking for file', configs[i])
-    // eslint-disable-next-line security/detect-non-literal-fs-filename
-    if (fs.existsSync(path.join(process.cwd(), '..', configs[i]))) {
+    try {
       // eslint-disable-next-line security/detect-non-literal-fs-filename
-      const fileConfig = Utils.safeJsonParse(
-        fs.readFileSync(path.join(process.cwd(), '..', configs[i])).toString()
-      )
-      config = merge(config, fileConfig, { arrayMerge: overwriteMerge })
-      console.log('config', config)
-    } else {
-      console.log('path to the following file is incorrect', configs[i])
+      if (fs.existsSync(path.join(process.cwd(), '..', configs[i]))) {
+        // eslint-disable-next-line security/detect-non-literal-fs-filename
+        const fileConfig = Utils.safeJsonParse(
+          fs.readFileSync(path.join(process.cwd(), '..', configs[i])).toString()
+        )
+        config = merge(config, fileConfig, { arrayMerge: overwriteMerge })
+        console.log('config loaded from:', configs[i])
+      } else {
+        throw new Error('path to the following file is incorrect:' + configs[i])
+      }
+    } catch (e) {
+      throw new Error('error loading config file: ' + e)
     }
   }
-  console.log('config loaded from env var')
 }
 
 // apply env variables
