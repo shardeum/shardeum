@@ -1,0 +1,26 @@
+{
+  "server": {
+    "p2p": {
+      "baselineNodes": 10,
+      "minNodes": 10,
+      "maxNodes": 10,
+      "forceBogonFilteringOn": false,
+      "syncFloorEnabled": true,
+      "syncingDesiredMinCount": 5,
+      "activeRecoveryEnabled": true
+    },
+    "sharding": {
+      "nodesPerConsensusGroup": 10
+    },
+    "features": {
+      "tickets": {
+        "updateTicketListTimeInMs": 300000
+      }
+    },
+    "mode": "debug",
+    "debug": {
+      "startInFatalsLogMode": false,
+      "startInErrorLogMode": true
+    }
+  }
+}
