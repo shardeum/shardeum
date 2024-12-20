@@ -4233,7 +4233,7 @@ const shardusSetup = (): void => {
           nodeAccount2.stakeLock = BigInt('0x' + nodeAccount2.stakeLock)
         }
 
-        nodeAccount2.stakeTimestamp = stakeCoinsTx.timestamp
+        nodeAccount2.stakeTimestamp = txTimestamp
         nodeAccount2.nominator = stakeCoinsTx.nominator
         nodeAccount2.stakeLock += stakeCoinsTx.stake
         nodeAccount2.timestamp = txTimestamp
