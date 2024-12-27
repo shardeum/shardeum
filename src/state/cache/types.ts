@@ -1,9 +1,8 @@
 export enum CacheType {
-  LRU = 'lru',
-  ORDERED_MAP = 'ordered_map',
+    LRU = 'lru',
+    ORDERED_MAP = 'ordered_map'
 }
-
 export interface CacheOpts {
-  size: number
-  type: CacheType
+    size: number;
+    type: CacheType;
 }

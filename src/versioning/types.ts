@@ -1,1 +1,1 @@
-export type Migration = () => Promise<void>
+export type Migration = () => Promise<void>;
