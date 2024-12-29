@@ -31,6 +31,7 @@
     "push-docker-production": "docker push registry.gitlab.com/shardeum/server",
     "tsc": "tsc",
     "dcr": "node scripts/debugCycleRecords.ts",
+    "release:prerelease": "npm run prepare && npm version prerelease --preid=prerelease && git push --follow-tags && npm publish --tag prerelease",
     "release:patch": "npm run prepare && npm version patch && git push --follow-tags && npm publish",
     "release:minor": "npm run prepare && npm version minor && git push --follow-tags && npm publish",
     "release:major": "npm run prepare && npm version major && git push --follow-tags && npm publish"
