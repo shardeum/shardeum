@@ -8,6 +8,7 @@
       "syncFloorEnabled": true,
       "syncingDesiredMinCount": 5,
       "activeRecoveryEnabled": true,
+      "flexibleRotationDelta": 0,
       "formingNodesPerCycle": 9
     },
     "sharding": {

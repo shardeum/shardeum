@@ -464,6 +464,7 @@ config = merge(config, {
       minNodes: process.env.minNodes ? parseInt(process.env.minNodes) : (config.server.p2p as any).minNodes,
       maxNodes: process.env.maxNodes ? parseInt(process.env.maxNodes) : (config.server.p2p as any).maxNodes,
       maxRotatedPerCycle: process.env.maxRotatedPerCycle ? parseInt(process.env.maxRotatedPerCycle) : (config.server.p2p as any).maxRotatedPerCycle,
+      flexibleRotationDelta: process.env.flexibleRotationDelta ? parseInt(process.env.flexibleRotationDelta) : (config.server.p2p as any).flexibleRotationDelta,
     },
     sharding: {
       nodesPerConsensusGroup: process.env.nodesPerConsensusGroup
