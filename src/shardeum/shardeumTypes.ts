@@ -172,6 +172,7 @@ export interface InitRewardTimes extends InternalTxBase {
   nominee: string
   timestamp: number
   nodeActivatedTime: number
+  txData: NodeInitTxData
   sign: ShardusTypes.Sign
 }
 
@@ -185,6 +186,7 @@ export interface ClaimRewardTX extends InternalTxBase {
   timestamp: number
   deactivatedNodeId: string
   nodeDeactivatedTime: number
+  txData: NodeRewardTxData
   sign: ShardusTypes.Sign
 }
 

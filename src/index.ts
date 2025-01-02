@@ -2424,7 +2424,7 @@ const configShardusEndpoints = (): void => {
 }
 
 const configShardusNetworkTransactions = (): void => {
-  shardus.registerBeforeAddVerifier(
+  shardus.serviceQueue.registerBeforeAddVerifier(
     'nodeReward',
     async (txEntry: P2P.ServiceQueueTypes.AddNetworkTx<SignedNodeRewardTxData>) => {
       const tx = txEntry.txData
@@ -2484,6 +2484,18 @@ const configShardusNetworkTransactions = (): void => {
         return false
       }
 
+      if (tx.endTime === undefined) {
+        /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log('registerBeforeAddVerify nodeReward fail endTime field missing', Utils.safeStringify(tx))
+        /* prettier-ignore */ nestedCountersInstance.countEvent('shardeum-staking', `registerBeforeAddVerify nodeReward fail endTime field missing`)
+        return false
+      }
+
+      if (tx.end !== latestCycles[0].counter) {
+        /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log('registerBeforeAddVerify nodeReward fail end value is not correct ', Utils.safeStringify(tx))
+        /* prettier-ignore */ nestedCountersInstance.countEvent('shardeum-staking', `registerBeforeAddVerify nodeReward fail end value is not correct `)
+        return false
+      }
+
       const nodeRemovedCycle = latestCycles.find(
         (cycle) => cycle.removed.includes(tx.nodeId) || cycle.lost.includes(tx.nodeId)
       )
@@ -2501,7 +2513,7 @@ const configShardusNetworkTransactions = (): void => {
       return true
     }
   )
-  shardus.registerApplyVerifier(
+  shardus.serviceQueue.registerApplyVerifier(
     'nodeReward',
     async (txEntry: P2P.ServiceQueueTypes.AddNetworkTx<SignedNodeRewardTxData>) => {
       const tx = txEntry.txData
@@ -2526,7 +2538,7 @@ const configShardusNetworkTransactions = (): void => {
       return appliedEntry
     }
   )
-  shardus.registerBeforeAddVerifier(
+  shardus.serviceQueue.registerBeforeAddVerifier(
     'nodeInitReward',
     async (txEntry: P2P.ServiceQueueTypes.AddNetworkTx<SignedNodeInitTxData>) => {
       const tx = txEntry.txData
@@ -2574,7 +2586,7 @@ const configShardusNetworkTransactions = (): void => {
       return true
     }
   )
-  shardus.registerApplyVerifier(
+  shardus.serviceQueue.registerApplyVerifier(
     'nodeInitReward',
     async (txEntry: P2P.ServiceQueueTypes.AddNetworkTx<SignedNodeInitTxData>) => {
       const tx = txEntry.txData
@@ -2606,7 +2618,7 @@ const configShardusNetworkTransactions = (): void => {
       return false
     }
   )
-  shardus.registerShutdownHandler(
+  shardus.serviceQueue.registerShutdownHandler(
     'nodeInitReward',
     (node: P2P.NodeListTypes.Node, record: P2P.CycleCreatorTypes.CycleRecord) => {
       if (record.activated.includes(node.id)) {
@@ -2627,7 +2639,7 @@ const configShardusNetworkTransactions = (): void => {
       }
     }
   )
-  shardus.registerShutdownHandler(
+  shardus.serviceQueue.registerShutdownHandler(
     'nodeReward',
     (node: P2P.NodeListTypes.Node, record: P2P.CycleCreatorTypes.CycleRecord) => {
       if (record.txadd.some((entry) => entry.txData.nodeId === node.id && entry.type === 'nodeReward')) {
@@ -2637,7 +2649,7 @@ const configShardusNetworkTransactions = (): void => {
 
       // get latest entry for node in txList. and if it is init then we inject otherwise continue
       // first iterate over txlist backwards and get first entry that has public key of node
-      const txListEntry = shardus.getLatestNetworkTxEntryForSubqueueKey(node.publicKey)
+      const txListEntry = shardus.serviceQueue.getLatestNetworkTxEntryForSubqueueKey(node.publicKey)
       if (txListEntry && txListEntry.tx.type === 'nodeReward') {
         /** prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`Skipping creation of shutdown reward tx (last entry already is of type ${txListEntry.tx.type})`, Utils.safeStringify(txListEntry))
         return
@@ -7538,7 +7550,7 @@ const shardusSetup = (): void => {
                 nodeId: data.nodeId,
               } as NodeInitTxData
               console.log('node-activated', 'injectInitRewardTimesTx', data.publicKey, txData)
-              shardus.addNetworkTx('nodeInitReward', shardus.signAsNode(txData), data.publicKey)
+              shardus.serviceQueue.addNetworkTx('nodeInitReward', shardus.signAsNode(txData), data.publicKey)
             }
           }
         } else if (eventType === 'node-deactivated') {
@@ -7557,7 +7569,7 @@ const shardusSetup = (): void => {
                 nodeId: data.nodeId,
               } as NodeRewardTxData
               console.log('node-deactivates', 'injectClaimRewardTx', data.publicKey, txData)
-              shardus.addNetworkTx('nodeReward', shardus.signAsNode(txData), data.publicKey)
+              shardus.serviceQueue.addNetworkTx('nodeReward', shardus.signAsNode(txData), data.publicKey)
             }
           }
         } else if (

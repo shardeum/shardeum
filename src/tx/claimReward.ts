@@ -62,6 +62,7 @@ export async function injectClaimRewardTx(
     cycle: eventData.cycle,
     isInternalTx: true,
     internalTXType: InternalTXType.ClaimReward,
+    txData: eventData.additionalData.txData,
   } as Omit<ClaimRewardTX, 'sign'>
 
   if (ShardeumFlags.txHashingFix) {
@@ -133,6 +134,46 @@ export function validateClaimRewardTx(
     /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log('validateClaimRewardTx fail Invalid signature exception', tx)
     return { isValid: false, reason: 'Invalid signature for ClaimReward tx' }
   }
+
+  // only allow claim reward txs for nodes that are in the serviceQueue
+  if (!shardus.serviceQueue.containsTxData(tx.txData)) {
+    /* prettier-ignore */ nestedCountersInstance.countEvent('shardeum-staking', `validateClaimRewardTx fail txData not in serviceQueue`)
+    /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log('validateClaimRewardTx fail txData not in serviceQueue', tx)
+    return { isValid: false, reason: 'txData not in serviceQueue for ClaimReward tx' }
+  }
+
+  // check txData matches tx
+  if (tx.txData.endTime !== tx.nodeDeactivatedTime) {
+    /* prettier-ignore */ nestedCountersInstance.countEvent('shardeum-staking', `validateClaimRewardTx fail txData.endTime does not match tx.nodeDeactivatedTime`)
+    /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log('validateClaimRewardTx fail txData.endTime does not match tx.nodeDeactivatedTime', tx)
+    return { isValid: false, reason: 'txData.endTime does not match tx.nodeDeactivatedTime' }
+  }
+
+  const cycleForTime = shardus.p2p.state.getCycleByTimestamp(tx.txData.endTime)
+  if (!cycleForTime) {
+    /* prettier-ignore */ nestedCountersInstance.countEvent('shardeum-staking', `validateClaimRewardTx fail cycleForTime not found`)
+    /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log('validateClaimRewardTx fail cycleForTime not found', tx)
+    return { isValid: false, reason: 'cycleForTime not found' }
+  }
+
+  if (tx.txData.end !== cycleForTime.counter) {
+    /* prettier-ignore */ nestedCountersInstance.countEvent('shardeum-staking', `validateClaimRewardTx fail txData.end does not match cycleForTime`)
+    /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log('validateClaimRewardTx fail txData.end does not match cycleForTime', tx)
+    return { isValid: false, reason: 'txData.end does not match cycleForTime' }
+  }
+
+  if (tx.txData.publicKey !== tx.nominee) {
+    /* prettier-ignore */ nestedCountersInstance.countEvent('shardeum-staking', `validateClaimRewardTx fail txData.publicKey does not match tx.nominee`)
+    /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log('validateClaimRewardTx fail txData.publicKey does not match tx.nominee', tx)
+    return { isValid: false, reason: 'txData.publicKey does not match tx.nominee' }
+  }
+
+  if (tx.txData.nodeId !== tx.nominator) {
+    /* prettier-ignore */ nestedCountersInstance.countEvent('shardeum-staking', `validateClaimRewardTx fail txData.nodeId does not match tx.nominator`)
+    /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log('validateClaimRewardTx fail txData.nodeId does not match tx.nominator', tx)
+    return { isValid: false, reason: 'txData.nodeId does not match tx.nominator' }
+  }
+
   /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log('validateClaimRewardTx format success', tx)
   return { isValid: true, reason: '' }
 }
