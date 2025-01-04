@@ -2466,33 +2466,39 @@ const configShardusNetworkTransactions = (): void => {
         /* prettier-ignore */ nestedCountersInstance.countEvent('shardeum-staking', `registerBeforeAddVerify nodeReward fail invalid publicKey field`)
         return false
       }
-      if (tx.start === undefined) {
-        /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log('registerBeforeAddVerify nodeReward fail start field missing', Utils.safeStringify(tx))
-        /* prettier-ignore */ nestedCountersInstance.countEvent(
-        'shardeum-staking',
-        `registerBeforeAddVerify nodeReward fail start field missing`
-      )
-        return false
-      }
-      const latestCycles = shardus.getLatestCycles(5)
-      if (tx.start < 0 || !latestCycles.some((cycle) => tx.start <= cycle.counter)) {
-        /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log('registerBeforeAddVerify nodeReward fail start value is not correct ', Utils.safeStringify(tx))
-        /* prettier-ignore */ nestedCountersInstance.countEvent(
-        'shardeum-staking',
-        `registerBeforeAddVerify nodeReward fail start value is not correct `
-      )
-        return false
-      }
 
+      // todo: can't get the node here because it's already removed. how do we best verify the nodeId is correct in that case? Possibly add field to cycleRecords simlilar to activatedPublicKeys but for removed/apoped... to be clarified
+      const node = shardus.getNode(tx.nodeId)
+      if (node == null || tx.publicKey !== node.publicKey) {
+        /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log('registerBeforeAddVerify nodeReward fail invalid nodeId field', Utils.safeStringify(tx))
+        /* prettier-ignore */ nestedCountersInstance.countEvent('shardeum-staking', `registerBeforeAddVerify nodeReward fail invalid nodeId field`)
+        return false
+      }
+      const amountOfCycles = 5
+      const latestCycles = shardus.getLatestCycles(amountOfCycles)
       if (tx.endTime === undefined) {
         /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log('registerBeforeAddVerify nodeReward fail endTime field missing', Utils.safeStringify(tx))
         /* prettier-ignore */ nestedCountersInstance.countEvent('shardeum-staking', `registerBeforeAddVerify nodeReward fail endTime field missing`)
         return false
       }
 
-      if (tx.end !== latestCycles[0].counter) {
-        /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log('registerBeforeAddVerify nodeReward fail end value is not correct ', Utils.safeStringify(tx))
-        /* prettier-ignore */ nestedCountersInstance.countEvent('shardeum-staking', `registerBeforeAddVerify nodeReward fail end value is not correct `)
+      const nodeDeactivatedCycle = latestCycles.find((cycle) => cycle.removed.includes(tx.nodeId)
+          || cycle.apoptosized.includes(tx.nodeId) || cycle.appRemoved.includes(tx.nodeId))
+      if (!nodeDeactivatedCycle) {
+        /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log('registerBeforeAddVerify nodeReward fail !nodeDeactivatedCycle', Utils.safeStringify(tx))
+        /* prettier-ignore */ nestedCountersInstance.countEvent('shardeum-staking', `registerBeforeAddVerify nodeReward fail !nodeDeactivatedCycle`)
+        return false
+      }
+      const removeCycleRange = [nodeDeactivatedCycle.start, nodeDeactivatedCycle.start + nodeDeactivatedCycle.duration]
+      if (tx.endTime == null) {
+        /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log('registerBeforeAddVerify nodeReward fail endTime field missing', Utils.safeStringify(tx))
+        /* prettier-ignore */ nestedCountersInstance.countEvent('shardeum-staking', `registerBeforeAddVerify nodeReward fail endTime field missing`)
+        return false
+      }
+
+      if (tx.endTime < removeCycleRange[0] || tx.endTime > removeCycleRange[1]) {
+        /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log('registerBeforeAddVerify nodeReward fail endTime is not in range', Utils.safeStringify(tx))
+        /* prettier-ignore */ nestedCountersInstance.countEvent('shardeum-staking', `registerBeforeAddVerify nodeReward fail endTime is not in range`)
         return false
       }
 
@@ -2566,6 +2572,13 @@ const configShardusNetworkTransactions = (): void => {
       }
       if (txEntry.subQueueKey == null || txEntry.subQueueKey != tx.publicKey) {
         /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log('registerBeforeAddVerifier - nodeInitReward: fail Invalid subQueueKey', Utils.safeStringify(tx))
+        return false
+      }
+
+      const node = shardus.getNode(tx.nodeId)
+      if (node == null || tx.publicKey !== node.publicKey) {
+        /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log('registerBeforeAddVerify nodeInitReward fail invalid nodeId field', Utils.safeStringify(tx))
+        /* prettier-ignore */ nestedCountersInstance.countEvent('shardeum-staking', `registerBeforeAddVerify nodeInitReward fail invalid nodeId field`)
         return false
       }
       const latestCycles = shardus.getLatestCycles(5)
@@ -7562,39 +7575,37 @@ const shardusSetup = (): void => {
             if (id === ourId) {
               nestedCountersInstance.countEvent('shardeum-staking', `${eventType}: injectClaimRewardTx`)
               const txData = {
-                start: data.activeCycle,
-                end: data.cycleNumber,
                 endTime: data.time,
-                publicKey: data.publicKey,
-                nodeId: data.nodeId,
-              } as NodeRewardTxData
-              console.log('node-deactivates', 'injectClaimRewardTx', data.publicKey, txData)
-              shardus.serviceQueue.addNetworkTx('nodeReward', shardus.signAsNode(txData), data.publicKey)
-            }
+              publicKey: data.publicKey,
+              nodeId: data.nodeId,
+            } as NodeRewardTxData
+            console.log('node-deactivates', 'injectClaimRewardTx', data.publicKey, txData)
+            shardus.serviceQueue.addNetworkTx('nodeReward', shardus.signAsNode(txData), data.publicKey)
           }
-        } else if (
-          eventType === 'node-left-early' &&
-          AccountsStorage.cachedNetworkAccount.current.enableNodeSlashing === true &&
-          AccountsStorage.cachedNetworkAccount.current.slashing.enableLeftNetworkEarlySlashing
-        ) {
-          let nodeLostCycle
-          let nodeDroppedCycle
-          for (let i = 0; i < latestCycles.length; i++) {
-            const cycle = latestCycles[i]
-            if (cycle == null) continue
-            if (cycle.apoptosized.includes(data.nodeId)) {
-              nodeDroppedCycle = cycle.counter
-            } else if (cycle.lost.includes(data.nodeId)) {
-              nodeLostCycle = cycle.counter
-            }
+        }
+      } else if (
+        eventType === 'node-left-early' &&
+        AccountsStorage.cachedNetworkAccount.current.enableNodeSlashing === true &&
+        AccountsStorage.cachedNetworkAccount.current.slashing.enableLeftNetworkEarlySlashing
+      ) {
+        let nodeLostCycle
+        let nodeDroppedCycle
+        for (let i = 0; i < latestCycles.length; i++) {
+          const cycle = latestCycles[i]
+          if (cycle == null) continue
+          if (cycle.apoptosized.includes(data.nodeId)) {
+            nodeDroppedCycle = cycle.counter
+          } else if (cycle.lost.includes(data.nodeId)) {
+            nodeLostCycle = cycle.counter
           }
-          if (nodeLostCycle && nodeDroppedCycle && nodeLostCycle < nodeDroppedCycle) {
-            const violationData: LeftNetworkEarlyViolationData = {
-              nodeLostCycle,
-              nodeDroppedCycle,
-              nodeDroppedTime: data.time,
-            }
-            nestedCountersInstance.countEvent('shardeum-staking', `node-left-early: injectPenaltyTx`)
+        }
+        if (nodeLostCycle && nodeDroppedCycle && nodeLostCycle < nodeDroppedCycle) {
+          const violationData: LeftNetworkEarlyViolationData = {
+            nodeLostCycle,
+            nodeDroppedCycle,
+            nodeDroppedTime: data.time,
+          }
+          nestedCountersInstance.countEvent('shardeum-staking', `node-left-early: injectPenaltyTx`)
 
             await PenaltyTx.injectPenaltyTX(shardus, data, violationData)
           } else {

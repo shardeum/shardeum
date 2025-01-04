@@ -193,8 +193,6 @@ export interface ClaimRewardTX extends InternalTxBase {
 export interface NodeRewardTxData {
   publicKey: string
   nodeId: string
-  start: number
-  end: number
   endTime: number
 }
 
