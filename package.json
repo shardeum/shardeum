@@ -123,5 +123,8 @@
     "jsonwebtoken": "9.0.2",
     "engine.io": "3.6.1",
     "nat-api": "timadinorth/nat-api#appsec-dep-fix"
+  },
+  "publishConfig": {
+    "access": "public"
   }
 }
