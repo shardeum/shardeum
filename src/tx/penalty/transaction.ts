@@ -1,4 +1,4 @@
-import { nestedCountersInstance, Shardus, ShardusTypes } from '@shardus/core'
+import { nestedCountersInstance, Shardus, ShardusTypes } from '@shardeum-foundation/core'
 import {
   AccountType,
   InternalTXType,

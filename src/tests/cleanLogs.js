@@ -1,4 +1,4 @@
-import { Utils } from '@shardus/types'
+import { Utils } from '@shardeum-foundation/lib-types'
 
 let stringify = require('fast-json-stable-stringify')
 const fs = require('fs')

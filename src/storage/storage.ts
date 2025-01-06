@@ -6,7 +6,7 @@ import { ShardeumFlags } from '../shardeum/shardeumFlags'
 import Sqlite3Storage from './sqlite3storage'
 import { isServiceMode } from '..'
 import { Op } from './utils/sqlOpertors'
-import { Utils } from '@shardus/types'
+import { Utils } from '@shardeum-foundation/lib-types'
 
 export interface AccountsEntry {
   accountId: string

@@ -1,4 +1,4 @@
-import { VectorBufferStream } from '@shardus/core'
+import { VectorBufferStream } from '@shardeum-foundation/core'
 import { TypeIdentifierEnum } from './enum/TypeIdentifierEnum'
 
 const cBaseAccountVersion = 1

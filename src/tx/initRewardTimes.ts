@@ -1,5 +1,5 @@
-import { nestedCountersInstance, Shardus, ShardusTypes } from '@shardus/core'
-import * as crypto from '@shardus/crypto-utils'
+import { nestedCountersInstance, Shardus, ShardusTypes } from '@shardeum-foundation/core'
+import * as crypto from '@shardeum-foundation/lib-crypto-utils'
 import { hashSignedObj } from '../setup/helpers'
 import { ShardeumFlags } from '../shardeum/shardeumFlags'
 import {

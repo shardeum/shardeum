@@ -1,4 +1,4 @@
-import { nestedCountersInstance } from '@shardus/core'
+import { nestedCountersInstance } from '@shardeum-foundation/core'
 import { isEqualOrNewerVersion } from '../utils'
 import { Migration as Migrate } from './types'
 

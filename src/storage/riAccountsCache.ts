@@ -1,11 +1,11 @@
-import { nestedCountersInstance } from '@shardus/core'
+import { nestedCountersInstance } from '@shardeum-foundation/core'
 import { isServiceMode, logFlags } from '..'
 import { ShardeumFlags } from '../shardeum/shardeumFlags'
 import { AccountType, WrappedEVMAccount } from '../shardeum/shardeumTypes'
 import { accounts, storage } from './accountStorage'
 import { AccountsEntry } from './storage'
 import * as WrappedEVMAccountFunctions from '../shardeum/wrappedEVMAccountFunctions'
-import { Utils } from '@shardus/types'
+import { Utils } from '@shardeum-foundation/lib-types'
 
 export async function getCachedRIAccount(address: string): Promise<WrappedEVMAccount> {
   if (ShardeumFlags.enableRIAccountsCache === false || isServiceMode()) return

@@ -1,11 +1,11 @@
-import { DevSecurityLevel, ShardusTypes } from '@shardus/core'
+import { DevSecurityLevel, ShardusTypes } from '@shardeum-foundation/core'
 import config from '../../config'
 import { logFlags, shardusConfig } from '../..'
 import axios from 'axios'
-import { getFinalArchiverList } from '@shardus/archiver-discovery'
+import { getFinalArchiverList } from '@shardeum-foundation/lib-archiver-discovery'
 import { getRandom } from '../../utils'
 import { verifyMultiSigs } from '../helpers'
-import { Archiver } from '@shardus/archiver-discovery/dist/src/types'
+import { Archiver } from '@shardeum-foundation/lib-archiver-discovery/dist/src/types'
 import { Address } from '@ethereumjs/util'
 
 export interface Ticket {

@@ -13,7 +13,7 @@ import { Address } from '@ethereumjs/util'
 import { networkAccount as globalAccount } from '../../shardeum/shardeumConstants'
 import { logFlags, shardusConfig } from '../..'
 import { toShardusAddress } from '../../shardeum/evmAddress'
-import { nestedCountersInstance, Shardus } from '@shardus/core'
+import { nestedCountersInstance, Shardus } from '@shardeum-foundation/core'
 import * as TicketManager from '../../setup/ticket-manager'
 import { doesTransactionSenderHaveTicketType, TicketTypes } from '../../setup/ticket-manager'
 

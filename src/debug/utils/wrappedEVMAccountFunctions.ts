@@ -2,7 +2,7 @@ import { AccountType, InternalAccount, WrappedEVMAccount } from '../../shardeum/
 import { TransactionState } from '../state'
 import { fixBigIntLiteralsToBigInt } from '../../utils'
 import { Account, bigIntToBytes, generateAddress } from '@ethereumjs/util'
-import * as crypto from '@shardus/crypto-utils'
+import * as crypto from '@shardeum-foundation/lib-crypto-utils'
 
 /**
  * make in place repairs to deserialized wrappedEVMAccount

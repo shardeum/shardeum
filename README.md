@@ -91,7 +91,7 @@ npm run prepare
 
 ```bash
 npm install -g shardus
-npm update @shardus/archiver
+npm update @shardeum-foundation/archiver
 ```
 
 ## Running the Network Locally

@@ -37,7 +37,7 @@ import {
   DebugComplete,
   Shardus,
   DevSecurityLevel,
-} from '@shardus/core'
+} from '@shardeum-foundation/core'
 import { ContractByteWrite, WarmupStats } from './state/transactionState'
 import { version, devDependencies, dependencies } from '../package.json'
 import {
@@ -143,13 +143,13 @@ import {
   verify,
 } from './setup/helpers'
 import { onActiveVersionChange } from './versioning'
-import { shardusFactory } from '@shardus/core'
+import { shardusFactory } from '@shardeum-foundation/core'
 import { unsafeGetClientIp } from './utils/requests'
 import { initialNetworkParamters } from './shardeum/initialNetworkParameters'
 import { oneSHM, networkAccount, ONE_SECOND } from './shardeum/shardeumConstants'
 import { applyPenaltyTX, clearOldPenaltyTxs } from './tx/penalty/transaction'
-import { getFinalArchiverList, setupArchiverDiscovery } from '@shardus/archiver-discovery'
-import { Archiver } from '@shardus/archiver-discovery/dist/src/types'
+import { getFinalArchiverList, setupArchiverDiscovery } from '@shardeum-foundation/lib-archiver-discovery'
+import { Archiver } from '@shardeum-foundation/lib-archiver-discovery/dist/src/types'
 import axios from 'axios'
 //import blockedAt from 'blocked-at'
 //import { v4 as uuidv4 } from 'uuid'
@@ -157,21 +157,21 @@ import { RunState } from './evm_v2/interpreter'
 import { VM } from './vm_v7/vm'
 import rfdc = require('rfdc')
 import { AdminCert, PutAdminCertResult, putAdminCertificateHandler } from './handlers/adminCertificate'
-import { P2P } from '@shardus/types'
+import { P2P } from '@shardeum-foundation/lib-types'
 import { getExternalApiMiddleware } from './middleware/externalApiMiddleware'
 import { AccountsEntry } from './storage/storage'
 import { getCachedRIAccount, setCachedRIAccount } from './storage/riAccountsCache'
 import { isLowStake } from './tx/penalty/penaltyFunctions'
 import { accountDeserializer, accountSerializer } from './types/Helpers'
 import { runWithContextAsync } from './utils/RequestContext'
-import { Utils } from '@shardus/types'
+import { Utils } from '@shardeum-foundation/lib-types'
 import { SafeBalance } from './utils/safeMath'
 import { isStakeUnlocked, verifyStakeTx, verifyUnstakeTx } from './tx/staking/verifyStake'
 import { AJVSchemaEnum } from './types/enum/AJVSchemaEnum'
 import { initAjvSchemas, verifyPayload } from './types/ajv/Helpers'
-import { Sign, ServerMode } from '@shardus/core/dist/shardus/shardus-types'
+import { Sign, ServerMode } from '@shardeum-foundation/core/dist/shardus/shardus-types'
 
-import { safeStringify } from '@shardus/types/build/src/utils/functions/stringify'
+import { safeStringify } from '@shardeum-foundation/lib-types/build/src/utils/functions/stringify'
 import { initializeSerialization } from './utils/serialization/SchemaHelpers';
 import { getAccountData } from './utils/account'
 import {
@@ -445,7 +445,7 @@ export function setGenesisAccounts(accounts = []): void {
 // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
 function getShardusDependenciesVersions(){
   // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
-  const isShardus = ([key, value] ) => key.startsWith('@shardus')
+  const isShardus = ([key, value] ) => key.startsWith('@shardeum-foundation')
 
   if (shardusDependenciesVersions === null) {
     shardusDependenciesVersions = {}
@@ -7117,7 +7117,7 @@ const shardusSetup = (): void => {
           /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`validateArchiverJoinRequest() fail: old version`)
           return {
             success: false,
-            reason: `Archiver Version number is old. Our Archiver version is: ${devDependencies['@shardus/archiver']}. Join Archiver app version is ${appData.version}`,
+            reason: `Archiver Version number is old. Our Archiver version is: ${devDependencies['@shardeum-foundation/archiver']}. Join Archiver app version is ${appData.version}`,
             fatal: true,
           }
         }
@@ -7146,7 +7146,7 @@ const shardusSetup = (): void => {
         }
       }
     },
-    // Update the activeNodes type here; We can import from P2P.P2PTypes.Node from '@shardus/type' lib but seems it's not installed yet
+    // Update the activeNodes type here; We can import from P2P.P2PTypes.Node from '@shardeum-foundation/lib-types' lib but seems it's not installed yet
     async isReadyToJoin(
       latestCycle: ShardusTypes.Cycle,
       publicKey: string,

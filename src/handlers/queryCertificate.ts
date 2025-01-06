@@ -1,5 +1,5 @@
-import { nestedCountersInstance, Shardus, ShardusTypes } from '@shardus/core'
-import * as crypto from '@shardus/crypto-utils'
+import { nestedCountersInstance, Shardus, ShardusTypes } from '@shardeum-foundation/core'
+import * as crypto from '@shardeum-foundation/lib-crypto-utils'
 import { isValidAddress } from '@ethereumjs/util'
 import { Request } from 'express'
 import { toShardusAddress } from '../shardeum/evmAddress'
@@ -15,7 +15,7 @@ import { fixDeserializedWrappedEVMAccount, isWrappedEVMAccount } from '../sharde
 import { getRandom, fixBigIntLiteralsToBigInt } from '../utils'
 import { shardusGetFromNode, shardusPostToNode, shardusPutToNode } from '../utils/requests'
 import { logFlags, shardeumGetTime } from '..'
-import { OpaqueTransaction } from '@shardus/core/dist/shardus/shardus-types'
+import { OpaqueTransaction } from '@shardeum-foundation/core/dist/shardus/shardus-types'
 
 // constants
 

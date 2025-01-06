@@ -2,7 +2,7 @@ import { AccountType, NetworkAccount, WrappedEVMAccount, InternalAccount, Secure
 import { isWrappedEVMAccount, isInternalAccount } from './wrappedEVMAccountFunctions'
 
 import { ShardeumFlags } from './shardeumFlags'
-import * as crypto from '@shardus/crypto-utils'
+import * as crypto from '@shardeum-foundation/lib-crypto-utils'
 
 /**
  * This will correctly get a shardus address from a WrappedEVMAccount account no matter what type it is.

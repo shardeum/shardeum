@@ -1,7 +1,7 @@
 import fs from 'fs'
 import path from 'path'
 import { FilePaths } from '../src/shardeum/shardeumFlags'
-import { Utils } from '@shardus/types'
+import { Utils } from '@shardeum-foundation/lib-types'
 
 const { Sequelize } = require('sequelize')
 const sqlite3 = require('sqlite3').verbose()

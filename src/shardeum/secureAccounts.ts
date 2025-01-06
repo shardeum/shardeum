@@ -3,7 +3,7 @@ import { updateEthAccountHash } from './wrappedEVMAccountFunctions'
 import { ShardeumFlags } from './shardeumFlags'
 import { toShardusAddress } from './evmAddress'
 
-import { ShardusTypes, DevSecurityLevel, Shardus } from '@shardus/core'
+import { ShardusTypes, DevSecurityLevel, Shardus } from '@shardeum-foundation/core'
 import { verifyMultiSigs } from '../setup/helpers'
 import { createInternalTxReceipt, shardusConfig } from '..'
 import { _shardusWrappedAccount } from './wrappedEVMAccountFunctions'
@@ -11,7 +11,7 @@ import { _shardusWrappedAccount } from './wrappedEVMAccountFunctions'
 import genesisSecureAccounts from '../config/genesis-secure-accounts.json'
 import { Address, bigIntToHex } from '@ethereumjs/util'
 import { getApplyTXState } from '../'
-import { DebugComplete } from '@shardus/core'
+import { DebugComplete } from '@shardeum-foundation/core'
 
 validateSecureAccountConfig(genesisSecureAccounts)
 

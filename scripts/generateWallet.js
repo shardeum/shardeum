@@ -1,4 +1,4 @@
-const crypto = require('@shardus/crypto-utils');
+const crypto = require('@shardeum-foundation/lib-crypto-utils');
 
 // Generate a random keypair
 const keypair = crypto.generateKeypair();

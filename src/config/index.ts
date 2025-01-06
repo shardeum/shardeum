@@ -2,9 +2,9 @@ import fs from 'fs'
 import path from 'path'
 import merge from 'deepmerge'
 import { ShardeumFlags } from '../shardeum/shardeumFlags'
-import { DevSecurityLevel } from '@shardus/core'
+import { DevSecurityLevel } from '@shardeum-foundation/core'
 import { FilePaths } from '../shardeum/shardeumFlags'
-import { Utils } from '@shardus/types'
+import { Utils } from '@shardeum-foundation/lib-types'
 
 const overwriteMerge = (target: any[], source: any[]): any[] => source // eslint-disable-line @typescript-eslint/no-explicit-any
 

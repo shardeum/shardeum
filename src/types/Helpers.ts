@@ -1,4 +1,4 @@
-import { VectorBufferStream, nestedCountersInstance } from '@shardus/core'
+import { VectorBufferStream, nestedCountersInstance } from '@shardeum-foundation/core'
 import { AccountType, NodeAccount2, SecureAccount } from '../shardeum/shardeumTypes'
 import { BaseAccount } from './BaseAccount'
 import { DevAccount, deserializeDevAccount, serializeDevAccount } from './DevAccount'
@@ -10,7 +10,7 @@ import {
   serializeWrappedEVMAccount,
 } from './WrappedEVMAccount'
 import { TypeIdentifierEnum } from './enum/TypeIdentifierEnum'
-import { Utils } from '@shardus/types'
+import { Utils } from '@shardeum-foundation/lib-types'
 import { deserializeSecureAccount, serializeSecureAccount } from './SecureAccount'
 
 export const binarySerializer = <T>(
