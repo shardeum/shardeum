@@ -1,5 +1,5 @@
 import { DecimalString, HexString } from '../shardeum/shardeumTypes'
-import { Utils } from '@shardus/types'
+import { Utils } from '@shardeum-foundation/lib-types'
 
 export const isObject = (val): boolean => {
   if (val === null) {

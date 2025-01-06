@@ -120,8 +120,8 @@ npm run prepare
 4. Install the Shardus CLI:
 
 ```bash
-npm install -g shardus
-npm update @shardus/archiver
+npm install -g @shardeum-foundation/tools-shardus-cli
+npm update @shardeum-foundation/archiver
 ```
 
 ## Network Configuration

@@ -1,4 +1,4 @@
-import { VectorBufferStream } from '@shardus/core'
+import { VectorBufferStream } from '@shardeum-foundation/core'
 import { BaseAccount, deserializeBaseAccount, serializeBaseAccount } from './BaseAccount'
 import { TypeIdentifierEnum } from './enum/TypeIdentifierEnum'
 

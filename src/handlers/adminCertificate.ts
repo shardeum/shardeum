@@ -1,9 +1,9 @@
-import { Shardus, ShardusTypes, nestedCountersInstance } from '@shardus/core'
+import { Shardus, ShardusTypes, nestedCountersInstance } from '@shardeum-foundation/core'
 import { ValidatorError } from './queryCertificate'
 import { ShardeumFlags } from '../shardeum/shardeumFlags'
-import * as crypto from '@shardus/crypto-utils'
+import * as crypto from '@shardeum-foundation/lib-crypto-utils'
 import { Request } from 'express'
-import { DevSecurityLevel } from '@shardus/core'
+import { DevSecurityLevel } from '@shardeum-foundation/core'
 
 export interface AdminCert {
   nominee: string

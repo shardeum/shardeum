@@ -6,12 +6,12 @@ import {
   TicketTypes, clearTicketMap,
 } from '../../../../../src/setup/ticket-manager'  // Use correct path to your module
 import axios from 'axios';
-import { getFinalArchiverList } from '@shardus/archiver-discovery';
+import { getFinalArchiverList } from '@shardeum-foundation/lib-archiver-discovery';
 import { Address } from '@ethereumjs/util';
 import {expect, jest} from '@jest/globals';
 
 jest.mock('axios');
-jest.mock('@shardus/archiver-discovery');
+jest.mock('@shardeum-foundation/lib-archiver-discovery');
 
 const mockedAxios = axios as jest.Mocked<typeof axios>;
 const mockedGetFinalArchiverList = getFinalArchiverList as jest.Mocked<typeof getFinalArchiverList>;

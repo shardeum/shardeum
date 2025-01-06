@@ -2,7 +2,7 @@ import fs from 'fs'
 import { AccountType, WrappedEVMAccount } from '../../shardeum/shardeumTypes'
 import { isValidAddress } from 'ethereumjs-util'
 import { toShardusAddress, toShardusAddressWithKey } from '../utils/evmAddress'
-import { Utils } from '@shardus/types'
+import { Utils } from '@shardeum-foundation/lib-types'
 
 export type jsonState = {
   accountId: string

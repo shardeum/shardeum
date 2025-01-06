@@ -1,11 +1,11 @@
 import { Account } from '@ethereumjs/util'
-import { VectorBufferStream } from '@shardus/core'
+import { VectorBufferStream } from '@shardeum-foundation/core'
 import { OperatorAccountInfo, ReadableReceipt } from '../shardeum/shardeumTypes'
 import { TxReceipt } from '../vm_v7'
 import { BaseAccount, deserializeBaseAccount, serializeBaseAccount } from './BaseAccount'
 import { deserializeEVMAccount, serializeEVMAccount } from './EVMAccount'
 import { TypeIdentifierEnum } from './enum/TypeIdentifierEnum'
-import { Utils } from '@shardus/types'
+import { Utils } from '@shardeum-foundation/lib-types'
 
 const cWrappedEVMAccountVersion = 1
 

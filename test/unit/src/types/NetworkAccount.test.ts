@@ -1,5 +1,5 @@
-import { VectorBufferStream, ShardusTypes } from '@shardus/core'
-import { Utils } from '@shardus/types'
+import { VectorBufferStream, ShardusTypes } from '@shardeum-foundation/core'
+import { Utils } from '@shardeum-foundation/lib-types'
 import {
   NetworkAccount,
   deserializeNetworkAccount,

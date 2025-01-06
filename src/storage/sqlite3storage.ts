@@ -11,7 +11,7 @@ import { SQLDataTypes } from './utils/schemaDefintions'
 import { Database, OPEN_READONLY } from 'sqlite3'
 import config from '../config'
 import { isServiceMode } from '..'
-import { Utils } from '@shardus/types'
+import { Utils } from '@shardeum-foundation/lib-types'
 
 interface Sqlite3Storage {
   baseDir: string

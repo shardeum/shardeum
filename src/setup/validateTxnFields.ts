@@ -1,4 +1,4 @@
-import { DevSecurityLevel, nestedCountersInstance, Shardus } from '@shardus/core'
+import { DevSecurityLevel, nestedCountersInstance, Shardus } from '@shardeum-foundation/core'
 import { ShardeumFlags } from '../shardeum/shardeumFlags'
 import {
   ClaimRewardTX,
@@ -41,7 +41,7 @@ import { fixBigIntLiteralsToBigInt } from '../utils/serialization'
 import { validatePenaltyTX } from '../tx/penalty/transaction'
 import { bytesToHex } from '@ethereumjs/util'
 import { logFlags, shardusConfig, getStakeTxBlobFromEVMTx } from '..'
-import { Sign } from '@shardus/core/dist/shardus/shardus-types'
+import { Sign } from '@shardeum-foundation/core/dist/shardus/shardus-types'
 import { validateTransferFromSecureAccount } from '../shardeum/secureAccounts'
 
 /**

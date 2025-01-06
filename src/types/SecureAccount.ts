@@ -1,11 +1,11 @@
 // src/types/SecureAccount.ts
-import { VectorBufferStream } from '@shardus/core'
+import { VectorBufferStream } from '@shardeum-foundation/core'
 import { AccountType } from '../shardeum/shardeumTypes'
 import { TypeIdentifierEnum } from './enum/TypeIdentifierEnum'
 
 import { SecureAccount } from '../shardeum/secureAccounts'
 import { deserializeBaseAccount, serializeBaseAccount } from './BaseAccount'
-import { Utils } from '@shardus/types'
+import { Utils } from '@shardeum-foundation/lib-types'
 
 function validateSecureAccount(obj: SecureAccount) {
   if (typeof obj.id !== 'string' || typeof obj.hash !== 'string' || typeof obj.timestamp !== 'number' || typeof obj.name !== 'string' || typeof obj.nextTransferAmount !== 'bigint' || typeof obj.nextTransferTime !== 'number' || typeof obj.nonce !== 'number') {

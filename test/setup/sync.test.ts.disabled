@@ -1,9 +1,9 @@
 import Common, { Chain } from '@ethereumjs/common'
-import { Shardus, shardusFactory } from '@shardus/core'
+import { Shardus, shardusFactory } from '@shardeum-foundation/core'
 import config from '../../src/config'
 import { ShardeumFlags } from '../../src/shardeum/shardeumFlags'
 import { sync } from '../../src/setup/sync'
-import * as crypto from '@shardus/crypto-utils'
+import * as crypto from '@shardeum-foundation/lib-crypto-utils'
 import * as debugRestoreAccounts from '../../src/shardeum/debugRestoreAccounts'
 import * as AccountsStorage from '../../src/storage/accountStorage'
 import { MOCK_SHARDUS_CONFIG } from '../mocks/mockShardusConfig'
@@ -15,7 +15,7 @@ jest.useFakeTimers()
 jest.mock('../../src/storage/accountStorage')
 jest.mock('../../src/shardeum/debugRestoreAccounts')
 
-jest.mock('@shardus/core', () => {
+jest.mock('@shardeum-foundation/core', () => {
   return {
     Shardus: jest.fn().mockImplementation(() => {
       return {

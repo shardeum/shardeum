@@ -1,5 +1,5 @@
 import { NetworkAccount } from '../shardeum/shardeumTypes'
-import { Utils } from '@shardus/types'
+import { Utils } from '@shardeum-foundation/lib-types'
 
 export function calculateGasPrice(
   baselineTxFee: string,

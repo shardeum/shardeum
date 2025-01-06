@@ -1,7 +1,7 @@
 import execa from 'execa'
 import * as utils from '../testUtils'
 import * as AccountsCheck from '../../scripts/accountsSyncCheck'
-import { Utils } from '@shardus/types'
+import { Utils } from '@shardeum-foundation/lib-types'
 
 const opts = { shell: true }
 

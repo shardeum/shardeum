@@ -17,7 +17,7 @@ import { fixDeserializedWrappedEVMAccount } from '../utils/wrappedEVMAccountFunc
 import { Trie } from '@ethereumjs/trie'
 import { keccak256 } from 'ethereum-cryptography/keccak.js'
 import { RLP } from '@ethereumjs/rlp'
-import { Utils } from '@shardus/types'
+import { Utils } from '@shardeum-foundation/lib-types'
 
 export type accountEvent = (transactionState: TransactionState, address: string) => Promise<boolean>
 export type contractStorageEvent = (

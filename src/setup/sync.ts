@@ -1,4 +1,4 @@
-import { DevSecurityLevel, Shardus, ShardusTypes } from '@shardus/core'
+import { DevSecurityLevel, Shardus, ShardusTypes } from '@shardeum-foundation/core'
 import { Account, Address } from '@ethereumjs/util'
 import config from '../config'
 import genesis from '../config/genesis.json'
@@ -13,7 +13,7 @@ import * as AccountsStorage from '../storage/accountStorage'
 import { sleep } from '../utils'
 import { DefaultStateManager } from '@ethereumjs/statemanager'
 import { logFlags, shardeumGetTime } from '..'
-import { Utils } from '@shardus/types'
+import { Utils } from '@shardeum-foundation/lib-types'
 import { initializeSecureAccount, SecureAccountConfig } from '../shardeum/secureAccounts'
 
 function isDebugMode(): boolean {
