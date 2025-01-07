@@ -104,8 +104,28 @@
         "repo": "flake-utils",
         "type": "github"
       }
+    },
+    "new-utils": {
+      "inputs": {
+        "nixpkgs": "nixpkgs",
+        "systems": "systems"
+      },
+      "locked": {
+        "lastModified": 1705970000,
+        "narHash": "sha256-abcdefgh1234567890qrstuvwxyzABCDEF=",
+        "owner": "example-owner",
+        "repo": "example-utils",
+        "rev": "abcd1234efgh5678ijkl9101mnopqrstu",
+        "type": "github"
+      },
+      "original": {
+        "owner": "example-owner",
+        "repo": "example-utils",
+        "type": "github"
+      }
     }
   },
   "root": "root",
-  "version": 7
+  "version": 8
 }
+
