@@ -1,6 +1,6 @@
 {
   "name": "@shardeum-foundation/shardeum",
-  "version": "1.17.1-prerelease.2",
+  "version": "1.17.1-prerelease.3",
   "description": "",
   "main": "dist/src/index.js",
   "scripts": {
@@ -38,11 +38,11 @@
   },
   "author": "",
   "dependencies": {
-    "@shardeum-foundation/lib-archiver-discovery": "1.1.0",
-    "@shardeum-foundation/core": "2.13.4-prerelease.0",
-    "@shardeum-foundation/lib-crypto-utils": "4.1.5",
-    "@shardeum-foundation/lib-net": "1.4.0",
-    "@shardeum-foundation/lib-types": "1.2.21",
+    "@shardeum-foundation/lib-archiver-discovery": "1.1.1-prerelease.0",
+    "@shardeum-foundation/core": "2.13.4-prerelease.1",
+    "@shardeum-foundation/lib-crypto-utils": "4.1.6-prerelease.0",
+    "@shardeum-foundation/lib-net": "1.4.1-prerelease.0",
+    "@shardeum-foundation/lib-types": "1.2.22-prerelease.1",
     "@ethereumjs/block": "5.0.0",
     "@ethereumjs/blockchain": "7.0.0",
     "@ethereumjs/common": "4.0.0",
@@ -70,9 +70,9 @@
     "sqlite3": "5.1.6"
   },
   "devDependencies": {
-    "@shardeum-foundation/archiver": "3.5.7-prerelease.2",
+    "@shardeum-foundation/archiver": "3.5.7-prerelease.3",
     "@shardeum-foundation/monitor-server": "2.8.6-prerelease.1",
-    "@shardeum-foundation/tools-shardus-cli": "4.3.0",
+    "@shardeum-foundation/tools-shardus-cli": "4.3.1-prerelease.2",
     "@types/decimal.js": "7.4.0",
     "@types/express": "4.17.21",
     "@types/heapdump": "0.3.1",
