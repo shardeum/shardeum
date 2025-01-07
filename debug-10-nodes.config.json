@@ -2,14 +2,14 @@
   "server": {
     "p2p": {
       "baselineNodes": 10,
-      "minNodes": 10,
-      "maxNodes": 10,
-      "forceBogonFilteringOn": false,
+      "minNodes": 8,
+      "maxNodes": 12,
+      "forceBogonFilteringOn": true,
       "syncFloorEnabled": true,
-      "syncingDesiredMinCount": 5,
+      "syncingDesiredMinCount": 6,
       "activeRecoveryEnabled": true,
-      "flexibleRotationDelta": 0,
-      "formingNodesPerCycle": 9
+      "flexibleRotationDelta": 1,
+      "formingNodesPerCycle": 5
     },
     "sharding": {
       "nodesPerConsensusGroup": 10
