@@ -49,7 +49,7 @@
     "@shardus/core": "git+https://github.com/shardeum/shardus-core#itn4-1.16.3",
     "@shardus/crypto-utils": "git+https://github.com/shardeum/lib-crypto-utils#itn4",
     "@shardus/net": "git+https://github.com/shardeum/lib-net#itn4",
-    "@shardus/types": "git+https://github.com/shardeum/lib-types#itn4",
+    "@shardus/types": "git+https://github.com/shardeum/lib-types#itn4-1.16.3",
     "@types/sqlite3": "3.1.8",
     "cliffy": "2.5.1",
     "cls-hooked": "4.2.2",
@@ -105,6 +105,9 @@
     "yarpm": "0.2.1"
   },
   "overrides": {
+    "@shardus/crypto-utils": {
+      "@shardus/types": "git+https://github.com/shardeum/lib-types#itn4-1.16.3"
+    },
     "@babel/traverse": "7.23.2",
     "qs": "6.11.2",
     "ejs": "3.1.9",
