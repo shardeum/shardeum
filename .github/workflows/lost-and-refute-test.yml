@@ -1,0 +1,79 @@
+name: Lost and Refute Simulation Test
+
+on:
+  workflow_dispatch:
+  pull_request:
+    branches:
+      - main
+      - beta
+      - dev
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Install Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: 18
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@1.70.0
+        with:
+          components: rustfmt, clippy
+
+      - name: Install System Dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y curl jq build-essential pkg-config libssl-dev
+
+      - name: Install Global NPM Packages
+        run: |
+          npm install -g shardus typescript ts-node
+
+      - name: Apply Debug Patch
+        run: |
+          git apply debug-10-nodes.patch
+
+      - name: Install Project Dependencies
+        run: |
+          cargo --version
+          npm ci
+
+      - name: Make Scripts Executable
+        run: |
+          chmod +x ./scripts/*.sh
+          ls -la ./scripts/*.sh
+
+      - name: Start Network
+        run: |
+          shardus start 10 && sleep 10
+
+      - name: Wait for Processing Mode
+        run: |
+          ./scripts/wait-for-processing-mode.sh
+
+      - name: Run Lost and Refute Simulation
+        run: |
+          TARGET_NODE=5 ./scripts/lost-and-refute-sim.sh
+
+      - name: Monitor Debug Endpoint
+        run: |
+          ./scripts/wait-for-debug-problem-nodes-reported.sh
+
+      - name: Upload Test Artifacts
+        if: always()
+        uses: actions/upload-artifact@v3
+        with:
+          name: test-logs
+          path: |
+            instances/*/logs/
+            instances/*/cycles.sqlite3
+
+      - name: Cleanup
+        if: always()
+        run: |
+          shardus stop || true
+          pkill -f "lost-and-refute-sim.sh" || true 

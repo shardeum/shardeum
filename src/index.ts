@@ -2382,7 +2382,7 @@ const configShardusEndpoints = (): void => {
     try {
       nestedCountersInstance.countEvent('shardeum-admin-certificate', 'called PUT admin-certificate')
 
-      const certRes = await putAdminCertificateHandler(req, shardus)
+      const certRes = await putAdminCertificateHandler(req as any, shardus)
       /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log('certRes', certRes)
       if (certRes.success) {
         const successRes = certRes as PutAdminCertResult

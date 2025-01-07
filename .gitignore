@@ -29,3 +29,6 @@ archiverAccounts.json
 .direnv/
 db/
 secrets*
+
+# Ignore act binary but keep the directory
+bin/act
