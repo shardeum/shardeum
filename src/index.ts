@@ -1237,14 +1237,21 @@ const configShardusEndpoints = (): void => {
         })
         return
       }
-      await handleInject(tx, appData, res)
+
+      // Find IP of request sender
+      let ipAddress: string | undefined = req.headers['x-forwarded-for'] as string || req.socket.remoteAddress;
+      if (ipAddress && ipAddress.includes(',')) {
+        ipAddress = ipAddress.split(',')[0].trim(); // Take the first IP in case of multiple
+      }
+
+      await handleInject(tx, appData, res, ipAddress)
     } catch (error) {
       /* prettier-ignore */ if (logFlags.error) console.error('Error in inject endpoint:', error)
       res.json({ error: 'Internal Server Error' })
     }
   })
 
-  async function handleInject(tx, appData, res): Promise<void> {
+  async function handleInject(tx, appData, res, ipAddress?: string): Promise<void> {
     if (ShardeumFlags.VerboseLogs) console.log('Transaction injected:', new Date(), tx)
 
     const nodeId = shardus.getNodeId()
@@ -1288,6 +1295,11 @@ const configShardusEndpoints = (): void => {
           status: 500,
         })
         return
+      }
+
+      // Incremeant counter for this IP
+      if (shardusConfig.server.debug.verboseNestedCounters && !ipAddress) {
+        nestedCountersInstance.countEvent('shardeum', `Injected from ${ipAddress}`)
       }
 
       numActiveNodes = shardus.getNumActiveNodes()
