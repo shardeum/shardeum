@@ -1239,10 +1239,7 @@ const configShardusEndpoints = (): void => {
       }
 
       // Find IP of request sender
-      let ipAddress: string | undefined = req.headers['x-forwarded-for'] as string || req.socket.remoteAddress;
-      if (ipAddress && ipAddress.includes(',')) {
-        ipAddress = ipAddress.split(',')[0].trim(); // Take the first IP in case of multiple
-      }
+      const ipAddress: string | undefined = req.ip || req.socket.remoteAddress;
 
       await handleInject(tx, appData, res, ipAddress)
     } catch (error) {
@@ -1299,7 +1296,7 @@ const configShardusEndpoints = (): void => {
 
       // Incremeant counter for this IP
       if (shardusConfig.server.debug.verboseNestedCounters && !ipAddress) {
-        nestedCountersInstance.countEvent('shardeum', `Injected from ${ipAddress}`)
+        nestedCountersInstance.countEvent('shardeum', `txInjected from ${ipAddress}`)
       }
 
       numActiveNodes = shardus.getNumActiveNodes()
