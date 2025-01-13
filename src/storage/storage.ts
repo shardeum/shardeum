@@ -190,7 +190,7 @@ class Storage {
     limit = Number(limit)
     tsStart = Number(tsStart)
     tsEnd = Number(tsEnd)
-
+  
     if (accountStart && !/^[0-9a-fA-F]*$/.test(accountStart)) {
       throw new Error('accountStart should be an empty string or a string with only upper or lower case hex chars.')
     }
@@ -200,32 +200,26 @@ class Storage {
     if (accountOffset && !/^[0-9a-fA-F]*$/.test(accountOffset)) {
       throw new Error('accountOffset should be an empty string or a string with only upper or lower case hex chars.')
     }
-
-    if (
-      isNaN(limit) ||
-      isNaN(tsStart) ||
-      isNaN(tsEnd)
-    ) {
+  
+    if (isNaN(limit) || isNaN(tsStart) || isNaN(tsEnd)) {
       throw new Error('arguments should be numbers.')
     }
-    // if (accountEnd < accountStart) {
-    //   throw new Error('accountEnd must be greater than or equal to accountStart.')
-    // }
     if (tsStart < 0 || tsEnd < 0 || tsEnd < tsStart) {
       throw new Error('Invalid timestamp range.')
     }
-
-    // Validate limit
     if (limit <= 0) {
       throw new Error('Invalid limit. Must be a positive number')
     }
+  
+    const query = `SELECT * FROM accountsEntry WHERE (timestamp, accountId) >= (?, ?) 
+                     AND timestamp < ? 
+                     AND accountId <= ? AND accountId >= ? 
+                     ORDER BY timestamp, accountId  LIMIT ?`
+    const params = [tsStart, accountOffset, tsEnd, accountEnd, accountStart, limit]
+  
     this._checkInit()
     try {
-      const query = `SELECT * FROM accountsEntry WHERE (timestamp, accountId) >= (${tsStart}, "${accountOffset}") 
-                      AND timestamp < ${tsEnd} 
-                      AND accountId <= "${accountEnd}" AND accountId >= "${accountStart}" 
-                      ORDER BY timestamp, accountId  LIMIT ${limit}`
-      const result = await this._query(query, [])
+      const result = await this._query(query, params)
       return result
     } catch (e) {
       throw new Error(e)
