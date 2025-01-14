@@ -43,7 +43,7 @@ import { bytesToHex } from '@ethereumjs/util'
 import { logFlags, shardusConfig, getStakeTxBlobFromEVMTx } from '..'
 import { Sign } from '@shardeum-foundation/core/dist/shardus/shardus-types'
 import { validateTransferFromSecureAccount } from '../shardeum/secureAccounts'
-
+import { log } from './validateTransaction'
 /**
  * Checks that Transaction fields are valid
  * @param shardus
@@ -102,6 +102,8 @@ export const validateTxnFields =
           tx.internalTXType === InternalTXType.ChangeConfig ||
           tx.internalTXType === InternalTXType.ChangeNetworkParam
         ) {
+          log('validateTxnFields: internalTXType is ChangeConfig or ChangeNetworkParam');
+
           try {
             // DEFINATION:
             // Valid signature is a cryptocraphically valid signature
@@ -124,6 +126,7 @@ export const validateTxnFields =
 
             // if the signatures in the payload is larger than the allowed public keys, it is invalid
             // this prevent loop exhaustion abuses
+            log('validateTxnFields: calling verifyMultiSigs');
             const sig_are_valid = verifyMultiSigs(
               txWithoutSign,
               sigs,
@@ -131,6 +134,7 @@ export const validateTxnFields =
               requiredSigs,
               DevSecurityLevel.High
             )
+            log('validateTxnFields: verifyMultiSigs returned ' + sig_are_valid);
             if (sig_are_valid === true) {
               success = true
               reason = 'Valid'
@@ -139,6 +143,7 @@ export const validateTxnFields =
               reason = 'Invalid signatures'
             }
           } catch (e) {
+            log('validateTxnFields: Signature verification thrown exception');
             success = false
             reason = 'Signature verification thrown exception'
           }

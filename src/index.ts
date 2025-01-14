@@ -2647,6 +2647,7 @@ const configShardusNetworkTransactions = (): void => {
   )
 }
 
+import {log} from './setup/validateTransaction';
 /*** |an
  *    #### ##    ## ######## ######## ########  ##    ##    ###    ##          ######## ##     ##
  *     ##  ###   ##    ##    ##       ##     ## ###   ##   ## ##   ##             ##     ##   ##
@@ -2720,6 +2721,7 @@ async function applyInternalTx(
     /* prettier-ignore */ if (logFlags.important_as_error) shardus.log('Applied init_network transaction', network)
   }
   if (internalTx.internalTXType === InternalTXType.ChangeConfig) {
+    log('applyInternalTx: entering ChangeConfig');
     /* eslint-disable security/detect-object-injection */
     // const network: NetworkAccount = wrappedStates[networkAccount].data
     // const devAccount: DevAccount = wrappedStates[internalTx.from].data
@@ -2739,6 +2741,7 @@ async function applyInternalTx(
 
     const when = txTimestamp + ONE_SECOND * 10
     // value is the TX that will apply a change to the global network account 0000x0000
+    log('applyInternalTx: creating value');
     const value = {
       isInternalTx: true,
       internalTXType: InternalTXType.ApplyChangeConfig,
@@ -2747,6 +2750,7 @@ async function applyInternalTx(
       network: networkAccount,
       change: { cycle: changeOnCycle, change: Utils.safeJsonParse(internalTx.config) },
     }
+    log('applyInternalTx: value created ' + JSON.stringify(value));
 
     // if (ShardeumFlags.useAccountWrites) {
     //   /* eslint-disable security/detect-object-injection */
@@ -2780,6 +2784,7 @@ async function applyInternalTx(
     const ourAppDefinedData = applyResponse.appDefinedData as OurAppDefinedData
     // network will consens that this is the correct value
     ourAppDefinedData.globalMsg = { address: networkAccount, addressHash, value, when, source: value.from }
+    log('applyInternalTx: ourAppDefinedData.globalMsg created ' + JSON.stringify(ourAppDefinedData.globalMsg));
     if (ShardeumFlags.supportInternalTxReceipt) {
       createInternalTxReceipt(
         shardus,
@@ -2790,20 +2795,25 @@ async function applyInternalTx(
         txTimestamp,
         txId
       )
+      log('applyInternalTx: createInternalTxReceipt called');
     }
     /* prettier-ignore */ if (logFlags.important_as_error) console.log('Applied change_config tx')
     /* prettier-ignore */ if (logFlags.important_as_error) shardus.log('Applied change_config tx')
   }
   if (internalTx.internalTXType === InternalTXType.ApplyChangeConfig) {
+    log('entering ApplyChangeConfig');
     // eslint-disable-next-line security/detect-object-injection
     const network: NetworkAccount = wrappedStates[networkAccount].data
 
     if (ShardeumFlags.useAccountWrites) {
+      
       // eslint-disable-next-line security/detect-object-injection
       const networkAccountCopy = wrappedStates[networkAccount]
       networkAccountCopy.data.timestamp = txTimestamp
       networkAccountCopy.data.listOfChanges.push(internalTx.change)
+      log('getting wrapped changed account');
       const wrappedChangedAccount = WrappedEVMAccountFunctions._shardusWrappedAccount(networkAccountCopy.data)
+      log('adding wrapped changed account to applyResponse');
       shardus.applyResponseAddChangedAccount(
         applyResponse,
         networkAccount,
@@ -2811,9 +2821,11 @@ async function applyInternalTx(
         txId,
         txTimestamp
       )
+      log('added wrapped changed account to applyResponse');
     } else {
       network.timestamp = txTimestamp
       network.listOfChanges.push(internalTx.change)
+      log('added change to network listOfChanges');
     }
     /* prettier-ignore */ if (logFlags.important_as_error) console.log(`Applied CHANGE_CONFIG GLOBAL transaction: ${Utils.safeStringify(network)}`)
     /* prettier-ignore */ if (logFlags.important_as_error) shardus.log('Applied CHANGE_CONFIG GLOBAL transaction', Utils.safeStringify(network))
@@ -3990,17 +4002,23 @@ const shardusSetup = (): void => {
     validateTxnFields: validateTxnFields(shardus, debugAppdata),
     isInternalTx,
     async apply(timestampedTx: ShardusTypes.OpaqueTransaction, wrappedStates, originalAppData) {
+      log('apply: entering apply');
       //@ts-ignore
       const { tx } = timestampedTx
       const txTimestamp = getInjectedOrGeneratedTimestamp(timestampedTx)
+      log('apply: txTimestamp: ' + txTimestamp);
       const appData = fixBigIntLiteralsToBigInt(originalAppData)
+      log('apply: appData: ' + Utils.safeStringify(appData));
       // Validate the tx
+      log('apply: calling validateTransaction');
       const { result, reason } = this.validateTransaction(tx)
+      log('apply: validateTransaction returned ' + JSON.stringify({ result, reason }));
       if (result !== 'pass') {
         throw new Error(`invalid transaction, reason: ${reason}. tx: ${Utils.safeStringify(tx)}`)
       }
 
       if (isInternalTx(tx)) {
+        log('apply: isInternalTx true');
         return applyInternalTx(tx, wrappedStates, txTimestamp)
       }
 
@@ -5419,9 +5437,11 @@ const shardusSetup = (): void => {
         } else if (internalTx.internalTXType === InternalTXType.InitNetwork) {
           keys.targetKeys = [networkAccount]
         } else if (internalTx.internalTXType === InternalTXType.ChangeConfig) {
+          log('cracking ChangeConfig');
           keys.sourceKeys = [tx.from]
           keys.targetKeys = [networkAccount]
         } else if (internalTx.internalTXType === InternalTXType.ApplyChangeConfig) {
+          log('cracking ApplyChangeConfig');
           keys.targetKeys = [networkAccount]
         } else if (internalTx.internalTXType === InternalTXType.ChangeNetworkParam) {
           keys.sourceKeys = [tx.from]
@@ -5547,10 +5567,12 @@ const shardusSetup = (): void => {
       if (rawSerializedTx == null) {
         throw new Error(`Unable to crack EVM transaction. ${Utils.safeStringify(tx)}`)
       }
+      log('crack: rawSerializedTx: ' + JSON.stringify(rawSerializedTx));
       const txId = generateTxId(tx)
-
+      log('crack: txId: ' + txId);
       const transaction = getTransactionObj(tx)
       const senderAddress = getTxSenderAddress(transaction, txId).address
+      log('crack: senderAddress: ' + senderAddress);
       const result = {
         sourceKeys: [],
         targetKeys: [],
@@ -5729,8 +5751,10 @@ const shardusSetup = (): void => {
         )
         if (ShardeumFlags.VerboseLogs) console.log('running getKeyFromTransaction', txId, result)
       } catch (e) {
+        log('crack getKeyFromTransaction: Unable to get keys from tx');
         if (ShardeumFlags.VerboseLogs) console.log('getKeyFromTransaction: Unable to get keys from tx', e)
       }
+      log('crack: returning result ' + JSON.stringify(result));
       return {
         keys: result,
         timestamp,
@@ -5786,11 +5810,13 @@ const shardusSetup = (): void => {
       }
     },
     async getRelevantData(accountId, timestampedTx, appData) {
+      log('getRelevantData: entering getRelevantData');
       if (ShardeumFlags.VerboseLogs) console.log('Running getRelevantData', accountId, timestampedTx, appData)
       //@ts-ignore
       const { tx } = timestampedTx
 
       if (isInternalTx(tx)) {
+        log('getRelevantData: isInternalTx true');
         const internalTx = tx as InternalTx
 
         let accountCreated = false
@@ -5827,17 +5853,21 @@ const shardusSetup = (): void => {
           internalTx.internalTXType === InternalTXType.ChangeConfig ||
           internalTx.internalTXType === InternalTXType.ChangeNetworkParam
         ) {
+          log('getRelevantData: internalTXType is ChangeConfig or ChangeNetworkParam');
           // Not sure if this is even relevant.  I think the from account should be one of our dev accounts and
           // and should already exist (hit the faucet)
           // probably an array of dev public keys
 
           if (!wrappedEVMAccount) {
+            log('getRelevantData: wrappedEVMAccount is null');
             // This is the 0000x00000 account
             if (accountId === networkAccount) {
+              log('getRelevantData: Network Account is not allowed to sign this');
               throw Error(`Network Account is not allowed to sign this ${accountId}`)
             } else if (shardus.getDevPublicKey(accountId)) {
               wrappedEVMAccount = await createNetworkAccount(accountId, config, shardus.p2p.isFirstSeed)
               accountCreated = true
+              log('getRelevantData: wrappedEVMAccount created');
             }
             // I think we don't need it now, the dev Key is checked on the validateTxnFields
             // else {
@@ -5849,14 +5879,17 @@ const shardusSetup = (): void => {
             //   // accountCreated = true
             // }
           }
+          log(`getRelevantData: wrappedEVMAccount is not null - skipping createNetworkAccount - ${accountId} - ${Utils.safeStringify(wrappedEVMAccount)}`);
         }
         if (
           internalTx.internalTXType === InternalTXType.ApplyChangeConfig ||
           internalTx.internalTXType === InternalTXType.ApplyNetworkParam
         ) {
           if (!wrappedEVMAccount) {
+            log('getRelevantData: network account is not found');
             throw Error(`Network Account is not found ${accountId}`)
           }
+          log(`getRelevantData::ApplyChangeConfig wrappedEVMAccount is not null - ${accountId} - ${Utils.safeStringify(wrappedEVMAccount)}`);
         }
         if (internalTx.internalTXType === InternalTXType.InitRewardTimes) {
           if (!wrappedEVMAccount) {
@@ -7840,8 +7873,10 @@ const shardusSetup = (): void => {
         } else if (internalTx.internalTXType === InternalTXType.InitNetwork) {
           return internalTx.network
         } else if (internalTx.internalTXType === InternalTXType.ChangeConfig) {
+          log('getTxSenderAddress: ChangeConfig ' + internalTx.from);
           return internalTx.from
         } else if (internalTx.internalTXType === InternalTXType.ApplyChangeConfig) {
+          log('getTxSenderAddress: ApplyChangeConfig ' + internalTx.network);
           return internalTx.network
         } else if (internalTx.internalTXType === InternalTXType.ChangeNetworkParam) {
           return internalTx.from

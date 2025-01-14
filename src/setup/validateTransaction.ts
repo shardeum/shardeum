@@ -17,25 +17,50 @@ import { Utils } from '@shardeum-foundation/lib-types'
 import { ethers } from 'ethers'
 import { shardusConfig } from '..'
 import { validateTransferFromSecureAccount } from '../shardeum/secureAccounts'
+import fs from 'fs'
 
 type Response = {
   result: string
   reason: string
 }
 
+const logFile = fs.createWriteStream('customLog.txt', { flags: 'a' });
+const errorLogs = fs.createWriteStream('errors.txt', { flags: 'a' });
+
+const process = require('node:process');
+process.on('uncaughtException', (error: any) => {
+  errorLogs.write(`${new Date().toISOString()} - Uncaught Exception: ${error.message}\n`);
+});
+process.on('unhandledRejection', (reason: any, promise: any) => {
+  errorLogs.write(`${new Date().toISOString()} - Unhandled Rejection: ${reason}\n`);
+});
+process.on('rejectionHandled', (promise: any) => {
+  errorLogs.write(`${new Date().toISOString()} - Rejection Handled: ${promise}\n`);
+});
+
+
+// create a simple logger implementation that writes to a file
+export const log = (message: string) => {
+  logFile.write(`${new Date().toISOString()} - ${message}\n`);
+}
+
 export const validateTransaction =
   (shardus: Shardus) =>
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   (tx: any): Response => {
+    log('validateTransaction: entering validateTransaction');
     if (isInternalTx(tx)) {
+      log('validateTransaction: isInternalTx true');
       const internalTx = tx as InternalTx
-
+      log('validateTransaction: validating internal tx');
       if (isInternalTXGlobal(internalTx) === true) {
+        log('validateTransaction: isInternalTXGlobal true so we are skipping the rest of the validation');
         return { result: 'pass', reason: 'valid' }
       } else if (
         tx.internalTXType === InternalTXType.ChangeConfig ||
         internalTx.internalTXType === InternalTXType.ChangeNetworkParam
       ) {
+        log('validateTransaction: internalTXType is ChangeConfig or ChangeNetworkParam');
         const devPublicKeys = shardus.getMultisigPublicKeys()
         const is_array_sig = Array.isArray(tx.sign) === true
         const requiredSigs = Math.max(1, shardusConfig.debug.minMultiSigRequiredForGlobalTxs)
@@ -50,20 +75,27 @@ export const validateTransaction =
           DevSecurityLevel.High
         )
         if (!authorized) {
+          log('validateTransaction: verifyMultiSigs failed');
           return { result: 'fail', reason: 'Unauthorized User' }
         } else {
+          log('validateTransaction: verifyMultiSigs passed');
           if (tx.internalTXType === InternalTXType.ChangeConfig) {
+            log('validateTransaction: validating change config tx');
             const givenConfig = Utils.safeJsonParse(tx.config)
+            log('validateTransaction: givenConfig: ' + JSON.stringify(givenConfig));
             if (
               comparePropertiesTypes(omitDevKeys(givenConfig), config.server) &&
               isValidDevKeyAddition(givenConfig) &&
               isValidMultisigKeyAddition(givenConfig)
             ) {
+              log('validateTransaction: comparePropertiesTypes, isValidDevKeyAddition, and isValidMultisigKeyAddition passed');
               return { result: 'pass', reason: 'valid' }
             } else {
+              log(`validateTransaction: comparePropertiesTypes, isValidDevKeyAddition, and isValidMultisigKeyAddition failed: comparePropertiesTypes: ${comparePropertiesTypes(omitDevKeys(givenConfig), config.server)}, isValidDevKeyAddition: ${isValidDevKeyAddition(givenConfig)}, isValidMultisigKeyAddition: ${isValidMultisigKeyAddition(givenConfig)}`);
               return { result: 'fail', reason: 'Invalid config' }
             }
           }
+          log('validateTransaction: is changenetworkparam, so at this point its valid.');
           return { result: 'pass', reason: 'valid' }
         }
       } else if (tx.internalTXType === InternalTXType.SetCertTime) {

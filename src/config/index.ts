@@ -141,7 +141,7 @@ config = merge(config, {
       activeRecoveryEnabled: true,//ITN initially false for rotation safety
       allowActivePerCycleRecover: 4, 
 
-      flexibleRotationEnabled: true, //ITN 1.16.1
+      flexibleRotationEnabled: false, //ITN 1.16.1
       flexibleRotationDelta: 10,
 
       maxStandbyCount: 30000, //max allowed standby nodes count
