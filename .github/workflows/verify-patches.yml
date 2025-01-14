@@ -1,0 +1,51 @@
+name: Verify Patch Files
+
+on:
+  pull_request:
+    branches: [ main ]
+    paths:
+      - '**.patch'
+
+jobs:
+  verify-patches:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        fetch-depth: 0  # We need the full history to properly test patches
+        
+    - name: Set up Git config
+      run: |
+        git config --global user.name "GitHub Action"
+        git config --global user.email "action@github.com"
+
+    - name: Find all patch files
+      id: find-patches
+      run: |
+        echo "patches=$(find . -name "debug-*-nodes.patch" -printf "%P\n" | jq -R -s -c 'split("\n")[:-1]')" >> $GITHUB_OUTPUT
+
+    - name: Verify each patch file
+      run: |
+        patches=$(echo '${{ steps.find-patches.outputs.patches }}' | jq -c '.[]')
+        
+        # Store the current HEAD commit for resetting
+        original_commit=$(git rev-parse HEAD)
+        
+        # Test each patch file
+        echo "$patches" | while read -r patch; do
+          patch=$(echo "$patch" | tr -d '"')  # Remove quotes
+          echo "Testing patch: $patch"
+          
+          # Reset to original state
+          git reset --hard $original_commit
+          git clean -fdx
+          
+          # Try to apply the patch
+          if ! git apply "$patch"; then
+            echo "❌ Failed to apply patch: $patch"
+            exit 1
+          fi
+          
+          echo "✅ Successfully applied patch: $patch"
+        done 
