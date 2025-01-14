@@ -1374,7 +1374,10 @@ const configShardusEndpoints = (): void => {
       if (warmupList != null) {
         appData = { warmupList }
       }
-      await handleInject(tx, appData, res)
+
+      // Find IP of request sender
+      const ipAddress: string | undefined = req.ip || req.socket.remoteAddress;
+      await handleInject(tx, appData, res, ipAddress)
     } catch (err) {
       if (ShardeumFlags.VerboseLogs) console.log('Failed to inject tx: ', err)
       try {
