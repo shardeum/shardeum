@@ -76,7 +76,7 @@ npm ci
 3. Network Configuration:
 
 ```bash
-git apply debug-10-nodes.patch
+export LOAD_JSON_CONFIGS=debug-10-nodes.config.json
 ```
 
 Learn more about the different config options [here](local)
@@ -90,7 +90,7 @@ npm run prepare
 5. Install the Shardus CLI:
 
 ```bash
-npm install -g shardus
+npm install -g @shardeum-foundation/tools-shardus-cli
 npm update @shardeum-foundation/archiver
 ```
 
