@@ -33,5 +33,12 @@
     "RecipientFundsAddress": "0x1be3e07e7c4c2e568c590f71234e0c03f2348734",
     "SecureAccountAddress": "5916018611b4958ab9dc963df642d0b6bcff15a9000000000000000000000000",
     "SourceFundsBalance": "5080000000000000000000000"
+  },
+  {
+    "Name": "Operations",
+    "SourceFundsAddress": "0xffffffffffffffffffffffffffffffffffffffff",
+    "RecipientFundsAddress": "0x633D35F7Fb28d6C6CDa3108253D2d5C799b58c54",
+    "SecureAccountAddress": "1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef",
+    "SourceFundsBalance": "5000000000000000000000000"
   }
 ]
