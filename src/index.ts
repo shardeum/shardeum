@@ -2467,9 +2467,8 @@ const configShardusNetworkTransactions = (): void => {
         return false
       }
 
-      // todo: can't get the node here because it's already removed. how do we best verify the nodeId is correct in that case? Possibly add field to cycleRecords simlilar to activatedPublicKeys but for removed/apoped... to be clarified
-      const node = shardus.getNode(tx.nodeId)
-      if (node == null || tx.publicKey !== node.publicKey) {
+      const nodePubKey = shardus.getRemovedNodePubKeyFromCache(tx.nodeId)
+      if (nodePubKey == null || tx.publicKey !== nodePubKey) {
         /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log('registerBeforeAddVerify nodeReward fail invalid nodeId field', Utils.safeStringify(tx))
         /* prettier-ignore */ nestedCountersInstance.countEvent('shardeum-staking', `registerBeforeAddVerify nodeReward fail invalid nodeId field`)
         return false

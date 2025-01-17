@@ -28,6 +28,7 @@ export async function injectInitRewardTimesTx(
     nominee: eventData.publicKey,
     nodeActivatedTime: startTime,
     timestamp: shardeumGetTime(),
+    txData: eventData.additionalData.txData
   } as InitRewardTimes
 
   // check if this node has node account data
@@ -101,7 +102,7 @@ export function validateFields(tx: InitRewardTimes, shardus: Shardus): { success
     return { success: false, reason: 'Invalid signature' }
   }
 
-  // only allow claim reward txs for nodes that are in the serviceQueue
+  // only allow claim reward txs for tx data that is in the serviceQueue
   if (!shardus.serviceQueue.containsTxData(tx.txData)) {
     /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log('validateFields InitRewardTimes fail node not in serviceQueue', tx)
     /* prettier-ignore */ nestedCountersInstance.countEvent('shardeum-staking', `validateFields InitRewardTimes fail node not in serviceQueue`)
@@ -115,7 +116,7 @@ export function validateFields(tx: InitRewardTimes, shardus: Shardus): { success
     return { success: false, reason: 'txData.startTime does not match nodeActivatedTime' }
   }
 
-  if (tx.txData.publicKey === tx.nominee) {
+  if (tx.txData.publicKey !== tx.nominee) {
     /* prettier-ignore */ nestedCountersInstance.countEvent('shardeum-staking', `validateFields InitRewardTimes fail txData.publicKey does not match tx.nominee`)
     /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log('validateFields InitRewardTimes fail txData.publicKey does not match tx.nominee', tx)
     return { success: false, reason: 'txData.publicKey does not match tx.nominee' }
