@@ -8011,7 +8011,7 @@ async function fetchNetworkAccountFromArchiver(): Promise<WrappedAccount> {
 
   //make sure there was a majority winner for the hash
   const majorityValue = findMajorityResult(values, (v) => v.hash)
-  /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`[fetchNetworkAccountFromArchiver] majorityValue: ${JSON.stringify(majorityValue)}`)
+  /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`[fetchNetworkAccountFromArchiver] majorityValue: ${safeStringify(majorityValue)}`)
   if (!majorityValue) {
     /* prettier-ignore */ nestedCountersInstance.countEvent('network-config-operation', 'failure: no majority found for archivers get-network-account result. Use default configs.')
     throw new Error(`no majority found for archivers get-network-account result `)
@@ -8019,12 +8019,33 @@ async function fetchNetworkAccountFromArchiver(): Promise<WrappedAccount> {
   const url = `http://${majorityValue.archiver.ip}:${majorityValue.archiver.port}/get-network-account?hash=false`
   try {
     const res = await axios.get<{ networkAccount: WrappedAccount }>(url)
-    /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`[fetchNetworkAccountFromArchiver] data: ${JSON.stringify(res?.data)}`)
+    /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`[fetchNetworkAccountFromArchiver] data: ${safeStringify(res?.data)}`)
     if (!res.data) {
       /* prettier-ignore */ nestedCountersInstance.countEvent('network-config-operation', 'failure: did not get network account from archiver private key, returned null. Use default configs.')
       throw new Error(
         `get-network-account from archiver pk:${majorityValue.archiver.publicKey} returned null`
       )
+    }
+
+    // basic validation of the data to make sure we wont get unexpected errors
+    if (!res.data.networkAccount || !res.data.networkAccount.data || !res.data.networkAccount.data.hash) {
+      throw new Error(`get-network-account from archiver pk:${majorityValue.archiver.publicKey} returned malformed data: ${safeStringify(res.data)}`)
+    }
+
+    nestedCountersInstance.countEvent('network-config-operation', 'success: got network account from winning archiver')
+
+    // verify the 'winning' archiver's signature of the network account matches that of the response body signature
+    const isResponseVerified = verify(res.data, majorityValue.archiver.publicKey)
+    if (!isResponseVerified) {
+      nestedCountersInstance.countEvent('network-config-operation', 'failure: The response signature is not the same from archiver pk:${majorityValue.archiver.publicKey}')
+      throw new Error(`The response signature is not the same from archiver pk:${majorityValue.archiver.publicKey}`)
+    }
+
+    // verify that the hash was not spoofed by the archiver, rehash the network account and compare
+    const rehashedNetworkAccount = WrappedEVMAccountFunctions.accountSpecificHash(res.data.networkAccount.data)
+    if (rehashedNetworkAccount !== majorityValue.hash) {
+      nestedCountersInstance.countEvent('network-config-operation', 'failure: The rehashed network account is not the same as the majority hash')
+      throw new Error(`The rehashed network account is not the same as the majority hash. rehashed: ${rehashedNetworkAccount}, majority: ${majorityValue.hash}`)
     }
 
     return res.data.networkAccount as WrappedAccount
