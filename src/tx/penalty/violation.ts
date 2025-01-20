@@ -1,6 +1,6 @@
 import { PenaltyTX, ViolationType } from '../../shardeum/shardeumTypes'
 import { _base16BNParser } from '../../utils'
-import { nestedCountersInstance } from '@shardus/core'
+import { nestedCountersInstance } from '@shardeum-foundation/core'
 import { cachedNetworkAccount } from '../../storage/accountStorage'
 import { logFlags } from '../..'
 

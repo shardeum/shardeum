@@ -1,6 +1,6 @@
 import * as utils from './testUtils'
 import axios from 'axios'
-import { Utils } from '@shardus/types'
+import { Utils } from '@shardeum-foundation/lib-types'
 
 export async function getAccountsReport(_shuffle: boolean = false) {
   const activeNodes = await utils.queryActiveNodes()

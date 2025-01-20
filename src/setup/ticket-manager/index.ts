@@ -1,11 +1,11 @@
-import { DevSecurityLevel, ShardusTypes } from '@shardus/core'
+import { DevSecurityLevel, ShardusTypes } from '@shardeum-foundation/core'
 import config from '../../config'
 import { logFlags, shardusConfig } from '../..'
 import axios from 'axios'
-import { getFinalArchiverList } from '@shardus/archiver-discovery'
+import { getFinalArchiverList } from '@shardeum-foundation/lib-archiver-discovery'
 import { getRandom } from '../../utils'
 import { verifyMultiSigs } from '../helpers'
-import { Archiver } from '@shardus/archiver-discovery/dist/src/types'
+import { Archiver } from '@shardeum-foundation/lib-archiver-discovery/dist/src/types'
 import { Address } from '@ethereumjs/util'
 
 export interface Ticket {
@@ -72,7 +72,7 @@ export async function updateTicketMap(): Promise<void> {
     const ticketTypes: TicketType[] = await getTicketTypesFromArchiver(archiver)
 
     const devPublicKeys = shardusConfig?.debug?.multisigKeys || {}
-    const requiredSigs = Math.max(1, shardusConfig?.debug?.minMultiSigRequiredForGlobalTxs || 1)
+    const requiredSigs = Math.max(3, shardusConfig?.debug?.minMultiSigRequiredForGlobalTxs || 1)
 
     ticketTypes.forEach((ticketType: TicketType, i: number) => {
       const { sign, ...ticketTypeWithoutSign } = ticketType
@@ -86,6 +86,7 @@ export async function updateTicketMap(): Promise<void> {
       )
       /* prettier-ignore */ if (logFlags.debug) console.log(JSON.stringify({script: 'tickets',method: 'updateTicketMap',data: { index: i, ticketType, isValidSig },}))
       if (isValidSig) {
+        console.log(`[tickets][updateTicketMap] ticket type ${ticketType.type} added to ticket map`)
         ticketTypeMap.set(ticketType.type, ticketType)
       } else {
         console.warn(`[tickets][updateTicketMap] Invalid signature for ticket ${JSON.stringify(ticketType)}`)

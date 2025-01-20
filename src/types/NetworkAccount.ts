@@ -1,8 +1,8 @@
-import { ShardusTypes, VectorBufferStream } from '@shardus/core'
+import { ShardusTypes, VectorBufferStream } from '@shardeum-foundation/core'
 import { Change, NetworkParameters } from '../shardeum/shardeumTypes'
 import { BaseAccount, deserializeBaseAccount, serializeBaseAccount } from './BaseAccount'
 import { TypeIdentifierEnum } from './enum/TypeIdentifierEnum'
-import { Utils } from '@shardus/types'
+import { Utils } from '@shardeum-foundation/lib-types'
 import { ShardeumFlags } from '../shardeum/shardeumFlags'
 
 const cNetworkAccountVersion = 1

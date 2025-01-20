@@ -18,7 +18,7 @@ import * as WrappedEVMAccountFunctions from './utils/wrappedEVMAccountFunctions'
 import { estimateGas } from './estimateGas/estimateGas'
 import { EVM as EthereumVirtualMachine } from '../evm_v2'
 import { getTxSenderAddress } from '../utils'
-import { Utils } from '@shardus/types'
+import { Utils } from '@shardeum-foundation/lib-types'
 
 export async function createAccount(addressStr: string, balance = BigInt(0)): Promise<WrappedEVMAccount> {
   // if (ShardeumFlags.VerboseLogs) console.log('Creating new account', addressStr)

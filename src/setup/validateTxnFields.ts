@@ -1,4 +1,4 @@
-import { DevSecurityLevel, nestedCountersInstance, Shardus } from '@shardus/core'
+import { DevSecurityLevel, nestedCountersInstance, Shardus } from '@shardeum-foundation/core'
 import { ShardeumFlags } from '../shardeum/shardeumFlags'
 import {
   ClaimRewardTX,
@@ -41,7 +41,7 @@ import { fixBigIntLiteralsToBigInt } from '../utils/serialization'
 import { validatePenaltyTX } from '../tx/penalty/transaction'
 import { bytesToHex } from '@ethereumjs/util'
 import { logFlags, shardusConfig, getStakeTxBlobFromEVMTx } from '..'
-import { Sign } from '@shardus/core/dist/shardus/shardus-types'
+import { Sign } from '@shardeum-foundation/core/dist/shardus/shardus-types'
 import { validateTransferFromSecureAccount } from '../shardeum/secureAccounts'
 
 /**
@@ -209,6 +209,13 @@ export const validateTxnFields =
       }
 
       if (isDebugTx(tx)) {
+        if (!ShardeumFlags.debugTxEnabled) {
+          return {
+            success: false,
+            reason: 'Debug TX is not allowed',
+            txnTimestamp,
+          }
+        }
         return {
           success: true,
           reason: 'always valid',
@@ -440,6 +447,7 @@ export const validateTxnFields =
 
         if (appData && appData.internalTx && appData.internalTXType === InternalTXType.Unstake) {
           nestedCountersInstance.countEvent('shardeum-unstaking', 'validating unstake coins tx fields')
+          appData.internalTx = getStakeTxBlobFromEVMTx(transaction)
           if (ShardeumFlags.VerboseLogs) console.log('Validating unstake coins tx fields', appData.internalTx)
           const unstakeCoinsTX = appData.internalTx as UnstakeCoinsTX
           if (

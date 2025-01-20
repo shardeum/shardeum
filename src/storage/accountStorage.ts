@@ -10,7 +10,7 @@ import { setCachedRIAccount } from './riAccountsCache'
 import { getContextValue } from '../utils/RequestContext'
 import { shardusGet } from '../utils/requests'
 import { Block } from '@ethereumjs/block'
-import { Utils } from '@shardus/types'
+import { Utils } from '@shardeum-foundation/lib-types'
 
 //WrappedEVMAccount
 export let accounts: WrappedEVMAccountMap = {}

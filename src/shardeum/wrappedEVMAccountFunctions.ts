@@ -1,7 +1,7 @@
 import { Account, bigIntToBytes, generateAddress } from '@ethereumjs/util'
 
-import { ShardusTypes } from '@shardus/core'
-import * as crypto from '@shardus/crypto-utils'
+import { ShardusTypes } from '@shardeum-foundation/core'
+import * as crypto from '@shardeum-foundation/lib-crypto-utils'
 import { TransactionState } from '../state'
 import { getAccountShardusAddress } from './evmAddress'
 import { AccountType, InternalAccount, WrappedEVMAccount } from './shardeumTypes'

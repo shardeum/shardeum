@@ -1,4 +1,4 @@
-import { nestedCountersInstance, Shardus, ShardusTypes } from '@shardus/core'
+import { nestedCountersInstance, Shardus, ShardusTypes } from '@shardeum-foundation/core'
 import { networkAccount, ONE_SECOND } from '../shardeum/shardeumConstants'
 import config from '../config'
 import { getNodeAccountWithRetry, InjectTxToConsensor } from '../handlers/queryCertificate'
@@ -21,7 +21,7 @@ import { getRandom, scaleByStabilityFactor, _base16BNParser, _readableSHM } from
 
 import { createInternalTxReceipt, logFlags, shardeumGetTime } from '..'
 import { bigIntToHex, isValidAddress } from '@ethereumjs/util'
-import { Utils } from '@shardus/types'
+import { Utils } from '@shardeum-foundation/lib-types'
 import { SafeBalance } from '../utils/safeMath'
 import { verify } from '../setup/helpers'
 import { NetworkAccount } from '../types/NetworkAccount';

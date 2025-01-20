@@ -6,8 +6,8 @@ import * as Path from 'path'
 import * as readline from 'readline'
 import { once } from 'events'
 import { AccountType } from './shardeumTypes'
-import { Shardus } from '@shardus/core'
-import { Utils } from '@shardus/types'
+import { Shardus } from '@shardeum-foundation/core'
+import { Utils } from '@shardeum-foundation/lib-types'
 export interface LoadOptions {
   file: string
 }

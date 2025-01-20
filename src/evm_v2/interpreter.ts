@@ -21,7 +21,7 @@ import type { Journal } from './journal.js'
 import type { AsyncOpHandler, OpHandler, Opcode } from './opcodes/index.js'
 import type { Block, Blockchain, EVMResult, Log } from './types.js'
 import type { Common, EVMStateManagerInterface } from '@ethereumjs/common'
-import { Utils } from '@shardus/types'
+import { Utils } from '@shardeum-foundation/lib-types'
 import type { Address } from '@ethereumjs/util'
 const { debug: createDebugLogger } = debugDefault
 

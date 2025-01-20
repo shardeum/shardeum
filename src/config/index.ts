@@ -2,9 +2,9 @@ import fs from 'fs'
 import path from 'path'
 import merge from 'deepmerge'
 import { ShardeumFlags } from '../shardeum/shardeumFlags'
-import { DevSecurityLevel } from '@shardus/core'
+import { DevSecurityLevel } from '@shardeum-foundation/core'
 import { FilePaths } from '../shardeum/shardeumFlags'
-import { Utils } from '@shardus/types'
+import { Utils } from '@shardeum-foundation/lib-types'
 
 const overwriteMerge = (target: any[], source: any[]): any[] => source // eslint-disable-line @typescript-eslint/no-explicit-any
 
@@ -56,99 +56,17 @@ if (fs.existsSync(path.join(process.cwd(), FilePaths.CONFIG))) {
   config = merge(config, fileConfig, { arrayMerge: overwriteMerge })
 }
 
-if (process.env.BASE_DIR) {
-  const baseDir = process.env.BASE_DIR || '.'
-  let baseDirFileConfig = {}
-
-  // eslint-disable-next-line security/detect-non-literal-fs-filename
-  if (fs.existsSync(path.join(baseDir, FilePaths.CONFIG))) {
-    // eslint-disable-next-line security/detect-non-literal-fs-filename
-    baseDirFileConfig = Utils.safeJsonParse(fs.readFileSync(path.join(baseDir, FilePaths.CONFIG)).toString())
-  }
-  config = merge(config, baseDirFileConfig, { arrayMerge: overwriteMerge })
-  config.server.baseDir = process.env.BASE_DIR
-}
-
-if (process.env.APP_SEEDLIST) {
-  config = merge(
-    config,
-    {
-      server: {
-        p2p: {
-          existingArchivers: [
-            {
-              ip: process.env.APP_SEEDLIST,
-              port: process.env.APP_SEEDLIST_PORT || 4000,
-              publicKey:
-                process.env.APP_SEEDLIST_PUBLIC_KEY ||
-                '758b1c119412298802cd28dbfa394cdfeecc4074492d60844cc192d632d84de3',
-            },
-          ],
-        },
-      },
-    },
-    { arrayMerge: overwriteMerge }
-  )
-}
-
-// EXISTING_ARCHIVERS env has to be passed in string format!
-if (process.env.EXISTING_ARCHIVERS) {
-  const existingArchivers = Utils.safeJsonParse(process.env.EXISTING_ARCHIVERS)
-  if (existingArchivers.length > 0) {
-    config = merge(
-      config,
-      {
-        server: {
-          p2p: {
-            existingArchivers,
-          },
-        },
-      },
-      { arrayMerge: overwriteMerge }
-    )
-  }
-}
-
-if (process.env.APP_MONITOR) {
-  config = merge(
-    config,
-    {
-      server: {
-        reporting: {
-          recipient: `http://${process.env.APP_MONITOR}:3000/api`,
-        },
-      },
-    },
-    { arrayMerge: overwriteMerge }
-  )
-}
-
-if (process.env.APP_IP) {
-  config = merge(
-    config,
-    {
-      server: {
-        ip: {
-          externalIp: process.env.APP_IP,
-          internalIp: process.env.APP_IP,
-        },
-      },
-    },
-    { arrayMerge: overwriteMerge }
-  )
-}
-
 config = merge(config, {
   server: {
     p2p: {
       cycleDuration: 60,
       minNodesToAllowTxs: 1, // to allow single node networks
-      baselineNodes: process.env.baselineNodes ? parseInt(process.env.baselineNodes) : 640, // config used for baseline for entering recovery, restore, and safety. Should be equivalient to minNodes on network startup
-      minNodes: process.env.minNodes ? parseInt(process.env.minNodes) : 640,
-      maxNodes: process.env.maxNodes ? parseInt(process.env.maxNodes) : 1100,
+      baselineNodes: 1280, // config used for baseline for entering recovery, restore, and safety. Should be equivalient to minNodes on network startup
+      minNodes: 1280,
+      maxNodes: 1280,
       maxJoinedPerCycle: 10,
       maxSyncingPerCycle: 10,
-      maxRotatedPerCycle: process.env.maxRotatedPerCycle ? parseInt(process.env.maxRotatedPerCycle) : 1,
+      maxRotatedPerCycle: 1,
       firstCycleJoin: 0,
       maxSyncTimeFloor: 10000, //Using 6000 for a restore from archiver, then set config at runtime back to 1200
       //  1200=20 minutes.  If the network lives a long time we may have to bump this up
@@ -218,11 +136,13 @@ config = merge(config, {
       allowActivePerCycle: 1,
 
       syncFloorEnabled: true,  //ITN initially false for rotation safety
-      syncingDesiredMinCount: 50, //ITN = 50
+      syncingDesiredMinCount: 40, //ITN = 40
 
       activeRecoveryEnabled: true,//ITN initially false for rotation safety
-      allowActivePerCycleRecover: 4, 
+      allowActivePerCycleRecover: 4,
 
+      flexibleRotationEnabled: true, //ITN 1.16.1
+      flexibleRotationDelta: 10,
 
       maxStandbyCount: 30000, //max allowed standby nodes count
       enableMaxStandbyCount: true,
@@ -230,6 +150,15 @@ config = merge(config, {
       formingNodesPerCycle: 16, //how many nodes can be add in a cycle while in forming mode
 
       downNodeFilteringEnabled: false, //turning down node filtering off for diagnostics purposes
+
+      //initial parameters for problem node rotation
+      enableProblematicNodeRemoval: false,
+      enableProblematicNodeRemovalOnCycle: 20000,
+      maxProblematicNodeRemovalsPerCycle: 1,
+      problematicNodeConsecutiveRefuteThreshold: 6,
+      problematicNodeRefutePercentageThreshold: 0.1,
+      problematicNodeHistoryLength: 100,
+      problematicNodeRemovalCycleFrequency: 5,
     },
     features: {
       //This feature will restrict transactions to only coin transfers
@@ -282,10 +211,8 @@ config = merge(config, {
 config = merge(config, {
   server: {
     sharding: {
-      nodesPerConsensusGroup: process.env.nodesPerConsensusGroup
-        ? parseInt(process.env.nodesPerConsensusGroup)
-        : 128, //128 is the final goal
-      nodesPerEdge: process.env.nodesPerEdge ? parseInt(process.env.nodesPerEdge) : 5,
+      nodesPerConsensusGroup: 128, //128 is the final goal
+      nodesPerEdge: 5,
       executeInOneShard: true,
     },
     stateManager: {
@@ -415,10 +342,138 @@ config = merge(
         enableScopedProfiling: false,
         minMultiSigRequiredForEndpoints: 1,
         minMultiSigRequiredForGlobalTxs: 1,
+        minSigRequiredForArchiverWhitelist: 1
       },
     },
   },
   { arrayMerge: overwriteMerge }
 )
+
+// load local config files
+if (process.env.LOAD_JSON_CONFIGS) {
+  const configs = process.env.LOAD_JSON_CONFIGS.split(',')
+  for (let i = 0; i < configs.length; i++) {
+    configs[i] = configs[i].trim()
+  }
+
+  for (let i = 0; i < configs.length; i++) {
+    try {
+      // eslint-disable-next-line security/detect-non-literal-fs-filename
+      if (fs.existsSync(path.join(process.cwd(), '..', configs[i]))) {
+        // eslint-disable-next-line security/detect-non-literal-fs-filename
+        const fileConfig = Utils.safeJsonParse(
+          fs.readFileSync(path.join(process.cwd(), '..', configs[i])).toString()
+        )
+        config = merge(config, fileConfig, { arrayMerge: overwriteMerge })
+        console.log('config loaded from:', configs[i])
+      } else {
+        throw new Error('path to the following file is incorrect:' + configs[i])
+      }
+    } catch (e) {
+      throw new Error('error loading config file: ' + e)
+    }
+  }
+}
+
+// apply env variables
+if (process.env.BASE_DIR) {
+  const baseDir = process.env.BASE_DIR || '.'
+  let baseDirFileConfig = {}
+
+  // eslint-disable-next-line security/detect-non-literal-fs-filename
+  if (fs.existsSync(path.join(baseDir, FilePaths.CONFIG))) {
+    // eslint-disable-next-line security/detect-non-literal-fs-filename
+    baseDirFileConfig = Utils.safeJsonParse(fs.readFileSync(path.join(baseDir, FilePaths.CONFIG)).toString())
+  }
+  config = merge(config, baseDirFileConfig, { arrayMerge: overwriteMerge })
+  config.server.baseDir = process.env.BASE_DIR
+}
+
+if (process.env.APP_SEEDLIST) {
+  config = merge(
+    config,
+    {
+      server: {
+        p2p: {
+          existingArchivers: [
+            {
+              ip: process.env.APP_SEEDLIST,
+              port: process.env.APP_SEEDLIST_PORT || 4000,
+              publicKey:
+                process.env.APP_SEEDLIST_PUBLIC_KEY ||
+                '758b1c119412298802cd28dbfa394cdfeecc4074492d60844cc192d632d84de3',
+            },
+          ],
+        },
+      },
+    },
+    { arrayMerge: overwriteMerge }
+  )
+}
+
+// EXISTING_ARCHIVERS env has to be passed in string format!
+if (process.env.EXISTING_ARCHIVERS) {
+  const existingArchivers = Utils.safeJsonParse(process.env.EXISTING_ARCHIVERS)
+  if (existingArchivers.length > 0) {
+    config = merge(
+      config,
+      {
+        server: {
+          p2p: {
+            existingArchivers,
+          },
+        },
+      },
+      { arrayMerge: overwriteMerge }
+    )
+  }
+}
+
+if (process.env.APP_MONITOR) {
+  config = merge(
+    config,
+    {
+      server: {
+        reporting: {
+          recipient: `http://${process.env.APP_MONITOR}:3000/api`,
+        },
+      },
+    },
+    { arrayMerge: overwriteMerge }
+  )
+}
+
+if (process.env.APP_IP) {
+  config = merge(
+    config,
+    {
+      server: {
+        ip: {
+          externalIp: process.env.APP_IP,
+          internalIp: process.env.APP_IP,
+        },
+      },
+    },
+    { arrayMerge: overwriteMerge }
+  )
+}
+
+config = merge(config, {
+  server: {
+    p2p: {
+      baselineNodes: process.env.baselineNodes ? parseInt(process.env.baselineNodes) : (config.server.p2p as any).baselineNodes, // config used for baseline for entering recovery, restore, and safety. Should be equivalient to minNodes on network startup
+      minNodes: process.env.minNodes ? parseInt(process.env.minNodes) : (config.server.p2p as any).minNodes,
+      maxNodes: process.env.maxNodes ? parseInt(process.env.maxNodes) : (config.server.p2p as any).maxNodes,
+      maxRotatedPerCycle: process.env.maxRotatedPerCycle ? parseInt(process.env.maxRotatedPerCycle) : (config.server.p2p as any).maxRotatedPerCycle,
+      flexibleRotationDelta: process.env.flexibleRotationDelta ? parseInt(process.env.flexibleRotationDelta) : (config.server.p2p as any).flexibleRotationDelta,
+    },
+    sharding: {
+      nodesPerConsensusGroup: process.env.nodesPerConsensusGroup
+        ? parseInt(process.env.nodesPerConsensusGroup)
+        : (config.server.sharding as any).nodesPerConsensusGroup,
+      nodesPerEdge: process.env.nodesPerEdge ? parseInt(process.env.nodesPerEdge) : (config.server.sharding as any).nodesPerEdge,
+    }
+  }
+})
 
 export default config

@@ -6,14 +6,14 @@ Access lists are a difficult topic with multiple constraints.
 
 EIP2930 is an Ethereum standard for providing an access list to a transaction.
 This has limits because it does not specify contract code addresses.
-Also it does not have knowlege of memory access patterns.
-Using this directly is also a security vulnerablity for complex reasons.
+Also it does not have knowledge of memory access patterns.
+Using this directly is also a security vulnerability for complex reasons.
 
 
 
 
-Shardeum Validators run AALG which is automatica access list generation.
-This access list contains addressess used and a list of mermory access patterns.
+Shardeum Validators run AALG which is automatic access list generation.
+This access list contains addresses used and a list of memory access patterns.
 
 
 

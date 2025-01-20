@@ -1,6 +1,6 @@
 import {Transaction, TransactionType, TypedTransaction} from '@ethereumjs/tx'
 import { Address } from '@ethereumjs/util'
-import { getSenderAddress } from '@shardus/net'
+import { getSenderAddress } from '@shardeum-foundation/lib-net'
 import { hashSignedObj } from '../setup/helpers'
 import { logFlags } from '..'
 import {ShardeumFlags} from "../shardeum/shardeumFlags";

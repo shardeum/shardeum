@@ -16,9 +16,9 @@ export const initialNetworkParamters: NetworkParameters = {
   restakeCooldown: THIRTY_MINUTES,
   maintenanceInterval: ONE_DAY,
   maintenanceFee: 0,
-  minVersion: '1.16.0',
-  activeVersion: '1.16.0',
-  latestVersion: '1.16.0',
+  minVersion: '1.16.2',
+  activeVersion: '1.16.2',
+  latestVersion: '1.17.1',
   archiver: {
     minVersion: '3.5.6',
     activeVersion: '3.5.6',
@@ -38,5 +38,5 @@ export const initialNetworkParamters: NetworkParameters = {
     nodeRefutedPenaltyPercent: 0.2,
   },
   enableRPCEndpoints: false,
-  stakeLockTime: 1000 * 60 * 60 * 3, // 3 hours in milliseconds
+  stakeLockTime: 6000, //1000 * 60 * 60 * 3, // 3 hours in milliseconds
 }

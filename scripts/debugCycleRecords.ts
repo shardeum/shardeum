@@ -1,5 +1,5 @@
 // ts-nocheck
-const { Utils }  = require('@shardus/types')
+const { Utils }  = require('@shardeum-foundation/lib-types')
 const fs = require('fs');
 const readline = require ('readline');
 const path = require('path');

@@ -2,7 +2,7 @@ import sqlite3 from 'sqlite3'
 import axios from 'axios'
 import fs from 'fs'
 import { FilePaths } from '../src/shardeum/shardeumFlags'
-import { Utils } from '@shardus/types'
+import { Utils } from '@shardeum-foundation/lib-types'
 let db: any
 
 const instancesDirPath = 'instances'

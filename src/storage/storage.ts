@@ -6,7 +6,7 @@ import { ShardeumFlags } from '../shardeum/shardeumFlags'
 import Sqlite3Storage from './sqlite3storage'
 import { isServiceMode } from '..'
 import { Op } from './utils/sqlOpertors'
-import { Utils } from '@shardus/types'
+import { Utils } from '@shardeum-foundation/lib-types'
 
 export interface AccountsEntry {
   accountId: string
@@ -187,41 +187,39 @@ class Storage {
     limit: number,
     accountOffset: string
   ): Promise<AccountsEntry[]> {
-    const accountStartNum = Number(accountStart)
-    const accountEndNum = Number(accountEnd)
     limit = Number(limit)
-    const accountOffsetNum = Number(accountOffset)
     tsStart = Number(tsStart)
     tsEnd = Number(tsEnd)
-
-    if (
-      isNaN(accountStartNum) ||
-      isNaN(accountEndNum) ||
-      isNaN(accountOffsetNum) ||
-      isNaN(limit) ||
-      isNaN(tsStart) ||
-      isNaN(tsEnd)
-    ) {
-      throw new Error('arguments should be numbers.')
+  
+    if (accountStart && !/^[0-9a-fA-F]*$/.test(accountStart)) {
+      throw new Error('accountStart should be an empty string or a string with only upper or lower case hex chars.')
     }
-    if (accountEndNum < accountStartNum) {
-      throw new Error('accountEnd must be greater than or equal to accountStart.')
+    if (accountEnd && !/^[0-9a-fA-F]*$/.test(accountEnd)) {
+      throw new Error('accountEnd should be an empty string or a string with only upper or lower case hex chars.')
+    }
+    if (accountOffset && !/^[0-9a-fA-F]*$/.test(accountOffset)) {
+      throw new Error('accountOffset should be an empty string or a string with only upper or lower case hex chars.')
+    }
+  
+    if (isNaN(limit) || isNaN(tsStart) || isNaN(tsEnd)) {
+      throw new Error('arguments should be numbers.')
     }
     if (tsStart < 0 || tsEnd < 0 || tsEnd < tsStart) {
       throw new Error('Invalid timestamp range.')
     }
-
-    // Validate limit
     if (limit <= 0) {
       throw new Error('Invalid limit. Must be a positive number')
     }
+  
+    const query = `SELECT * FROM accountsEntry WHERE (timestamp, accountId) >= (?, ?) 
+                     AND timestamp < ? 
+                     AND accountId <= ? AND accountId >= ? 
+                     ORDER BY timestamp, accountId  LIMIT ?`
+    const params = [tsStart, accountOffset, tsEnd, accountEnd, accountStart, limit]
+  
     this._checkInit()
     try {
-      const query = `SELECT * FROM accountsEntry WHERE (timestamp, accountId) >= (${tsStart}, "${accountOffset}") 
-                      AND timestamp < ${tsEnd} 
-                      AND accountId <= "${accountEnd}" AND accountId >= "${accountStart}" 
-                      ORDER BY timestamp, accountId  LIMIT ${limit}`
-      const result = await this._query(query, [])
+      const result = await this._query(query, params)
       return result
     } catch (e) {
       throw new Error(e)

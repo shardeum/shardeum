@@ -2,15 +2,15 @@ import { initializeSecureAccount, isSecureAccount, SecureAccount, SecureAccountC
 import { ShardeumFlags } from '../../../../src/shardeum/shardeumFlags'
 import * as WrappedEVMAccountFunctions from '../../../../src/shardeum/wrappedEVMAccountFunctions'
 import { AccountMap, AccountType, InternalTx, InternalTXType, WrappedStates } from '../../../../src/shardeum/shardeumTypes'
-import { Shardus } from '@shardus/core'
+import { Shardus } from '@shardeum-foundation/core'
 import { shardusConfig } from '../../../../src'
-import { VectorBufferStream } from '@shardus/core'
+import { VectorBufferStream } from '@shardeum-foundation/core'
 import { TypeIdentifierEnum } from '../../../../src/types/enum/TypeIdentifierEnum'
 import { serializeSecureAccount, deserializeSecureAccount } from '../../../../src/types/SecureAccount'
-import { ApplyResponse } from '@shardus/core/dist/state-manager/state-manager-types'
-import { DevSecurityLevel, StrictShardusConfiguration } from '@shardus/core/dist/shardus/shardus-types'
+import { ApplyResponse } from '@shardeum-foundation/core/dist/state-manager/state-manager-types'
+import { DevSecurityLevel, StrictShardusConfiguration } from '@shardeum-foundation/core/dist/shardus/shardus-types'
 import * as ethers from 'ethers'
-import { Utils } from '@shardus/types'
+import { Utils } from '@shardeum-foundation/lib-types'
 import { toShardusAddress } from '../../../../src/shardeum/evmAddress'
 
 jest.mock('../../../../src/shardeum/wrappedEVMAccountFunctions', () => ({
@@ -23,8 +23,8 @@ jest.mock('../../../../src/shardeum/wrappedEVMAccountFunctions', () => ({
   })
 }));
 
-jest.mock('@shardus/core', () => {
-  const actual = jest.requireActual('@shardus/core')
+jest.mock('@shardeum-foundation/core', () => {
+  const actual = jest.requireActual('@shardeum-foundation/core')
   return {
     Shardus: jest.fn().mockImplementation(() => ({
       getMultisigPublicKeys: jest.fn().mockReturnValue({

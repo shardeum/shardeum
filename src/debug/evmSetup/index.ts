@@ -4,7 +4,7 @@ import { ShardeumBlock } from '../block/blockchain'
 import { VM } from '../../vm_v7/vm'
 import { ShardeumState } from '../state'
 import { EVMAccountInfo } from '../../shardeum/shardeumTypes'
-import { ShardusTypes } from '@shardus/core'
+import { ShardusTypes } from '@shardeum-foundation/core'
 import { EVM as EthereumVirtualMachine } from '../../evm_v2'
 
 let shardeumBlock: ShardeumBlock

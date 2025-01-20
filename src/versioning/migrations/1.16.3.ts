@@ -7,11 +7,10 @@ import { shardusConfig } from '../..'
 // an example for when we need to migrate again.
 
 export const migrate: Migration = async () => {
-  console.log('migrate 1.15.4')
-  nestedCountersInstance.countEvent('migrate', 'calling migrate 1.15.4')
+  console.log('migrate 1.16.3')
+  nestedCountersInstance.countEvent('migrate', 'calling migrate 1.16.3')
 
-  shardusConfig.p2p.syncFloorEnabled = true
-  shardusConfig.p2p.activeRecoveryEnabled = true
+  shardusConfig.p2p.dropNGTByGossipEnabled = true
 }
 
 //WARNING if you add a new one of these migration files you must add it to the migrations list in

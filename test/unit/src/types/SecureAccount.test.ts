@@ -1,4 +1,4 @@
-import { VectorBufferStream } from "@shardus/core";
+import { VectorBufferStream } from "@shardeum-foundation/core";
 import { deserializeSecureAccount, serializeSecureAccount } from "../../../../src/types/SecureAccount";
 
 import { SecureAccount } from "../../../../src/shardeum/secureAccounts";

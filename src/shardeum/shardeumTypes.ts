@@ -1,5 +1,5 @@
 import { Account } from '@ethereumjs/util'
-import { ShardusTypes } from '@shardus/core'
+import { ShardusTypes } from '@shardeum-foundation/core'
 import { Block } from '@ethereumjs/block'
 import { StakeCert } from '../handlers/queryCertificate'
 import { TxReceipt } from '../vm_v7/types'

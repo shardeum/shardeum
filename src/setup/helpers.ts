@@ -1,10 +1,10 @@
 import { Transaction, TransactionFactory, TransactionType } from '@ethereumjs/tx'
-import * as crypto from '@shardus/crypto-utils'
+import * as crypto from '@shardeum-foundation/lib-crypto-utils'
 import { toBuffer } from 'ethereumjs-util'
 import { ShardeumFlags } from '../shardeum/shardeumFlags'
 import { InternalTx, InternalTXType } from '../shardeum/shardeumTypes'
-import { Utils } from '@shardus/types'
-import { DevSecurityLevel, Sign } from '@shardus/core/dist/shardus/shardus-types'
+import { Utils } from '@shardeum-foundation/lib-types'
+import { DevSecurityLevel, Sign } from '@shardeum-foundation/core/dist/shardus/shardus-types'
 import { ethers } from 'ethers'
 
 crypto.init('69fa4195670576c0160d660c3be36556ff8d504725be8a59b5a96509e0c994bc')

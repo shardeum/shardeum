@@ -1,4 +1,4 @@
-import { ShardusTypes } from '@shardus/core'
+import { ShardusTypes } from '@shardeum-foundation/core'
 import axios, { AxiosRequestConfig, AxiosResponse } from 'axios'
 
 export const shardusGet = async <ResponseType>(
