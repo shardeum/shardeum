@@ -1,4 +1,7 @@
 /* eslint-disable @typescript-eslint/ban-ts-comment */
+
+const enableTracing = true
+
 import { exec } from 'child_process'
 import { arch, cpus, freemem, totalmem, platform } from 'os'
 import {
@@ -181,6 +184,32 @@ import {
   secureAccountDataMap 
 } from './shardeum/secureAccounts'
 import * as TicketManager from './setup/ticket-manager'
+
+import opentelemetry from '@opentelemetry/sdk-node'
+import { OTLPTraceExporter } from '@opentelemetry/exporter-trace-otlp-http'
+import { getNodeAutoInstrumentations } from '@opentelemetry/auto-instrumentations-node'
+import { trace, context, ContextManager, TextMapPropagator, Tracer, Span } from '@opentelemetry/api'
+import NoOpTracer from './no-tracing'
+
+if (enableTracing) {
+  // Only initialize the opentelemetry sdk if tracing is enabled, otherwise use the NoOpTracer to avoid adding overhead
+  const sdk = new opentelemetry.NodeSDK({
+    traceExporter: new OTLPTraceExporter(),
+    instrumentations: [
+      getNodeAutoInstrumentations({
+        // we recommend disabling fs autoinstrumentation since it can be noisy
+        // and expensive during startup
+        '@opentelemetry/instrumentation-fs': {
+          enabled: false,
+        },
+      }),
+    ],
+  })
+  sdk.start()
+  console.log('Tracing is Enabled')
+} else {
+  console.log('Tracing is Disabled')
+}
 
 let latestBlock = 0
 export const blocks: BlockMap = {}
@@ -1120,6 +1149,14 @@ const configShardusEndpoints = (): void => {
   //const debugMiddlewareHigh = shardus.getDebugModeMiddlewareHigh()
   const externalApiMiddleware = getExternalApiMiddleware()
 
+  if (! enableTracing) {
+    // Connect the tracer & span functions to a no-op class
+    trace.getTracer = (tracerName: string, version?: string) => {
+      return new NoOpTracer()
+    }
+  }
+  const tracer = trace.getTracer('shardeum-validator')
+
   //TODO request needs a signature and a timestamp.  or make it a real TX from a faucet account..
   //?id=<accountID>
   // shardus.registerExternalGet('faucet-all', debugMiddleware, async (req, res) => {
@@ -1152,6 +1189,7 @@ const configShardusEndpoints = (): void => {
   // })
 
   shardus.registerExternalGet('debug-points', debugMiddleware, async (req, res) => {
+    const span = tracer.startSpan('debug-points')
     try {
       // if(isDebugMode()){
       //   return res.json(`endpoint not available`)
@@ -1159,11 +1197,13 @@ const configShardusEndpoints = (): void => {
       if (Number.isNaN(Number(req.query.points as string))) {
         /* prettier-ignore */ if (logFlags.error) console.log(`Invalid input debug-points number`)
         res.json({ error: `Invalid input debug-points number` })
+        span.end()
         return
       }
       const points = Number(req.query.points ?? ShardeumFlags.ServicePoints['debug-points'])
       if (trySpendServicePoints(points, null, 'debug-points') === false) {
         res.json({ error: 'node busy', points, servicePointSpendHistory, debugLastTotalServicePoints })
+        span.end()
         return
       }
 
@@ -1175,10 +1215,13 @@ const configShardusEndpoints = (): void => {
     } catch (error) {
       /* prettier-ignore */ if (logFlags.error) console.error('Error in debug-points endpoint:', error)
       res.json({ error: error.message})
+    } finally {
+      span.end()
     }
   })
 
   shardus.registerExternalGet('debug-point-spenders', debugMiddleware, async (req, res) => {
+    const span = tracer.startSpan('debug-point-spenders')
     try {
       const debugObj = {
         debugTotalPointRequests: debugTotalServicePointRequests,
@@ -1190,10 +1233,13 @@ const configShardusEndpoints = (): void => {
     } catch (error) {
       /* prettier-ignore */ if (logFlags.error) console.error('Error in debug-point-spenders endpoint:', error)
       res.json({ error: error.message })
+    } finally {
+      span.end()
     }
   })
 
   shardus.registerExternalGet('debug-point-spenders-clear', debugMiddleware, async (req, res) => {
+    const span = tracer.startSpan('debug-point-spenders-clear')
     try {
       const totalSpends = debugTotalServicePointRequests
       debugTotalServicePointRequests = 0
@@ -1203,6 +1249,8 @@ const configShardusEndpoints = (): void => {
     } catch (error) {
       /* prettier-ignore */ if (logFlags.error) console.error('Error in debug-point-spenders-clear endpoint:', error)
       res.json({ error: error.message })
+    } finally {
+      span.end()
     }
   })
 
@@ -1211,6 +1259,7 @@ const configShardusEndpoints = (): void => {
   })
 
   shardus.registerExternalPost('inject', externalApiMiddleware, async (req, res) => {
+    const span = tracer.startSpan('inject')
     try {
       const tx = req.body
       const errors = verifyPayload(AJVSchemaEnum.InjectTxReq, tx)
@@ -1222,6 +1271,7 @@ const configShardusEndpoints = (): void => {
           details: isDebugMode() ? errors : null,
           status: 400,
         })
+        span.end()
         return
       }
       // if timestamp is a float, round it down to nearest millisecond
@@ -1235,12 +1285,15 @@ const configShardusEndpoints = (): void => {
           reason: `Node is too close to rotation edges. Inject to another node`,
           status: 500,
         })
+        span.end()
         return
       }
       await handleInject(tx, appData, res)
     } catch (error) {
       /* prettier-ignore */ if (logFlags.error) console.error('Error in inject endpoint:', error)
       res.json({ error: 'Internal Server Error' })
+    } finally {
+      span.end()
     }
   })
 
@@ -1349,6 +1402,7 @@ const configShardusEndpoints = (): void => {
       return
     }
 
+    const span = tracer.startSpan('inject-with-warmup')
     try {
       const id = shardus.getNodeId()
       const isInRotationBonds = shardus.isNodeInRotationBounds(id)
@@ -1358,6 +1412,7 @@ const configShardusEndpoints = (): void => {
           reason: `Node is too close to rotation edges. Inject to another node`,
           status: 500,
         })
+        span.end()
         return 
       }
       const { tx, warmupList } = req.body
@@ -1376,21 +1431,27 @@ const configShardusEndpoints = (): void => {
         })
       } catch (e) {
         /* prettier-ignore */ if (logFlags.error) console.log('Failed to respond to inject tx: ', e)
+      } finally {
+        span.end()
       }
     }
   })
 
   shardus.registerExternalGet('eth_blockNumber', externalApiMiddleware, async (req, res) => {
+    const span = tracer.startSpan('eth_blockNumber')
     try {
       if (ShardeumFlags.VerboseLogs) console.log('Req: eth_blockNumber')
       res.json({ blockNumber: latestBlock ? '0x' + latestBlock.toString(16) : '0x0' })
     } catch (err) {
       if (ShardeumFlags.VerboseLogs) console.log('Failed to retrieve eth_blockNumber: ', err)
       res.status(500).json({ error: 'Failed to retrieve eth_blockNumber' })
+    } finally {
+      span.end()
     }
   })
 
   shardus.registerExternalGet('eth_getBlockHashes', externalApiMiddleware, async (req: Request, res: Response) => {
+    const span = tracer.startSpan('eth_getBlockHashes')
     try {
       // Helper function to parse and validate block numbers
       const parseBlockNumber = (block: string | null, defaultValue?: number): number => {
@@ -1398,12 +1459,15 @@ const configShardusEndpoints = (): void => {
           if (defaultValue !== undefined) {
             return defaultValue;
           }
+          span.end()
           throw new Error('missing');
         }
         const num = parseInt(block, 10);
         if (isNaN(num) || num < 0) {
+          span.end()
           throw new Error('invalid');
         }
+        span.end()
         return num;
       };
 
@@ -1432,6 +1496,7 @@ const configShardusEndpoints = (): void => {
       // Validate block range
       if (fromBlock > toBlock) {
         res.status(400).json({ error: 'fromBlock cannot be greater than toBlock' });
+        span.end()
         return
       }
 
@@ -1459,11 +1524,14 @@ const configShardusEndpoints = (): void => {
         success: false,
         error: errorMessages[error.message] || 'Internal server error while processing block hashes'
       });
+    } finally {
+      span.end()
     }
   });
 
 
   shardus.registerExternalGet('eth_getBlockByNumber', externalApiMiddleware, async (req, res) => {
+    const span = tracer.startSpan('eth_getBlockByNumber')
     try {
       const blockNumberParam = req.query.blockNumber as string
       let blockNumber: number | string
@@ -1472,6 +1540,7 @@ const configShardusEndpoints = (): void => {
       const isInRotationBonds = shardus.isNodeInRotationBounds(id)
       if (isInRotationBonds) {
         res.json({ error: 'node close to rotation edges' })
+        span.end()
         return
       }
       if (blockNumberParam === 'latest' || blockNumberParam === 'earliest') {
@@ -1480,6 +1549,7 @@ const configShardusEndpoints = (): void => {
         blockNumber = parseInt(blockNumberParam)
         if (Number.isNaN(blockNumber) || blockNumber < 0) {
           res.json({ error: 'Invalid block number' })
+          span.end()
           return 
         }
       }
@@ -1487,22 +1557,27 @@ const configShardusEndpoints = (): void => {
       if (blockNumber === 'latest') blockNumber = latestBlock
       if (blockNumber === 'earliest') {
         res.json({ block: readableBlocks[Object.keys(readableBlocks)[0]] }) // eslint-disable-line security/detect-object-injection
+        span.end()
         return 
       }
       res.json({ block: readableBlocks[blockNumber] }) // eslint-disable-line security/detect-object-injection
     } catch (err) {
       if (ShardeumFlags.VerboseLogs) console.log('Failed to retrieve eth_getBlockByNumber: ', err)
       res.status(500).json({ error: 'Failed to retrieve eth_getBlockByNumber' })
+    } finally {
+      span.end()
     }
   })
 
   shardus.registerExternalGet('eth_getBlockByHash', externalApiMiddleware, async (req, res) => {
+    const span = tracer.startSpan('eth_getBlockByHash')
     try {
       /* eslint-disable security/detect-object-injection */
       let blockHash = req.query.blockHash as string
       if (blockHash === 'latest') blockHash = readableBlocks[latestBlock].hash
       else if (blockHash.length !== 66 || !isHexString(blockHash)){
         res.json({ error: 'Invalid block hash' })
+        span.end()
         return
       }
       if (ShardeumFlags.VerboseLogs) console.log('Req: eth_getBlockByHash', blockHash)
@@ -1512,10 +1587,13 @@ const configShardusEndpoints = (): void => {
     } catch (err) {
       if (ShardeumFlags.VerboseLogs) console.log('Failed to retrieve eth_getBlockByHash: ', err)
       res.status(500).json({ error: 'Failed to retrieve eth_getBlockByHash' })
+    } finally {
+      span.end()
     }
   })
 
   shardus.registerExternalGet('stake', async (req, res) => {
+    const span = tracer.startSpan('stake')
     try {
       const stakeRequiredUsd = AccountsStorage.cachedNetworkAccount.current.stakeRequiredUsd
       const stakeRequired = scaleByStabilityFactor(stakeRequiredUsd, AccountsStorage.cachedNetworkAccount)
@@ -1524,10 +1602,13 @@ const configShardusEndpoints = (): void => {
     } catch (e) {
       if (ShardeumFlags.VerboseLogs) console.log(`Error /stake`, e)
       res.status(500).send(e.message)
+    } finally {
+      span.end()
     }
   })
 
   shardus.registerExternalGet('canUnstake/:nominee/:nominator', externalApiMiddleware, async (req, res) => {
+    const span = tracer.startSpan('stake')
     if (
       trySpendServicePoints(
         ShardeumFlags.ServicePoints['canUnstake/:nominee/:nominator'],
@@ -1536,9 +1617,9 @@ const configShardusEndpoints = (): void => {
       ) === false
     ) {
       res.json({ error: 'node busy' })
+      span.end()
       return
     }
-
     try {
       const nominator = await getAccountData(shardus, req.params['nominator'], { query: {} })
       const nominatee = await getAccountData(shardus, req.params['nominee'], { query: { type: 9 } })
@@ -1557,6 +1638,8 @@ const configShardusEndpoints = (): void => {
     } catch (e) {
       if (ShardeumFlags.VerboseLogs) console.log(`Error /canUnstake`, e)
       res.status(500).send(e.message)
+    } finally {
+      span.end()
     }
   })
 
@@ -1564,13 +1647,14 @@ const configShardusEndpoints = (): void => {
     // if(isDebugMode()){
     //   return res.json(`endpoint not available`)
     // }
-
+    const span = tracer.startSpan('dumpStorage')
     let id
     try {
       id = req.query.id as string
       const addr = Address.fromString(id)
       if (addr == null) {
         res.json(`dumpStorage: ${id} addr == null`)
+        span.end()
         return
       }
 
@@ -1582,6 +1666,8 @@ const configShardusEndpoints = (): void => {
       //if(ShardeumFlags.VerboseLogs) console.log( `dumpStorage: ${id} `, err)
 
       res.json(`dumpStorage: ${id} ${err}`)
+    } finally {
+      span.end()
     }
   })
 
@@ -1589,7 +1675,7 @@ const configShardusEndpoints = (): void => {
     // if(isDebugMode()){
     //   return res.json(`endpoint not available`)
     // }
-
+    const span = tracer.startSpan('dumpAddressMap')
     let id
     try {
       //use a replacer so we get the map:
@@ -1597,10 +1683,13 @@ const configShardusEndpoints = (): void => {
       const output = JSON.stringify(shardusAddressToEVMAccountInfo, replacer, 4)
       res.write(output)
       res.end()
+      span.end()
       return
       //return res.json(transactionStateMap)
     } catch (err) {
       res.json(`dumpAddressMap: ${id} ${err}`)
+    } finally {
+      span.end()
     }
   })
 
@@ -1608,36 +1697,45 @@ const configShardusEndpoints = (): void => {
     // if(isDebugMode()){
     //   return res.json(`endpoint not available`)
     // }
+    const span = tracer.startSpan('dumpShardeumStateMap')
     try {
       //use a replacer so we get the map:
       //let output = stringify(shardeumStateTXMap, replacer, 4)
       const output = `tx shardeumState count:${shardeumStateTXMap.size}`
       res.write(output)
       res.end()
+      span.end()
       return
       //return res.json(transactionStateMap)
     } catch (err) {
       res.json(`dumpShardeumStateMap: ${err}`)
+    } finally {
+      span.end()
     }
   })
 
   shardus.registerExternalGet('debug-shardeum-flags', debugMiddleware, async (req, res) => {
+    const span = tracer.startSpan('debug-shardeum-flags')
     try {
       res.json({ ShardeumFlags })
     } catch (e) {
       /* prettier-ignore */ if (logFlags.error) console.log(e)
       res.json({ error: e.message })
+    } finally {
+      span.end()
     }
   })
 
   shardus.registerExternalGet('debug-set-shardeum-flag', debugMiddleware, async (req, res) => {
     let value
     let key
+    const span = tracer.startSpan('debug-set-shardeum-flag')
     try {
       key = req.query.key as string
       value = req.query.value as string
       if (value == null) {
         res.json(`debug-set-shardeum-flag: ${value} == null`)
+        span.end()
         return
       }
 
@@ -1655,23 +1753,28 @@ const configShardusEndpoints = (): void => {
       res.json({ [key]: ShardeumFlags[key] }) // eslint-disable-line security/detect-object-injection
     } catch (err) {
       res.json(`debug-set-shardeum-flag: ${key} ${err.message} `)
+    } finally {
+      span.end()
     }
   })
   shardus.registerExternalGet('debug-set-service-point', debugMiddleware, async (req, res) => {
     let value
     let key1
     let key2
+    const span = tracer.startSpan('debug-set-service-point')
     try {
       key1 = req.query.key1 as string
       key2 = req.query.key2 as string
       value = req.query.value as string
       if (value == null) {
         res.json(`debug-set-service-point: ${value} == null`)
+        span.end()
         return
       }
       if (Number.isNaN(Number(value))) {
         /* prettier-ignore */ if (logFlags.error) console.log(`Invalid service point`, value)
         res.json({ error: `Invalid service point` })
+        span.end()
         return 
       }
 
@@ -1682,12 +1785,16 @@ const configShardusEndpoints = (): void => {
       res.json({ ServicePoints: ShardeumFlags['ServicePoints'] })
     } catch (err) {
       res.json(`debug-set-service-point: ${value} ${err}`)
+    } finally {
+      span.end()
     }
   })
 
   shardus.registerExternalGet('account/:address', externalApiMiddleware, async (req, res) => {
+    const span = tracer.startSpan('account-address')
     if (trySpendServicePoints(ShardeumFlags.ServicePoints['account/:address'], req, 'account') === false) {
       res.json({ error: 'node busy' })
+      span.end()
       return
     }
 
@@ -1697,17 +1804,22 @@ const configShardusEndpoints = (): void => {
       res.json(accountData)
     } catch (error) {
       res.json({ error: error.message || 'An error occurred' })
+    } finally {
+      span.end()
     }
   })
 
   shardus.registerExternalGet('eth_getCode', externalApiMiddleware as any, async (req, res) => {
+    const span = tracer.startSpan('eth_getCode')
     if (ShardeumFlags.disableSmartContractEndpoints) {
       res.json({ contractCode: '0x' })
+      span.end()
       return
     }
 
     if (trySpendServicePoints(ShardeumFlags.ServicePoints['eth_getCode'], req, 'account') === false) {
       res.json({ error: 'node busy' })
+      span.end()
       return 
     }
 
@@ -1726,12 +1838,14 @@ const configShardusEndpoints = (): void => {
         )
         if (!wrappedEVMAccount) {
           res.json({ contractCode: '0x' })
+          span.end()
           return 
         }
       } else {
         const account = await shardus.getLocalOrRemoteAccount(shardusAddress)
         if (!account || !account.data) {
           res.json({ contractCode: '0x' })
+          span.end()
           return 
         }
         wrappedEVMAccount = account.data as WrappedEVMAccount
@@ -1746,6 +1860,7 @@ const configShardusEndpoints = (): void => {
       })
       if (!codeAccount || !codeAccount.data) {
         res.json({ contractCode: '0x' })
+        span.end()
         return 
       }
 
@@ -1756,12 +1871,16 @@ const configShardusEndpoints = (): void => {
     } catch (error) {
       /* prettier-ignore */ if (logFlags.dapp_verbose) console.log('eth_getCode: ' + formatErrorMessage(error))
       res.json({ error })
+    } finally {
+      span.end()
     }
   })
 
   shardus.registerExternalGet('eth_gasPrice', externalApiMiddleware, async (req, res) => {
+    const span = tracer.startSpan('eth_gasPrice')
     if (trySpendServicePoints(ShardeumFlags.ServicePoints['eth_gasPrice'], req, 'account') === false) {
       res.json({ error: 'node busy' })
+      span.end()
       return
     }
 
@@ -1775,6 +1894,8 @@ const configShardusEndpoints = (): void => {
     } catch (error) {
       /* prettier-ignore */ if (logFlags.dapp_verbose) console.log('eth_gasPrice: ' + formatErrorMessage(error))
       res.json({ error })
+    } finally {
+      span.end()
     }
   })
 
@@ -1782,8 +1903,10 @@ const configShardusEndpoints = (): void => {
     // if(isDebugMode()){
     //   return res.json(`endpoint not available`)
     // }
+    const span = tracer.startSpan('contract-call')
     if (ShardeumFlags.disableSmartContractEndpoints) {
       res.json({ result: null, error: 'Smart contract endpoints are disabled' })
+      span.end()
       return
     }
     if (
@@ -1791,6 +1914,7 @@ const configShardusEndpoints = (): void => {
       false
     ) {
       res.json({ result: null, error: 'node busy' })
+      span.end()
       return
     }
 
@@ -1834,6 +1958,7 @@ const configShardusEndpoints = (): void => {
                 ERC20TokenBalanceMap.push(tokenBalanceResult)
                 /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`eth call for ERC20TokenBalanceMap`, callObj.to, callObj.data)
                 res.json({ result: tokenBalanceResult.result })
+                span.end()
                 return
               }
             }
@@ -1866,11 +1991,13 @@ const configShardusEndpoints = (): void => {
               //res.json({ result: callResult.execResult.returnValue.toString() })
               //return res.json({ result: '0x' + postResp.body })   //I think the 0x is worse?
               res.json({ result: postResp.body.result })
+              span.end()
               return
             }
           } else {
             if (ShardeumFlags.VerboseLogs) console.log(`Node is in remote shard: consensusNode = null`)
             res.json({ result: null })
+            span.end()
             return
           }
         } else {
@@ -1884,6 +2011,7 @@ const configShardusEndpoints = (): void => {
         false
       ) {
         res.json({ result: null, error: 'node busy' })
+        span.end()
         return
       }
 
@@ -1986,12 +2114,16 @@ const configShardusEndpoints = (): void => {
       if (ShardeumFlags.VerboseLogs) console.log('Error eth_call', e)
       res.json({ result: null })
       return
+    } finally {
+      span.end()
     }
   })
 
   shardus.registerExternalPost('contract/accesslist', externalApiMiddleware, async (req, res) => {
+    const span = tracer.startSpan('account-accesslist')
     if (ShardeumFlags.disableSmartContractEndpoints) {
       res.json({ result: null, error: 'Smart contract endpoints are disabled' })
+      span.end()
       return
     }
     if (
@@ -2002,6 +2134,7 @@ const configShardusEndpoints = (): void => {
       ) === false
     ) {
       res.json({ result: null, error: 'node busy' })
+      span.end()
       return
     }
 
@@ -2015,12 +2148,16 @@ const configShardusEndpoints = (): void => {
     } catch (e) {
       if (ShardeumFlags.VerboseLogs) console.log('Error predict accessList', e)
       res.json([])
+    } finally {
+      span.end()
     }
   })
 
   shardus.registerExternalPost('contract/accesslist-warmup', externalApiMiddleware, async (req, res) => {
+    const span = tracer.startSpan('contract-accesslist-warmup')
     if (ShardeumFlags.disableSmartContractEndpoints) {
       res.json({ result: null, error: 'Smart contract endpoints are disabled' })
+      span.end()
       return
     }
     if (
@@ -2031,6 +2168,7 @@ const configShardusEndpoints = (): void => {
       ) === false
     ) {
       res.json({ result: null, error: 'node busy' })
+      span.end()
       return
     }
 
@@ -2044,18 +2182,23 @@ const configShardusEndpoints = (): void => {
     } catch (e) {
       if (ShardeumFlags.VerboseLogs) console.log('Error predict accessList warmup', e)
       res.json([])
+    } finally {
+      span.end()
     }
   })
 
   shardus.registerExternalPost('contract/estimateGas', externalApiMiddleware, async (req, res) => {
+    const span = tracer.startSpan('contract-estimateGas')
     if (ShardeumFlags.supportEstimateGas === false) {
       res.json({ result: null, error: 'estimateGas not supported' })
+      span.end()
       return
     }
     if (!isServiceMode()) {
       const response = { success: false, reason: '', status: 500 }
       if (AccountsStorage.cachedNetworkAccount === undefined){
         res.json({ ...response, reason: `Network account not available yet` })
+        span.end()
         return
       }
       if (AccountsStorage.cachedNetworkAccount.current.enableRPCEndpoints === false) {
@@ -2064,6 +2207,7 @@ const configShardusEndpoints = (): void => {
             ...response,
             reason: `The current RPC endpoint is disabled in the production network`,
           })
+          span.end()
           return
         }
       }
@@ -2076,6 +2220,7 @@ const configShardusEndpoints = (): void => {
       ) === false
     ) {
       res.json({ result: null, error: 'node busy' })
+      span.end()
       return
     }
 
@@ -2096,12 +2241,16 @@ const configShardusEndpoints = (): void => {
           },
         },
       })
+    } finally {
+      span.end()
     }
   })
 
   shardus.registerExternalGet('tx/:hash', externalApiMiddleware, async (req, res) => {
+    const span = tracer.startSpan('tx-hash')
     if (trySpendServicePoints(ShardeumFlags.ServicePoints['tx/:hash'], req, 'tx') === false) {
       res.json({ error: 'node busy' })
+      span.end()
       return
     }
 
@@ -2115,6 +2264,7 @@ const configShardusEndpoints = (): void => {
           /* prettier-ignore */ if (logFlags.shardedCache) console.log(`cachedAppData: Found tx receipt for ${txHash} ${Date.now()}`)
           const receipt = cachedAppData.appData as ShardusTypes.WrappedData
           res.json({ account: convertBigIntsToHex(receipt.data) })
+          span.end()
           return
         } else {
           // tools will ask for a tx receipt before it exists!
@@ -2122,11 +2272,14 @@ const configShardusEndpoints = (): void => {
           /* prettier-ignore */ if (logFlags.shardedCache) console.log(`cachedAppData: Unable to find tx receipt for ${txHash} ${Date.now()}`)
         }
         res.json({ account: null })
+        span.end()
         return
       } catch (error) {
         /* prettier-ignore */ if (logFlags.shardedCache) console.log('cachedAppData: Unable to get tx receipt: ' + formatErrorMessage(error))
         res.json({ account: null })
         return
+      } finally {
+        span.end()
       }
     } else {
       try {
@@ -2148,11 +2301,14 @@ const configShardusEndpoints = (): void => {
       } catch (error) {
         /* prettier-ignore */ if (logFlags.dapp_verbose) console.log('tx/:hash: ' + formatErrorMessage(error))
         res.json({ error })
+      } finally {
+        span.end()
       }
     }
   })
 
   shardus.registerExternalGet('debug-appdata/:hash', debugMiddleware, async (req, res) => {
+    const span = tracer.startSpan('debug-appdata-hash')
     try {
       // if(isDebugMode()){
       //   return res.json(`endpoint not available`)
@@ -2171,6 +2327,7 @@ const configShardusEndpoints = (): void => {
 
       if (appData == null) {
         res.json(Utils.safeStringify({ result: `no appData` }))
+        span.end()
         return
       }
 
@@ -2182,6 +2339,8 @@ const configShardusEndpoints = (): void => {
     } catch (error) {
       /* prettier-ignore */ if (logFlags.error) console.error('Error in debug-appdata endpoint:', error)
       res.status(500).json({ error: error.message})
+    } finally {
+      span.end()
     }
   })
 
@@ -2235,6 +2394,7 @@ const configShardusEndpoints = (): void => {
   // })
 
   shardus.registerExternalGet('accounts', debugMiddlewareMedium, async (req, res) => {
+    const span = tracer.startSpan('accounts')
     try {
       // if(isDebugMode()){
       //   return res.json(`endpoint not available`)
@@ -2252,14 +2412,18 @@ const configShardusEndpoints = (): void => {
     } catch (error) {
       /* prettier-ignore */ if (logFlags.error) console.error('Error in processing accounts request:', error)
       res.status(500).json({ error: error.message })
+    } finally {
+      span.end()
     }
   })
 
   shardus.registerExternalGet('genesis_accounts', externalApiMiddleware, async (req, res) => {
+    const span = tracer.startSpan('genesis_accounts')
     try {
       const { start } = req.query
       if (!start) {
         res.json({ success: false, reason: 'start value is not defined!' })
+        span.end()
         return
       }
       let skip: number
@@ -2275,10 +2439,13 @@ const configShardusEndpoints = (): void => {
     } catch (error) {
       /* prettier-ignore */ if (logFlags.error) console.error('Error in processing genesis_accounts request:', error)
       res.status(500).json({ error: 'Internal Server Error' })
+    } finally {
+      span.end()
     }
   })
 
   shardus.registerExternalGet('secure_accounts', externalApiMiddleware, async (req, res) => {
+    const span = tracer.startSpan('secure_accounts')
     try {
       const secureAccounts = []
       for (const secureAccountConfig of secureAccountDataMap.values()) {
@@ -2293,11 +2460,14 @@ const configShardusEndpoints = (): void => {
     } catch (error) {
       /* prettier-ignore */ if (logFlags.error) console.error('Error in processing secure_accounts request:', error)
       res.status(500).json({ success: false, reason: 'Internal Server Error' })
+    } finally {
+      span.end()
     }
   })
 
   // Returns the hardware-spec of the server running the validator
   shardus.registerExternalGet('system-info', debugMiddlewareLow, async (req, res) => {
+    const span = tracer.startSpan('system-info')
     try {
       let result = {
         platform: platform(),
@@ -2320,6 +2490,8 @@ const configShardusEndpoints = (): void => {
     } catch (error) {
       /* prettier-ignore */ if (logFlags.error) console.error('Error in processing system-info request:', error)
       res.status(500).json({ error: error.message})
+    } finally {
+      span.end()
     }
   })
 
@@ -2327,6 +2499,7 @@ const configShardusEndpoints = (): void => {
     'query-certificate',
     externalApiMiddleware,
     async (req: Request, res: Response) => {
+      const span = tracer.startSpan('query-certificate')
       try {
         nestedCountersInstance.countEvent('shardeum-penalty', 'called query-certificate')
         const queryCertRes = await queryCertificateHandler(req, shardus)
@@ -2343,6 +2516,8 @@ const configShardusEndpoints = (): void => {
       } catch (error) {
         /* prettier-ignore */ if (logFlags.error) console.error('Error in processing query-certificate request:', error)
         res.status(500).json({ error: 'Internal Server Error' })
+      } finally {
+        span.end()
       }
     }
   )
@@ -2350,6 +2525,7 @@ const configShardusEndpoints = (): void => {
   // Returns the latest value from isReadyToJoin call
   // TODO verify if this is used by the node operator
   shardus.registerExternalGet('debug-is-ready-to-join', async (req, res) => {
+    const span = tracer.startSpan('debug-is-ready-to-join')
     try {
       const publicKey = shardus.crypto.getPublicKey()
 
@@ -2357,16 +2533,20 @@ const configShardusEndpoints = (): void => {
     } catch (error) {
       /* prettier-ignore */ if (logFlags.error) console.error('Error in processing debug-is-ready-to-join request:', error)
       res.status(500).json({ error: 'Internal Server Error' })
+    } finally {
+      span.end()
     }
   })
 
   // Changes the threshold for the blocked-At function
   shardus.registerExternalGet('debug-set-event-block-threshold', debugMiddleware, async (req, res) => {
+    const span = tracer.startSpan('debug-set-event-block-threshold')
     try {
       const threshold = Number(req.query.threshold)
 
       if (isNaN(threshold) || threshold <= 0) {
         res.json({ error: `Invalid threshold: ${req.query.threshold}` })
+        span.end()
         return
       }
 
@@ -2374,11 +2554,14 @@ const configShardusEndpoints = (): void => {
       res.json({ success: `Threshold set to ${threshold}ms` })
     } catch (err) {
       res.json({ error: `Error setting threshold: ${err.toString()}` })
+    } finally {
+      span.end()
     }
   })
 
   // endpoint on joining nodes side to receive admin certificate
   shardus.registerExternalPut('admin-certificate', externalApiMiddleware, async (req, res) => {
+    const span = tracer.startSpan('admin-certificate')
     try {
       nestedCountersInstance.countEvent('shardeum-admin-certificate', 'called PUT admin-certificate')
 
@@ -2396,18 +2579,25 @@ const configShardusEndpoints = (): void => {
     } catch (error) {
       /* prettier-ignore */ if (logFlags.error) console.error('Error in processing admin-certificate request:', error)
       res.status(500).json({ error: 'Internal Server Error' })
+    } finally {
+      span.end()
     }
+
   })
 
   shardus.registerExternalGet('is-alive', async (req, res) => {
+    const span = tracer.startSpan('is-alive')
     nestedCountersInstance.countEvent('endpoint', 'is-alive')
     res.sendStatus(200)
+    span.end()
   })
 
   shardus.registerExternalGet('is-healthy', async (req, res) => {
+    const span = tracer.startSpan('is-healthy')
     // TODO: Add actual health check logic
     nestedCountersInstance.countEvent('endpoint', 'health-check')
     res.sendStatus(200)
+    span.end()
   })
 }
 
