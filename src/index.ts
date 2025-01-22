@@ -185,15 +185,22 @@ import {
 } from './shardeum/secureAccounts'
 import * as TicketManager from './setup/ticket-manager'
 
-import opentelemetry from '@opentelemetry/sdk-node'
-import { OTLPTraceExporter } from '@opentelemetry/exporter-trace-otlp-http'
-import { getNodeAutoInstrumentations } from '@opentelemetry/auto-instrumentations-node'
-import { trace, context, ContextManager, TextMapPropagator, Tracer, Span } from '@opentelemetry/api'
+
 import { NodeSDK } from '@opentelemetry/sdk-node'
+import { getNodeAutoInstrumentations } from '@opentelemetry/auto-instrumentations-node'
+import { OTLPTraceExporter } from '@opentelemetry/exporter-trace-otlp-http'
+import { trace, context, ContextManager, TextMapPropagator, Tracer, Span } from '@opentelemetry/api'
+import { diag, DiagLogLevel } from '@opentelemetry/api'
+import * as otelLogs from '@opentelemetry/api-logs'
+import { OTLPLogExporter } from '@opentelemetry/exporter-logs-otlp-http'
+import { LoggerProvider, SimpleLogRecordProcessor } from '@opentelemetry/sdk-logs'
 import NoOpTracer from './no-tracing'
+
 
 if (enableTracing) {
   // Only initialize the opentelemetry sdk if tracing is enabled, otherwise use the NoOpTracer to avoid adding overhead
+  const originalConsoleLog = console.log
+  const originalConsoleError = console.error
   const sdk = new NodeSDK({
     traceExporter: new OTLPTraceExporter(),
     instrumentations: [
@@ -207,6 +214,42 @@ if (enableTracing) {
     ],
   })
   sdk.start()
+
+  // Hook custom logger to OpenTelemetry and override the build in console.log and console.error so we can intercept those without changing all the console.* calls
+  // Generally you shouldn't create your own logger provider, but to minimize code impact, this is the quickest way to get it working
+  const logExporter = new OTLPLogExporter()
+  const loggerProvider = new LoggerProvider()
+  loggerProvider.addLogRecordProcessor(new SimpleLogRecordProcessor(logExporter)) // Or BatchLogRecordProcessor
+  otelLogs.logs.setGlobalLoggerProvider(loggerProvider)
+  const logger = otelLogs.logs.getLogger('shardeum-logger', '1.0.0')
+
+  console.log = function (...args: any[]) {
+    // Send log to OpenTelemetry
+    logger.emit({
+      body: args.map((arg) => (typeof arg === 'object' ? JSON.stringify(arg, null, 2) : arg)).join(' '),
+      severityNumber: otelLogs.SeverityNumber.INFO,
+      severityText: 'INFO',
+    })
+    // Call the original console.log
+    originalConsoleLog.apply(console, args)
+  }
+
+  // Override console.error
+  console.error = function (...args: any[]) {
+    // Send log to OpenTelemetry
+    logger.emit({
+      body: args.map((arg) => (typeof arg === 'object' ? JSON.stringify(arg, null, 2) : arg)).join(' '),
+      severityNumber: otelLogs.SeverityNumber.ERROR,
+      severityText: 'ERROR',
+    })
+    // Call the original console.error
+    originalConsoleError.apply(console, args)
+  }
+
+  process.on('beforeExit', async () => {
+    await sdk.shutdown()
+  })
+
   console.log('Tracing is Enabled')
 } else {
   console.log('Tracing is Disabled')
