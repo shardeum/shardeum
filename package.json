@@ -46,7 +46,7 @@
     "@ethereumjs/vm": "7.0.0",
     "@mapbox/node-pre-gyp": "1.0.10",
     "@shardus/archiver-discovery": "git+https://github.com/shardeum/lib-archiver-discovery#itn4",
-    "@shardus/core": "git+https://github.com/shardeum/shardus-core#itn4-1.16.3",
+    "@shardus/core": "git+https://github.com/shardeum/shardus-core#itn4-1.16.3-logging",
     "@shardus/crypto-utils": "git+https://github.com/shardeum/lib-crypto-utils#itn4",
     "@shardus/net": "git+https://github.com/shardeum/lib-net#itn4",
     "@shardus/types": "git+https://github.com/shardeum/lib-types#itn4-1.16.3",
