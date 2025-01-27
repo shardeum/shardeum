@@ -126,7 +126,7 @@ interface ShardeumFlags {
   debugGlobalAccountUpdateFail: boolean
   ticketTypesEnabled: boolean
   debugTxEnabled: boolean
-  disableArchiverNetworkAccountValidation: boolean
+  enableArchiverNetworkAccountValidation: boolean
 }
 
 export const ShardeumFlags: ShardeumFlags = {
@@ -290,7 +290,7 @@ export const ShardeumFlags: ShardeumFlags = {
   debugGlobalAccountUpdateFail: false,
   ticketTypesEnabled: false,
   debugTxEnabled: false,
-  disableArchiverNetworkAccountValidation: true, //  Enable/disable network account basic validations from archiver
+  enableArchiverNetworkAccountValidation: false, //  Enable/disable network account basic validations from archiver
 }
 
 export function updateShardeumFlag(key: string, value: string | number | boolean): void {

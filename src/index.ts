@@ -8049,7 +8049,7 @@ async function fetchNetworkAccountFromArchiver(): Promise<WrappedAccount> {
       )
     }
 
-    if (!ShardeumFlags.disableArchiverNetworkAccountValidation) {
+    if (ShardeumFlags.enableArchiverNetworkAccountValidation) {
       // basic validation of the data to make sure we wont get unexpected errors
       if (!res.data.networkAccount || !res.data.networkAccount.data || !res.data.networkAccount.data.hash) {
         throw new Error(`get-network-account from archiver pk:${majorityValue.archiver.publicKey} returned malformed data: ${safeStringify(res.data)}`)
