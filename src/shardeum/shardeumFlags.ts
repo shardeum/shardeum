@@ -126,6 +126,7 @@ interface ShardeumFlags {
   debugGlobalAccountUpdateFail: boolean
   ticketTypesEnabled: boolean
   debugTxEnabled: boolean
+  disableArchiverNetworkAccountValidation: boolean
 }
 
 export const ShardeumFlags: ShardeumFlags = {
@@ -288,7 +289,8 @@ export const ShardeumFlags: ShardeumFlags = {
   disableSmartContractEndpoints: true, // Disable smart contract read endpoints by default
   debugGlobalAccountUpdateFail: false,
   ticketTypesEnabled: false,
-  debugTxEnabled: false
+  debugTxEnabled: false,
+  disableArchiverNetworkAccountValidation: true, //  Enable/disable network account basic validations from archiver
 }
 
 export function updateShardeumFlag(key: string, value: string | number | boolean): void {

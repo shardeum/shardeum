@@ -8049,25 +8049,27 @@ async function fetchNetworkAccountFromArchiver(): Promise<WrappedAccount> {
       )
     }
 
-    // basic validation of the data to make sure we wont get unexpected errors
-    if (!res.data.networkAccount || !res.data.networkAccount.data || !res.data.networkAccount.data.hash) {
-      throw new Error(`get-network-account from archiver pk:${majorityValue.archiver.publicKey} returned malformed data: ${safeStringify(res.data)}`)
-    }
+    if (!ShardeumFlags.disableArchiverNetworkAccountValidation) {
+      // basic validation of the data to make sure we wont get unexpected errors
+      if (!res.data.networkAccount || !res.data.networkAccount.data || !res.data.networkAccount.data.hash) {
+        throw new Error(`get-network-account from archiver pk:${majorityValue.archiver.publicKey} returned malformed data: ${safeStringify(res.data)}`)
+      }
 
-    nestedCountersInstance.countEvent('network-config-operation', 'success: got network account from winning archiver')
+      nestedCountersInstance.countEvent('network-config-operation', 'success: got network account from winning archiver')
 
-    // verify the 'winning' archiver's signature of the network account matches that of the response body signature
-    const isResponseVerified = verify(res.data, majorityValue.archiver.publicKey)
-    if (!isResponseVerified) {
-      nestedCountersInstance.countEvent('network-config-operation', 'failure: The response signature is not the same from archiver pk:${majorityValue.archiver.publicKey}')
-      throw new Error(`The response signature is not the same from archiver pk:${majorityValue.archiver.publicKey}`)
-    }
+      // verify the 'winning' archiver's signature of the network account matches that of the response body signature
+      const isResponseVerified = verify(res.data, majorityValue.archiver.publicKey)
+      if (!isResponseVerified) {
+        nestedCountersInstance.countEvent('network-config-operation', 'failure: The response signature is not the same from archiver pk:${majorityValue.archiver.publicKey}')
+        throw new Error(`The response signature is not the same from archiver pk:${majorityValue.archiver.publicKey}`)
+      }
 
-    // verify that the hash was not spoofed by the archiver, rehash the network account and compare
-    const rehashedNetworkAccount = WrappedEVMAccountFunctions.accountSpecificHash(res.data.networkAccount.data)
-    if (rehashedNetworkAccount !== majorityValue.hash) {
-      nestedCountersInstance.countEvent('network-config-operation', 'failure: The rehashed network account is not the same as the majority hash')
-      throw new Error(`The rehashed network account is not the same as the majority hash. rehashed: ${rehashedNetworkAccount}, majority: ${majorityValue.hash}`)
+      // verify that the hash was not spoofed by the archiver, rehash the network account and compare
+      const rehashedNetworkAccount = WrappedEVMAccountFunctions.accountSpecificHash(res.data.networkAccount.data)
+      if (rehashedNetworkAccount !== majorityValue.hash) {
+        nestedCountersInstance.countEvent('network-config-operation', 'failure: The rehashed network account is not the same as the majority hash')
+        throw new Error(`The rehashed network account is not the same as the majority hash. rehashed: ${rehashedNetworkAccount}, majority: ${majorityValue.hash}`)
+      }
     }
 
     return res.data.networkAccount as WrappedAccount
