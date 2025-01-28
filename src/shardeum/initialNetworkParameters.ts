@@ -29,6 +29,12 @@ export const initialNetworkParamters: NetworkParameters = {
   txPause: false,
   certCycleDuration: 30,
   enableNodeSlashing: false,
+  qa: {
+    qaTestNumber: 0,
+    qaTestBoolean: false,
+    qaTestPercent: 0,
+    qaTestSemver: "0.0.0",
+  },
   slashing: {
     enableLeftNetworkEarlySlashing: false,
     enableSyncTimeoutSlashing: false,

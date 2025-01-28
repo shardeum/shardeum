@@ -385,6 +385,12 @@ export interface NetworkParameters {
   txPause: boolean
   certCycleDuration: number
   enableNodeSlashing: boolean
+  qa: {
+    qaTestNumber: number
+    qaTestBoolean: boolean
+    qaTestPercent: number
+    qaTestSemver: string
+  }
   slashing: {
     enableLeftNetworkEarlySlashing: boolean,
     enableSyncTimeoutSlashing: boolean,
