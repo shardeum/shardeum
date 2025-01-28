@@ -144,7 +144,7 @@ export async function queryAccountsFromArchiver(skip = 0, limit = 10000): Promis
   try {
     const sql = `SELECT * FROM accounts ORDER BY cycleNumber ASC, timestamp ASC LIMIT ${limit} OFFSET ${skip}`
     accounts = await all(sql)
-    if (accounts.lenth > 0) {
+    if (accounts.length > 0) {
       accounts.map((account) => {
         if (account && account.data) account.data = Utils.safeJsonParse(account.data)
       })
