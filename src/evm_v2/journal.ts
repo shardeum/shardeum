@@ -164,7 +164,7 @@ export class Journal {
   }
 
   /**
-   * Removes accounts form the state trie that have been touched,
+   * Removes accounts from the state trie that have been touched,
    * as defined in EIP-161 (https://eips.ethereum.org/EIPS/eip-161).
    * Also cleanups any other internal fields
    */
