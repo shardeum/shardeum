@@ -235,7 +235,7 @@ export interface NodeRefutedViolationData {
 
 export interface PenaltyTX extends InternalTxBase {
   reportedNodeId: string
-  reportedNodePublickKey: string
+  reportedNodepublicKey: string
   operatorEVMAddress: string
   violationType: ViolationType
   violationData: LeftNetworkEarlyViolationData | SyncingTimeoutViolationData | NodeRefutedViolationData
