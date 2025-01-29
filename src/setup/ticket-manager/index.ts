@@ -107,8 +107,9 @@ export function getTicketsByType(type: string): Ticket[] {
 export function doesTransactionSenderHaveTicketType({ticketType, senderAddress}: { ticketType:TicketTypes, senderAddress:Address }): {
   success: boolean
   reason: string
+  enabled: boolean
 } {
-  const result: { success:boolean, reason:string } = { success: false, reason: '' }
+  const result: { success:boolean, reason:string, enabled:boolean } = { success: false, reason: '', enabled: false }
   /* prettier-ignore */ if (logFlags.debug) console.log(`[ticket-master][doesNominatorHaveTicketType] ticketType: ${ticketType}, senderAddress: ${senderAddress}`)
   // Check if Silver Tickets feature is enabled in the shardus configuration
   /* prettier-ignore */ if (logFlags.debug) console.log(`[ticket-master][doesNominatorHaveTicketType] shardusConfig: ${JSON.stringify(shardusConfig)}`)
@@ -116,6 +117,7 @@ export function doesTransactionSenderHaveTicketType({ticketType, senderAddress}:
   /* prettier-ignore */ if (logFlags.debug) console.log(`[ticket-master][doesNominatorHaveTicketType] ticketTypes: ${JSON.stringify(ticketTypes)}`)
   const isSilverTicketsEnabled = ticketTypes?.find((tt) => tt.type === ticketType)?.enabled
   /* prettier-ignore */ if (logFlags.debug) console.log(`[ticket-master][doesNominatorHaveTicketType] isSilverTicketsEnabled: ${isSilverTicketsEnabled}`)
+  result.enabled = isSilverTicketsEnabled
   if (isSilverTicketsEnabled) {
     let silverTicketForNominee: Ticket | undefined
     // Retrieve all Silver Tickets using the TicketManager
@@ -147,7 +149,6 @@ export function doesTransactionSenderHaveTicketType({ticketType, senderAddress}:
     }
   } else {
     result.reason = 'Silver Tickets feature is not enabled'
-    result.success = true
   }
   return result
 }

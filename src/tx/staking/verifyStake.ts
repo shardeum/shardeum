@@ -88,10 +88,13 @@ export function verifyStakeTx(
   const isTicketTypesEnabled = ShardeumFlags.ticketTypesEnabled
   /* prettier-ignore */ if (logFlags.debug) console.log(`[verifyStake][verifyStakeTx] isTicketsEnabled: ${isTicketTypesEnabled}`)
   if (isTicketTypesEnabled) {
-    const doesNominatorHaveTicketTypeResponse: {success:boolean;reason:string} = doesTransactionSenderHaveTicketType({ ticketType: TicketTypes.SILVER, senderAddress })
+    const doesNominatorHaveTicketTypeResponse: {success:boolean;reason:string;enabled:boolean} = doesTransactionSenderHaveTicketType({ ticketType: TicketTypes.SILVER, senderAddress })
     /* prettier-ignore */ if (logFlags.debug) console.log(`[verifyStake][verifyStakeTx] doesNominatorHaveTicketTypeResponse: ${doesNominatorHaveTicketTypeResponse}`)
-    if (!doesNominatorHaveTicketTypeResponse.success){
-      return doesNominatorHaveTicketTypeResponse
+    if (doesNominatorHaveTicketTypeResponse.enabled && !doesNominatorHaveTicketTypeResponse.success){
+      return {
+        success: doesNominatorHaveTicketTypeResponse.success,
+        reason: doesNominatorHaveTicketTypeResponse.reason
+      }
     }
   }
 
