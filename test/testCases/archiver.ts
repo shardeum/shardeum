@@ -5,8 +5,8 @@ import { Utils } from '@shardeum-foundation/lib-types'
 
 const opts = { shell: true }
 
-export const archiverTest = (startNewAchiver = false, checkTotalDataCheck = false, dataSyncTest = false) => {
-  if (startNewAchiver) {
+export const archiverTest = (startNewArchiver = false, checkTotalDataCheck = false, dataSyncTest = false) => {
+  if (startNewArchiver) {
     test('Start new archivers successfully', async () => {
       console.log('TEST: Start new archivers successfully')
 
