@@ -182,6 +182,7 @@ import {
 } from './shardeum/secureAccounts'
 import * as TicketManager from './setup/ticket-manager'
 import { getHeapStatistics } from 'v8'
+import { checkDatabaseHealth } from "../scripts/accountsSyncCheck";
 
 let latestBlock = 0
 export const blocks: BlockMap = {}
@@ -2420,9 +2421,15 @@ const configShardusEndpoints = (): void => {
   })
 
   shardus.registerExternalGet('is-healthy', async (req, res) => {
-    // TODO: Add actual health check logic
+    let dbHealthy = checkDatabaseHealth();
+    const result = {
+      status: dbHealthy ? 'healthy' : 'degraded',
+      uptime: process.uptime(),
+      timestamp: new Date().toISOString(),
+      database: dbHealthy ? 'healthy' : 'unreachable',
+    }
     nestedCountersInstance.countEvent('endpoint', 'health-check')
-    res.sendStatus(200)
+    res.sendStatus(dbHealthy ? 200 : 500).json(result)
   })
 }
 
