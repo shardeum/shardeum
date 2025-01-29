@@ -43,10 +43,10 @@ export async function injectInitRewardTimesTx(
     }
   }
   const nodeAccount = wrappedData.data as NodeAccount2
-  // check if the nodeAccount has nomimator data
+  // check if the nodeAccount has nominator data
   if (nodeAccount.nominator == null) {
-    /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`injectInitRewardTimesTx failed cant find nomimator : ${eventData.publicKey}`, nodeAccount)
-    /* prettier-ignore */ nestedCountersInstance.countEvent('shardeum-staking', `injectInitRewardTimesTx failed cant find nomimator`)
+    /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`injectInitRewardTimesTx failed cant find nominator : ${eventData.publicKey}`, nodeAccount)
+    /* prettier-ignore */ nestedCountersInstance.countEvent('shardeum-staking', `injectInitRewardTimesTx failed cant find nominator`)
     return
   }
   // check if nodeAccount.rewardStartTime is already set to eventData.time
