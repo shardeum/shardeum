@@ -241,7 +241,7 @@ export const processAccountsData = async (shardus, report: LoadReport, accountAr
     }
   } else {
     await shardus.forwardAccounts({ accounts: accountArrayClean.accounts, receipts: [] })
-    setGenesisAccounts(accountArrayClean.accounts) // As an assumption to save in memory, so that when it's queried it can reponse fast, we can make it query from DB later
+    setGenesisAccounts(accountArrayClean.accounts) // As an assumption to save in memory, so that when it's queried it can response fast, we can make it query from DB later
   }
 
   await shardus.debugCommitAccountCopies(accountArrayClean.accounts)
