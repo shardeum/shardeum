@@ -522,6 +522,7 @@ export interface NodeInfoAppData {
   latestVersion: string
   operatorCLIVersion: string
   operatorGUIVersion: string
+  appStartupTimestamp: number
 }
 
 export type HexString = string
