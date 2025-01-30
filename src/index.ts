@@ -1296,7 +1296,7 @@ const configShardusEndpoints = (): void => {
       }
 
       // Incremeant counter for this IP
-      if (shardusConfig.debug.verboseNestedCounters && !ipAddress) {
+      if (shardusConfig.debug.verboseNestedCounters && ipAddress) {
         nestedCountersInstance.countEvent('shardeum', `txInjected from ${ipAddress}`)
       }
 
