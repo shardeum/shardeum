@@ -287,6 +287,8 @@ let isReadyToJoinLatestValue = false
 //used only for when the nework is...
 let isAdminCertUnexpired = false
 
+let appStartupTimestamp = 0
+
 /**
  * Allows us to attempt to spend points.  We have ShardeumFlags.ServicePointsPerSecond
  * that can be spent as a total bucket
@@ -7499,6 +7501,7 @@ const shardusSetup = (): void => {
         latestVersion,
         operatorCLIVersion,
         operatorGUIVersion,
+        appStartupTimestamp
       }
       return shardeumNodeInfo
     },
@@ -8199,6 +8202,8 @@ export function shardeumGetTime(): number {
 
   /** Start process for updating tickets (e.g. silver) */
   TicketManager.updateTicketMapAndScheduleNextUpdate()
+
+  appStartupTimestamp = shardeumGetTime()
 
   if (ShardeumFlags.GlobalNetworkAccount) {
     // CODE THAT GETS EXECUTED WHEN NODES START
