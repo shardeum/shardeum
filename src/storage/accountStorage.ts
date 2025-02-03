@@ -260,3 +260,8 @@ export async function queryAccountsEntryByRanges2(
     //return accounts
   }
 }
+
+
+export async function checkDatabaseHealth(): Promise<boolean> {
+  return storage.checkDatabaseHealth();
+}

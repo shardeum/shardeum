@@ -2405,9 +2405,18 @@ const configShardusEndpoints = (): void => {
   })
 
   shardus.registerExternalGet('is-healthy', async (req, res) => {
-    // TODO: Add actual health check logic
+    let dbHealthy = await AccountsStorage.checkDatabaseHealth();
+    const result = {
+      status: dbHealthy ? 'healthy' : 'degraded',
+      uptime: process.uptime(),
+      timestamp: new Date().toISOString(),
+      database: dbHealthy ? 'healthy' : 'unreachable',
+    }
     nestedCountersInstance.countEvent('endpoint', 'health-check')
-    res.sendStatus(200)
+
+    // fastify automatically converts 500 body if not explicitly set like this
+    res.header('Content-Type', 'application/json')
+    res.status(dbHealthy ? 200 : 500).send(result)
   })
 }
 
