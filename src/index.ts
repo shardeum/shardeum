@@ -7900,6 +7900,16 @@ const shardusSetup = (): void => {
         minSigRequired,
         requiredSecurityLevel
       )
+    },
+    async getNetworkAccountFromArchiver(): Promise<WrappedAccount> {
+      try {
+        const networkAccount = await fetchNetworkAccountFromArchiver()
+        return networkAccount
+      } catch (e) {
+        /* prettier-ignore */ if (logFlags.error) console.log('getNetworkAccountFromArchiver error:', e)
+        nestedCountersInstance.countEvent('getNetworkAccountFromArchiver', 'error')
+      }
+      return null 
     }
   })
 
