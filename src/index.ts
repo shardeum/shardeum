@@ -8090,7 +8090,10 @@ export function shardeumGetTime(): number {
     /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`[index] networkAccount: ${JSON.stringify(networkAccount)}`)
     AccountsStorage.setCachedNetworkAccount(networkAccount.data)
 
-    configToLoad = await updateConfigFromNetworkAccount(config, networkAccount)
+    //hack test.  do not patch the config
+    //configToLoad = await updateConfigFromNetworkAccount(config, networkAccount)
+
+    configToLoad = config
   } catch (error) {
     configToLoad = config
     /* prettier-ignore */ nestedCountersInstance.countEvent('network-config-operation', 'Error: Use default configs.')
