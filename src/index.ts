@@ -182,6 +182,7 @@ import {
 } from './shardeum/secureAccounts'
 import * as TicketManager from './setup/ticket-manager'
 import { getHeapStatistics } from 'v8'
+import { stateManager } from '@shardeum-foundation/core/dist/p2p/Context'
 
 let latestBlock = 0
 export const blocks: BlockMap = {}
@@ -5871,31 +5872,35 @@ const shardusSetup = (): void => {
             throw Error(`Dev Account already exists`)
           }
         }
+        if (internalTx.internalTXType === InternalTXType.ChangeConfig) {
+          // for ChangeConfig, we expect the sign to be an array of public keys
+          if (!Array.isArray(internalTx.sign)) {
+            throw Error(`Sign is not an array for ChangeConfig`)
+          }
+
+          // find accounts that have signed but have not been created yet
+          const accountsThatHaveSigned = internalTx.sign.filter(({owner}) => AccountsStorage.accountExists(owner))
+          if (accountsThatHaveSigned.length > 0) {
+            // create the accounts that have signed. We shouldnt need to do this, but here we are. If we dont do this, if you sign change config tx 
+            // with an account that doesnt exist, the tx will *silently* fail.
+            for (const accountToCreate of accountsThatHaveSigned) {
+              const account = await createAccount(accountToCreate.owner, getApplyTXState(tx.id), BigInt(0)) 
+              await AccountsStorage.setAccount(getAccountShardusAddress(account), account)
+            }
+          }
+        }
         if (
           internalTx.internalTXType === InternalTXType.ChangeConfig ||
           internalTx.internalTXType === InternalTXType.ChangeNetworkParam
         ) {
-          // Not sure if this is even relevant.  I think the from account should be one of our dev accounts and
-          // and should already exist (hit the faucet)
-          // probably an array of dev public keys
-
           if (!wrappedEVMAccount) {
-            // This is the 0000x00000 account
+            // if the account is the network account, throw an error
             if (accountId === networkAccount) {
               throw Error(`Network Account is not allowed to sign this ${accountId}`)
             } else if (shardus.getDevPublicKey(accountId)) {
               wrappedEVMAccount = await createNetworkAccount(accountId, config, shardus.p2p.isFirstSeed)
               accountCreated = true
             }
-            // I think we don't need it now, the dev Key is checked on the validateTxnFields
-            // else {
-            //   //If the id is not the network account then it must be our dev user account.
-            //   // we shouldn't try to create that either.
-            //   // Dev account is a developers public key on a test account they control
-            //   throw Error(`Dev Account is not found ${accountId}`)
-            //   // wrappedEVMAccount = createNodeAccount(accountId) as any
-            //   // accountCreated = true
-            // }
           }
         }
         if (
@@ -6074,27 +6079,6 @@ const shardusSetup = (): void => {
       let accountCreated = false
 
       const txId = generateTxId(tx)
-      // let transactionState = transactionStateMap.get(txId)
-      // if (transactionState == null) {
-      //   transactionState = new TransactionState()
-      //   transactionState.initData(
-      //     shardeumStateManager,
-      //     {
-      //       storageMiss: accountMiss,
-      //       contractStorageMiss,
-      //       accountInvolved,
-      //       contractStorageInvolved,
-      //       tryGetRemoteAccountCB: tryGetRemoteAccountCBNoOp
-      //     },
-      //     txId,
-      //     undefined,
-      //     undefined
-      //   )
-      //   transactionStateMap.set(txId, transactionState)
-      // } else {
-      //   //TODO possibly need a blob to re-init with, but that may happen somewhere else.  Will require a slight interface change
-      //   //to allow shardus to pass in this extra data blob (unless we find a way to run it through wrapped states??)
-      // }
 
       const shardeumState = getApplyTXState(txId)
 
@@ -6199,6 +6183,7 @@ const shardusSetup = (): void => {
         // accounts[accountId] = wrappedEVMAccount //getRelevantData must never modify accounts[]
         accountCreated = true
       }
+
       /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log('Running getRelevantData final result for EOA', wrappedEVMAccount)
       // Wrap it for Shardus
       return shardus.createWrappedResponse(
