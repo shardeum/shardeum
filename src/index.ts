@@ -183,6 +183,7 @@ import {
 import * as TicketManager from './setup/ticket-manager'
 import { getHeapStatistics } from 'v8'
 import { OpaqueTransaction } from '@shardeum-foundation/core/dist/shardus/shardus-types'
+import { TicketTypes, doesTransactionSenderHaveTicketType } from './setup/ticket-manager'
 
 let latestBlock = 0
 export const blocks: BlockMap = {}
@@ -2433,6 +2434,33 @@ const configShardusEndpoints = (): void => {
     // fastify automatically converts 500 body if not explicitly set like this
     res.header('Content-Type', 'application/json')
     res.status(dbHealthy ? 200 : 500).send(result)
+  })
+
+  shardus.registerExternalGet('is-genesis-node/:nominator', async (req, res) => {
+    let senderAddress: Address
+    try {
+      senderAddress = Address.fromString(req.params['nominator'])
+    } catch (error) {
+      return res.json({ success: false, reason: 'Invalid address' })
+    }
+    const isTicketTypesEnabled = ShardeumFlags.ticketTypesEnabled
+    /* prettier-ignore */ if (logFlags.debug) console.log(`[is-genesis-node] isTicketsEnabled: ${isTicketTypesEnabled}`)
+    if (!isTicketTypesEnabled) {
+      return res.json({ success: true, reason: 'Ticket types are not enabled' })
+    }
+    const doesNominatorHaveTicketTypeResponse: { success: boolean; reason: string; enabled: boolean } =
+      doesTransactionSenderHaveTicketType({ ticketType: TicketTypes.SILVER, senderAddress })
+    /* prettier-ignore */ if (logFlags.debug) console.log(
+      `[is-genesis-node] doesNominatorHaveTicketTypeResponse: ${doesNominatorHaveTicketTypeResponse}`
+    )
+    if (doesNominatorHaveTicketTypeResponse.enabled && !doesNominatorHaveTicketTypeResponse.success) {
+      return res.json({
+        success: doesNominatorHaveTicketTypeResponse.success,
+        reason: doesNominatorHaveTicketTypeResponse.reason,
+      })
+    } else {
+      return res.json({ success: true, reason: 'Genesis Node detected' })
+    }
   })
 }
 
