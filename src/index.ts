@@ -7974,12 +7974,11 @@ const shardusSetup = (): void => {
     ): boolean => {
       return verifyMultiSigs(rawPayload, sigs, allowedPubkeys, minSigRequired, requiredSecurityLevel)
     },
-    isNGT: (acceptedTx: any): boolean => {
+    isNGT: (tx: OpaqueTransaction): boolean => {
       const INIT_REWARD_TX = 8
       const CLAIM_REWARD_TX = 9
       const NGT_TYPES = [INIT_REWARD_TX, CLAIM_REWARD_TX]
-      return NGT_TYPES.includes(acceptedTx.data?.tx?.['internalTXType'])
-      return NGT_TYPES.includes(acceptedTx?.data?.tx?.['internalTXType'])
+      return NGT_TYPES.includes(tx?.['internalTXType'])
     },
   })
 
