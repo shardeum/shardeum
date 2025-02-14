@@ -7971,13 +7971,13 @@ const shardusSetup = (): void => {
       minSigRequired: number,
       requiredSecurityLevel: DevSecurityLevel
     ): boolean => {
-      return verifyMultiSigs(
-        rawPayload,
+      return verifyMultiSigs(rawPayload, sigs, allowedPubkeys, minSigRequired, requiredSecurityLevel)
+    },
     isNGT: (txType: number): boolean => {
       const INIT_REWARD_TX = 8
       const CLAIM_REWARD_TX = 9
       const NGT_TYPES = [INIT_REWARD_TX, CLAIM_REWARD_TX]
-      )
+      console.log('isNGT', txType)
       return NGT_TYPES.includes(txType)
     },
   })
