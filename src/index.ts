@@ -182,6 +182,7 @@ import {
 } from './shardeum/secureAccounts'
 import * as TicketManager from './setup/ticket-manager'
 import { getHeapStatistics } from 'v8'
+import { OpaqueTransaction } from '@shardeum-foundation/core/dist/shardus/shardus-types'
 
 let latestBlock = 0
 export const blocks: BlockMap = {}
@@ -7973,12 +7974,11 @@ const shardusSetup = (): void => {
     ): boolean => {
       return verifyMultiSigs(rawPayload, sigs, allowedPubkeys, minSigRequired, requiredSecurityLevel)
     },
-    isNGT: (txType: number): boolean => {
+    isNGT: (acceptedTx: OpaqueTransaction): boolean => {
       const INIT_REWARD_TX = 8
       const CLAIM_REWARD_TX = 9
       const NGT_TYPES = [INIT_REWARD_TX, CLAIM_REWARD_TX]
-      console.log('isNGT', txType)
-      return NGT_TYPES.includes(txType)
+      return NGT_TYPES.includes(acceptedTx.data?.tx?.['internalTXType'])
     },
   })
 
