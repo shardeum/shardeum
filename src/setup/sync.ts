@@ -3,7 +3,6 @@ import { Account, Address } from '@ethereumjs/util'
 import config from '../config'
 import genesis from '../config/genesis.json'
 import genesisSecureAccounts from '../config/genesis-secure-accounts.json'
-import { loadAccountDataFromDB } from '../shardeum/debugRestoreAccounts'
 import { toShardusAddress } from '../shardeum/evmAddress'
 import { ShardeumFlags } from '../shardeum/shardeumFlags'
 import { AccountType, DevAccount, InternalTXType, WrappedEVMAccount } from '../shardeum/shardeumTypes'
@@ -45,14 +44,6 @@ export const sync = (shardus: Shardus, evmCommon: any) => async (): Promise<void
       await sleep(ONE_SECOND * 5)
 
       const nodeId = shardus.getNodeId()
-
-      if (ShardeumFlags.DebugRestoreFile != null && ShardeumFlags.DebugRestoreFile != '') {
-        const loadOptions = {
-          file: ShardeumFlags.DebugRestoreFile,
-        }
-        const report = await loadAccountDataFromDB(shardus, loadOptions)
-        /* prettier-ignore */ if (logFlags.important_as_error) console.log('loadAccountDataFromDB:' + Utils.safeStringify(report))
-      }
 
       //create genesis accounts before network account since nodes will wait for the network account
       /* prettier-ignore */ if (logFlags.important_as_error) shardus.log(`node ${nodeId} GENERATED_A_NEW_NETWORK_ACCOUNT: `)

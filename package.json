@@ -18,6 +18,7 @@
     "posttest": "",
     "dbg": "shardus start 3 && shardus stop && rm -rf instances/",
     "test": "jest",
+    "test:multisig": "jest --detectOpenHandles multisigValidation.test.ts",
     "test:smoke": "cross-env minNodes=20 nodesPerConsensusGroup=5 NODE_ENV='DEBUG' jest --detectOpenHandles --useStderr --coverage main.test.ts",
     "test:shardedNet": "cross-env minNodes=20 nodesPerConsensusGroup=5 NODE_ENV='DEBUG' jest --detectOpenHandles --useStderr --coverage shardedNetwork.test.ts",
     "test:singleShardRotation": "cross-env minNodes=10 nodesPerConsensusGroup=20 NODE_ENV='DEBUG' NodeReward=false jest --detectOpenHandles --useStderr --coverage singleShardRotation.test.ts",

@@ -17,10 +17,117 @@ import { Utils } from '@shardus/types'
 import { ethers } from 'ethers'
 import { shardusConfig } from '..'
 import { validateTransferFromSecureAccount } from '../shardeum/secureAccounts'
+import { validateConfigChange } from './multisigKeyValidator'
 
 type Response = {
   result: string
   reason: string
+}
+
+/**
+ * Checks if a config change is modifying the multisig key list
+ * @param oldConfig Current configuration
+ * @param newConfig New configuration being applied
+ * @returns True if multisig keys are being modified
+ */
+export function isMultisigKeyChange(oldConfig: any, newConfig: any): boolean {
+  // Check if debug.multisigKeys exist in both configs
+  const oldMultisigKeys = oldConfig?.debug?.multisigKeys
+  const newMultisigKeys = newConfig?.debug?.multisigKeys
+  
+  // If newConfig doesn't have multisigKeys, it can't be changing them
+  if (!newMultisigKeys) {
+    return false
+  }
+
+  // If oldConfig doesn't have multisigKeys but newConfig does, it's a key change
+  if (!oldMultisigKeys) {
+    return Object.keys(newMultisigKeys).length > 0
+  }
+
+  // Check if any keys are being added, removed, or modified
+  const oldKeys = Object.keys(oldMultisigKeys)
+  const newKeys = Object.keys(newMultisigKeys)
+  
+  // If key count is different, something was added or removed
+  if (oldKeys.length !== newKeys.length) {
+    return true
+  }
+  
+  // Check if any keys are different
+  for (const key of oldKeys) {
+    // If key exists in old but not in new, it's being removed
+    if (!(key in newMultisigKeys)) {
+      return true
+    }
+    
+    // If security level is being changed, it's a key change
+    // eslint-disable-next-line security/detect-object-injection
+    if (oldMultisigKeys[key] !== newMultisigKeys[key]) {
+      return true
+    }
+  }
+  
+  // Check if any new keys are being added
+  for (const key of newKeys) {
+    if (!(key in oldMultisigKeys)) {
+      return true
+    }
+  }
+  
+  return false
+}
+
+/**
+ * Verifies multisig signatures specifically for key management operations
+ * This is a more stringent verification that requires:
+ * 1. All signers must be in the keyManagerAddresses list
+ * 2. Number of valid signatures must meet the keyManagementMinSignatures threshold
+ * 
+ * @param rawPayload The transaction payload
+ * @param sigs The signatures to verify
+ * @param keyManagerAddresses List of addresses authorized to manage keys
+ * @param minSigRequired Minimum number of signatures required
+ * @returns True if validation passes, false otherwise
+ */
+export function verifyMultiSigsForKeyManagement(
+  rawPayload: object,
+  sigs: ShardusTypes.Sign[],
+  keyManagerAddresses: string[],
+  minSigRequired: number
+): boolean {
+  if (!rawPayload || !sigs || !keyManagerAddresses || !Array.isArray(sigs)) {
+    return false
+  }
+  
+  if (sigs.length < minSigRequired) {
+    return false
+  }
+  
+  // Convert keyManagerAddresses to lowercase for case-insensitive matching
+  const allowedAddresses = keyManagerAddresses.map(addr => addr.toLowerCase())
+  
+  let validSigs = 0
+  const payload_hash = ethers.keccak256(ethers.toUtf8Bytes(Utils.safeStringify(rawPayload)))
+  const seen = new Set()
+  
+  for (let i = 0; i < sigs.length; i++) {
+    const signerAddress = ethers.verifyMessage(payload_hash, sigs[i].sig).toLowerCase()
+    
+    // Check if signer is in the key manager list and signature is valid
+    if (
+      !seen.has(sigs[i].owner) &&
+      allowedAddresses.includes(signerAddress) &&
+      signerAddress === sigs[i].owner.toLowerCase()
+    ) {
+      validSigs++
+      seen.add(sigs[i].owner)
+    }
+    
+    if (validSigs >= minSigRequired) break
+  }
+  
+  return validSigs >= minSigRequired
 }
 
 export const validateTransaction =
@@ -37,11 +144,35 @@ export const validateTransaction =
         internalTx.internalTXType === InternalTXType.ChangeNetworkParam
       ) {
         const devPublicKeys = shardus.getMultisigPublicKeys()
-        const is_array_sig = Array.isArray(tx.sign) === true
         const requiredSigs = Math.max(1, shardusConfig.debug.minMultiSigRequiredForGlobalTxs)
-        //Ensure old single sig / non-array are still compitable
+        
+        // For config changes, use specialized validation
+        if (tx.internalTXType === InternalTXType.ChangeConfig) {
+          // First validate the config change with special checks for multisig key changes
+          const validationResult = validateConfigChange(tx, config, devPublicKeys, requiredSigs, verifyMultiSigs)
+          
+          if (validationResult.result === 'fail') {
+            return validationResult
+          }
+          
+          // Then validate the config structure itself
+          const givenConfig = Utils.safeJsonParse(tx.config)
+          if (
+            comparePropertiesTypes(omitDevKeys(givenConfig), config.server) &&
+            isValidDevKeyAddition(givenConfig) &&
+            isValidMultisigKeyAddition(givenConfig)
+          ) {
+            return { result: 'pass', reason: 'valid' }
+          } else {
+            return { result: 'fail', reason: 'Invalid config' }
+          }
+        }
+        
+        // For network param changes, use regular validation
+        const is_array_sig = Array.isArray(tx.sign) === true
         const sigs: ShardusTypes.Sign[] = is_array_sig ? tx.sign : [tx.sign]
         const { sign, ...txWithoutSign } = tx
+        
         const authorized = verifyMultiSigs(
           txWithoutSign,
           sigs,
@@ -49,23 +180,12 @@ export const validateTransaction =
           requiredSigs,
           DevSecurityLevel.High
         )
+        
         if (!authorized) {
           return { result: 'fail', reason: 'Unauthorized User' }
-        } else {
-          if (tx.internalTXType === InternalTXType.ChangeConfig) {
-            const givenConfig = Utils.safeJsonParse(tx.config)
-            if (
-              comparePropertiesTypes(omitDevKeys(givenConfig), config.server) &&
-              isValidDevKeyAddition(givenConfig) &&
-              isValidMultisigKeyAddition(givenConfig)
-            ) {
-              return { result: 'pass', reason: 'valid' }
-            } else {
-              return { result: 'fail', reason: 'Invalid config' }
-            }
-          }
-          return { result: 'pass', reason: 'valid' }
         }
+        
+        return { result: 'pass', reason: 'valid' }
       } else if (tx.internalTXType === InternalTXType.SetCertTime) {
         return { result: 'pass', reason: 'valid' }
       } else if (tx.internalTXType === InternalTXType.InitRewardTimes) {
