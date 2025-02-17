@@ -6920,6 +6920,16 @@ const shardusSetup = (): void => {
 
         const appJoinData = data.appJoinData as AppJoinData
 
+        const verifyErrors = verifyPayload(AJVSchemaEnum.AppJoinData, data)
+        if (verifyErrors) {
+          /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`validateJoinRequest fail: verifyErrors`)
+          return {
+            success: false,
+            reason: `Join request node app join data is invalid. ${verifyErrors.join(', ')}`,
+            fatal: true,
+          }
+        }
+
         const minVersion = AccountsStorage.cachedNetworkAccount.current.minVersion
         if (!isEqualOrNewerVersion(minVersion, appJoinData.version)) {
           /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`validateJoinRequest fail: old version`)
