@@ -5199,6 +5199,10 @@ const shardusSetup = (): void => {
         let remoteTargetAccount
         appData.requestNewTimestamp = true // force all evm txs to generate a new timestamp
 
+        if (isEIP2930 && isStakingEVMTx(transaction) === false) {
+          return { status: false, reason: `EVM txs have been disabled` }
+        }
+
         //if the TX is a contract deploy, predict the new contract address correctly (needs sender's nonce)
         //remote fetch of sender EOA also allows fast balance and nonce checking (assuming we get some queue hints as well from shardus core)
         if (
