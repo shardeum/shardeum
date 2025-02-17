@@ -7,7 +7,7 @@ export const schemaStakeCert = {
   properties: {
     nominator: { type: 'string' },
     nominee: { type: 'string' },
-    stake: { type: 'string' }, // bigint as string
+    stake: { type: 'string', pattern: '^[0-9]+$' }, // bigint as string
     certExp: { type: 'number' },
     signs: {
       type: 'array',
@@ -28,7 +28,7 @@ export const schemaAdminCert = {
     sign: schemaSign,
     goldenTicket: { type: 'boolean' },
   },
-  required: ['nominee', 'certCreation', 'certExp', 'sign'],
+  required: ['nominee', 'certCreation', 'certExp', 'sign', 'goldenTicket'],
   additionalProperties: false,
 }
 
@@ -36,11 +36,11 @@ export const schemaAppJoinData = {
   type: 'object',
   properties: {
     version: { type: 'string' },
-    stakeCert: { anyOf: [schemaStakeCert, { type: 'null' }] },
-    adminCert: { anyOf: [schemaAdminCert, { type: 'null' }] },
+    stakeCert: schemaStakeCert,
+    adminCert: schemaAdminCert,
     isAdminCertUnexpired: { type: 'boolean' },
   },
-  required: ['version'],
+  required: ['version', 'stakeCert', 'adminCert', 'isAdminCertUnexpired'],
   additionalProperties: false,
 }
 
