@@ -28,7 +28,7 @@ export const schemaAdminCert = {
     sign: schemaSign,
     goldenTicket: { type: 'boolean' },
   },
-  required: ['nominee', 'certCreation', 'certExp', 'sign', 'goldenTicket'],
+  required: ['nominee', 'certCreation', 'certExp', 'sign'],
   additionalProperties: false,
 }
 
@@ -36,11 +36,11 @@ export const schemaAppJoinData = {
   type: 'object',
   properties: {
     version: { type: 'string' },
-    stakeCert: schemaStakeCert,
-    adminCert: schemaAdminCert,
+    stakeCert: { anyOf: [schemaStakeCert, { type: 'null' }] },
+    adminCert: { anyOf: [schemaAdminCert, { type: 'null' }] },
     isAdminCertUnexpired: { type: 'boolean' },
   },
-  required: ['version', 'stakeCert', 'adminCert', 'isAdminCertUnexpired'],
+  required: ['version'],
   additionalProperties: false,
 }
 
