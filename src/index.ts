@@ -1537,7 +1537,16 @@ const configShardusEndpoints = (): void => {
       const stakeRequiredUsd = AccountsStorage.cachedNetworkAccount.current.stakeRequiredUsd
       const stakeRequired = scaleByStabilityFactor(stakeRequiredUsd, AccountsStorage.cachedNetworkAccount)
       if (ShardeumFlags.VerboseLogs) console.log('Req: stake requirement', _readableSHM(stakeRequired))
-      res.json(Utils.safeJsonParse(Utils.safeStringify({ stakeRequired, stakeRequiredUsd })))
+      
+      const response = { stakeRequired: stakeRequired.toString(), stakeRequiredUsd: stakeRequiredUsd.toString() }
+      const errors = verifyPayload(AJVSchemaEnum.StakeResp, response)
+      
+      if (errors) {
+        nestedCountersInstance.countEvent('external', 'ajv-failed-stake-response')
+        res.status(500).json({ error: 'Internal server error' })
+        return
+      }
+      res.json(Utils.safeJsonParse(Utils.safeStringify(response)))
     } catch (e) {
       if (ShardeumFlags.VerboseLogs) console.log(`Error /stake`, e)
       res.status(500).send(e.message)

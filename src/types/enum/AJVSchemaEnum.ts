@@ -7,4 +7,5 @@ export enum AJVSchemaEnum {
   SyncingTimeoutViolationData = 'SyncingTimeoutViolationData',
   NodeRefutedViolationData = 'NodeRefutedViolationData',
   Sign = 'Sign',
+  StakeResp = 'StakeResp',
 }

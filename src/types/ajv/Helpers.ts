@@ -4,11 +4,13 @@ import { getVerifyFunction } from '../../utils/serialization/SchemaHelpers'
 import { initInjectTxReq } from './InjectTxReq'
 import { initSign } from './SignSchema';
 import { initPenaltyTX } from './PenaltyTXSchema';
+import { initStakeResp } from './StakeResp';
 
 export function initAjvSchemas(): void {
   initSign()
   initInjectTxReq()
   initPenaltyTX()
+  initStakeResp()
 }
 
 export function verifyPayload<T>(name: string, payload: T): string[] | null {
