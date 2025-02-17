@@ -348,7 +348,7 @@ export interface NetworkAccount extends BaseAccount {
     cycle: number
     change: Change
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    appData: any
+    appData?: any
   }>
   next: NetworkParameters | object //todo potentially improve this, but will need functional changes
   hash: string

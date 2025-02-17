@@ -3,7 +3,6 @@ import { Change, NetworkParameters } from '../shardeum/shardeumTypes'
 import { BaseAccount, deserializeBaseAccount, serializeBaseAccount } from './BaseAccount'
 import { TypeIdentifierEnum } from './enum/TypeIdentifierEnum'
 import { Utils } from '@shardeum-foundation/lib-types'
-import { ShardeumFlags } from '../shardeum/shardeumFlags'
 
 const cNetworkAccountVersion = 1
 
@@ -17,7 +16,7 @@ export interface NetworkAccount extends BaseAccount {
     cycle: number
     change: Change
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    appData: any
+    appData?: any
   }>
   next: NetworkParameters | object
   hash: string
@@ -44,8 +43,13 @@ export function serializeNetworkAccount(stream: VectorBufferStream, obj: Network
     stream.writeUInt32(changeObj.cycle)
     const changeJson = Utils.safeStringify(changeObj.change)
     stream.writeString(changeJson)
-    const appDataJson = Utils.safeStringify(changeObj.appData)
-    stream.writeString(appDataJson)
+    if (changeObj.appData) {
+      stream.writeUInt8(1)
+      const appDataJson = Utils.safeStringify(changeObj.appData)
+      stream.writeString(appDataJson)
+    } else {
+      stream.writeUInt8(0)
+    }
   }
 
   stream.writeString(obj.hash)
@@ -54,11 +58,6 @@ export function serializeNetworkAccount(stream: VectorBufferStream, obj: Network
 }
 
 export function deserializeNetworkAccount(stream: VectorBufferStream): NetworkAccount {
-  if (ShardeumFlags.beta1_11_2) {
-    //Manualy disable this hack after 1.11.2
-  //  return Utils.safeJsonParse(Beta1_11_2NetworkAccountJson) as NetworkAccount
-  }
-
   const version = stream.readUInt8()
   if (version > cNetworkAccountVersion) {
     throw new Error('NetworkAccount version mismatch')
@@ -75,8 +74,14 @@ export function deserializeNetworkAccount(stream: VectorBufferStream): NetworkAc
   for (let i = 0; i < changesCount; i++) {
     const cycle = stream.readUInt32()
     const change = Utils.safeJsonParse(stream.readString()) as Change
-    const appData = Utils.safeJsonParse(stream.readString())
-    listOfChanges.push({ cycle, change, appData })
+
+    const isAppDataPresent = stream.readUInt8() === 1
+    if (isAppDataPresent) {
+      const appData = Utils.safeJsonParse(stream.readString())
+      listOfChanges.push({ cycle, change, appData })
+    } else {
+      listOfChanges.push({ cycle, change })
+    }
   }
 
   const hash = stream.readString()
