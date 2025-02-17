@@ -5703,9 +5703,6 @@ const shardusSetup = (): void => {
           }
         }
 
-        if (transaction instanceof AccessListEIP2930Transaction) {
-          return { status: false, reason: `EVM txs have been disabled` }
-        }
         if (transaction instanceof AccessListEIP2930Transaction && transaction.AccessListJSON != null) {
           for (const accessList of transaction.AccessListJSON) {
             const address = accessList.address
