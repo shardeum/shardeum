@@ -6920,7 +6920,7 @@ const shardusSetup = (): void => {
 
         const appJoinData = data.appJoinData as AppJoinData
 
-        const verifyErrors = verifyPayload(AJVSchemaEnum.AppJoinData, data)
+        const verifyErrors = verifyPayload(AJVSchemaEnum.AppJoinData, appJoinData)
         if (verifyErrors) {
           /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`validateJoinRequest fail: verifyErrors`)
           return {
