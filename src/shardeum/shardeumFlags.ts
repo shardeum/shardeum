@@ -150,7 +150,7 @@ export const ShardeumFlags: ShardeumFlags = {
   CheckNonce: true,
   txNoncePreCheck: false,
   txBalancePreCheck: true ,
-  autoGenerateAccessList: true,
+  autoGenerateAccessList: false,
   forwardGenesisAccounts: true,
   UseDBForAccounts: true,
   AppliedTxsMaps: false,
