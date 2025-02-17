@@ -7,7 +7,7 @@ export const schemaStakeCert = {
   properties: {
     nominator: { type: 'string' },
     nominee: { type: 'string' },
-    stake: { type: 'string', pattern: '^[0-9]+$' }, // bigint as string
+    stake: { type: 'string' }, // bigint as string
     certExp: { type: 'number' },
     signs: {
       type: 'array',
