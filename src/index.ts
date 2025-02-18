@@ -8031,6 +8031,16 @@ const shardusSetup = (): void => {
       const NGT_TYPES = [INIT_REWARD_TX, CLAIM_REWARD_TX]
       return NGT_TYPES.includes(tx?.['internalTXType'])
     },
+    async getNetworkAccountFromArchiver(): Promise<WrappedAccount> {
+      try {
+        const networkAccount = await fetchNetworkAccountFromArchiver()
+        return networkAccount
+      } catch (e) {
+        /* prettier-ignore */ if (logFlags.error) console.log('getNetworkAccountFromArchiver error:', e)
+        nestedCountersInstance.countEvent('getNetworkAccountFromArchiver', 'error')
+      }
+      return null
+    },
   })
 
   shardus.registerExceptionHandler()
