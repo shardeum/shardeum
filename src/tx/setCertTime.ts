@@ -222,6 +222,22 @@ export function applySetCertTimeTx(
 
   /* prettier-ignore */ if (logFlags.dapp_verbose) console.log('operatorEVMAccount Before', operatorEVMAccount)
 
+  const transactionNominee = tx.nominee
+  const operatorNominee = operatorEVMAccount.operatorAccountInfo.nominee
+
+  /* prettier-ignore */ if (logFlags.dapp_verbose) console.log(`transactionNominee: ${transactionNominee}, operatorNominee: ${operatorNominee}`)
+
+  if (transactionNominee.toLowerCase() !== operatorNominee.toLowerCase()) {
+    console.log(`NOMINEE MISMATCH - txNominee: ${transactionNominee}, operatorNominee: ${operatorNominee}`)
+    /* prettier-ignore */ if (logFlags.dapp_verbose) console.log(`Transaction nominee ${transactionNominee} and original operator nominee ${operatorNominee} MISMATCH!!`)
+    shardus.applyResponseSetFailed(
+      applyResponse,
+      `Transaction nominee ${transactionNominee} and original operator nominee ${operatorNominee} MISMATCH!!`
+    )
+    /* prettier-ignore */ nestedCountersInstance.countEvent('shardeum-staking', 'applySetCertTimeTx' + ' tx and operator nominee mismatch')
+    return
+  }
+
   // Update state
   const serverConfig = config.server
   let shouldChargeTxFee = true
