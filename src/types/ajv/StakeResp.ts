@@ -1,14 +1,41 @@
+
 import { addSchema } from '../../utils/serialization/SchemaHelpers'
 import { AJVSchemaEnum } from '../enum/AJVSchemaEnum'
 
 const schemaStakeResp = {
     type: 'object',
     properties: {
-        stakeRequired: { type: 'string' }, // BigInt is serialized as string
-        stakeRequiredUsd: { type: 'string' } // BigInt is serialized as string
+        stakeRequired: {
+            type: 'object',
+            required: ['dataType', 'value'],
+            properties: {
+                dataType: {
+                    type: 'string',
+                    enum: ['bi'],
+                },
+                value: {
+                    type: 'string',
+                    pattern: '^[0-9a-fA-F]+$', // Hex string pattern
+                },
+            },
+        },
+        stakeRequiredUsd: {
+            type: 'object',
+            required: ['dataType', 'value'],
+            properties: {
+                dataType: {
+                    type: 'string',
+                    enum: ['bi'],
+                },
+                value: {
+                    type: 'string',
+                    pattern: '^[0-9a-fA-F]+$', // Hex string pattern
+                },
+            },
+        },
     },
     required: ['stakeRequired', 'stakeRequiredUsd'],
-    additionalProperties: false
+    additionalProperties: false,
 }
 
 export function initStakeResp(): void {
