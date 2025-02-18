@@ -8136,7 +8136,7 @@ async function fetchNetworkAccountFromArchiver(): Promise<WrappedAccount> {
 
     if (ShardeumFlags.enableArchiverNetworkAccountValidation) {
       // basic validation of the data to make sure we wont get unexpected errors
-      if (!res.data.networkAccount || !res.data.networkAccount.data || !res.data.networkAccount.data.hash) {
+      if (!res.data.networkAccount || !res.data.networkAccount.data || !res.data.networkAccount.hash) {
         throw new Error(`get-network-account from archiver pk:${majorityValue.archiver.publicKey} returned malformed data: ${safeStringify(res.data)}`)
       }
 
@@ -8150,7 +8150,7 @@ async function fetchNetworkAccountFromArchiver(): Promise<WrappedAccount> {
       }
 
       // verify that the hash was not spoofed by the archiver, rehash the network account and compare
-      const rehashedNetworkAccount = WrappedEVMAccountFunctions.accountSpecificHash(res.data.networkAccount.data)
+      const rehashedNetworkAccount = WrappedEVMAccountFunctions.accountSpecificHash(res.data.networkAccount)
       if (rehashedNetworkAccount !== majorityValue.hash) {
         nestedCountersInstance.countEvent('network-config-operation', 'failure: The rehashed network account is not the same as the majority hash')
         throw new Error(`The rehashed network account is not the same as the majority hash. rehashed: ${rehashedNetworkAccount}, majority: ${majorityValue.hash}`)
