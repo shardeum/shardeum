@@ -7,7 +7,7 @@ export const schemaStakeCert = {
   properties: {
     nominator: { type: 'string' },
     nominee: { type: 'string' },
-    stake: { type: 'string' }, // bigint as string
+    stake: { type: 'string' },
     certExp: { type: 'number' },
     signs: {
       type: 'array',
@@ -45,12 +45,7 @@ export const schemaAppJoinData = {
 }
 
 export function initJoinAppData(): void {
-  addSchemaDependencies()
   addSchemas()
-}
-
-function addSchemaDependencies(): void {
-  // No dependencies
 }
 
 function addSchemas(): void {
