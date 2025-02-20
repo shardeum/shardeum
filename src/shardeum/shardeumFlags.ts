@@ -1,6 +1,6 @@
 import { DecimalString } from './shardeumTypes'
 
-interface ShardeumFlags {
+export interface ShardeumFlags {
   contractStorageKeySilo: boolean
   contractStoragePrefixBitLength: number
   contractCodeKeySilo: boolean
