@@ -6652,9 +6652,10 @@ const shardusSetup = (): void => {
         if (type === 'sign-stake-cert') {
           if (nodesToSign != 5) return fail
           const stakeCert = appData as StakeCert
-          if (!stakeCert.nominator || !stakeCert.nominee || !stakeCert.stake || !stakeCert.certExp) {
-            nestedCountersInstance.countEvent('shardeum-staking', 'signAppData format failed')
-            /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`signAppData format failed ${type} ${Utils.safeStringify(stakeCert)} `)
+          const errors = verifyPayload(AJVSchemaEnum.StakeCert, stakeCert)
+          if (errors) {
+            nestedCountersInstance.countEvent('shardeum-staking', 'signAppData ajv verification failed')
+            /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`signAppData ajv verification failed - type: ${type} stakeCert: ${Utils.safeStringify(stakeCert)} errors: ${Utils.safeStringify(errors)}`)
             return fail
           }
           const currentTimestamp = shardeumGetTime()
@@ -6740,9 +6741,10 @@ const shardusSetup = (): void => {
         } else if (type === 'sign-remove-node-cert') {
           if (nodesToSign != 5) return fail
           const removeNodeCert = appData as RemoveNodeCert
-          if (!removeNodeCert.nodePublicKey || !removeNodeCert.cycle) {
-            nestedCountersInstance.countEvent('shardeum-remove-node', 'signAppData format failed')
-            /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`signAppData format failed ${type} ${Utils.safeStringify(removeNodeCert)} `)
+          const errors = verifyPayload(AJVSchemaEnum.RemoveNodeCert, removeNodeCert)
+          if (errors) {
+            nestedCountersInstance.countEvent('shardeum-remove-node', 'signAppData ajv verification failed')
+            /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`signAppData ajv verification failed - type: ${type} removeNodeCert: ${Utils.safeStringify(removeNodeCert)} errors: ${Utils.safeStringify(errors)}`)
             return fail
           }
           const latestCycles = shardus.getLatestCycles()

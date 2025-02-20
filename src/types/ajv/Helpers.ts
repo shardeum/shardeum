@@ -6,6 +6,8 @@ import { initSign } from './SignSchema';
 import { initPenaltyTX } from './PenaltyTXSchema';
 import { initJoinAppData } from "./JoinAppData";
 import { initStakeResp } from './StakeResp';
+import { initStakeCert } from './StakeCert';
+import { initRemoveNodeCert } from './RemoveNodeCert';
 
 export function initAjvSchemas(): void {
   initSign()
@@ -13,6 +15,8 @@ export function initAjvSchemas(): void {
   initPenaltyTX()
   initJoinAppData()
   initStakeResp()
+  initStakeCert()
+  initRemoveNodeCert()
 }
 
 export function verifyPayload<T>(name: string, payload: T): string[] | null {

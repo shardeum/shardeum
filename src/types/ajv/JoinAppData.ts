@@ -1,23 +1,7 @@
 import { schemaSign } from './SignSchema'
+import { StakeCert } from './StakeCert';
 import {AJVSchemaEnum} from "../enum/AJVSchemaEnum";
 import {addSchema} from "../../utils/serialization/SchemaHelpers";
-
-export const schemaStakeCert = {
-  type: 'object',
-  properties: {
-    nominator: { type: 'string' },
-    nominee: { type: 'string' },
-    stake: { isBigInt: true },
-    certExp: { type: 'integer', minimum: 0 },
-    signs: {
-      type: 'array',
-      items: schemaSign,
-    },
-    sign: schemaSign,
-  },
-  required: ['nominator', 'nominee', 'stake', 'certExp'],
-  additionalProperties: false,
-}
 
 export const schemaAdminCert = {
   type: 'object',
@@ -36,7 +20,7 @@ export const schemaAppJoinData = {
   type: 'object',
   properties: {
     version: { type: 'string' },
-    stakeCert: { anyOf: [schemaStakeCert, { type: 'null' }] },
+    stakeCert: { anyOf: [StakeCert, { type: 'null' }] },
     adminCert: { anyOf: [schemaAdminCert, { type: 'null' }] },
     isAdminCertUnexpired: { type: 'boolean' },
   },

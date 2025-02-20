@@ -9,4 +9,6 @@ export enum AJVSchemaEnum {
   Sign = 'Sign',
   AppJoinData = 'AppJoinData',
   StakeResp = 'StakeResp',
+  StakeCert = 'StakeCert',
+  RemoveNodeCert = 'RemoveNodeCert',
 }
