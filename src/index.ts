@@ -8124,6 +8124,7 @@ function periodicMemoryCleanup(): void {
 }
 
 async function fetchNetworkAccountFromArchiver(): Promise<WrappedAccount> {
+  // extracted code to enhance testability
   const built = buildFetchNetworkAccountFromArchiver({
     getFinalArchiverList,
     getRandom,
