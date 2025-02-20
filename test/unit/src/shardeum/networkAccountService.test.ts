@@ -1,4 +1,4 @@
-import { buildFetchNetworkAccountFromArchiver } from '../../../../src/shardeum/services/networkAccountService'
+import { buildFetchNetworkAccountFromArchiver, NetworkAccountDependencies } from '../../../../src/shardeum/services/networkAccountService'
 import { Archiver } from '@shardeum-foundation/lib-archiver-discovery/dist/src/types'
 import { NetworkAccount } from '../../../../src/shardeum/shardeumTypes'
 import axios from 'axios'
@@ -31,7 +31,7 @@ describe('NetworkAccountService', () => {
     }
   }
 
-  const mockDependencies = {
+  const mockDependencies: NetworkAccountDependencies = {
     getFinalArchiverList: jest.fn().mockReturnValue([mockArchiver]),
     getRandom: jest.fn().mockImplementation((list: Archiver[], count: number) => list.slice(0, count)),
     verify: jest.fn().mockReturnValue(true),
@@ -471,5 +471,178 @@ describe('NetworkAccountService', () => {
       'network-config-operation',
       'error: Network error during hash check'
     )
+  })
+
+  it('should handle undefined error message in catch block', async () => {
+    const error = { name: 'Error' } as Error
+    mockedAxios.get.mockRejectedValueOnce(error)
+
+    const fetchNetworkAccountFromArchiver = buildFetchNetworkAccountFromArchiver(mockDependencies)
+    await expect(fetchNetworkAccountFromArchiver()).rejects.toThrow('no majority found')
+    expect(mockDependencies.nestedCountersInstance.countEvent).toHaveBeenCalledWith(
+      'network-config-operation',
+      'error: undefined'
+    )
+  })
+
+  it('should handle verbose logging during successful fetch', async () => {
+    const modifiedDeps = {
+      ...mockDependencies,
+      ShardeumFlags: {
+        VerboseLogs: true,
+        enableArchiverNetworkAccountValidation: true
+      }
+    }
+
+    mockedAxios.get
+      .mockImplementationOnce(() => Promise.resolve({ data: mockNetworkAccountHashResponse }))
+      .mockImplementationOnce(() => Promise.resolve({ data: { networkAccount: mockNetworkAccount } }))
+
+    const fetchNetworkAccountFromArchiver = buildFetchNetworkAccountFromArchiver(modifiedDeps)
+    await fetchNetworkAccountFromArchiver()
+
+    expect(console.log).toHaveBeenCalledWith(
+      expect.stringContaining('[fetchNetworkAccountFromArchiver] data:')
+    )
+    expect(console.log).toHaveBeenCalledWith(
+      expect.stringContaining('[fetchNetworkAccountFromArchiver] isFronArchiver:')
+    )
+    expect(console.log).toHaveBeenCalledWith(
+      expect.stringContaining('[fetchNetworkAccountFromArchiver] isResponseVerified:')
+    )
+    expect(console.log).toHaveBeenCalledWith(
+      expect.stringContaining('[fetchNetworkAccountFromArchiver] majorityValue:')
+    )
+  })
+
+  it('should handle successful network account validation', async () => {
+    const mockResponse = {
+      data: {
+        networkAccount: mockNetworkAccount
+      }
+    }
+
+    mockedAxios.get
+      .mockImplementationOnce(() => Promise.resolve({ data: mockNetworkAccountHashResponse }))
+      .mockImplementationOnce(() => Promise.resolve(mockResponse))
+
+    const modifiedDeps = {
+      ...mockDependencies,
+      ShardeumFlags: {
+        VerboseLogs: true,
+        enableArchiverNetworkAccountValidation: true
+      }
+    }
+
+    const fetchNetworkAccountFromArchiver = buildFetchNetworkAccountFromArchiver(modifiedDeps)
+    await fetchNetworkAccountFromArchiver()
+
+    expect(modifiedDeps.nestedCountersInstance.countEvent).toHaveBeenCalledWith(
+      'network-config-operation',
+      'success: got network account from winning archiver'
+    )
+  })
+
+  it('should handle all dependency function calls', async () => {
+    const mockArchivers = [
+      { ip: '127.0.0.1', port: 8080, publicKey: 'pk1' },
+      { ip: '127.0.0.2', port: 8080, publicKey: 'pk2' }
+    ]
+
+    const modifiedDeps = {
+      ...mockDependencies,
+      getFinalArchiverList: jest.fn().mockReturnValue(mockArchivers),
+      getRandom: jest.fn().mockImplementation((list: Archiver[], count: number) => list.slice(0, count)),
+      verify: jest.fn().mockReturnValue(true),
+      findMajorityResult: jest.fn().mockImplementation((values) => values[0] || null),
+      safeStringify: jest.fn().mockImplementation(JSON.stringify),
+      ShardeumFlags: {
+        VerboseLogs: true,
+        enableArchiverNetworkAccountValidation: true
+      }
+    }
+
+    mockedAxios.get
+      .mockImplementationOnce(() => Promise.resolve({
+        data: { ...mockNetworkAccountHashResponse, sign: { owner: 'pk1', sig: 'sig1' } }
+      }))
+      .mockImplementationOnce(() => Promise.resolve({
+        data: { ...mockNetworkAccountHashResponse, sign: { owner: 'pk2', sig: 'sig2' } }
+      }))
+      .mockImplementationOnce(() => Promise.resolve({ data: { networkAccount: mockNetworkAccount } }))
+
+    const fetchNetworkAccountFromArchiver = buildFetchNetworkAccountFromArchiver(modifiedDeps)
+    const result = await fetchNetworkAccountFromArchiver()
+
+    expect(result).toEqual(mockNetworkAccount)
+    expect(modifiedDeps.getFinalArchiverList).toHaveBeenCalled()
+    expect(modifiedDeps.getRandom).toHaveBeenCalled()
+    expect(modifiedDeps.verify).toHaveBeenCalled()
+    expect(modifiedDeps.findMajorityResult).toHaveBeenCalled()
+    expect(modifiedDeps.safeStringify).toHaveBeenCalled()
+  })
+
+  it('should handle malformed network account data with detailed error', async () => {
+    const malformedResponse = {
+      data: {
+        networkAccount: {
+          data: null
+        }
+      }
+    }
+
+    mockedAxios.get
+      .mockImplementationOnce(() => Promise.resolve({ data: mockNetworkAccountHashResponse }))
+      .mockImplementationOnce(() => Promise.resolve(malformedResponse))
+
+    const modifiedDeps = {
+      ...mockDependencies,
+      safeStringify: jest.fn().mockImplementation(JSON.stringify)
+    }
+
+    const fetchNetworkAccountFromArchiver = buildFetchNetworkAccountFromArchiver(modifiedDeps)
+    await expect(fetchNetworkAccountFromArchiver()).rejects.toThrow('Not able to fetch')
+    expect(modifiedDeps.safeStringify).toHaveBeenCalledWith(malformedResponse.data)
+  })
+
+  it('should properly use hash getter arrow function', async () => {
+    const mockArchivers = [
+      { ip: '127.0.0.1', port: 8080, publicKey: 'pk1' }
+    ]
+
+    const mockResponse = {
+      networkAccountHash: 'test-hash',
+      sign: { owner: 'pk1', sig: 'sig1' }
+    }
+
+    // Capture the hash getter function to verify it works as expected
+    let capturedHashGetter: ((v: { hash: string, archiver: Archiver }) => string) | null = null
+
+    const modifiedDeps = {
+      ...mockDependencies,
+      getFinalArchiverList: jest.fn().mockReturnValue(mockArchivers),
+      getRandom: jest.fn().mockReturnValue(mockArchivers),
+      verify: jest.fn().mockReturnValue(true),
+      findMajorityResult: jest.fn().mockImplementation((values, getHash) => {
+        // Capture the hash getter function
+        capturedHashGetter = getHash
+        return { hash: values[0].hash, archiver: mockArchivers[0] }
+      }),
+      ShardeumFlags: {
+        VerboseLogs: false,
+        enableArchiverNetworkAccountValidation: false
+      }
+    }
+
+    mockedAxios.get
+      .mockImplementationOnce(() => Promise.resolve({ data: mockResponse }))
+      .mockImplementationOnce(() => Promise.resolve({ data: { networkAccount: mockNetworkAccount } }))
+
+    const fetchNetworkAccountFromArchiver = buildFetchNetworkAccountFromArchiver(modifiedDeps)
+    await fetchNetworkAccountFromArchiver()
+
+    // Verify the hash getter function works correctly
+    expect(capturedHashGetter).not.toBeNull()
+    expect(capturedHashGetter!({ hash: 'test-hash', archiver: mockArchivers[0] })).toBe('test-hash')
   })
 })
