@@ -605,6 +605,29 @@ describe('NetworkAccountService', () => {
     expect(modifiedDeps.safeStringify).toHaveBeenCalledWith(malformedResponse.data)
   })
 
+  it('should handle undefined error object during network request', async () => {
+    const mockArchivers = [
+      { ip: '127.0.0.1', port: 8080, publicKey: 'pk1' }
+    ]
+
+    const modifiedDeps = {
+      ...mockDependencies,
+      getFinalArchiverList: jest.fn().mockReturnValue(mockArchivers),
+      getRandom: jest.fn().mockReturnValue(mockArchivers)
+    }
+
+    // Mock axios to reject with undefined
+    mockedAxios.get.mockRejectedValueOnce(undefined)
+
+    const fetchNetworkAccountFromArchiver = buildFetchNetworkAccountFromArchiver(modifiedDeps)
+    await expect(fetchNetworkAccountFromArchiver()).rejects.toThrow('no majority found')
+    expect(modifiedDeps.nestedCountersInstance.countEvent).toHaveBeenCalledWith(
+      'network-config-operation',
+      'error: undefined'
+    )
+    expect(console.error).toHaveBeenCalled()
+  })
+
   it('should properly use hash getter arrow function', async () => {
     const mockArchivers = [
       { ip: '127.0.0.1', port: 8080, publicKey: 'pk1' }
