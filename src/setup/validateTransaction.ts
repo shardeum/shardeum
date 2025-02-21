@@ -25,6 +25,20 @@ type Response = {
   reason: string
 }
 
+const txTypeToAJVMap = {
+  [InternalTXType.InitNetwork]: 'InitNetworkTx',
+  [InternalTXType.ChangeConfig]: 'ChangeConfigTx',
+  [InternalTXType.ApplyChangeConfig]: 'ApplyChangeConfigTx',
+  [InternalTXType.SetCertTime]: 'SetCertTimeTx',
+  [InternalTXType.Stake]: 'StakeTx',
+  [InternalTXType.Unstake]: 'UnstakeTx',
+  [InternalTXType.InitRewardTimes]: 'InitRewardTimesTx',
+  [InternalTXType.ClaimReward]: 'ClaimRewardTx',
+  [InternalTXType.ChangeNetworkParam]: 'ChangeNetworkParamTx',
+  [InternalTXType.ApplyNetworkParam]: 'ApplyNetworkParamTx',
+  [InternalTXType.TransferFromSecureAccount]: 'TransferFromSecureAccountTx',
+}
+
 export const validateTransaction =
   (shardus: Shardus) =>
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -33,20 +47,6 @@ export const validateTransaction =
         const internalTx = tx as InternalTx
 
         // Verify AJV for internal transactions
-        const txTypeToAJVMap = {
-          [InternalTXType.InitNetwork]: 'InitNetworkTx',
-          [InternalTXType.ChangeConfig]: 'ChangeConfigTx',
-          [InternalTXType.ApplyChangeConfig]: 'ApplyChangeConfigTx',
-          [InternalTXType.SetCertTime]: 'SetCertTimeTx',
-          [InternalTXType.Stake]: 'StakeTx',
-          [InternalTXType.Unstake]: 'UnstakeTx',
-          [InternalTXType.InitRewardTimes]: 'InitRewardTimesTx',
-          [InternalTXType.ClaimReward]: 'ClaimRewardTx',
-          [InternalTXType.ChangeNetworkParam]: 'ChangeNetworkParamTx',
-          [InternalTXType.ApplyNetworkParam]: 'ApplyNetworkParamTx',
-          [InternalTXType.TransferFromSecureAccount]: 'TransferFromSecureAccountTx',
-        }
-
         const ajvTxType = txTypeToAJVMap[internalTx.internalTXType]
         const ajvErrors = verifyPayload(ajvTxType, internalTx)
         if (ajvErrors) {
