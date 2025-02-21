@@ -91,6 +91,7 @@ export const validateTxnFields =
         let success = false
         let reason = ''
 
+        // validate internal TX
         if (isInternalTXGlobal(internalTX) === true) {
           return {
             success: true,
