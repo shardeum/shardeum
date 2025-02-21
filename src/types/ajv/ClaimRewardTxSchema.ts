@@ -33,6 +33,7 @@ const schemaClaimRewardTx = {
         'nominee',
         'nominator',
         'timestamp',
+        'cycle',
         'deactivatedNodeId',
         'nodeDeactivatedTime',
         'txData',
