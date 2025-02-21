@@ -8,7 +8,7 @@ export const schemaStakeCert = {
     nominator: { type: 'string' },
     nominee: { type: 'string' },
     stake: { isBigInt: true },
-    certExp: { type: 'number' },
+    certExp: { type: 'integer', minimum: 0 },
     signs: {
       type: 'array',
       items: schemaSign,
@@ -23,8 +23,8 @@ export const schemaAdminCert = {
   type: 'object',
   properties: {
     nominee: { type: 'string' },
-    certCreation: { type: 'number' },
-    certExp: { type: 'number' },
+    certCreation: { type: 'integer', minimum: 0  },
+    certExp: { type: 'integer', minimum: 0 },
     sign: schemaSign,
     goldenTicket: { type: 'boolean' },
   },
