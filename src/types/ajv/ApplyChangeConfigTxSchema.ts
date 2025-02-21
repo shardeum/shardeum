@@ -7,18 +7,18 @@ const schemaApplyChangeConfigTx = {
     properties: {
         isInternalTx: { type: 'boolean', enum: [true] },
         internalTXType: { enum: [InternalTXType.ApplyChangeConfig] },
-        type: { type: 'string' },
+        from: { type: 'string' },
+        network: { type: 'string' },
         change: { type: 'object' },
-        timestamp: { type: 'number', exclusiveMinimum: 0 },
-        sign: { $ref: AJVSchemaEnum.Sign }
+        timestamp: { type: 'number', exclusiveMinimum: 0 }
     },
     required: [
         'isInternalTx',
         'internalTXType',
-        'type',
+        'from',
+        'network',
         'change',
-        'timestamp',
-        'sign'
+        'timestamp'
     ],
     additionalProperties: false
 }

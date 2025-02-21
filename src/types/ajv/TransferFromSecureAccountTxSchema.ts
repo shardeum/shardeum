@@ -11,18 +11,8 @@ const schemaTransferFromSecureAccountTx = {
         nonce: { type: 'number' },
         amount: { type: 'string' },
         timestamp: { type: 'number', exclusiveMinimum: 0 },
-        sign: {
-            type: 'array',
-            items: {
-                type: 'object',
-                properties: {
-                    owner: { type: 'string' },
-                    sig: { type: 'string' }
-                },
-                required: ['owner', 'sig'],
-                additionalProperties: false
-            }
-        }
+        from: { type: 'string' },
+        sign: { type: 'array', items: { $ref: AJVSchemaEnum.Sign } }
     },
     required: [
         'isInternalTx',
@@ -31,6 +21,7 @@ const schemaTransferFromSecureAccountTx = {
         'nonce',
         'amount',
         'timestamp',
+        'from',
         'sign'
     ],
     additionalProperties: false

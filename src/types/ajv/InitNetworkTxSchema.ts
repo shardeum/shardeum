@@ -8,15 +8,13 @@ const schemaInitNetworkTx = {
         isInternalTx: { type: 'boolean', enum: [true] },
         internalTXType: { enum: [InternalTXType.InitNetwork] },
         timestamp: { type: 'number', exclusiveMinimum: 0 },
-        network: { type: 'string' },
-        sign: { $ref: AJVSchemaEnum.Sign }
+        network: { type: 'string' }
     },
     required: [
         'isInternalTx',
         'internalTXType',
         'timestamp',
-        'network',
-        'sign'
+        'network'
     ],
     additionalProperties: false
 }

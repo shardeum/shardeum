@@ -21,6 +21,7 @@ const schemaClaimRewardTx = {
         nominee: { type: 'string' },
         nominator: { type: 'string' },
         timestamp: { type: 'number', exclusiveMinimum: 0 },
+        cycle: { type: ['object', 'number', 'string'] },
         deactivatedNodeId: { type: 'string' },
         nodeDeactivatedTime: { type: 'number' },
         txData: { $ref: AJVSchemaEnum.NodeRewardTxData },
