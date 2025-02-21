@@ -8,6 +8,17 @@ import { initJoinAppData } from "./JoinAppData";
 import { initStakeResp } from './StakeResp';
 import { initStakeCert } from './StakeCert';
 import { initRemoveNodeCert } from './RemoveNodeCert';
+import { initApplyChangeConfigTx } from './ApplyChangeConfigTxSchema';
+import { initApplyNetworkParamTx } from './ApplyNetworkParamTxSchema';
+import { initChangeConfigTx } from './ChangeConfigTxSchema';
+import { initChangeNetworkParamTx } from './ChangeNetworkParamTxSchema';
+import { initSetCertTimeTx } from './SetCertTimeTxSchema';
+import { initStakeTx } from './StakeTxSchema';
+import { initInitRewardTimesTx } from './InitRewardTimesTxSchema';
+import { initClaimRewardTx } from './ClaimRewardTxSchema';
+import { initTransferFromSecureAccountTx } from './TransferFromSecureAccountTxSchema';
+import { initUnstakeTx } from './UnstakeTxSchema';
+import { initInitNetworkTx } from './InitNetworkTxSchema';
 
 export function initAjvSchemas(): void {
   initSign()
@@ -17,6 +28,17 @@ export function initAjvSchemas(): void {
   initStakeResp()
   initStakeCert()
   initRemoveNodeCert()
+  initApplyChangeConfigTx()
+  initApplyNetworkParamTx()
+  initChangeConfigTx()
+  initChangeNetworkParamTx()
+  initClaimRewardTx()
+  initInitNetworkTx()
+  initInitRewardTimesTx()
+  initSetCertTimeTx()
+  initStakeTx()
+  initUnstakeTx()
+  initTransferFromSecureAccountTx()
 }
 
 export function verifyPayload<T>(name: string, payload: T): string[] | null {

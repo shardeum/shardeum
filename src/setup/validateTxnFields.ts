@@ -43,6 +43,7 @@ import { bytesToHex } from '@ethereumjs/util'
 import { logFlags, shardusConfig, getStakeTxBlobFromEVMTx } from '..'
 import { Sign } from '@shardeum-foundation/core/dist/shardus/shardus-types'
 import { validateTransferFromSecureAccount } from '../shardeum/secureAccounts'
+import { verifyPayload } from '../types/ajv/Helpers'
 
 /**
  * Checks that Transaction fields are valid
@@ -91,7 +92,31 @@ export const validateTxnFields =
         let success = false
         let reason = ''
 
-        // validate internal TX
+        // Verify AJV
+        const txTypeToAJVMap = {
+          [InternalTXType.InitNetwork]: 'InitNetworkTx',
+          [InternalTXType.ChangeConfig]: 'ChangeConfigTx',
+          [InternalTXType.ApplyChangeConfig]: 'ApplyChangeConfigTx',
+          [InternalTXType.SetCertTime]: 'SetCertTimeTx',
+          [InternalTXType.Stake]: 'StakeTx',
+          [InternalTXType.Unstake]: 'UnstakeTx',
+          [InternalTXType.InitRewardTimes]: 'InitRewardTimesTx',
+          [InternalTXType.ClaimReward]: 'ClaimRewardTx',
+          [InternalTXType.ChangeNetworkParam]: 'ChangeNetworkParamTx',
+          [InternalTXType.ApplyNetworkParam]: 'ApplyNetworkParamTx',
+          [InternalTXType.TransferFromSecureAccount]: 'TransferFromSecureAccountTx',
+        }
+
+        const ajvTxType = txTypeToAJVMap[internalTX.internalTXType]
+        const ajvErrors = verifyPayload(ajvTxType, internalTX)
+        if (ajvErrors) {
+          return {
+            success: false,
+            reason: `Validation failed for internal transaction of type ${ajvTxType}`,
+            txnTimestamp,
+          }
+        }
+
         if (isInternalTXGlobal(internalTX) === true) {
           return {
             success: true,
