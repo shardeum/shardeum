@@ -2404,19 +2404,52 @@ const configShardusEndpoints = (): void => {
     res.sendStatus(200)
   })
 
-  shardus.registerExternalGet('is-healthy', async (req, res) => {
-    let dbHealthy = await AccountsStorage.checkDatabaseHealth();
-    const result = {
-      status: dbHealthy ? 'healthy' : 'degraded',
-      uptime: process.uptime(),
-      timestamp: new Date().toISOString(),
-      database: dbHealthy ? 'healthy' : 'unreachable',
-    }
-    nestedCountersInstance.countEvent('endpoint', 'health-check')
 
-    // fastify automatically converts 500 body if not explicitly set like this
-    res.header('Content-Type', 'application/json')
-    res.status(dbHealthy ? 200 : 500).send(result)
+  let lastHealthCheck = 0
+  let isRunningHealthCheck = false
+  let lastHealthCheckResult = false
+
+  shardus.registerExternalGet('is-healthy', async (req, res) => {
+    let dbHealthy = lastHealthCheckResult
+    try {
+      if(Date.now() - lastHealthCheck > 1000 && !isRunningHealthCheck){
+        try{
+          isRunningHealthCheck = true 
+          lastHealthCheckResult = await AccountsStorage.checkDatabaseHealth();
+          lastHealthCheck = Date.now()
+        } finally{
+          isRunningHealthCheck = false
+        }
+      } else {
+        while(!lastHealthCheckResult){
+          await sleep(100)
+        }
+        dbHealthy = lastHealthCheckResult
+      }
+
+      const result = {
+        status: dbHealthy ? 'healthy' : 'degraded',
+        uptime: process.uptime(),
+        timestamp: new Date().toISOString(),
+        database: dbHealthy ? 'healthy' : 'unreachable',
+      }
+      nestedCountersInstance.countEvent('endpoint', 'health-check')
+
+      // fastify automatically converts 500 body if not explicitly set like this
+      res.header('Content-Type', 'application/json')
+      res.status(dbHealthy ? 200 : 500).send(result)
+    } catch (error) {
+      /* prettier-ignore */ if (logFlags.error) console.error('Error in processing is-healthy request:', error)
+      const result = {
+        status: 'degraded',
+        uptime: process.uptime(),
+        timestamp: new Date().toISOString(),
+        database: 'unreachable',
+      }
+      res.header('Content-Type', 'application/json')
+      res.status(500).send(result)
+    }
+
   })
 }
 
