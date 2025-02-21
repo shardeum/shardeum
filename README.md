@@ -22,6 +22,7 @@
 - [Running the Network Locally](#running-the-network-locally)
   - [Running the JSON-RPC Server](#running-the-json-rpc-server)
 - [Testing with MetaMask](#testing-with-metamask)
+- [Testing with Jest](#testing-with-jest)
 - [Stopping and Cleaning Up](#stopping-and-cleaning-up)
 - [Health Checks](#health-checks)
 - [Contributing](#contributing)
@@ -140,6 +141,10 @@ To test your local Shardeum network using MetaMask:
     "wei": "200000000000000000000000000"
 },
 ```
+
+## Testing with Jest
+
+`src/index.ts` is mocked for all tests. You can see how its mocked out in the `test/unit/setup.ts` file. Don't import the `index` file directly if you can since it has a lot of dependencies, import the specific files you need in your implementation or test files.
 
 ## Stopping and Cleaning Up
 
