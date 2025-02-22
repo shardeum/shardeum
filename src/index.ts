@@ -5210,16 +5210,26 @@ const shardusSetup = (): void => {
         let remoteTargetAccount
         appData.requestNewTimestamp = true // force all evm txs to generate a new timestamp
 
-        const tooManyAddresses = (transaction as AccessListEIP2930Transaction).AccessListJSON?.length > ShardeumFlags.accessListSizeLimit;
-        const tooManyStorageKeys = (transaction as AccessListEIP2930Transaction).AccessListJSON?.some(
-          (accessListItem) => accessListItem.storageKeys?.length > ShardeumFlags.accessListSizeLimit
-        );
-        
-        if (isEIP2930 && (tooManyAddresses || tooManyStorageKeys)) {
-          return { 
-            status: false, 
-            reason: `EIP2930 tx blocked for having > ${ShardeumFlags.accessListSizeLimit} addresses in accessList or storage keys per address`
-          };
+        if (isEIP2930) {
+          const eip2930Tx = (transaction as AccessListEIP2930Transaction)
+
+          const tooManyAddresses = eip2930Tx.AccessListJSON?.length > ShardeumFlags.accessListSizeLimit;
+          const tooManyStorageKeys = eip2930Tx.AccessListJSON?.some(
+            (accessListItem) => accessListItem.storageKeys?.length > ShardeumFlags.accessListSizeLimit
+          )
+
+          if (tooManyAddresses) {
+            return { 
+              status: false, 
+              reason: `EIP2930 tx blocked for having > ${ShardeumFlags.accessListSizeLimit} addresses in accessList`
+            }
+          }
+          if (tooManyStorageKeys) {
+            return { 
+              status: false, 
+              reason: `EIP2930 tx blocked for having > ${ShardeumFlags.accessListSizeLimit} storage keys for at least one address`
+            }
+          }
         }
 
         //if the TX is a contract deploy, predict the new contract address correctly (needs sender's nonce)
