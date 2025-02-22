@@ -1,6 +1,6 @@
 {
   "name": "shardeum",
-  "version": "1.16.4",
+  "version": "1.16.5",
   "description": "",
   "main": "dist/src/index.js",
   "scripts": {
@@ -46,10 +46,10 @@
     "@ethereumjs/vm": "7.0.0",
     "@mapbox/node-pre-gyp": "1.0.10",
     "@shardus/archiver-discovery": "git+https://github.com/shardeum/lib-archiver-discovery#itn4",
-    "@shardus/core": "git+https://github.com/shardeum/shardus-core#itn4-1.16.4",
+    "@shardus/core": "git+https://github.com/shardeum/shardus-core#itn4-1.16.5rc1",
     "@shardus/crypto-utils": "git+https://github.com/shardeum/lib-crypto-utils#itn4",
     "@shardus/net": "git+https://github.com/shardeum/lib-net#itn4",
-    "@shardus/types": "git+https://github.com/shardeum/lib-types#itn4-1.16.3",
+    "@shardus/types": "git+https://github.com/shardeum/lib-types#itn4-1.16.5rc1",
     "@types/sqlite3": "3.1.8",
     "cliffy": "2.5.1",
     "cls-hooked": "4.2.2",
@@ -106,7 +106,7 @@
   },
   "overrides": {
     "@shardus/crypto-utils": {
-      "@shardus/types": "git+https://github.com/shardeum/lib-types#itn4-1.16.3"
+      "@shardus/types": "git+https://github.com/shardeum/lib-types#itn4-1.16.5rc1"
     },
     "@babel/traverse": "7.23.2",
     "qs": "6.11.2",
