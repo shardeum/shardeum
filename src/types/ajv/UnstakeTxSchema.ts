@@ -1,6 +1,7 @@
 import { addSchema } from '../../utils/serialization/SchemaHelpers'
 import { AJVSchemaEnum } from '../enum/AJVSchemaEnum'
 import { InternalTXType } from '../../shardeum/shardeumTypes'
+import { schemaSign } from './SignSchema'
 
 const schemaUnstakeTx = {
     type: 'object',
@@ -10,7 +11,7 @@ const schemaUnstakeTx = {
         nominee: { type: 'string' },
         nominator: { type: 'string' },
         timestamp: { type: 'number', exclusiveMinimum: 0 },
-        sign: { $ref: AJVSchemaEnum.Sign },
+        sign: schemaSign,
         force: { type: 'boolean' }
     },
     required: [

@@ -1,6 +1,7 @@
 import { addSchema } from '../../utils/serialization/SchemaHelpers'
 import { AJVSchemaEnum } from '../enum/AJVSchemaEnum'
 import { InternalTXType } from '../../shardeum/shardeumTypes'
+import { schemaSign } from './SignSchema'
 
 const schemaSetCertTimeTx = {
     type: 'object',
@@ -11,7 +12,7 @@ const schemaSetCertTimeTx = {
         nominator: { type: 'string' },
         duration: { type: 'number' },
         timestamp: { type: 'number', exclusiveMinimum: 0 },
-        sign: { $ref: AJVSchemaEnum.Sign }
+        sign: schemaSign
     },
     required: [
         'isInternalTx',

@@ -1,6 +1,7 @@
 import { addSchema } from '../../utils/serialization/SchemaHelpers'
 import { AJVSchemaEnum } from '../enum/AJVSchemaEnum'
 import { InternalTXType } from '../../shardeum/shardeumTypes'
+import { schemaSign } from './SignSchema';
 
 const schemaChangeConfigTx = {
     type: 'object',
@@ -12,7 +13,10 @@ const schemaChangeConfigTx = {
         cycle: { type: 'number' },
         config: { type: 'string' },
         timestamp: { type: 'number', exclusiveMinimum: 0 },
-        sign: { type: 'array', items: { $ref: AJVSchemaEnum.Sign } }
+        sign: {
+            type: "array",
+            items: schemaSign
+        }
     },
     required: [
         'isInternalTx',

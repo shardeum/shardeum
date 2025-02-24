@@ -1,6 +1,7 @@
 import { addSchema } from '../../utils/serialization/SchemaHelpers'
 import { AJVSchemaEnum } from '../enum/AJVSchemaEnum'
 import { InternalTXType } from '../../shardeum/shardeumTypes'
+import { schemaSign } from './SignSchema'
 
 const schemaNodeRewardTxData = {
     type: 'object',
@@ -24,8 +25,8 @@ const schemaClaimRewardTx = {
         cycle: { type: ['object', 'number', 'string'] },
         deactivatedNodeId: { type: 'string' },
         nodeDeactivatedTime: { type: 'number' },
-        txData: { $ref: AJVSchemaEnum.NodeRewardTxData },
-        sign: { $ref: AJVSchemaEnum.Sign }
+        txData: schemaNodeRewardTxData,
+        sign: schemaSign
     },
     required: [
         'isInternalTx',
