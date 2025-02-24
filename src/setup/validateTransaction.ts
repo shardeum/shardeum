@@ -57,106 +57,106 @@ export const validateTransaction =
           }
         }
 
-        if (isInternalTXGlobal(internalTx) === true) {
-          return { result: 'pass', reason: 'valid' }
-        } else if (
-          tx.internalTXType === InternalTXType.ChangeConfig ||
-          internalTx.internalTXType === InternalTXType.ChangeNetworkParam
-        ) {
-          const devPublicKeys = shardus.getMultisigPublicKeys()
-          const is_array_sig = Array.isArray(tx.sign) === true
-          const requiredSigs = Math.max(1, shardusConfig.debug.minMultiSigRequiredForGlobalTxs)
-          //Ensure old single sig / non-array are still compitable
-          const sigs: ShardusTypes.Sign[] = is_array_sig ? tx.sign : [tx.sign]
-          const { sign, ...txWithoutSign } = tx
-          const authorized = verifyMultiSigs(
-            txWithoutSign,
-            sigs,
-            devPublicKeys,
-            requiredSigs,
-            DevSecurityLevel.High
-          )
-          if (!authorized) {
-            return { result: 'fail', reason: 'Unauthorized User' }
-          } else {
-            if (tx.internalTXType === InternalTXType.ChangeConfig) {
-              const givenConfig = Utils.safeJsonParse(tx.config)
-              if (
-                comparePropertiesTypes(omitDevKeys(givenConfig), config.server) &&
-                isValidDevKeyAddition(givenConfig) &&
-                isValidMultisigKeyAddition(givenConfig)
-              ) {
-                return { result: 'pass', reason: 'valid' }
-              } else {
-                return { result: 'fail', reason: 'Invalid config' }
-              }
-            }
-            return { result: 'pass', reason: 'valid' }
-          }
-        } else if (isSetCertTimeTx(tx)) {
-          return { result: 'pass', reason: 'valid' }
-        } else if (tx.internalTXType === InternalTXType.InitRewardTimes) {
-          return InitRewardTimesTx.validate(tx as InitRewardTimes, shardus)
-        } else if (tx.internalTXType === InternalTXType.TransferFromSecureAccount) {
-          const verifyResult = validateTransferFromSecureAccount(tx, shardus)
-          return { result: verifyResult.success ? 'pass' : 'fail', reason: verifyResult.reason }
+      if (isInternalTXGlobal(internalTx) === true) {
+        return { result: 'pass', reason: 'valid' }
+      } else if (
+        tx.internalTXType === InternalTXType.ChangeConfig ||
+        internalTx.internalTXType === InternalTXType.ChangeNetworkParam
+      ) {
+        const devPublicKeys = shardus.getMultisigPublicKeys()
+        const is_array_sig = Array.isArray(tx.sign) === true
+        const requiredSigs = Math.max(1, shardusConfig.debug.minMultiSigRequiredForGlobalTxs)
+        //Ensure old single sig / non-array are still compitable
+        const sigs: ShardusTypes.Sign[] = is_array_sig ? tx.sign : [tx.sign]
+        const { sign, ...txWithoutSign } = tx
+        const authorized = verifyMultiSigs(
+          txWithoutSign,
+          sigs,
+          devPublicKeys,
+          requiredSigs,
+          DevSecurityLevel.High
+        )
+        if (!authorized) {
+          return { result: 'fail', reason: 'Unauthorized User' }
         } else {
-          //todo validate internal TX
-          const isValid = crypto.verifyObj(internalTx as InternalTxWithSingleSign)
-          if (isValid) return { result: 'pass', reason: 'valid' }
-          else return { result: 'fail', reason: 'Invalid signature' }
+          if (tx.internalTXType === InternalTXType.ChangeConfig) {
+            const givenConfig = Utils.safeJsonParse(tx.config)
+            if (
+              comparePropertiesTypes(omitDevKeys(givenConfig), config.server) &&
+              isValidDevKeyAddition(givenConfig) &&
+              isValidMultisigKeyAddition(givenConfig)
+            ) {
+              return { result: 'pass', reason: 'valid' }
+            } else {
+              return { result: 'fail', reason: 'Invalid config' }
+            }
+          }
+          return { result: 'pass', reason: 'valid' }
         }
+      } else if (isSetCertTimeTx(tx)) {
+        return { result: 'pass', reason: 'valid' }
+      } else if (tx.internalTXType === InternalTXType.InitRewardTimes) {
+        return InitRewardTimesTx.validate(tx as InitRewardTimes, shardus)
+      } else if (tx.internalTXType === InternalTXType.TransferFromSecureAccount) {
+        const verifyResult = validateTransferFromSecureAccount(tx, shardus)
+        return { result: verifyResult.success ? 'pass' : 'fail', reason: verifyResult.reason }
+      } else {
+        //todo validate internal TX
+        const isValid = crypto.verifyObj(internalTx as InternalTxWithSingleSign)
+        if (isValid) return { result: 'pass', reason: 'valid' }
+        else return { result: 'fail', reason: 'Invalid signature' }
       }
+    }
 
-      // Reject all other transactions if txPause is enabled
-      const networkAccount = AccountsStorage.cachedNetworkAccount
-      if (networkAccount.current.txPause) {
+    // Reject all other transactions if txPause is enabled
+    const networkAccount = AccountsStorage.cachedNetworkAccount
+    if (networkAccount.current.txPause) {
+      return {
+        result: 'fail',
+        reason: 'Transaction is not allowed. Network is paused.',
+      }
+    }
+
+    if (isDebugTx(tx)) {
+      if (!ShardeumFlags.debugTxEnabled) {
+        return { result: 'fail', reason: 'Debug TX is not allowed' }
+      }
+      //todo validate debug TX
+      return { result: 'pass', reason: 'all_allowed' }
+    }
+
+    const txObj = getTransactionObj(tx)
+
+    const response = {
+      result: 'fail',
+      reason: 'Transaction is not valid. Cannot get txObj.',
+    }
+    if (!txObj) return response
+
+    try {
+      // FIX: seems like a bug using txObj as senderAddress
+      // const senderAddress = txObj.getSenderAddress()
+      const senderAddress = txObj
+      if (!senderAddress) {
         return {
           result: 'fail',
-          reason: 'Transaction is not allowed. Network is paused.',
+          reason: 'Cannot derive sender address from tx',
         }
       }
-
-      if (isDebugTx(tx)) {
-        if (!ShardeumFlags.debugTxEnabled) {
-          return { result: 'fail', reason: 'Debug TX is not allowed' }
-        }
-        //todo validate debug TX
-        return { result: 'pass', reason: 'all_allowed' }
-      }
-
-      const txObj = getTransactionObj(tx)
-
-      const response = {
-        result: 'fail',
-        reason: 'Transaction is not valid. Cannot get txObj.',
-      }
-      if (!txObj) return response
-
-      try {
-        // FIX: seems like a bug using txObj as senderAddress
-        // const senderAddress = txObj.getSenderAddress()
-        const senderAddress = txObj
-        if (!senderAddress) {
-          return {
-            result: 'fail',
-            reason: 'Cannot derive sender address from tx',
-          }
-        }
-      } catch (e) {
-        if (ShardeumFlags.VerboseLogs) console.log('Validation error', e)
-        response.result = 'fail'
-        response.reason = e
-        return response
-      }
-
-      // TODO: more validation here
-
-      response.result = 'pass'
-      response.reason = 'all_allowed'
-
+    } catch (e) {
+      if (ShardeumFlags.VerboseLogs) console.log('Validation error', e)
+      response.result = 'fail'
+      response.reason = e
       return response
     }
+
+    // TODO: more validation here
+
+    response.result = 'pass'
+    response.reason = 'all_allowed'
+
+    return response
+  }
 
 function omitDevKeys(givenConfig: any): any {
   if (!givenConfig.debug?.devPublicKeys && !givenConfig.debug?.multisigKeys) {
