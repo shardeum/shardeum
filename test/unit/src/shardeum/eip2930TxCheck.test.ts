@@ -10,16 +10,14 @@ function txCheck(transaction): { status: boolean, reason: string } {
     const eip2930Tx = (transaction as AccessListEIP2930Transaction)
 
     const tooManyAddresses = eip2930Tx.AccessListJSON?.length > ShardeumFlags.accessListSizeLimit;
-    const tooManyStorageKeys = eip2930Tx.AccessListJSON?.some(
-      (accessListItem) => accessListItem.storageKeys?.length > ShardeumFlags.accessListSizeLimit
-    )
-
     if (tooManyAddresses) {
       return { 
         status: false, 
         reason: `EIP2930 tx blocked for having > ${ShardeumFlags.accessListSizeLimit} addresses in accessList`
       }
     }
+
+    const tooManyStorageKeys = eip2930Tx.AccessListJSON?.some((accessListItem) => accessListItem.storageKeys?.length > ShardeumFlags.accessListSizeLimit)
     if (tooManyStorageKeys) {
       return { 
         status: false, 
