@@ -2457,16 +2457,16 @@ const configShardusEndpoints = (): void => {
   })
 
   shardus.registerExternalGet('is-genesis-node/:nominator', async (req, res) => {
+    const isTicketTypesEnabled = ShardeumFlags.ticketTypesEnabled
+    /* prettier-ignore */ if (logFlags.debug) console.log(`[is-genesis-node] isTicketsEnabled: ${isTicketTypesEnabled}`)
+    if (!isTicketTypesEnabled) {
+      return res.json({ success: true, reason: 'Ticket types are not enabled' })
+    }
     let senderAddress: Address
     try {
       senderAddress = Address.fromString(req.params['nominator'])
     } catch (error) {
       return res.json({ success: false, reason: 'Invalid address' })
-    }
-    const isTicketTypesEnabled = ShardeumFlags.ticketTypesEnabled
-    /* prettier-ignore */ if (logFlags.debug) console.log(`[is-genesis-node] isTicketsEnabled: ${isTicketTypesEnabled}`)
-    if (!isTicketTypesEnabled) {
-      return res.json({ success: true, reason: 'Ticket types are not enabled' })
     }
     const doesNominatorHaveTicketTypeResponse: { success: boolean; reason: string; enabled: boolean } =
       doesTransactionSenderHaveTicketType({ ticketType: TicketTypes.SILVER, senderAddress })
