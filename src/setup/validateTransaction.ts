@@ -17,6 +17,7 @@ import { Utils } from '@shardeum-foundation/lib-types'
 import { ethers } from 'ethers'
 import { shardusConfig } from '..'
 import { validateTransferFromSecureAccount } from '../shardeum/secureAccounts'
+import { isSetCertTimeTx } from '../tx/setCertTime'
 
 type Response = {
   result: string
@@ -66,7 +67,7 @@ export const validateTransaction =
           }
           return { result: 'pass', reason: 'valid' }
         }
-      } else if (tx.internalTXType === InternalTXType.SetCertTime) {
+      } else if (isSetCertTimeTx(tx)) {
         return { result: 'pass', reason: 'valid' }
       } else if (tx.internalTXType === InternalTXType.InitRewardTimes) {
         return InitRewardTimesTx.validate(tx as InitRewardTimes, shardus)

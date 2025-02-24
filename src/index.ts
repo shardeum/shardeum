@@ -120,7 +120,7 @@ import { Block } from '@ethereumjs/block'
 import { ShardeumBlock } from './block/blockchain'
 import * as AccountsStorage from './storage/accountStorage'
 import { sync, validateTransaction, validateTxnFields } from './setup'
-import { applySetCertTimeTx, injectSetCertTimeTx, getCertCycleDuration } from './tx/setCertTime'
+import { applySetCertTimeTx, injectSetCertTimeTx, getCertCycleDuration, isSetCertTimeTx } from './tx/setCertTime'
 import { applyClaimRewardTx, injectClaimRewardTx } from './tx/claimReward'
 import { Request, Response } from 'express'
 import {
@@ -3004,7 +3004,7 @@ async function applyInternalTx(
     /* prettier-ignore */ if (logFlags.important_as_error) console.log(`Applied CHANGE_NETWORK_PARAM GLOBAL transaction: ${Utils.safeStringify(network)}`)
     /* prettier-ignore */ if (logFlags.important_as_error) shardus.log('Applied CHANGE_NETWORK_PARAM GLOBAL transaction', Utils.safeStringify(network))
   }
-  if (internalTx.internalTXType === InternalTXType.SetCertTime) {
+  if (isSetCertTimeTx(internalTx)) {
     const setCertTimeTx = internalTx as SetCertTime
     applySetCertTimeTx(shardus, setCertTimeTx, wrappedStates, txId, txTimestamp, applyResponse)
   }
@@ -5543,7 +5543,7 @@ const shardusSetup = (): void => {
           keys.targetKeys = [networkAccount]
         } else if (internalTx.internalTXType === InternalTXType.ApplyNetworkParam) {
           keys.targetKeys = [networkAccount]
-        } else if (internalTx.internalTXType === InternalTXType.SetCertTime) {
+        } else if (isSetCertTimeTx(internalTx)) {
           keys.sourceKeys = [tx.nominee]
           keys.targetKeys = [toShardusAddress(tx.nominator, AccountType.Account), networkAccount]
         } else if (internalTx.internalTXType === InternalTXType.InitRewardTimes) {
@@ -5989,7 +5989,7 @@ const shardusSetup = (): void => {
             }
           }
         }
-        if (internalTx.internalTXType === InternalTXType.SetCertTime) {
+        if (isSetCertTimeTx(internalTx)) {
           if (!wrappedEVMAccount) {
             // Node Account or EVM Account(Nominator) has to be already created at this point.
             if (accountId === internalTx.nominee) {
@@ -7966,7 +7966,7 @@ const shardusSetup = (): void => {
           return internalTx.from
         } else if (internalTx.internalTXType === InternalTXType.ApplyNetworkParam) {
           return internalTx.network
-        } else if (internalTx.internalTXType === InternalTXType.SetCertTime) {
+        } else if (isSetCertTimeTx(internalTx)) {
           return internalTx.nominee
         } else if (internalTx.internalTXType === InternalTXType.InitRewardTimes) {
           return internalTx.nominee
