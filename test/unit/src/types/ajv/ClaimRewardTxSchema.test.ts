@@ -18,6 +18,7 @@ describe('ClaimRewardTx AJV tests', () => {
           nominee: '0x1234567890abcdef',
           nominator: '0xabcdef1234567890',
           timestamp: 1234567890,
+          cycle: 123,
           deactivatedNodeId: 'node123',
           nodeDeactivatedTime: 1234567880,
           txData: {
@@ -38,6 +39,7 @@ describe('ClaimRewardTx AJV tests', () => {
           nominee: '0x1234567890abcdef',
           // missing nominator
           timestamp: 1234567890,
+          cycle: 123,
           deactivatedNodeId: 'node123',
           nodeDeactivatedTime: 1234567880,
           txData: {
@@ -60,6 +62,7 @@ describe('ClaimRewardTx AJV tests', () => {
           nominee: '0x1234567890abcdef',
           nominator: '0xabcdef1234567890',
           timestamp: 1234567890,
+          cycle: 123,
           deactivatedNodeId: 'node123',
           nodeDeactivatedTime: 1234567880,
           txData: {
@@ -82,6 +85,7 @@ describe('ClaimRewardTx AJV tests', () => {
           nominee: '0x1234567890abcdef',
           nominator: '0xabcdef1234567890',
           timestamp: 0, // should be > 0
+          cycle: 123,
           deactivatedNodeId: 'node123',
           nodeDeactivatedTime: 1234567880,
           txData: {
