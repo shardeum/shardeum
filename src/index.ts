@@ -5732,6 +5732,9 @@ const shardusSetup = (): void => {
           }
         }
 
+        // Note: The below code is being removed because usage of appData properties should only be used for staking
+        //       data at this time. Also, for security reasons, only appData properties internalTx, internalTxType,
+        //       networkAccount, monimeeAccount, and nominatorAccount should be used in this function.
         // if (transaction instanceof AccessListEIP2930Transaction && transaction.AccessListJSON != null) {
         //   for (const accessList of transaction.AccessListJSON) {
         //     const address = accessList.address
