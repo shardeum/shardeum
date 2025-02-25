@@ -153,16 +153,30 @@ export default class TransactionState {
 
   private static fixAccountUint8Arrays(account): void {
     if (account.storageRoot && account.storageRoot.data) {
+      const isValid = this.isValidUint8ArrayInput(account.storageRoot.data)
+      if (isValid === false)
+        return
       account.storageRoot = Uint8Array.from(account.storageRoot.data)
     }
     if (account.codeHash?.data) {
+      const isValid = this.isValidUint8ArrayInput(account.codeHash.data)
+      if (isValid === false)
+        return
       account.codeHash = Uint8Array.from(account.codeHash.data)
     }
     if (Buffer.isBuffer(account.storageRoot) === false && typeof account.storageRoot === 'object') {
-      account.storageRoot = Uint8Array.from(Object.values(account.storageRoot))
+      const storageRootValues = Object.values(account.storageRoot)
+      const isValid = this.isValidUint8ArrayInput(storageRootValues)
+      if (isValid === false)
+        return
+      account.storageRoot = Uint8Array.from(storageRootValues as number[])
     }
     if (Buffer.isBuffer(account.codeHash) === false && typeof account.codeHash === 'object') {
-      account.codeHash = Uint8Array.from(Object.values(account.codeHash))
+      const codeHashValues = Object.values(account.codeHash)
+      const isValid = this.isValidUint8ArrayInput(codeHashValues)
+      if (isValid === false)
+        return
+      account.codeHash = Uint8Array.from(codeHashValues as number[])
     }
   }
 
@@ -1098,6 +1112,30 @@ export default class TransactionState {
         }
       }
     }
+  }
+
+  private static isValidUint8ArrayInput(input: any): boolean {
+    if (typeof input !== 'object' || input === null) {
+      return false; // Input must be an object or array
+    }
+  
+    const values = Array.isArray(input) ? input : Object.values(input);
+  
+    for (let i = 0; i < values.length; i++) {
+      const v = values[i];
+  
+      if (typeof v === "number") {
+        if (v < 0 || v > 255 || !Number.isInteger(v)) return false;
+      } else if (typeof v === "string") {
+        if (v.length > 3 || !/^\d+$/.test(v)) return false; // Ensure it's a valid numeric string
+        const num = Number(v);
+        if (num > 255) return false; // Must be within Uint8 range
+      } else {
+        return false; // Reject non-number/string types
+      }
+    }
+  
+    return true; // Input is fully valid
   }
 
   logAccountWrites(accountWrites: Map<string, Uint8Array>): Map<unknown, unknown> {
