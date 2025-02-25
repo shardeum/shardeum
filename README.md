@@ -80,7 +80,7 @@ npm ci
 export LOAD_JSON_CONFIGS=debug-10-nodes.config.json
 ```
 
-Learn more about the different config options [here](local)
+Learn more about the different config options [here](local-environment-setup.md)
 
 4. Compile project
 
