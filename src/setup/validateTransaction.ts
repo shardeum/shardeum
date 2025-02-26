@@ -18,25 +18,10 @@ import { ethers } from 'ethers'
 import { shardusConfig } from '..'
 import { validateTransferFromSecureAccount } from '../shardeum/secureAccounts'
 import { isSetCertTimeTx } from '../tx/setCertTime'
-import { verifyPayload } from '../types/ajv/Helpers'
 
 type Response = {
   result: string
   reason: string
-}
-
-const txTypeToAJVMap = {
-  [InternalTXType.InitNetwork]: 'InitNetworkTx',
-  [InternalTXType.ChangeConfig]: 'ChangeConfigTx',
-  [InternalTXType.ApplyChangeConfig]: 'ApplyChangeConfigTx',
-  [InternalTXType.SetCertTime]: 'SetCertTimeTx',
-  [InternalTXType.Stake]: 'StakeTx',
-  [InternalTXType.Unstake]: 'UnstakeTx',
-  [InternalTXType.InitRewardTimes]: 'InitRewardTimesTx',
-  [InternalTXType.ClaimReward]: 'ClaimRewardTx',
-  [InternalTXType.ChangeNetworkParam]: 'ChangeNetworkParamTx',
-  [InternalTXType.ApplyNetworkParam]: 'ApplyNetworkParamTx',
-  [InternalTXType.TransferFromSecureAccount]: 'TransferFromSecureAccountTx',
 }
 
 export const validateTransaction =
@@ -45,18 +30,6 @@ export const validateTransaction =
     (tx: any): Response => {
       if (isInternalTx(tx)) {
         const internalTx = tx as InternalTx
-
-        // Verify AJV for internal transactions
-        const ajvTxType = txTypeToAJVMap[internalTx.internalTXType]
-        const ajvErrors = verifyPayload(ajvTxType, internalTx)
-        if (ajvErrors) {
-          if (ShardeumFlags.VerboseLogs) console.log(`Validation failed for internal transaction for ${ajvTxType} - `, ajvErrors)
-          return {
-            result: 'fail',
-            reason: `Validation failed`,
-          }
-        }
-
       if (isInternalTXGlobal(internalTx) === true) {
         return { result: 'pass', reason: 'valid' }
       } else if (
