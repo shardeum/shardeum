@@ -13,20 +13,20 @@ describe('ClaimRewardTx AJV tests', () => {
 
     test('Valid object should pass validation', () => {
         const obj = {
-            isInternalTx: true,
-            internalTXType: InternalTXType.ClaimReward,
-            nominee: '0x1234567890abcdef',
-            nominator: '0xabcdef1234567890',
-            timestamp: 1234567890,
-            cycle: 123,
-            deactivatedNodeId: 'node123',
-            nodeDeactivatedTime: 1234567880,
-            txData: {
-                publicKey: 'pubKey123',
-                nodeId: 'node123',
-                endTime: 1234567890
-            },
-            sign: { owner: 'owner1', sig: 'signature1' }
+          isInternalTx: true,
+          internalTXType: InternalTXType.ClaimReward,
+          nominee: '0x1234567890abcdef',
+          nominator: '0xabcdef1234567890',
+          timestamp: 1234567890,
+          cycle: 123,
+          deactivatedNodeId: 'node123',
+          nodeDeactivatedTime: 1234567880,
+          txData: {
+            publicKey: 'pubKey123',
+            nodeId: 'node123',
+            endTime: 1234567890,
+          },
+          sign: { owner: 'owner1', sig: 'signature1' },
         }
         const errors = verifyPayload(AJVSchemaEnum.ClaimRewardTx, obj)
         expect(errors).toBeNull()
@@ -34,20 +34,20 @@ describe('ClaimRewardTx AJV tests', () => {
 
     test('Missing required field should fail validation', () => {
         const obj = {
-            isInternalTx: true,
-            internalTXType: InternalTXType.ClaimReward,
-            nominee: '0x1234567890abcdef',
-            // missing nominator
-            timestamp: 1234567890,
-            cycle: 123,
-            deactivatedNodeId: 'node123',
-            nodeDeactivatedTime: 1234567880,
-            txData: {
-                publicKey: 'pubKey123',
-                nodeId: 'node123',
-                endTime: 1234567890
-            },
-            sign: { owner: 'owner1', sig: 'signature1' }
+          isInternalTx: true,
+          internalTXType: InternalTXType.ClaimReward,
+          nominee: '0x1234567890abcdef',
+          // missing nominator
+          timestamp: 1234567890,
+          cycle: 123,
+          deactivatedNodeId: 'node123',
+          nodeDeactivatedTime: 1234567880,
+          txData: {
+            publicKey: 'pubKey123',
+            nodeId: 'node123',
+            endTime: 1234567890,
+          },
+          sign: { owner: 'owner1', sig: 'signature1' },
         }
         const errors = verifyPayload(AJVSchemaEnum.ClaimRewardTx, obj)
         expect(errors).not.toBeNull()
@@ -57,20 +57,20 @@ describe('ClaimRewardTx AJV tests', () => {
 
     test('Invalid txData should fail validation', () => {
         const obj = {
-            isInternalTx: true,
-            internalTXType: InternalTXType.ClaimReward,
-            nominee: '0x1234567890abcdef',
-            nominator: '0xabcdef1234567890',
-            timestamp: 1234567890,
-            cycle: 123,
-            deactivatedNodeId: 'node123',
-            nodeDeactivatedTime: 1234567880,
-            txData: {
-                publicKey: 'pubKey123',
-                // missing nodeId
-                endTime: 1234567890
-            },
-            sign: { owner: 'owner1', sig: 'signature1' }
+          isInternalTx: true,
+          internalTXType: InternalTXType.ClaimReward,
+          nominee: '0x1234567890abcdef',
+          nominator: '0xabcdef1234567890',
+          timestamp: 1234567890,
+          cycle: 123,
+          deactivatedNodeId: 'node123',
+          nodeDeactivatedTime: 1234567880,
+          txData: {
+            publicKey: 'pubKey123',
+            // missing nodeId
+            endTime: 1234567890,
+          },
+          sign: { owner: 'owner1', sig: 'signature1' },
         }
         const errors = verifyPayload(AJVSchemaEnum.ClaimRewardTx, obj)
         expect(errors).not.toBeNull()
@@ -80,20 +80,20 @@ describe('ClaimRewardTx AJV tests', () => {
 
     test('Invalid timestamp should fail validation', () => {
         const obj = {
-            isInternalTx: true,
-            internalTXType: InternalTXType.ClaimReward,
-            nominee: '0x1234567890abcdef',
-            nominator: '0xabcdef1234567890',
-            timestamp: 0, // should be > 0
-            cycle: 123,
-            deactivatedNodeId: 'node123',
-            nodeDeactivatedTime: 1234567880,
-            txData: {
-                publicKey: 'pubKey123',
-                nodeId: 'node123',
-                endTime: 1234567890
-            },
-            sign: { owner: 'owner1', sig: 'signature1' }
+          isInternalTx: true,
+          internalTXType: InternalTXType.ClaimReward,
+          nominee: '0x1234567890abcdef',
+          nominator: '0xabcdef1234567890',
+          timestamp: 0, // should be > 0
+          cycle: 123,
+          deactivatedNodeId: 'node123',
+          nodeDeactivatedTime: 1234567880,
+          txData: {
+            publicKey: 'pubKey123',
+            nodeId: 'node123',
+            endTime: 1234567890,
+          },
+          sign: { owner: 'owner1', sig: 'signature1' },
         }
         const errors = verifyPayload(AJVSchemaEnum.ClaimRewardTx, obj)
         expect(errors).not.toBeNull()

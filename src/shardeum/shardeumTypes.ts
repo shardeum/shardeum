@@ -184,6 +184,7 @@ export interface ClaimRewardTX extends InternalTxBase {
   nominee: string
   nominator: string
   timestamp: number
+  cycle: number
   deactivatedNodeId: string
   nodeDeactivatedTime: number
   txData: NodeRewardTxData

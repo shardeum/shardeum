@@ -2442,7 +2442,7 @@ const configShardusEndpoints = (): void => {
   })
 
   shardus.registerExternalGet('is-healthy', async (req, res) => {
-    let dbHealthy = await AccountsStorage.checkDatabaseHealth();
+    const dbHealthy = await AccountsStorage.checkDatabaseHealth();
     const result = {
       status: dbHealthy ? 'healthy' : 'degraded',
       uptime: process.uptime(),
@@ -5518,7 +5518,7 @@ const shardusSetup = (): void => {
 
       const timestamp: number = getInjectedOrGeneratedTimestamp(timestampedTx)
 
-      let shardusMemoryPatterns = {}
+      const shardusMemoryPatterns = {}
       if (isInternalTx(tx)) {
         const customTXhash = null
         const internalTx = tx as InternalTx
@@ -5717,101 +5717,104 @@ const shardusSetup = (): void => {
             otherAccountKeys.push(shardusAddr)
             shardusAddressToEVMAccountInfo.set(shardusAddr, { evmAddress: caAddr, type: AccountType.Account })
             /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log('getKeyFromTransaction: Predicting new contract account address:', caAddr, shardusAddr)
-          } else {
-            //use app data!
-            if (appData && appData.newCAAddr) {
-              const caAddr = appData.newCAAddr
-              const shardusAddr = toShardusAddress(caAddr, AccountType.Account)
-              otherAccountKeys.push(shardusAddr)
-              shardusAddressToEVMAccountInfo.set(shardusAddr, {
-                evmAddress: caAddr,
-                type: AccountType.Account,
-              })
-              /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log('getKeyFromTransaction: Appdata provided new contract account address:', caAddr, shardusAddr)
-            }
+          // } else {
+          //   //use app data!
+          //   if (appData && appData.newCAAddr) {
+          //     const caAddr = appData.newCAAddr
+          //     const shardusAddr = toShardusAddress(caAddr, AccountType.Account)
+          //     otherAccountKeys.push(shardusAddr)
+          //     shardusAddressToEVMAccountInfo.set(shardusAddr, {
+          //       evmAddress: caAddr,
+          //       type: AccountType.Account,
+          //     })
+          //     /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log('getKeyFromTransaction: Appdata provided new contract account address:', caAddr, shardusAddr)
+          //   }
           }
         }
 
-        if (transaction instanceof AccessListEIP2930Transaction && transaction.AccessListJSON != null) {
-          for (const accessList of transaction.AccessListJSON) {
-            const address = accessList.address
-            if (address) {
-              const shardusAddr = toShardusAddress(address, AccountType.Account)
-              shardusAddressToEVMAccountInfo.set(shardusAddr, {
-                evmAddress: address,
-                type: AccountType.Account,
-              })
-              otherAccountKeys.push(shardusAddr)
-
-              //TODO: we need some new logic that can check each account to try loading each CA "early"
-              //and figure so we will at least know the code hash to load
-              //probably should also do some work with memory access patterns too.
-            }
-            //let storageKeys = accessList.storageKeys.map(key => toShardusAddress(key, AccountType.ContractStorage))
-            const storageKeys = []
-            for (const storageKey of accessList.storageKeys) {
-              //let shardusAddr = toShardusAddress(storageKey, AccountType.ContractStorage)
-              const shardusAddr = toShardusAddressWithKey(address, storageKey, AccountType.ContractStorage)
-
-              shardusAddressToEVMAccountInfo.set(shardusAddr, {
-                evmAddress: shardusAddr,
-                contractAddress: address,
-                type: AccountType.ContractStorage,
-              })
-              storageKeys.push(shardusAddr)
-            }
-            result.storageKeys = result.storageKeys.concat(storageKeys)
-          }
-        } else {
-          if (ShardeumFlags.autoGenerateAccessList && appData.accessList) {
-            shardusMemoryPatterns = appData.shardusMemoryPatterns
-            // we have pre-generated accessList
-            for (const accessListItem of appData.accessList) {
-              const address = accessListItem[0]
-              if (address) {
-                const shardusAddr = toShardusAddress(address, AccountType.Account)
-                shardusAddressToEVMAccountInfo.set(shardusAddr, {
-                  evmAddress: address,
-                  type: AccountType.Account,
-                })
-                otherAccountKeys.push(shardusAddr)
-              }
-              //let storageKeys = accessListItem.storageKeys.map(key => toShardusAddress(key, AccountType.ContractStorage))
-              const storageKeys = []
-              for (const storageKey of accessListItem[1]) {
-                //let shardusAddr = toShardusAddress(storageKey, AccountType.ContractStorage)
-                const shardusAddr = toShardusAddressWithKey(address, storageKey, AccountType.ContractStorage)
-
-                shardusAddressToEVMAccountInfo.set(shardusAddr, {
-                  evmAddress: storageKey,
-                  contractAddress: address,
-                  type: AccountType.ContractStorage,
-                })
-                storageKeys.push(shardusAddr)
-              }
-              result.storageKeys = result.storageKeys.concat(storageKeys)
-            }
-          }
-        }
+        // Note: The below code is being removed because usage of appData properties should only be used for staking
+        //       data at this time. Also, for security reasons, only appData properties internalTx, internalTxType,
+        //       networkAccount, monimeeAccount, and nominatorAccount should be used in this function.
+        // if (transaction instanceof AccessListEIP2930Transaction && transaction.AccessListJSON != null) {
+        //   for (const accessList of transaction.AccessListJSON) {
+        //     const address = accessList.address
+        //     if (address) {
+        //       const shardusAddr = toShardusAddress(address, AccountType.Account)
+        //       shardusAddressToEVMAccountInfo.set(shardusAddr, {
+        //         evmAddress: address,
+        //         type: AccountType.Account,
+        //       })
+        //       otherAccountKeys.push(shardusAddr)
+        //
+        //       //TODO: we need some new logic that can check each account to try loading each CA "early"
+        //       //and figure so we will at least know the code hash to load
+        //       //probably should also do some work with memory access patterns too.
+        //     }
+        //     //let storageKeys = accessList.storageKeys.map(key => toShardusAddress(key, AccountType.ContractStorage))
+        //     const storageKeys = []
+        //     for (const storageKey of accessList.storageKeys) {
+        //       //let shardusAddr = toShardusAddress(storageKey, AccountType.ContractStorage)
+        //       const shardusAddr = toShardusAddressWithKey(address, storageKey, AccountType.ContractStorage)
+        //
+        //       shardusAddressToEVMAccountInfo.set(shardusAddr, {
+        //         evmAddress: shardusAddr,
+        //         contractAddress: address,
+        //         type: AccountType.ContractStorage,
+        //       })
+        //       storageKeys.push(shardusAddr)
+        //     }
+        //     result.storageKeys = result.storageKeys.concat(storageKeys)
+        //   }
+        // } else {
+        //   if (ShardeumFlags.autoGenerateAccessList && appData.accessList) {
+        //     shardusMemoryPatterns = appData.shardusMemoryPatterns
+        //     // we have pre-generated accessList
+        //     for (const accessListItem of appData.accessList) {
+        //       const address = accessListItem[0]
+        //       if (address) {
+        //         const shardusAddr = toShardusAddress(address, AccountType.Account)
+        //         shardusAddressToEVMAccountInfo.set(shardusAddr, {
+        //           evmAddress: address,
+        //           type: AccountType.Account,
+        //         })
+        //         otherAccountKeys.push(shardusAddr)
+        //       }
+        //       //let storageKeys = accessListItem.storageKeys.map(key => toShardusAddress(key, AccountType.ContractStorage))
+        //       const storageKeys = []
+        //       for (const storageKey of accessListItem[1]) {
+        //         //let shardusAddr = toShardusAddress(storageKey, AccountType.ContractStorage)
+        //         const shardusAddr = toShardusAddressWithKey(address, storageKey, AccountType.ContractStorage)
+        //
+        //         shardusAddressToEVMAccountInfo.set(shardusAddr, {
+        //           evmAddress: storageKey,
+        //           contractAddress: address,
+        //           type: AccountType.ContractStorage,
+        //         })
+        //         storageKeys.push(shardusAddr)
+        //       }
+        //       result.storageKeys = result.storageKeys.concat(storageKeys)
+        //     }
+        //   }
+        // }
 
         //set keys for code hashes if we have them on app data
-        if (appData.codeHashes != null && appData.codeHashes.length > 0) {
-          //setting this may be useless seems like we never needed to do anything with codebytes in
-          //getRelevantData before
-          for (const codeHashObj of appData.codeHashes) {
-            const shardusAddr = toShardusAddressWithKey(
-              codeHashObj.contractAddress,
-              codeHashObj.codeHash,
-              AccountType.ContractCode
-            )
-            result.codeHashKeys.push(shardusAddr)
-            shardusAddressToEVMAccountInfo.set(shardusAddr, {
-              evmAddress: codeHashObj.codeHash,
-              contractAddress: codeHashObj.contractAddress,
-              type: AccountType.ContractCode,
-            })
-          }
-        }
+        // if (appData.codeHashes != null && appData.codeHashes.length > 0) {
+        //   //setting this may be useless seems like we never needed to do anything with codebytes in
+        //   //getRelevantData before
+        //   for (const codeHashObj of appData.codeHashes) {
+        //     const shardusAddr = toShardusAddressWithKey(
+        //       codeHashObj.contractAddress,
+        //       codeHashObj.codeHash,
+        //       AccountType.ContractCode
+        //     )
+        //     result.codeHashKeys.push(shardusAddr)
+        //     shardusAddressToEVMAccountInfo.set(shardusAddr, {
+        //       evmAddress: codeHashObj.codeHash,
+        //       contractAddress: codeHashObj.contractAddress,
+        //       type: AccountType.ContractCode,
+        //     })
+        //   }
+        // }
 
         // make sure the receipt address is in the get keys from transaction..
         // This will technically cause an empty account to get created but this will get overriden with the

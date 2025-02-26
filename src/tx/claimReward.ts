@@ -63,7 +63,7 @@ export async function injectClaimRewardTx(
     isInternalTx: true,
     internalTXType: InternalTXType.ClaimReward,
     txData: eventData.additionalData.txData,
-  } as Omit<ClaimRewardTX, 'sign'>
+  } as ClaimRewardTX
 
   if (ShardeumFlags.txHashingFix) {
     // to make sure that differnt nodes all submit an equivalent tx that is counted as the same tx,
