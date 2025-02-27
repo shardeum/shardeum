@@ -168,7 +168,7 @@ import { Utils } from '@shardeum-foundation/lib-types'
 import { SafeBalance } from './utils/safeMath'
 import { isStakeUnlocked, verifyStakeTx, verifyUnstakeTx } from './tx/staking/verifyStake'
 import { AJVSchemaEnum } from './types/enum/AJVSchemaEnum'
-import { initAjvSchemas, verifyPayload } from './types/ajv/Helpers'
+import { filterObjectByWhitelistedProps, initAjvSchemas, verifyPayload } from './types/ajv/Helpers'
 import { Sign, ServerMode } from '@shardeum-foundation/core/dist/shardus/shardus-types'
 
 import { safeStringify } from '@shardeum-foundation/lib-types/build/src/utils/functions/stringify'
@@ -5511,7 +5511,32 @@ const shardusSetup = (): void => {
     },
 
     //@ts-ignore
-    crack(timestampedTx, appData) {
+    crack(timestampedTx, passedAppData) {
+      const appData: any = filterObjectByWhitelistedProps(passedAppData,
+        [
+          {
+            name: 'internalTx',
+            type: 'object'
+          },
+          {
+            name: 'internalTXType',
+            type: 'number'
+          },
+          {
+            name: 'networkAccount',
+            type: 'object'
+          },
+          {
+            name: 'nomineeAccount',
+            type: 'string'
+          },
+          {
+            name: 'nominatorAccount',
+            type: 'string'
+          }
+        ]
+      )
+
       if (ShardeumFlags.VerboseLogs) console.log('Running getKeyFromTransaction', timestampedTx)
       //@ts-ignore
       const { tx } = timestampedTx
@@ -5717,18 +5742,18 @@ const shardusSetup = (): void => {
             otherAccountKeys.push(shardusAddr)
             shardusAddressToEVMAccountInfo.set(shardusAddr, { evmAddress: caAddr, type: AccountType.Account })
             /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log('getKeyFromTransaction: Predicting new contract account address:', caAddr, shardusAddr)
-          // } else {
-          //   //use app data!
-          //   if (appData && appData.newCAAddr) {
-          //     const caAddr = appData.newCAAddr
-          //     const shardusAddr = toShardusAddress(caAddr, AccountType.Account)
-          //     otherAccountKeys.push(shardusAddr)
-          //     shardusAddressToEVMAccountInfo.set(shardusAddr, {
-          //       evmAddress: caAddr,
-          //       type: AccountType.Account,
-          //     })
-          //     /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log('getKeyFromTransaction: Appdata provided new contract account address:', caAddr, shardusAddr)
-          //   }
+          } else {
+            //use app data!
+            if (appData && appData.newCAAddr) {
+              const caAddr = appData.newCAAddr
+              const shardusAddr = toShardusAddress(caAddr, AccountType.Account)
+              otherAccountKeys.push(shardusAddr)
+              shardusAddressToEVMAccountInfo.set(shardusAddr, {
+                evmAddress: caAddr,
+                type: AccountType.Account,
+              })
+              /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log('getKeyFromTransaction: Appdata provided new contract account address:', caAddr, shardusAddr)
+            }
           }
         }
 
@@ -5798,23 +5823,23 @@ const shardusSetup = (): void => {
         // }
 
         //set keys for code hashes if we have them on app data
-        // if (appData.codeHashes != null && appData.codeHashes.length > 0) {
-        //   //setting this may be useless seems like we never needed to do anything with codebytes in
-        //   //getRelevantData before
-        //   for (const codeHashObj of appData.codeHashes) {
-        //     const shardusAddr = toShardusAddressWithKey(
-        //       codeHashObj.contractAddress,
-        //       codeHashObj.codeHash,
-        //       AccountType.ContractCode
-        //     )
-        //     result.codeHashKeys.push(shardusAddr)
-        //     shardusAddressToEVMAccountInfo.set(shardusAddr, {
-        //       evmAddress: codeHashObj.codeHash,
-        //       contractAddress: codeHashObj.contractAddress,
-        //       type: AccountType.ContractCode,
-        //     })
-        //   }
-        // }
+        if (appData.codeHashes != null && appData.codeHashes.length > 0) {
+          //setting this may be useless seems like we never needed to do anything with codebytes in
+          //getRelevantData before
+          for (const codeHashObj of appData.codeHashes) {
+            const shardusAddr = toShardusAddressWithKey(
+              codeHashObj.contractAddress,
+              codeHashObj.codeHash,
+              AccountType.ContractCode
+            )
+            result.codeHashKeys.push(shardusAddr)
+            shardusAddressToEVMAccountInfo.set(shardusAddr, {
+              evmAddress: codeHashObj.codeHash,
+              contractAddress: codeHashObj.contractAddress,
+              type: AccountType.ContractCode,
+            })
+          }
+        }
 
         // make sure the receipt address is in the get keys from transaction..
         // This will technically cause an empty account to get created but this will get overriden with the

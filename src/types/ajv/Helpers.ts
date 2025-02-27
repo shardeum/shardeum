@@ -1,5 +1,5 @@
 import { Utils } from '@shardeum-foundation/lib-types'
-import { ErrorObject } from 'ajv'
+import Ajv, { ErrorObject } from 'ajv'
 import { getVerifyFunction } from '../../utils/serialization/SchemaHelpers'
 import { initInjectTxReq } from './InjectTxReq'
 import { initSign } from './SignSchema';
@@ -61,4 +61,32 @@ function parseAjvErrors(errors: Array<ErrorObject> | null): string[] | null {
     }
     return errorMsg
   })
+}
+
+export function filterObjectByWhitelistedProps(obj:any, whitelistedProps: {name:string,type:string}[] ): any {
+  const ajv = new Ajv();
+
+  const newObject = Object.keys(obj)
+    .filter(key => whitelistedProps.map(item => item.name).includes(key))
+    .reduce((acc, key) => {
+      acc[key] = obj[key];
+      return acc;
+    }, {});
+
+  const schema = {
+    type: "object",
+    properties: whitelistedProps.reduce((acc, prop) => {
+      acc[prop.name] = { type: prop.type };
+      return acc;
+    }, {}),
+    additionalProperties: false
+  };
+
+  const validate = ajv.compile(schema);
+
+  if (validate(newObject)) {
+    return newObject
+  } else {
+    return {}
+  }
 }
