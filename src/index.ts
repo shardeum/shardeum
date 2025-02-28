@@ -5757,6 +5757,9 @@ const shardusSetup = (): void => {
           }
         }
 
+        /***
+         DO NOT REMOVE - BEGIN
+         ***/
         // Note: The below code is being removed because usage of appData properties should only be used for staking
         //       data at this time. Also, for security reasons, only appData properties internalTx, internalTxType,
         //       networkAccount, monimeeAccount, and nominatorAccount should be used in this function.
@@ -5821,6 +5824,9 @@ const shardusSetup = (): void => {
         //     }
         //   }
         // }
+        /***
+         DO NOT REMOVE - END
+         ***/
 
         //set keys for code hashes if we have them on app data
         if (appData.codeHashes != null && appData.codeHashes.length > 0) {
