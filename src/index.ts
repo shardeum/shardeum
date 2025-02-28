@@ -5512,30 +5512,28 @@ const shardusSetup = (): void => {
 
     //@ts-ignore
     crack(timestampedTx, passedAppData) {
-      const appData: any = filterObjectByWhitelistedProps(passedAppData,
-        [
-          {
-            name: 'internalTx',
-            type: 'object'
-          },
-          {
-            name: 'internalTXType',
-            type: 'number'
-          },
-          {
-            name: 'networkAccount',
-            type: 'object'
-          },
-          {
-            name: 'nomineeAccount',
-            type: 'string'
-          },
-          {
-            name: 'nominatorAccount',
-            type: 'string'
-          }
-        ]
-      )
+      const appData: any = filterObjectByWhitelistedProps(passedAppData, [
+        {
+          name: 'internalTx',
+          type: 'object',
+        },
+        {
+          name: 'internalTXType',
+          type: 'number',
+        },
+        {
+          name: 'networkAccount',
+          type: 'object',
+        },
+        {
+          name: 'nomineeAccount',
+          type: 'object',
+        },
+        {
+          name: 'nominatorAccount',
+          type: 'object',
+        },
+      ])
 
       if (ShardeumFlags.VerboseLogs) console.log('Running getKeyFromTransaction', timestampedTx)
       //@ts-ignore

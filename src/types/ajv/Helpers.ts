@@ -64,29 +64,30 @@ function parseAjvErrors(errors: Array<ErrorObject> | null): string[] | null {
 }
 
 export function filterObjectByWhitelistedProps(obj:any, whitelistedProps: {name:string,type:string}[] ): any {
-  const ajv = new Ajv();
+  const ajv = new Ajv()
 
   const newObject = Object.keys(obj)
-    .filter(key => whitelistedProps.map(item => item.name).includes(key))
+    .filter((key) => whitelistedProps.map((item) => item.name).includes(key))
     .reduce((acc, key) => {
-      acc[key] = obj[key];
-      return acc;
-    }, {});
+      acc[key] = obj[key]
+      return acc
+    }, {})
 
   const schema = {
-    type: "object",
+    type: 'object',
     properties: whitelistedProps.reduce((acc, prop) => {
-      acc[prop.name] = { type: prop.type };
-      return acc;
+      acc[prop.name] = { type: prop.type }
+      return acc
     }, {}),
-    additionalProperties: false
-  };
+    additionalProperties: false,
+  }
 
-  const validate = ajv.compile(schema);
+  const validate = ajv.compile(schema)
 
   if (validate(newObject)) {
     return newObject
   } else {
+    console.log('validation errors in filterObjectByWhitelistedProps: ', validate.errors)
     return {}
   }
 }
