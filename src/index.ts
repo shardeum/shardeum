@@ -88,7 +88,6 @@ import {
 } from './shardeum/wrappedEVMAccountFunctions'
 import {
   emptyCodeHash,
-  isEqualOrNewerVersion,
   replacer,
   fixBigIntLiteralsToBigInt,
   sleep,
@@ -96,7 +95,6 @@ import {
   _base16BNParser,
   _readableSHM,
   scaleByStabilityFactor,
-  isEqualOrOlderVersion,
   debug_map_replacer,
   operatorCLIVersion,
   operatorGUIVersion,
@@ -107,13 +105,14 @@ import {
   findMajorityResult,
   generateTxId,
   isWithinRange,
-  isValidVersion,
   getTxSenderAddress,
   isInSenderCache,
   removeTxFromSenderCache,
   isStakingEVMTx,
   convertBigIntsToHex,
 } from './utils'
+
+import { meetsMinimumVersion, isWithinMaximumVersion, VersionValidationResult } from '@shardeum-foundation/core'
 import config, { Config } from './config'
 import Wallet from 'ethereumjs-wallet'
 import { Block } from '@ethereumjs/block'
@@ -6970,36 +6969,37 @@ const shardusSetup = (): void => {
         /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`validateJoinRequest ${Utils.safeStringify(data)}`)
         if (!data.appJoinData) {
           /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`validateJoinRequest fail: !data.appJoinData`)
-          return {
-            success: false,
-            reason: `Join request node doesn't provide the app join data.`,
-            fatal: true,
-          }
+          return { success: false, reason: `Join request node doesn't provide the app join data.`, fatal: true, }
         }
 
         const appJoinData = data.appJoinData as AppJoinData
+        const appJoinDataVersion = appJoinData.version
         const minVersion = AccountsStorage.cachedNetworkAccount.current.minVersion
-        if (!isEqualOrNewerVersion(minVersion, appJoinData.version)) {
-          /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`validateJoinRequest fail: old version`)
-          return {
-            success: false,
-            reason: `version number is old. minVersion is ${minVersion}. Join request node app version is ${appJoinData.version}`,
-            fatal: true,
-          }
-        }
-
         const latestVersion = AccountsStorage.cachedNetworkAccount.current.latestVersion
 
-        if (
-          latestVersion &&
-          appJoinData.version &&
-          !isEqualOrOlderVersion(latestVersion, appJoinData.version)
-        ) {
-          /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`validateJoinRequest fail: version number is newer than latest`)
-          return {
-            success: false,
-            reason: `version number is newer than latest. The latest allowed app version is ${latestVersion}. Join request node app version is ${appJoinData.version}`,
-            fatal: true,
+        // Min version reasons we can't validate the join request.
+        const minVersionValidationResult = meetsMinimumVersion(minVersion, appJoinDataVersion)
+        if (minVersionValidationResult !== VersionValidationResult.Success) {
+          switch (minVersionValidationResult) {
+            case VersionValidationResult.ComparisonFailed: return { success: false, reason: `validateJoinRequest: Standby node version: ${appJoinDataVersion} failed to meet min version ${minVersion}`, fatal: true }
+            case VersionValidationResult.ControlVersionParseFailure: return { success: false, reason: `validateJoinRequest: Failed to parse minVersion ${minVersion}`, fatal: true }
+            case VersionValidationResult.InvalidControlVersion: return { success: false, reason: `validateJoinRequest: Failed to validate minVersion ${minVersion}`, fatal: true }
+            case VersionValidationResult.TestVersionParseFailure: return { success: false, reason: `validateJoinRequest: Failed to parse appJoinDataVersion ${appJoinDataVersion}`, fatal: true }
+            case VersionValidationResult.InvalidTestVersion: return { success: false, reason: `validateJoinRequest: Failed to validate appJoinDataVersion ${appJoinDataVersion}`, fatal: true }
+            default: return { success: false, reason: `validateJoinRequest: Unexpected validation result ${minVersionValidationResult} - minVersion: ${minVersion} appJoinDataVersion: ${appJoinDataVersion}`, fatal: true }
+          }
+        }
+        
+        // Max version reasons we can't validate the join request.
+        const latestVersionValidationResult = isWithinMaximumVersion(latestVersion, appJoinDataVersion)
+        if (latestVersionValidationResult !== VersionValidationResult.Success) {
+          switch (latestVersionValidationResult) {
+            case VersionValidationResult.ComparisonFailed: return { success: false, reason: `validateJoinRequest: Standby node version: ${appJoinDataVersion} exceeds latestVersion ${latestVersion}`, fatal: true }
+            case VersionValidationResult.ControlVersionParseFailure: return { success: false, reason: `validateJoinRequest: Failed to parse latestVersion ${latestVersion}`, fatal: true }
+            case VersionValidationResult.InvalidControlVersion: return { success: false, reason: `validateJoinRequest: Failed to validate latestVersion ${latestVersion}`, fatal: true }
+            case VersionValidationResult.TestVersionParseFailure: return { success: false, reason: `validateJoinRequest: Failed to parse appJoinDataVersion ${appJoinDataVersion}`, fatal: true }
+            case VersionValidationResult.InvalidTestVersion: return { success: false, reason: `validateJoinRequest: Failed to validate appJoinDataVersion ${appJoinDataVersion}`, fatal: true }
+            default: return { success: false, reason: `validateJoinRequest: Unexpected validation result ${latestVersionValidationResult} - latestVersion: ${latestVersion} appJoinDataVersion: ${appJoinDataVersion}`, fatal: true }
           }
         }
 
@@ -7007,8 +7007,7 @@ const shardusSetup = (): void => {
         const numTotalNodes = latestCycle.active + latestCycle.syncing // total number of nodes in the network
 
         // Staking is only enabled when flag is on and
-        const stakingEnabled =
-          ShardeumFlags.StakingEnabled && numActiveNodes >= ShardeumFlags.minActiveNodesForStaking
+        const stakingEnabled = ShardeumFlags.StakingEnabled && numActiveNodes >= ShardeumFlags.minActiveNodesForStaking
 
         // there is no flag to turn off golden ticket if we want to
         //Checks for golden ticket
@@ -7259,39 +7258,42 @@ const shardusSetup = (): void => {
             fatal: true,
           }
         }
-        const { appData } = data
-        const { minVersion } = AccountsStorage.cachedNetworkAccount.current.archiver
-        if (!isEqualOrNewerVersion(minVersion, appData.version)) {
-          /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`validateArchiverJoinRequest() fail: old version`)
-          return {
-            success: false,
-            reason: `Archiver Version number is old. Our Archiver version is: ${devDependencies['@shardeum-foundation/archiver']}. Join Archiver app version is ${appData.version}`,
-            fatal: true,
+
+        const appDataVersion = data.appData.version
+        const minVersion = AccountsStorage.cachedNetworkAccount.current.archiver.minVersion
+        const latestVersion = AccountsStorage.cachedNetworkAccount.current.archiver.latestVersion
+
+        // Min version reasons we can't validate the archiver join request.
+        const minVersionValidationResult = meetsMinimumVersion(minVersion, appDataVersion)
+        if (minVersionValidationResult !== VersionValidationResult.Success) {
+          switch (minVersionValidationResult) {
+            case VersionValidationResult.ComparisonFailed: return { success: false, reason: `validateArchiverJoinRequest: Archiver node version: ${appDataVersion} failed to meet min version ${minVersion}`, fatal: true }
+            case VersionValidationResult.ControlVersionParseFailure: return { success: false, reason: `validateArchiverJoinRequest: Failed to parse minVersion ${minVersion}`, fatal: true }
+            case VersionValidationResult.InvalidControlVersion: return { success: false, reason: `validateArchiverJoinRequest: Failed to validate minVersion ${minVersion}`, fatal: true }
+            case VersionValidationResult.TestVersionParseFailure: return { success: false, reason: `validateArchiverJoinRequest: Failed to parse appJoinDataVersion ${appDataVersion}`, fatal: true }
+            case VersionValidationResult.InvalidTestVersion: return { success: false, reason: `validateArchiverJoinRequest: Failed to validate appJoinDataVersion ${appDataVersion}`, fatal: true }
+            default: return { success: false, reason: `validateArchiverJoinRequest: Unexpected validation result ${minVersionValidationResult} - minVersion: ${minVersion} appJoinDataVersion: ${appDataVersion}`, fatal: true }
+          }
+        }
+        
+        // Max version reasons we can't validate the archiverjoin request.
+        const latestVersionValidationResult = isWithinMaximumVersion(latestVersion, appDataVersion)
+        if (latestVersionValidationResult !== VersionValidationResult.Success) {
+          switch (latestVersionValidationResult) {
+            case VersionValidationResult.ComparisonFailed: return { success: false, reason: `validateArchiverJoinRequest: Archiver node version: ${appDataVersion} exceeds latestVersion ${latestVersion}`, fatal: true }
+            case VersionValidationResult.ControlVersionParseFailure: return { success: false, reason: `validateArchiverJoinRequest: Failed to parse latestVersion ${latestVersion}`, fatal: true }
+            case VersionValidationResult.InvalidControlVersion: return { success: false, reason: `validateArchiverJoinRequest: Failed to validate latestVersion ${latestVersion}`, fatal: true }
+            case VersionValidationResult.TestVersionParseFailure: return { success: false, reason: `validateArchiverJoinRequest: Failed to parse appJoinDataVersion ${appDataVersion}`, fatal: true }
+            case VersionValidationResult.InvalidTestVersion: return { success: false, reason: `validateArchiverJoinRequest: Failed to validate appJoinDataVersion ${appDataVersion}`, fatal: true }
+            default: return { success: false, reason: `validateArchiverJoinRequest: Unexpected validation result ${latestVersionValidationResult} - latestVersion: ${latestVersion} appJoinDataVersion: ${appDataVersion}`, fatal: true }
           }
         }
 
-        const { latestVersion } = AccountsStorage.cachedNetworkAccount.current.archiver
-        if (latestVersion && appData.version && !isEqualOrOlderVersion(latestVersion, appData.version)) {
-          /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`validateArchiverJoinRequest() fail: version number is newer than latest`)
-          return {
-            success: false,
-            reason: `Archiver Version number is newer than latest. The latest allowed Archiver version is ${latestVersion}. Join Archiver app version is ${appData.version}`,
-            fatal: true,
-          }
-        }
         /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`validateArchiverJoinRequest() Successful!`)
-        return {
-          success: true,
-          reason: 'Archiver-Join Request Validated!',
-          fatal: false,
-        }
+        return { success: true, reason: 'Archiver-Join Request Validated!', fatal: false, }
       } catch (e) {
         /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`validateArchiverJoinRequest exception: ${e}`)
-        return {
-          success: false,
-          reason: `validateArchiverJoinRequest fail: exception: ${e}`,
-          fatal: true,
-        }
+        return { success: false, reason: `validateArchiverJoinRequest fail: exception: ${e}`, fatal: true, }
       }
     },
     // Update the activeNodes type here; We can import from P2P.P2PTypes.Node from '@shardeum-foundation/lib-types' lib but seems it's not installed yet
@@ -7320,26 +7322,32 @@ const shardusSetup = (): void => {
       /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`isReadyToJoin cachedNetworkAccount 2 ${Utils.safeStringify(cachedNetworkAccount)}`)
 
       if (initialNetworkParamters && networkAccount) {
-        if (
-          !isValidVersion(
-            networkAccount.data.current.minVersion,
-            networkAccount.data.current.latestVersion,
-            version
-          )
-        ) {
-          const tag = 'version out-of-date; please update and restart'
-          const message = 'node version is out-of-date; please update node to latest version'
+        //error out nodes in debug mode for production networks to prevent joining
+        if (networkAccount.data.mode === ServerMode.Release && config.server.mode !== ServerMode.Release ) {
+          const tag = `wrong mode; please update and restart`
+          const message = `node mode must be in release mode; please update the node mode`
           shardus.shutdownFromDapp(tag, message, false)
           return false
         }
 
-        //error out nodes in debug mode for production networks to prevent joining
-        if (
-          networkAccount.data.mode === ServerMode.Release &&
-          config.server.mode !== ServerMode.Release
-        ) {
-          const tag = 'wrong mode; please update and restart'
-          const message = 'node mode must be release; please update the node mode'
+        const nodeVersion = version
+        const minVersion = networkAccount.data.current.minVersion      
+        const latestVersion = AccountsStorage.cachedNetworkAccount.current.latestVersion
+
+        // Error out if our node version doesn't meet the min version (it's too old)
+        const minVersionValidationResult = meetsMinimumVersion(minVersion, nodeVersion)
+        if (minVersionValidationResult !== VersionValidationResult.Success) {
+          const tag = `isReadyToJoin: Not ready to join`
+          const message = `Node version (${nodeVersion}) does not meet minimum required version (${minVersion}); Please install version (${latestVersion})`
+          shardus.shutdownFromDapp(tag, message, false)
+          return false
+        }
+
+        // Error out if our node version exceeds the max version (it's too new)        
+        const latestVersionValidationResult = isWithinMaximumVersion(latestVersion, nodeVersion)
+        if (latestVersionValidationResult !== VersionValidationResult.Success) {
+          const tag = `isReadyToJoin: Not ready to join`
+          const message = `Node version (${nodeVersion}) exceeds maximum allowed version (${latestVersion}); Please install version (${latestVersion})`
           shardus.shutdownFromDapp(tag, message, false)
           return false
         }
@@ -7926,26 +7934,32 @@ const shardusSetup = (): void => {
         }
 
         const minVersion = AccountsStorage.cachedNetworkAccount.current.minVersion
-        if (!isEqualOrNewerVersion(minVersion, appJoinData.version)) {
-          /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`canStayOnStandby fail: old version`)
-          return {
-            canStay: false,
-            reason: `canStayOnStandby: standby node version: ${appJoinData.version} < minVersion ${minVersion}`,
+        const latestVersion = AccountsStorage.cachedNetworkAccount.current.latestVersion
+        const appJoinDataVersion = appJoinData.version
+
+        // Min version reasons we can't stay on standby list.
+        const minVersionValidationResult = meetsMinimumVersion(minVersion, appJoinDataVersion)
+        if (minVersionValidationResult !== VersionValidationResult.Success) {
+          switch (minVersionValidationResult) {
+            case VersionValidationResult.ComparisonFailed: return { canStay: false, reason: `canStayOnStandby: Standby node version: ${appJoinDataVersion} failed to meet min version ${minVersion}` }
+            case VersionValidationResult.ControlVersionParseFailure: return { canStay: false, reason: `canStayOnStandby: Failed to parse minVersion ${minVersion}` }
+            case VersionValidationResult.InvalidControlVersion: return { canStay: false, reason: `canStayOnStandby: Failed to validate minVersion ${minVersion}` }
+            case VersionValidationResult.TestVersionParseFailure: return { canStay: false, reason: `canStayOnStandby: Failed to parse appJoinDataVersion ${appJoinDataVersion}` }
+            case VersionValidationResult.InvalidTestVersion: return { canStay: false, reason: `canStayOnStandby: Failed to validate appJoinDataVersion ${appJoinDataVersion}` }
+            default: return { canStay: false, reason: `canStayOnStandby: Unexpected validation result ${minVersionValidationResult} - minVersion: ${minVersion} appJoinDataVersion: ${appJoinDataVersion}`}
           }
         }
-
-        const latestVersion = AccountsStorage.cachedNetworkAccount.current.latestVersion
-
-        if (
-          latestVersion &&
-          appJoinData.version &&
-          !isEqualOrOlderVersion(latestVersion, appJoinData.version)
-        ) {
-          /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`canStayOnStandby fail: version number is newer than latest`)
-          return {
-            canStay: false,
-            reason: `version number is newer than latest. The latest allowed app version is ${latestVersion}. Join request node app version is ${appJoinData.version}`,
-            //fatal: true,
+        
+        // Max version reasons we can't stay on standby list.
+        const latestVersionValidationResult = isWithinMaximumVersion(latestVersion, appJoinDataVersion)
+        if (latestVersionValidationResult !== VersionValidationResult.Success) {
+          switch (latestVersionValidationResult) {
+            case VersionValidationResult.ComparisonFailed: return { canStay: false, reason: `canStayOnStandby: Standby node version: ${appJoinDataVersion} exceeds latestVersion ${latestVersion}` }
+            case VersionValidationResult.ControlVersionParseFailure: return { canStay: false, reason: `canStayOnStandby: Failed to parse latestVersion ${latestVersion}` }
+            case VersionValidationResult.InvalidControlVersion: return { canStay: false, reason: `canStayOnStandby: Failed to validate latestVersion ${latestVersion}` }
+            case VersionValidationResult.TestVersionParseFailure: return { canStay: false, reason: `canStayOnStandby: Failed to parse appJoinDataVersion ${appJoinDataVersion}` }
+            case VersionValidationResult.InvalidTestVersion: return { canStay: false, reason: `canStayOnStandby: Failed to validate appJoinDataVersion ${appJoinDataVersion}` }
+            default: return { canStay: false, reason: `canStayOnStandby: Unexpected validation result ${latestVersionValidationResult} - latestVersion: ${latestVersion} appJoinDataVersion: ${appJoinDataVersion}`}
           }
         }
       }
