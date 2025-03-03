@@ -1,8 +1,8 @@
 import { DevSecurityLevel, ShardusTypes } from '@shardus/core'
 import { Utils } from '@shardus/types'
-import { getKeyManagerConfig } from '../config/multisigKeyManagerConfig'
+import { getKeyManagerConfig } from '../../config/multisigKeyManagerConfig'
 import { ethers } from 'ethers'
-import { comparePropertiesTypes } from '../utils/general'
+import { comparePropertiesTypes } from '../../utils/general'
 
 /**
  * Type definition for the verifyMultiSigs function to use for dependency injection

@@ -5,8 +5,8 @@
 We've refactored the multisig key validation system to improve modularity and testability through dependency injection. Key changes include:
 
 1. **Merged Related Files:**
-   - Combined `multisigKeyManagement.ts` and `multisigKeyValidator.ts` into a single file, now named `validateConfigChange.ts`
-   - Merged test files into a unified `multisigValidation.test.ts`
+   - Combined `multisigKeyManagement.ts` and `multisigKeyValidator.ts` into a single file, now named `validate.ts` located in `src/tx/changeConfig/`
+   - Merged test files into a unified `validate.test.ts` located in `test/unit/src/tx/changeConfig/`
 
 2. **Implemented Dependency Injection:**
    - Removed direct import of `verifyMultiSigs` from `helpers.ts`

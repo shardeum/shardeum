@@ -9,10 +9,10 @@ import {
   isValidMultisigKeyAddition,
   isValidHexKey,
   validateConfigChangeTx
-} from '../src/setup/validateConfigChange'
+} from '../../../../../src/tx/changeConfig/validate'
 
 // Import comparePropertiesTypes for proper mocking
-import * as generalUtils from '../src/utils/general'
+import * as generalUtils from '../../../../../src/utils/general'
 
 // Mock the type definition without importing from the real file
 type VerifyMultiSigsFunction = (

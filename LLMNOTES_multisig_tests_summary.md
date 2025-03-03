@@ -1,6 +1,6 @@
 # MultisigKeyValidator Tests Summary
 
-The multisigKeyValidator component (now renamed to validateConfigChange) is tested through the test file `test/multisigValidation.test.ts`.
+The multisigKeyValidator component (now renamed and relocated to src/tx/changeConfig/validate.ts) is tested through the test file `test/unit/src/tx/changeConfig/validate.test.ts`.
 
 ## Test coverage:
 
@@ -35,13 +35,13 @@ npm run test:multisig
 ```
 
 ## Test Results:
-All 34 tests are now passing, providing comprehensive coverage of the validateConfigChange component's functionality.
+All 34 tests are now passing, providing comprehensive coverage of the validate.ts component's functionality.
 
 ## Test Improvements:
-- Added tests for all exported functions in the validateConfigChange module
+- Added tests for all exported functions in the validate.ts module
 - Improved mocking of dependencies like comparePropertiesTypes
 - Added edge cases testing for input validation and error handling
 - Enhanced coverage of security validation logic
 
-## File Rename:
-The original file `src/setup/multisigKeyValidator.ts` has been renamed to `src/setup/validateConfigChange.ts` to better reflect its primary purpose. All imports and documentation references have been updated accordingly. 
+## File Rename and Relocation:
+The original file `src/setup/multisigKeyValidator.ts` has been renamed and relocated to `src/tx/changeConfig/validate.ts` to better reflect its primary purpose and to organize it within the transaction hierarchy. All imports and documentation references have been updated accordingly. 
