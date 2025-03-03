@@ -69,7 +69,7 @@ export const validateTxnFields =
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
 
 
-  (shardus: Shardus, debugAppdata: Map<string, unknown>) =>
+    (shardus: Shardus, debugAppdata: Map<string, unknown>) =>
     (
       timestampedTx: any,
       originalAppData: any
@@ -92,7 +92,7 @@ export const validateTxnFields =
       const txId = generateTxId(tx)
 
       // Verify AJV for internal transactions
-      if (isInternalTx(tx)) {
+      if(isInternalTx(tx)) {
         const ajvTxType = txTypeToAJVMap[tx.internalTXType]
         const ajvErrors = verifyPayload(ajvTxType, tx)
         if (ajvErrors) {
@@ -433,7 +433,7 @@ export const validateTxnFields =
             success = false
             reason = 'Invalid nominee address in stake coins tx'
           } else if (stakeCoinsTx.stake !== transaction.value) {
-            /* prettier-ignore */ if (logFlags.dapp_verbose) console.log(`Tx value and stake amount are different`, stakeCoinsTx.stake.toString(), transaction.value.toString())
+            /* prettier-ignore */ if (logFlags.dapp_verbose) console.log( `Tx value and stake amount are different`, stakeCoinsTx.stake.toString(), transaction.value.toString() )
             success = false
             reason = `Tx value and stake amount are different`
           } else if (stakeCoinsTx.stake < minStakeAmount) {
@@ -495,12 +495,12 @@ export const validateTxnFields =
             unstakeCoinsTX.nominator == null ||
             unstakeCoinsTX.nominator.toLowerCase() !== senderAddress.toString()
           ) {
-            /* prettier-ignore */ nestedCountersInstance.countEvent('shardeum-unstaking', 'invalid nominator address in stake coins tx')
-            /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`nominator vs tx signer`, unstakeCoinsTX.nominator, senderAddress.toString())
+            /* prettier-ignore */ nestedCountersInstance.countEvent( 'shardeum-unstaking', 'invalid nominator address in stake coins tx' )
+            /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log( `nominator vs tx signer`, unstakeCoinsTX.nominator, senderAddress.toString() )
             success = false
             reason = `Invalid nominator address in stake coins tx`
           } else if (unstakeCoinsTX.nominee == null) {
-            /* prettier-ignore */ nestedCountersInstance.countEvent('shardeum-unstaking', 'invalid nominee address in stake coins tx')
+            /* prettier-ignore */ nestedCountersInstance.countEvent( 'shardeum-unstaking', 'invalid nominee address in stake coins tx' )
             success = false
             reason = `Invalid nominee address in stake coins tx`
           }
