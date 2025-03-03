@@ -313,7 +313,7 @@ export const validateTxnFields =
           ? AccountsStorage.cachedNetworkAccount.current.chainID
           : ShardeumFlags.ChainID;
 
-        if (chainId !== BigInt(networkChainID)) {
+        if (chainId !== BigInt(networkChainID) || tx.chainID !== networkChainID) {
           nestedCountersInstance.countEvent('shardeum', 'validate - invalid chain ID')
           success = false
           reason = `Transaction chain ID is invalid.`
