@@ -7332,7 +7332,7 @@ const shardusSetup = (): void => {
 
         const nodeVersion = version
         const minVersion = networkAccount.data.current.minVersion      
-        const latestVersion = AccountsStorage.cachedNetworkAccount.current.latestVersion
+        const latestVersion = networkAccount.data.current.latestVersion
 
         // Error out if our node version doesn't meet the min version (it's too old)
         const minVersionValidationResult = meetsMinimumVersion(minVersion, nodeVersion)
