@@ -15,20 +15,3 @@ export const DEFAULT_KEY_MANAGER_ADDRESSES = [
 
 // Minimum number of signatures required for key management operations
 export const DEFAULT_KEY_MANAGEMENT_MIN_SIGNATURES = 3
-
-/**
- * Retrieves the current key manager configuration from the global config
- * or falls back to defaults if not configured
- * 
- * @param config The global configuration object
- * @returns Key manager configuration values
- */
-export function getKeyManagerConfig(config: any): {
-  keyManagerAddresses: string[],
-  keyManagementMinSignatures: number
-} {
-  return {
-    keyManagerAddresses: config?.server?.debug?.keyManagerAddresses || DEFAULT_KEY_MANAGER_ADDRESSES,
-    keyManagementMinSignatures: config?.server?.debug?.keyManagementMinSignatures || DEFAULT_KEY_MANAGEMENT_MIN_SIGNATURES
-  }
-} 
