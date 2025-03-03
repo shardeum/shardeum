@@ -1,6 +1,7 @@
 import { BN } from 'ethereumjs-util'
 import { NetworkParameters } from './shardeumTypes'
 import { ONE_HOUR, oneSHM, ONE_DAY, THIRTY_MINUTES } from './shardeumConstants'
+import { ShardeumFlags } from './shardeumFlags'
 
 // INITIAL NETWORK PARAMETERS FOR Shardeum
 
@@ -45,4 +46,5 @@ export const initialNetworkParamters: NetworkParameters = {
   },
   enableRPCEndpoints: false,
   stakeLockTime: 6000, //1000 * 60 * 60 * 3, // 3 hours in milliseconds
+  chainID: ShardeumFlags.ChainID, // 8082
 }
