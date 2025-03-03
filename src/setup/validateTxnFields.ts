@@ -318,6 +318,11 @@ export const validateTxnFields =
           success = false
           reason = `Transaction chain ID is invalid.`
           /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`chain ID fail: chain ID: ${chainId}, Network Chain ID: ${networkChainID}`)
+          return {
+            success,
+            reason,
+            txnTimestamp,
+          }
         }
 
         if (ShardeumFlags.txBalancePreCheck && appData != null) {
