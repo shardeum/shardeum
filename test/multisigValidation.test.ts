@@ -9,7 +9,7 @@ import {
   isValidMultisigKeyAddition,
   isValidHexKey,
   validateConfigChangeTx
-} from '../src/setup/multisigKeyValidator'
+} from '../src/setup/validateConfigChange'
 
 // Import comparePropertiesTypes for proper mocking
 import * as generalUtils from '../src/utils/general'

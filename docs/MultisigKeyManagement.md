@@ -29,6 +29,7 @@ In the Shardeum network, multisig keys are used to authorize important operation
 
 - `src/config/multisigKeyManagerConfig.ts`: Configuration defaults and helpers
 - `src/setup/multisigKeyValidator.ts`: Core validation functions and integration with transaction validation
+- `src/setup/validateConfigChange.ts`: Core validation functions and integration with transaction validation
 - `test/multisigValidation.test.ts`: Unit and integration tests
 
 ## How It Works

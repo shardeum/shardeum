@@ -22,7 +22,7 @@ import {
   isValidDevKeyAddition, 
   isValidMultisigKeyAddition,
   isValidHexKey
-} from './multisigKeyValidator'
+} from './validateConfigChange'
 
 type Response = {
   result: string
