@@ -14,10 +14,15 @@ import * as AccountsStorage from '../storage/accountStorage'
 import config from '../config'
 import { comparePropertiesTypes } from '../utils'
 import { Utils } from '@shardus/types'
-import { ethers } from 'ethers'
 import { shardusConfig } from '..'
 import { validateTransferFromSecureAccount } from '../shardeum/secureAccounts'
-import { validateConfigChange } from './multisigKeyValidator'
+import { 
+  validateConfigChange, 
+  omitDevKeys, 
+  isValidDevKeyAddition, 
+  isValidMultisigKeyAddition,
+  isValidHexKey
+} from './multisigKeyValidator'
 
 type Response = {
   result: string
@@ -42,24 +47,7 @@ export const validateTransaction =
         
         // For config changes, use specialized validation
         if (tx.internalTXType === InternalTXType.ChangeConfig) {
-          // First validate the config change with special checks for multisig key changes
-          const validationResult = validateConfigChange(tx, config, devPublicKeys, requiredSigs, verifyMultiSigs)
-          
-          if (validationResult.result === 'fail') {
-            return validationResult
-          }
-          
-          // Then validate the config structure itself
-          const givenConfig = Utils.safeJsonParse(tx.config)
-          if (
-            comparePropertiesTypes(omitDevKeys(givenConfig), config.server) &&
-            isValidDevKeyAddition(givenConfig) &&
-            isValidMultisigKeyAddition(givenConfig)
-          ) {
-            return { result: 'pass', reason: 'valid' }
-          } else {
-            return { result: 'fail', reason: 'Invalid config' }
-          }
+          return validateConfigChange(tx, config, devPublicKeys, requiredSigs, verifyMultiSigs)
         }
         
         // For network param changes, use regular validation
@@ -141,63 +129,3 @@ export const validateTransaction =
 
     return response
   }
-
-function omitDevKeys(givenConfig: any): any {
-  if (!givenConfig.debug?.devPublicKeys && !givenConfig.debug?.multisigKeys) {
-    return givenConfig
-  }
-
-  const { debug, ...restOfConfig } = givenConfig
-  const { devPublicKeys, multisigKeys, ...restOfDebug } = debug
-
-  if (Object.keys(restOfDebug).length > 0) {
-    return { ...restOfConfig, debug: restOfDebug }
-  }
-
-  return restOfConfig
-}
-
-function isValidDevKeyAddition(givenConfig: any): boolean {
-  const devPublicKeys = givenConfig.debug?.devPublicKeys
-  if (!devPublicKeys) {
-    return true
-  }
-
-  for (const key in devPublicKeys) {
-    if (!isValidHexKey(key)) {
-      return false
-    }
-
-    // eslint-disable-next-line security/detect-object-injection
-    const securityLevel = devPublicKeys[key]
-    if (!Object.values(DevSecurityLevel).includes(securityLevel)) {
-      return false
-    }
-  }
-  return true
-}
-
-function isValidMultisigKeyAddition(givenConfig: any): boolean {
-  const multisigKeys = givenConfig.debug?.multisigKeys
-  if (!multisigKeys) {
-    return true
-  }
-
-  for (const key in multisigKeys) {
-    if (!ethers.isAddress(key)) {
-      return false
-    }
-
-    // eslint-disable-next-line security/detect-object-injection
-    const securityLevel = multisigKeys[key]
-    if (!Object.values(DevSecurityLevel).includes(securityLevel)) {
-      return false
-    }
-  }
-  return true
-}
-
-function isValidHexKey(key: string): boolean {
-  const hexPattern = /^[a-f0-9]{64}$/i
-  return hexPattern.test(key)
-}

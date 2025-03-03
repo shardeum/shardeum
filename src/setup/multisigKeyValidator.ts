@@ -2,6 +2,7 @@ import { DevSecurityLevel, ShardusTypes } from '@shardus/core'
 import { Utils } from '@shardus/types'
 import { getKeyManagerConfig } from '../config/multisigKeyManagerConfig'
 import { ethers } from 'ethers'
+import { comparePropertiesTypes } from '../utils/general'
 
 /**
  * Type definition for the verifyMultiSigs function to use for dependency injection
@@ -182,4 +183,120 @@ export function validateConfigChange(
   }
   
   return { result: 'success', reason: 'valid' }
+}
+
+/**
+ * Removes developer key fields from a configuration for comparison purposes
+ * @param givenConfig Configuration object to process
+ * @returns Configuration with dev keys removed
+ */
+export function omitDevKeys(givenConfig: any): any {
+  if (!givenConfig.debug?.devPublicKeys && !givenConfig.debug?.multisigKeys) {
+    return givenConfig
+  }
+
+  const { debug, ...restOfConfig } = givenConfig
+  const { devPublicKeys, multisigKeys, ...restOfDebug } = debug
+
+  if (Object.keys(restOfDebug).length > 0) {
+    return { ...restOfConfig, debug: restOfDebug }
+  }
+
+  return restOfConfig
+}
+
+/**
+ * Validates that developer public keys in a configuration have valid format and security levels
+ * @param givenConfig Configuration containing developer keys
+ * @returns True if all keys are valid, false otherwise
+ */
+export function isValidDevKeyAddition(givenConfig: any): boolean {
+  const devPublicKeys = givenConfig.debug?.devPublicKeys
+  if (!devPublicKeys) {
+    return true
+  }
+
+  for (const key in devPublicKeys) {
+    if (!isValidHexKey(key)) {
+      return false
+    }
+
+    // eslint-disable-next-line security/detect-object-injection
+    const securityLevel = devPublicKeys[key]
+    if (!Object.values(DevSecurityLevel).includes(securityLevel)) {
+      return false
+    }
+  }
+  return true
+}
+
+/**
+ * Validates that multisig keys in a configuration have valid format and security levels
+ * @param givenConfig Configuration containing multisig keys
+ * @returns True if all keys are valid, false otherwise
+ */
+export function isValidMultisigKeyAddition(givenConfig: any): boolean {
+  const multisigKeys = givenConfig.debug?.multisigKeys
+  if (!multisigKeys) {
+    return true
+  }
+
+  for (const key in multisigKeys) {
+    if (!ethers.isAddress(key)) {
+      return false
+    }
+
+    // eslint-disable-next-line security/detect-object-injection
+    const securityLevel = multisigKeys[key]
+    if (!Object.values(DevSecurityLevel).includes(securityLevel)) {
+      return false
+    }
+  }
+  return true
+}
+
+/**
+ * Validates that a string is a valid 64-character hexadecimal key
+ * @param key String to validate
+ * @returns True if the key is a valid 64-character hex string, false otherwise
+ */
+export function isValidHexKey(key: string): boolean {
+  const hexPattern = /^[a-f0-9]{64}$/i
+  return hexPattern.test(key)
+}
+
+/**
+ * Validates a config change transaction with special handling for multisig key changes
+ * @param tx The transaction containing the config change
+ * @param config The current configuration
+ * @param devPublicKeys The map of allowed public keys
+ * @param requiredSigs The regular minimum signatures for non-key management operations
+ * @param verifyMultiSigs The verification function to use for signature validation
+ * @returns Object with validation result and reason
+ */
+export function validateConfigChangeTx(
+  tx: any,
+  config: any,
+  devPublicKeys: { [pubkey: string]: DevSecurityLevel },
+  requiredSigs: number,
+  verifyMultiSigs: VerifyMultiSigsFunction
+): { result: string; reason: string } {
+  // First validate the config change with special checks for multisig key changes
+  const validationResult = validateConfigChange(tx, config, devPublicKeys, requiredSigs, verifyMultiSigs)
+  
+  if (validationResult.result === 'fail') {
+    return validationResult
+  }
+  
+  // Then validate the config structure itself
+  const givenConfig = Utils.safeJsonParse(tx.config)
+  if (
+    comparePropertiesTypes(omitDevKeys(givenConfig), config.server) &&
+    isValidDevKeyAddition(givenConfig) &&
+    isValidMultisigKeyAddition(givenConfig)
+  ) {
+    return { result: 'pass', reason: 'valid' }
+  } else {
+    return { result: 'fail', reason: 'Invalid config' }
+  }
 } 

@@ -2,6 +2,18 @@ import { ethers } from 'ethers'
 import { DevSecurityLevel } from '@shardus/core'
 import { Utils } from '@shardus/types'
 
+// Only import the functions that don't have local declarations
+import {
+  omitDevKeys,
+  isValidDevKeyAddition,
+  isValidMultisigKeyAddition,
+  isValidHexKey,
+  validateConfigChangeTx
+} from '../src/setup/multisigKeyValidator'
+
+// Import comparePropertiesTypes for proper mocking
+import * as generalUtils from '../src/utils/general'
+
 // Mock the type definition without importing from the real file
 type VerifyMultiSigsFunction = (
   rawPayload: object,
@@ -528,6 +540,375 @@ describe('Multisig Validation System', () => {
       // Should use regular validation and pass
       expect(result.result).toBe('success')
       expect(result.reason).toBe('valid')
+    })
+  })
+
+  describe('omitDevKeys function', () => {
+    it('should remove devPublicKeys and multisigKeys from the config', () => {
+      const config = {
+        debug: {
+          devPublicKeys: {
+            'pubkey1': DevSecurityLevel.High
+          },
+          multisigKeys: {
+            '0x1111111111111111111111111111111111111111': DevSecurityLevel.High
+          },
+          otherField: 'test'
+        },
+        anotherField: 'value'
+      }
+      
+      const result = omitDevKeys(config)
+      
+      expect(result).toEqual({
+        debug: {
+          otherField: 'test'
+        },
+        anotherField: 'value'
+      })
+    })
+    
+    it('should handle config without debug field', () => {
+      const config = {
+        anotherField: 'value'
+      }
+      
+      const result = omitDevKeys(config)
+      
+      expect(result).toEqual(config)
+    })
+    
+    it('should handle config with empty debug field', () => {
+      const config = {
+        debug: {},
+        anotherField: 'value'
+      }
+      
+      const result = omitDevKeys(config)
+      
+      expect(result).toEqual(config)
+    })
+    
+    it('should remove debug field entirely if it becomes empty', () => {
+      const config = {
+        debug: {
+          devPublicKeys: {
+            'pubkey1': DevSecurityLevel.High
+          },
+          multisigKeys: {
+            '0x1111111111111111111111111111111111111111': DevSecurityLevel.High
+          }
+        },
+        anotherField: 'value'
+      }
+      
+      const result = omitDevKeys(config)
+      
+      expect(result).toEqual({
+        anotherField: 'value'
+      })
+    })
+  })
+
+  describe('isValidHexKey function', () => {
+    it('should validate correct hex keys', () => {
+      const validKey = '1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef'
+      expect(isValidHexKey(validKey)).toBe(true)
+    })
+    
+    it('should validate correct hex keys with uppercase characters', () => {
+      const validKey = '1234567890ABCDEF1234567890ABCDEF1234567890ABCDEF1234567890ABCDEF'
+      expect(isValidHexKey(validKey)).toBe(true)
+    })
+    
+    it('should reject keys that are too short', () => {
+      const invalidKey = '1234567890abcdef'
+      expect(isValidHexKey(invalidKey)).toBe(false)
+    })
+    
+    it('should reject keys that are too long', () => {
+      const invalidKey = '1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef00'
+      expect(isValidHexKey(invalidKey)).toBe(false)
+    })
+    
+    it('should reject keys with non-hex characters', () => {
+      const invalidKey = '1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdeg'
+      expect(isValidHexKey(invalidKey)).toBe(false)
+    })
+  })
+
+  describe('isValidDevKeyAddition function', () => {
+    it('should validate correct devPublicKeys', () => {
+      const config = {
+        debug: {
+          devPublicKeys: {
+            '1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef': DevSecurityLevel.High
+          }
+        }
+      }
+      
+      expect(isValidDevKeyAddition(config)).toBe(true)
+    })
+    
+    it('should handle config without devPublicKeys', () => {
+      const config = {
+        debug: {}
+      }
+      
+      expect(isValidDevKeyAddition(config)).toBe(true)
+    })
+    
+    it('should reject invalid hex keys', () => {
+      const config = {
+        debug: {
+          devPublicKeys: {
+            'invalidkey': DevSecurityLevel.High
+          }
+        }
+      }
+      
+      expect(isValidDevKeyAddition(config)).toBe(false)
+    })
+    
+    it('should reject invalid security levels', () => {
+      const config = {
+        debug: {
+          devPublicKeys: {
+            '1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef': 999
+          }
+        }
+      }
+      
+      expect(isValidDevKeyAddition(config)).toBe(false)
+    })
+  })
+
+  describe('isValidMultisigKeyAddition function', () => {
+    it('should validate correct multisigKeys', () => {
+      const config = {
+        debug: {
+          multisigKeys: {
+            '0x1234567890123456789012345678901234567890': DevSecurityLevel.High
+          }
+        }
+      }
+      
+      expect(isValidMultisigKeyAddition(config)).toBe(true)
+    })
+    
+    it('should handle config without multisigKeys', () => {
+      const config = {
+        debug: {}
+      }
+      
+      expect(isValidMultisigKeyAddition(config)).toBe(true)
+    })
+    
+    it('should reject invalid ethereum addresses', () => {
+      const config = {
+        debug: {
+          multisigKeys: {
+            'not-an-address': DevSecurityLevel.High
+          }
+        }
+      }
+      
+      expect(isValidMultisigKeyAddition(config)).toBe(false)
+    })
+    
+    it('should reject invalid security levels', () => {
+      const config = {
+        debug: {
+          multisigKeys: {
+            '0x1234567890123456789012345678901234567890': 999
+          }
+        }
+      }
+      
+      expect(isValidMultisigKeyAddition(config)).toBe(false)
+    })
+  })
+
+  describe('validateConfigChangeTx function', () => {
+    it('should validate correct config changes', async () => {
+      // Mock dependencies
+      const mockVerifyMultiSigs = jest.fn().mockReturnValue(true)
+      
+      // Create test tx and config
+      const tx = {
+        isInternalTx: true,
+        internalTXType: 3,
+        config: JSON.stringify({
+          server: {
+            testField: 'test value'
+          }
+        }),
+        sign: [{ owner: 'owner1', sig: 'sig1' }]
+      }
+      
+      const config = {
+        server: {
+          testField: 'test value'
+        }
+      }
+      
+      const devPublicKeys = {
+        'owner1': DevSecurityLevel.High
+      }
+      
+      // Mock implementation of comparePropertiesTypes to return true
+      jest.spyOn(generalUtils, 'comparePropertiesTypes').mockReturnValue(true)
+      
+      const result = validateConfigChangeTx(tx, config, devPublicKeys, 1, mockVerifyMultiSigs)
+      
+      expect(result.result).toBe('pass')
+      expect(result.reason).toBe('valid')
+      
+      // Restore mock
+      jest.restoreAllMocks()
+    })
+    
+    it('should fail when validateConfigChange fails', async () => {
+      // Mock dependencies to fail validation
+      const mockVerifyMultiSigs = jest.fn().mockReturnValue(false)
+      
+      // Create test tx and config
+      const tx = {
+        isInternalTx: true,
+        internalTXType: 3,
+        config: JSON.stringify({
+          debug: {
+            multisigKeys: {
+              '0x1234567890123456789012345678901234567890': DevSecurityLevel.High
+            }
+          }
+        }),
+        sign: [{ owner: 'owner1', sig: 'sig1' }]
+      }
+      
+      const config = {
+        debug: {
+          multisigKeys: {}
+        }
+      }
+      
+      const devPublicKeys = {
+        'owner1': DevSecurityLevel.High
+      }
+      
+      const result = validateConfigChangeTx(tx, config, devPublicKeys, 1, mockVerifyMultiSigs)
+      
+      expect(result.result).toBe('fail')
+    })
+    
+    it('should fail when comparePropertiesTypes fails', async () => {
+      // Mock dependencies
+      const mockVerifyMultiSigs = jest.fn().mockReturnValue(true)
+      
+      // Create test tx and config
+      const tx = {
+        isInternalTx: true,
+        internalTXType: 3,
+        config: JSON.stringify({
+          server: {
+            newField: 'new value'
+          }
+        }),
+        sign: [{ owner: 'owner1', sig: 'sig1' }]
+      }
+      
+      const config = {
+        server: {
+          testField: 'test value'
+        }
+      }
+      
+      const devPublicKeys = {
+        'owner1': DevSecurityLevel.High
+      }
+      
+      // Mock implementation of comparePropertiesTypes to return false
+      jest.spyOn(generalUtils, 'comparePropertiesTypes').mockReturnValue(false)
+      
+      const result = validateConfigChangeTx(tx, config, devPublicKeys, 1, mockVerifyMultiSigs)
+      
+      expect(result.result).toBe('fail')
+      expect(result.reason).toBe('Invalid config')
+      
+      // Restore mock
+      jest.restoreAllMocks()
+    })
+    
+    it('should fail when isValidDevKeyAddition fails', async () => {
+      // Mock dependencies
+      const mockVerifyMultiSigs = jest.fn().mockReturnValue(true)
+      
+      // Create test tx with invalid dev key
+      const tx = {
+        isInternalTx: true,
+        internalTXType: 3,
+        config: JSON.stringify({
+          debug: {
+            devPublicKeys: {
+              'invalidkey': DevSecurityLevel.High
+            }
+          }
+        }),
+        sign: [{ owner: 'owner1', sig: 'sig1' }]
+      }
+      
+      const config = {}
+      
+      const devPublicKeys = {
+        'owner1': DevSecurityLevel.High
+      }
+      
+      // Mock implementation of comparePropertiesTypes to return true
+      jest.spyOn(generalUtils, 'comparePropertiesTypes').mockReturnValue(true)
+      
+      const result = validateConfigChangeTx(tx, config, devPublicKeys, 1, mockVerifyMultiSigs)
+      
+      expect(result.result).toBe('fail')
+      expect(result.reason).toBe('Invalid config')
+      
+      // Restore mock
+      jest.restoreAllMocks()
+    })
+    
+    it('should fail when isValidMultisigKeyAddition fails', async () => {
+      // Mock dependencies
+      const mockVerifyMultiSigs = jest.fn().mockReturnValue(true)
+      
+      // Create test tx with invalid multisig key
+      const tx = {
+        isInternalTx: true,
+        internalTXType: 3,
+        config: JSON.stringify({
+          debug: {
+            multisigKeys: {
+              'not-an-address': DevSecurityLevel.High
+            }
+          }
+        }),
+        sign: [{ owner: 'owner1', sig: 'sig1' }]
+      }
+      
+      const config = {}
+      
+      const devPublicKeys = {
+        'owner1': DevSecurityLevel.High
+      }
+      
+      // Mock implementation of comparePropertiesTypes to return true
+      jest.spyOn(generalUtils, 'comparePropertiesTypes').mockReturnValue(true)
+      
+      const result = validateConfigChangeTx(tx, config, devPublicKeys, 1, mockVerifyMultiSigs)
+      
+      expect(result.result).toBe('fail')
+      expect(result.reason).toBe('Unauthorized key management operation. Requires signatures from authorized key managers.')
+      
+      // Restore mock
+      jest.restoreAllMocks()
     })
   })
 }); 
