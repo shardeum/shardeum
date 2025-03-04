@@ -105,7 +105,7 @@ export function validateSetCertTimeTx(tx: SetCertTime): { isValid: boolean; reas
     return { isValid: false, reason: 'Timestamp in cert tx must be > 0' }
   }
   try {
-    if (!verify(tx, tx.nominee)) return { isValid: false, reason: 'Invalid signature for SetCertTime tx' }
+    if (!verify(tx, tx.nominator)) return { isValid: false, reason: 'Invalid signature for SetCertTime tx' }
   } catch (e) {
     return { isValid: false, reason: 'Invalid signature for SetCertTime tx' }
   }
