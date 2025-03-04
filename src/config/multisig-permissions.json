@@ -1,0 +1,11 @@
+{
+    "changeDevKeyList": [
+        "0x002D3a2BfE09E3E29b6d38d58CaaD16EEe4C9BC5"
+    ],
+    "changeMultiSigKeyList": [
+        "0x002D3a2BfE09E3E29b6d38d58CaaD16EEe4C9BC5"
+    ],
+    "initiateSecureAccountTransfer": [
+        "0x002D3a2BfE09E3E29b6d38d58CaaD16EEe4C9BC5"
+    ]
+}

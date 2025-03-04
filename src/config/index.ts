@@ -36,21 +36,6 @@ export interface Config {
           enabled: boolean;
         }>,
       }
-    },
-    debug?: {
-      // Key management specific settings
-      keyManagerAddresses?: string[],  // Addresses that can modify the multisig key list
-      keyManagementMinSignatures?: number,  // Higher threshold for key management operations
-      startInFatalsLogMode?: boolean,
-      startInErrorLogMode?: boolean,
-      verboseNestedCounters?: boolean,
-      robustQueryDebug?: boolean,
-      fakeNetworkDelay?: number,
-      disableSnapshots?: boolean,
-      countEndpointStart?: number,
-      hashedDevAuth?: string,
-      devPublicKeys?: { [key: string]: number },
-      multisigKeys?: { [key: string]: number },
     }
   }
 }
@@ -372,9 +357,6 @@ config = merge(
         disableSnapshots: true, // do not check in if set to false
         countEndpointStart: -1,
         hashedDevAuth: '',
-        // Key management specific settings
-        keyManagerAddresses: DEFAULT_KEY_MANAGER_ADDRESSES,
-        keyManagementMinSignatures: DEFAULT_KEY_MANAGEMENT_MIN_SIGNATURES,
         devPublicKeys: {
           // '': DevSecurityLevel.Unauthorized,
           // These are production keys.  Use 'git apply use_test_key.patch' for unsafe local test keys

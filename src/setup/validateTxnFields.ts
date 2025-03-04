@@ -43,6 +43,8 @@ import { bytesToHex } from '@ethereumjs/util'
 import { logFlags, shardusConfig, getStakeTxBlobFromEVMTx } from '..'
 import { Sign } from '@shardus/core/dist/shardus/shardus-types'
 import { validateTransferFromSecureAccount } from '../shardeum/secureAccounts'
+import { validateConfigChangeTx, validateConfigChangeTxFields } from '../tx/changeConfig/validate'
+import config from '../config'
 
 /**
  * Checks that Transaction fields are valid
@@ -109,14 +111,36 @@ export const validateTxnFields =
             if (!tx.sign) {
               success = false
               reason = 'No signature found'
+              return {
+                success,
+                reason,
+                txnTimestamp,
+              }
             }
 
             // Use multisig keys for validation
             const allowedPublicKeys = shardus.getMultisigPublicKeys()
-
-            const is_array_sig = Array.isArray(tx.sign) === true
             const requiredSigs = Math.max(1, shardusConfig.debug.minMultiSigRequiredForGlobalTxs)
 
+            // Handle ChangeConfig transactions with specialized validation
+            if (tx.internalTXType === InternalTXType.ChangeConfig) {
+              const validationResult = validateConfigChangeTxFields(
+                tx, 
+                config, 
+                allowedPublicKeys, 
+                requiredSigs, 
+                verifyMultiSigs
+              )
+              
+              return {
+                success: validationResult.success,
+                reason: validationResult.reason,
+                txnTimestamp,
+              }
+            }
+
+            // Handle ChangeNetworkParam transactions with standard validation
+            const is_array_sig = Array.isArray(tx.sign) === true
             //this'll making sure old single sig / non-array are still compitable
             const sigs: Sign[] = is_array_sig ? tx.sign : [tx.sign]
 

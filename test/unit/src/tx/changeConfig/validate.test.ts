@@ -1,165 +1,26 @@
 import { ethers } from 'ethers'
-import { DevSecurityLevel } from '@shardus/core'
+import { DevSecurityLevel, ShardusTypes } from '@shardus/core'
 import { Utils } from '@shardus/types'
 
-// Only import the functions that don't have local declarations
+// Import all functions from the actual implementation
 import {
+  isMultisigKeyChange,
+  verifyMultiSigsForKeyManagement, 
+  validateConfigChange,
   omitDevKeys,
   isValidDevKeyAddition,
   isValidMultisigKeyAddition,
   isValidHexKey,
-  validateConfigChangeTx
+  validateConfigChangeTx,
+  validateConfigChangeTxFields,
+  VerifyMultiSigsFunction
 } from '../../../../../src/tx/changeConfig/validate'
 
 // Import comparePropertiesTypes for proper mocking
 import * as generalUtils from '../../../../../src/utils/general'
 
-// Mock the type definition without importing from the real file
-type VerifyMultiSigsFunction = (
-  rawPayload: object,
-  sigs: Array<{ owner: string; sig: string }>,
-  allowedPubkeys: { [pubkey: string]: DevSecurityLevel },
-  minSigRequired: number,
-  requiredSecurityLevel: DevSecurityLevel
-) => boolean
-
-// Create local versions of the functions we want to test
-function isMultisigKeyChange(oldConfig: any, newConfig: any): boolean {
-  // Check if debug.multisigKeys exist in both configs
-  const oldMultisigKeys = oldConfig?.debug?.multisigKeys
-  const newMultisigKeys = newConfig?.debug?.multisigKeys
-  
-  // If newConfig doesn't have multisigKeys, it can't be changing them
-  if (!newMultisigKeys) {
-    return false
-  }
-
-  // If oldConfig doesn't have multisigKeys but newConfig does, it's a key change
-  if (!oldMultisigKeys) {
-    return Object.keys(newMultisigKeys).length > 0
-  }
-
-  // Check if any keys are being added, removed, or modified
-  const oldKeys = Object.keys(oldMultisigKeys)
-  const newKeys = Object.keys(newMultisigKeys)
-  
-  // If key count is different, something was added or removed
-  if (oldKeys.length !== newKeys.length) {
-    return true
-  }
-  
-  // Check if any keys are different
-  for (const key of oldKeys) {
-    // If key exists in old but not in new, it's being removed
-    if (!(key in newMultisigKeys)) {
-      return true
-    }
-    
-    // If security level is being changed, it's a key change
-    if (oldMultisigKeys[key] !== newMultisigKeys[key]) {
-      return true
-    }
-  }
-  
-  // Check if any new keys are being added
-  for (const key of newKeys) {
-    if (!(key in oldMultisigKeys)) {
-      return true
-    }
-  }
-  
-  return false
-}
-
-function verifyMultiSigsForKeyManagement(
-  rawPayload: object,
-  sigs: Array<{ owner: string; sig: string }>,
-  keyManagerAddresses: string[],
-  minSigRequired: number,
-  verifyMultiSigsFunc: VerifyMultiSigsFunction
-): boolean {
-  if (!rawPayload || !sigs || !keyManagerAddresses || !Array.isArray(sigs)) {
-    return false
-  }
-  
-  if (sigs.length < minSigRequired) {
-    return false
-  }
-  
-  // Convert keyManagerAddresses to a format compatible with verifyMultiSigs
-  const allowedPubkeys: { [pubkey: string]: DevSecurityLevel } = {}
-  for (const address of keyManagerAddresses) {
-    allowedPubkeys[address.toLowerCase()] = DevSecurityLevel.High
-  }
-  
-  // Use the provided verifyMultiSigs function for the actual verification
-  return verifyMultiSigsFunc(
-    rawPayload,
-    sigs,
-    allowedPubkeys,
-    minSigRequired,
-    DevSecurityLevel.High
-  )
-}
-
-function validateConfigChange(
-  tx: any,
-  config: any,
-  devPublicKeys: { [pubkey: string]: DevSecurityLevel },
-  regularRequiredSigs: number,
-  verifyMultiSigsFunc: VerifyMultiSigsFunction
-): { result: string; reason: string } {
-  const is_array_sig = Array.isArray(tx.sign) === true
-  const sigs = is_array_sig ? tx.sign : [tx.sign]
-  const { sign, ...txWithoutSign } = tx
-  
-  // Parse the new config
-  const givenConfig = JSON.parse(tx.config)
-  
-  // Check if this is a multisig key change
-  if (isMultisigKeyChange(config, givenConfig)) {
-    // Get key manager config
-    const keyManagerAddresses = config.server?.debug?.keyManagerAddresses || []
-    const keyManagementMinSignatures = config.server?.debug?.keyManagementMinSignatures || 3
-    
-    // Apply special validation for key management
-    const authorized = verifyMultiSigsForKeyManagement(
-      txWithoutSign,
-      sigs,
-      keyManagerAddresses,
-      keyManagementMinSignatures,
-      verifyMultiSigsFunc
-    )
-    
-    if (!authorized) {
-      return { 
-        result: 'fail', 
-        reason: 'Unauthorized key management operation. Requires signatures from authorized key managers.'
-      }
-    }
-    
-    // If we pass the special validation, continue with regular validation
-    return { result: 'success', reason: 'valid' }
-  }
-  
-  // For non-multisig key changes, use regular multisig validation
-  const authorized = verifyMultiSigsFunc(
-    txWithoutSign,
-    sigs,
-    devPublicKeys,
-    regularRequiredSigs,
-    DevSecurityLevel.High
-  )
-  
-  if (!authorized) {
-    return { result: 'fail', reason: 'Unauthorized. Requires signatures from authorized multisig keys.' }
-  }
-  
-  return { result: 'success', reason: 'valid' }
-}
-
 // Set up mocks for when needed
-const mockVerifyMultiSigs = jest.fn()
+const mockVerifyMultiSigs = jest.fn() as jest.MockedFunction<VerifyMultiSigsFunction>
 
 describe('Multisig Validation System', () => {
   // Test data - shared between all tests
@@ -178,7 +39,6 @@ describe('Multisig Validation System', () => {
     server: {
       debug: {
         keyManagerAddresses: keyManagerAddresses.map(addr => addr.toLowerCase()),
-        keyManagementMinSignatures: 3,
         multisigKeys: {
           [wallet1.address.toLowerCase()]: DevSecurityLevel.High,
           [wallet2.address.toLowerCase()]: DevSecurityLevel.High,
@@ -205,7 +65,7 @@ describe('Multisig Validation System', () => {
     })
   }
   
-  // Helper function to create signed transactions
+  // Helper function to create signed transactions for testing
   async function createSignedTx(
     wallets: Array<{ address: string; signMessage: (message: Uint8Array) => Promise<string> }>, 
     config: any, 
@@ -239,6 +99,11 @@ describe('Multisig Validation System', () => {
     }
   }
   
+  // Clear all mocks before each test
+  beforeEach(() => {
+    jest.clearAllMocks()
+  })
+
   describe('isMultisigKeyChange function', () => {
     it('should detect adding a new multisig key', () => {
       const oldConfig = {
@@ -286,7 +151,7 @@ describe('Multisig Validation System', () => {
       const oldConfig = {
         debug: {
           multisigKeys: {
-            '0x1111111111111111111111111111111111111111': DevSecurityLevel.Medium
+            '0x1111111111111111111111111111111111111111': DevSecurityLevel.High
           }
         }
       }
@@ -294,7 +159,7 @@ describe('Multisig Validation System', () => {
       const newConfig = {
         debug: {
           multisigKeys: {
-            '0x1111111111111111111111111111111111111111': DevSecurityLevel.High
+            '0x1111111111111111111111111111111111111111': DevSecurityLevel.Medium
           }
         }
       }
@@ -304,18 +169,20 @@ describe('Multisig Validation System', () => {
     
     it('should return false for non-multisig key changes', () => {
       const oldConfig = {
-        server: {
-          p2p: {
-            cycleDuration: 60
-          }
+        debug: {
+          multisigKeys: {
+            '0x1111111111111111111111111111111111111111': DevSecurityLevel.High
+          },
+          otherSetting: 'old value'
         }
       }
       
       const newConfig = {
-        server: {
-          p2p: {
-            cycleDuration: 90
-          }
+        debug: {
+          multisigKeys: {
+            '0x1111111111111111111111111111111111111111': DevSecurityLevel.High
+          },
+          otherSetting: 'new value'
         }
       }
       
@@ -324,109 +191,80 @@ describe('Multisig Validation System', () => {
   })
   
   describe('verifyMultiSigsForKeyManagement function', () => {
-    beforeEach(() => {
-      // Reset mocks before each test
-      mockVerifyMultiSigs.mockReset()
-    })
-    
     it('should pass with enough valid signers from keyManagerAddresses', async () => {
       // Sign the payload with 3 valid key managers (wallet1, wallet2, wallet3)
-      const payload_hash = ethers.keccak256(ethers.toUtf8Bytes(Utils.safeStringify(payload)))
-      
       const sigs = [
-        {
-          owner: wallet1.address.toLowerCase(),
-          sig: await wallet1.signMessage(ethers.getBytes(payload_hash))
-        },
-        {
-          owner: wallet2.address.toLowerCase(),
-          sig: await wallet2.signMessage(ethers.getBytes(payload_hash))
-        },
-        {
-          owner: wallet3.address.toLowerCase(),
-          sig: await wallet3.signMessage(ethers.getBytes(payload_hash))
-        }
-      ]
+        { owner: wallet1.address.toLowerCase(), sig: 'valid_sig1' },
+        { owner: wallet2.address.toLowerCase(), sig: 'valid_sig2' },
+        { owner: wallet3.address.toLowerCase(), sig: 'valid_sig3' }
+      ] as unknown as ShardusTypes.Sign[]
       
-      // Create a mock verification function that always returns true
+      // Create a mock that returns true, simulating valid signatures
       mockVerifyMultiSigs.mockReturnValue(true)
       
       const result = verifyMultiSigsForKeyManagement(
         payload,
         sigs,
-        keyManagerAddresses,
-        3,
+        keyManagerAddresses.map(addr => addr.toLowerCase()),
+        2, // Require 2 signatures
         mockVerifyMultiSigs
       )
       
-      // Verify the mock was called with the right parameters
-      expect(mockVerifyMultiSigs).toHaveBeenCalledWith(
-        payload,
-        sigs,
-        expect.any(Object),
-        3,
-        DevSecurityLevel.High
-      )
-      
       expect(result).toBe(true)
+      
+      // Verify mockVerifyMultiSigs was called correctly
+      expect(mockVerifyMultiSigs).toHaveBeenCalledTimes(1)
+      expect(mockVerifyMultiSigs.mock.calls[0][3]).toBe(2) // Check minSigRequired
     })
     
     it('should fail with not enough valid signers', async () => {
-      // Sign the payload with only 2 valid key managers (wallet1, wallet2)
-      const payload_hash = ethers.keccak256(ethers.toUtf8Bytes(Utils.safeStringify(payload)))
-      
+      // Only sign with 1 key manager
       const sigs = [
-        {
-          owner: wallet1.address.toLowerCase(),
-          sig: await wallet1.signMessage(ethers.getBytes(payload_hash))
-        },
-        {
-          owner: wallet2.address.toLowerCase(),
-          sig: await wallet2.signMessage(ethers.getBytes(payload_hash))
-        }
-      ]
+        { owner: wallet1.address.toLowerCase(), sig: 'valid_sig1' }
+      ] as unknown as ShardusTypes.Sign[]
       
-      // Create a mock that returns false - we're testing failure case
-      mockVerifyMultiSigs.mockReturnValue(false)
+      // Even though the signature would be valid, we don't have enough signers
+      mockVerifyMultiSigs.mockReturnValue(true)
       
       const result = verifyMultiSigsForKeyManagement(
         payload,
         sigs,
-        keyManagerAddresses,
-        3,
+        keyManagerAddresses.map(addr => addr.toLowerCase()),
+        2, // Require 2 signatures
         mockVerifyMultiSigs
       )
       
       expect(result).toBe(false)
+      
+      // Verify mockVerifyMultiSigs was NOT called because we already failed the min sig check
+      expect(mockVerifyMultiSigs).not.toHaveBeenCalled()
     })
     
     it('should fail with enough signers but some not in keyManagerAddresses', async () => {
-      // Sign the payload with 2 valid key managers and 1 invalid
-      const payload_hash = ethers.keccak256(ethers.toUtf8Bytes(Utils.safeStringify(payload)))
-      
+      // Sign with 2 key managers and 1 non-key manager (wallet4)
       const sigs = [
-        {
-          owner: wallet1.address.toLowerCase(),
-          sig: await wallet1.signMessage(ethers.getBytes(payload_hash))
-        },
-        {
-          owner: wallet2.address.toLowerCase(),
-          sig: await wallet2.signMessage(ethers.getBytes(payload_hash))
-        },
-        {
-          owner: wallet4.address.toLowerCase(), // Not in keyManagerAddresses
-          sig: await wallet4.signMessage(ethers.getBytes(payload_hash))
-        }
-      ]
+        { owner: wallet1.address.toLowerCase(), sig: 'valid_sig1' },
+        { owner: wallet4.address.toLowerCase(), sig: 'valid_sig4' }
+      ] as unknown as ShardusTypes.Sign[]
       
-      // Create a mock that returns false - we're testing failure case
-      mockVerifyMultiSigs.mockReturnValue(false)
+      // Create a mock that returns true only for signatures that are in allowedPubkeys
+      mockVerifyMultiSigs.mockImplementation(
+        (rawPayload, sigs, allowedPubkeys, minSigRequired) => {
+          // Check if all signatures are from allowed pubkeys
+          for (const sig of sigs) {
+            if (!allowedPubkeys[sig.owner]) {
+              return false
+            }
+          }
+          return true
+        }
+      )
       
       const result = verifyMultiSigsForKeyManagement(
         payload,
         sigs,
-        keyManagerAddresses,
-        3,
+        keyManagerAddresses.map(addr => addr.toLowerCase()),
+        1, // Only require 1 signature for this test
         mockVerifyMultiSigs
       )
       
@@ -434,24 +272,12 @@ describe('Multisig Validation System', () => {
     })
     
     it('should fail with invalid signatures', async () => {
-      // Sign with 3 valid key managers but use wrong payload for one
-      const payload_hash = ethers.keccak256(ethers.toUtf8Bytes(Utils.safeStringify(payload)))
-      const wrong_payload_hash = ethers.keccak256(ethers.toUtf8Bytes(Utils.safeStringify({ ...payload, wrong: true })))
-      
+      // Sign with 3 key managers but signatures are invalid
       const sigs = [
-        {
-          owner: wallet1.address.toLowerCase(),
-          sig: await wallet1.signMessage(ethers.getBytes(payload_hash))
-        },
-        {
-          owner: wallet2.address.toLowerCase(),
-          sig: await wallet2.signMessage(ethers.getBytes(payload_hash))
-        },
-        {
-          owner: wallet3.address.toLowerCase(),
-          sig: await wallet3.signMessage(ethers.getBytes(wrong_payload_hash)) // Signed wrong payload
-        }
-      ]
+        { owner: wallet1.address.toLowerCase(), sig: 'invalid_sig1' },
+        { owner: wallet2.address.toLowerCase(), sig: 'invalid_sig2' },
+        { owner: wallet3.address.toLowerCase(), sig: 'invalid_sig3' }
+      ] as unknown as ShardusTypes.Sign[]
       
       // Create a mock that returns false - we're testing failure case
       mockVerifyMultiSigs.mockReturnValue(false)
@@ -459,8 +285,8 @@ describe('Multisig Validation System', () => {
       const result = verifyMultiSigsForKeyManagement(
         payload,
         sigs,
-        keyManagerAddresses,
-        3,
+        keyManagerAddresses.map(addr => addr.toLowerCase()),
+        3, // Require all 3 signatures
         mockVerifyMultiSigs
       )
       
@@ -469,19 +295,33 @@ describe('Multisig Validation System', () => {
   })
   
   describe('validateConfigChange function', () => {
-    beforeEach(() => {
-      // Reset mocks before each test
-      mockVerifyMultiSigs.mockReset()
-    })
-    
     it('should pass validation for multisig key changes with valid key manager signatures', async () => {
       // Set up mock to return true for validation
       mockVerifyMultiSigs.mockReturnValue(true)
       
-      // Create a transaction signed by all three key managers
-      const tx = await createSignedTx([wallet1, wallet2, wallet3], mockConfig)
+      // Prepare a test config change that modifies multisig keys
+      const tx = {
+        internalTXType: 'ChangeConfig',
+        config: JSON.stringify({
+          debug: {
+            multisigKeys: {
+              '0x1234567890123456789012345678901234567890': DevSecurityLevel.High
+            }
+          }
+        }),
+        sign: [
+          { owner: wallet1.address.toLowerCase(), sig: 'valid_sig1' },
+          { owner: wallet2.address.toLowerCase(), sig: 'valid_sig2' },
+          { owner: wallet3.address.toLowerCase(), sig: 'valid_sig3' }
+        ] as unknown as ShardusTypes.Sign[]
+      }
       
-      // Use the real isMultisigKeyChange function
+      // Mock typedPermissions.changeMultiSigKeyList access through Jest spyOn
+      jest.spyOn(Object.getPrototypeOf(require('../../../../../src/tx/changeConfig/validate')), 'typedPermissions', 'get')
+        .mockReturnValue({
+          changeMultiSigKeyList: keyManagerAddresses.map(addr => addr.toLowerCase())
+        });
+      
       const result = validateConfigChange(tx, mockConfig, devPublicKeys, 2, mockVerifyMultiSigs)
       
       // Validation should pass
@@ -493,8 +333,26 @@ describe('Multisig Validation System', () => {
       // Set up mock to return false for validation
       mockVerifyMultiSigs.mockReturnValue(false)
       
-      // Create a transaction signed by only two key managers
-      const tx = await createSignedTx([wallet1, wallet2], mockConfig)
+      // Prepare a test config change that modifies multisig keys
+      const tx = {
+        internalTXType: 'ChangeConfig',
+        config: JSON.stringify({
+          debug: {
+            multisigKeys: {
+              '0x1234567890123456789012345678901234567890': DevSecurityLevel.High
+            }
+          }
+        }),
+        sign: [
+          { owner: wallet1.address.toLowerCase(), sig: 'sig1' }
+        ] as unknown as ShardusTypes.Sign[]
+      }
+      
+      // Mock typedPermissions.changeMultiSigKeyList access through Jest spyOn
+      jest.spyOn(Object.getPrototypeOf(require('../../../../../src/tx/changeConfig/validate')), 'typedPermissions', 'get')
+        .mockReturnValue({
+          changeMultiSigKeyList: keyManagerAddresses.map(addr => addr.toLowerCase())
+        });
       
       const result = validateConfigChange(tx, mockConfig, devPublicKeys, 2, mockVerifyMultiSigs)
       
@@ -507,8 +365,26 @@ describe('Multisig Validation System', () => {
       // Set up mock to return false for validation
       mockVerifyMultiSigs.mockReturnValue(false)
       
-      // Create a transaction signed by two key managers and one non-key-manager
-      const tx = await createSignedTx([wallet1, wallet2, wallet4], mockConfig)
+      // Prepare a test config change that modifies multisig keys but is signed by non-key-managers
+      const tx = {
+        internalTXType: 'ChangeConfig',
+        config: JSON.stringify({
+          debug: {
+            multisigKeys: {
+              '0x1234567890123456789012345678901234567890': DevSecurityLevel.High
+            }
+          }
+        }),
+        sign: [
+          { owner: wallet4.address.toLowerCase(), sig: 'sig4' }
+        ] as unknown as ShardusTypes.Sign[]
+      }
+      
+      // Mock typedPermissions.changeMultiSigKeyList access through Jest spyOn
+      jest.spyOn(Object.getPrototypeOf(require('../../../../../src/tx/changeConfig/validate')), 'typedPermissions', 'get')
+        .mockReturnValue({
+          changeMultiSigKeyList: keyManagerAddresses.map(addr => addr.toLowerCase())
+        });
       
       const result = validateConfigChange(tx, mockConfig, devPublicKeys, 2, mockVerifyMultiSigs)
       
@@ -518,11 +394,11 @@ describe('Multisig Validation System', () => {
     })
     
     it('should handle regular config changes (non-multisig key changes)', async () => {
-      // Mock the function to return true
+      // Set up mock to return true for validation
       mockVerifyMultiSigs.mockReturnValue(true)
       
-      // Create a regular config change (not a multisig key change)
-      const regularConfigPayload = {
+      // Prepare a test config change that doesn't modify multisig keys
+      const tx = {
         internalTXType: 'ChangeConfig',
         config: JSON.stringify({
           server: {
@@ -530,14 +406,15 @@ describe('Multisig Validation System', () => {
               cycleDuration: 90
             }
           }
-        })
+        }),
+        sign: [
+          { owner: wallet1.address.toLowerCase(), sig: 'sig1' }
+        ] as unknown as ShardusTypes.Sign[]
       }
       
-      const tx = await createSignedTx([wallet1, wallet2], mockConfig, regularConfigPayload)
+      const result = validateConfigChange(tx, mockConfig, devPublicKeys, 1, mockVerifyMultiSigs)
       
-      const result = validateConfigChange(tx, mockConfig, devPublicKeys, 2, mockVerifyMultiSigs)
-      
-      // Should use regular validation and pass
+      // Validation should pass
       expect(result.result).toBe('success')
       expect(result.reason).toBe('valid')
     })
@@ -730,52 +607,13 @@ describe('Multisig Validation System', () => {
   })
 
   describe('validateConfigChangeTx function', () => {
-    it('should validate correct config changes', async () => {
-      // Mock dependencies
-      const mockVerifyMultiSigs = jest.fn().mockReturnValue(true)
+    it('should validate a multisig key change transaction with valid signatures', async () => {
+      // Setup mock to return true for validation
+      mockVerifyMultiSigs.mockReturnValue(true)
       
-      // Create test tx and config
+      // Prepare a test config change for multisig keys with valid signatures
       const tx = {
-        isInternalTx: true,
-        internalTXType: 3,
-        config: JSON.stringify({
-          server: {
-            testField: 'test value'
-          }
-        }),
-        sign: [{ owner: 'owner1', sig: 'sig1' }]
-      }
-      
-      const config = {
-        server: {
-          testField: 'test value'
-        }
-      }
-      
-      const devPublicKeys = {
-        'owner1': DevSecurityLevel.High
-      }
-      
-      // Mock implementation of comparePropertiesTypes to return true
-      jest.spyOn(generalUtils, 'comparePropertiesTypes').mockReturnValue(true)
-      
-      const result = validateConfigChangeTx(tx, config, devPublicKeys, 1, mockVerifyMultiSigs)
-      
-      expect(result.result).toBe('pass')
-      expect(result.reason).toBe('valid')
-      
-      // Restore mock
-      jest.restoreAllMocks()
-    })
-    
-    it('should fail when validateConfigChange fails', async () => {
-      // Mock dependencies to fail validation
-      const mockVerifyMultiSigs = jest.fn().mockReturnValue(false)
-      
-      // Create test tx and config
-      const tx = {
-        isInternalTx: true,
-        internalTXType: 3,
+        internalTXType: 'ChangeConfig',
         config: JSON.stringify({
           debug: {
             multisigKeys: {
@@ -783,132 +621,152 @@ describe('Multisig Validation System', () => {
             }
           }
         }),
-        sign: [{ owner: 'owner1', sig: 'sig1' }]
+        sign: [
+          { owner: wallet1.address.toLowerCase(), sig: 'valid_sig1' },
+          { owner: wallet2.address.toLowerCase(), sig: 'valid_sig2' },
+          { owner: wallet3.address.toLowerCase(), sig: 'valid_sig3' }
+        ] as unknown as ShardusTypes.Sign[]
       }
       
-      const config = {
-        debug: {
-          multisigKeys: {}
-        }
-      }
+      // Mock typedPermissions.changeMultiSigKeyList access through Jest spyOn
+      jest.spyOn(Object.getPrototypeOf(require('../../../../../src/tx/changeConfig/validate')), 'typedPermissions', 'get')
+        .mockReturnValue({
+          changeMultiSigKeyList: keyManagerAddresses.map(addr => addr.toLowerCase())
+        });
       
-      const devPublicKeys = {
-        'owner1': DevSecurityLevel.High
-      }
+      const result = validateConfigChangeTx(tx, mockConfig, devPublicKeys, 2, mockVerifyMultiSigs)
       
-      const result = validateConfigChangeTx(tx, config, devPublicKeys, 1, mockVerifyMultiSigs)
-      
-      expect(result.result).toBe('fail')
+      expect(result.result).toBe('pass')
+      expect(result.reason).toBe('valid')
     })
     
-    it('should fail when comparePropertiesTypes fails', async () => {
-      // Mock dependencies
-      const mockVerifyMultiSigs = jest.fn().mockReturnValue(true)
+    it('should invalidate a multisig key change transaction with insufficient signatures', async () => {
+      // Setup mock to return false for validation
+      mockVerifyMultiSigs.mockReturnValue(false)
       
-      // Create test tx and config
+      // Prepare a test config change for multisig keys with insufficient signatures
       const tx = {
-        isInternalTx: true,
-        internalTXType: 3,
-        config: JSON.stringify({
-          server: {
-            newField: 'new value'
-          }
-        }),
-        sign: [{ owner: 'owner1', sig: 'sig1' }]
-      }
-      
-      const config = {
-        server: {
-          testField: 'test value'
-        }
-      }
-      
-      const devPublicKeys = {
-        'owner1': DevSecurityLevel.High
-      }
-      
-      // Mock implementation of comparePropertiesTypes to return false
-      jest.spyOn(generalUtils, 'comparePropertiesTypes').mockReturnValue(false)
-      
-      const result = validateConfigChangeTx(tx, config, devPublicKeys, 1, mockVerifyMultiSigs)
-      
-      expect(result.result).toBe('fail')
-      expect(result.reason).toBe('Invalid config')
-      
-      // Restore mock
-      jest.restoreAllMocks()
-    })
-    
-    it('should fail when isValidDevKeyAddition fails', async () => {
-      // Mock dependencies
-      const mockVerifyMultiSigs = jest.fn().mockReturnValue(true)
-      
-      // Create test tx with invalid dev key
-      const tx = {
-        isInternalTx: true,
-        internalTXType: 3,
-        config: JSON.stringify({
-          debug: {
-            devPublicKeys: {
-              'invalidkey': DevSecurityLevel.High
-            }
-          }
-        }),
-        sign: [{ owner: 'owner1', sig: 'sig1' }]
-      }
-      
-      const config = {}
-      
-      const devPublicKeys = {
-        'owner1': DevSecurityLevel.High
-      }
-      
-      // Mock implementation of comparePropertiesTypes to return true
-      jest.spyOn(generalUtils, 'comparePropertiesTypes').mockReturnValue(true)
-      
-      const result = validateConfigChangeTx(tx, config, devPublicKeys, 1, mockVerifyMultiSigs)
-      
-      expect(result.result).toBe('fail')
-      expect(result.reason).toBe('Invalid config')
-      
-      // Restore mock
-      jest.restoreAllMocks()
-    })
-    
-    it('should fail when isValidMultisigKeyAddition fails', async () => {
-      // Mock dependencies
-      const mockVerifyMultiSigs = jest.fn().mockReturnValue(true)
-      
-      // Create test tx with invalid multisig key
-      const tx = {
-        isInternalTx: true,
-        internalTXType: 3,
+        internalTXType: 'ChangeConfig',
         config: JSON.stringify({
           debug: {
             multisigKeys: {
-              'not-an-address': DevSecurityLevel.High
+              '0x1234567890123456789012345678901234567890': DevSecurityLevel.High
             }
           }
         }),
-        sign: [{ owner: 'owner1', sig: 'sig1' }]
+        sign: [
+          { owner: wallet1.address.toLowerCase(), sig: 'sig1' }
+        ] as unknown as ShardusTypes.Sign[]
       }
       
-      const config = {}
+      // Mock typedPermissions.changeMultiSigKeyList access through Jest spyOn
+      jest.spyOn(Object.getPrototypeOf(require('../../../../../src/tx/changeConfig/validate')), 'typedPermissions', 'get')
+        .mockReturnValue({
+          changeMultiSigKeyList: keyManagerAddresses.map(addr => addr.toLowerCase())
+        });
       
-      const devPublicKeys = {
-        'owner1': DevSecurityLevel.High
-      }
-      
-      // Mock implementation of comparePropertiesTypes to return true
-      jest.spyOn(generalUtils, 'comparePropertiesTypes').mockReturnValue(true)
-      
-      const result = validateConfigChangeTx(tx, config, devPublicKeys, 1, mockVerifyMultiSigs)
+      const result = validateConfigChangeTx(tx, mockConfig, devPublicKeys, 2, mockVerifyMultiSigs)
       
       expect(result.result).toBe('fail')
-      expect(result.reason).toBe('Unauthorized key management operation. Requires signatures from authorized key managers.')
+      expect(result.reason).toContain('Unauthorized key management operation')
+    })
+    
+    it('should validate a regular config change transaction', async () => {
+      // Prepare a test for regular config change (non-multisig key change)
+      const tx = {
+        internalTXType: 'ChangeConfig',
+        config: JSON.stringify({
+          server: {
+            p2p: {
+              cycleDuration: 90
+            }
+          }
+        }),
+        sign: [
+          { owner: wallet1.address.toLowerCase(), sig: 'sig1' }
+        ] as unknown as ShardusTypes.Sign[]
+      }
       
-      // Restore mock
-      jest.restoreAllMocks()
+      const result = validateConfigChangeTx(tx, mockConfig, devPublicKeys, 1, mockVerifyMultiSigs)
+      
+      expect(result.result).toBe('pass')
+      expect(result.reason).toBe('valid')
+    })
+    
+    it('should handle invalid config JSON in transaction', async () => {
+      // Prepare a test with invalid JSON in config field
+      const tx = {
+        internalTXType: 'ChangeConfig',
+        config: '{invalid json}',
+        sign: [
+          { owner: wallet1.address.toLowerCase(), sig: 'sig1' }
+        ] as unknown as ShardusTypes.Sign[]
+      }
+      
+      const result = validateConfigChangeTx(tx, mockConfig, devPublicKeys, 1, mockVerifyMultiSigs)
+      
+      expect(result.result).toBe('fail')
+      expect(result.reason).toContain('Invalid configuration JSON')
+    })
+  })
+
+  describe('validateConfigChangeTxFields function', () => {
+    beforeEach(() => {
+      mockVerifyMultiSigs.mockReset()
+    })
+
+    it('should return success: true for valid config changes', async () => {
+      // Set up mock to return true for validation
+      mockVerifyMultiSigs.mockReturnValue(true)
+      
+      // Create a transaction signed by all three key managers
+      const tx = await createSignedTx([wallet1, wallet2, wallet3], mockConfig)
+      
+      const result = validateConfigChangeTxFields(tx, mockConfig, devPublicKeys, 2, mockVerifyMultiSigs)
+      
+      // Validation should pass with the new API format
+      expect(result.success).toBe(true)
+      expect(result.reason).toBe('valid')
+    })
+
+    it('should return success: false for invalid signatures', async () => {
+      // Set up mock to return false for validation
+      mockVerifyMultiSigs.mockReturnValue(false)
+      
+      // Create a transaction signed by all three key managers
+      const tx = await createSignedTx([wallet1, wallet2, wallet3], mockConfig)
+      
+      const result = validateConfigChangeTxFields(tx, mockConfig, devPublicKeys, 2, mockVerifyMultiSigs)
+      
+      // Validation should fail with the new API format
+      expect(result.success).toBe(false)
+      expect(result.reason).toContain('Unauthorized')
+    })
+
+    it('should return success: false for invalid config structure', async () => {
+      // Set up mock to return true for signature validation but invalid config
+      mockVerifyMultiSigs.mockReturnValue(true)
+      
+      // Create an invalid config tx with non-string value where string is expected
+      const invalidConfig = {
+        debug: {
+          someOtherSetting: 'not-multisig-keys' // Not a multisig key change
+        }
+      }
+      
+      const tx = {
+        config: JSON.stringify(invalidConfig),
+        sign: []
+      }
+      
+      // Mock comparePropertiesTypes to return false to simulate invalid structure
+      jest.spyOn(generalUtils, 'comparePropertiesTypes').mockReturnValueOnce(false)
+      
+      const result = validateConfigChangeTxFields(tx, mockConfig, devPublicKeys, 2, mockVerifyMultiSigs)
+      
+      // Validation should fail with the new API format
+      expect(result.success).toBe(false)
+      expect(result.reason).toBe('Invalid config')
     })
   })
 }); 
