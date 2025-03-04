@@ -309,9 +309,7 @@ export const validateTxnFields =
         }
 
         // Get chainID from network account if available, otherwise use ShardeumFlags.ChainID
-        const networkChainID = AccountsStorage.cachedNetworkAccount?.current?.chainID !== undefined
-          ? AccountsStorage.cachedNetworkAccount.current.chainID
-          : ShardeumFlags.ChainID;
+        const networkChainID = ShardeumFlags.ChainID
 
         if (chainId !== BigInt(networkChainID) || tx.chainID !== networkChainID) {
           nestedCountersInstance.countEvent('shardeum', 'validate - invalid chain ID')
