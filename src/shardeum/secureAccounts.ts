@@ -12,6 +12,10 @@ import genesisSecureAccounts from '../config/genesis-secure-accounts.json'
 import { Address, bigIntToHex } from '@ethereumjs/util'
 import { getApplyTXState } from '../'
 import { DebugComplete } from '@shardeum-foundation/core'
+import { Utils } from '@shardeum-foundation/lib-types'
+import { keyListAsLeveledKeys } from '../utils/keyUtils'
+import multisigPermissions from '../config/multisig-permissions.json'
+import { cleanMultiSigPermissions } from '../utils/multisig'
 
 validateSecureAccountConfig(genesisSecureAccounts)
 
@@ -147,7 +151,13 @@ export function validateTransferFromSecureAccount(tx: InternalTx, shardus: Shard
     nonce: tx.nonce
   }
 
-  const allowedPublicKeys = shardus.getMultisigPublicKeys()
+  // Clean multiSigPermissions to remove any keys not in shardusConfig.debug.multisigKeys
+  const cleanedMultiSigPermissions = cleanMultiSigPermissions(multisigPermissions, shardusConfig)
+
+  // Use the permitted keys from multisig-permissions.json for secure account transfers
+  const permittedKeys = cleanedMultiSigPermissions.initiateSecureAccountTransfer || []
+  const securityLevel = 9 // High security level for secure account transfers
+  const allowedPublicKeys = keyListAsLeveledKeys(permittedKeys, securityLevel)
   const requiredSigs = Math.max(1, shardusConfig.debug.minMultiSigRequiredForGlobalTxs || 1)
 
   const isSignatureValid = verifyMultiSigs(
@@ -155,7 +165,7 @@ export function validateTransferFromSecureAccount(tx: InternalTx, shardus: Shard
     tx.sign as ShardusTypes.Sign[],
     allowedPublicKeys,
     requiredSigs,
-    DevSecurityLevel.High
+    securityLevel as DevSecurityLevel
   )
 
   if (!isSignatureValid) {
