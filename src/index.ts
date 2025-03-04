@@ -2730,8 +2730,6 @@ const configShardusNetworkTransactions = (): void => {
       return {
         type: 'nodeReward',
         txData: {
-          start: node.activeCycle,
-          end: record.counter,
           endTime: record.start,
           publicKey: node.publicKey,
           nodeId: node.id,

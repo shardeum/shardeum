@@ -59,7 +59,7 @@ export async function injectClaimRewardTx(
     timestamp: shardeumGetTime(),
     deactivatedNodeId: eventData.nodeId,
     nodeDeactivatedTime: eventData.additionalData.txData.endTime,
-    cycle: eventData.cycle,
+    cycle: eventData.cycleNumber,
     isInternalTx: true,
     internalTXType: InternalTXType.ClaimReward,
     txData: eventData.additionalData.txData,
