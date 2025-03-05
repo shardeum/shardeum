@@ -308,14 +308,11 @@ export const validateTxnFields =
           chainId = transaction.common.chainId()
         }
 
-        // Get chainID from network account if available, otherwise use ShardeumFlags.ChainID
-        const networkChainID = ShardeumFlags.ChainID
-
-        if (chainId !== BigInt(networkChainID) || tx.chainID !== networkChainID) {
+        if (chainId !== BigInt(ShardeumFlags.ChainID)) {
           nestedCountersInstance.countEvent('shardeum', 'validate - invalid chain ID')
           success = false
           reason = `Transaction chain ID is invalid.`
-          /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`chain ID fail: chain ID: ${chainId}, Network Chain ID: ${networkChainID}`)
+          /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`chain ID fail: chain ID: ${chainId}, Network Chain ID: ${ShardeumFlags.ChainID}`)
           return {
             success,
             reason,
