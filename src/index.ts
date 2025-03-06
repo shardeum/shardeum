@@ -2946,10 +2946,28 @@ async function applyInternalTx(
     }
 
     // eslint-disable-next-line security/detect-object-injection
-    const addressHash = wrappedStates[networkAccount].stateId
+    let addressHash = wrappedStates[networkAccount].stateId
 
     const ourAppDefinedData = applyResponse.appDefinedData as OurAppDefinedData
     // network will consens that this is the correct value
+
+    // We need to move the code that changes our global account to before
+    // SetGlobal and make sure we change the account as needed and 
+    // compute the updated hash (to set as addressHash)
+    // we only need to update addressHash, since the value will have 
+    // information on how to apply a change to the global account
+    // if we change it the same way here as we will later then this will 
+    // let us know the correct hash up front to consens on 
+    // eslint-disable-next-line security/detect-object-injection
+    // we have to do this for every place we call SetGlobal()
+    const networkAccountCopy = wrappedStates[networkAccount]
+    networkAccountCopy.data.timestamp = txTimestamp
+    networkAccountCopy.data.listOfChanges.push(internalTx.change)
+    const wrappedChangedAccount = WrappedEVMAccountFunctions._shardusWrappedAccount(networkAccountCopy.data)
+    //value = wrappedChangedAccount
+    addressHash = wrappedChangedAccount.stateId
+
+
     ourAppDefinedData.globalMsg = { address: networkAccount, addressHash, value, when, source: value.from }
 
     if (ShardeumFlags.supportInternalTxReceipt) {
