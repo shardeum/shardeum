@@ -2,9 +2,18 @@
   "server": {
     "baseDir": ".",
     "p2p": {
+      "baselineNodes": 10,
+      "minNodes": 10,
+      "maxNodes": 1280,
+      "forceBogonFilteringOn": false,
+      "syncFloorEnabled": true,
+      "syncingDesiredMinCount": 5,
+      "activeRecoveryEnabled": true,
+      "flexibleRotationEnabled": false,
+      "formingNodesPerCycle": 9,
       "existingArchivers": [
         {
-          "ip": "localhost",
+          "ip": "127.0.0.1",
           "port": 4000,
           "publicKey": "758b1c119412298802cd28dbfa394cdfeecc4074492d60844cc192d632d84de3"
         }
@@ -16,11 +25,28 @@
       "internalIp": "127.0.0.1",
       "internalPort": 10001
     },
+    "sharding": {
+      "nodesPerConsensusGroup": 10
+    },
+    "features": {
+      "tickets": {
+        "updateTicketListTimeInMs": 300000
+      }
+    },
+    "mode": "debug",
+    "debug": {
+      "startInFatalsLogMode": false,
+      "startInErrorLogMode": true
+    },
     "reporting": {
       "report": true,
       "recipient": "http://localhost:3000/api",
       "interval": 2,
       "console": false
+    },
+    "network": {
+      "chainId": 8081,
+      "name": "Shardeum Local"
     }
   }
 }
