@@ -285,6 +285,7 @@ export interface OurAppDefinedData {
     }
     when: number
     source: string
+    afterStateHash: string
   }
 }
 

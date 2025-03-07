@@ -2751,6 +2751,27 @@ const configShardusNetworkTransactions = (): void => {
  *    #### ##    ##    ##    ######## ##     ## ##    ## ##     ## ########       ##    ##     ##
  */
 
+/**
+ * Applies an internal transaction to the given wrapped states and returns an apply response.
+ *
+ * @param tx - The internal transaction to be applied.
+ * @param wrappedStates - The current state of the wrapped accounts.
+ * @param txTimestamp - The timestamp of the transaction.
+ * @returns A promise that resolves to a ShardusTypes.ApplyResponse object.
+ *
+ * The function handles different types of internal transactions:
+ * - `SetGlobalCodeBytes`: Updates the timestamp of the wrapped EVM account and optionally creates an internal transaction receipt.
+ * - `InitNetwork`: Initializes the network account and optionally creates an internal transaction receipt.
+ * - `ChangeConfig`: Schedules a configuration change to be applied at a future cycle and optionally creates an internal transaction receipt.
+ * - `ApplyChangeConfig`: Applies a scheduled configuration change to the network account and optionally creates an internal transaction receipt.
+ * - `ChangeNetworkParam`: Schedules a network parameter change to be applied at a future cycle and optionally creates an internal transaction receipt.
+ * - `ApplyNetworkParam`: Applies a scheduled network parameter change to the network account and optionally creates an internal transaction receipt.
+ * - `SetCertTimeTx`: Applies a certificate time transaction.
+ * - `InitRewardTimes`: Initializes reward times.
+ * - `ClaimReward`: Applies a claim reward transaction.
+ * - `Penalty`: Applies a penalty transaction.
+ * - `TransferFromSecureAccount`: Applies a transfer from a secure account transaction.
+ */
 async function applyInternalTx(
   tx: InternalTx,
   wrappedStates: WrappedStates,
@@ -2870,10 +2891,26 @@ async function applyInternalTx(
 
     // eslint-disable-next-line security/detect-object-injection
     const addressHash = wrappedStates[networkAccount].stateId
+    // eslint-disable-next-line security/detect-object-injection
+
+    // Create a copy of the network account to apply modifications and determine the resulting state.
+    const networkAccountCopy = wrappedStates[networkAccount]
+    networkAccountCopy.data.timestamp = txTimestamp
+    networkAccountCopy.data.listOfChanges.push(internalTx.change)
+    const wrappedChangedAccount = WrappedEVMAccountFunctions._shardusWrappedAccount(networkAccountCopy.data)
+    //value = wrappedChangedAccount
+    const afterStateHash = wrappedChangedAccount.stateId // this is the hash of the network account after it has been modified with a change
 
     const ourAppDefinedData = applyResponse.appDefinedData as OurAppDefinedData
     // network will consens that this is the correct value
-    ourAppDefinedData.globalMsg = { address: networkAccount, addressHash, value, when, source: value.from }
+    ourAppDefinedData.globalMsg = {
+      address: networkAccount,
+      addressHash,
+      value,
+      when,
+      source: value.from,
+      afterStateHash: afterStateHash,
+    }
     if (ShardeumFlags.supportInternalTxReceipt) {
       createInternalTxReceipt(
         shardus,
@@ -2947,11 +2984,26 @@ async function applyInternalTx(
 
     // eslint-disable-next-line security/detect-object-injection
     const addressHash = wrappedStates[networkAccount].stateId
+    // eslint-disable-next-line security/detect-object-injection
+
+    // Create a copy of the network account to apply modifications and determine the resulting state.
+    const networkAccountCopy = wrappedStates[networkAccount]
+    networkAccountCopy.data.timestamp = txTimestamp
+    networkAccountCopy.data.listOfChanges.push(internalTx.change)
+    const wrappedChangedAccount = WrappedEVMAccountFunctions._shardusWrappedAccount(networkAccountCopy.data)
+    //value = wrappedChangedAccount
+    const afterStateHash = wrappedChangedAccount.stateId // this is the hash of the network account after it has been modified with a change
 
     const ourAppDefinedData = applyResponse.appDefinedData as OurAppDefinedData
     // network will consens that this is the correct value
-    ourAppDefinedData.globalMsg = { address: networkAccount, addressHash, value, when, source: value.from }
-
+    ourAppDefinedData.globalMsg = {
+      address: networkAccount,
+      addressHash,
+      value,
+      when,
+      source: value.from,
+      afterStateHash: afterStateHash,
+    }
     if (ShardeumFlags.supportInternalTxReceipt) {
       createInternalTxReceipt(
         shardus,
@@ -3165,9 +3217,17 @@ function setGlobalCodeByteUpdate(
   //value = shardus.signAsNode(value)
 
   const addressHash = WrappedEVMAccountFunctions._calculateAccountHash(wrappedEVMAccount)
+  const afterStateHash = addressHash
 
   const ourAppDefinedData = applyResponse.appDefinedData as OurAppDefinedData
-  ourAppDefinedData.globalMsg = { address: globalAddress, addressHash, value, when, source: globalAddress }
+  ourAppDefinedData.globalMsg = {
+    address: globalAddress,
+    addressHash,
+    value,
+    when,
+    source: globalAddress,
+    afterStateHash: afterStateHash,
+  }
 }
 
 async function _transactionReceiptPass(
@@ -3205,9 +3265,9 @@ async function _transactionReceiptPass(
 
   //If this apply response has a global message defined then call setGlobal()
   if (ourAppDefinedData.globalMsg) {
-    const { address, addressHash, value, when, source } = ourAppDefinedData.globalMsg
+    const { address, addressHash, value, when, source, afterStateHash } = ourAppDefinedData.globalMsg
     //delete value.sign
-    shardus.setGlobal(address, addressHash, value, when, source)
+    shardus.setGlobal(address, addressHash, value, when, source, afterStateHash)
     if (ShardeumFlags.VerboseLogs) {
       const txHash = generateTxId(value)
       console.log(`transactionReceiptPass setglobal: ${txHash} ${Utils.safeStringify(tx)}  `)
