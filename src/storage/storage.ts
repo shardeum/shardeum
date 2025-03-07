@@ -311,5 +311,17 @@ class Storage {
       throw new Error(e)
     }
   }
+
+  async checkDatabaseHealth(): Promise<boolean> {
+    try {
+      this._checkInit()
+      const query = `SELECT 1`
+      const result = await this._query(query, [])
+      return result[0][1] === 1
+    } catch (e) {
+      console.log('checkDatabaseHealth error:', e)
+      return false
+    }
+  }
 }
 export default Storage

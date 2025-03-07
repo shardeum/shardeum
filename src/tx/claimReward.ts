@@ -59,11 +59,11 @@ export async function injectClaimRewardTx(
     timestamp: shardeumGetTime(),
     deactivatedNodeId: eventData.nodeId,
     nodeDeactivatedTime: eventData.additionalData.txData.endTime,
-    cycle: eventData.cycle,
+    cycle: eventData.cycleNumber,
     isInternalTx: true,
     internalTXType: InternalTXType.ClaimReward,
     txData: eventData.additionalData.txData,
-  } as Omit<ClaimRewardTX, 'sign'>
+  } as ClaimRewardTX
 
   if (ShardeumFlags.txHashingFix) {
     // to make sure that differnt nodes all submit an equivalent tx that is counted as the same tx,

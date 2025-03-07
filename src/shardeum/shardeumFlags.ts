@@ -1,6 +1,6 @@
 import { DecimalString } from './shardeumTypes'
 
-interface ShardeumFlags {
+export interface ShardeumFlags {
   contractStorageKeySilo: boolean
   contractStoragePrefixBitLength: number
   contractCodeKeySilo: boolean
@@ -127,6 +127,7 @@ interface ShardeumFlags {
   ticketTypesEnabled: boolean
   debugTxEnabled: boolean
   enableArchiverNetworkAccountValidation: boolean
+  accessListSizeLimit: number
 }
 
 export const ShardeumFlags: ShardeumFlags = {
@@ -150,7 +151,7 @@ export const ShardeumFlags: ShardeumFlags = {
   CheckNonce: true,
   txNoncePreCheck: false,
   txBalancePreCheck: true ,
-  autoGenerateAccessList: true,
+  autoGenerateAccessList: false,
   forwardGenesisAccounts: true,
   UseDBForAccounts: true,
   AppliedTxsMaps: false,
@@ -291,6 +292,7 @@ export const ShardeumFlags: ShardeumFlags = {
   ticketTypesEnabled: false,
   debugTxEnabled: false,
   enableArchiverNetworkAccountValidation: false, //  Enable/disable network account basic validations from archiver
+  accessListSizeLimit: 5,
 }
 
 export function updateShardeumFlag(key: string, value: string | number | boolean): void {

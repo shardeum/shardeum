@@ -1,5 +1,4 @@
 import {
-  updateTicketMapAndScheduleNextUpdate,
   updateTicketMap,
   getTicketsByType,
   doesTransactionSenderHaveTicketType,
@@ -9,10 +8,13 @@ import axios from 'axios';
 import { getFinalArchiverList } from '@shardeum-foundation/lib-archiver-discovery';
 import { Address } from '@ethereumjs/util';
 import {expect, jest} from '@jest/globals';
+import { verifyMultiSigs } from '../../../../../src/setup/helpers';
 
 jest.mock('axios');
 jest.mock('@shardeum-foundation/lib-archiver-discovery');
+jest.mock('../../../../../src/setup/helpers');
 
+const mockedVerifyMultiSigs = jest.mocked(verifyMultiSigs);
 const mockedAxios = axios as jest.Mocked<typeof axios>;
 const mockedGetFinalArchiverList = getFinalArchiverList as jest.Mocked<typeof getFinalArchiverList>;
 
@@ -45,15 +47,20 @@ const ticketTypeWithSilverTicketAndInvalidSignature = { type: 'silver', data: [{
 describe('Ticket Type Test Cases', () => {
 
   beforeEach(async () => {
-    jest.clearAllMocks();
+    mockedVerifyMultiSigs.mockReturnValue(true);
     mockedGetFinalArchiverList.mockReturnValue([{ ip: '127.0.0.1', port: 3000, publicKey: '' }]);
     mockedAxios.get.mockResolvedValue({ status: 200, data: [{ ...ticketTypeWithSilverTicket }] })
     await updateTicketMap();
   });
 
+  afterEach(async () => {
+    jest.clearAllMocks();
+  });
+
   describe('updateTicketMap', () => {
     it('should fail to update ticketMap if signature is invalid', async () => {
       const spy = jest.spyOn(console, 'warn').mockImplementation(jest.fn());
+      mockedVerifyMultiSigs.mockReturnValue(false);
       mockedAxios.get.mockResolvedValue({ status: 200, data: [{ ...ticketTypeWithSilverTicketAndInvalidSignature }] });
       await updateTicketMap();
       const senderAddress = Address.fromString('0x1e5e12568b7103E8B22cd680A6fa6256DD66ED76');

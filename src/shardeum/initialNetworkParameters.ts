@@ -1,6 +1,7 @@
 import { BN } from 'ethereumjs-util'
 import { NetworkParameters } from './shardeumTypes'
 import { ONE_HOUR, oneSHM, ONE_DAY, THIRTY_MINUTES } from './shardeumConstants'
+import { ShardeumFlags } from './shardeumFlags'
 
 // INITIAL NETWORK PARAMETERS FOR Shardeum
 
@@ -16,13 +17,13 @@ export const initialNetworkParamters: NetworkParameters = {
   restakeCooldown: THIRTY_MINUTES,
   maintenanceInterval: ONE_DAY,
   maintenanceFee: 0,
-  minVersion: '1.16.2',
-  activeVersion: '1.16.2',
-  latestVersion: '1.17.1',
+  minVersion: '1.19.0-prerelease.0',
+  activeVersion: '1.19.0-prerelease.0',
+  latestVersion: '1.19.0',
   archiver: {
-    minVersion: '3.5.6',
-    activeVersion: '3.5.6',
-    latestVersion: '3.5.6',
+    minVersion: '3.7.0-prerelease.0',
+    activeVersion: '3.7.0-prerelease.0',
+    latestVersion: '3.7.0',
   },
   stabilityScaleMul: 1000,
   stabilityScaleDiv: 1000,
@@ -45,4 +46,5 @@ export const initialNetworkParamters: NetworkParameters = {
   },
   enableRPCEndpoints: false,
   stakeLockTime: 6000, //1000 * 60 * 60 * 3, // 3 hours in milliseconds
+  chainID: ShardeumFlags.ChainID, // 8082
 }

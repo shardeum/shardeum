@@ -153,10 +153,10 @@ export default class TransactionState {
 
   private static fixAccountUint8Arrays(account): void {
     if (account.storageRoot && account.storageRoot.data) {
-      account.storageRoot = Uint8Array.from(account.storageRoot.data)
+      account.storageRoot = Uint8Array.from(Object.values(account.storageRoot.data))
     }
     if (account.codeHash?.data) {
-      account.codeHash = Uint8Array.from(account.codeHash.data)
+      account.codeHash = Uint8Array.from(Object.values(account.codeHash.data))
     }
     if (Buffer.isBuffer(account.storageRoot) === false && typeof account.storageRoot === 'object') {
       account.storageRoot = Uint8Array.from(Object.values(account.storageRoot))

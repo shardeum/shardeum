@@ -1,0 +1,64 @@
+import { initAjvSchemas, verifyPayload } from '../../../../../src/types/ajv/Helpers'
+import { AJVSchemaEnum } from '../../../../../src/types/enum/AJVSchemaEnum'
+import { InternalTXType } from '../../../../../src/shardeum/shardeumTypes'
+
+describe('InitNetworkTx AJV tests', () => {
+    beforeAll(() => {
+        initAjvSchemas()
+    })
+
+    beforeEach(() => {
+        jest.clearAllMocks()
+    })
+
+    test('Valid object should pass validation', () => {
+        const obj = {
+            isInternalTx: true,
+            internalTXType: InternalTXType.InitNetwork,
+            timestamp: 1234567890,
+            network: 'testnet'
+        }
+        const errors = verifyPayload(AJVSchemaEnum.InitNetworkTx, obj)
+        expect(errors).toBeNull()
+    })
+
+    test('Missing required field should fail validation', () => {
+        const obj = {
+            isInternalTx: true,
+            internalTXType: InternalTXType.InitNetwork,
+            timestamp: 1234567890
+            // missing network field
+        }
+        const errors = verifyPayload(AJVSchemaEnum.InitNetworkTx, obj)
+        expect(errors).not.toBeNull()
+        expect(errors?.length).toBe(1)
+        expect(errors?.[0]).toContain("should have required property 'network'")
+    })
+
+    test('Invalid timestamp should fail validation', () => {
+        const obj = {
+            isInternalTx: true,
+            internalTXType: InternalTXType.InitNetwork,
+            timestamp: 0, // should be > 0
+            network: 'testnet'
+        }
+        const errors = verifyPayload(AJVSchemaEnum.InitNetworkTx, obj)
+        expect(errors).not.toBeNull()
+        expect(errors?.length).toBe(1)
+        expect(errors?.[0]).toContain('should be > 0')
+    })
+
+    test('Additional properties should fail validation', () => {
+        const obj = {
+            isInternalTx: true,
+            internalTXType: InternalTXType.InitNetwork,
+            timestamp: 1234567890,
+            network: 'testnet',
+            extraField: 'should not be here'
+        }
+        const errors = verifyPayload(AJVSchemaEnum.InitNetworkTx, obj)
+        expect(errors).not.toBeNull()
+        expect(errors?.length).toBe(1)
+        expect(errors?.[0]).toContain('should NOT have additional properties')
+    })
+}) 
