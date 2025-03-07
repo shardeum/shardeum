@@ -12,7 +12,7 @@ import { ShardeumState, TransactionState } from '../state'
 import * as AccountsStorage from '../storage/accountStorage'
 import { sleep } from '../utils'
 import { DefaultStateManager } from '@ethereumjs/statemanager'
-import { logFlags, shardeumGetTime } from '..'
+import { createNetworkAccount, logFlags, shardeumGetTime } from '..'
 import { Utils } from '@shardeum-foundation/lib-types'
 import { initializeSecureAccount, SecureAccountConfig } from '../shardeum/secureAccounts'
 
@@ -153,13 +153,16 @@ export const sync = (shardus: Shardus, evmCommon: any) => async (): Promise<void
         timestamp: when,
         network: networkAccount,
       }
-      shardus.setGlobal(networkAccount, '', value, when, networkAccount, '') // need to set addressHash = '' because it's not created yet.
-    } else {
+      const wrappedEVMAccount = await createNetworkAccount(networkAccount, config, shardus.p2p.isFirstSeed)
+      wrappedEVMAccount.timestamp = when
+      const wrappedChangedAccount = WrappedEVMAccountFunctions._shardusWrappedAccount(wrappedEVMAccount)
+      const afterStatehash = wrappedChangedAccount.stateId
+      shardus.setGlobal(networkAccount, '', value, when, networkAccount, afterStatehash) // need to set addressHash = '' because it's not created yet.
+    } else
       while (!(await shardus.getLocalOrRemoteAccount(networkAccount))) {
         /* prettier-ignore */ if (logFlags.important_as_error) console.log('waiting..')
         await sleep(1000)
       }
-    }
   }
 }
 

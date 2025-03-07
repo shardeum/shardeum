@@ -3319,7 +3319,7 @@ const getNetworkAccount = async (): Promise<ShardusTypes.WrappedData> => {
   return account
 }
 
-const createNetworkAccount = async (
+export const createNetworkAccount = async (
   accountId: string,
   config: Config,
   isFirstSeed: boolean
