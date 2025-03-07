@@ -184,6 +184,7 @@ export interface ClaimRewardTX extends InternalTxBase {
   nominee: string
   nominator: string
   timestamp: number
+  cycle: number
   deactivatedNodeId: string
   nodeDeactivatedTime: number
   txData: NodeRewardTxData
@@ -348,7 +349,7 @@ export interface NetworkAccount extends BaseAccount {
     cycle: number
     change: Change
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    appData: any
+    appData?: any
   }>
   next: NetworkParameters | object //todo potentially improve this, but will need functional changes
   hash: string
@@ -401,6 +402,7 @@ export interface NetworkParameters {
   }
   enableRPCEndpoints: boolean
   stakeLockTime: number
+  chainID: number
 }
 
 export interface NodeAccount2 extends BaseAccount {

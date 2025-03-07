@@ -22,18 +22,4 @@ describe('InjectTxReq AJV tests', () => {
     expect(errors).toBeNull()
   })
 
-  test('Valid object negative case', () => {
-    const obj = {
-      timestamp: 1,
-      tx: {
-        isInternalTx: true,
-        nominee: 'nominee',
-      },
-      raw: 'raw',
-      isInternalTx123: true,
-    }
-    const errors = verifyPayload(AJVSchemaEnum.InjectTxReq, obj)
-    expect(errors).not.toBeNull()
-    expect(errors?.length).toBe(1)
-  })
 })

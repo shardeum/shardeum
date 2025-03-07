@@ -44,48 +44,6 @@ export const replacer = <T, K, V>(
   }
 }
 
-/**
- * Check if the test version is equal or newer than the min version
- * @param minimumVersion
- * @param testVersion
- * @returns
- */
-export function isEqualOrNewerVersion(minimumVersion: string, testVersion: string): boolean {
-  if (minimumVersion === testVersion) {
-    return true
-  }
-
-  const minVerParts = minimumVersion.split('.')
-  const testVerParts = testVersion.split('.')
-  /* eslint-disable security/detect-object-injection */
-  for (let i = 0; i < testVerParts.length; i++) {
-    const testV = ~~testVerParts[i] // parse int
-    const minV = ~~minVerParts[i] // parse int
-    if (testV > minV) return true
-    if (testV < minV) return false
-  }
-  /* eslint-enable security/detect-object-injection */
-  return false
-}
-
-/**
- * Check if the test version is equal or older than the max version
- * can also think of this as checking if testVersion is an earlier
- * version than maximumVersion
- * @param maximumVersion
- * @param testVersion
- * @returns
- */
-export function isEqualOrOlderVersion(maximumVersion: string, testVersion: string): boolean {
-  return isEqualOrNewerVersion(testVersion, maximumVersion)
-}
-
-export function isValidVersion(minimumVersion: string, latestVersion: string, testVersion: string): boolean {
-  const equalOrNewer = isEqualOrNewerVersion(minimumVersion, testVersion)
-  const equalOrOlder = isEqualOrOlderVersion(latestVersion, testVersion)
-  return equalOrNewer && equalOrOlder
-}
-
 // From: https://stackoverflow.com/a/19270021
 export function getRandom<T>(arr: T[], n: number): T[] {
   let len = arr.length

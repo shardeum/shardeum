@@ -23,11 +23,11 @@ import { createInternalTxReceipt, logFlags, shardeumGetTime } from '..'
 import { bigIntToHex, isValidAddress } from '@ethereumjs/util'
 import { Utils } from '@shardeum-foundation/lib-types'
 import { SafeBalance } from '../utils/safeMath'
-import { verify } from '../setup/helpers'
+import { isInternalTx, verify } from '../setup/helpers'
 import { NetworkAccount } from '../types/NetworkAccount';
 
 export function isSetCertTimeTx(tx): boolean {
-  if (tx.isInternalTx && tx.internalTXType === InternalTXType.SetCertTime) {
+  if (isInternalTx(tx) && tx.internalTXType === InternalTXType.SetCertTime) {
     return true
   }
   return false
@@ -134,6 +134,20 @@ export function validateSetCertTimeState(
         reason: `Found no wrapped state for operator account ${tx.nominator}`,
       }
   } else {
+    const transactionNominee = tx.nominee
+    const operatorNominee = operatorEVMAccount.operatorAccountInfo.nominee
+
+    /* prettier-ignore */ if (logFlags.dapp_verbose) console.log(`transactionNominee: ${transactionNominee}, operatorNominee: ${operatorNominee}`)
+
+    if (transactionNominee.toLowerCase() !== operatorNominee.toLowerCase()) {
+      console.log(`NOMINEE MISMATCH - txNominee: ${transactionNominee}, operatorNominee: ${operatorNominee}`)
+      /* prettier-ignore */ if (logFlags.dapp_verbose) console.log(`Transaction nominee ${transactionNominee} and original operator nominee ${operatorNominee} MISMATCH!!`)
+      return {
+        result: 'fail',
+        reason: `Transaction nominee ${transactionNominee} and original operator nominee ${operatorNominee} MISMATCH!!`
+      }
+    }
+
     if (operatorEVMAccount && operatorEVMAccount.operatorAccountInfo) {
       try {
         committedStake = _base16BNParser(operatorEVMAccount.operatorAccountInfo.stake)

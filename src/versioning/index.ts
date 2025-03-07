@@ -1,6 +1,7 @@
-import { nestedCountersInstance } from '@shardeum-foundation/core'
-import { isEqualOrNewerVersion } from '../utils'
+import { meetsMinimumVersion, VersionValidationResult, nestedCountersInstance } from '@shardeum-foundation/core'
 import { Migration as Migrate } from './types'
+
+
 
 const appliedMigrations = new Set<string>()
 
@@ -18,23 +19,23 @@ const appliedMigrations = new Set<string>()
 export const onActiveVersionChange = async (newActiveVersion: string) => {
   // For future migrations, add a file under ./migrations and add the version here
   const migrations = ['1.9.1', '1.10.2', '1.11.2', '1.11.3', '1.15.4', '1.16.3']
-
   for (let index = 0; index < migrations.length; index++) {
     const migrationVersion = migrations[index] // eslint-disable-line security/detect-object-injection
+    if (appliedMigrations.has(migrationVersion) !== true) {
+      continue
+    }
+    const versionValidationResult = meetsMinimumVersion(migrationVersion, newActiveVersion)
+    if (versionValidationResult !== VersionValidationResult.Success) {
+      continue
+    }
 
-    const { migrate } = (await import(`./migrations/${migrationVersion}`)) as { migrate: Migrate } // eslint-disable-line no-unsanitized/method
-
-    const needsMigration =
-      !appliedMigrations.has(migrationVersion) && isEqualOrNewerVersion(migrationVersion, newActiveVersion)
-
-    if (needsMigration) {
-      try {
-        await migrate()
-      } catch (error) {
-        nestedCountersInstance.countEvent('migration-failed', `failed to apply migration ${migrationVersion}`)
-      } finally {
-        appliedMigrations.add(migrationVersion)
-      }
+    try {
+      const { migrate } = (await import(`./migrations/${migrationVersion}`)) as { migrate: Migrate } // eslint-disable-line no-unsanitized/method
+      await migrate()
+    } catch (error) {
+      nestedCountersInstance.countEvent('migration-failed', `failed to apply migration ${migrationVersion}`)
+    } finally {
+      appliedMigrations.add(migrationVersion)
     }
   }
 }

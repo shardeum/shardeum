@@ -88,7 +88,6 @@ import {
 } from './shardeum/wrappedEVMAccountFunctions'
 import {
   emptyCodeHash,
-  isEqualOrNewerVersion,
   replacer,
   fixBigIntLiteralsToBigInt,
   sleep,
@@ -96,7 +95,6 @@ import {
   _base16BNParser,
   _readableSHM,
   scaleByStabilityFactor,
-  isEqualOrOlderVersion,
   debug_map_replacer,
   operatorCLIVersion,
   operatorGUIVersion,
@@ -107,20 +105,21 @@ import {
   findMajorityResult,
   generateTxId,
   isWithinRange,
-  isValidVersion,
   getTxSenderAddress,
   isInSenderCache,
   removeTxFromSenderCache,
   isStakingEVMTx,
   convertBigIntsToHex,
 } from './utils'
+
+import { meetsMinimumVersion, isWithinMaximumVersion, VersionValidationResult } from '@shardeum-foundation/core'
 import config, { Config } from './config'
 import Wallet from 'ethereumjs-wallet'
 import { Block } from '@ethereumjs/block'
 import { ShardeumBlock } from './block/blockchain'
 import * as AccountsStorage from './storage/accountStorage'
 import { sync, validateTransaction, validateTxnFields } from './setup'
-import { applySetCertTimeTx, injectSetCertTimeTx, getCertCycleDuration } from './tx/setCertTime'
+import { applySetCertTimeTx, injectSetCertTimeTx, getCertCycleDuration, isSetCertTimeTx } from './tx/setCertTime'
 import { applyClaimRewardTx, injectClaimRewardTx } from './tx/claimReward'
 import { Request, Response } from 'express'
 import {
@@ -168,7 +167,7 @@ import { Utils } from '@shardeum-foundation/lib-types'
 import { SafeBalance } from './utils/safeMath'
 import { isStakeUnlocked, verifyStakeTx, verifyUnstakeTx } from './tx/staking/verifyStake'
 import { AJVSchemaEnum } from './types/enum/AJVSchemaEnum'
-import { initAjvSchemas, verifyPayload } from './types/ajv/Helpers'
+import { filterObjectByWhitelistedProps, initAjvSchemas, verifyPayload } from './types/ajv/Helpers'
 import { Sign, ServerMode } from '@shardeum-foundation/core/dist/shardus/shardus-types'
 
 import { safeStringify } from '@shardeum-foundation/lib-types/build/src/utils/functions/stringify'
@@ -182,6 +181,9 @@ import {
 } from './shardeum/secureAccounts'
 import * as TicketManager from './setup/ticket-manager'
 import { getHeapStatistics } from 'v8'
+import { OpaqueTransaction } from '@shardeum-foundation/core/dist/shardus/shardus-types'
+import { TicketTypes, doesTransactionSenderHaveTicketType } from './setup/ticket-manager'
+import { buildFetchNetworkAccountFromArchiver } from './shardeum/services/networkAccountService'
 
 let latestBlock = 0
 export const blocks: BlockMap = {}
@@ -1535,7 +1537,26 @@ const configShardusEndpoints = (): void => {
       const stakeRequiredUsd = AccountsStorage.cachedNetworkAccount.current.stakeRequiredUsd
       const stakeRequired = scaleByStabilityFactor(stakeRequiredUsd, AccountsStorage.cachedNetworkAccount)
       if (ShardeumFlags.VerboseLogs) console.log('Req: stake requirement', _readableSHM(stakeRequired))
-      res.json(Utils.safeJsonParse(Utils.safeStringify({ stakeRequired, stakeRequiredUsd })))
+
+      const response = {
+        stakeRequired: {
+          dataType: 'bi',
+          value: stakeRequired.toString(16).padStart(16, '0'),
+        },
+        stakeRequiredUsd: {
+          dataType: 'bi',
+          value: stakeRequiredUsd.toString(16).padStart(16, '0'),
+        },
+      }
+
+      const errors = verifyPayload(AJVSchemaEnum.StakeResp, response)
+
+      if (errors) {
+        nestedCountersInstance.countEvent('external', 'ajv-failed-stake-response')
+        res.status(500).json({ error: 'Internal server error' })
+        return
+      }
+      res.json(response)
     } catch (e) {
       if (ShardeumFlags.VerboseLogs) console.log(`Error /stake`, e)
       res.status(500).send(e.message)
@@ -2420,9 +2441,45 @@ const configShardusEndpoints = (): void => {
   })
 
   shardus.registerExternalGet('is-healthy', async (req, res) => {
-    // TODO: Add actual health check logic
+    const dbHealthy = await AccountsStorage.checkDatabaseHealth();
+    const result = {
+      status: dbHealthy ? 'healthy' : 'degraded',
+      uptime: process.uptime(),
+      timestamp: new Date().toISOString(),
+      database: dbHealthy ? 'healthy' : 'unreachable',
+    }
     nestedCountersInstance.countEvent('endpoint', 'health-check')
-    res.sendStatus(200)
+
+    // fastify automatically converts 500 body if not explicitly set like this
+    res.header('Content-Type', 'application/json')
+    res.status(dbHealthy ? 200 : 500).send(result)
+  })
+
+  shardus.registerExternalGet('is-genesis-node/:nominator', async (req, res) => {
+    const isTicketTypesEnabled = ShardeumFlags.ticketTypesEnabled
+    /* prettier-ignore */ if (logFlags.debug) console.log(`[is-genesis-node] isTicketsEnabled: ${isTicketTypesEnabled}`)
+    if (!isTicketTypesEnabled) {
+      return res.json({ success: true, reason: 'Ticket types are not enabled' })
+    }
+    let senderAddress: Address
+    try {
+      senderAddress = Address.fromString(req.params['nominator'])
+    } catch (error) {
+      return res.json({ success: false, reason: 'Invalid address' })
+    }
+    const doesNominatorHaveTicketTypeResponse: { success: boolean; reason: string; enabled: boolean } =
+      doesTransactionSenderHaveTicketType({ ticketType: TicketTypes.SILVER, senderAddress })
+    /* prettier-ignore */ if (logFlags.debug) console.log(
+      `[is-genesis-node] doesNominatorHaveTicketTypeResponse: ${doesNominatorHaveTicketTypeResponse}`
+    )
+    if (doesNominatorHaveTicketTypeResponse.enabled && !doesNominatorHaveTicketTypeResponse.success) {
+      return res.json({
+        success: doesNominatorHaveTicketTypeResponse.success,
+        reason: doesNominatorHaveTicketTypeResponse.reason,
+      })
+    } else {
+      return res.json({ success: true, reason: 'Genesis Node detected' })
+    }
   })
 }
 
@@ -2673,8 +2730,6 @@ const configShardusNetworkTransactions = (): void => {
       return {
         type: 'nodeReward',
         txData: {
-          start: node.activeCycle,
-          end: record.counter,
           endTime: record.start,
           publicKey: node.publicKey,
           nodeId: node.id,
@@ -2946,7 +3001,7 @@ async function applyInternalTx(
     /* prettier-ignore */ if (logFlags.important_as_error) console.log(`Applied CHANGE_NETWORK_PARAM GLOBAL transaction: ${Utils.safeStringify(network)}`)
     /* prettier-ignore */ if (logFlags.important_as_error) shardus.log('Applied CHANGE_NETWORK_PARAM GLOBAL transaction', Utils.safeStringify(network))
   }
-  if (internalTx.internalTXType === InternalTXType.SetCertTime) {
+  if (isSetCertTimeTx(internalTx)) {
     const setCertTimeTx = internalTx as SetCertTime
     applySetCertTimeTx(shardus, setCertTimeTx, wrappedStates, txId, txTimestamp, applyResponse)
   }
@@ -5110,7 +5165,7 @@ const shardusSetup = (): void => {
     getTimestampFromTransaction(tx, appData) {
       if (ShardeumFlags.VerboseLogs) console.log('Running getTimestampFromTransaction', tx, appData)
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      if (ShardeumFlags.autoGenerateAccessList && appData && (appData as any).requestNewTimestamp) {
+      if (appData && (appData as any).requestNewTimestamp) {
         if (ShardeumFlags.VerboseLogs) console.log('Requesting new timestamp', appData)
         return -1
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -5144,13 +5199,31 @@ const shardusSetup = (): void => {
 
         const isStakeRelatedTx: boolean = isStakingEVMTx(transaction)
 
-        const isEIP2930 =
-          transaction instanceof AccessListEIP2930Transaction && transaction.AccessListJSON != null
         let isSimpleTransfer = false
-
         let remoteShardusAccount
         let remoteTargetAccount
         appData.requestNewTimestamp = true // force all evm txs to generate a new timestamp
+
+        const isEIP2930 = transaction instanceof AccessListEIP2930Transaction && transaction.AccessListJSON != null
+        if (isEIP2930) {
+          const eip2930Tx = (transaction as AccessListEIP2930Transaction)
+
+          const tooManyAddresses = eip2930Tx.AccessListJSON?.length > ShardeumFlags.accessListSizeLimit;
+          if (tooManyAddresses) {
+            return { 
+              status: false, 
+              reason: `EIP2930 tx blocked for having > ${ShardeumFlags.accessListSizeLimit} addresses in accessList`
+            }
+          }        
+
+          const tooManyStorageKeys = eip2930Tx.AccessListJSON?.some((accessListItem) => accessListItem.storageKeys?.length > ShardeumFlags.accessListSizeLimit)
+          if (tooManyStorageKeys) {
+            return { 
+              status: false, 
+              reason: `EIP2930 tx blocked for having > ${ShardeumFlags.accessListSizeLimit} storage keys for at least one address`
+            }
+          }
+        }
 
         //if the TX is a contract deploy, predict the new contract address correctly (needs sender's nonce)
         //remote fetch of sender EOA also allows fast balance and nonce checking (assuming we get some queue hints as well from shardus core)
@@ -5435,14 +5508,37 @@ const shardusSetup = (): void => {
     },
 
     //@ts-ignore
-    crack(timestampedTx, appData) {
+    crack(timestampedTx, passedAppData) {
+      const appData: any = filterObjectByWhitelistedProps(passedAppData, [
+        {
+          name: 'internalTx',
+          type: 'object',
+        },
+        {
+          name: 'internalTXType',
+          type: 'number',
+        },
+        {
+          name: 'networkAccount',
+          type: 'object',
+        },
+        {
+          name: 'nomineeAccount',
+          type: 'object',
+        },
+        {
+          name: 'nominatorAccount',
+          type: 'object',
+        },
+      ])
+
       if (ShardeumFlags.VerboseLogs) console.log('Running getKeyFromTransaction', timestampedTx)
       //@ts-ignore
       const { tx } = timestampedTx
 
       const timestamp: number = getInjectedOrGeneratedTimestamp(timestampedTx)
 
-      let shardusMemoryPatterns = {}
+      const shardusMemoryPatterns = {}
       if (isInternalTx(tx)) {
         const customTXhash = null
         const internalTx = tx as InternalTx
@@ -5467,7 +5563,7 @@ const shardusSetup = (): void => {
           keys.targetKeys = [networkAccount]
         } else if (internalTx.internalTXType === InternalTXType.ApplyNetworkParam) {
           keys.targetKeys = [networkAccount]
-        } else if (internalTx.internalTXType === InternalTXType.SetCertTime) {
+        } else if (isSetCertTimeTx(internalTx)) {
           keys.sourceKeys = [tx.nominee]
           keys.targetKeys = [toShardusAddress(tx.nominator, AccountType.Account), networkAccount]
         } else if (internalTx.internalTXType === InternalTXType.InitRewardTimes) {
@@ -5656,67 +5752,76 @@ const shardusSetup = (): void => {
           }
         }
 
-        if (transaction instanceof AccessListEIP2930Transaction && transaction.AccessListJSON != null) {
-          for (const accessList of transaction.AccessListJSON) {
-            const address = accessList.address
-            if (address) {
-              const shardusAddr = toShardusAddress(address, AccountType.Account)
-              shardusAddressToEVMAccountInfo.set(shardusAddr, {
-                evmAddress: address,
-                type: AccountType.Account,
-              })
-              otherAccountKeys.push(shardusAddr)
-
-              //TODO: we need some new logic that can check each account to try loading each CA "early"
-              //and figure so we will at least know the code hash to load
-              //probably should also do some work with memory access patterns too.
-            }
-            //let storageKeys = accessList.storageKeys.map(key => toShardusAddress(key, AccountType.ContractStorage))
-            const storageKeys = []
-            for (const storageKey of accessList.storageKeys) {
-              //let shardusAddr = toShardusAddress(storageKey, AccountType.ContractStorage)
-              const shardusAddr = toShardusAddressWithKey(address, storageKey, AccountType.ContractStorage)
-
-              shardusAddressToEVMAccountInfo.set(shardusAddr, {
-                evmAddress: shardusAddr,
-                contractAddress: address,
-                type: AccountType.ContractStorage,
-              })
-              storageKeys.push(shardusAddr)
-            }
-            result.storageKeys = result.storageKeys.concat(storageKeys)
-          }
-        } else {
-          if (ShardeumFlags.autoGenerateAccessList && appData.accessList) {
-            shardusMemoryPatterns = appData.shardusMemoryPatterns
-            // we have pre-generated accessList
-            for (const accessListItem of appData.accessList) {
-              const address = accessListItem[0]
-              if (address) {
-                const shardusAddr = toShardusAddress(address, AccountType.Account)
-                shardusAddressToEVMAccountInfo.set(shardusAddr, {
-                  evmAddress: address,
-                  type: AccountType.Account,
-                })
-                otherAccountKeys.push(shardusAddr)
-              }
-              //let storageKeys = accessListItem.storageKeys.map(key => toShardusAddress(key, AccountType.ContractStorage))
-              const storageKeys = []
-              for (const storageKey of accessListItem[1]) {
-                //let shardusAddr = toShardusAddress(storageKey, AccountType.ContractStorage)
-                const shardusAddr = toShardusAddressWithKey(address, storageKey, AccountType.ContractStorage)
-
-                shardusAddressToEVMAccountInfo.set(shardusAddr, {
-                  evmAddress: storageKey,
-                  contractAddress: address,
-                  type: AccountType.ContractStorage,
-                })
-                storageKeys.push(shardusAddr)
-              }
-              result.storageKeys = result.storageKeys.concat(storageKeys)
-            }
-          }
-        }
+        /***
+         DO NOT REMOVE - BEGIN
+         ***/
+        // Note: The below code is being removed because usage of appData properties should only be used for staking
+        //       data at this time. Also, for security reasons, only appData properties internalTx, internalTxType,
+        //       networkAccount, monimeeAccount, and nominatorAccount should be used in this function.
+        // if (transaction instanceof AccessListEIP2930Transaction && transaction.AccessListJSON != null) {
+        //   for (const accessList of transaction.AccessListJSON) {
+        //     const address = accessList.address
+        //     if (address) {
+        //       const shardusAddr = toShardusAddress(address, AccountType.Account)
+        //       shardusAddressToEVMAccountInfo.set(shardusAddr, {
+        //         evmAddress: address,
+        //         type: AccountType.Account,
+        //       })
+        //       otherAccountKeys.push(shardusAddr)
+        //
+        //       //TODO: we need some new logic that can check each account to try loading each CA "early"
+        //       //and figure so we will at least know the code hash to load
+        //       //probably should also do some work with memory access patterns too.
+        //     }
+        //     //let storageKeys = accessList.storageKeys.map(key => toShardusAddress(key, AccountType.ContractStorage))
+        //     const storageKeys = []
+        //     for (const storageKey of accessList.storageKeys) {
+        //       //let shardusAddr = toShardusAddress(storageKey, AccountType.ContractStorage)
+        //       const shardusAddr = toShardusAddressWithKey(address, storageKey, AccountType.ContractStorage)
+        //
+        //       shardusAddressToEVMAccountInfo.set(shardusAddr, {
+        //         evmAddress: shardusAddr,
+        //         contractAddress: address,
+        //         type: AccountType.ContractStorage,
+        //       })
+        //       storageKeys.push(shardusAddr)
+        //     }
+        //     result.storageKeys = result.storageKeys.concat(storageKeys)
+        //   }
+        // } else {
+        //   if (ShardeumFlags.autoGenerateAccessList && appData.accessList) {
+        //     shardusMemoryPatterns = appData.shardusMemoryPatterns
+        //     // we have pre-generated accessList
+        //     for (const accessListItem of appData.accessList) {
+        //       const address = accessListItem[0]
+        //       if (address) {
+        //         const shardusAddr = toShardusAddress(address, AccountType.Account)
+        //         shardusAddressToEVMAccountInfo.set(shardusAddr, {
+        //           evmAddress: address,
+        //           type: AccountType.Account,
+        //         })
+        //         otherAccountKeys.push(shardusAddr)
+        //       }
+        //       //let storageKeys = accessListItem.storageKeys.map(key => toShardusAddress(key, AccountType.ContractStorage))
+        //       const storageKeys = []
+        //       for (const storageKey of accessListItem[1]) {
+        //         //let shardusAddr = toShardusAddress(storageKey, AccountType.ContractStorage)
+        //         const shardusAddr = toShardusAddressWithKey(address, storageKey, AccountType.ContractStorage)
+        //
+        //         shardusAddressToEVMAccountInfo.set(shardusAddr, {
+        //           evmAddress: storageKey,
+        //           contractAddress: address,
+        //           type: AccountType.ContractStorage,
+        //         })
+        //         storageKeys.push(shardusAddr)
+        //       }
+        //       result.storageKeys = result.storageKeys.concat(storageKeys)
+        //     }
+        //   }
+        // }
+        /***
+         DO NOT REMOVE - END
+         ***/
 
         //set keys for code hashes if we have them on app data
         if (appData.codeHashes != null && appData.codeHashes.length > 0) {
@@ -5913,7 +6018,7 @@ const shardusSetup = (): void => {
             }
           }
         }
-        if (internalTx.internalTXType === InternalTXType.SetCertTime) {
+        if (isSetCertTimeTx(internalTx)) {
           if (!wrappedEVMAccount) {
             // Node Account or EVM Account(Nominator) has to be already created at this point.
             if (accountId === internalTx.nominee) {
@@ -6576,9 +6681,10 @@ const shardusSetup = (): void => {
         if (type === 'sign-stake-cert') {
           if (nodesToSign != 5) return fail
           const stakeCert = appData as StakeCert
-          if (!stakeCert.nominator || !stakeCert.nominee || !stakeCert.stake || !stakeCert.certExp) {
-            nestedCountersInstance.countEvent('shardeum-staking', 'signAppData format failed')
-            /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`signAppData format failed ${type} ${Utils.safeStringify(stakeCert)} `)
+          const errors = verifyPayload(AJVSchemaEnum.StakeCert, stakeCert)
+          if (errors) {
+            nestedCountersInstance.countEvent('shardeum-staking', 'signAppData ajv verification failed')
+            /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`signAppData ajv verification failed - type: ${type} stakeCert: ${Utils.safeStringify(stakeCert)} errors: ${Utils.safeStringify(errors)}`)
             return fail
           }
           const currentTimestamp = shardeumGetTime()
@@ -6664,9 +6770,10 @@ const shardusSetup = (): void => {
         } else if (type === 'sign-remove-node-cert') {
           if (nodesToSign != 5) return fail
           const removeNodeCert = appData as RemoveNodeCert
-          if (!removeNodeCert.nodePublicKey || !removeNodeCert.cycle) {
-            nestedCountersInstance.countEvent('shardeum-remove-node', 'signAppData format failed')
-            /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`signAppData format failed ${type} ${Utils.safeStringify(removeNodeCert)} `)
+          const errors = verifyPayload(AJVSchemaEnum.RemoveNodeCert, removeNodeCert)
+          if (errors) {
+            nestedCountersInstance.countEvent('shardeum-remove-node', 'signAppData ajv verification failed')
+            /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`signAppData ajv verification failed - type: ${type} removeNodeCert: ${Utils.safeStringify(removeNodeCert)} errors: ${Utils.safeStringify(errors)}`)
             return fail
           }
           const latestCycles = shardus.getLatestCycles()
@@ -6860,37 +6967,37 @@ const shardusSetup = (): void => {
         /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`validateJoinRequest ${Utils.safeStringify(data)}`)
         if (!data.appJoinData) {
           /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`validateJoinRequest fail: !data.appJoinData`)
-          return {
-            success: false,
-            reason: `Join request node doesn't provide the app join data.`,
-            fatal: true,
-          }
+          return { success: false, reason: `Join request node doesn't provide the app join data.`, fatal: true, }
         }
 
         const appJoinData = data.appJoinData as AppJoinData
-
+        const appJoinDataVersion = appJoinData.version
         const minVersion = AccountsStorage.cachedNetworkAccount.current.minVersion
-        if (!isEqualOrNewerVersion(minVersion, appJoinData.version)) {
-          /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`validateJoinRequest fail: old version`)
-          return {
-            success: false,
-            reason: `version number is old. minVersion is ${minVersion}. Join request node app version is ${appJoinData.version}`,
-            fatal: true,
-          }
-        }
-
         const latestVersion = AccountsStorage.cachedNetworkAccount.current.latestVersion
 
-        if (
-          latestVersion &&
-          appJoinData.version &&
-          !isEqualOrOlderVersion(latestVersion, appJoinData.version)
-        ) {
-          /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`validateJoinRequest fail: version number is newer than latest`)
-          return {
-            success: false,
-            reason: `version number is newer than latest. The latest allowed app version is ${latestVersion}. Join request node app version is ${appJoinData.version}`,
-            fatal: true,
+        // Min version reasons we can't validate the join request.
+        const minVersionValidationResult = meetsMinimumVersion(minVersion, appJoinDataVersion)
+        if (minVersionValidationResult !== VersionValidationResult.Success) {
+          switch (minVersionValidationResult) {
+            case VersionValidationResult.ComparisonFailed: return { success: false, reason: `validateJoinRequest: Standby node version: ${appJoinDataVersion} failed to meet min version ${minVersion}`, fatal: true }
+            case VersionValidationResult.ControlVersionParseFailure: return { success: false, reason: `validateJoinRequest: Failed to parse minVersion ${minVersion}`, fatal: true }
+            case VersionValidationResult.InvalidControlVersion: return { success: false, reason: `validateJoinRequest: Failed to validate minVersion ${minVersion}`, fatal: true }
+            case VersionValidationResult.TestVersionParseFailure: return { success: false, reason: `validateJoinRequest: Failed to parse appJoinDataVersion ${appJoinDataVersion}`, fatal: true }
+            case VersionValidationResult.InvalidTestVersion: return { success: false, reason: `validateJoinRequest: Failed to validate appJoinDataVersion ${appJoinDataVersion}`, fatal: true }
+            default: return { success: false, reason: `validateJoinRequest: Unexpected validation result ${minVersionValidationResult} - minVersion: ${minVersion} appJoinDataVersion: ${appJoinDataVersion}`, fatal: true }
+          }
+        }
+        
+        // Max version reasons we can't validate the join request.
+        const latestVersionValidationResult = isWithinMaximumVersion(latestVersion, appJoinDataVersion)
+        if (latestVersionValidationResult !== VersionValidationResult.Success) {
+          switch (latestVersionValidationResult) {
+            case VersionValidationResult.ComparisonFailed: return { success: false, reason: `validateJoinRequest: Standby node version: ${appJoinDataVersion} exceeds latestVersion ${latestVersion}`, fatal: true }
+            case VersionValidationResult.ControlVersionParseFailure: return { success: false, reason: `validateJoinRequest: Failed to parse latestVersion ${latestVersion}`, fatal: true }
+            case VersionValidationResult.InvalidControlVersion: return { success: false, reason: `validateJoinRequest: Failed to validate latestVersion ${latestVersion}`, fatal: true }
+            case VersionValidationResult.TestVersionParseFailure: return { success: false, reason: `validateJoinRequest: Failed to parse appJoinDataVersion ${appJoinDataVersion}`, fatal: true }
+            case VersionValidationResult.InvalidTestVersion: return { success: false, reason: `validateJoinRequest: Failed to validate appJoinDataVersion ${appJoinDataVersion}`, fatal: true }
+            default: return { success: false, reason: `validateJoinRequest: Unexpected validation result ${latestVersionValidationResult} - latestVersion: ${latestVersion} appJoinDataVersion: ${appJoinDataVersion}`, fatal: true }
           }
         }
 
@@ -6898,8 +7005,7 @@ const shardusSetup = (): void => {
         const numTotalNodes = latestCycle.active + latestCycle.syncing // total number of nodes in the network
 
         // Staking is only enabled when flag is on and
-        const stakingEnabled =
-          ShardeumFlags.StakingEnabled && numActiveNodes >= ShardeumFlags.minActiveNodesForStaking
+        const stakingEnabled = ShardeumFlags.StakingEnabled && numActiveNodes >= ShardeumFlags.minActiveNodesForStaking
 
         // there is no flag to turn off golden ticket if we want to
         //Checks for golden ticket
@@ -7150,39 +7256,42 @@ const shardusSetup = (): void => {
             fatal: true,
           }
         }
-        const { appData } = data
-        const { minVersion } = AccountsStorage.cachedNetworkAccount.current.archiver
-        if (!isEqualOrNewerVersion(minVersion, appData.version)) {
-          /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`validateArchiverJoinRequest() fail: old version`)
-          return {
-            success: false,
-            reason: `Archiver Version number is old. Our Archiver version is: ${devDependencies['@shardeum-foundation/archiver']}. Join Archiver app version is ${appData.version}`,
-            fatal: true,
+
+        const appDataVersion = data.appData.version
+        const minVersion = AccountsStorage.cachedNetworkAccount.current.archiver.minVersion
+        const latestVersion = AccountsStorage.cachedNetworkAccount.current.archiver.latestVersion
+
+        // Min version reasons we can't validate the archiver join request.
+        const minVersionValidationResult = meetsMinimumVersion(minVersion, appDataVersion)
+        if (minVersionValidationResult !== VersionValidationResult.Success) {
+          switch (minVersionValidationResult) {
+            case VersionValidationResult.ComparisonFailed: return { success: false, reason: `validateArchiverJoinRequest: Archiver node version: ${appDataVersion} failed to meet min version ${minVersion}`, fatal: true }
+            case VersionValidationResult.ControlVersionParseFailure: return { success: false, reason: `validateArchiverJoinRequest: Failed to parse minVersion ${minVersion}`, fatal: true }
+            case VersionValidationResult.InvalidControlVersion: return { success: false, reason: `validateArchiverJoinRequest: Failed to validate minVersion ${minVersion}`, fatal: true }
+            case VersionValidationResult.TestVersionParseFailure: return { success: false, reason: `validateArchiverJoinRequest: Failed to parse appJoinDataVersion ${appDataVersion}`, fatal: true }
+            case VersionValidationResult.InvalidTestVersion: return { success: false, reason: `validateArchiverJoinRequest: Failed to validate appJoinDataVersion ${appDataVersion}`, fatal: true }
+            default: return { success: false, reason: `validateArchiverJoinRequest: Unexpected validation result ${minVersionValidationResult} - minVersion: ${minVersion} appJoinDataVersion: ${appDataVersion}`, fatal: true }
+          }
+        }
+        
+        // Max version reasons we can't validate the archiverjoin request.
+        const latestVersionValidationResult = isWithinMaximumVersion(latestVersion, appDataVersion)
+        if (latestVersionValidationResult !== VersionValidationResult.Success) {
+          switch (latestVersionValidationResult) {
+            case VersionValidationResult.ComparisonFailed: return { success: false, reason: `validateArchiverJoinRequest: Archiver node version: ${appDataVersion} exceeds latestVersion ${latestVersion}`, fatal: true }
+            case VersionValidationResult.ControlVersionParseFailure: return { success: false, reason: `validateArchiverJoinRequest: Failed to parse latestVersion ${latestVersion}`, fatal: true }
+            case VersionValidationResult.InvalidControlVersion: return { success: false, reason: `validateArchiverJoinRequest: Failed to validate latestVersion ${latestVersion}`, fatal: true }
+            case VersionValidationResult.TestVersionParseFailure: return { success: false, reason: `validateArchiverJoinRequest: Failed to parse appJoinDataVersion ${appDataVersion}`, fatal: true }
+            case VersionValidationResult.InvalidTestVersion: return { success: false, reason: `validateArchiverJoinRequest: Failed to validate appJoinDataVersion ${appDataVersion}`, fatal: true }
+            default: return { success: false, reason: `validateArchiverJoinRequest: Unexpected validation result ${latestVersionValidationResult} - latestVersion: ${latestVersion} appJoinDataVersion: ${appDataVersion}`, fatal: true }
           }
         }
 
-        const { latestVersion } = AccountsStorage.cachedNetworkAccount.current.archiver
-        if (latestVersion && appData.version && !isEqualOrOlderVersion(latestVersion, appData.version)) {
-          /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`validateArchiverJoinRequest() fail: version number is newer than latest`)
-          return {
-            success: false,
-            reason: `Archiver Version number is newer than latest. The latest allowed Archiver version is ${latestVersion}. Join Archiver app version is ${appData.version}`,
-            fatal: true,
-          }
-        }
         /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`validateArchiverJoinRequest() Successful!`)
-        return {
-          success: true,
-          reason: 'Archiver-Join Request Validated!',
-          fatal: false,
-        }
+        return { success: true, reason: 'Archiver-Join Request Validated!', fatal: false, }
       } catch (e) {
         /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`validateArchiverJoinRequest exception: ${e}`)
-        return {
-          success: false,
-          reason: `validateArchiverJoinRequest fail: exception: ${e}`,
-          fatal: true,
-        }
+        return { success: false, reason: `validateArchiverJoinRequest fail: exception: ${e}`, fatal: true, }
       }
     },
     // Update the activeNodes type here; We can import from P2P.P2PTypes.Node from '@shardeum-foundation/lib-types' lib but seems it's not installed yet
@@ -7211,26 +7320,32 @@ const shardusSetup = (): void => {
       /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`isReadyToJoin cachedNetworkAccount 2 ${Utils.safeStringify(cachedNetworkAccount)}`)
 
       if (initialNetworkParamters && networkAccount) {
-        if (
-          !isValidVersion(
-            networkAccount.data.current.minVersion,
-            networkAccount.data.current.latestVersion,
-            version
-          )
-        ) {
-          const tag = 'version out-of-date; please update and restart'
-          const message = 'node version is out-of-date; please update node to latest version'
+        //error out nodes in debug mode for production networks to prevent joining
+        if (networkAccount.data.mode === ServerMode.Release && config.server.mode !== ServerMode.Release ) {
+          const tag = `wrong mode; please update and restart`
+          const message = `node mode must be in release mode; please update the node mode`
           shardus.shutdownFromDapp(tag, message, false)
           return false
         }
 
-        //error out nodes in debug mode for production networks to prevent joining
-        if (
-          networkAccount.data.mode === ServerMode.Release &&
-          config.server.mode !== ServerMode.Release
-        ) {
-          const tag = 'wrong mode; please update and restart'
-          const message = 'node mode must be release; please update the node mode'
+        const nodeVersion = version
+        const minVersion = networkAccount.data.current.minVersion      
+        const latestVersion = networkAccount.data.current.latestVersion
+
+        // Error out if our node version doesn't meet the min version (it's too old)
+        const minVersionValidationResult = meetsMinimumVersion(minVersion, nodeVersion)
+        if (minVersionValidationResult !== VersionValidationResult.Success) {
+          const tag = `isReadyToJoin: Not ready to join`
+          const message = `Node version (${nodeVersion}) does not meet minimum required version (${minVersion}); Please install version (${latestVersion})`
+          shardus.shutdownFromDapp(tag, message, false)
+          return false
+        }
+
+        // Error out if our node version exceeds the max version (it's too new)        
+        const latestVersionValidationResult = isWithinMaximumVersion(latestVersion, nodeVersion)
+        if (latestVersionValidationResult !== VersionValidationResult.Success) {
+          const tag = `isReadyToJoin: Not ready to join`
+          const message = `Node version (${nodeVersion}) exceeds maximum allowed version (${latestVersion}); Please install version (${latestVersion})`
           shardus.shutdownFromDapp(tag, message, false)
           return false
         }
@@ -7817,26 +7932,32 @@ const shardusSetup = (): void => {
         }
 
         const minVersion = AccountsStorage.cachedNetworkAccount.current.minVersion
-        if (!isEqualOrNewerVersion(minVersion, appJoinData.version)) {
-          /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`canStayOnStandby fail: old version`)
-          return {
-            canStay: false,
-            reason: `canStayOnStandby: standby node version: ${appJoinData.version} < minVersion ${minVersion}`,
+        const latestVersion = AccountsStorage.cachedNetworkAccount.current.latestVersion
+        const appJoinDataVersion = appJoinData.version
+
+        // Min version reasons we can't stay on standby list.
+        const minVersionValidationResult = meetsMinimumVersion(minVersion, appJoinDataVersion)
+        if (minVersionValidationResult !== VersionValidationResult.Success) {
+          switch (minVersionValidationResult) {
+            case VersionValidationResult.ComparisonFailed: return { canStay: false, reason: `canStayOnStandby: Standby node version: ${appJoinDataVersion} failed to meet min version ${minVersion}` }
+            case VersionValidationResult.ControlVersionParseFailure: return { canStay: false, reason: `canStayOnStandby: Failed to parse minVersion ${minVersion}` }
+            case VersionValidationResult.InvalidControlVersion: return { canStay: false, reason: `canStayOnStandby: Failed to validate minVersion ${minVersion}` }
+            case VersionValidationResult.TestVersionParseFailure: return { canStay: false, reason: `canStayOnStandby: Failed to parse appJoinDataVersion ${appJoinDataVersion}` }
+            case VersionValidationResult.InvalidTestVersion: return { canStay: false, reason: `canStayOnStandby: Failed to validate appJoinDataVersion ${appJoinDataVersion}` }
+            default: return { canStay: false, reason: `canStayOnStandby: Unexpected validation result ${minVersionValidationResult} - minVersion: ${minVersion} appJoinDataVersion: ${appJoinDataVersion}`}
           }
         }
-
-        const latestVersion = AccountsStorage.cachedNetworkAccount.current.latestVersion
-
-        if (
-          latestVersion &&
-          appJoinData.version &&
-          !isEqualOrOlderVersion(latestVersion, appJoinData.version)
-        ) {
-          /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`canStayOnStandby fail: version number is newer than latest`)
-          return {
-            canStay: false,
-            reason: `version number is newer than latest. The latest allowed app version is ${latestVersion}. Join request node app version is ${appJoinData.version}`,
-            //fatal: true,
+        
+        // Max version reasons we can't stay on standby list.
+        const latestVersionValidationResult = isWithinMaximumVersion(latestVersion, appJoinDataVersion)
+        if (latestVersionValidationResult !== VersionValidationResult.Success) {
+          switch (latestVersionValidationResult) {
+            case VersionValidationResult.ComparisonFailed: return { canStay: false, reason: `canStayOnStandby: Standby node version: ${appJoinDataVersion} exceeds latestVersion ${latestVersion}` }
+            case VersionValidationResult.ControlVersionParseFailure: return { canStay: false, reason: `canStayOnStandby: Failed to parse latestVersion ${latestVersion}` }
+            case VersionValidationResult.InvalidControlVersion: return { canStay: false, reason: `canStayOnStandby: Failed to validate latestVersion ${latestVersion}` }
+            case VersionValidationResult.TestVersionParseFailure: return { canStay: false, reason: `canStayOnStandby: Failed to parse appJoinDataVersion ${appJoinDataVersion}` }
+            case VersionValidationResult.InvalidTestVersion: return { canStay: false, reason: `canStayOnStandby: Failed to validate appJoinDataVersion ${appJoinDataVersion}` }
+            default: return { canStay: false, reason: `canStayOnStandby: Unexpected validation result ${latestVersionValidationResult} - latestVersion: ${latestVersion} appJoinDataVersion: ${appJoinDataVersion}`}
           }
         }
       }
@@ -7891,7 +8012,7 @@ const shardusSetup = (): void => {
           return internalTx.from
         } else if (internalTx.internalTXType === InternalTXType.ApplyNetworkParam) {
           return internalTx.network
-        } else if (internalTx.internalTXType === InternalTXType.SetCertTime) {
+        } else if (isSetCertTimeTx(internalTx)) {
           return internalTx.nominee
         } else if (internalTx.internalTXType === InternalTXType.InitRewardTimes) {
           return internalTx.nominee
@@ -7962,14 +8083,25 @@ const shardusSetup = (): void => {
       minSigRequired: number,
       requiredSecurityLevel: DevSecurityLevel
     ): boolean => {
-      return verifyMultiSigs(
-        rawPayload,
-        sigs,
-        allowedPubkeys,
-        minSigRequired,
-        requiredSecurityLevel
-      )
-    }
+      return verifyMultiSigs(rawPayload, sigs, allowedPubkeys, minSigRequired, requiredSecurityLevel)
+    },
+    isNGT: (tx: OpaqueTransaction): boolean => {
+      const INIT_REWARD_TX = 8
+      const CLAIM_REWARD_TX = 9
+      const NGT_TYPES = [INIT_REWARD_TX, CLAIM_REWARD_TX]
+      return NGT_TYPES.includes(tx?.['internalTXType'])
+    },
+    verifyAppJoinData: (data: unknown): string[] | null => verifyPayload(AJVSchemaEnum.AppJoinData, data),
+    async getNetworkAccountFromArchiver(): Promise<WrappedAccount> {
+      try {
+        const networkAccount = await fetchNetworkAccountFromArchiver()
+        return networkAccount
+      } catch (e) {
+        /* prettier-ignore */ if (logFlags.error) console.log('getNetworkAccountFromArchiver error:', e)
+        nestedCountersInstance.countEvent('getNetworkAccountFromArchiver', 'error')
+      }
+      return null
+    },
   })
 
   shardus.registerExceptionHandler()
@@ -7993,95 +8125,17 @@ function periodicMemoryCleanup(): void {
 }
 
 async function fetchNetworkAccountFromArchiver(): Promise<WrappedAccount> {
-  //make a trustless query which will check 3 random archivers and call the endpoint with hash=true
-  let archiverList = getFinalArchiverList()
-  archiverList = getRandom(archiverList, archiverList.length >= 3 ? 3 : archiverList.length)
-  const values: {
-    hash: string
-    archiver: Archiver
-  }[] = []
-  for (const archiver of archiverList) {
-    const archiverUrl = `http://${archiver.ip}:${archiver.port}/get-network-account?hash=true`
-    try {
-      const res = await axios.get<{ networkAccountHash: string,
-        sign: {
-          owner: string,
-          sig: string
-        }
-      }>(archiverUrl)
-      if (!res.data) {
-        /* prettier-ignore */ nestedCountersInstance.countEvent('network-config-operation', 'failure: did not get network account from archiver private key. Use default configs.')
-        throw new Error(`fetchNetworkAccountFromArchiver() from pk:${archiver.publicKey} returned null`)
-      }
-      /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`[fetchNetworkAccountFromArchiver] data: ${JSON.stringify(res.data)}`)
-      const isFromArchiver = archiver.publicKey === res.data.sign.owner
-      /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`[fetchNetworkAccountFromArchiver] isFronArchiver: ${isFromArchiver}`)
-      if (!isFromArchiver) {
-        throw new Error(`The response signature is not the same from archiver pk:${archiver.publicKey}`)
-      }
-      const isResponseVerified = verify(res.data, archiver.publicKey)
-      /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`[fetchNetworkAccountFromArchiver] isResponseVerified: ${isResponseVerified}`)
-      if (!isResponseVerified) {
-        throw new Error(`The response signature is not the same from archiver pk:${archiver.publicKey}`)
-      }
-      values.push({
-        hash: res.data.networkAccountHash as string,
-        archiver,
-      })
-    } catch (ex) {
-      //dont let one bad archiver crash us !
-      /* prettier-ignore */ nestedCountersInstance.countEvent('network-config-operation', `error: ${ex?.message}`)
-      console.error(`[fetchNetworkAccountFromArchiver] ERROR retrieving/processing data from archiver ${archiverUrl}: `, ex)
-    }
-  }
-
-  //make sure there was a majority winner for the hash
-  const majorityValue = findMajorityResult(values, (v) => v.hash)
-  /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`[fetchNetworkAccountFromArchiver] majorityValue: ${safeStringify(majorityValue)}`)
-  if (!majorityValue) {
-    /* prettier-ignore */ nestedCountersInstance.countEvent('network-config-operation', 'failure: no majority found for archivers get-network-account result. Use default configs.')
-    throw new Error(`no majority found for archivers get-network-account result `)
-  }
-  const url = `http://${majorityValue.archiver.ip}:${majorityValue.archiver.port}/get-network-account?hash=false`
-  try {
-    const res = await axios.get<{ networkAccount: WrappedAccount }>(url)
-    /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`[fetchNetworkAccountFromArchiver] data: ${safeStringify(res?.data)}`)
-    if (!res.data) {
-      /* prettier-ignore */ nestedCountersInstance.countEvent('network-config-operation', 'failure: did not get network account from archiver private key, returned null. Use default configs.')
-      throw new Error(
-        `get-network-account from archiver pk:${majorityValue.archiver.publicKey} returned null`
-      )
-    }
-
-    if (ShardeumFlags.enableArchiverNetworkAccountValidation) {
-      // basic validation of the data to make sure we wont get unexpected errors
-      if (!res.data.networkAccount || !res.data.networkAccount.data || !res.data.networkAccount.data.hash) {
-        throw new Error(`get-network-account from archiver pk:${majorityValue.archiver.publicKey} returned malformed data: ${safeStringify(res.data)}`)
-      }
-
-      nestedCountersInstance.countEvent('network-config-operation', 'success: got network account from winning archiver')
-
-      // verify the 'winning' archiver's signature of the network account matches that of the response body signature
-      const isResponseVerified = verify(res.data, majorityValue.archiver.publicKey)
-      if (!isResponseVerified) {
-        nestedCountersInstance.countEvent('network-config-operation', 'failure: The response signature is not the same from archiver pk:${majorityValue.archiver.publicKey}')
-        throw new Error(`The response signature is not the same from archiver pk:${majorityValue.archiver.publicKey}`)
-      }
-
-      // verify that the hash was not spoofed by the archiver, rehash the network account and compare
-      const rehashedNetworkAccount = WrappedEVMAccountFunctions.accountSpecificHash(res.data.networkAccount.data)
-      if (rehashedNetworkAccount !== majorityValue.hash) {
-        nestedCountersInstance.countEvent('network-config-operation', 'failure: The rehashed network account is not the same as the majority hash')
-        throw new Error(`The rehashed network account is not the same as the majority hash. rehashed: ${rehashedNetworkAccount}, majority: ${majorityValue.hash}`)
-      }
-    }
-
-    return res.data.networkAccount as WrappedAccount
-  } catch (ex) {
-    console.error(`[fetchNetworkAccountFromArchiver] ERROR retrieving/processing data from archiver ${url}: `, ex)
-    /* prettier-ignore */ nestedCountersInstance.countEvent('network-config-operation', `error: ${ex?.message}`)
-    throw new Error(`Not able to fetch get-network-account result from archiver `)
-  }
+  const built = buildFetchNetworkAccountFromArchiver({
+    getFinalArchiverList,
+    getRandom,
+    verify,
+    ShardeumFlags,
+    WrappedEVMAccountFunctions,
+    nestedCountersInstance,
+    findMajorityResult,
+    safeStringify,
+  });
+  return await built();
 }
 
 async function updateConfigFromNetworkAccount(inputConfig: Config, account: WrappedAccount): Promise<Config> {
