@@ -2895,8 +2895,8 @@ async function applyInternalTx(
 
     // Create a copy of the network account to apply modifications and determine the resulting state.
     const networkAccountCopy = wrappedStates[networkAccount]
-    networkAccountCopy.data.timestamp = txTimestamp
-    networkAccountCopy.data.listOfChanges.push(internalTx.change)
+    networkAccountCopy.data.timestamp = when
+    networkAccountCopy.data.listOfChanges.push(value.change)
     const wrappedChangedAccount = WrappedEVMAccountFunctions._shardusWrappedAccount(networkAccountCopy.data)
     //value = wrappedChangedAccount
     const afterStateHash = wrappedChangedAccount.stateId // this is the hash of the network account after it has been modified with a change
@@ -2988,8 +2988,8 @@ async function applyInternalTx(
 
     // Create a copy of the network account to apply modifications and determine the resulting state.
     const networkAccountCopy = wrappedStates[networkAccount]
-    networkAccountCopy.data.timestamp = txTimestamp
-    networkAccountCopy.data.listOfChanges.push(internalTx.change)
+    networkAccountCopy.data.timestamp = when
+    networkAccountCopy.data.listOfChanges.push(value.change)
     const wrappedChangedAccount = WrappedEVMAccountFunctions._shardusWrappedAccount(networkAccountCopy.data)
     //value = wrappedChangedAccount
     const afterStateHash = wrappedChangedAccount.stateId // this is the hash of the network account after it has been modified with a change
