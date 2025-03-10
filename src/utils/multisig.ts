@@ -1,3 +1,4 @@
+import { safeJsonParse } from '@shardeum-foundation/lib-types/build/src/utils/functions/stringify';
 import { ChangeConfig } from '../shardeum/shardeumTypes'
 
 /**
@@ -18,7 +19,7 @@ export function isKeyChange(tx: ChangeConfig, currentConfig: any, multiSigPermis
   }
   
   try {
-    const newConfig = JSON.parse(tx.config);
+    const newConfig = safeJsonParse(tx.config);
     
     // Check what type of key changes are happening
     const isMultisigChange = isKeyChangeDetailed(currentConfig, newConfig, 'multisigKeys');
