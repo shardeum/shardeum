@@ -106,17 +106,13 @@ function fixWrappedEVMAccountBuffers(wrappedEVMAccount: WrappedEVMAccount): void
       wrappedEVMAccount.codeHash = Uint8Array.from(Object.values(wrappedEVMAccount.codeHash))
       wrappedEVMAccount.codeByte = Uint8Array.from(Object.values(wrappedEVMAccount.codeByte))
     } else {
-      wrappedEVMAccount.codeHash = Uint8Array.from(wrappedEVMAccount.codeHash)
-      wrappedEVMAccount.codeByte = Uint8Array.from(wrappedEVMAccount.codeByte)
+      wrappedEVMAccount.codeHash = Uint8Array.from(Object.values(wrappedEVMAccount.codeHash))
+      wrappedEVMAccount.codeByte = Uint8Array.from(Object.values(wrappedEVMAccount.codeByte))
     }
   }
 
   if (wrappedEVMAccount.accountType === AccountType.ContractStorage) {
-    if (!(wrappedEVMAccount.value instanceof Uint8Array) && typeof wrappedEVMAccount.value === 'object') {
-      wrappedEVMAccount.value = Uint8Array.from(Object.values(wrappedEVMAccount.value))
-    } else {
-      wrappedEVMAccount.value = Uint8Array.from(wrappedEVMAccount.value)
-    }
+    wrappedEVMAccount.value = Uint8Array.from(Object.values(wrappedEVMAccount.value))
   }
 }
 
