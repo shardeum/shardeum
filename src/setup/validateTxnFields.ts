@@ -44,6 +44,9 @@ import { logFlags, shardusConfig, getStakeTxBlobFromEVMTx } from '..'
 import { Sign } from '@shardeum-foundation/core/dist/shardus/shardus-types'
 import { validateTransferFromSecureAccount } from '../shardeum/secureAccounts'
 import { verifyPayload } from '../types/ajv/Helpers'
+import { isKeyChange as isTransactionKeyChange, isNonKeyChange as isTransactionNonKeyChange, cleanMultiSigPermissions } from '../utils/multisig'
+import { keyListAsLeveledKeys } from '../utils/keyUtils'
+import multisigPermissions from '../config/multisig-permissions.json'
 
 const txTypeToAJVMap = {
   [InternalTXType.InitNetwork]: 'InitNetworkTx',
@@ -133,7 +136,6 @@ export const validateTxnFields =
           tx.internalTXType === InternalTXType.ChangeNetworkParam
         ) {
           try {
-            // DEFINATION:
             // Valid signature is a cryptocraphically valid signature
             // that is signed by a key which is defined on the server and has enough security clearance
             if (!tx.sign) {
@@ -141,9 +143,31 @@ export const validateTxnFields =
               reason = 'No signature found'
             }
 
-            // Use multisig keys for validation
-            const allowedPublicKeys = shardus.getMultisigPublicKeys()
-
+            // Clean multiSigPermissions to remove any keys not in shardusConfig.debug.multisigKeys
+            const cleanedMultiSigPermissions = cleanMultiSigPermissions(multisigPermissions, shardusConfig)
+            
+            // Check if this is a key change transaction
+            const { isKeyChange, permittedKeys: keyChangePermittedKeys } = 
+              tx.internalTXType === InternalTXType.ChangeConfig ? 
+              isTransactionKeyChange(tx, shardusConfig, cleanedMultiSigPermissions) : 
+              { isKeyChange: false, permittedKeys: [] }
+            
+            // Check if this is a non-key change transaction (only if not a key change)
+            const { isNonKeyChange, permittedKeys: nonKeyChangePermittedKeys } = 
+              !isKeyChange && tx.internalTXType === InternalTXType.ChangeConfig ? 
+              isTransactionNonKeyChange(tx, shardusConfig, cleanedMultiSigPermissions) : 
+              { isNonKeyChange: false, permittedKeys: [] }
+            
+            // Determine which keys are allowed to sign this transaction and the required security level
+            const permittedKeys = isKeyChange ? keyChangePermittedKeys : 
+                                 isNonKeyChange ? nonKeyChangePermittedKeys : []
+            
+            const allowedPublicKeys = (isKeyChange || isNonKeyChange) ? 
+              keyListAsLeveledKeys(permittedKeys, DevSecurityLevel.High) : 
+              shardus.getMultisigPublicKeys()
+            
+            const requiredLevel = DevSecurityLevel.High
+            
             const is_array_sig = Array.isArray(tx.sign) === true
             const requiredSigs = Math.max(1, shardusConfig.debug.minMultiSigRequiredForGlobalTxs)
 
@@ -159,7 +183,7 @@ export const validateTxnFields =
               sigs,
               allowedPublicKeys,
               requiredSigs,
-              DevSecurityLevel.High
+              requiredLevel
             )
             if (sig_are_valid === true) {
               success = true

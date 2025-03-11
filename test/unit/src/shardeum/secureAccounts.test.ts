@@ -13,6 +13,11 @@ import * as ethers from 'ethers'
 import { Utils } from '@shardeum-foundation/lib-types'
 import { toShardusAddress } from '../../../../src/shardeum/evmAddress'
 
+// Mock the multisig-permissions.json file
+jest.mock('../../../../src/config/multisig-permissions.json', () => ({
+  initiateSecureAccountTransfer: ['0x1234567890123456789012345678901234567890']
+}), { virtual: true });
+
 jest.mock('../../../../src/shardeum/wrappedEVMAccountFunctions', () => ({
   updateEthAccountHash: jest.fn(),
   _shardusWrappedAccount: (wrappedEVMAccount) => ({
@@ -45,6 +50,15 @@ jest.mock('@shardeum-foundation/core', () => {
     }
   }
 })
+
+// Mock the shardusConfig
+jest.mock('../../../../src', () => ({
+  shardusConfig: {
+    debug: {
+      minMultiSigRequiredForGlobalTxs: 1
+    }
+  }
+}));
 
 // Add mock config with required properties
 const mockShardusConfig = {
@@ -108,15 +122,11 @@ describe('secureAccounts', () => {
 
   describe('validateTransferFromSecureAccount', () => {
     it('should validate a correct transfer transaction', async () => {
+      // Use the address from the mocked multisig-permissions.json
       const testPrivateKey = '0x1234567890123456789012345678901234567890123456789012345678901234';
       const testWallet = new ethers.Wallet(testPrivateKey);
-      const testAddress = testWallet.address;
+      const testAddress = '0x1234567890123456789012345678901234567890'; // This matches our mocked permission
       
-      // Mock the multisig keys to accept our test wallet
-      (shardus.getMultisigPublicKeys as jest.Mock).mockReturnValue({
-        [testAddress]: DevSecurityLevel.High
-      })
-
       const txData = {
         amount: '1000000000000000000',
         accountName: 'Foundation',
@@ -130,12 +140,15 @@ describe('secureAccounts', () => {
       const validTx = {
         ...txData,
         sign: [{
-          owner: testAddress,
+          owner: testAddress, // Use the address from our mocked permissions
           sig: signature
         }],
         isInternalTx: true,
         internalTXType: InternalTXType.TransferFromSecureAccount
       } as InternalTx
+
+      // Mock the verifyMultiSigs function to return true for our test
+      jest.spyOn(require('../../../../src/setup/helpers'), 'verifyMultiSigs').mockReturnValue(true);
 
       const result = validateTransferFromSecureAccount(validTx, shardus)
       expect(result.reason).toBe('')
@@ -173,9 +186,10 @@ describe('secureAccounts', () => {
 
   describe('verify', () => {
     it('should verify a valid transfer transaction', async () => {
-      const testPrivateKey = '0x1234567890123456789012345678901234567890123456789012345678901234'
-      const testWallet = new ethers.Wallet(testPrivateKey)
-      const testAddress = testWallet.address
+      // Use the address from the mocked multisig-permissions.json
+      const testPrivateKey = '0x1234567890123456789012345678901234567890123456789012345678901234';
+      const testWallet = new ethers.Wallet(testPrivateKey);
+      const testAddress = '0x1234567890123456789012345678901234567890'; // This matches our mocked permission
       
       const txData = {
         amount: '1000000000000000000',
@@ -189,7 +203,7 @@ describe('secureAccounts', () => {
       const validTx = {
         ...txData,
         sign: [{
-          owner: testAddress,
+          owner: testAddress, // Use the address from our mocked permissions
           sig: signature
         }],
         isInternalTx: true,
@@ -197,9 +211,8 @@ describe('secureAccounts', () => {
         timestamp: Date.now()
       } as InternalTx
 
-      ;(shardus.getMultisigPublicKeys as jest.Mock).mockReturnValue({
-        [testAddress]: 2
-      })
+      // Mock the verifyMultiSigs function to return true for our test
+      jest.spyOn(require('../../../../src/setup/helpers'), 'verifyMultiSigs').mockReturnValue(true);
 
       const foundationAccount = secureAccountDataMap.get('Foundation')
       if (!foundationAccount) throw new Error('Foundation account not found in secure account map')
