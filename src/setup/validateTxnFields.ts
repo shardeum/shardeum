@@ -159,10 +159,17 @@ export const validateTxnFields =
               { isNonKeyChange: false, permittedKeys: [] }
             
             // Determine which keys are allowed to sign this transaction and the required security level
-            const permittedKeys = isKeyChange ? keyChangePermittedKeys : 
+            let permittedKeys = isKeyChange ? keyChangePermittedKeys : 
                                  isNonKeyChange ? nonKeyChangePermittedKeys : []
+
+            let networkParamChange = false
+            if(tx.internalTXType === InternalTXType.ChangeNetworkParam){
+              //network param changes always use the clean list of non key config changers
+              permittedKeys = cleanedMultiSigPermissions.changeNonKeyConfigs
+              networkParamChange = true
+            }
             
-            const allowedPublicKeys = (isKeyChange || isNonKeyChange) ? 
+            const allowedPublicKeys = (isKeyChange || isNonKeyChange || networkParamChange) ? 
               keyListAsLeveledKeys(permittedKeys, DevSecurityLevel.High) : 
               shardus.getMultisigPublicKeys()
             
