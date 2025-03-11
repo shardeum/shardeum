@@ -159,8 +159,13 @@ export const validateTxnFields =
               { isNonKeyChange: false, permittedKeys: [] }
             
             // Determine which keys are allowed to sign this transaction and the required security level
-            const permittedKeys = isKeyChange ? keyChangePermittedKeys : 
+            let permittedKeys = isKeyChange ? keyChangePermittedKeys : 
                                  isNonKeyChange ? nonKeyChangePermittedKeys : []
+
+            if(tx.internalTXType === InternalTXType.ChangeNetworkParam){
+              //network param changes always use the clean list of non key config changers
+              permittedKeys = cleanedMultiSigPermissions.changeNonKeyConfigs
+            }
             
             const allowedPublicKeys = (isKeyChange || isNonKeyChange) ? 
               keyListAsLeveledKeys(permittedKeys, DevSecurityLevel.High) : 
