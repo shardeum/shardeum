@@ -1,4 +1,4 @@
-# Contrubution guide
+# Contribution guide
 This is a contribution guide for this repository. Recommend to read this before working on the project.
 
 # Branch Organization
