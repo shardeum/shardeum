@@ -72,7 +72,7 @@ export function isNonKeyChange(tx: ChangeConfig, currentConfig: any, multiSigPer
   }
   
   try {
-    const newConfig = JSON.parse(tx.config);
+    const newConfig = safeJsonParse(tx.config);
     
     // Check if there are key changes (if so, this is not a non-key change)
     if (isKeyChangeDetailed(currentConfig, newConfig, 'multisigKeys') || 
