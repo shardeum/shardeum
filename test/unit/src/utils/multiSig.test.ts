@@ -1,6 +1,7 @@
-import { verifyMultiSigs } from '../src/setup/helpers'
+import { verifyMultiSigs } from '../../../../src/setup/helpers'
 import { ethers, Wallet } from 'ethers'
 import { expect, test, afterAll } from '@jest/globals'
+import { Utils } from '@shardeum-foundation/lib-types'
 
 const DevSecurityLevel = {
   Low: 0,
@@ -18,7 +19,7 @@ const changeConfigTx: any = {
   cycle: -1,
 }
 
-const tx_hash = ethers.keccak256(ethers.toUtf8Bytes(JSON.stringify(changeConfigTx)))
+const tx_hash = ethers.keccak256(ethers.toUtf8Bytes(Utils.safeStringify(changeConfigTx)))
 
 test('should validate the internal tx with multi sig', async () => {
   const sign: any = []
@@ -131,7 +132,7 @@ test('should fail when signature is invalid', async () => {
 
 test('backward compatible with single sig payloads', async () => {
   const tx_copy = { ...changeConfigTx }
-  const tx_hash = ethers.keccak256(ethers.toUtf8Bytes(JSON.stringify(changeConfigTx)))
+  const tx_hash = ethers.keccak256(ethers.toUtf8Bytes(Utils.safeStringify(changeConfigTx)))
   const wallet = Wallet.createRandom()
   const hashed_sig = await wallet.signMessage(tx_hash)
 
