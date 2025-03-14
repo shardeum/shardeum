@@ -345,5 +345,4 @@ describe('evmAddress', () => {
             )
         })
     })
-
 })
