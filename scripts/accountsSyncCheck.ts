@@ -1,8 +1,9 @@
 import sqlite3 from 'sqlite3'
-import axios from 'axios'
 import fs from 'fs'
 import { FilePaths } from '../src/shardeum/shardeumFlags'
 import { Utils } from '@shardeum-foundation/lib-types'
+import { customAxios } from '../src/utils/customHttpFunctions'
+
 let db: any
 
 const instancesDirPath = 'instances'
@@ -89,7 +90,7 @@ export async function queryAccountsFromConsensor(): Promise<any> {
 }
 
 export const getAccountsDataFromConsensors = async (): Promise<any> => {
-  const res = await axios.get(ARCHIVER_URL)
+  const res = await customAxios(100 * 1024 * 1024).get(ARCHIVER_URL)
 
   for (const nodeinfo of res.data.nodeList) {
     const node = nodeinfo.port

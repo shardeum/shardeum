@@ -1,12 +1,12 @@
 import { DevSecurityLevel, ShardusTypes } from '@shardeum-foundation/core'
 import config from '../../config'
 import { logFlags, shardusConfig } from '../..'
-import axios from 'axios'
 import { getFinalArchiverList } from '@shardeum-foundation/lib-archiver-discovery'
 import { getRandom } from '../../utils'
 import { verifyMultiSigs } from '../helpers'
 import { Archiver } from '@shardeum-foundation/lib-archiver-discovery/dist/src/types'
 import { Address } from '@ethereumjs/util'
+import { customAxios } from '../../utils/customHttpFunctions'
 
 export interface Ticket {
   address: string
@@ -51,7 +51,7 @@ function getArchiverToRetrieveTicketType(): Archiver {
 async function getTicketTypesFromArchiver(archiver: Archiver): Promise<TicketType[]> {
   try {
     const url = `http://${archiver.ip}:${archiver.port}/tickets`
-    const res = await axios.get(url)
+    const res = await customAxios().get(url)
     if (res.status >= 200 && res.status < 300) {
       return res.data
     }

@@ -1,11 +1,12 @@
 import { ShardusTypes } from '@shardeum-foundation/core'
-import axios, { AxiosRequestConfig, AxiosResponse } from 'axios'
+import { AxiosRequestConfig, AxiosResponse } from 'axios'
+import { customAxios } from './customHttpFunctions'
 
 export const shardusGet = async <ResponseType>(
   url: string,
   config: AxiosRequestConfig
 ): Promise<AxiosResponse<ResponseType>> => {
-  const response = axios.get<ResponseType>(url, config)
+  const response = customAxios().get<ResponseType>(url, config)
   return response
 }
 
@@ -14,7 +15,7 @@ export const shardusPost = async <ResponseType>(
   data: unknown,
   config: AxiosRequestConfig
 ): Promise<AxiosResponse<ResponseType>> => {
-  const response = axios.post<ResponseType>(url, data, config)
+  const response = customAxios().post<ResponseType>(url, data, config)
   return response
 }
 
@@ -23,7 +24,7 @@ export const shardusPut = async <ResponseType>(
   data: unknown,
   config: AxiosRequestConfig
 ): Promise<AxiosResponse<ResponseType>> => {
-  const response = axios.put<ResponseType>(url, data, config)
+  const response = customAxios().put<ResponseType>(url, data, config)
   return response
 }
 
