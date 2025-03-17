@@ -42,7 +42,7 @@ describe('Storage', () => {
         accountsEntry: {},
         riAccountsCache: {},
       },
-      init: jest.fn().mockReturnValue(Promise.resolve()),
+      init: jest.fn(),
       close: jest.fn().mockReturnValue(Promise.resolve()),
       runCreate: jest.fn().mockReturnValue(Promise.resolve()),
       run: jest.fn().mockReturnValue(Promise.resolve()),
@@ -65,37 +65,40 @@ describe('Storage', () => {
 
   describe('constructor()', () => {
     it('should create a new Storage instance with provided paths', () => {
-      assert(storage instanceof Storage)
+      expect(storage).toBeInstanceOf(Storage)
       const constructorCalls = jest.mocked(Sqlite3Storage).mock.calls
-      assert(constructorCalls[0][1] === baseDir)
-      assert(constructorCalls[0][2] === dbPath)
+      expect(constructorCalls[0][1]).toBe(baseDir)
+      expect(constructorCalls[0][2]).toBe(dbPath)
     })
 
     it('should initialize with null storage before init', () => {
-      assert(storage.initialized === undefined)
+      expect(storage.initialized).toBe(undefined)
     })
   })
 
   describe('init()', () => {
     it('should initialize storage successfully in non-service mode', async () => {
       await storage.init()
-      assert(mockStorage.init.mock.calls.length === 1)
-      assert(mockStorage.runCreate.mock.calls[0][0].includes('CREATE TABLE if not exists `accountsEntry`'))
-      assert(storage.initialized === true)
+      expect(mockStorage.init.mock.calls.length).toBe(1)
+      expect(
+        mockStorage.runCreate.mock.calls[0][0].includes('CREATE TABLE if not exists `accountsEntry`')
+      ).toBe(true)
+      expect(storage.initialized).toBe(true)
     })
 
     it('should initialize storage without creating tables in service mode', async () => {
       jest.mocked(require('../../../../src').isServiceMode).mockReturnValue(true)
       await storage.init()
-      assert(mockStorage.init.mock.calls.length === 1)
-      assert(mockStorage.runCreate.mock.calls.length === 0)
-      assert(storage.initialized === true)
+      expect(mockStorage.init.mock.calls.length).toBe(1)
+      expect(mockStorage.runCreate.mock.calls.length).toBe(0)
+      expect(storage.initialized).toBe(true)
     })
 
     it('should handle initialization errors', async () => {
-      mockStorage.init.mockRejectedValue(new Error('Init failed'))
-      await assert.rejects(async () => await storage.init(), /Init failed/)
-      assert(storage.initialized === undefined)
+      mockStorage.init.mockRejectedValue(new Error('Init Failed'))
+
+      await expect(storage.init()).rejects.toThrow('Init Failed')
+      expect(storage.initialized).toBe(undefined)
     })
   })
 
@@ -103,26 +106,24 @@ describe('Storage', () => {
     it('should close storage successfully', async () => {
       await storage.init()
       await storage.close()
-      assert(mockStorage.close.mock.calls.length === 1)
+      expect(mockStorage.close).toHaveBeenCalledTimes(1)
     })
 
     it('should handle close errors', async () => {
       mockStorage.close.mockRejectedValue(new Error('Close failed'))
       await storage.init()
-      await assert.rejects(async () => await storage.close(), /Close failed/)
+      await expect(storage.close()).rejects.toThrow('Close failed')
     })
   })
 
   describe('_checkInit()', () => {
     it('should not throw when storage is initialized', async () => {
       await storage.init()
-      assert.doesNotThrow(() => storage._checkInit())
+      expect(() => storage._checkInit()).not.toThrow()
     })
 
     it('should throw when storage is not initialized', () => {
-      assert.throws(() => storage._checkInit(), {
-        message: 'Storage not initialized.',
-      })
+      expect(() => storage._checkInit()).toThrow('Storage not initialized.')
     })
   })
 
@@ -136,26 +137,26 @@ describe('Storage', () => {
       mockStorage._rawQuery.mockResolvedValue([[0, 1]]) // Return a single row with a single column
 
       const result = await storage.checkDatabaseHealth()
-      assert(result === true) // This should pass if the implementation is correct
-      assert(mockStorage._rawQuery.mock.calls[0][0] === 'SELECT 1') // Ensure the query is correct
+      expect(result).toBe(true) // This should pass if the implementation is correct
+      expect(mockStorage._rawQuery.mock.calls[0][0]).toBe('SELECT 1') // Ensure the query is correct
     })
 
     it('should return false for unhealthy database', async () => {
       mockStorage._query.mockRejectedValue(new Error('DB Error'))
       const result = await storage.checkDatabaseHealth()
-      assert(result === false)
+      expect(result).toBe(false)
     })
 
     it('should return false when not initialized', async () => {
       storage.initialized = false
       const result = await storage.checkDatabaseHealth()
-      assert(result === false)
+      expect(result).toBe(false)
     })
 
     it('should return false when query returns empty result', async () => {
       mockStorage._query.mockReturnValue(Promise.resolve([]))
       const result = await storage.checkDatabaseHealth()
-      assert(result === false)
+      expect(result).toBe(false)
     })
   })
 
@@ -209,9 +210,7 @@ describe('Storage', () => {
 
       mockStorage._create.mockRejectedValue(new Error('Database error')) // Mock failure
 
-      await assert.rejects(async () => {
-        await storage.createOrReplaceAccountEntry(accountEntry)
-      }, 'Database error')
+      await expect(storage.createOrReplaceAccountEntry(accountEntry)).rejects.toThrow('Database error')
     })
 
     it('should throw an error if storage is not initialized', async () => {
@@ -224,14 +223,8 @@ describe('Storage', () => {
       // Simulate storage not being initialized
       storage.initialized = false
 
-      await assert.rejects(
-        async () => {
-          await storage.createOrReplaceAccountEntry(accountEntry)
-        },
-        {
-          name: 'Error', // Check for the error type
-          message: 'Storage not initialized.', // Check for the specific error message
-        }
+      await expect(storage.createOrReplaceAccountEntry(accountEntry)).rejects.toThrowError(
+        new Error('Storage not initialized.')
       )
     })
   })
@@ -272,9 +265,7 @@ describe('Storage', () => {
       // Mock the _read method to throw an error
       mockStorage._read.mockRejectedValue(new Error('Database error'))
 
-      await assert.rejects(async () => {
-        await storage.getRIAccountsCache(accountId)
-      }, 'Database error')
+      await expect(storage.getRIAccountsCache(accountId)).rejects.toThrow('Database error')
     })
 
     it('should throw an error if storage is not initialized', async () => {
@@ -283,13 +274,8 @@ describe('Storage', () => {
       // Simulate storage not being initialized
       storage.initialized = false
 
-      await assert.rejects(
-        async () => {
-          await storage.getRIAccountsCache(accountId)
-        },
-        {
-          message: 'Storage not initialized.',
-        }
+      await expect(storage.getRIAccountsCache(accountId)).rejects.toThrowError(
+        new Error('Storage not initialized.')
       )
     })
   })
@@ -299,7 +285,7 @@ describe('Storage', () => {
       await storage.init() // Ensure storage is initialized before each test
     })
 
-    it('should successfully set an account entry in the cache when cache size within limits', async () => {
+    it('should successfully set an account entry in the cache when cache size is within limits', async () => {
       const accountEntry: AccountsEntry = {
         accountId: 'testAccountId',
         timestamp: Date.now(),
@@ -318,7 +304,7 @@ describe('Storage', () => {
       )
     })
 
-    it('should successfully set an account entry in the cache when cache size beyond limits and should delete one record', async () => {
+    it('should successfully set an account entry in the cache when cache size exceeds limits and delete one record', async () => {
       const accountEntry: AccountsEntry = {
         accountId: 'testAccountId',
         timestamp: Date.now(),
@@ -358,18 +344,13 @@ describe('Storage', () => {
         { createOrReplace: true }
       )
 
-      const testAccountId = await storage.getRIAccountsCache('testAccountId')
-      expect(testAccountId).toBe(undefined)
+      expect(await storage.getRIAccountsCache('testAccountId')).toBeUndefined()
+      expect(await storage.getRIAccountsCache('testAccountId1')).toBeUndefined()
+      expect(await storage.getRIAccountsCache('testAccountId2')).toBeUndefined()
+      expect(await storage.getRIAccountsCache('testAccountId3')).toBeUndefined()
 
-      const testAccountId1 = await storage.getRIAccountsCache('testAccountId1')
-      expect(testAccountId1).toBe(undefined)
-
-      const testAccountId2 = await storage.getRIAccountsCache('testAccountId2')
-      expect(testAccountId2).toBe(undefined)
-
-      const testAccountId3 = await storage.getRIAccountsCache('testAccountId3')
-      expect(testAccountId3).toBe(undefined)
-      ShardeumFlags.riAccountsCacheSize = originalRiAccountsCacheSize //reset back to original value
+      // Reset cache size back to original value
+      ShardeumFlags.riAccountsCacheSize = originalRiAccountsCacheSize
     })
 
     it('should delete the oldest entries if the cache size exceeds the limit', async () => {
@@ -401,9 +382,7 @@ describe('Storage', () => {
 
       mockStorage._create.mockRejectedValue(new Error('Database error')) // Mock failure
 
-      await assert.rejects(async () => {
-        await storage.setRIAccountsCache(accountEntry)
-      }, 'Database error')
+      await expect(storage.setRIAccountsCache(accountEntry)).rejects.toThrow('Database error')
     })
 
     it('should throw an error if storage is not initialized', async () => {
@@ -416,13 +395,8 @@ describe('Storage', () => {
       // Simulate storage not being initialized
       storage.initialized = false
 
-      await assert.rejects(
-        async () => {
-          await storage.setRIAccountsCache(accountEntry)
-        },
-        {
-          message: 'Storage not initialized.',
-        }
+      await expect(storage.setRIAccountsCache(accountEntry)).rejects.toThrowError(
+        new Error('Storage not initialized.')
       )
     })
   })
@@ -444,23 +418,14 @@ describe('Storage', () => {
     it('should throw an error if the database operation fails', async () => {
       mockStorage._delete.mockRejectedValue(new Error('Delete error')) // Mock failure
 
-      await assert.rejects(async () => {
-        await storage.deleteAccountsEntry()
-      }, 'Delete error')
+      await expect(storage.deleteAccountsEntry()).rejects.toThrow('Delete error')
     })
 
     it('should throw an error if storage is not initialized', async () => {
       // Simulate storage not being initialized
       storage.initialized = false
 
-      await assert.rejects(
-        async () => {
-          await storage.deleteAccountsEntry()
-        },
-        {
-          message: 'Storage not initialized.',
-        }
-      )
+      await expect(storage.deleteAccountsEntry()).rejects.toThrow('Storage not initialized.')
     })
 
     it('should handle the case when there are no entries to delete', async () => {
@@ -495,23 +460,14 @@ describe('Storage', () => {
       // Mock the _read method to throw an error
       mockStorage._read.mockRejectedValue(new Error('Read error'))
 
-      await assert.rejects(async () => {
-        await storage.debugSelectAllAccountsEntry()
-      }, 'Read error')
+      await expect(storage.debugSelectAllAccountsEntry()).rejects.toThrow('Read error')
     })
 
     it('should throw an error if storage is not initialized', async () => {
       // Simulate storage not being initialized
       storage.initialized = false
 
-      await assert.rejects(
-        async () => {
-          await storage.debugSelectAllAccountsEntry()
-        },
-        {
-          message: 'Storage not initialized.',
-        }
-      )
+      await expect(storage.debugSelectAllAccountsEntry()).rejects.toThrow('Storage not initialized.')
     })
 
     it('should return an empty array if there are no entries', async () => {
@@ -542,37 +498,21 @@ describe('Storage', () => {
       // Mock the method to throw an error
       jest.spyOn(storage, 'getRIAccountsCacheSize').mockRejectedValue(new Error('Cache error'))
 
-      await assert.rejects(
-        async () => {
-          await storage.getRIAccountsCacheSize()
-        },
-        {
-          message: 'Cache error', // Ensure this matches the error thrown in your implementation
-        }
-      )
+      await expect(storage.getRIAccountsCacheSize()).rejects.toThrow('Cache error')
     })
 
     it('should throw an error if the database operation fails', async () => {
       // Mock the method to throw an error
       mockStorage._rawQuery.mockRejectedValue(new Error('Database error'))
 
-      await assert.rejects(async () => {
-        await storage.getRIAccountsCacheSize()
-      }, 'Database error')
+      await expect(storage.getRIAccountsCacheSize()).rejects.toThrow('Database error')
     })
 
     it('should throw an error if storage is not initialized', async () => {
       // Simulate storage not being initialized
       storage.initialized = false
 
-      await assert.rejects(
-        async () => {
-          await storage.getRIAccountsCacheSize()
-        },
-        {
-          message: 'Storage not initialized.',
-        }
-      )
+      await expect(storage.getRIAccountsCacheSize()).rejects.toThrow('Storage not initialized.')
     })
   })
 
@@ -585,15 +525,7 @@ describe('Storage', () => {
       // Simulate storage not being initialized
       storage.initialized = false
 
-      await assert.rejects(
-        async () => {
-          await storage.deleteOldestRIAccountsFromCache(1)
-        },
-        {
-          name: 'Error', // Check for the error type
-          message: 'Storage not initialized.', // Check for the specific error message
-        }
-      )
+      await expect(storage.deleteOldestRIAccountsFromCache(1)).rejects.toThrow('Storage not initialized.')
     })
 
     it('should successfully delete the specified number of oldest entries', async () => {
@@ -627,9 +559,7 @@ describe('Storage', () => {
       // Mock the _query method to throw an error
       mockStorage._rawQuery.mockRejectedValue(new Error('Delete error'))
 
-      await assert.rejects(async () => {
-        await storage.deleteOldestRIAccountsFromCache(size)
-      }, 'Delete error')
+      await expect(storage.deleteOldestRIAccountsFromCache(size)).rejects.toThrow('Delete error')
     })
   })
 
@@ -642,14 +572,7 @@ describe('Storage', () => {
       // Simulate storage not being initialized
       storage.initialized = false
 
-      await assert.rejects(
-        async () => {
-          await storage.getAccountsEntry('testAccountId')
-        },
-        {
-          message: 'Storage not initialized.', // Ensure this matches the error thrown in your implementation
-        }
-      )
+      await expect(storage.getAccountsEntry('testAccountId')).rejects.toThrow('Storage not initialized.')
     })
 
     it('should successfully retrieve an account entry for a valid accountId', async () => {
@@ -677,9 +600,10 @@ describe('Storage', () => {
       expect(result).toBeUndefined() // Check that the result is undefined
     })
 
-    it('should throw an error if the accountId is invalid', async () => {
+    it('should return undefined if the accountId is invalid', async () => {
       const invalidAccountId = '' // Example of an invalid accountId
-      expect(await storage.getAccountsEntry(invalidAccountId)).toBe(undefined)
+      const result = await storage.getAccountsEntry(invalidAccountId)
+      expect(result).toBeUndefined()
     })
 
     it('should throw an error if the database operation fails', async () => {
@@ -688,9 +612,7 @@ describe('Storage', () => {
       // Mock the _read method to throw an error
       mockStorage._read.mockRejectedValue(new Error('Database error'))
 
-      await assert.rejects(async () => {
-        await storage.getAccountsEntry(accountId)
-      }, 'Database error')
+      await expect(storage.getAccountsEntry(accountId)).rejects.toThrow('Database error')
     })
   })
 
@@ -712,7 +634,6 @@ describe('Storage', () => {
         { accountId: '0004', timestamp: 1800, data: { someData: 'value' } },
       ]
 
-      // Mock the _query method to return the expected entries
       mockStorage._rawQuery.mockResolvedValue(expectedEntries)
 
       const result = await storage.queryAccountsEntryByRanges3(
@@ -723,197 +644,65 @@ describe('Storage', () => {
         limit,
         accountOffset
       )
-      expect(result).toEqual(expectedEntries) // Check that the result matches the expected entries
+      expect(result).toEqual(expectedEntries)
     })
 
     it('should throw an error if accountStart has invalid characters', async () => {
-      const accountStart = 'invalidAccountId' // Invalid format
-      const accountEnd = '0005'
-      const tsStart = 1000
-      const tsEnd = 2000
-      const limit = 10
-      const accountOffset = '0003'
-
-      await assert.rejects(
-        async () => {
-          await storage.queryAccountsEntryByRanges3(
-            accountStart,
-            accountEnd,
-            tsStart,
-            tsEnd,
-            limit,
-            accountOffset
-          )
-        },
-        {
-          message:
-            'accountStart should be an empty string or a string with only upper or lower case hex chars.',
-        }
+      await expect(
+        storage.queryAccountsEntryByRanges3('invalidAccountId', '0005', 1000, 2000, 10, '0003')
+      ).rejects.toThrow(
+        'accountStart should be an empty string or a string with only upper or lower case hex chars.'
       )
     })
 
     it('should throw an error if accountEnd has invalid characters', async () => {
-      const accountStart = '003'
-      const accountEnd = 'invalidAccountEnd'
-      const tsStart = 1000
-      const tsEnd = 2000
-      const limit = 10
-      const accountOffset = '0003'
-
-      await assert.rejects(
-        async () => {
-          await storage.queryAccountsEntryByRanges3(
-            accountStart,
-            accountEnd,
-            tsStart,
-            tsEnd,
-            limit,
-            accountOffset
-          )
-        },
-        {
-          message:
-            'accountEnd should be an empty string or a string with only upper or lower case hex chars.',
-        }
+      await expect(
+        storage.queryAccountsEntryByRanges3('003', 'invalidAccountEnd', 1000, 2000, 10, '0003')
+      ).rejects.toThrow(
+        'accountEnd should be an empty string or a string with only upper or lower case hex chars.'
       )
     })
 
     it('should throw an error if accountOffset has invalid characters', async () => {
-      const accountStart = '003'
-      const accountEnd = '005'
-      const tsStart = 1000
-      const tsEnd = 2000
-      const limit = 10
-      const accountOffset = 'invalidAccountOffset'
-
-      await assert.rejects(
-        async () => {
-          await storage.queryAccountsEntryByRanges3(
-            accountStart,
-            accountEnd,
-            tsStart,
-            tsEnd,
-            limit,
-            accountOffset
-          )
-        },
-        {
-          message:
-            'accountOffset should be an empty string or a string with only upper or lower case hex chars.',
-        }
+      await expect(
+        storage.queryAccountsEntryByRanges3('003', '005', 1000, 2000, 10, 'invalidAccountOffset')
+      ).rejects.toThrow(
+        'accountOffset should be an empty string or a string with only upper or lower case hex chars.'
       )
     })
 
     it('should throw an error if timestamps are invalid', async () => {
-      const accountStart = '0001'
-      const accountEnd = '0005'
-      const tsStart = 2000 // Invalid: tsStart > tsEnd
-      const tsEnd = 1000
-      const limit = 10
-      const accountOffset = '0003'
-
-      await assert.rejects(
-        async () => {
-          await storage.queryAccountsEntryByRanges3(
-            accountStart,
-            accountEnd,
-            tsStart,
-            tsEnd,
-            limit,
-            accountOffset
-          )
-        },
-        {
-          message: 'Invalid timestamp range.',
-        }
-      )
+      await expect(
+        storage.queryAccountsEntryByRanges3('0001', '0005', 2000, 1000, 10, '0003')
+      ).rejects.toThrow('Invalid timestamp range.')
     })
 
     it('should throw an error if limit is not a positive number', async () => {
-      const accountStart = '0001'
-      const accountEnd = '0005'
-      const tsStart = 1000
-      const tsEnd = 2000
-      const limit = -5 // Invalid limit
-      const accountOffset = '0003'
-
-      await assert.rejects(
-        async () => {
-          await storage.queryAccountsEntryByRanges3(
-            accountStart,
-            accountEnd,
-            tsStart,
-            tsEnd,
-            limit,
-            accountOffset
-          )
-        },
-        {
-          message: 'Invalid limit. Must be a positive number',
-        }
-      )
+      await expect(
+        storage.queryAccountsEntryByRanges3('0001', '0005', 1000, 2000, -5, '0003')
+      ).rejects.toThrow('Invalid limit. Must be a positive number')
     })
 
     it('should throw an error if limit is invalid number', async () => {
-      const accountStart = '0001'
-      const accountEnd = '0005'
-      const tsStart = 1000
-      const tsEnd = 2000
-      const limit = NaN // Invalid limit
-      const accountOffset = '0003'
-
-      await assert.rejects(
-        async () => {
-          await storage.queryAccountsEntryByRanges3(
-            accountStart,
-            accountEnd,
-            tsStart,
-            tsEnd,
-            limit,
-            accountOffset
-          )
-        },
-        {
-          message: 'arguments should be numbers.',
-        }
-      )
+      await expect(
+        storage.queryAccountsEntryByRanges3('0001', '0005', 1000, 2000, NaN, '0003')
+      ).rejects.toThrow('arguments should be numbers.')
     })
 
     it('should throw an error if the database operation fails', async () => {
-      const accountStart = '0001'
-      const accountEnd = '0005'
-      const tsStart = 1000
-      const tsEnd = 2000
-      const limit = 10
-      const accountOffset = '0003'
-
-      // Mock the _query method to throw an error
       mockStorage._rawQuery.mockRejectedValue(new Error('Database error'))
 
-      await assert.rejects(async () => {
-        await storage.queryAccountsEntryByRanges3(
-          accountStart,
-          accountEnd,
-          tsStart,
-          tsEnd,
-          limit,
-          accountOffset
-        )
-      }, 'Database error')
+      await expect(
+        storage.queryAccountsEntryByRanges3('0001', '0005', 1000, 2000, 10, '0003')
+      ).rejects.toThrow('Database error')
     })
 
     it('should throw an error if storage is not initialized', async () => {
-      // Simulate storage not being initialized
       storage.initialized = false
 
-      await assert.rejects(
-        async () => {
-          await storage.queryAccountsEntryByRanges3('0001', '0005', 1000, 2000, 10, '0003')
-        },
-        {
-          message: 'Storage not initialized.', // Ensure this matches the error thrown in your implementation
-        }
-      )
+      await expect(
+        storage.queryAccountsEntryByRanges3('0001', '0005', 1000, 2000, 10, '0003')
+      ).rejects.toThrow('Storage not initialized.')
     })
   })
 
@@ -960,23 +749,18 @@ describe('Storage', () => {
       // Mock the _read method to throw an error
       mockStorage._read.mockRejectedValue(new Error('Database error'))
 
-      await assert.rejects(async () => {
+      await expect(async () => {
         await storage.queryAccountsEntryByRanges2(accountStart, accountEnd, tsStart, tsEnd, limit, offset)
-      }, 'Database error')
+      }).rejects.toThrow('Database error')
     })
 
     it('should throw an error if storage is not initialized', async () => {
       // Simulate storage not being initialized
       storage.initialized = false
 
-      await assert.rejects(
-        async () => {
-          await storage.queryAccountsEntryByRanges2('0001', '0005', 1000, 2000, 10, 0)
-        },
-        {
-          message: 'Storage not initialized.', // Ensure this matches the error thrown in your implementation
-        }
-      )
+      await expect(async () => {
+        await storage.queryAccountsEntryByRanges2('0001', '0005', 1000, 2000, 10, 0)
+      }).rejects.toThrow('Storage not initialized.') // Ensure this matches the error thrown in your implementation
     })
   })
 
@@ -1010,22 +794,17 @@ describe('Storage', () => {
       // Mock the _read method to throw an error
       mockStorage._read.mockRejectedValue(new Error('Database error'))
 
-      await assert.rejects(async () => {
-        await storage.queryAccountsEntryByRanges(accountStart, accountEnd, limit)
-      }, 'Database error')
+      await expect(storage.queryAccountsEntryByRanges(accountStart, accountEnd, limit)).rejects.toThrow(
+        'Database error'
+      )
     })
 
     it('should throw an error if storage is not initialized', async () => {
       // Simulate storage not being initialized
       storage.initialized = false
 
-      await assert.rejects(
-        async () => {
-          await storage.queryAccountsEntryByRanges('0001', '0005', 10)
-        },
-        {
-          message: 'Storage not initialized.', // Ensure this matches the error thrown in your implementation
-        }
+      await expect(storage.queryAccountsEntryByRanges('0001', '0005', 10)).rejects.toThrow(
+        'Storage not initialized.'
       )
     })
   })
