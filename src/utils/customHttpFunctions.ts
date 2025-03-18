@@ -7,6 +7,7 @@ import axios, {
 } from 'axios'
 import got, { Got } from 'got'
 import { shardusConfig } from '../index'
+import { Utils } from '@shardeum-foundation/lib-types'
 
 export function customGot(maxBytes?: number): Got {
   return got.extend({
@@ -90,7 +91,7 @@ export function customAxios(maxBytes?: number, axiosConfig: AxiosRequestConfig =
           dataSize = response.data.length
         } else if (typeof response.data === 'object') {
           // For JSON responses
-          dataSize = JSON.stringify(response.data).length
+          dataSize = Utils.safeStringify(response.data).length
         }
 
         if (dataSize > downloadLimit) {
