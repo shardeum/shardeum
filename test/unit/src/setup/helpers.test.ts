@@ -28,9 +28,9 @@ describe('verify', () => {
 
   it('should verify an object with matching public key', () => {
     const mockObj = {
-        sign: { owner: 'testPk' },
-        data: 'testData',
-      }
+      sign: { owner: 'testPk' },
+      data: 'testData',
+    }
     ;(crypto.verifyObj as jest.Mock).mockReturnValue(true)
 
     const result = verify(mockObj, 'testPk')
@@ -50,9 +50,9 @@ describe('verify', () => {
 
   it('should verify an object without public key check', () => {
     const mockObj = {
-        sign: { owner: 'testPk' },
-        data: 'testData',
-      }
+      sign: { owner: 'testPk' },
+      data: 'testData',
+    }
     ;(crypto.verifyObj as jest.Mock).mockReturnValue(true)
 
     const result = verify(mockObj)

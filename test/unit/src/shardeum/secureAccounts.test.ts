@@ -1,14 +1,11 @@
-import { initializeSecureAccount, isSecureAccount, SecureAccount, SecureAccountConfig, validateTransferFromSecureAccount, verify, apply, secureAccountDataMap } from '../../../../src/shardeum/secureAccounts'
+import { isSecureAccount, validateTransferFromSecureAccount, verify, apply, secureAccountDataMap } from '../../../../src/shardeum/secureAccounts'
 import { ShardeumFlags } from '../../../../src/shardeum/shardeumFlags'
 import * as WrappedEVMAccountFunctions from '../../../../src/shardeum/wrappedEVMAccountFunctions'
-import { AccountMap, AccountType, InternalTx, InternalTXType, WrappedStates } from '../../../../src/shardeum/shardeumTypes'
+import { AccountType, InternalTx, InternalTXType, WrappedStates } from '../../../../src/shardeum/shardeumTypes'
 import { Shardus } from '@shardeum-foundation/core'
 import { shardusConfig } from '../../../../src'
-import { VectorBufferStream } from '@shardeum-foundation/core'
-import { TypeIdentifierEnum } from '../../../../src/types/enum/TypeIdentifierEnum'
-import { serializeSecureAccount, deserializeSecureAccount } from '../../../../src/types/SecureAccount'
 import { ApplyResponse } from '@shardeum-foundation/core/dist/state-manager/state-manager-types'
-import { DevSecurityLevel, StrictShardusConfiguration } from '@shardeum-foundation/core/dist/shardus/shardus-types'
+import { StrictShardusConfiguration } from '@shardeum-foundation/core/dist/shardus/shardus-types'
 import * as ethers from 'ethers'
 import { Utils } from '@shardeum-foundation/lib-types'
 import { toShardusAddress } from '../../../../src/shardeum/evmAddress'
@@ -74,26 +71,44 @@ const mockShardusConfig = {
 } as unknown as StrictShardusConfiguration
 
 // Add this before your test cases in secureAccounts.test.ts
-jest.mock('../../../../src', () => ({
-  shardusConfig: {
-    debug: {
-      minMultisigRequiredForGlobalTxs: 1
-    }
-  },
-  createInternalTxReceipt: jest.fn(),
-  getApplyTXState: jest.fn().mockReturnValue({
-    checkpoint: jest.fn().mockResolvedValue(undefined),
-    commit: jest.fn().mockResolvedValue(undefined),
-    revert: jest.fn().mockResolvedValue(undefined),
-    putAccount: jest.fn().mockResolvedValue(undefined)
-  })
-}))
+jest.mock('../../../../src')
 
 describe('secureAccounts', () => {
   let shardus: Shardus
 
   beforeEach(() => {
     jest.clearAllMocks()
+    
+    // Mock implementation for @shardeum-foundation/core
+    const actual = jest.requireActual('@shardeum-foundation/core')
+    jest.mocked(require('@shardeum-foundation/core')).Shardus = jest.fn().mockImplementation(() => ({
+      getMultisigPublicKeys: jest.fn().mockReturnValue({
+        '0x123': 2
+      }),
+      applyResponseAddChangedAccount: jest.fn(),
+      applyResponseAddReceiptData: jest.fn(),
+      setDebugSetLastAppAwait: jest.fn()
+    }))
+    jest.mocked(require('@shardeum-foundation/core')).VectorBufferStream = actual.VectorBufferStream
+    jest.mocked(require('@shardeum-foundation/core')).DevSecurityLevel = {
+      High: 2,
+      Medium: 1,
+      Low: 0
+    }
+    jest.mocked(require('@shardeum-foundation/core')).DebugComplete = {
+      Completed: 'Completed'
+    }
+
+    const mockedSrc = jest.requireMock('../../../../src');
+    mockedSrc.shardusConfig.debug.minMultisigRequiredForGlobalTxs = 1;
+    mockedSrc.createInternalTxReceipt = jest.fn();
+    mockedSrc.getApplyTXState = jest.fn().mockReturnValue({
+      checkpoint: jest.fn().mockResolvedValue(undefined),
+      commit: jest.fn().mockResolvedValue(undefined),
+      revert: jest.fn().mockResolvedValue(undefined),
+      putAccount: jest.fn().mockResolvedValue(undefined)
+    });
+
     shardus = new Shardus(mockShardusConfig)
     ;(WrappedEVMAccountFunctions.updateEthAccountHash as jest.Mock).mockImplementation((arg) => arg)
   })
