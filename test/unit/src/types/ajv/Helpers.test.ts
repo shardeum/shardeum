@@ -195,12 +195,37 @@ describe('Ajv Helpers', () => {
 
       const result = filterObjectByWhitelistedProps(obj, whitelist)
       expect(result).toEqual({})
-
-      // Check that console.log was called with a message containing "validation errors"
       expect(console.log).toHaveBeenCalledWith(
         expect.stringContaining('validation errors in filterObjectByWhitelistedProps: '),
         expect.anything()
       )
+    })
+
+    it('should return the original object if all properties are whitelisted', () => {
+      const obj = { a: 1, b: 2 }
+      const whitelist = [
+        { name: 'a', type: 'number' },
+        { name: 'b', type: 'number' },
+      ]
+
+      const result = filterObjectByWhitelistedProps(obj, whitelist)
+      expect(result).toEqual(obj)
+    })
+
+    it('should return an empty object if the input object is empty', () => {
+      const obj = {}
+      const whitelist = [{ name: 'a', type: 'number' }]
+
+      const result = filterObjectByWhitelistedProps(obj, whitelist)
+      expect(result).toEqual({})
+    })
+
+    it('should return an empty object if the whitelist is empty', () => {
+      const obj = { a: 1, b: 2 }
+      const whitelist = []
+
+      const result = filterObjectByWhitelistedProps(obj, whitelist)
+      expect(result).toEqual({})
     })
   })
 })
