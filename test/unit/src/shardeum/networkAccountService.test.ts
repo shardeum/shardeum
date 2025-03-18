@@ -36,28 +36,30 @@ describe('NetworkAccountService', () => {
     },
   }
 
-  const mockDependencies: NetworkAccountDependencies = {
-    getFinalArchiverList: jest.fn().mockReturnValue([mockArchiver]),
-    getRandom: jest.fn().mockImplementation((list: Archiver[], count: number) => list.slice(0, count)),
-    verify: jest.fn().mockReturnValue(true),
-    ShardeumFlags: {
-      VerboseLogs: false,
-      enableArchiverNetworkAccountValidation: true,
-    },
-    WrappedEVMAccountFunctions: {
-      accountSpecificHash: jest.fn().mockReturnValue('mock-hash'),
-    },
-    nestedCountersInstance: {
-      countEvent: jest.fn(),
-    },
-    findMajorityResult: jest.fn().mockImplementation((values) => values[0] || null),
-    safeStringify: jest.fn().mockImplementation(JSON.stringify),
-  }
+  let mockDependencies: NetworkAccountDependencies;
 
   beforeEach(() => {
     // Clear all mocks before each test
     jest.clearAllMocks()
     mockedAxios.get.mockReset()
+    mockDependencies = {
+      getFinalArchiverList: jest.fn().mockReturnValue([mockArchiver]),
+      getRandom: jest.fn().mockImplementation((list: Archiver[], count: number) => list.slice(0, count)),
+      verify: jest.fn().mockReturnValue(true),
+      ShardeumFlags: {
+        VerboseLogs: false,
+        enableArchiverNetworkAccountValidation: true,
+      },
+      WrappedEVMAccountFunctions: {
+        accountSpecificHash: jest.fn().mockReturnValue('mock-hash'),
+      },
+      nestedCountersInstance: {
+        countEvent: jest.fn(),
+      },
+      findMajorityResult: jest.fn().mockImplementation((values) => values[0] || null),
+      safeStringify: jest.fn().mockImplementation(JSON.stringify),
+    }
+  
     // Reset console.log and console.error spies
     jest.spyOn(console, 'log').mockImplementation(noop)
     jest.spyOn(console, 'error').mockImplementation(noop)
