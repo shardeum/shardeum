@@ -130,14 +130,9 @@ export function customAxios(maxBytes?: number, axiosConfig: AxiosRequestConfig =
   instance.defaults.onDownloadProgress = (progressEvent: AxiosProgressEvent) => {
     if (progressEvent.loaded > downloadLimit) {
       try {
-        try {
-          const event = progressEvent as unknown as { config?: { _cancelSource?: CancelTokenSource } }
-          if (event.config?._cancelSource?.cancel) {
-            event.config._cancelSource.cancel(`Response size exceeds limit of ${downloadLimit} bytes`)
-          }
-        } catch (err) {
-          // Silently handle any errors with the cancellation
-          console.error('Error during request cancellation:', err)
+        const event = progressEvent as unknown as { config?: { _cancelSource?: CancelTokenSource } }
+        if (event.config?._cancelSource?.cancel) {
+          event.config._cancelSource.cancel(`Response size exceeds limit of ${downloadLimit} bytes`)
         }
       } catch (err) {
         // Silently handle any errors with the cancellation
