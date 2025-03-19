@@ -1,1 +1,11 @@
-{}
+{
+  "server": {
+    "p2p": {
+      "baselineNodes": 300,
+      "minNodes": 300,
+      "syncingDesiredMinCount": 20,
+      "flexibleRotationDelta": 5,
+      "formingNodesPerCycle": 300
+    }
+  }
+}
