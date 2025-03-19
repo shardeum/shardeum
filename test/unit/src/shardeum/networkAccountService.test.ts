@@ -9,6 +9,12 @@ import axios from 'axios'
 jest.mock('axios')
 const mockedAxios = axios as jest.Mocked<typeof axios>
 
+// Mock customAxios function
+jest.mock('../../../../src/utils/customHttpFunctions', () => ({
+  customAxios: () => axios,
+  customGot: jest.fn(),
+}))
+
 const noop = (): void => {
   /* noop */
 }
