@@ -27,7 +27,7 @@ import { RunTxResult } from './vm_v7'
 // import { EVM as EthereumVirtualMachine, getActivePrecompiles } from '@ethereumjs/evm'
 import { EVM as EthereumVirtualMachine } from './evm_v2'
 import { EVMResult } from './evm_v2/types'
-import got, { Response as GotResponse } from 'got'
+import { Response as GotResponse } from 'got'
 import 'dotenv/config'
 import { ShardeumState, TransactionState } from './state'
 import {
@@ -149,7 +149,6 @@ import { oneSHM, networkAccount, ONE_SECOND } from './shardeum/shardeumConstants
 import { applyPenaltyTX, clearOldPenaltyTxs } from './tx/penalty/transaction'
 import { getFinalArchiverList, setupArchiverDiscovery } from '@shardeum-foundation/lib-archiver-discovery'
 import { Archiver } from '@shardeum-foundation/lib-archiver-discovery/dist/src/types'
-import axios from 'axios'
 //import blockedAt from 'blocked-at'
 //import { v4 as uuidv4 } from 'uuid'
 import { RunState } from './evm_v2/interpreter'
@@ -184,6 +183,7 @@ import { getHeapStatistics } from 'v8'
 import { OpaqueTransaction } from '@shardeum-foundation/core/dist/shardus/shardus-types'
 import { TicketTypes, doesTransactionSenderHaveTicketType } from './setup/ticket-manager'
 import { buildFetchNetworkAccountFromArchiver } from './shardeum/services/networkAccountService'
+import { customGot } from './utils/customHttpFunctions'
 
 let latestBlock = 0
 export const blocks: BlockMap = {}
@@ -1086,7 +1086,7 @@ async function _internalHackPostWithResp(url: string, body): Promise<GotResponse
   const normalized = _normalizeUrl(url)
 
   try {
-    const res = await got.post(normalized, {
+    const res = await customGot().post(normalized, {
       timeout: {
         request: ShardeumFlags.shardeumTimeout,
       },

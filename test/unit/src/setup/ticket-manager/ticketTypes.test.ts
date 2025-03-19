@@ -14,6 +14,12 @@ jest.mock('axios');
 jest.mock('@shardeum-foundation/lib-archiver-discovery');
 jest.mock('../../../../../src/setup/helpers');
 
+// Mock customAxios function
+jest.mock('../../../../../src/utils/customHttpFunctions', () => ({
+  customAxios: () => axios,
+  customGot: jest.fn(),
+}));
+
 const mockedVerifyMultiSigs = jest.mocked(verifyMultiSigs);
 const mockedAxios = axios as jest.Mocked<typeof axios>;
 const mockedGetFinalArchiverList = getFinalArchiverList as jest.Mocked<typeof getFinalArchiverList>;

@@ -2,6 +2,7 @@ import axios from 'axios'
 import { NetworkAccount, WrappedAccount } from '../shardeumTypes'
 import { Archiver } from '@shardeum-foundation/lib-archiver-discovery/dist/src/types'
 import { ShardeumFlags } from '../shardeumFlags'
+import { customAxios } from '../../utils/customHttpFunctions'
 
 export interface NetworkAccountResponse {
   networkAccount: {
@@ -54,7 +55,7 @@ export const buildFetchNetworkAccountFromArchiver = ({
     for (const archiver of archiverList) {
       const archiverUrl = `http://${archiver.ip}:${archiver.port}/get-network-account?hash=true`
       try {
-        const res = await axios.get<{
+        const res = await customAxios().get<{
           networkAccountHash: string
           sign: {
             owner: string
@@ -99,7 +100,7 @@ export const buildFetchNetworkAccountFromArchiver = ({
     }
     const url = `http://${majorityValue.archiver.ip}:${majorityValue.archiver.port}/get-network-account?hash=false`
     try {
-      const res = await axios.get<{ networkAccount: WrappedAccount }>(url)
+      const res = await customAxios().get<{ networkAccount: WrappedAccount }>(url)
       /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`[fetchNetworkAccountFromArchiver] data: ${safeStringify(res?.data)}`)
       if (!res.data) {
         /* prettier-ignore */ nestedCountersInstance.countEvent('network-config-operation', 'failure: did not get network account from archiver private key, returned null. Use default configs.')
