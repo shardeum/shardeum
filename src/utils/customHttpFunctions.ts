@@ -1,19 +1,16 @@
-import axios, {
-  AxiosInstance,
-  AxiosProgressEvent,
-  AxiosRequestConfig,
-  AxiosResponse,
-  CancelTokenSource,
-} from 'axios'
+import axios, { AxiosInstance, AxiosRequestConfig } from 'axios'
 import got, { Got } from 'got'
 import { shardusConfig } from '../index'
 import { Utils } from '@shardeum-foundation/lib-types'
+import { PassThrough } from 'node:stream'
+
+const DEFAULT_MAX_BYTES = 15 * 1024 * 1024
 
 export function customGot(maxBytes?: number): Got {
   return got.extend({
     handlers: [
       (options, next) => {
-        const downloadLimit = maxBytes ?? shardusConfig.p2p.maxResponseSize
+        const downloadLimit = maxBytes ?? shardusConfig?.p2p?.maxResponseSize ?? DEFAULT_MAX_BYTES
         const promiseOrStream = next(options)
 
         // A destroy function that supports both promises and streams
@@ -55,20 +52,15 @@ export function customGot(maxBytes?: number): Got {
  * @returns Custom axios instance
  */
 export function customAxios(maxBytes?: number, axiosConfig: AxiosRequestConfig = {}): AxiosInstance {
-  // Use the provided maxBytes or fall back to config.maxResponseSize
-  const downloadLimit = maxBytes ?? shardusConfig.p2p.maxResponseSize
+  const downloadLimit = maxBytes ?? shardusConfig?.p2p?.maxResponseSize ?? DEFAULT_MAX_BYTES
 
+  const userRequestedType = axiosConfig.responseType ?? 'json'
+  axiosConfig.responseType = 'stream'
   const instance = axios.create({
     ...axiosConfig,
-    maxContentLength: downloadLimit,
-    maxBodyLength: downloadLimit,
-    // Add responseType for better handling
-    responseType: 'arraybuffer',
-    // Don't automatically reject on error status codes
     validateStatus: () => true,
   })
 
-  // Add request interceptor to add a cancel token
   instance.interceptors.request.use((request) => {
     const source = axios.CancelToken.source()
     request.cancelToken = source.token
@@ -76,71 +68,73 @@ export function customAxios(maxBytes?: number, axiosConfig: AxiosRequestConfig =
     return request
   })
 
-  // Add response interceptor to check size
   instance.interceptors.response.use(
-    (response) => {
-      // Check size for different response types
-      if (response.data) {
-        let dataSize = 0
-
-        if (response.data instanceof ArrayBuffer) {
-          dataSize = response.data.byteLength
-        } else if (typeof response.data === 'string') {
-          dataSize = response.data.length
-        } else if (Buffer.isBuffer(response.data)) {
-          dataSize = response.data.length
-        } else if (typeof response.data === 'object') {
-          // For JSON responses
-          dataSize = Utils.safeStringify(response.data).length
-        }
-
-        if (dataSize > downloadLimit) {
-          throw new Error(`Response size of ${dataSize} bytes exceeds limit of ${downloadLimit} bytes`)
-        }
-      }
-
-      // Also check Content-Length header if available
+    async (response) => {
       const contentLength = parseInt(response.headers['content-length'] || '0', 10)
       if (contentLength > 0 && contentLength > downloadLimit) {
-        throw new Error(
-          `Response content length ${contentLength} bytes exceeds limit of ${downloadLimit} bytes`
+        ;(response.config as any)._cancelSource?.cancel(
+          `Response content-length ${contentLength} exceeds limit of ${downloadLimit}`
         )
+        throw new Error(`Response size exceeds limit of ${downloadLimit} bytes`)
       }
 
-      return response
+      const stream = response.data
+      let totalBytes = 0
+      const chunks: Buffer[] = []
+
+      return new Promise((resolve, reject) => {
+        stream.on('data', (chunk: Buffer) => {
+          totalBytes += chunk.length
+          if (totalBytes > downloadLimit) {
+            stream.destroy(new Error(`Response size exceeds limit of ${downloadLimit} bytes`))
+            return
+          }
+          chunks.push(chunk)
+        })
+
+        stream.on('end', () => {
+          const fullBuffer = Buffer.concat(chunks)
+
+          switch (userRequestedType) {
+            case 'stream': {
+              // If user truly wants a stream, we can either:
+              const pass = new PassThrough()
+              pass.end(fullBuffer)
+              response.data = pass
+              break
+            }
+
+            case 'arraybuffer':
+              response.data = fullBuffer
+              break
+
+            case 'json':
+            default:
+              try {
+                response.data = Utils.safeJsonParse(fullBuffer.toString('utf8'))
+              } catch (err: any) {
+                return reject(
+                  new Error(`Failed to parse JSON (size: ${fullBuffer.length} bytes): ${err.message}`)
+                )
+              }
+              break
+          }
+
+          resolve(response)
+        })
+
+        stream.on('error', (err: Error) => {
+          reject(err)
+        })
+      })
     },
     (error) => {
       if (axios.isCancel(error)) {
         throw new Error(`Response size exceeds limit of ${downloadLimit} bytes`)
       }
-
-      if (
-        error.message &&
-        (error.message.includes('maxContentLength') ||
-          error.message.includes('maxBodyLength') ||
-          error.message.includes('socket hang up'))
-      ) {
-        throw new Error(`Response size exceeds limit of ${downloadLimit} bytes`)
-      }
-
       throw error
     }
   )
-
-  // Handle download progress
-  instance.defaults.onDownloadProgress = (progressEvent: AxiosProgressEvent) => {
-    if (progressEvent.loaded > downloadLimit) {
-      try {
-        const event = progressEvent as unknown as { config?: { _cancelSource?: CancelTokenSource } }
-        if (event.config?._cancelSource?.cancel) {
-          event.config._cancelSource.cancel(`Response size exceeds limit of ${downloadLimit} bytes`)
-        }
-      } catch (err) {
-        // Silently handle any errors with the cancellation
-        console.error('Error during request cancellation:', err)
-      }
-    }
-  }
 
   return instance
 }
