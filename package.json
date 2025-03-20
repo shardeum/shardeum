@@ -37,7 +37,9 @@
     "release:prerelease": "npm run prepare && npm version prerelease --preid=prerelease && git push --follow-tags",
     "release:patch": "npm run prepare && npm version patch && git push --follow-tags",
     "release:minor": "npm run prepare && npm version minor && git push --follow-tags",
-    "release:major": "npm run prepare && npm version major && git push --follow-tags"
+    "release:major": "npm run prepare && npm version major && git push --follow-tags",
+    "format-check": "prettier --check './src/**/*.ts'",
+    "format-fix": "prettier --write './src/**/*.ts'"
   },
   "author": "",
   "dependencies": {
