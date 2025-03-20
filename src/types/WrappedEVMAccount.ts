@@ -28,11 +28,7 @@ export interface WrappedEVMAccount extends BaseAccount {
   operatorAccountInfo?: OperatorAccountInfo
 }
 
-export function serializeWrappedEVMAccount(
-  stream: VectorBufferStream,
-  obj: WrappedEVMAccount,
-  root = false
-): void {
+export function serializeWrappedEVMAccount(stream: VectorBufferStream, obj: WrappedEVMAccount, root = false): void {
   if (root) {
     stream.writeUInt16(TypeIdentifierEnum.cWrappedEVMAccount)
   }
@@ -51,9 +47,7 @@ export function serializeWrappedEVMAccount(
     stream.writeUInt8(0) // Absence flag
   }
   obj.key !== undefined ? (stream.writeUInt8(1), stream.writeString(obj.key)) : stream.writeUInt8(0)
-  obj.value !== undefined
-    ? (stream.writeUInt8(1), stream.writeBuffer(Buffer.from(obj.value)))
-    : stream.writeUInt8(0)
+  obj.value !== undefined ? (stream.writeUInt8(1), stream.writeBuffer(Buffer.from(obj.value))) : stream.writeUInt8(0)
   obj.codeHash !== undefined
     ? (stream.writeUInt8(1), stream.writeBuffer(Buffer.from(obj.codeHash)))
     : stream.writeUInt8(0)
@@ -63,14 +57,10 @@ export function serializeWrappedEVMAccount(
   obj.contractAddress !== undefined
     ? (stream.writeUInt8(1), stream.writeString(obj.contractAddress))
     : stream.writeUInt8(0)
-  obj.amountSpent !== undefined
-    ? (stream.writeUInt8(1), stream.writeString(obj.amountSpent))
-    : stream.writeUInt8(0)
+  obj.amountSpent !== undefined ? (stream.writeUInt8(1), stream.writeString(obj.amountSpent)) : stream.writeUInt8(0)
   obj.txId !== undefined ? (stream.writeUInt8(1), stream.writeString(obj.txId)) : stream.writeUInt8(0)
   obj.txFrom !== undefined ? (stream.writeUInt8(1), stream.writeString(obj.txFrom)) : stream.writeUInt8(0)
-  obj.balance !== undefined
-    ? (stream.writeUInt8(1), stream.writeBigUInt64(BigInt(obj.balance)))
-    : stream.writeUInt8(0)
+  obj.balance !== undefined ? (stream.writeUInt8(1), stream.writeBigUInt64(BigInt(obj.balance))) : stream.writeUInt8(0)
 
   // JSON serialization
   const receiptJson = Utils.safeStringify(obj.receipt)
@@ -94,8 +84,7 @@ export function deserializeWrappedEVMAccount(stream: VectorBufferStream): Wrappe
   const ethAddress = stream.readString()
   const hash = stream.readString()
   const timestamp = Number(stream.readBigUInt64())
-  const account =
-    stream.readUInt8() === 1 ? Account.fromAccountData(deserializeEVMAccount(stream)) : undefined
+  const account = stream.readUInt8() === 1 ? Account.fromAccountData(deserializeEVMAccount(stream)) : undefined
   const key = stream.readUInt8() === 1 ? stream.readString() : undefined
   const valueBuffer = stream.readUInt8() === 1 ? stream.readBuffer() : undefined
   const value = valueBuffer
@@ -116,8 +105,7 @@ export function deserializeWrappedEVMAccount(stream: VectorBufferStream): Wrappe
   const balance = stream.readUInt8() === 1 ? Number(stream.readBigUInt64()) : undefined
 
   // JSON deserialization
-  const receipt =
-    stream.readUInt8() === 1 ? (Utils.safeJsonParse(stream.readString()) as TxReceipt) : undefined
+  const receipt = stream.readUInt8() === 1 ? (Utils.safeJsonParse(stream.readString()) as TxReceipt) : undefined
   const readableReceipt =
     stream.readUInt8() === 1 ? (Utils.safeJsonParse(stream.readString()) as ReadableReceipt) : undefined
   const operatorAccountInfo =

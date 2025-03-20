@@ -4,14 +4,14 @@ import { InternalTXType } from '../../shardeum/shardeumTypes'
 import { schemaSign } from './SignSchema'
 
 const schemaNodeRewardTxData = {
-    type: 'object',
-    properties: {
-        publicKey: { type: 'string' },
-        nodeId: { type: 'string' },
-        endTime: { type: 'number' }
-    },
-    required: ['publicKey', 'nodeId', 'endTime'],
-    additionalProperties: false
+  type: 'object',
+  properties: {
+    publicKey: { type: 'string' },
+    nodeId: { type: 'string' },
+    endTime: { type: 'number' },
+  },
+  required: ['publicKey', 'nodeId', 'endTime'],
+  additionalProperties: false,
 }
 
 const schemaClaimRewardTx = {
@@ -44,14 +44,14 @@ const schemaClaimRewardTx = {
 }
 
 export function initClaimRewardTx(): void {
-    addSchemaDependencies()
-    addSchemas()
+  addSchemaDependencies()
+  addSchemas()
 }
 
 function addSchemaDependencies(): void {
-    addSchema(AJVSchemaEnum.NodeRewardTxData, schemaNodeRewardTxData)
+  addSchema(AJVSchemaEnum.NodeRewardTxData, schemaNodeRewardTxData)
 }
 
 function addSchemas(): void {
-    addSchema(AJVSchemaEnum.ClaimRewardTx, schemaClaimRewardTx)
+  addSchema(AJVSchemaEnum.ClaimRewardTx, schemaClaimRewardTx)
 }

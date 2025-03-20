@@ -1,12 +1,12 @@
 import { DevSecurityLevel, ShardusTypes } from '@shardeum-foundation/core'
 import config from '../../config'
 import { logFlags, shardusConfig } from '../..'
-import axios from 'axios'
 import { getFinalArchiverList } from '@shardeum-foundation/lib-archiver-discovery'
 import { getRandom } from '../../utils'
 import { verifyMultiSigs } from '../helpers'
 import { Archiver } from '@shardeum-foundation/lib-archiver-discovery/dist/src/types'
 import { Address } from '@ethereumjs/util'
+import { customAxios } from '../../utils/customHttpFunctions'
 
 export interface Ticket {
   address: string
@@ -19,17 +19,19 @@ export interface TicketType {
 }
 
 export enum TicketTypes {
-  SILVER = 'silver'
+  SILVER = 'silver',
 }
 
 const ticketTypeMap = new Map<string, TicketType>()
 
 export function updateTicketMapAndScheduleNextUpdate(): void {
-  updateTicketMap().catch((error) => {
-    console.error(`[tickets][updateTicketMapAndScheduleNextUpdate] ERROR:`, error)
-  }).finally(() => {
-    scheduleUpdateTicketMap()
-  })
+  updateTicketMap()
+    .catch((error) => {
+      console.error(`[tickets][updateTicketMapAndScheduleNextUpdate] ERROR:`, error)
+    })
+    .finally(() => {
+      scheduleUpdateTicketMap()
+    })
 }
 
 export function scheduleUpdateTicketMap(): void {
@@ -51,11 +53,11 @@ function getArchiverToRetrieveTicketType(): Archiver {
 async function getTicketTypesFromArchiver(archiver: Archiver): Promise<TicketType[]> {
   try {
     const url = `http://${archiver.ip}:${archiver.port}/tickets`
-    const res = await axios.get(url)
+    const res = await customAxios().get(url)
     if (res.status >= 200 && res.status < 300) {
       return res.data
     }
-  } catch (error){
+  } catch (error) {
     console.error(`[tickets][getTicketTypesFromArchiver] Error getting ticket list`, error)
   }
   return []
@@ -68,7 +70,7 @@ export function clearTicketMap(): void {
 export async function updateTicketMap(): Promise<void> {
   const archiver: Archiver = getArchiverToRetrieveTicketType()
   /* prettier-ignore */ if (logFlags.debug) console.log(JSON.stringify({script: 'tickets',method: 'updateTicketMap',data: { archiver: archiver },}))
-  if (archiver){
+  if (archiver) {
     const ticketTypes: TicketType[] = await getTicketTypesFromArchiver(archiver)
 
     const devPublicKeys = shardusConfig?.debug?.multisigKeys || {}
@@ -104,12 +106,18 @@ export function getTicketsByType(type: string): Ticket[] {
   return []
 }
 
-export function doesTransactionSenderHaveTicketType({ticketType, senderAddress}: { ticketType:TicketTypes, senderAddress:Address }): {
+export function doesTransactionSenderHaveTicketType({
+  ticketType,
+  senderAddress,
+}: {
+  ticketType: TicketTypes
+  senderAddress: Address
+}): {
   success: boolean
   reason: string
   enabled: boolean
 } {
-  const result: { success:boolean, reason:string, enabled:boolean } = { success: false, reason: '', enabled: false }
+  const result: { success: boolean; reason: string; enabled: boolean } = { success: false, reason: '', enabled: false }
   /* prettier-ignore */ if (logFlags.debug) console.log(`[ticket-master][doesNominatorHaveTicketType] ticketType: ${ticketType}, senderAddress: ${senderAddress}`)
   // Check if Silver Tickets feature is enabled in the shardus configuration
   /* prettier-ignore */ if (logFlags.debug) console.log(`[ticket-master][doesNominatorHaveTicketType] shardusConfig: ${JSON.stringify(shardusConfig)}`)

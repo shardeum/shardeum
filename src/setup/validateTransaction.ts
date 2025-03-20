@@ -1,14 +1,7 @@
 import { DevSecurityLevel, Shardus, ShardusTypes } from '@shardeum-foundation/core'
 import { ShardeumFlags } from '../shardeum/shardeumFlags'
 import { InitRewardTimes, InternalTx, InternalTXType, InternalTxWithSingleSign } from '../shardeum/shardeumTypes'
-import {
-  crypto,
-  getTransactionObj,
-  isDebugTx,
-  isInternalTx,
-  isInternalTXGlobal,
-  verifyMultiSigs,
-} from './helpers'
+import { crypto, getTransactionObj, isDebugTx, isInternalTx, isInternalTXGlobal, verifyMultiSigs } from './helpers'
 import * as InitRewardTimesTx from '../tx/initRewardTimes'
 import * as AccountsStorage from '../storage/accountStorage'
 import config from '../config'
@@ -26,10 +19,10 @@ type Response = {
 
 export const validateTransaction =
   (shardus: Shardus) =>
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    (tx: any): Response => {
-      if (isInternalTx(tx)) {
-        const internalTx = tx as InternalTx
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  (tx: any): Response => {
+    if (isInternalTx(tx)) {
+      const internalTx = tx as InternalTx
       if (isInternalTXGlobal(internalTx) === true) {
         return { result: 'pass', reason: 'valid' }
       } else if (
@@ -42,13 +35,7 @@ export const validateTransaction =
         //Ensure old single sig / non-array are still compitable
         const sigs: ShardusTypes.Sign[] = is_array_sig ? tx.sign : [tx.sign]
         const { sign, ...txWithoutSign } = tx
-        const authorized = verifyMultiSigs(
-          txWithoutSign,
-          sigs,
-          devPublicKeys,
-          requiredSigs,
-          DevSecurityLevel.High
-        )
+        const authorized = verifyMultiSigs(txWithoutSign, sigs, devPublicKeys, requiredSigs, DevSecurityLevel.High)
         if (!authorized) {
           return { result: 'fail', reason: 'Unauthorized User' }
         } else {

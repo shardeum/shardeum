@@ -3,35 +3,28 @@ import { AJVSchemaEnum } from '../enum/AJVSchemaEnum'
 import { InternalTXType } from '../../shardeum/shardeumTypes'
 
 const schemaApplyChangeConfigTx = {
-    type: 'object',
-    properties: {
-        isInternalTx: { type: 'boolean', enum: [true] },
-        internalTXType: { enum: [InternalTXType.ApplyChangeConfig] },
-        from: { type: 'string' },
-        network: { type: 'string' },
-        change: { type: 'object' },
-        timestamp: { type: 'number', exclusiveMinimum: 0 }
-    },
-    required: [
-        'isInternalTx',
-        'internalTXType',
-        'from',
-        'network',
-        'change',
-        'timestamp'
-    ],
-    additionalProperties: false
+  type: 'object',
+  properties: {
+    isInternalTx: { type: 'boolean', enum: [true] },
+    internalTXType: { enum: [InternalTXType.ApplyChangeConfig] },
+    from: { type: 'string' },
+    network: { type: 'string' },
+    change: { type: 'object' },
+    timestamp: { type: 'number', exclusiveMinimum: 0 },
+  },
+  required: ['isInternalTx', 'internalTXType', 'from', 'network', 'change', 'timestamp'],
+  additionalProperties: false,
 }
 
 export function initApplyChangeConfigTx(): void {
-    addSchemaDependencies()
-    addSchemas()
+  addSchemaDependencies()
+  addSchemas()
 }
 
 function addSchemaDependencies(): void {
-    // No dependencies
+  // No dependencies
 }
 
 function addSchemas(): void {
-    addSchema(AJVSchemaEnum.ApplyChangeConfigTx, schemaApplyChangeConfigTx)
+  addSchema(AJVSchemaEnum.ApplyChangeConfigTx, schemaApplyChangeConfigTx)
 }

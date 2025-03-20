@@ -38,9 +38,7 @@ const { debug: createDebugLogger } = debugDefault
 
 const debug = createDebugLogger('vm:block')
 
-const parentBeaconBlockRootAddress = Address.fromString(
-  '0x000000000000000000000000000000000000000b'
-)
+const parentBeaconBlockRootAddress = Address.fromString('0x000000000000000000000000000000000000000b')
 
 /**
  * @ignore
@@ -81,9 +79,7 @@ export async function runBlock(this: VM, opts: RunBlockOpts): Promise<RunBlockRe
   if (this.DEBUG) {
     debug('-'.repeat(100))
     debug(
-      `Running block hash=${bytesToHex(block.hash())} number=${
-        block.header.number
-      } hardfork=${this.common.hardfork()}`
+      `Running block hash=${bytesToHex(block.hash())} number=${block.header.number} hardfork=${this.common.hardfork()}`
     )
   }
 
@@ -121,9 +117,9 @@ export async function runBlock(this: VM, opts: RunBlockOpts): Promise<RunBlockRe
       debug(
         `Received block results gasUsed=${result.gasUsed} bloom=${short(result.bloom.bitvector)} (${
           result.bloom.bitvector.length
-        } bytes) receiptsRoot=${bytesToHex(result.receiptsRoot)} receipts=${
-          result.receipts.length
-        } txResults=${result.results.length}`
+        } bytes) receiptsRoot=${bytesToHex(result.receiptsRoot)} receipts=${result.receipts.length} txResults=${
+          result.results.length
+        }`
       )
     }
   } catch (err: any) {
@@ -171,9 +167,7 @@ export async function runBlock(this: VM, opts: RunBlockOpts): Promise<RunBlockRe
     if (!(equalsBytes(result.bloom.bitvector, block.header.logsBloom) === true)) {
       if (this.DEBUG) {
         debug(
-          `Invalid bloom received=${bytesToHex(result.bloom.bitvector)} expected=${bytesToHex(
-            block.header.logsBloom
-          )}`
+          `Invalid bloom received=${bytesToHex(result.bloom.bitvector)} expected=${bytesToHex(block.header.logsBloom)}`
         )
       }
       const msg = _errorMsg('invalid bloom', this, block)
@@ -188,11 +182,7 @@ export async function runBlock(this: VM, opts: RunBlockOpts): Promise<RunBlockRe
     }
     if (!(equalsBytes(stateRoot, block.header.stateRoot) === true)) {
       if (this.DEBUG) {
-        debug(
-          `Invalid stateRoot received=${bytesToHex(stateRoot)} expected=${bytesToHex(
-            block.header.stateRoot
-          )}`
-        )
+        debug(`Invalid stateRoot received=${bytesToHex(stateRoot)} expected=${bytesToHex(block.header.stateRoot)}`)
       }
       const msg = _errorMsg('invalid block stateRoot', this, block)
       throw new Error(msg)
@@ -237,7 +227,11 @@ export async function runBlock(this: VM, opts: RunBlockOpts): Promise<RunBlockRe
  * @param {Block} block
  * @param {RunBlockOpts} opts
  */
-async function applyBlock(this: VM, block: Block, opts: RunBlockOpts): Promise<{ bloom: Bloom, gasUsed: bigint, receiptsRoot: Uint8Array, receipts: any[], results: any[] }> {
+async function applyBlock(
+  this: VM,
+  block: Block,
+  opts: RunBlockOpts
+): Promise<{ bloom: Bloom; gasUsed: bigint; receiptsRoot: Uint8Array; receipts: any[]; results: any[] }> {
   // Validate block
   if (opts.skipBlockValidation !== true) {
     if (block.header.gasLimit >= BigInt('0x8000000000000000')) {
@@ -262,10 +256,7 @@ async function applyBlock(this: VM, block: Block, opts: RunBlockOpts): Promise<{
     if (this.DEBUG) {
       debug(`accumulate parentBeaconBlockRoot`)
     }
-    await accumulateParentBeaconBlockRoot.bind(this)(
-      block.header.parentBeaconBlockRoot!,
-      block.header.timestamp
-    )
+    await accumulateParentBeaconBlockRoot.bind(this)(block.header.parentBeaconBlockRoot!, block.header.timestamp)
   }
 
   // Apply transactions
@@ -285,11 +276,7 @@ async function applyBlock(this: VM, block: Block, opts: RunBlockOpts): Promise<{
   return blockResults
 }
 
-export async function accumulateParentBeaconBlockRoot(
-  this: VM,
-  root: Uint8Array,
-  timestamp: bigint
-): Promise<void> {
+export async function accumulateParentBeaconBlockRoot(this: VM, root: Uint8Array, timestamp: bigint): Promise<void> {
   // Save the parentBeaconBlockRoot to the beaconroot stateful precompile ring buffers
   const historicalRootsLength = BigInt(this.common.param('vm', 'historicalRootsLength'))
   const timestampIndex = timestamp % historicalRootsLength
@@ -325,7 +312,11 @@ export async function accumulateParentBeaconBlockRoot(
  * @param {Block} block
  * @param {RunBlockOpts} opts
  */
-async function applyTransactions(this: VM, block: Block, opts: RunBlockOpts): Promise<{ receipts: any[]; gasUsed: bigint; receiptsRoot: Uint8Array; bloom: Bloom; results: any[] }> {
+async function applyTransactions(
+  this: VM,
+  block: Block,
+  opts: RunBlockOpts
+): Promise<{ receipts: any[]; gasUsed: bigint; receiptsRoot: Uint8Array; bloom: Bloom; results: any[] }> {
   const bloom = new Bloom()
   // the total amount of gas used processing these transactions
   let gasUsed = BigInt(0)
@@ -429,11 +420,7 @@ async function assignBlockRewards(this: VM, block: Block): Promise<void> {
   }
 }
 
-function calculateOmmerReward(
-  ommerBlockNumber: bigint,
-  blockNumber: bigint,
-  minerReward: bigint
-): bigint {
+function calculateOmmerReward(ommerBlockNumber: bigint, blockNumber: bigint, minerReward: bigint): bigint {
   const heightDiff = blockNumber - ommerBlockNumber
   let reward = ((BigInt(8) - heightDiff) * minerReward) / BigInt(8)
   if (reward < BigInt(0)) {
@@ -450,11 +437,7 @@ export function calculateMinerReward(minerReward: bigint, ommersNum: number): bi
   return reward
 }
 
-export async function rewardAccount(
-  evm: EVMInterface,
-  address: Address,
-  reward: bigint
-): Promise<Account> {
+export async function rewardAccount(evm: EVMInterface, address: Address, reward: bigint): Promise<Account> {
   let account = await evm.stateManager.getAccount(address)
   if (account === undefined) {
     account = new Account()

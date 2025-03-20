@@ -1,4 +1,4 @@
-import {Account, Address, bytesToHex} from '@ethereumjs/util'
+import { Account, Address, bytesToHex } from '@ethereumjs/util'
 import Tree from 'functional-red-black-tree'
 import { ShardeumAccount } from '../shardeum/shardeumTypes'
 

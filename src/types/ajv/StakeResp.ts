@@ -1,54 +1,53 @@
-
 import { addSchema } from '../../utils/serialization/SchemaHelpers'
 import { AJVSchemaEnum } from '../enum/AJVSchemaEnum'
 
 const schemaStakeResp = {
-    type: 'object',
-    properties: {
-        stakeRequired: {
-            type: 'object',
-            required: ['dataType', 'value'],
-            properties: {
-                dataType: {
-                    type: 'string',
-                    enum: ['bi'],
-                },
-                value: {
-                    type: 'string',
-                    pattern: '^[0-9a-fA-F]+$', // Hex string pattern
-                },
-            },
+  type: 'object',
+  properties: {
+    stakeRequired: {
+      type: 'object',
+      required: ['dataType', 'value'],
+      properties: {
+        dataType: {
+          type: 'string',
+          enum: ['bi'],
         },
-        stakeRequiredUsd: {
-            type: 'object',
-            required: ['dataType', 'value'],
-            properties: {
-                dataType: {
-                    type: 'string',
-                    enum: ['bi'],
-                },
-                value: {
-                    type: 'string',
-                    pattern: '^[0-9a-fA-F]+$', // Hex string pattern
-                },
-            },
+        value: {
+          type: 'string',
+          pattern: '^[0-9a-fA-F]+$', // Hex string pattern
         },
+      },
     },
-    required: ['stakeRequired', 'stakeRequiredUsd'],
-    additionalProperties: false,
+    stakeRequiredUsd: {
+      type: 'object',
+      required: ['dataType', 'value'],
+      properties: {
+        dataType: {
+          type: 'string',
+          enum: ['bi'],
+        },
+        value: {
+          type: 'string',
+          pattern: '^[0-9a-fA-F]+$', // Hex string pattern
+        },
+      },
+    },
+  },
+  required: ['stakeRequired', 'stakeRequiredUsd'],
+  additionalProperties: false,
 }
 
 export function initStakeResp(): void {
-    addSchemaDependencies()
-    addSchemas()
+  addSchemaDependencies()
+  addSchemas()
 }
 
 // Function to add schema dependencies
 function addSchemaDependencies(): void {
-    // No dependencies
+  // No dependencies
 }
 
 // Function to register the schema
 function addSchemas(): void {
-    addSchema(AJVSchemaEnum.StakeResp, schemaStakeResp)
+  addSchema(AJVSchemaEnum.StakeResp, schemaStakeResp)
 }

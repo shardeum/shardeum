@@ -8,7 +8,15 @@ import { deserializeBaseAccount, serializeBaseAccount } from './BaseAccount'
 import { Utils } from '@shardeum-foundation/lib-types'
 
 function validateSecureAccount(obj: SecureAccount) {
-  if (typeof obj.id !== 'string' || typeof obj.hash !== 'string' || typeof obj.timestamp !== 'number' || typeof obj.name !== 'string' || typeof obj.nextTransferAmount !== 'bigint' || typeof obj.nextTransferTime !== 'number' || typeof obj.nonce !== 'number') {
+  if (
+    typeof obj.id !== 'string' ||
+    typeof obj.hash !== 'string' ||
+    typeof obj.timestamp !== 'number' ||
+    typeof obj.name !== 'string' ||
+    typeof obj.nextTransferAmount !== 'bigint' ||
+    typeof obj.nextTransferTime !== 'number' ||
+    typeof obj.nonce !== 'number'
+  ) {
     throw new Error(`Invalid SecureAccount object: ${Utils.safeStringify(obj)}`)
   }
 }
@@ -42,7 +50,7 @@ export function deserializeSecureAccount(stream: VectorBufferStream): SecureAcco
 
   const baseAccount = deserializeBaseAccount(stream)
   // Check if we have enough bytes remaining for the rest of the data
-  const remainingBytes = (stream as any).buffer.length - stream.position;
+  const remainingBytes = (stream as any).buffer.length - stream.position
   const minimumBytesNeeded =
     8 + // id (String)
     8 + // hash (String)
@@ -50,10 +58,10 @@ export function deserializeSecureAccount(stream: VectorBufferStream): SecureAcco
     4 + // minimum for string length fields
     8 + // nextTransferAmount (BigUInt64)
     8 + // nextTransferTime (BigUInt64)
-    4;  // nonce (UInt32)
+    4 // nonce (UInt32)
 
   if (remainingBytes < minimumBytesNeeded) {
-    throw new Error(`Unexpected end of buffer: remaining bytes: ${remainingBytes}, needed ${minimumBytesNeeded}`);
+    throw new Error(`Unexpected end of buffer: remaining bytes: ${remainingBytes}, needed ${minimumBytesNeeded}`)
   }
 
   // Read each field, asserting its type as we go. If there is an issue, log and throw error.
@@ -87,11 +95,11 @@ export function deserializeSecureAccount(stream: VectorBufferStream): SecureAcco
       name,
       nextTransferAmount,
       nextTransferTime,
-      nonce
+      nonce,
     }
     validateSecureAccount(foo)
     return foo
   } catch (err) {
-    throw new Error(`Could not deserialize secure account: ${err.message} ${err.stack}`);
+    throw new Error(`Could not deserialize secure account: ${err.message} ${err.stack}`)
   }
 }
