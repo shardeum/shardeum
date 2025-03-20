@@ -44,7 +44,11 @@ import { logFlags, shardusConfig, getStakeTxBlobFromEVMTx } from '..'
 import { Sign } from '@shardeum-foundation/core/dist/shardus/shardus-types'
 import { validateTransferFromSecureAccount } from '../shardeum/secureAccounts'
 import { verifyPayload } from '../types/ajv/Helpers'
-import { isKeyChange as isTransactionKeyChange, isNonKeyChange as isTransactionNonKeyChange, cleanMultiSigPermissions } from '../utils/multisig'
+import {
+  isKeyChange as isTransactionKeyChange,
+  isNonKeyChange as isTransactionNonKeyChange,
+  cleanMultiSigPermissions,
+} from '../utils/multisig'
 import { keyListAsLeveledKeys } from '../utils/keyUtils'
 import multisigPermissions from '../config/multisig-permissions.json'
 
@@ -95,12 +99,13 @@ export const validateTxnFields =
       const txId = generateTxId(tx)
 
       // Verify AJV for internal transactions
-      if(isInternalTx(tx)) {
+      if (isInternalTx(tx)) {
         const ajvTxType = txTypeToAJVMap[tx.internalTXType]
         const ajvErrors = verifyPayload(ajvTxType, tx)
         if (ajvErrors) {
           nestedCountersInstance.countEvent('internal', `ajv-validation-failed-${ajvTxType}`)
-          if (ShardeumFlags.VerboseLogs) console.log(`AJV validation failed for internal transaction for ${ajvTxType} - `, ajvErrors)
+          if (ShardeumFlags.VerboseLogs)
+            console.log(`AJV validation failed for internal transaction for ${ajvTxType} - `, ajvErrors)
           return {
             success: false,
             reason: `AJV validation failed`,
@@ -145,36 +150,36 @@ export const validateTxnFields =
 
             // Clean multiSigPermissions to remove any keys not in shardusConfig.debug.multisigKeys
             const cleanedMultiSigPermissions = cleanMultiSigPermissions(multisigPermissions, shardusConfig)
-            
+
             // Check if this is a key change transaction
-            const { isKeyChange, permittedKeys: keyChangePermittedKeys } = 
-              tx.internalTXType === InternalTXType.ChangeConfig ? 
-              isTransactionKeyChange(tx, shardusConfig, cleanedMultiSigPermissions) : 
-              { isKeyChange: false, permittedKeys: [] }
-            
+            const { isKeyChange, permittedKeys: keyChangePermittedKeys } =
+              tx.internalTXType === InternalTXType.ChangeConfig
+                ? isTransactionKeyChange(tx, shardusConfig, cleanedMultiSigPermissions)
+                : { isKeyChange: false, permittedKeys: [] }
+
             // Check if this is a non-key change transaction (only if not a key change)
-            const { isNonKeyChange, permittedKeys: nonKeyChangePermittedKeys } = 
-              !isKeyChange && tx.internalTXType === InternalTXType.ChangeConfig ? 
-              isTransactionNonKeyChange(tx, shardusConfig, cleanedMultiSigPermissions) : 
-              { isNonKeyChange: false, permittedKeys: [] }
-            
+            const { isNonKeyChange, permittedKeys: nonKeyChangePermittedKeys } =
+              !isKeyChange && tx.internalTXType === InternalTXType.ChangeConfig
+                ? isTransactionNonKeyChange(tx, shardusConfig, cleanedMultiSigPermissions)
+                : { isNonKeyChange: false, permittedKeys: [] }
+
             // Determine which keys are allowed to sign this transaction and the required security level
-            let permittedKeys = isKeyChange ? keyChangePermittedKeys : 
-                                 isNonKeyChange ? nonKeyChangePermittedKeys : []
+            let permittedKeys = isKeyChange ? keyChangePermittedKeys : isNonKeyChange ? nonKeyChangePermittedKeys : []
 
             let networkParamChange = false
-            if(tx.internalTXType === InternalTXType.ChangeNetworkParam){
+            if (tx.internalTXType === InternalTXType.ChangeNetworkParam) {
               //network param changes always use the clean list of non key config changers
               permittedKeys = cleanedMultiSigPermissions.changeNonKeyConfigs
               networkParamChange = true
             }
-            
-            const allowedPublicKeys = (isKeyChange || isNonKeyChange || networkParamChange) ? 
-              keyListAsLeveledKeys(permittedKeys, DevSecurityLevel.High) : 
-              shardus.getMultisigPublicKeys()
-            
+
+            const allowedPublicKeys =
+              isKeyChange || isNonKeyChange || networkParamChange
+                ? keyListAsLeveledKeys(permittedKeys, DevSecurityLevel.High)
+                : shardus.getMultisigPublicKeys()
+
             const requiredLevel = DevSecurityLevel.High
-            
+
             const is_array_sig = Array.isArray(tx.sign) === true
             const requiredSigs = Math.max(1, shardusConfig.debug.minMultiSigRequiredForGlobalTxs)
 
@@ -185,13 +190,7 @@ export const validateTxnFields =
 
             // if the signatures in the payload is larger than the allowed public keys, it is invalid
             // this prevent loop exhaustion abuses
-            const sig_are_valid = verifyMultiSigs(
-              txWithoutSign,
-              sigs,
-              allowedPublicKeys,
-              requiredSigs,
-              requiredLevel
-            )
+            const sig_are_valid = verifyMultiSigs(txWithoutSign, sigs, allowedPublicKeys, requiredSigs, requiredLevel)
             if (sig_are_valid === true) {
               success = true
               reason = 'Valid'
@@ -291,11 +290,7 @@ export const validateTxnFields =
       try {
         const transaction = getTransactionObj(tx)
         const isSigned = transaction.isSigned()
-        const {
-          address: senderAddress,
-          isValid: isSignatureValid,
-          gasValid,
-        } = getTxSenderAddress(transaction, txId) // ensures that tx is valid
+        const { address: senderAddress, isValid: isSignatureValid, gasValid } = getTxSenderAddress(transaction, txId) // ensures that tx is valid
         if (ShardeumFlags.VerboseLogs) console.log('validate evm tx', isSigned, isSignatureValid)
 
         //const txId = '0x' + crypto.hashObj(timestampedTx.tx)
@@ -355,8 +350,7 @@ export const validateTxnFields =
           let minBalance: bigint // Calculate the minimun balance with the transaction value added in
           if (ShardeumFlags.chargeConstantTxFee) {
             const minBalanceUsd = BigInt(ShardeumFlags.constantTxFeeUsd)
-            minBalance =
-              scaleByStabilityFactor(minBalanceUsd, AccountsStorage.cachedNetworkAccount) + transaction.value
+            minBalance = scaleByStabilityFactor(minBalanceUsd, AccountsStorage.cachedNetworkAccount) + transaction.value
           } else minBalance = transaction.getUpfrontCost() // tx.gasLimit * tx.gasPrice + tx.value
           const accountBalance = appData.balance
           if (accountBalance < minBalance) {
@@ -410,12 +404,7 @@ export const validateTxnFields =
         }
 
         const isStakeRelatedTx: boolean = isStakingEVMTx(transaction)
-        if (
-          shardusConfig.features.dappFeature1enabled &&
-          appData &&
-          !appData.internalTx &&
-          !isStakeRelatedTx
-        ) {
+        if (shardusConfig.features.dappFeature1enabled && appData && !appData.internalTx && !isStakeRelatedTx) {
           const isCoinTransfer =
             transaction.value != null &&
             transaction.to != null &&
@@ -439,15 +428,9 @@ export const validateTxnFields =
           const stakeCoinsTx = appData.internalTx as StakeCoinsTX
           const networkAccount = AccountsStorage.cachedNetworkAccount
           const minStakeAmountUsd = networkAccount.current.stakeRequiredUsd
-          const minStakeAmount = scaleByStabilityFactor(
-            minStakeAmountUsd,
-            AccountsStorage.cachedNetworkAccount
-          )
+          const minStakeAmount = scaleByStabilityFactor(minStakeAmountUsd, AccountsStorage.cachedNetworkAccount)
           if (typeof stakeCoinsTx.stake === 'object') stakeCoinsTx.stake = BigInt(stakeCoinsTx.stake)
-          if (
-            stakeCoinsTx.nominator == null ||
-            stakeCoinsTx.nominator.toLowerCase() !== senderAddress.toString()
-          ) {
+          if (stakeCoinsTx.nominator == null || stakeCoinsTx.nominator.toLowerCase() !== senderAddress.toString()) {
             /* prettier-ignore */ if (logFlags.dapp_verbose) console.log(`nominator vs tx signer`, stakeCoinsTx.nominator, senderAddress.toString())
             success = false
             reason = `Invalid nominator address in stake coins tx`
@@ -483,10 +466,7 @@ export const validateTxnFields =
           }
           if (appData.nomineeAccount) {
             const nodeAccount = appData.nomineeAccount as NodeAccount2
-            if (
-              nodeAccount.nominator &&
-              nodeAccount.nominator.toLowerCase() !== stakeCoinsTx.nominator.toLowerCase()
-            ) {
+            if (nodeAccount.nominator && nodeAccount.nominator.toLowerCase() !== stakeCoinsTx.nominator.toLowerCase()) {
               return {
                 success: false,
                 reason: `This node is already staked by another account!`,
@@ -498,10 +478,7 @@ export const validateTxnFields =
             const wrappedEVMAccount = appData.nominatorAccount as WrappedEVMAccount
             if (wrappedEVMAccount.operatorAccountInfo) {
               if (wrappedEVMAccount.operatorAccountInfo.nominee) {
-                if (
-                  wrappedEVMAccount.operatorAccountInfo.nominee.toLowerCase() !==
-                  stakeCoinsTx.nominee.toLowerCase()
-                )
+                if (wrappedEVMAccount.operatorAccountInfo.nominee.toLowerCase() !== stakeCoinsTx.nominee.toLowerCase())
                   return {
                     success: false,
                     reason: `This account has already staked to a different node.`,
@@ -517,10 +494,7 @@ export const validateTxnFields =
           appData.internalTx = getStakeTxBlobFromEVMTx(transaction)
           if (ShardeumFlags.VerboseLogs) console.log('Validating unstake coins tx fields', appData.internalTx)
           const unstakeCoinsTX = appData.internalTx as UnstakeCoinsTX
-          if (
-            unstakeCoinsTX.nominator == null ||
-            unstakeCoinsTX.nominator.toLowerCase() !== senderAddress.toString()
-          ) {
+          if (unstakeCoinsTX.nominator == null || unstakeCoinsTX.nominator.toLowerCase() !== senderAddress.toString()) {
             /* prettier-ignore */ nestedCountersInstance.countEvent( 'shardeum-unstaking', 'invalid nominator address in stake coins tx' )
             /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log( `nominator vs tx signer`, unstakeCoinsTX.nominator, senderAddress.toString() )
             success = false
@@ -560,8 +534,7 @@ export const validateTxnFields =
             } else if (shardus.isNodeSyncingByPubKey(nodeAccount.id)) {
               success = false
               reason = `This node is still syncing in the network. You can unstake only after the node leaves the network!`
-            }
-            else if (
+            } else if (
               nodeAccount.rewardEndTime === 0 &&
               nodeAccount.rewardStartTime > 0 &&
               !(unstakeCoinsTX.force && ShardeumFlags.allowForceUnstake)

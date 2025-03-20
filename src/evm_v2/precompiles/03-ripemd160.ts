@@ -14,9 +14,9 @@ export function precompile03(opts: PrecompileInput): ExecResult {
 
   if (opts._debug !== undefined) {
     opts._debug(
-      `Run RIPEMD160 (0x03) precompile data=${short(opts.data)} length=${
-        opts.data.length
-      } gasLimit=${opts.gasLimit} gasUsed=${gasUsed}`
+      `Run RIPEMD160 (0x03) precompile data=${short(opts.data)} length=${opts.data.length} gasLimit=${
+        opts.gasLimit
+      } gasUsed=${gasUsed}`
     )
   }
 

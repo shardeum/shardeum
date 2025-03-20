@@ -10,15 +10,7 @@ import { runBlock } from './runBlock.js'
 import { runTx } from './runTx.js'
 
 import type { BlockBuilder } from './buildBlock.js'
-import type {
-  BuildBlockOpts,
-  RunBlockOpts,
-  RunBlockResult,
-  RunTxOpts,
-  RunTxResult,
-  VMEvents,
-  VMOpts,
-} from './types.js'
+import type { BuildBlockOpts, RunBlockOpts, RunBlockResult, RunTxOpts, RunTxResult, VMEvents, VMOpts } from './types.js'
 import type { BlockchainInterface } from '@ethereumjs/blockchain'
 import type { EVMStateManagerInterface } from '@ethereumjs/common'
 import type { EVMInterface } from '@ethereumjs/evm'
@@ -79,9 +71,7 @@ export class VM {
   static async create(opts: VMOpts = {}): Promise<VM> {
     const vm = new this(opts)
     const genesisStateOpts =
-      opts.stateManager === undefined && opts.genesisState === undefined
-        ? { genesisState: {} }
-        : undefined
+      opts.stateManager === undefined && opts.genesisState === undefined ? { genesisState: {} } : undefined
     await vm.init({ ...genesisStateOpts, ...opts })
     return vm
   }
@@ -133,8 +123,7 @@ export class VM {
 
     // Skip DEBUG calls unless 'ethjs' included in environmental DEBUG variables
     // Additional window check is to prevent vite browser bundling (and potentially other) to break
-    this.DEBUG =
-      typeof window === 'undefined' ? process?.env?.DEBUG?.includes('ethjs') ?? false : false
+    this.DEBUG = typeof window === 'undefined' ? process?.env?.DEBUG?.includes('ethjs') ?? false : false
   }
 
   async init({ genesisState }: { genesisState?: GenesisState } = {}): Promise<void> {

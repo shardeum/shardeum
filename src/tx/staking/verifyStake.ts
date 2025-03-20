@@ -46,10 +46,7 @@ export function verifyStakeTx(
     //TODO: NEED to potentially write a custom faster test that avoids regex so we can avoid a regex-dos attack
     success = false
     reason = 'Invalid nominee address in stake coins tx'
-  } else if (
-    nomineeAccount &&
-    nomineeAccount.stakeTimestamp + networkAccount.current.restakeCooldown > Date.now()
-  ) {
+  } else if (nomineeAccount && nomineeAccount.stakeTimestamp + networkAccount.current.restakeCooldown > Date.now()) {
     success = false
     reason = `This node was staked within the last ${
       networkAccount.current.restakeCooldown / 60000
@@ -61,8 +58,7 @@ export function verifyStakeTx(
     if (ShardeumFlags.fixExtraStakeLessThanMin) {
       const operatorShardusAddress = toShardusAddress(stakeCoinsTx.nominator, AccountType.Account)
       // eslint-disable-next-line security/detect-object-injection
-      const wrappedEVMAccount: WrappedEVMAccount = wrappedStates[operatorShardusAddress]
-        .data as WrappedEVMAccount
+      const wrappedEVMAccount: WrappedEVMAccount = wrappedStates[operatorShardusAddress].data as WrappedEVMAccount
 
       if (wrappedEVMAccount.operatorAccountInfo) {
         const existingStake =
@@ -88,12 +84,13 @@ export function verifyStakeTx(
   const isTicketTypesEnabled = ShardeumFlags.ticketTypesEnabled
   /* prettier-ignore */ if (logFlags.debug) console.log(`[verifyStake][verifyStakeTx] isTicketsEnabled: ${isTicketTypesEnabled}`)
   if (isTicketTypesEnabled) {
-    const doesNominatorHaveTicketTypeResponse: {success:boolean;reason:string;enabled:boolean} = doesTransactionSenderHaveTicketType({ ticketType: TicketTypes.SILVER, senderAddress })
+    const doesNominatorHaveTicketTypeResponse: { success: boolean; reason: string; enabled: boolean } =
+      doesTransactionSenderHaveTicketType({ ticketType: TicketTypes.SILVER, senderAddress })
     /* prettier-ignore */ if (logFlags.debug) console.log(`[verifyStake][verifyStakeTx] doesNominatorHaveTicketTypeResponse: ${doesNominatorHaveTicketTypeResponse}`)
-    if (doesNominatorHaveTicketTypeResponse.enabled && !doesNominatorHaveTicketTypeResponse.success){
+    if (doesNominatorHaveTicketTypeResponse.enabled && !doesNominatorHaveTicketTypeResponse.success) {
       return {
         success: doesNominatorHaveTicketTypeResponse.success,
-        reason: doesNominatorHaveTicketTypeResponse.reason
+        reason: doesNominatorHaveTicketTypeResponse.reason,
       }
     }
   }
@@ -101,10 +98,7 @@ export function verifyStakeTx(
   const nominatorAccount = wrappedStates[toShardusAddress(stakeCoinsTx.nominator, AccountType.Account)]
     .data as WrappedEVMAccount
   if (nomineeAccount) {
-    if (
-      nomineeAccount.nominator &&
-      nomineeAccount.nominator.toLowerCase() !== stakeCoinsTx.nominator.toLowerCase()
-    ) {
+    if (nomineeAccount.nominator && nomineeAccount.nominator.toLowerCase() !== stakeCoinsTx.nominator.toLowerCase()) {
       return {
         success: false,
         reason: `This node is already staked by another account!`,
@@ -138,10 +132,7 @@ export function verifyUnstakeTx(
   let reason = ''
   if (ShardeumFlags.VerboseLogs) console.log('verifyUnstake: Validating unstake coins tx fields', appData)
   const unstakeCoinsTX = appData as UnstakeCoinsTX
-  if (
-    unstakeCoinsTX.nominator == null ||
-    unstakeCoinsTX.nominator.toLowerCase() !== senderAddress.toString()
-  ) {
+  if (unstakeCoinsTX.nominator == null || unstakeCoinsTX.nominator.toLowerCase() !== senderAddress.toString()) {
     /* prettier-ignore */ nestedCountersInstance.countEvent( 'shardeum-unstaking', 'invalid nominator address in stake coins tx' )
     /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log( `nominator vs tx signer`, unstakeCoinsTX.nominator, senderAddress.toString() )
     success = false
@@ -197,9 +188,7 @@ export function verifyUnstakeTx(
   }
 
   // eslint-disable-next-line security/detect-object-injection
-  if (
-    !isStakeUnlocked(nominatorAccount, nomineeAccount, shardus, wrappedStates[globalAccount].data).unlocked
-  ) {
+  if (!isStakeUnlocked(nominatorAccount, nomineeAccount, shardus, wrappedStates[globalAccount].data).unlocked) {
     success = false
     reason = `The stake is not unlocked yet!`
   }

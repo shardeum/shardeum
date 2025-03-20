@@ -40,9 +40,7 @@ export function toShardusAddressWithKey(
     const prefix = addressStr.slice(2, numPrefixChars + 2)
 
     if (addressStr.length != 42) {
-      throw new Error(
-        'must pass in a 42 character hex address for Account type ContractStorage or ContractCode.'
-      )
+      throw new Error('must pass in a 42 character hex address for Account type ContractStorage or ContractCode.')
     }
     if (secondaryAddressStr.length === 66) {
       secondaryAddressStr = secondaryAddressStr.slice(2)

@@ -47,12 +47,7 @@ export function accessAddressEIP2929(
  * @param {Uint8Array} key (to storage slot)
  * @param {Common} common
  */
-export function accessStorageEIP2929(
-  runState: RunState,
-  key: Uint8Array,
-  isSstore: boolean,
-  common: Common
-): bigint {
+export function accessStorageEIP2929(runState: RunState, key: Uint8Array, isSstore: boolean, common: Common): bigint {
   if (common.isActivatedEIP(2929) === false) return BigInt(0)
 
   const address = runState.interpreter.getAddress().bytes

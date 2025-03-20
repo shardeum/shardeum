@@ -24,7 +24,7 @@ import { bigIntToHex, isValidAddress } from '@ethereumjs/util'
 import { Utils } from '@shardeum-foundation/lib-types'
 import { SafeBalance } from '../utils/safeMath'
 import { isInternalTx, verify } from '../setup/helpers'
-import { NetworkAccount } from '../types/NetworkAccount';
+import { NetworkAccount } from '../types/NetworkAccount'
 
 export function isSetCertTimeTx(tx): boolean {
   if (isInternalTx(tx) && tx.internalTXType === InternalTXType.SetCertTime) {
@@ -43,10 +43,7 @@ export type setCertTimeTx = {
 }
 
 export function getCertCycleDuration(): number {
-  if (
-    AccountsStorage.cachedNetworkAccount &&
-    AccountsStorage.cachedNetworkAccount.current.certCycleDuration !== null
-  ) {
+  if (AccountsStorage.cachedNetworkAccount && AccountsStorage.cachedNetworkAccount.current.certCycleDuration !== null) {
     return AccountsStorage.cachedNetworkAccount.current.certCycleDuration
   }
   return ShardeumFlags.certCycleDuration
@@ -144,7 +141,7 @@ export function validateSetCertTimeState(
       /* prettier-ignore */ if (logFlags.dapp_verbose) console.log(`Transaction nominee ${transactionNominee} and original operator nominee ${operatorNominee} MISMATCH!!`)
       return {
         result: 'fail',
-        reason: `Transaction nominee ${transactionNominee} and original operator nominee ${operatorNominee} MISMATCH!!`
+        reason: `Transaction nominee ${transactionNominee} and original operator nominee ${operatorNominee} MISMATCH!!`,
       }
     }
 
@@ -155,9 +152,9 @@ export function validateSetCertTimeState(
         /* prettier-ignore */ nestedCountersInstance.countEvent('shardeum-staking', 'validateSetCertTimeState' + ' stake failed to parse')
         return {
           result: 'fail',
-          reason: `stake failed to parse: ${Utils.safeStringify(
-            operatorEVMAccount.operatorAccountInfo.stake
-          )} er:${er.message}`,
+          reason: `stake failed to parse: ${Utils.safeStringify(operatorEVMAccount.operatorAccountInfo.stake)} er:${
+            er.message
+          }`,
         }
       }
     } else if (operatorEVMAccount && operatorEVMAccount.operatorAccountInfo == null) {
@@ -279,8 +276,7 @@ export function applySetCertTimeTx(
   }
 
   // update operator cert expiration
-  operatorEVMAccount.operatorAccountInfo.certExp =
-    txTimestamp + serverConfig.p2p.cycleDuration * ONE_SECOND * duration
+  operatorEVMAccount.operatorAccountInfo.certExp = txTimestamp + serverConfig.p2p.cycleDuration * ONE_SECOND * duration
 
   // deduct tx fee if certExp is not set yet or far from expiration
   /* prettier-ignore */ if (logFlags.dapp_verbose) console.log(`applySetCertTimeTx shouldChargeTxFee: ${shouldChargeTxFee}`)
@@ -293,11 +289,11 @@ export function applySetCertTimeTx(
   }
   let amountSpent = bigIntToHex(BigInt(0))
   if (shouldChargeTxFee) {
-    const costTxFee = scaleByStabilityFactor(
-      BigInt(ShardeumFlags.constantTxFeeUsd),
-      network
+    const costTxFee = scaleByStabilityFactor(BigInt(ShardeumFlags.constantTxFeeUsd), network)
+    operatorEVMAccount.account.balance = SafeBalance.subtractBigintBalance(
+      operatorEVMAccount.account.balance,
+      costTxFee
     )
-    operatorEVMAccount.account.balance = SafeBalance.subtractBigintBalance(operatorEVMAccount.account.balance, costTxFee)
     amountSpent = bigIntToHex(costTxFee)
   }
 
@@ -316,15 +312,6 @@ export function applySetCertTimeTx(
   }
 
   if (ShardeumFlags.supportInternalTxReceipt) {
-    createInternalTxReceipt(
-      shardus,
-      applyResponse,
-      tx,
-      tx.nominee,
-      tx.nominator,
-      txTimestamp,
-      txId,
-      amountSpent
-    )
+    createInternalTxReceipt(shardus, applyResponse, tx, tx.nominee, tx.nominator, txTimestamp, txId, amountSpent)
   }
 }
