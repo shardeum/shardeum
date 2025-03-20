@@ -17,10 +17,7 @@ import { sleep, generateTxId, _base16BNParser } from '../utils'
 import { createInternalTxReceipt, shardeumGetTime, logFlags } from '..'
 import { networkAccount } from '../shardeum/shardeumConstants'
 
-export async function injectInitRewardTimesTx(
-  shardus,
-  eventData: ShardusTypes.ShardusEvent
-): Promise<unknown> {
+export async function injectInitRewardTimesTx(shardus, eventData: ShardusTypes.ShardusEvent): Promise<unknown> {
   const startTime = eventData.additionalData.txData.startTime
   let tx = {
     isInternalTx: true,
@@ -28,7 +25,7 @@ export async function injectInitRewardTimesTx(
     nominee: eventData.publicKey,
     nodeActivatedTime: startTime,
     timestamp: shardeumGetTime(),
-    txData: eventData.additionalData.txData
+    txData: eventData.additionalData.txData,
   } as InitRewardTimes
 
   // check if this node has node account data
@@ -213,13 +210,7 @@ export function apply(
   if (ShardeumFlags.useAccountWrites) {
     const wrappedAccount: NodeAccount2 = nodeAccount // eslint-disable-line @typescript-eslint/no-explicit-any
     const wrappedChangedNodeAccount = WrappedEVMAccountFunctions._shardusWrappedAccount(wrappedAccount)
-    shardus.applyResponseAddChangedAccount(
-      applyResponse,
-      tx.nominee,
-      wrappedChangedNodeAccount,
-      txId,
-      txTimestamp
-    )
+    shardus.applyResponseAddChangedAccount(applyResponse, tx.nominee, wrappedChangedNodeAccount, txId, txTimestamp)
   }
   if (ShardeumFlags.supportInternalTxReceipt) {
     createInternalTxReceipt(shardus, applyResponse, tx, tx.nominee, nodeAccount.nominator, txTimestamp, txId)

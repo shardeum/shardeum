@@ -94,7 +94,7 @@ export interface EVMAccountInfo {
 export enum InternalTXType {
   SetGlobalCodeBytes = 0, //Deprecated
   InitNetwork = 1,
-  NodeReward = 2,   //Deprecated
+  NodeReward = 2, //Deprecated
   ChangeConfig = 3,
   ApplyChangeConfig = 4,
   SetCertTime = 5,
@@ -320,7 +320,7 @@ export interface ReadableReceipt {
   v?: string
   r?: string
   s?: string
-  penaltyAmount?: bigint,
+  penaltyAmount?: bigint
   rewardedAmount?: bigint
 }
 
@@ -394,12 +394,12 @@ export interface NetworkParameters {
     qaTestSemver: string
   }
   slashing: {
-    enableLeftNetworkEarlySlashing: boolean,
-    enableSyncTimeoutSlashing: boolean,
-    enableNodeRefutedSlashing: boolean,
-    leftNetworkEarlyPenaltyPercent: number,
-    syncTimeoutPenaltyPercent: number,
-    nodeRefutedPenaltyPercent: number,
+    enableLeftNetworkEarlySlashing: boolean
+    enableSyncTimeoutSlashing: boolean
+    enableNodeRefutedSlashing: boolean
+    leftNetworkEarlyPenaltyPercent: number
+    syncTimeoutPenaltyPercent: number
+    nodeRefutedPenaltyPercent: number
   }
   enableRPCEndpoints: boolean
   stakeLockTime: number
@@ -538,5 +538,4 @@ export interface AppJoinData {
   isAdminCertUnexpired: boolean
 }
 
-
-export type AccountMap = Map<string, WrappedEVMAccount>;
+export type AccountMap = Map<string, WrappedEVMAccount>

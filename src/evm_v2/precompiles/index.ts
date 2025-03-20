@@ -25,9 +25,7 @@ interface Precompiles {
   [key: string]: PrecompileFunc
 }
 
-type PrecompileAvailabilityCheckType =
-  | PrecompileAvailabilityCheckTypeHardfork
-  | PrecompileAvailabilityCheckTypeEIP
+type PrecompileAvailabilityCheckType = PrecompileAvailabilityCheckTypeHardfork | PrecompileAvailabilityCheckTypeEIP
 
 enum PrecompileAvailabilityCheck {
   EIP,
@@ -153,10 +151,7 @@ type AddPrecompile = {
 
 type CustomPrecompile = AddPrecompile | DeletePrecompile
 
-function getActivePrecompiles(
-  common: Common,
-  customPrecompiles?: CustomPrecompile[]
-): Map<string, PrecompileFunc> {
+function getActivePrecompiles(common: Common, customPrecompiles?: CustomPrecompile[]): Map<string, PrecompileFunc> {
   const precompileMap = new Map()
   if (customPrecompiles) {
     for (const precompile of customPrecompiles) {
@@ -174,8 +169,7 @@ function getActivePrecompiles(
 
     if (
       (type === PrecompileAvailabilityCheck.Hardfork && common.gteHardfork(entry.check.param)) ||
-      (entry.check.type === PrecompileAvailabilityCheck.EIP &&
-        common.isActivatedEIP(entry.check.param))
+      (entry.check.type === PrecompileAvailabilityCheck.EIP && common.isActivatedEIP(entry.check.param))
     ) {
       precompileMap.set(entry.address, entry.precompile)
     }

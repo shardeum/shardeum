@@ -1,11 +1,5 @@
 import { Hardfork } from '@ethereumjs/common'
-import {
-  bigIntToBytes,
-  bytesToHex,
-  equalsBytes,
-  setLengthLeft,
-  setLengthRight,
-} from '@ethereumjs/util'
+import { bigIntToBytes, bytesToHex, equalsBytes, setLengthLeft, setLengthRight } from '@ethereumjs/util'
 import { keccak256 } from 'ethereum-cryptography/keccak.js'
 
 import { EvmError } from '../exceptions.js'
@@ -143,12 +137,7 @@ export function jumpSubIsValid(runState: RunState, dest: number): boolean {
  * @param runState the current runState
  * @param common the common
  */
-export function maxCallGas(
-  gasLimit: bigint,
-  gasLeft: bigint,
-  runState: RunState,
-  common: Common
-): bigint {
+export function maxCallGas(gasLimit: bigint, gasLeft: bigint, runState: RunState, common: Common): bigint {
   if (common.gteHardfork(Hardfork.TangerineWhistle)) {
     const gasAllowed = gasLeft - gasLeft / BigInt(64)
     return gasLimit > gasAllowed ? gasAllowed : gasLimit
@@ -210,10 +199,7 @@ export function updateSstoreGas(
   value: Uint8Array,
   common: Common
 ): bigint {
-  if (
-    (value.length === 0 && currentStorage.length === 0) ||
-    (value.length > 0 && currentStorage.length > 0)
-  ) {
+  if ((value.length === 0 && currentStorage.length === 0) || (value.length > 0 && currentStorage.length > 0)) {
     const gas = common.param('gasPrices', 'sstoreReset')
     return gas
   } else if (value.length === 0 && currentStorage.length > 0) {

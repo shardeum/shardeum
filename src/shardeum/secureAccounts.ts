@@ -1,4 +1,12 @@
-import { AccountType, BaseAccount, InternalTx, InternalTXType, WrappedAccount, WrappedEVMAccount, WrappedStates } from './shardeumTypes'
+import {
+  AccountType,
+  BaseAccount,
+  InternalTx,
+  InternalTXType,
+  WrappedAccount,
+  WrappedEVMAccount,
+  WrappedStates,
+} from './shardeumTypes'
 import { updateEthAccountHash } from './wrappedEVMAccountFunctions'
 import { ShardeumFlags } from './shardeumFlags'
 import { toShardusAddress } from './evmAddress'
@@ -29,25 +37,21 @@ export interface SecureAccount extends BaseAccount {
 }
 
 export interface SecureAccountConfig {
-  Name: string;
-  SourceFundsAddress: string;
-  RecipientFundsAddress: string;
-  SecureAccountAddress: string; // This will be the 32-byte address format
-  SourceFundsBalance: string;
+  Name: string
+  SourceFundsAddress: string
+  RecipientFundsAddress: string
+  SecureAccountAddress: string // This will be the 32-byte address format
+  SourceFundsBalance: string
 }
 
 export function isSecureAccount(obj: unknown): obj is SecureAccount {
   return (
-    typeof obj === 'object' &&
-    obj !== null &&
-    'name' in obj &&
-    'nextTransferAmount' in obj &&
-    'nextTransferTime' in obj
+    typeof obj === 'object' && obj !== null && 'name' in obj && 'nextTransferAmount' in obj && 'nextTransferTime' in obj
   )
 }
 
 type SerializedSecureAccount = Omit<SecureAccount, 'nextTransferAmount'> & {
-  nextTransferAmount: string;
+  nextTransferAmount: string
 }
 
 export function initializeSecureAccount(
@@ -67,7 +71,7 @@ export function initializeSecureAccount(
     name: secureAccountConfig.Name,
     nextTransferAmount: BigInt(0),
     nextTransferTime: 0,
-    nonce: 0
+    nonce: 0,
   }
 
   updateEthAccountHash(secureAccount)
@@ -85,7 +89,7 @@ interface SecureAccountData {
 }
 
 export const secureAccountDataMap: Map<string, SecureAccountData> = new Map(
-  genesisSecureAccounts.map(account => [account.Name, account])
+  genesisSecureAccounts.map((account) => [account.Name, account])
 )
 
 interface CrackedData {
@@ -95,20 +99,21 @@ interface CrackedData {
 
 export function crack(tx: InternalTx): CrackedData {
   if (!secureAccountDataMap.has(tx.accountName)) {
-    throw new Error(`Secure account ${tx.accountName} not found`);
+    throw new Error(`Secure account ${tx.accountName} not found`)
   }
   return {
     sourceKeys: [
       toShardusAddress(secureAccountDataMap.get(tx.accountName).SourceFundsAddress, AccountType.Account),
       toShardusAddress(secureAccountDataMap.get(tx.accountName).SecureAccountAddress, AccountType.SecureAccount),
     ],
-    targetKeys: [
-      toShardusAddress(secureAccountDataMap.get(tx.accountName).RecipientFundsAddress, AccountType.Account)
-    ]
+    targetKeys: [toShardusAddress(secureAccountDataMap.get(tx.accountName).RecipientFundsAddress, AccountType.Account)],
   }
 }
 
-export function validateTransferFromSecureAccount(tx: InternalTx, shardus: Shardus): { success: boolean; reason: string } {
+export function validateTransferFromSecureAccount(
+  tx: InternalTx,
+  shardus: Shardus
+): { success: boolean; reason: string } {
   if (tx.internalTXType !== InternalTXType.TransferFromSecureAccount) {
     return { success: false, reason: 'Invalid transaction type' }
   }
@@ -147,7 +152,7 @@ export function validateTransferFromSecureAccount(tx: InternalTx, shardus: Shard
   const txData = {
     amount: tx.amount,
     accountName: tx.accountName,
-    nonce: tx.nonce
+    nonce: tx.nonce,
   }
 
   // Clean multiSigPermissions to remove any keys not in shardusConfig.debug.multisigKeys
@@ -173,7 +178,7 @@ export function validateTransferFromSecureAccount(tx: InternalTx, shardus: Shard
       allowedPublicKeys,
       txSign: tx.sign,
       txData,
-      secureAccountData
+      secureAccountData,
     })
     return { success: false, reason: 'Invalid signatures' }
   }
@@ -246,7 +251,8 @@ export async function apply(
 
   const sourceEOA = wrappedStates[toShardusAddress(secureAccountConfig.SourceFundsAddress, AccountType.Account)]
   const destEOA = wrappedStates[toShardusAddress(secureAccountConfig.RecipientFundsAddress, AccountType.Account)]
-  const secureAccount = wrappedStates[toShardusAddress(secureAccountConfig.SecureAccountAddress, AccountType.SecureAccount)]
+  const secureAccount =
+    wrappedStates[toShardusAddress(secureAccountConfig.SecureAccountAddress, AccountType.SecureAccount)]
 
   // throw if any of the required accounts are not found
   if (!sourceEOA || !destEOA || !secureAccount) {
@@ -281,7 +287,7 @@ export async function apply(
     // Put updated EVM accounts into state
     await shardeumState.putAccount(Address.fromString(secureAccountConfig.SourceFundsAddress), sourceEOAData.account)
     await shardeumState.putAccount(Address.fromString(secureAccountConfig.RecipientFundsAddress), destEOAData.account)
-    
+
     // Update secure account
     secureAccountData.timestamp = txTimestamp
     secureAccountData.nonce += 1
@@ -297,7 +303,7 @@ export async function apply(
   }
 
   shardus.setDebugSetLastAppAwait(`apply():checkpoint_secure_accounts`, DebugComplete.Completed)
-  
+
   const wrappedSourceEOA = _shardusWrappedAccount(sourceEOAData)
   const wrappedDestEOA = _shardusWrappedAccount(destEOAData)
   const wrappedSecureAccount = _shardusWrappedAccount(secureAccountData)
@@ -343,19 +349,21 @@ export async function apply(
 
 function validateSecureAccountConfig(config: SecureAccountConfig[]): void {
   const seenAddresses = new Set<string>()
-  
+
   for (const account of config) {
     if (account.SourceFundsAddress === account.RecipientFundsAddress) {
-      throw new Error(`Invalid secure account config for ${account.Name}: Source and recipient addresses must be different`)
+      throw new Error(
+        `Invalid secure account config for ${account.Name}: Source and recipient addresses must be different`
+      )
     }
-    
+
     if (seenAddresses.has(account.SourceFundsAddress)) {
       throw new Error(`Duplicate source address found: ${account.SourceFundsAddress}`)
     }
     if (seenAddresses.has(account.RecipientFundsAddress)) {
       throw new Error(`Duplicate recipient address found: ${account.RecipientFundsAddress}`)
     }
-    
+
     seenAddresses.add(account.SourceFundsAddress)
     seenAddresses.add(account.RecipientFundsAddress)
   }

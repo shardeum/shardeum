@@ -29,8 +29,10 @@ export interface NetworkAccountDependencies {
   nestedCountersInstance: {
     countEvent: (event: string, message: string) => void
   }
-  findMajorityResult: (values: { hash: string, archiver: Archiver }[], getHash: (v: { hash: string, archiver: Archiver }) => string
-  ) => { hash: string, archiver: Archiver } | null
+  findMajorityResult: (
+    values: { hash: string; archiver: Archiver }[],
+    getHash: (v: { hash: string; archiver: Archiver }) => string
+  ) => { hash: string; archiver: Archiver } | null
   safeStringify: (value: unknown) => string
 }
 
@@ -42,7 +44,7 @@ export const buildFetchNetworkAccountFromArchiver = ({
   WrappedEVMAccountFunctions,
   nestedCountersInstance,
   findMajorityResult,
-  safeStringify
+  safeStringify,
 }: NetworkAccountDependencies) => {
   return async function fetchNetworkAccountFromArchiver(): Promise<WrappedAccount> {
     //make a trustless query which will check 3 random archivers and call the endpoint with hash=true
@@ -104,9 +106,7 @@ export const buildFetchNetworkAccountFromArchiver = ({
       /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`[fetchNetworkAccountFromArchiver] data: ${safeStringify(res?.data)}`)
       if (!res.data) {
         /* prettier-ignore */ nestedCountersInstance.countEvent('network-config-operation', 'failure: did not get network account from archiver private key, returned null. Use default configs.')
-        throw new Error(
-          `get-network-account from archiver pk:${majorityValue.archiver.publicKey} returned null`
-        )
+        throw new Error(`get-network-account from archiver pk:${majorityValue.archiver.publicKey} returned null`)
       }
 
       if (ShardeumFlags.enableArchiverNetworkAccountValidation) {
@@ -131,15 +131,11 @@ export const buildFetchNetworkAccountFromArchiver = ({
             'network-config-operation',
             'failure: The response signature is not the same from archiver pk:${majorityValue.archiver.publicKey}'
           )
-          throw new Error(
-            `The response signature is not the same from archiver pk:${majorityValue.archiver.publicKey}`
-          )
+          throw new Error(`The response signature is not the same from archiver pk:${majorityValue.archiver.publicKey}`)
         }
 
         // verify that the hash was not spoofed by the archiver, rehash the network account and compare
-        const rehashedNetworkAccount = WrappedEVMAccountFunctions.accountSpecificHash(
-          res.data.networkAccount.data
-        )
+        const rehashedNetworkAccount = WrappedEVMAccountFunctions.accountSpecificHash(res.data.networkAccount.data)
         if (rehashedNetworkAccount !== majorityValue.hash) {
           nestedCountersInstance.countEvent(
             'network-config-operation',
@@ -153,10 +149,7 @@ export const buildFetchNetworkAccountFromArchiver = ({
 
       return res.data.networkAccount as WrappedAccount
     } catch (ex) {
-      console.error(
-        `[fetchNetworkAccountFromArchiver] ERROR retrieving/processing data from archiver ${url}: `,
-        ex
-      )
+      console.error(`[fetchNetworkAccountFromArchiver] ERROR retrieving/processing data from archiver ${url}: `, ex)
       /* prettier-ignore */ nestedCountersInstance.countEvent('network-config-operation', `error: ${ex?.message}`)
       throw new Error(`Not able to fetch get-network-account result from archiver `)
     }

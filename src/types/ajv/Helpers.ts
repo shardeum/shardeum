@@ -2,23 +2,23 @@ import { Utils } from '@shardeum-foundation/lib-types'
 import Ajv, { ErrorObject } from 'ajv'
 import { getVerifyFunction } from '../../utils/serialization/SchemaHelpers'
 import { initInjectTxReq } from './InjectTxReq'
-import { initSign } from './SignSchema';
-import { initPenaltyTX } from './PenaltyTXSchema';
-import { initJoinAppData } from "./JoinAppData";
-import { initStakeResp } from './StakeResp';
-import { initStakeCert } from './StakeCert';
-import { initRemoveNodeCert } from './RemoveNodeCert';
-import { initApplyChangeConfigTx } from './ApplyChangeConfigTxSchema';
-import { initApplyNetworkParamTx } from './ApplyNetworkParamTxSchema';
-import { initChangeConfigTx } from './ChangeConfigTxSchema';
-import { initChangeNetworkParamTx } from './ChangeNetworkParamTxSchema';
-import { initSetCertTimeTx } from './SetCertTimeTxSchema';
-import { initStakeTx } from './StakeTxSchema';
-import { initInitRewardTimesTx } from './InitRewardTimesTxSchema';
-import { initClaimRewardTx } from './ClaimRewardTxSchema';
-import { initTransferFromSecureAccountTx } from './TransferFromSecureAccountTxSchema';
-import { initUnstakeTx } from './UnstakeTxSchema';
-import { initInitNetworkTx } from './InitNetworkTxSchema';
+import { initSign } from './SignSchema'
+import { initPenaltyTX } from './PenaltyTXSchema'
+import { initJoinAppData } from './JoinAppData'
+import { initStakeResp } from './StakeResp'
+import { initStakeCert } from './StakeCert'
+import { initRemoveNodeCert } from './RemoveNodeCert'
+import { initApplyChangeConfigTx } from './ApplyChangeConfigTxSchema'
+import { initApplyNetworkParamTx } from './ApplyNetworkParamTxSchema'
+import { initChangeConfigTx } from './ChangeConfigTxSchema'
+import { initChangeNetworkParamTx } from './ChangeNetworkParamTxSchema'
+import { initSetCertTimeTx } from './SetCertTimeTxSchema'
+import { initStakeTx } from './StakeTxSchema'
+import { initInitRewardTimesTx } from './InitRewardTimesTxSchema'
+import { initClaimRewardTx } from './ClaimRewardTxSchema'
+import { initTransferFromSecureAccountTx } from './TransferFromSecureAccountTxSchema'
+import { initUnstakeTx } from './UnstakeTxSchema'
+import { initInitNetworkTx } from './InitNetworkTxSchema'
 
 export function initAjvSchemas(): void {
   initSign()
@@ -63,7 +63,7 @@ function parseAjvErrors(errors: Array<ErrorObject> | null): string[] | null {
   })
 }
 
-export function filterObjectByWhitelistedProps(obj:any, whitelistedProps: {name:string,type:string}[] ): any {
+export function filterObjectByWhitelistedProps(obj: any, whitelistedProps: { name: string; type: string }[]): any {
   const ajv = new Ajv()
 
   const newObject = Object.keys(obj)

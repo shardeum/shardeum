@@ -113,9 +113,7 @@ export function customAxios(maxBytes?: number, axiosConfig: AxiosRequestConfig =
               try {
                 response.data = Utils.safeJsonParse(fullBuffer.toString('utf8'))
               } catch (err: any) {
-                return reject(
-                  new Error(`Failed to parse JSON (size: ${fullBuffer.length} bytes): ${err.message}`)
-                )
+                return reject(new Error(`Failed to parse JSON (size: ${fullBuffer.length} bytes): ${err.message}`))
               }
               break
           }
