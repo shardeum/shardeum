@@ -1,242 +1,130 @@
 # Multi-Signature Permissions E2E Test Cases
 
-This document provides detailed end-to-end test cases for the Shardeum multi-signature permissions system, specifically using the `lt2` tool and its `change_global_config` script.
+## Testing Setup
+- Use multisig-app for all proposal creation and signing operations
+- Coordinate with co-testers for multi-signature collection
+- Test against appropriate Shardeum network
+- **Verification Method**: Check network account via archiver API: `http://{archiver-ip:port}/get-network-account?hash=false`
 
-## Prerequisites
-
-- Access to a Shardeum test environment
-- `lt2` tool installed and configured
-- Access to private keys for addresses in various permission categories
-- Basic understanding of the Shardeum multi-signature permissions system
-
-## Testing Using `lt2`
-
-The `lt2` tool's `change_global_config` script is specifically designed to prepare, sign, and send multi-signature transactions for configuration changes in Shardeum. Use this tool for all test cases below.
-
-## Test Suite 1: Basic Permission Validation
+## 1. Basic Permission Validation
 
 ### Test Case 1.1: Valid Multi-Sig Key Access
-
-**Objective:** Verify that a key in both `changeMultiSigKeyList` and `debug.multisigKeys` can participate in multi-sig key changes.
-
-**Steps:**
-1. Identify an address in both `changeMultiSigKeyList` and active `debug.multisigKeys`
-2. Use `lt2` to prepare a transaction that modifies a non-critical configuration:
-   ```bash
-   lt2 change_global_config prepare --name="testChange" --value="testValue" --output="tx.json"
-   ```
-3. Sign the transaction with this key:
-   ```bash
-   lt2 change_global_config sign --tx="tx.json" --key="path/to/private_key.json" --output="signed_tx.json"
-   ```
-4. Send the transaction:
-   ```bash
-   lt2 change_global_config send --tx="signed_tx.json"
-   ```
-5. Verify transaction is accepted by checking the node logs or using the API
-
-**Expected Result:** Transaction is accepted and configuration is changed.
+1. Using a key in both `changeMultiSigKeyList` and `debug.multisigKeys`, create a proposal to modify the multi-sig key list
+2. Collect required signatures from co-testers
+3. Submit the proposal
+4. Verify change in network account via archiver API
 
 ### Test Case 1.2: Unauthorized Key Access
+1. Using a key in `debug.multisigKeys` but NOT in `changeMultiSigKeyList`, attempt to create a proposal to modify the multi-sig key list
+2. Verify rejection with appropriate error
+3. Confirm via archiver API that no change occurred in network account
 
-**Objective:** Verify that keys not in permission lists cannot execute restricted operations.
+## 2. Dual Verification System
 
-**Steps:**
-1. Identify an address that is in `debug.multisigKeys` but NOT in `changeMultiSigKeyList`
-2. Use `lt2` to prepare a transaction that modifies the multi-sig key list:
-   ```bash
-   lt2 change_global_config prepare --config-field="debug.multisigKeys" --add-key="0xNEWADDRESS" --output="tx.json"
-   ```
-3. Sign with this unauthorized key:
-   ```bash
-   lt2 change_global_config sign --tx="tx.json" --key="path/to/unauthorized_key.json" --output="signed_tx.json"
-   ```
-4. Send the transaction:
-   ```bash
-   lt2 change_global_config send --tx="signed_tx.json"
-   ```
+### Test Case 2.1: Inactive Key Rejection
+1. Create a proposal using a key present in `changeMultiSigKeyList` but removed from `debug.multisigKeys`
+2. Attempt to sign and verify rejection
+3. Check network account via archiver to confirm no changes
 
-**Expected Result:** Transaction is rejected with "Invalid signatures" error.
+### Test Case 2.2: Permission List Filtering
+1. Add a test key to `changeMultiSigKeyList` but not to `debug.multisigKeys`
+2. Create a relevant proposal
+3. Check network account before and after to verify filtering behavior
 
-## Test Suite 2: Multi-Signature Requirements
+## 3. Multi-Signature Requirements
 
-### Test Case 2.1: Minimum Signature Enforcement
+### Test Case 3.1: Minimum Signature Enforcement
+1. Set `minMultiSigRequiredForGlobalTxs` to a value > 1
+2. Create a config change proposal
+3. Submit with fewer than required signatures
+4. Verify via archiver API that network account remains unchanged
 
-**Objective:** Verify that the minimum signature requirement is enforced.
+### Test Case 3.2: Multiple Valid Signatures
+1. Create a non-key config change proposal
+2. Collect exactly the minimum required signatures
+3. Submit and verify change via archiver API
+4. Create another proposal with more than minimum signatures
+5. Verify successful change via archiver API
 
-**Steps:**
-1. Check the current value of `minMultiSigRequiredForGlobalTxs` in the configuration
-2. Use `lt2` to prepare a configuration change:
-   ```bash
-   lt2 change_global_config prepare --name="testParam" --value="testValue" --output="tx.json"
-   ```
-3. Sign with fewer than the required number of authorized keys:
-   ```bash
-   lt2 change_global_config sign --tx="tx.json" --key="path/to/key1.json" --output="signed_tx.json"
-   ```
-4. Send the transaction:
-   ```bash
-   lt2 change_global_config send --tx="signed_tx.json"
-   ```
+## 4. Permission Category Tests
 
-**Expected Result:** Transaction is rejected with error about insufficient signatures.
+### Test Case 4.1: Developer Key List Change
+1. Create a proposal to modify the developer key list using key(s) from `changeDevKeyList`
+2. Submit and verify via archiver API that the developer key list was updated
+3. Attempt same with keys from other permission lists
+4. Verify rejection and unchanged network account via archiver
 
-### Test Case 2.2: Multiple Valid Signatures
+### Test Case 4.2: Secure Account Transfer
+1. Create a proposal to transfer from a secure account using key(s) from `initiateSecureAccountTransfer`
+2. Submit and verify the transfer occurred by checking account balances
+3. Attempt same with keys from other permission lists
+4. Verify rejection and unchanged balances
 
-**Objective:** Verify that multiple valid signatures are accepted.
+### Test Case 4.3: Non-Key Configuration Changes
+1. Create a proposal to modify non-key configuration using key(s) from `changeNonKeyConfigs`
+2. Submit and verify via archiver API that configuration was updated
+3. Attempt same with keys from other permission lists
+4. Verify rejection and unchanged configuration via archiver
 
-**Steps:**
-1. Use `lt2` to prepare a non-key configuration change:
-   ```bash
-   lt2 change_global_config prepare --name="testParam" --value="newValue" --output="tx.json"
-   ```
-2. Sign with the minimum required number of keys from `changeNonKeyConfigs`:
-   ```bash
-   lt2 change_global_config sign --tx="tx.json" --key="path/to/key1.json" --output="signed_tx_1.json"
-   lt2 change_global_config sign --tx="signed_tx_1.json" --key="path/to/key2.json" --output="signed_tx_final.json"
-   ```
-3. Send the transaction:
-   ```bash
-   lt2 change_global_config send --tx="signed_tx_final.json"
-   ```
+## 5. Security Level Tests
 
-**Expected Result:** Transaction is accepted and configuration is changed.
+### Test Case 5.1: Security Level Requirement
+1. Create a key change proposal
+2. Attempt to use a key with insufficient security level
+3. Verify rejection
+4. Confirm via archiver API that no change occurred
 
-## Test Suite 3: Permission Category Tests
+## 6. Edge Cases
 
-### Test Case 3.1: Developer Key List Change
+### Test Case 6.1: Permission List Consistency
+1. Using a key present in multiple permission lists, create proposals for different operation types
+2. Verify proper functioning across all authorized categories
+3. Check network account via archiver after each operation
 
-**Objective:** Verify only authorized addresses can change developer keys.
+### Test Case 6.2: Empty Permission Lists
+1. Create a test environment with an empty permission list for one category
+2. Attempt operations in that category
+3. Verify via archiver API that no changes occur
 
-**Steps:**
-1. Use `lt2` to prepare a transaction to modify the developer key list:
-   ```bash
-   lt2 change_global_config prepare --config-field="debug.devKeys" --add-key="0xNEWDEVKEY" --output="tx.json"
-   ```
-2. Sign with key(s) from `changeDevKeyList`:
-   ```bash
-   lt2 change_global_config sign --tx="tx.json" --key="path/to/dev_key.json" --output="signed_tx.json"
-   ```
-3. Send the transaction:
-   ```bash
-   lt2 change_global_config send --tx="signed_tx.json"
-   ```
-4. Now try with keys from other permission lists (e.g., `changeNonKeyConfigs`):
-   ```bash
-   lt2 change_global_config prepare --config-field="debug.devKeys" --add-key="0xANOTHERDEVKEY" --output="tx2.json"
-   lt2 change_global_config sign --tx="tx2.json" --key="path/to/nonkey_changer_key.json" --output="signed_tx2.json"
-   lt2 change_global_config send --tx="signed_tx2.json"
-   ```
+### Test Case 6.3: Invalid Signature Format
+1. Create a valid proposal
+2. Manually modify the signature data to be invalid
+3. Submit and verify rejection
+4. Check network account via archiver to confirm no changes
 
-**Expected Results:** 
-- First transaction is accepted
-- Second transaction is rejected due to invalid permissions
+## 7. Recovery Scenarios
 
-### Test Case 3.2: Secure Account Transfer
+### Test Case 7.1: Multi-Sig Key Recovery
+1. Create a proposal to replace potentially compromised multi-sig keys
+2. Collect signatures excluding the compromised key
+3. Submit and verify via archiver API that key list was updated
+4. Attempt an operation with the old key and verify it fails
 
-**Objective:** Verify secure account transfer permissions.
+### Test Case 7.2: Transaction Rollback
+1. Create a complex proposal designed to fail during execution
+2. Submit and monitor via archiver API
+3. Verify all state changes are properly rolled back
 
-**Steps:**
-1. Identify a secure account in the system
-2. Use `lt2` to prepare a transfer transaction from this account:
-   ```bash
-   lt2 transfer_from_secure_account prepare --account="SecureAccountName" --amount="1000000000000000000" --output="tx.json"
-   ```
-3. Sign with key(s) from `initiateSecureAccountTransfer`:
-   ```bash
-   lt2 transfer_from_secure_account sign --tx="tx.json" --key="path/to/secure_account_key.json" --output="signed_tx.json"
-   ```
-4. Send the transaction:
-   ```bash
-   lt2 transfer_from_secure_account send --tx="signed_tx.json"
-   ```
-5. Try again with keys from other permission lists:
-   ```bash
-   lt2 transfer_from_secure_account prepare --account="SecureAccountName" --amount="1000000000000000000" --output="tx2.json"
-   lt2 transfer_from_secure_account sign --tx="tx2.json" --key="path/to/nonkey_changer_key.json" --output="signed_tx2.json"
-   lt2 transfer_from_secure_account send --tx="signed_tx2.json"
-   ```
+## 8. Integration Tests
 
-**Expected Results:**
-- First transaction is accepted
-- Second transaction is rejected
+### Test Case 8.1: Chain of Operations
+1. Execute a sequence of governance operations:
+   - Change developer keys
+   - Use new keys to change multi-sig keys
+   - Modify non-key configurations
+   - Perform secure account transfer
+2. Verify each step via archiver API
 
-## Test Suite 4: Advanced Scenarios
+### Test Case 8.2: Concurrent Operations
+1. Create multiple proposals of different types simultaneously
+2. Have co-testers sign different proposals
+3. Submit in various orders
+4. Verify all are processed correctly via archiver API
 
-### Test Case 4.1: Multi-Sig Key Recovery
-
-**Objective:** Verify the process to recover if multi-sig keys are compromised.
-
-**Steps:**
-1. Use `lt2` to prepare a transaction that replaces a key in the multi-sig list:
-   ```bash
-   lt2 change_global_config prepare --config-field="debug.multisigKeys" --remove-key="0xOLDKEY" --add-key="0xNEWKEY" --output="tx.json"
-   ```
-2. Sign with authorized key(s) from `changeMultiSigKeyList`:
-   ```bash
-   lt2 change_global_config sign --tx="tx.json" --key="path/to/multisig_key.json" --output="signed_tx.json"
-   ```
-3. Send the transaction:
-   ```bash
-   lt2 change_global_config send --tx="signed_tx.json"
-   ```
-4. Verify the old key no longer works and the new key does by attempting transactions with each
-
-**Expected Results:**
-- Transaction is accepted
-- Old key is no longer authorized
-- New key is authorized
-
-### Test Case 4.2: Chain of Operations
-
-**Objective:** Verify a complete chain of permission-related operations.
-
-**Steps:**
-1. Change developer keys:
-   ```bash
-   lt2 change_global_config prepare --config-field="debug.devKeys" --add-key="0xNEWDEVKEY" --output="tx1.json"
-   lt2 change_global_config sign --tx="tx1.json" --key="path/to/dev_key_changer.json" --output="signed_tx1.json"
-   lt2 change_global_config send --tx="signed_tx1.json"
-   ```
-
-2. Change multi-sig keys using newly authorized keys:
-   ```bash
-   lt2 change_global_config prepare --config-field="debug.multisigKeys" --add-key="0xNEWMULTISIGKEY" --output="tx2.json"
-   lt2 change_global_config sign --tx="tx2.json" --key="path/to/multisig_key_changer.json" --output="signed_tx2.json"
-   lt2 change_global_config send --tx="signed_tx2.json"
-   ```
-
-3. Modify non-key configurations using new multi-sig keys:
-   ```bash
-   lt2 change_global_config prepare --name="networkParam" --value="newValue" --output="tx3.json"
-   lt2 change_global_config sign --tx="tx3.json" --key="path/to/new_multisig_key.json" --output="signed_tx3.json"
-   lt2 change_global_config send --tx="signed_tx3.json"
-   ```
-
-**Expected Results:** Each step in the chain works properly with the appropriate permissions.
-
-## Reporting
-
-For each test case, document:
-
-1. **Test Environment**
-   - Network details (testnet, devnet, etc.)
-   - Node versions
-   - `lt2` version
-
-2. **Test Data**
-   - Keys/addresses used (public addresses only, never share private keys)
-   - Transaction hashes
-   - Command outputs
-
-3. **Results**
-   - Expected vs. actual outcome
-   - Error messages if any
-   - Screenshots or logs where applicable
-
-4. **Issues Found**
-   - Description of any discrepancies
-   - Severity assessment
-   - Potential impact
-
-Submit the completed test report to the development team for review. 
+## Reporting Requirements
+- Transaction details and hashes
+- Archiver API response data before and after operations
+- Proposal parameters
+- Signers and their permission categories
+- Expected vs actual outcomes
+- Error messages when applicable 
