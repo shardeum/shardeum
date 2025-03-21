@@ -1,12 +1,5 @@
 import { ConsensusAlgorithm } from '@ethereumjs/common'
-import {
-  Account,
-  MAX_UINT64,
-  bigIntToHex,
-  bytesToBigInt,
-  bytesToHex,
-  equalsBytes,
-} from '@ethereumjs/util'
+import { Account, MAX_UINT64, bigIntToHex, bytesToBigInt, bytesToHex, equalsBytes } from '@ethereumjs/util'
 import debugDefault from 'debug'
 
 import { EOF } from './eof.js'
@@ -222,10 +215,7 @@ export class Interpreter {
     // Iterate through the given ops until something breaks or we hit STOP
     while (this._runState.programCounter < this._runState.code.length) {
       const opCode = this._runState.code[this._runState.programCounter]
-      if (
-        this._runState.shouldDoJumpAnalysis &&
-        (opCode === 0x56 || opCode === 0x57 || opCode === 0x5e)
-      ) {
+      if (this._runState.shouldDoJumpAnalysis && (opCode === 0x56 || opCode === 0x57 || opCode === 0x5e)) {
         // Only run the jump destination analysis if `code` actually contains a JUMP/JUMPI/JUMPSUB opcode
         this._runState.validJumps = this._getValidJumpDests(this._runState.code)
         this._runState.shouldDoJumpAnalysis = false
@@ -417,11 +407,7 @@ export class Interpreter {
   useGas(amount: bigint, context?: string): void {
     this._runState.gasLeft -= amount
     if (this._evm.DEBUG) {
-      debugGas(
-        `${typeof context === 'string' ? context + ': ' : ''}used ${amount} gas (-> ${
-          this._runState.gasLeft
-        })`
-      )
+      debugGas(`${typeof context === 'string' ? context + ': ' : ''}used ${amount} gas (-> ${this._runState.gasLeft})`)
     }
     if (this._runState.gasLeft < BigInt(0)) {
       this._runState.gasLeft = BigInt(0)
@@ -437,9 +423,7 @@ export class Interpreter {
   refundGas(amount: bigint, context?: string): void {
     if (this._evm.DEBUG) {
       debugGas(
-        `${typeof context === 'string' ? context + ': ' : ''}refund ${amount} gas (-> ${
-          this._runState.gasRefund
-        })`
+        `${typeof context === 'string' ? context + ': ' : ''}refund ${amount} gas (-> ${this._runState.gasRefund})`
       )
     }
     this._runState.gasRefund += amount
@@ -453,9 +437,7 @@ export class Interpreter {
   subRefund(amount: bigint, context?: string): void {
     if (this._evm.DEBUG) {
       debugGas(
-        `${typeof context === 'string' ? context + ': ' : ''}sub gas refund ${amount} (-> ${
-          this._runState.gasRefund
-        })`
+        `${typeof context === 'string' ? context + ': ' : ''}sub gas refund ${amount} (-> ${this._runState.gasRefund})`
       )
     }
     this._runState.gasRefund -= amount
@@ -753,12 +735,7 @@ export class Interpreter {
   /**
    * Sends a message with arbitrary data to a given address path.
    */
-  async authcall(
-    gasLimit: bigint,
-    address: Address,
-    value: bigint,
-    data: Uint8Array
-  ): Promise<bigint> {
+  async authcall(gasLimit: bigint, address: Address, value: bigint, data: Uint8Array): Promise<bigint> {
     const msg = new Message({
       caller: this._runState.auth,
       gasLimit,
@@ -777,12 +754,7 @@ export class Interpreter {
   /**
    * Message-call into this account with an alternative account's code.
    */
-  async callCode(
-    gasLimit: bigint,
-    address: Address,
-    value: bigint,
-    data: Uint8Array
-  ): Promise<bigint> {
+  async callCode(gasLimit: bigint, address: Address, value: bigint, data: Uint8Array): Promise<bigint> {
     const msg = new Message({
       caller: this._env.address,
       gasLimit,
@@ -803,12 +775,7 @@ export class Interpreter {
    * state modifications. This includes log, create, selfdestruct and call with
    * a non-zero value.
    */
-  async callStatic(
-    gasLimit: bigint,
-    address: Address,
-    value: bigint,
-    data: Uint8Array
-  ): Promise<bigint> {
+  async callStatic(gasLimit: bigint, address: Address, value: bigint, data: Uint8Array): Promise<bigint> {
     const msg = new Message({
       caller: this._env.address,
       gasLimit,
@@ -827,12 +794,7 @@ export class Interpreter {
    * Message-call into this account with an alternative account’s code, but
    * persisting the current values for sender and value.
    */
-  async callDelegate(
-    gasLimit: bigint,
-    address: Address,
-    value: bigint,
-    data: Uint8Array
-  ): Promise<bigint> {
+  async callDelegate(gasLimit: bigint, address: Address, value: bigint, data: Uint8Array): Promise<bigint> {
     const msg = new Message({
       caller: this._env.caller,
       gasLimit,
@@ -885,8 +847,7 @@ export class Interpreter {
     // Set return value
     if (
       results.execResult.returnValue !== undefined &&
-      (!results.execResult.exceptionError ||
-        results.execResult.exceptionError.error === ERROR.REVERT)
+      (!results.execResult.exceptionError || results.execResult.exceptionError.error === ERROR.REVERT)
     ) {
       this._runState.returnBytes = results.execResult.returnValue
     }
@@ -916,12 +877,7 @@ export class Interpreter {
   /**
    * Creates a new contract with a given value.
    */
-  async create(
-    gasLimit: bigint,
-    value: bigint,
-    data: Uint8Array,
-    salt?: Uint8Array
-  ): Promise<bigint> {
+  async create(gasLimit: bigint, value: bigint, data: Uint8Array, salt?: Uint8Array): Promise<bigint> {
     const selfdestruct = new Set(this._result.selfdestruct)
     const caller = this._env.address
     const depth = this._env.depth + 1
@@ -930,10 +886,7 @@ export class Interpreter {
     this._runState.returnBytes = new Uint8Array(0)
 
     // Check if account has enough ether and max depth not exceeded
-    if (
-      this._env.depth >= Number(this.common.param('vm', 'stackLimit')) ||
-      this._env.contract.balance < value
-    ) {
+    if (this._env.depth >= Number(this.common.param('vm', 'stackLimit')) || this._env.contract.balance < value) {
       return BigInt(0)
     }
 
@@ -982,17 +935,11 @@ export class Interpreter {
     this.useGas(results.execResult.executionGasUsed, 'CREATE')
 
     // Set return buffer in case revert happened
-    if (
-      results.execResult.exceptionError &&
-      results.execResult.exceptionError.error === ERROR.REVERT
-    ) {
+    if (results.execResult.exceptionError && results.execResult.exceptionError.error === ERROR.REVERT) {
       this._runState.returnBytes = results.execResult.returnValue
     }
 
-    if (
-      !results.execResult.exceptionError ||
-      results.execResult.exceptionError.error === ERROR.CODESTORE_OUT_OF_GAS
-    ) {
+    if (!results.execResult.exceptionError || results.execResult.exceptionError.error === ERROR.CODESTORE_OUT_OF_GAS) {
       for (const addressToSelfdestructHex of selfdestruct) {
         this._result.selfdestruct.add(addressToSelfdestructHex)
       }
@@ -1022,12 +969,7 @@ export class Interpreter {
    * Creates a new contract with a given value. Generates
    * a deterministic address via CREATE2 rules.
    */
-  async create2(
-    gasLimit: bigint,
-    value: bigint,
-    data: Uint8Array,
-    salt: Uint8Array
-  ): Promise<bigint> {
+  async create2(gasLimit: bigint, value: bigint, data: Uint8Array, salt: Uint8Array): Promise<bigint> {
     return this.create(gasLimit, value, data, salt)
   }
 

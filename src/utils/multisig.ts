@@ -1,104 +1,114 @@
-import { safeJsonParse } from '@shardeum-foundation/lib-types/build/src/utils/functions/stringify';
+import { safeJsonParse } from '@shardeum-foundation/lib-types/build/src/utils/functions/stringify'
 import { ChangeConfig } from '../shardeum/shardeumTypes'
 
 /**
  * Checks if a transaction is for changing keys and returns permitted keys
- * 
+ *
  * @param tx The transaction (already known to be ChangeConfig or ChangeNetworkParam)
  * @param currentConfig The current configuration object
  * @param multiSigPermissions The multiSigPermissions object
  * @returns Object with isKeyChange flag and array of permitted keys
  */
-export function isKeyChange(tx: ChangeConfig, currentConfig: any, multiSigPermissions: any): { isKeyChange: boolean, permittedKeys: string[] } {
+export function isKeyChange(
+  tx: ChangeConfig,
+  currentConfig: any,
+  multiSigPermissions: any
+): { isKeyChange: boolean; permittedKeys: string[] } {
   // Default response for no key changes
-  const noChange = { isKeyChange: false, permittedKeys: [] };
-  
+  const noChange = { isKeyChange: false, permittedKeys: [] }
+
   // Validate and parse the config
   if (!tx.config || typeof tx.config !== 'string') {
-    return noChange;
+    return noChange
   }
-  
+
   try {
-    const newConfig = safeJsonParse(tx.config);
-    
+    const newConfig = safeJsonParse(tx.config)
+
     // Check what type of key changes are happening
-    const isMultisigChange = isKeyChangeDetailed(currentConfig, newConfig, 'multisigKeys');
-    const isDevKeyChange = isKeyChangeDetailed(currentConfig, newConfig, 'devKeys');
-    
+    const isMultisigChange = isKeyChangeDetailed(currentConfig, newConfig, 'multisigKeys')
+    const isDevKeyChange = isKeyChangeDetailed(currentConfig, newConfig, 'devKeys')
+
     // If no key changes, return early
     if (!isMultisigChange && !isDevKeyChange) {
-      return noChange;
+      return noChange
     }
-    
+
     // Determine which permitted keys to return
     if (isMultisigChange && isDevKeyChange) {
       // If both types are changing, use the intersection of permitted keys
-      const multiSigList = multiSigPermissions.changeMultiSigKeyList || [];
-      const devKeyList = multiSigPermissions.changeDevKeyList || [];
+      const multiSigList = multiSigPermissions.changeMultiSigKeyList || []
+      const devKeyList = multiSigPermissions.changeDevKeyList || []
       return {
         isKeyChange: true,
-        permittedKeys: multiSigList.filter(key => devKeyList.includes(key))
-      };
+        permittedKeys: multiSigList.filter((key) => devKeyList.includes(key)),
+      }
     }
-    
+
     // Return the appropriate permitted keys list
     return {
       isKeyChange: true,
-      permittedKeys: isMultisigChange 
-        ? (multiSigPermissions.changeMultiSigKeyList || [])
-        : (multiSigPermissions.changeDevKeyList || [])
-    };
+      permittedKeys: isMultisigChange
+        ? multiSigPermissions.changeMultiSigKeyList || []
+        : multiSigPermissions.changeDevKeyList || [],
+    }
   } catch (e) {
     // If parsing fails, it's not a valid config change
-    return noChange;
+    return noChange
   }
 }
 
 /**
  * Checks if a transaction is for changing non-key configs and returns permitted keys
- * 
+ *
  * @param tx The transaction (already known to be ChangeConfig or ChangeNetworkParam)
  * @param currentConfig The current configuration object
  * @param multiSigPermissions The multiSigPermissions object
  * @returns Object with isNonKeyChange flag and array of permitted keys
  */
-export function isNonKeyChange(tx: ChangeConfig, currentConfig: any, multiSigPermissions: any): { isNonKeyChange: boolean, permittedKeys: string[] } {
+export function isNonKeyChange(
+  tx: ChangeConfig,
+  currentConfig: any,
+  multiSigPermissions: any
+): { isNonKeyChange: boolean; permittedKeys: string[] } {
   // Default response for no non-key changes
-  const noChange = { isNonKeyChange: false, permittedKeys: [] };
-  
+  const noChange = { isNonKeyChange: false, permittedKeys: [] }
+
   // Validate and parse the config
   if (!tx.config || typeof tx.config !== 'string') {
-    return noChange;
+    return noChange
   }
-  
+
   try {
-    const newConfig = safeJsonParse(tx.config);
-    
+    const newConfig = safeJsonParse(tx.config)
+
     // Check if there are key changes (if so, this is not a non-key change)
-    if (isKeyChangeDetailed(currentConfig, newConfig, 'multisigKeys') || 
-        isKeyChangeDetailed(currentConfig, newConfig, 'devKeys')) {
-      return noChange;
+    if (
+      isKeyChangeDetailed(currentConfig, newConfig, 'multisigKeys') ||
+      isKeyChangeDetailed(currentConfig, newConfig, 'devKeys')
+    ) {
+      return noChange
     }
-    
+
     // Check if there are any changes at all
     if (JSON.stringify(newConfig) === JSON.stringify(currentConfig)) {
-      return noChange;
+      return noChange
     }
-    
+
     // This is a non-key change, return the permitted keys
     return {
       isNonKeyChange: true,
-      permittedKeys: multiSigPermissions.changeNonKeyConfigs || []
-    };
+      permittedKeys: multiSigPermissions.changeNonKeyConfigs || [],
+    }
   } catch (e) {
     // If parsing fails, it's not a valid config change
-    return noChange;
+    return noChange
   }
 }
 
 /**
  * Generic function to determine if a configuration change is modifying a key list
- * 
+ *
  * @param oldConfig The current configuration
  * @param newConfig The proposed configuration change
  * @param keyType The type of keys to check ('multisigKeys' or 'devKeys')
@@ -106,64 +116,63 @@ export function isNonKeyChange(tx: ChangeConfig, currentConfig: any, multiSigPer
  */
 export function isKeyChangeDetailed(oldConfig: any, newConfig: any, keyType: string): boolean {
   // Check if the key type exists in new config
-  const newKeys = newConfig?.debug?.[keyType];
-  
+  const newKeys = newConfig?.debug?.[keyType]
+
   // If newConfig doesn't specify this key type, it can't be changing them
   if (!newKeys) {
-    return false;
+    return false
   }
-  
+
   // Get old keys or empty object if none exist
-  const oldKeys = oldConfig?.debug?.[keyType] || {};
-  
+  const oldKeys = oldConfig?.debug?.[keyType] || {}
+
   // Get the key lists
-  const oldKeyList = Object.keys(oldKeys);
-  const newKeyList = Object.keys(newKeys);
-  
+  const oldKeyList = Object.keys(oldKeys)
+  const newKeyList = Object.keys(newKeys)
+
   // Different number of keys means something changed
   if (oldKeyList.length !== newKeyList.length) {
-    return true;
+    return true
   }
-  
+
   // Check if any keys were added or removed
-  const oldKeySet = new Set(oldKeyList);
-  const newKeySet = new Set(newKeyList);
-  
+  const oldKeySet = new Set(oldKeyList)
+  const newKeySet = new Set(newKeyList)
+
   // If the sets are different, something changed
-  if (oldKeyList.some(key => !newKeySet.has(key)) || 
-      newKeyList.some(key => !oldKeySet.has(key))) {
-    return true;
+  if (oldKeyList.some((key) => !newKeySet.has(key)) || newKeyList.some((key) => !oldKeySet.has(key))) {
+    return true
   }
-  
+
   // Check if any key's security level has changed
-  return oldKeyList.some(key => oldKeys[key] !== newKeys[key]);
+  return oldKeyList.some((key) => oldKeys[key] !== newKeys[key])
 }
 
 /**
  * Determines if a configuration change is modifying the multisig key list
- * 
+ *
  * @param oldConfig The current configuration
  * @param newConfig The proposed configuration change
  * @returns True if the multisig key list is being modified, false otherwise
  */
 export function isMultisigKeyChangeDetailed(oldConfig: any, newConfig: any): boolean {
-  return isKeyChangeDetailed(oldConfig, newConfig, 'multisigKeys');
+  return isKeyChangeDetailed(oldConfig, newConfig, 'multisigKeys')
 }
 
 /**
  * Determines if a configuration change is modifying the dev key list
- * 
+ *
  * @param oldConfig The current configuration
  * @param newConfig The proposed configuration change
  * @returns True if the dev key list is being modified, false otherwise
  */
 export function isDevKeyChangeDetailed(oldConfig: any, newConfig: any): boolean {
-  return isKeyChangeDetailed(oldConfig, newConfig, 'devKeys');
+  return isKeyChangeDetailed(oldConfig, newConfig, 'devKeys')
 }
 
 /**
  * Removes keys from multiSigPermissions that are not in currentConfig.debug.multisigKeys
- * 
+ *
  * @param multiSigPermissions The multiSigPermissions object containing lists of permitted keys
  * @param currentConfig The current configuration object containing valid multisig keys
  * @returns A new multiSigPermissions object with invalid keys removed
@@ -171,27 +180,27 @@ export function isDevKeyChangeDetailed(oldConfig: any, newConfig: any): boolean 
 export function cleanMultiSigPermissions(multiSigPermissions: any, currentConfig: any): any {
   // If either input is invalid, return the original permissions
   if (!multiSigPermissions || !currentConfig?.debug?.multisigKeys) {
-    return multiSigPermissions;
+    return multiSigPermissions
   }
 
   // Get the set of valid multisig keys from currentConfig
-  const validMultisigKeys = new Set(Object.keys(currentConfig.debug.multisigKeys));
-  
+  const validMultisigKeys = new Set(Object.keys(currentConfig.debug.multisigKeys))
+
   // Create a new empty object to hold the cleaned permissions
-  const cleanedPermissions: Record<string, any> = {};
-  
+  const cleanedPermissions: Record<string, any> = {}
+
   // For each property in the original permissions
   for (const permissionType in multiSigPermissions) {
-    const value = multiSigPermissions[permissionType];
-    
+    const value = multiSigPermissions[permissionType]
+
     // If the property is an array, filter it to only include valid keys
     if (Array.isArray(value)) {
-      cleanedPermissions[permissionType] = value.filter(key => validMultisigKeys.has(key));
+      cleanedPermissions[permissionType] = value.filter((key) => validMultisigKeys.has(key))
     } else {
       // For non-array properties, copy them as-is
-      cleanedPermissions[permissionType] = value;
+      cleanedPermissions[permissionType] = value
     }
   }
-  
-  return cleanedPermissions;
+
+  return cleanedPermissions
 }

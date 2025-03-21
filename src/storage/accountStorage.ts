@@ -61,10 +61,7 @@ export async function getAccount(address: string): Promise<WrappedEVMAccount> {
   if (isArchiverMode()) {
     const blockContext = getContextValue<Block>('block')
     if (blockContext != undefined) {
-      const accountData = await fetchAccountDataFromCollector(
-        address,
-        '0x' + blockContext.header.number.toString(16)
-      )
+      const accountData = await fetchAccountDataFromCollector(address, '0x' + blockContext.header.number.toString(16))
       return accountData
     }
   }
@@ -132,13 +129,15 @@ export async function setAccount(address: string, account: WrappedEVMAccount): P
       }
 
       if (account.timestamp === 0) {
-        throw new Error(`setAccount timestamp should not be 0. accountId: ${address}, data: ${JSON.stringify(account, null, '  ')}`)
+        throw new Error(
+          `setAccount timestamp should not be 0. accountId: ${address}, data: ${JSON.stringify(account, null, '  ')}`
+        )
       }
       try {
         await storage.createOrReplaceAccountEntry(accountEntry)
       } catch (e) {
-        console.error("Blew up trying to set account", JSON.stringify(accountEntry, null, '  '), e);
-        throw e;
+        console.error('Blew up trying to set account', JSON.stringify(accountEntry, null, '  '), e)
+        throw e
       }
 
       setCachedRIAccount(accountEntry)
@@ -195,11 +194,7 @@ export async function clearAccounts(): Promise<void> {
   }
 }
 
-export async function queryAccountsEntryByRanges(
-  accountStart,
-  accountEnd,
-  maxRecords
-): Promise<WrappedEVMAccount[]> {
+export async function queryAccountsEntryByRanges(accountStart, accountEnd, maxRecords): Promise<WrappedEVMAccount[]> {
   if (ShardeumFlags.UseDBForAccounts === true) {
     const processedResults = []
     const results = await storage.queryAccountsEntryByRanges(accountStart, accountEnd, maxRecords)
@@ -238,14 +233,7 @@ export async function queryAccountsEntryByRanges2(
         accountOffset
       )
     } else {
-      results = await storage.queryAccountsEntryByRanges2(
-        accountStart,
-        accountEnd,
-        tsStart,
-        tsEnd,
-        maxRecords,
-        offset
-      )
+      results = await storage.queryAccountsEntryByRanges2(accountStart, accountEnd, tsStart, tsEnd, maxRecords, offset)
     }
 
     for (const result of results) {
@@ -261,7 +249,6 @@ export async function queryAccountsEntryByRanges2(
   }
 }
 
-
 export async function checkDatabaseHealth(): Promise<boolean> {
-  return storage.checkDatabaseHealth();
+  return storage.checkDatabaseHealth()
 }

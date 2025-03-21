@@ -13,14 +13,7 @@ import {
   bigIntToHex,
 } from '@ethereumjs/util'
 import { RLP } from '@ethereumjs/rlp'
-import {
-  AccountFields,
-  Chain,
-  Common,
-  EVMStateManagerInterface,
-  Hardfork,
-  StorageDump,
-} from '@ethereumjs/common'
+import { AccountFields, Chain, Common, EVMStateManagerInterface, Hardfork, StorageDump } from '@ethereumjs/common'
 import type { StorageRange } from '@ethereumjs/common/src'
 import { OriginalStorageCache } from '../../state/cache/originalStorageCache'
 import { CacheType, AccountCache, StorageCache } from '../../state/cache/index'
@@ -165,8 +158,7 @@ export default class ShardeumState implements EVMStateManagerInterface {
   }
 
   unsetTransactionState(txId: string): void {
-    if (ShardeumFlags.VerboseLogs)
-      console.log('Running unsetTransactionState', this._transactionState.linkedTX)
+    if (ShardeumFlags.VerboseLogs) console.log('Running unsetTransactionState', this._transactionState.linkedTX)
     if (this._transactionState.linkedTX !== txId) {
       if (ShardeumFlags.VerboseLogs) console.log('Unable to unset transaction with different txId')
       // TODO: we should find a way handle this condition
@@ -597,9 +589,7 @@ export default class ShardeumState implements EVMStateManagerInterface {
       }
       return returnValue
     }
-    const accountProof: PrefixedHexString[] = (await this._trie.createProof(address.bytes)).map((p) =>
-      bytesToHex(p)
-    )
+    const accountProof: PrefixedHexString[] = (await this._trie.createProof(address.bytes)).map((p) => bytesToHex(p))
     const storageProof: StorageProof[] = []
     const storageTrie = await this._getStorageTrie(address, account)
 

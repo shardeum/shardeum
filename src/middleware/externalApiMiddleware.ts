@@ -1,5 +1,5 @@
 import { ShardeumFlags } from '../shardeum/shardeumFlags'
-import {Handler} from 'express';
+import { Handler } from 'express'
 
 export const getExternalApiMiddleware = (): Handler => {
   return (req, res, next) => {

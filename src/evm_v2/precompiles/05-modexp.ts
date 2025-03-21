@@ -1,11 +1,4 @@
-import {
-  bigIntToBytes,
-  bytesToBigInt,
-  bytesToHex,
-  setLengthLeft,
-  setLengthRight,
-  short,
-} from '@ethereumjs/util'
+import { bigIntToBytes, bytesToBigInt, bytesToHex, setLengthLeft, setLengthRight, short } from '@ethereumjs/util'
 
 import { OOGResult } from '../evm.js'
 
@@ -85,7 +78,7 @@ export function expmod(a: bigint, power: bigint, modulo: bigint): bigint {
 
 export function precompile05(opts: PrecompileInput): ExecResult {
   // Pad the input data to 96 bytes if it's shorter
-  const data = opts.data.length < 96 ? setLengthRight(opts.data, 96) : opts.data;
+  const data = opts.data.length < 96 ? setLengthRight(opts.data, 96) : opts.data
 
   let adjustedELen = getAdjustedExponentLength(data)
   if (adjustedELen < BigInt(1)) {

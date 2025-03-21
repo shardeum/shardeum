@@ -61,28 +61,28 @@ export const sync = (shardus: Shardus, evmCommon: any) => async (): Promise<void
         let accountCopies = []
 
         // Create genesis accounts from secure accounts
-        const additionalGenesisAccounts = createGenesisAccountsFromSecureAccounts(genesisSecureAccounts);
+        const additionalGenesisAccounts = createGenesisAccountsFromSecureAccounts(genesisSecureAccounts)
 
         // Merge additional genesis accounts with existing genesis accounts
-        const mergedGenesisAccounts = { ...genesis, ...additionalGenesisAccounts };
+        const mergedGenesisAccounts = { ...genesis, ...additionalGenesisAccounts }
 
         for (const address in mergedGenesisAccounts) {
-          const amount = BigInt(mergedGenesisAccounts[address].wei);
+          const amount = BigInt(mergedGenesisAccounts[address].wei)
 
-          const shardusAccountID = toShardusAddress(address, AccountType.Account);
-          const existingAccount = await shardus.getLocalOrRemoteAccount(shardusAccountID);
+          const shardusAccountID = toShardusAddress(address, AccountType.Account)
+          const existingAccount = await shardus.getLocalOrRemoteAccount(shardusAccountID)
           if (existingAccount) {
-            skippedAccountCount += 1;
-            continue;
+            skippedAccountCount += 1
+            continue
           }
 
-          const ethAccountID = Address.fromString(address).toString();
+          const ethAccountID = Address.fromString(address).toString()
           const { wrappedEVMAccount, accountId, cycle } = await manuallyCreateAccount(
             ethAccountID,
             amount,
             evmCommon,
             shardus.getLatestCycles()
-          );
+          )
           const accountCopy: ShardusTypes.AccountsCopy = {
             cycleNumber: cycle.counter,
             accountId,
@@ -90,18 +90,15 @@ export const sync = (shardus: Shardus, evmCommon: any) => async (): Promise<void
             hash: wrappedEVMAccount.hash,
             isGlobal: false,
             timestamp: wrappedEVMAccount.timestamp,
-          };
-         
-          accountCopies.push(accountCopy);
+          }
+
+          accountCopies.push(accountCopy)
           /* prettier-ignore */ if (logFlags.important_as_error) shardus.log(`node ${nodeId} SETUP GENESIS ACCOUNT: ${address}  amt: ${amount}`);
         }
 
         for (const secureAccountConfig of genesisSecureAccounts) {
           const cycles = shardus.getLatestCycles()
-          const secureAccount = initializeSecureAccount(
-            secureAccountConfig as SecureAccountConfig,
-            cycles
-          );
+          const secureAccount = initializeSecureAccount(secureAccountConfig as SecureAccountConfig, cycles)
 
           const accountCopy: ShardusTypes.AccountsCopy = {
             cycleNumber: cycles[0].counter,
@@ -110,15 +107,15 @@ export const sync = (shardus: Shardus, evmCommon: any) => async (): Promise<void
             hash: secureAccount.hash,
             isGlobal: false,
             timestamp: secureAccount.timestamp,
-          };
-         
-          accountCopies.push(accountCopy);
+          }
+
+          accountCopies.push(accountCopy)
           /* prettier-ignore */ if (logFlags.important_as_error) shardus.log(`node ${nodeId} SETUP GENESIS SECUREACCOUNT: ${secureAccount.id}`);
         }
         /* prettier-ignore */ if (logFlags.important_as_error) console.log(`Skipped ${skippedAccountCount} genesis accounts`)
         //TODO we need to brainstorm a way to allow migration of keys on a live network
         const devPublicKeys = shardus.getDevPublicKeys()
-        for(const devPublicKey of Object.keys(devPublicKeys)) {
+        for (const devPublicKey of Object.keys(devPublicKeys)) {
           // eslint-disable-next-line security/detect-object-injection
           const level = devPublicKeys[devPublicKey]
           if (level >= DevSecurityLevel.Low) {
@@ -331,11 +328,7 @@ async function contractStorageMissNoOp(
   return isRemoteShard
 }
 
-function accountInvolvedNoOp(
-  _transactionState: TransactionState,
-  _address: string,
-  _isRead: boolean
-): boolean {
+function accountInvolvedNoOp(_transactionState: TransactionState, _address: string, _isRead: boolean): boolean {
   return true
 }
 
@@ -358,12 +351,11 @@ function tryGetRemoteAccountCBNoOp(
 }
 /* eslint-enable @typescript-eslint/no-unused-vars */
 
-function createGenesisAccountsFromSecureAccounts(secureAccounts: SecureAccountConfig[]): Record<string, { wei: string }> {
+function createGenesisAccountsFromSecureAccounts(
+  secureAccounts: SecureAccountConfig[]
+): Record<string, { wei: string }> {
   return secureAccounts.reduce((acc, account) => {
     acc[account.SourceFundsAddress] = { wei: account.SourceFundsBalance }
     return acc
   }, {} as Record<string, { wei: string }>)
 }
-
-
-
