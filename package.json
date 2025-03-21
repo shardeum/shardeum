@@ -3,6 +3,12 @@
   "version": "1.18.0-prerelease.7",
   "description": "",
   "main": "dist/src/index.js",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/shardeum/shardeum.git"
+  },
+  "homepage": "https://github.com/shardeum/shardeum#readme",
   "scripts": {
     "pm2": "cross-env PM2_HOME='./.pm2' pm2",
     "start": "node scripts/start.js && node dist/src/index.js",
