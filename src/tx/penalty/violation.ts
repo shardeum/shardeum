@@ -24,7 +24,9 @@ export function getPenaltyForViolation(tx: PenaltyTX, stakeLock: bigint): bigint
 
   switch (tx.violationType) {
     case ViolationType.LeftNetworkEarly:
-      return (stakeLock * BigInt(cachedNetworkAccount.current.slashing.leftNetworkEarlyPenaltyPercent * 100)) / BigInt(100) // 20% of stakeLock
+      return (
+        (stakeLock * BigInt(cachedNetworkAccount.current.slashing.leftNetworkEarlyPenaltyPercent * 100)) / BigInt(100)
+      ) // 20% of stakeLock
     case ViolationType.NodeRefuted:
       return (stakeLock * BigInt(cachedNetworkAccount.current.slashing.nodeRefutedPenaltyPercent * 100)) / BigInt(100) // 20% of stakeLock
     case ViolationType.SyncingTooLong:

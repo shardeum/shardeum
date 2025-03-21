@@ -26,14 +26,14 @@ export interface Config {
     mode?: 'debug' | 'release'
     sharding?: {
       nodesPerConsensusGroup: number
-    },
+    }
     features?: {
       tickets?: {
-        updateTicketListTimeInMs?: number,
+        updateTicketListTimeInMs?: number
         ticketTypes?: Array<{
-          type: string;
-          enabled: boolean;
-        }>,
+          type: string
+          enabled: boolean
+        }>
       }
     }
   }
@@ -50,9 +50,7 @@ let config: Config = {
 // eslint-disable-next-line security/detect-non-literal-fs-filename
 if (fs.existsSync(path.join(process.cwd(), FilePaths.CONFIG))) {
   // eslint-disable-next-line security/detect-non-literal-fs-filename
-  const fileConfig = Utils.safeJsonParse(
-    fs.readFileSync(path.join(process.cwd(), FilePaths.CONFIG)).toString()
-  )
+  const fileConfig = Utils.safeJsonParse(fs.readFileSync(path.join(process.cwd(), FilePaths.CONFIG)).toString())
   config = merge(config, fileConfig, { arrayMerge: overwriteMerge })
 }
 
@@ -135,10 +133,10 @@ config = merge(config, {
       rotationEdgeToAvoid: 0, //we are moving away from this feature in current testing.  There seem to be errors related to it
       allowActivePerCycle: 1,
 
-      syncFloorEnabled: true,  //ITN initially false for rotation safety
+      syncFloorEnabled: true, //ITN initially false for rotation safety
       syncingDesiredMinCount: 40, //ITN = 40
 
-      activeRecoveryEnabled: true,//ITN initially false for rotation safety
+      activeRecoveryEnabled: true, //ITN initially false for rotation safety
       allowActivePerCycleRecover: 4,
 
       flexibleRotationEnabled: true, //ITN 1.16.1
@@ -248,10 +246,8 @@ config = merge(config, {
       startInServiceMode: ShardeumFlags.startInServiceMode,
       tickets: {
         updateTicketListTimeInMs: 600000,
-        ticketTypes: [
-          { type: 'silver', enabled: true }
-        ]
-      }
+        ticketTypes: [{ type: 'silver', enabled: true }],
+      },
     },
   },
 })
@@ -342,7 +338,7 @@ config = merge(
         enableScopedProfiling: false,
         minMultiSigRequiredForEndpoints: 1,
         minMultiSigRequiredForGlobalTxs: 1,
-        minSigRequiredForArchiverWhitelist: 1
+        minSigRequiredForArchiverWhitelist: 1,
       },
     },
   },
@@ -361,9 +357,7 @@ if (process.env.LOAD_JSON_CONFIGS) {
       // eslint-disable-next-line security/detect-non-literal-fs-filename
       if (fs.existsSync(path.join(process.cwd(), '..', configs[i]))) {
         // eslint-disable-next-line security/detect-non-literal-fs-filename
-        const fileConfig = Utils.safeJsonParse(
-          fs.readFileSync(path.join(process.cwd(), '..', configs[i])).toString()
-        )
+        const fileConfig = Utils.safeJsonParse(fs.readFileSync(path.join(process.cwd(), '..', configs[i])).toString())
         config = merge(config, fileConfig, { arrayMerge: overwriteMerge })
         console.log('config loaded from:', configs[i])
       } else {
@@ -461,19 +455,27 @@ if (process.env.APP_IP) {
 config = merge(config, {
   server: {
     p2p: {
-      baselineNodes: process.env.baselineNodes ? parseInt(process.env.baselineNodes) : (config.server.p2p as any).baselineNodes, // config used for baseline for entering recovery, restore, and safety. Should be equivalient to minNodes on network startup
+      baselineNodes: process.env.baselineNodes
+        ? parseInt(process.env.baselineNodes)
+        : (config.server.p2p as any).baselineNodes, // config used for baseline for entering recovery, restore, and safety. Should be equivalient to minNodes on network startup
       minNodes: process.env.minNodes ? parseInt(process.env.minNodes) : (config.server.p2p as any).minNodes,
       maxNodes: process.env.maxNodes ? parseInt(process.env.maxNodes) : (config.server.p2p as any).maxNodes,
-      maxRotatedPerCycle: process.env.maxRotatedPerCycle ? parseInt(process.env.maxRotatedPerCycle) : (config.server.p2p as any).maxRotatedPerCycle,
-      flexibleRotationDelta: process.env.flexibleRotationDelta ? parseInt(process.env.flexibleRotationDelta) : (config.server.p2p as any).flexibleRotationDelta,
+      maxRotatedPerCycle: process.env.maxRotatedPerCycle
+        ? parseInt(process.env.maxRotatedPerCycle)
+        : (config.server.p2p as any).maxRotatedPerCycle,
+      flexibleRotationDelta: process.env.flexibleRotationDelta
+        ? parseInt(process.env.flexibleRotationDelta)
+        : (config.server.p2p as any).flexibleRotationDelta,
     },
     sharding: {
       nodesPerConsensusGroup: process.env.nodesPerConsensusGroup
         ? parseInt(process.env.nodesPerConsensusGroup)
         : (config.server.sharding as any).nodesPerConsensusGroup,
-      nodesPerEdge: process.env.nodesPerEdge ? parseInt(process.env.nodesPerEdge) : (config.server.sharding as any).nodesPerEdge,
-    }
-  }
+      nodesPerEdge: process.env.nodesPerEdge
+        ? parseInt(process.env.nodesPerEdge)
+        : (config.server.sharding as any).nodesPerEdge,
+    },
+  },
 })
 
 export default config

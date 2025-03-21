@@ -5,7 +5,7 @@ import type { Common, EVMStateManagerInterface } from '@ethereumjs/common'
 import type { EVMInterface, EVMResult, Log } from '@ethereumjs/evm'
 import type { AccessList, TypedTransaction } from '@ethereumjs/tx'
 import type { BigIntLike, GenesisState, WithdrawalData } from '@ethereumjs/util'
-import {NetworkAccount} from "../shardeum/shardeumTypes";
+import { NetworkAccount } from '../shardeum/shardeumTypes'
 export type TxReceipt = PreByzantiumTxReceipt | PostByzantiumTxReceipt | EIP4844BlobTxReceipt
 
 /**

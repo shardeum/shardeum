@@ -73,8 +73,7 @@ class Storage {
       this.storage._update(table, values, where, opts)
     this._delete = async (table, where, opts): Promise<unknown> => this.storage._delete(table, where, opts)
     this._query = async (query, tableModel): Promise<unknown> => this.storage._rawQuery(query, tableModel) // or queryString, valueArray for non-sequelize
-    this._queryOld = async (query, tableModel): Promise<unknown> =>
-      this.storage._rawQueryOld(query, tableModel) // or queryString, valueArray for non-sequelize
+    this._queryOld = async (query, tableModel): Promise<unknown> => this.storage._rawQueryOld(query, tableModel) // or queryString, valueArray for non-sequelize
 
     this.initialized = true
   }
@@ -190,7 +189,7 @@ class Storage {
     limit = Number(limit)
     tsStart = Number(tsStart)
     tsEnd = Number(tsEnd)
-  
+
     if (accountStart && !/^[0-9a-fA-F]*$/.test(accountStart)) {
       throw new Error('accountStart should be an empty string or a string with only upper or lower case hex chars.')
     }
@@ -200,7 +199,7 @@ class Storage {
     if (accountOffset && !/^[0-9a-fA-F]*$/.test(accountOffset)) {
       throw new Error('accountOffset should be an empty string or a string with only upper or lower case hex chars.')
     }
-  
+
     if (isNaN(limit) || isNaN(tsStart) || isNaN(tsEnd)) {
       throw new Error('arguments should be numbers.')
     }
@@ -210,13 +209,13 @@ class Storage {
     if (limit <= 0) {
       throw new Error('Invalid limit. Must be a positive number')
     }
-  
+
     const query = `SELECT * FROM accountsEntry WHERE (timestamp, accountId) >= (?, ?) 
                      AND timestamp < ? 
                      AND accountId <= ? AND accountId >= ? 
                      ORDER BY timestamp, accountId  LIMIT ?`
     const params = [tsStart, accountOffset, tsEnd, accountEnd, accountStart, limit]
-  
+
     this._checkInit()
     try {
       const result = await this._query(query, params)

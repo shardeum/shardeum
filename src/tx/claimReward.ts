@@ -22,7 +22,7 @@ import { scaleByStabilityFactor, sleep, _base16BNParser, _readableSHM, generateT
 
 export async function injectClaimRewardTx(
   shardus,
-  eventData: ShardusTypes.ShardusEvent | any,
+  eventData: ShardusTypes.ShardusEvent | any
 ): Promise<{
   success: boolean
   reason: string
@@ -84,20 +84,13 @@ export async function injectClaimRewardTx(
   if (ShardeumFlags.VerboseLogs) {
     const latestCycles = shardus.getLatestCycles(1)
     const txId = generateTxId(tx)
-    console.log(
-      `injectClaimRewardTx: tx.timestamp: ${tx.timestamp} txid: ${txId}, cycle:`,
-      tx,
-      latestCycles[0]
-    )
+    console.log(`injectClaimRewardTx: tx.timestamp: ${tx.timestamp} txid: ${txId}, cycle:`, tx, latestCycles[0])
   }
   const injectResult = await shardus.put(tx)
   return injectResult
 }
 
-export function validateClaimRewardTx(
-  tx: ClaimRewardTX,
-  shardus: Shardus
-): { isValid: boolean; reason: string } {
+export function validateClaimRewardTx(tx: ClaimRewardTX, shardus: Shardus): { isValid: boolean; reason: string } {
   if (!tx.nominee || tx.nominee === '' || tx.nominee.length !== 64) {
     /* prettier-ignore */ nestedCountersInstance.countEvent('shardeum-staking', `validateClaimRewardTx fail tx.nominee address invalid`)
     /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log('validateClaimRewardTx fail tx.nominee address invalid', tx)
@@ -256,10 +249,7 @@ export async function applyClaimRewardTx(
 
   if (nodeAccount.rewardStartTime < 0) {
     nestedCountersInstance.countEvent('shardeum-staking', `applyClaimRewardTx fail rewardStartTime < 0`)
-    shardus.applyResponseSetFailed(
-      applyResponse,
-      `applyClaimReward failed because rewardStartTime is less than 0`
-    )
+    shardus.applyResponseSetFailed(applyResponse, `applyClaimReward failed because rewardStartTime is less than 0`)
     return
   }
 
@@ -267,10 +257,7 @@ export async function applyClaimRewardTx(
   if (durationInNetwork < 0) {
     nestedCountersInstance.countEvent('shardeum-staking', `applyClaimRewardTx fail durationInNetwork < 0`)
     //throw new Error(`applyClaimReward failed because durationInNetwork is less than or equal 0`)
-    shardus.applyResponseSetFailed(
-      applyResponse,
-      `applyClaimReward failed because durationInNetwork is less than 0`
-    )
+    shardus.applyResponseSetFailed(applyResponse, `applyClaimReward failed because durationInNetwork is less than 0`)
     return
   }
 
@@ -303,8 +290,7 @@ export async function applyClaimRewardTx(
   nodeAccount.rewarded = true
 
   // update the node account historical stats
-  nodeAccount.nodeAccountStats.totalReward =
-    _base16BNParser(nodeAccount.nodeAccountStats.totalReward) + rewardedAmount
+  nodeAccount.nodeAccountStats.totalReward = _base16BNParser(nodeAccount.nodeAccountStats.totalReward) + rewardedAmount
   nodeAccount.nodeAccountStats.history.push({
     b: nodeAccount.rewardStartTime,
     e: nodeAccount.rewardEndTime,
@@ -314,14 +300,8 @@ export async function applyClaimRewardTx(
   shardeumState._transactionState.appData = {}
 
   if (operatorAccount?.operatorAccountInfo == null) {
-    nestedCountersInstance.countEvent(
-      'shardeum-staking',
-      'claiming reward on account with no `operatorAccountInfo`'
-    )
-    shardus.applyResponseSetFailed(
-      applyResponse,
-      'applyClaimReward failed because `operatorAccountInfo` is null'
-    )
+    nestedCountersInstance.countEvent('shardeum-staking', 'claiming reward on account with no `operatorAccountInfo`')
+    shardus.applyResponseSetFailed(applyResponse, 'applyClaimReward failed because `operatorAccountInfo` is null')
     return
   }
 
@@ -334,8 +314,7 @@ export async function applyClaimRewardTx(
     _base16BNParser(operatorAccount.operatorAccountInfo.operatorStats.totalNodeReward) + rewardedAmount
   operatorAccount.operatorAccountInfo.operatorStats.totalNodeTime += durationInNetwork
 
-  operatorAccount.operatorAccountInfo.operatorStats.lastStakedNodeKey =
-    operatorAccount.operatorAccountInfo.nominee
+  operatorAccount.operatorAccountInfo.operatorStats.lastStakedNodeKey = operatorAccount.operatorAccountInfo.nominee
 
   // hmm may be we don't need this as we are not updating nonce and balance
   const operatorEVMAddress: Address = Address.fromString(tx.nominator)
@@ -351,13 +330,7 @@ export async function applyClaimRewardTx(
     if (WrappedEVMAccountFunctions.isInternalAccount(nodeAccount)) {
       wrappedChangedNodeAccount = WrappedEVMAccountFunctions._shardusWrappedAccount(nodeAccount)
     }
-    shardus.applyResponseAddChangedAccount(
-      applyResponse,
-      tx.nominee,
-      wrappedChangedNodeAccount,
-      txId,
-      txTimestamp
-    )
+    shardus.applyResponseAddChangedAccount(applyResponse, tx.nominee, wrappedChangedNodeAccount, txId, txTimestamp)
 
     let wrappedChangedOperatorAccount: ShardusTypes.WrappedData
     /* eslint-disable security/detect-object-injection */

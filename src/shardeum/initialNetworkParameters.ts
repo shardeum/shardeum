@@ -34,7 +34,7 @@ export const initialNetworkParamters: NetworkParameters = {
     qaTestNumber: 0,
     qaTestBoolean: false,
     qaTestPercent: 0,
-    qaTestSemver: "0.0.0",
+    qaTestSemver: '0.0.0',
   },
   slashing: {
     enableLeftNetworkEarlySlashing: false,

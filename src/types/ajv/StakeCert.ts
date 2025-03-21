@@ -1,6 +1,6 @@
-import { addSchema } from '../../utils/serialization/SchemaHelpers';
-import { AJVSchemaEnum } from '../enum/AJVSchemaEnum';
-import { schemaSign } from './SignSchema';
+import { addSchema } from '../../utils/serialization/SchemaHelpers'
+import { AJVSchemaEnum } from '../enum/AJVSchemaEnum'
+import { schemaSign } from './SignSchema'
 
 export const StakeCert = {
   type: 'object',
@@ -11,12 +11,12 @@ export const StakeCert = {
     certExp: { type: 'number' },
     sign: schemaSign,
     signs: {
-      type: "array",
-      items: schemaSign
-    }
+      type: 'array',
+      items: schemaSign,
+    },
   },
   required: ['nominator', 'nominee', 'stake', 'certExp'],
-  additionalProperties: false
+  additionalProperties: false,
 }
 
 export function initStakeCert(): void {
@@ -29,5 +29,5 @@ function addSchemaDependencies(): void {
 }
 
 function addSchemas(): void {
-  addSchema(AJVSchemaEnum.StakeCert, StakeCert);
+  addSchema(AJVSchemaEnum.StakeCert, StakeCert)
 }

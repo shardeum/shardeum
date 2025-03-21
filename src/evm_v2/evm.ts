@@ -44,7 +44,7 @@ import type {
   ExecResult,
 } from './types.js'
 import type { EVMStateManagerInterface } from '@ethereumjs/common'
-import {ShardeumFlags} from "../shardeum/shardeumFlags";
+import { ShardeumFlags } from '../shardeum/shardeumFlags'
 const { debug: createDebugLogger } = debugDefault
 
 const debug = createDebugLogger('evm:evm')
@@ -156,8 +156,8 @@ export class EVM implements EVMInterface {
 
     // Supported EIPs
     const supportedEIPs = [
-      1153, 1559, 2315, 2565, 2718, 2929, 2930, 3074, 3198, 3529, 3540, 3541, 3607, 3651, 3670,
-      3855, 3860, 4399, 4895, 4788, 4844, 5133, 5656, 6780,
+      1153, 1559, 2315, 2565, 2718, 2929, 2930, 3074, 3198, 3529, 3540, 3541, 3607, 3651, 3670, 3855, 3860, 4399, 4895,
+      4788, 4844, 5133, 5656, 6780,
     ]
 
     for (const eip of this.common.eips()) {
@@ -167,9 +167,7 @@ export class EVM implements EVMInterface {
     }
 
     if (!EVM.supportedHardforks.includes(this.common.hardfork() as Hardfork)) {
-      throw new Error(
-        `Hardfork ${this.common.hardfork()} not set as supported in supportedHardforks`
-      )
+      throw new Error(`Hardfork ${this.common.hardfork()} not set as supported in supportedHardforks`)
     }
 
     this.allowUnlimitedContractSize = opts.allowUnlimitedContractSize ?? false
@@ -191,16 +189,15 @@ export class EVM implements EVMInterface {
 
     // Skip DEBUG calls unless 'ethjs' included in environmental DEBUG variables
     // Additional window check is to prevent vite browser bundling (and potentially other) to break
-    this.DEBUG =
-      typeof window === 'undefined' ? process?.env?.DEBUG?.includes('ethjs') ?? false : false
+    this.DEBUG = typeof window === 'undefined' ? process?.env?.DEBUG?.includes('ethjs') ?? false : false
   }
 
-  hardforkChangedHandler():void {
-    this.getActiveOpcodes();
-    this._precompiles = getActivePrecompiles(this.common, this._customPrecompiles);
+  hardforkChangedHandler(): void {
+    this.getActiveOpcodes()
+    this._precompiles = getActivePrecompiles(this.common, this._customPrecompiles)
   }
 
-  cleanUp(): void{
+  cleanUp(): void {
     this.common.events.removeListener('hardforkChanged', this.hardforkChangedHandler)
   }
 
@@ -225,7 +222,6 @@ export class EVM implements EVMInterface {
     // Reduce tx value from sender
     if (!message.delegatecall) {
       try {
-
         if (ShardeumFlags.VerboseLogs) {
           const to = message.to ? message.to.toString() : ''
           const value = message.value ? message.value.toString() : 0
@@ -246,7 +242,6 @@ export class EVM implements EVMInterface {
     // Add tx value to the `to` account
     if (!message.delegatecall) {
       try {
-
         //SHARDEUM FORK:
         //APF: only add to balance it there will be a change in balance.
         //it does not appear that this could mess up a payable endpoint
@@ -257,7 +252,7 @@ export class EVM implements EVMInterface {
           const value = message.value ? message.value.toString() : 0
           console.log(`add balance: ${to} ${value} skip: ${message.value <= 0}`)
         }
-        if(message.value > 0){
+        if (message.value > 0) {
           await this._addToBalance(toAccount, message)
         }
       } catch (e: any) {
@@ -296,11 +291,7 @@ export class EVM implements EVMInterface {
       if (this.DEBUG) {
         debug(`Run precompile`)
       }
-      result = await this.runPrecompile(
-        message.code as PrecompileFunc,
-        message.data,
-        message.gasLimit
-      )
+      result = await this.runPrecompile(message.code as PrecompileFunc, message.data, message.gasLimit)
       result.gasRefund = message.gasRefund
     } else {
       if (this.DEBUG) {
@@ -437,8 +428,7 @@ export class EVM implements EVMInterface {
     let totalGas = result.executionGasUsed
     let returnFee = BigInt(0)
     if (!result.exceptionError) {
-      returnFee =
-        BigInt(result.returnValue.length) * BigInt(this.common.param('gasPrices', 'createData'))
+      returnFee = BigInt(result.returnValue.length) * BigInt(this.common.param('gasPrices', 'createData'))
       totalGas = totalGas + returnFee
       if (this.DEBUG) {
         debugGas(`Add return value size fee (${returnFee} to gas used (-> ${totalGas}))`)
@@ -476,11 +466,7 @@ export class EVM implements EVMInterface {
           // The start of the code section of an EOF1 compliant contract will either be
           // index 7 (if no data section is present) or index 10 (if a data section is present)
           // in the bytecode of the contract
-          if (
-            !EOF.validOpcodes(
-              result.returnValue.subarray(codeStart, codeStart + eof1CodeAnalysisResults.code)
-            )
-          ) {
+          if (!EOF.validOpcodes(result.returnValue.subarray(codeStart, codeStart + eof1CodeAnalysisResults.code))) {
             result = {
               ...result,
               ...INVALID_EOF_RESULT(message.gasLimit),
@@ -524,11 +510,7 @@ export class EVM implements EVMInterface {
     }
 
     // Save code if a new contract was created
-    if (
-      !result.exceptionError &&
-      result.returnValue !== undefined &&
-      result.returnValue.length !== 0
-    ) {
+    if (!result.exceptionError && result.returnValue !== undefined && result.returnValue.length !== 0) {
       await this.stateManager.putContractCode(message.to, result.returnValue)
       if (this.DEBUG) {
         debug(`Code saved on new contract creation`)
@@ -554,10 +536,7 @@ export class EVM implements EVMInterface {
   /**
    * Starts the actual bytecode processing for a CALL or CREATE
    */
-  protected async runInterpreter(
-    message: Message,
-    opts: InterpreterOpts = {}
-  ): Promise<ExecResult> {
+  protected async runInterpreter(message: Message, opts: InterpreterOpts = {}): Promise<ExecResult> {
     let contract = await this.stateManager.getAccount(message.to ?? Address.zero())
     if (!contract) {
       contract = new Account()
@@ -582,14 +561,7 @@ export class EVM implements EVMInterface {
       createdAddresses: message.createdAddresses,
     }
 
-    const interpreter = new Interpreter(
-      this,
-      this.stateManager,
-      this.blockchain,
-      env,
-      message.gasLimit,
-      this.journal
-    )
+    const interpreter = new Interpreter(this, this.stateManager, this.blockchain, env, message.gasLimit, this.journal)
     if (message.selfdestruct) {
       interpreter._result.selfdestruct = message.selfdestruct
     }
@@ -712,9 +684,9 @@ export class EVM implements EVMInterface {
     if (this.DEBUG) {
       const { caller, gasLimit, to, value, delegatecall } = message
       debug(
-        `New message caller=${caller} gasLimit=${gasLimit} to=${
-          to?.toString() ?? 'none'
-        } value=${value} delegatecall=${delegatecall ? 'yes' : 'no'}`
+        `New message caller=${caller} gasLimit=${gasLimit} to=${to?.toString() ?? 'none'} value=${value} delegatecall=${
+          delegatecall ? 'yes' : 'no'
+        }`
       )
     }
     if (message.to) {
@@ -747,10 +719,7 @@ export class EVM implements EVMInterface {
       result.execResult.createdAddresses = new Set()
       result.execResult.gasRefund = BigInt(0)
     }
-    if (
-      err &&
-      !(this.common.hardfork() === Hardfork.Chainstart && err.error === ERROR.CODESTORE_OUT_OF_GAS)
-    ) {
+    if (err && !(this.common.hardfork() === Hardfork.Chainstart && err.error === ERROR.CODESTORE_OUT_OF_GAS)) {
       result.execResult.logs = []
       await this.journal.revert()
       if (this.common.isActivatedEIP(1153)) this.transientStorage.revert()
@@ -808,11 +777,7 @@ export class EVM implements EVMInterface {
   /**
    * Executes a precompiled contract with given data and gas limit.
    */
-  protected runPrecompile(
-    code: PrecompileFunc,
-    data: Uint8Array,
-    gasLimit: bigint
-  ): Promise<ExecResult> | ExecResult {
+  protected runPrecompile(code: PrecompileFunc, data: Uint8Array, gasLimit: bigint): Promise<ExecResult> | ExecResult {
     if (typeof code !== 'function') {
       throw new Error('Invalid precompile')
     }

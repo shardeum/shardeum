@@ -17,9 +17,9 @@ export function precompile01(opts: PrecompileInput): ExecResult {
   const gasUsed = opts.common.param('gasPrices', 'ecRecover')
   if (opts._debug !== undefined) {
     opts._debug(
-      `Run ECRECOVER (0x01) precompile data=${short(opts.data)} length=${
-        opts.data.length
-      } gasLimit=${opts.gasLimit} gasUsed=${gasUsed}`
+      `Run ECRECOVER (0x01) precompile data=${short(opts.data)} length=${opts.data.length} gasLimit=${
+        opts.gasLimit
+      } gasUsed=${gasUsed}`
     )
   }
 
@@ -56,9 +56,9 @@ export function precompile01(opts: PrecompileInput): ExecResult {
   try {
     if (opts._debug !== undefined) {
       opts._debug(
-        `ECRECOVER (0x01): PK recovery with msgHash=${bytesToHex(msgHash)} v=${bytesToHex(
-          v
-        )} r=${bytesToHex(r)}s=${bytesToHex(s)}}`
+        `ECRECOVER (0x01): PK recovery with msgHash=${bytesToHex(msgHash)} v=${bytesToHex(v)} r=${bytesToHex(
+          r
+        )}s=${bytesToHex(s)}}`
       )
     }
     publicKey = ecrecover(msgHash, bytesToBigInt(v), r, s)
