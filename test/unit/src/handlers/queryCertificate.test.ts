@@ -81,11 +81,7 @@ describe('queryCertificate', () => {
         }),
       }
 
-      const result = (await queryCertificate(
-        mockShardus,
-        'publicKey',
-        activeNodesMock
-      )) as CertSignaturesResult
+      const result = (await queryCertificate(mockShardus, 'publicKey', activeNodesMock)) as CertSignaturesResult
 
       expect(result.success).toBe(true)
       expect(result.signedStakeCert).not.toBeNull()
@@ -294,10 +290,7 @@ describe('queryCertificate', () => {
       const mockResponse = { data: { account: { data: { id: 'abcd1234', success: true } } } }
       ;(shardusGetFromNode as jest.Mock).mockResolvedValue(mockResponse)
 
-      const result = (await getNodeAccountWithRetry(
-        'nodeAccountId',
-        activeNodesMock
-      )) as NodeAccountQueryResponse
+      const result = (await getNodeAccountWithRetry('nodeAccountId', activeNodesMock)) as NodeAccountQueryResponse
       expect(result.success).not.toBeNull()
       expect(result.nodeAccount?.id).toBe('abcd1234')
     })
@@ -343,11 +336,12 @@ describe('queryCertificate', () => {
 
   describe('getCertSignatures', () => {
     const shardusMock = {
-      getAppDataSignatures: jest.fn().mockResolvedValue({ success: true, signatures: [{}] }),
+      getAppDataSignatures: jest.fn(),
     } as any
     const certMock = { nominee: 'a', nominator: 'b', stake: BigInt(100), certExp: 1234 } as any
 
     it('should return success with signatures', async () => {
+      shardusMock.getAppDataSignatures.mockResolvedValueOnce({ success: true, signatures: [{}] })
       const result = await getCertSignatures(shardusMock, certMock)
       expect(result.success).toBe(true)
       expect(result.signedStakeCert?.signs).toBeDefined()
