@@ -13,14 +13,7 @@ import {
   bigIntToHex,
 } from '@ethereumjs/util'
 import { RLP } from '@ethereumjs/rlp'
-import {
-  AccountFields,
-  Chain,
-  Common,
-  EVMStateManagerInterface,
-  Hardfork,
-  StorageDump,
-} from '@ethereumjs/common'
+import { AccountFields, Chain, Common, EVMStateManagerInterface, Hardfork, StorageDump } from '@ethereumjs/common'
 import type { StorageRange } from '@ethereumjs/common/src'
 import { OriginalStorageCache } from './cache/originalStorageCache'
 import { CacheType, AccountCache, StorageCache } from './cache/index'
@@ -602,9 +595,7 @@ export default class ShardeumState implements EVMStateManagerInterface {
       }
       return returnValue
     }
-    const accountProof: PrefixedHexString[] = (await this._trie.createProof(address.bytes)).map((p) =>
-      bytesToHex(p)
-    )
+    const accountProof: PrefixedHexString[] = (await this._trie.createProof(address.bytes)).map((p) => bytesToHex(p))
     const storageProof: StorageProof[] = []
     const storageTrie = await this._getStorageTrie(address, account)
 

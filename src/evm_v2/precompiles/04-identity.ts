@@ -12,9 +12,9 @@ export function precompile04(opts: PrecompileInput): ExecResult {
   gasUsed += opts.common.param('gasPrices', 'identityWord') * BigInt(Math.ceil(data.length / 32))
   if (opts._debug !== undefined) {
     opts._debug(
-      `Run IDENTITY (0x04) precompile data=${short(opts.data)} length=${
-        opts.data.length
-      } gasLimit=${opts.gasLimit} gasUsed=${gasUsed}`
+      `Run IDENTITY (0x04) precompile data=${short(opts.data)} length=${opts.data.length} gasLimit=${
+        opts.gasLimit
+      } gasUsed=${gasUsed}`
     )
   }
 

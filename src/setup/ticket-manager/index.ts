@@ -19,17 +19,19 @@ export interface TicketType {
 }
 
 export enum TicketTypes {
-  SILVER = 'silver'
+  SILVER = 'silver',
 }
 
 const ticketTypeMap = new Map<string, TicketType>()
 
 export function updateTicketMapAndScheduleNextUpdate(): void {
-  updateTicketMap().catch((error) => {
-    console.error(`[tickets][updateTicketMapAndScheduleNextUpdate] ERROR:`, error)
-  }).finally(() => {
-    scheduleUpdateTicketMap()
-  })
+  updateTicketMap()
+    .catch((error) => {
+      console.error(`[tickets][updateTicketMapAndScheduleNextUpdate] ERROR:`, error)
+    })
+    .finally(() => {
+      scheduleUpdateTicketMap()
+    })
 }
 
 export function scheduleUpdateTicketMap(): void {
@@ -55,7 +57,7 @@ async function getTicketTypesFromArchiver(archiver: Archiver): Promise<TicketTyp
     if (res.status >= 200 && res.status < 300) {
       return res.data
     }
-  } catch (error){
+  } catch (error) {
     console.error(`[tickets][getTicketTypesFromArchiver] Error getting ticket list`, error)
   }
   return []
@@ -68,7 +70,7 @@ export function clearTicketMap(): void {
 export async function updateTicketMap(): Promise<void> {
   const archiver: Archiver = getArchiverToRetrieveTicketType()
   /* prettier-ignore */ if (logFlags.debug) console.log(JSON.stringify({script: 'tickets',method: 'updateTicketMap',data: { archiver: archiver },}))
-  if (archiver){
+  if (archiver) {
     const ticketTypes: TicketType[] = await getTicketTypesFromArchiver(archiver)
 
     const devPublicKeys = shardusConfig?.debug?.multisigKeys || {}
@@ -104,12 +106,18 @@ export function getTicketsByType(type: string): Ticket[] {
   return []
 }
 
-export function doesTransactionSenderHaveTicketType({ticketType, senderAddress}: { ticketType:TicketTypes, senderAddress:Address }): {
+export function doesTransactionSenderHaveTicketType({
+  ticketType,
+  senderAddress,
+}: {
+  ticketType: TicketTypes
+  senderAddress: Address
+}): {
   success: boolean
   reason: string
   enabled: boolean
 } {
-  const result: { success:boolean, reason:string, enabled:boolean } = { success: false, reason: '', enabled: false }
+  const result: { success: boolean; reason: string; enabled: boolean } = { success: false, reason: '', enabled: false }
   /* prettier-ignore */ if (logFlags.debug) console.log(`[ticket-master][doesNominatorHaveTicketType] ticketType: ${ticketType}, senderAddress: ${senderAddress}`)
   // Check if Silver Tickets feature is enabled in the shardus configuration
   /* prettier-ignore */ if (logFlags.debug) console.log(`[ticket-master][doesNominatorHaveTicketType] shardusConfig: ${JSON.stringify(shardusConfig)}`)

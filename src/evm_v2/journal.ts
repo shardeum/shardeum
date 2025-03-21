@@ -1,11 +1,5 @@
 import { Hardfork } from '@ethereumjs/common'
-import {
-  Address,
-  RIPEMD160_ADDRESS_STRING,
-  bytesToUnprefixedHex,
-  stripHexPrefix,
-  toBytes,
-} from '@ethereumjs/util'
+import { Address, RIPEMD160_ADDRESS_STRING, bytesToUnprefixedHex, stripHexPrefix, toBytes } from '@ethereumjs/util'
 import debugDefault from 'debug'
 
 import type { Common, EVMStateManagerInterface } from '@ethereumjs/common'
@@ -48,8 +42,7 @@ export class Journal {
   constructor(stateManager: EVMStateManagerInterface, common: Common) {
     // Skip DEBUG calls unless 'ethjs' included in environmental DEBUG variables
     // Additional window check is to prevent vite browser bundling (and potentially other) to break
-    this.DEBUG =
-      typeof window === 'undefined' ? process?.env?.DEBUG?.includes('ethjs') ?? false : false
+    this.DEBUG = typeof window === 'undefined' ? process?.env?.DEBUG?.includes('ethjs') ?? false : false
 
     this._debug = createDebugLogger('statemanager:statemanager')
 

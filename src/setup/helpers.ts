@@ -54,8 +54,7 @@ export function getTransactionObj(
   }
   if (!transactionObj) {
     try {
-      transactionObj =
-        TransactionFactory.fromSerializedData<TransactionType.AccessListEIP2930>(serializedInput)
+      transactionObj = TransactionFactory.fromSerializedData<TransactionType.AccessListEIP2930>(serializedInput)
     } catch (e) {
       if (ShardeumFlags.VerboseLogs) console.log('Unable to get transaction obj', e)
     }

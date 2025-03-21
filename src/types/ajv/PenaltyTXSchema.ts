@@ -1,16 +1,16 @@
-import {AJVSchemaEnum} from '../enum/AJVSchemaEnum';
-import {addSchema} from '../../utils/serialization/SchemaHelpers';
-import {InternalTXType, ViolationType} from '../../shardeum/shardeumTypes';
+import { AJVSchemaEnum } from '../enum/AJVSchemaEnum'
+import { addSchema } from '../../utils/serialization/SchemaHelpers'
+import { InternalTXType, ViolationType } from '../../shardeum/shardeumTypes'
 
 export const schemaInternalTxBase = {
   type: 'object',
   properties: {
     isInternalTx: { type: 'boolean' },
-    internalTXType: { enum: Object.values(InternalTXType) }
+    internalTXType: { enum: Object.values(InternalTXType) },
   },
   required: ['isInternalTx', 'internalTXType'],
-  additionalProperties: false
-};
+  additionalProperties: false,
+}
 
 // LeftNetworkEarlyViolationData schema
 export const schemaLeftNetworkEarlyViolationData = {
@@ -18,33 +18,33 @@ export const schemaLeftNetworkEarlyViolationData = {
   properties: {
     nodeLostCycle: { type: 'number' },
     nodeDroppedCycle: { type: 'number' },
-    nodeDroppedTime: { type: 'number' }
+    nodeDroppedTime: { type: 'number' },
   },
   required: ['nodeLostCycle', 'nodeDroppedCycle', 'nodeDroppedTime'],
-  additionalProperties: false
-};
+  additionalProperties: false,
+}
 
 // SyncingTimeoutViolationData schema
 export const schemaSyncingTimeoutViolationData = {
   type: 'object',
   properties: {
     nodeLostCycle: { type: 'number' },
-    nodeDroppedTime: { type: 'number' }
+    nodeDroppedTime: { type: 'number' },
   },
   required: ['nodeLostCycle', 'nodeDroppedTime'],
-  additionalProperties: false
-};
+  additionalProperties: false,
+}
 
 // NodeRefutedViolationData schema
 export const schemaNodeRefutedViolationData = {
   type: 'object',
   properties: {
     nodeRefutedCycle: { type: 'number' },
-    nodeRefutedTime: { type: 'number' }
+    nodeRefutedTime: { type: 'number' },
   },
   required: ['nodeRefutedCycle', 'nodeRefutedTime'],
-  additionalProperties: false
-};
+  additionalProperties: false,
+}
 
 // PenaltyTX schema
 export const schemaPenaltyTX = {
@@ -58,13 +58,13 @@ export const schemaPenaltyTX = {
       anyOf: [
         { $ref: AJVSchemaEnum.LeftNetworkEarlyViolationData },
         { $ref: AJVSchemaEnum.SyncingTimeoutViolationData },
-        { $ref: AJVSchemaEnum.NodeRefutedViolationData }
-      ]
+        { $ref: AJVSchemaEnum.NodeRefutedViolationData },
+      ],
     },
     timestamp: { type: 'number', exclusiveMinimum: 0 },
     sign: { $ref: AJVSchemaEnum.Sign },
     isInternalTx: { type: 'boolean' },
-    internalTXType: { enum: Object.values(InternalTXType) }
+    internalTXType: { enum: Object.values(InternalTXType) },
   },
   required: [
     'reportedNodeId',
@@ -75,10 +75,10 @@ export const schemaPenaltyTX = {
     'timestamp',
     'sign',
     'isInternalTx',
-    'internalTXType'
+    'internalTXType',
   ],
-  additionalProperties: false
-};
+  additionalProperties: false,
+}
 
 export function initPenaltyTX(): void {
   addSchemas()
@@ -86,9 +86,9 @@ export function initPenaltyTX(): void {
 
 // Function to register the schema
 function addSchemas(): void {
-  addSchema(AJVSchemaEnum.InternalTxBase, schemaInternalTxBase);
-  addSchema(AJVSchemaEnum.LeftNetworkEarlyViolationData, schemaLeftNetworkEarlyViolationData);
-  addSchema(AJVSchemaEnum.SyncingTimeoutViolationData, schemaSyncingTimeoutViolationData);
-  addSchema(AJVSchemaEnum.NodeRefutedViolationData, schemaNodeRefutedViolationData);
+  addSchema(AJVSchemaEnum.InternalTxBase, schemaInternalTxBase)
+  addSchema(AJVSchemaEnum.LeftNetworkEarlyViolationData, schemaLeftNetworkEarlyViolationData)
+  addSchema(AJVSchemaEnum.SyncingTimeoutViolationData, schemaSyncingTimeoutViolationData)
+  addSchema(AJVSchemaEnum.NodeRefutedViolationData, schemaNodeRefutedViolationData)
   addSchema(AJVSchemaEnum.PenaltyTx, schemaPenaltyTX)
 }

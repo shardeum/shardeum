@@ -5,17 +5,8 @@ export * from './types.js'
 import { VM } from './vm.js'
 import { ShardeumFlags } from '../shardeum/shardeumFlags'
 
-
-import type {
-  BuildBlockOpts,
-  RunBlockOpts,
-  RunBlockResult,
-  RunTxOpts,
-  RunTxResult,
-  VMEvents,
-  VMOpts,
-} from './types.js'
-import {EVMRunCallOpts} from '../evm_v2/types'
+import type { BuildBlockOpts, RunBlockOpts, RunBlockResult, RunTxOpts, RunTxResult, VMEvents, VMOpts } from './types.js'
+import { EVMRunCallOpts } from '../evm_v2/types'
 
 // import VM, { VMOpts } from '@ethereumjs/vm'
 // import { default as runTx, RunTxOpts } from './runTx'

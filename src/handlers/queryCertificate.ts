@@ -129,17 +129,8 @@ async function getEVMAccountDataForAddress(
   return undefined
 }
 
-export async function getCertSignatures(
-  shardus: Shardus,
-  certData: StakeCert
-): Promise<CertSignaturesResult> {
-  const signedAppData = await shardus.getAppDataSignatures(
-    'sign-stake-cert',
-    crypto.hashObj(certData),
-    5,
-    certData,
-    2
-  )
+export async function getCertSignatures(shardus: Shardus, certData: StakeCert): Promise<CertSignaturesResult> {
+  const signedAppData = await shardus.getAppDataSignatures('sign-stake-cert', crypto.hashObj(certData), 5, certData, 2)
   if (!signedAppData.success) {
     return {
       success: false,
@@ -285,10 +276,7 @@ export async function queryCertificateHandler(
   const queryCertReq = req.body as QueryCertRequest
   const reqValidationResult = validateQueryCertRequest(queryCertReq)
   if (!reqValidationResult.success) {
-    nestedCountersInstance.countEvent(
-      'shardeum-staking',
-      'queryCertificateHandler: failed validateQueryCertRequest'
-    )
+    nestedCountersInstance.countEvent('shardeum-staking', 'queryCertificateHandler: failed validateQueryCertRequest')
     return reqValidationResult
   }
 
@@ -303,20 +291,14 @@ export async function queryCertificateHandler(
   let nodeAccount = await shardus.getLocalOrRemoteAccount(queryCertReq.nominee)
   nodeAccount = fixBigIntLiteralsToBigInt(nodeAccount)
   if (!nodeAccount) {
-    nestedCountersInstance.countEvent(
-      'shardeum-staking',
-      'queryCertificateHandler: failed to fetch node account state'
-    )
+    nestedCountersInstance.countEvent('shardeum-staking', 'queryCertificateHandler: failed to fetch node account state')
     return { success: false, reason: 'Failed to fetch node account state' }
   }
 
   const currentTimestampInMillis = shardeumGetTime()
 
   if (operatorAccount.operatorAccountInfo == null) {
-    nestedCountersInstance.countEvent(
-      'shardeum-staking',
-      'queryCertificateHandler: operator account info is null'
-    )
+    nestedCountersInstance.countEvent('shardeum-staking', 'queryCertificateHandler: operator account info is null')
     return {
       success: false,
       reason: 'Operator account info is null',
@@ -324,10 +306,7 @@ export async function queryCertificateHandler(
   }
 
   if (operatorAccount.operatorAccountInfo.certExp === null) {
-    nestedCountersInstance.countEvent(
-      'shardeum-staking',
-      'queryCertificateHandler: Operator certificate time is null'
-    )
+    nestedCountersInstance.countEvent('shardeum-staking', 'queryCertificateHandler: Operator certificate time is null')
     return {
       success: false,
       reason: 'Operator certificate time is null',
@@ -336,10 +315,7 @@ export async function queryCertificateHandler(
 
   // check operator cert validity
   if (operatorAccount.operatorAccountInfo.certExp < currentTimestampInMillis) {
-    nestedCountersInstance.countEvent(
-      'shardeum-staking',
-      'queryCertificateHandler: operator certificate has expired'
-    )
+    nestedCountersInstance.countEvent('shardeum-staking', 'queryCertificateHandler: operator certificate has expired')
 
     return {
       success: false,

@@ -1,13 +1,13 @@
 import { schemaSign } from './SignSchema'
-import { StakeCert } from './StakeCert';
-import {AJVSchemaEnum} from "../enum/AJVSchemaEnum";
-import {addSchema} from "../../utils/serialization/SchemaHelpers";
+import { StakeCert } from './StakeCert'
+import { AJVSchemaEnum } from '../enum/AJVSchemaEnum'
+import { addSchema } from '../../utils/serialization/SchemaHelpers'
 
 export const schemaAdminCert = {
   type: 'object',
   properties: {
     nominee: { type: 'string' },
-    certCreation: { type: 'integer', minimum: 0  },
+    certCreation: { type: 'integer', minimum: 0 },
     certExp: { type: 'integer', minimum: 0 },
     sign: schemaSign,
     goldenTicket: { type: 'boolean' },

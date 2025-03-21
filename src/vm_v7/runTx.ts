@@ -59,7 +59,12 @@ function execHardfork(hardfork: Hardfork | string, preMergeHf: Hardfork | string
 /**
  * @ignore
  */
-export async function runTx(this: VM, opts: RunTxOpts, evm: EthereumVirtualMachine, txid: string): Promise<RunTxResult> {
+export async function runTx(
+  this: VM,
+  opts: RunTxOpts,
+  evm: EthereumVirtualMachine,
+  txid: string
+): Promise<RunTxResult> {
   if (evm == null) evm = this.evm
   // create a reasonable default if no block is given
   opts.block = opts.block ?? Block.fromBlockData({}, { common: this.common })
@@ -73,15 +78,11 @@ export async function runTx(this: VM, opts: RunTxOpts, evm: EthereumVirtualMachi
 
     // If block and tx don't have a same hardfork, set tx hardfork to block
     if (
-      execHardfork(opts.tx.common.hardfork(), preMergeHf) !==
-      execHardfork(opts.block.common.hardfork(), preMergeHf)
+      execHardfork(opts.tx.common.hardfork(), preMergeHf) !== execHardfork(opts.block.common.hardfork(), preMergeHf)
     ) {
       opts.tx.common.setHardfork(opts.block.common.hardfork())
     }
-    if (
-      execHardfork(opts.block.common.hardfork(), preMergeHf) !==
-      execHardfork(this.common.hardfork(), preMergeHf)
-    ) {
+    if (execHardfork(opts.block.common.hardfork(), preMergeHf) !== execHardfork(this.common.hardfork(), preMergeHf)) {
       // Block and VM's hardfork should match as well
       const msg = _errorMsg('block has a different hardfork than the vm', this, opts.block, opts.tx)
       throw new Error(msg)
@@ -394,11 +395,9 @@ async function _runTx(this: VM, opts: RunTxOpts, evm: any, txid: string): Promis
 
   if (this.DEBUG) {
     debug(
-      `Running tx=${
-        tx.isSigned() ? bytesToHex(tx.hash()) : 'unsigned'
-      } with caller=${caller} gasLimit=${gasLimit} to=${to?.toString() ?? 'none'} value=${value} data=${short(
-        data
-      )}`
+      `Running tx=${tx.isSigned() ? bytesToHex(tx.hash()) : 'unsigned'} with caller=${caller} gasLimit=${gasLimit} to=${
+        to?.toString() ?? 'none'
+      } value=${value} data=${short(data)}`
     )
   }
 
@@ -499,9 +498,7 @@ async function _runTx(this: VM, opts: RunTxOpts, evm: any, txid: string): Promis
   }
   // add the amount spent on gas to the miner's account
   results.minerValue =
-    this.common.isActivatedEIP(1559) === true
-      ? results.totalGasSpent * inclusionFeePerGas!
-      : results.amountSpent
+    this.common.isActivatedEIP(1559) === true ? results.totalGasSpent * inclusionFeePerGas! : results.amountSpent
   minerAccount.balance += results.minerValue
 
   // Put the miner account into the state. If the balance of the miner account remains zero, note that
@@ -556,13 +553,7 @@ async function _runTx(this: VM, opts: RunTxOpts, evm: any, txid: string): Promis
   // Generate the tx receipt
   const gasUsed = opts.blockGasUsed !== undefined ? opts.blockGasUsed : block.header.gasUsed
   const cumulativeGasUsed = gasUsed + results.totalGasSpent
-  results.receipt = await generateTxReceipt.bind(this)(
-    tx,
-    results,
-    cumulativeGasUsed,
-    totalblobGas,
-    blobGasPrice
-  )
+  results.receipt = await generateTxReceipt.bind(this)(tx, results, cumulativeGasUsed, totalblobGas, blobGasPrice)
 
   /**
    * The `afterTx` event
@@ -574,9 +565,7 @@ async function _runTx(this: VM, opts: RunTxOpts, evm: any, txid: string): Promis
   const event: AfterTxEvent = { transaction: tx, ...results }
   await this._emit('afterTx', event)
   if (this.DEBUG) {
-    debug(
-      `tx run finished hash=${opts.tx.isSigned() ? bytesToHex(opts.tx.hash()) : 'unsigned'} sender=${caller}`
-    )
+    debug(`tx run finished hash=${opts.tx.isSigned() ? bytesToHex(opts.tx.hash()) : 'unsigned'} sender=${caller}`)
   }
 
   return results
@@ -629,11 +618,9 @@ export async function generateTxReceipt(
   let receipt
   if (this.DEBUG) {
     debug(
-      `Generate tx receipt transactionType=${
-        tx.type
-      } cumulativeBlockGasUsed=${cumulativeGasUsed} bitvector=${short(baseReceipt.bitvector)} (${
-        baseReceipt.bitvector.length
-      } bytes) logs=${baseReceipt.logs.length}`
+      `Generate tx receipt transactionType=${tx.type} cumulativeBlockGasUsed=${cumulativeGasUsed} bitvector=${short(
+        baseReceipt.bitvector
+      )} (${baseReceipt.bitvector.length} bytes) logs=${baseReceipt.logs.length}`
     )
   }
 
