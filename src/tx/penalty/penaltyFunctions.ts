@@ -5,11 +5,7 @@ import * as AccountsStorage from '../../storage/accountStorage'
 import { NodeAccount2, WrappedEVMAccount } from '../../shardeum/shardeumTypes'
 import { logFlags } from '../..'
 
-export function applyPenalty(
-  nodeAccount: NodeAccount2,
-  operatorEOA: WrappedEVMAccount,
-  penalty: bigint
-): boolean {
+export function applyPenalty(nodeAccount: NodeAccount2, operatorEOA: WrappedEVMAccount, penalty: bigint): boolean {
   /* prettier-ignore */ if (logFlags.dapp_verbose) console.log(`\nApplying Penalty on Node: ${nodeAccount.id} of ${penalty.toString()} SHM`)
 
   // convert hex value to BN

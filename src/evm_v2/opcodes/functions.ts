@@ -488,8 +488,7 @@ export const handlers: Map<number, OpHandler> = new Map([
     async function (runState): Promise<void> {
       const addressBigInt = runState.stack.pop()
       const size = BigInt(
-        (await runState.stateManager.getContractCode(new Address(addresstoBytes(addressBigInt))))
-          .length
+        (await runState.stateManager.getContractCode(new Address(addresstoBytes(addressBigInt)))).length
       )
       runState.stack.push(size)
     },
@@ -501,9 +500,7 @@ export const handlers: Map<number, OpHandler> = new Map([
       const [addressBigInt, memOffset, codeOffset, dataLength] = runState.stack.popN(4)
 
       if (dataLength !== BigInt(0)) {
-        const code = await runState.stateManager.getContractCode(
-          new Address(addresstoBytes(addressBigInt))
-        )
+        const code = await runState.stateManager.getContractCode(new Address(addresstoBytes(addressBigInt)))
 
         const data = getDataSlice(code, codeOffset, dataLength)
         const memOffsetNum = Number(memOffset)
@@ -541,11 +538,7 @@ export const handlers: Map<number, OpHandler> = new Map([
       const [memOffset, returnDataOffset, dataLength] = runState.stack.popN(3)
 
       if (dataLength !== BigInt(0)) {
-        const data = getDataSlice(
-          runState.interpreter.getReturnData(),
-          returnDataOffset,
-          dataLength
-        )
+        const data = getDataSlice(runState.interpreter.getReturnData(), returnDataOffset, dataLength)
         const memOffsetNum = Number(memOffset)
         const lengthNum = Number(dataLength)
         runState.memory.write(memOffsetNum, lengthNum, data)
@@ -777,7 +770,12 @@ export const handlers: Map<number, OpHandler> = new Map([
     },
   ],
   // 0x5b: JUMPDEST
-  [0x5b, function (): void {/**/}],
+  [
+    0x5b,
+    function (): void {
+      /**/
+    },
+  ],
   // 0x5c: BEGINSUB (EIP 2315) / TLOAD (EIP 1153)
   [
     0x5c,
@@ -867,16 +865,11 @@ export const handlers: Map<number, OpHandler> = new Map([
     0x60,
     function (runState, common): void {
       const numToPush = runState.opCode - 0x5f
-      if (
-        common.isActivatedEIP(3540) &&
-        runState.programCounter + numToPush > runState.code.length
-      ) {
+      if (common.isActivatedEIP(3540) && runState.programCounter + numToPush > runState.code.length) {
         trap(ERROR.OUT_OF_RANGE)
       }
 
-      const loaded = bytesToBigInt(
-        runState.code.subarray(runState.programCounter, runState.programCounter + numToPush)
-      )
+      const loaded = bytesToBigInt(runState.code.subarray(runState.programCounter, runState.programCounter + numToPush))
       runState.programCounter += numToPush
       runState.stack.push(loaded)
     },
@@ -971,12 +964,7 @@ export const handlers: Map<number, OpHandler> = new Map([
         data = runState.memory.read(Number(offset), Number(length), true)
       }
 
-      const ret = await runState.interpreter.create2(
-        gasLimit,
-        value,
-        data,
-        setLengthLeft(bigIntToBytes(salt), 32)
-      )
+      const ret = await runState.interpreter.create2(gasLimit, value, data, setLengthLeft(bigIntToBytes(salt), 32))
       runState.stack.push(ret)
     },
   ],
@@ -984,8 +972,7 @@ export const handlers: Map<number, OpHandler> = new Map([
   [
     0xf1,
     async function (runState: RunState): Promise<void> {
-      const [_currentGasLimit, toAddr, value, inOffset, inLength, outOffset, outLength] =
-        runState.stack.popN(7)
+      const [_currentGasLimit, toAddr, value, inOffset, inLength, outOffset, outLength] = runState.stack.popN(7)
       const toAddress = new Address(addresstoBytes(toAddr))
 
       let data = new Uint8Array(0)
@@ -1006,8 +993,7 @@ export const handlers: Map<number, OpHandler> = new Map([
   [
     0xf2,
     async function (runState: RunState): Promise<void> {
-      const [_currentGasLimit, toAddr, value, inOffset, inLength, outOffset, outLength] =
-        runState.stack.popN(7)
+      const [_currentGasLimit, toAddr, value, inOffset, inLength, outOffset, outLength] = runState.stack.popN(7)
       const toAddress = new Address(addresstoBytes(toAddr))
 
       const gasLimit = runState.messageGasLimit!
@@ -1029,8 +1015,7 @@ export const handlers: Map<number, OpHandler> = new Map([
     0xf4,
     async function (runState): Promise<void> {
       const value = runState.interpreter.getCallValue()
-      const [_currentGasLimit, toAddr, inOffset, inLength, outOffset, outLength] =
-        runState.stack.popN(6)
+      const [_currentGasLimit, toAddr, inOffset, inLength, outOffset, outLength] = runState.stack.popN(6)
       const toAddress = new Address(addresstoBytes(toAddr))
 
       let data = new Uint8Array(0)
@@ -1108,16 +1093,8 @@ export const handlers: Map<number, OpHandler> = new Map([
   [
     0xf7,
     async function (runState): Promise<void> {
-      const [
-        _currentGasLimit,
-        addr,
-        value,
-        _valueExt,
-        argsOffset,
-        argsLength,
-        retOffset,
-        retLength,
-      ] = runState.stack.popN(8)
+      const [_currentGasLimit, addr, value, _valueExt, argsOffset, argsLength, retOffset, retLength] =
+        runState.stack.popN(8)
 
       const toAddress = new Address(addresstoBytes(addr))
 
@@ -1140,8 +1117,7 @@ export const handlers: Map<number, OpHandler> = new Map([
     0xfa,
     async function (runState): Promise<void> {
       const value = BigInt(0)
-      const [_currentGasLimit, toAddr, inOffset, inLength, outOffset, outLength] =
-        runState.stack.popN(6)
+      const [_currentGasLimit, toAddr, inOffset, inLength, outOffset, outLength] = runState.stack.popN(6)
       const toAddress = new Address(addresstoBytes(toAddr))
 
       const gasLimit = runState.messageGasLimit!

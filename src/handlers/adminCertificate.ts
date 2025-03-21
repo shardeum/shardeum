@@ -36,14 +36,14 @@ function validatePutAdminCertRequest(req: PutAdminCertRequest, shardus: Shardus)
   try {
     const pkClearance = shardus.getDevPublicKey(req.sign.owner)
 
-    if(pkClearance == null){
+    if (pkClearance == null) {
       return { success: false, reason: 'Unauthorized! no getDevPublicKey defined' }
     }
 
     if (
       pkClearance &&
       (!shardus.crypto.verify(req, pkClearance) ||
-      shardus.ensureKeySecurity(pkClearance, DevSecurityLevel.High) === false)
+        shardus.ensureKeySecurity(pkClearance, DevSecurityLevel.High) === false)
     )
       return { success: false, reason: 'Unauthorized! Please use higher level auth key.' }
   } catch (e) {

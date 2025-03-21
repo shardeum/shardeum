@@ -5,31 +5,19 @@ import { ConsensusType } from '@ethereumjs/common'
 import { RLP } from '@ethereumjs/rlp'
 import { Trie } from '@ethereumjs/trie'
 import { BlobEIP4844Transaction } from '@ethereumjs/tx'
-import {
-  Address,
-  GWEI_TO_WEI,
-  TypeOutput,
-  Withdrawal,
-  toBytes,
-  toType,
-  zeros,
-} from '@ethereumjs/util'
+import { Address, GWEI_TO_WEI, TypeOutput, Withdrawal, toBytes, toType, zeros } from '@ethereumjs/util'
 
 import { Bloom } from './bloom/index.js'
-import {
-  accumulateParentBeaconBlockRoot,
-  calculateMinerReward,
-  encodeReceipt,
-  rewardAccount,
-} from './runBlock.js'
+import { accumulateParentBeaconBlockRoot, calculateMinerReward, encodeReceipt, rewardAccount } from './runBlock.js'
 
 import type {
   BuildBlockOpts,
-  BuilderOpts, EIP4844BlobTxReceipt,
+  BuilderOpts,
+  EIP4844BlobTxReceipt,
   PostByzantiumTxReceipt,
   PreByzantiumTxReceipt,
   RunTxResult,
-  SealBlockOpts
+  SealBlockOpts,
 } from './types.js'
 import type { VM } from './vm.js'
 import type { HeaderData } from '@ethereumjs/block'
@@ -41,9 +29,7 @@ export enum BuildStatus {
   Pending = 'pending',
 }
 
-type BlockStatus =
-  | { status: BuildStatus.Pending | BuildStatus.Reverted }
-  | { status: BuildStatus.Build; block: Block }
+type BlockStatus = { status: BuildStatus.Pending | BuildStatus.Reverted } | { status: BuildStatus.Build; block: Block }
 
 export class BlockBuilder {
   /**
@@ -90,17 +76,11 @@ export class BlockBuilder {
     }
     this.withdrawals = opts.withdrawals?.map(Withdrawal.fromWithdrawalData)
 
-    if (
-      this.vm.common.isActivatedEIP(1559) === true &&
-      typeof this.headerData.baseFeePerGas === 'undefined'
-    ) {
+    if (this.vm.common.isActivatedEIP(1559) === true && typeof this.headerData.baseFeePerGas === 'undefined') {
       this.headerData.baseFeePerGas = opts.parentBlock.header.calcNextBaseFee()
     }
 
-    if (
-      this.vm.common.isActivatedEIP(4844) === true &&
-      typeof this.headerData.excessBlobGas === 'undefined'
-    ) {
+    if (this.vm.common.isActivatedEIP(4844) === true && typeof this.headerData.excessBlobGas === 'undefined') {
       this.headerData.excessBlobGas = opts.parentBlock.header.calcNextExcessBlobGas()
     }
   }
@@ -160,9 +140,7 @@ export class BlockBuilder {
     const minerReward = this.vm.common.param('pow', 'minerReward')
     const reward = calculateMinerReward(minerReward, 0)
     const coinbase =
-      this.headerData.coinbase !== undefined
-        ? new Address(toBytes(this.headerData.coinbase))
-        : Address.zero()
+      this.headerData.coinbase !== undefined ? new Address(toBytes(this.headerData.coinbase)) : Address.zero()
     await rewardAccount(this.vm.evm, coinbase, reward)
   }
 
@@ -291,9 +269,7 @@ export class BlockBuilder {
 
     const stateRoot = await this.vm.stateManager.getStateRoot()
     const transactionsTrie = await this.transactionsTrie()
-    const withdrawalsRoot = this.withdrawals
-      ? await Block.genWithdrawalsTrieRoot(this.withdrawals)
-      : undefined
+    const withdrawalsRoot = this.withdrawals ? await Block.genWithdrawalsTrieRoot(this.withdrawals) : undefined
     const receiptTrie = await this.receiptTrie()
     const logsBloom = this.logsBloom()
     const gasUsed = this.gasUsed
@@ -353,8 +329,7 @@ export class BlockBuilder {
       const { parentBeaconBlockRoot, timestamp } = this.headerData
       // timestamp should already be set in constructor
       const timestampBigInt = toType(timestamp ?? 0, TypeOutput.BigInt)
-      const parentBeaconBlockRootBuf =
-        toType(parentBeaconBlockRoot!, TypeOutput.Uint8Array) ?? zeros(32)
+      const parentBeaconBlockRootBuf = toType(parentBeaconBlockRoot!, TypeOutput.Uint8Array) ?? zeros(32)
 
       await accumulateParentBeaconBlockRoot.bind(this.vm)(parentBeaconBlockRootBuf, timestampBigInt)
     }
