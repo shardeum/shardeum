@@ -23,8 +23,8 @@ import { Address, bigIntToHex } from '@ethereumjs/util'
 import { applyPenalty } from './penaltyFunctions'
 import * as AccountsStorage from '../../storage/accountStorage'
 import config from '../../config'
-import {verifyPayload} from '../../types/ajv/Helpers';
-import {AJVSchemaEnum} from '../../types/enum/AJVSchemaEnum';
+import { verifyPayload } from '../../types/ajv/Helpers'
+import { AJVSchemaEnum } from '../../types/enum/AJVSchemaEnum'
 
 const penaltyTxsMap: Map<string, PenaltyTX> = new Map()
 
@@ -89,15 +89,11 @@ export async function injectPenaltyTX(
   recordPenaltyTX(txId, signedTx)
 
   // Limit the nodes that send this to the <ShardeumFlags.numberOfNodesToInjectPenaltyTx> closest to the node address ( publicKey )
-  const closestNodes = shardus.getClosestNodes(
-    eventData.publicKey,
-    ShardeumFlags.numberOfNodesToInjectPenaltyTx
-  )
+  const closestNodes = shardus.getClosestNodes(eventData.publicKey, ShardeumFlags.numberOfNodesToInjectPenaltyTx)
   const ourId = shardus.getNodeId()
   const isLuckyNode = closestNodes.some((nodeId) => nodeId === ourId)
   if (!isLuckyNode) {
-    if (ShardeumFlags.VerboseLogs)
-      console.log(`injectPenaltyTX: not lucky node, skipping injection`, signedTx)
+    if (ShardeumFlags.VerboseLogs) console.log(`injectPenaltyTX: not lucky node, skipping injection`, signedTx)
     return
   }
   const waitTime = futureTimestamp - shardeumGetTime()
@@ -122,10 +118,7 @@ function recordPenaltyTX(txId: string, tx: PenaltyTX): void {
 /**
  * Compares the event timestamp of the penalty tx with the timestamp of the last saved penalty tx
  */
-function isProcessedPenaltyTx(
-  tx: PenaltyTX,
-  nodeAccount: NodeAccount2
-): { isProcessed: boolean; eventTime: number } {
+function isProcessedPenaltyTx(tx: PenaltyTX, nodeAccount: NodeAccount2): { isProcessed: boolean; eventTime: number } {
   switch (tx.violationType) {
     case ViolationType.LeftNetworkEarly:
       return {
@@ -186,13 +179,22 @@ export function validatePenaltyTX(txId: string, tx: PenaltyTX, isApply = false):
     }
   }
 
-  if (tx.violationType === ViolationType.LeftNetworkEarly && AccountsStorage.cachedNetworkAccount.current.slashing.enableLeftNetworkEarlySlashing === false) {
+  if (
+    tx.violationType === ViolationType.LeftNetworkEarly &&
+    AccountsStorage.cachedNetworkAccount.current.slashing.enableLeftNetworkEarlySlashing === false
+  ) {
     return { isValid: false, reason: 'LeftNetworkEarly slashing is disabled' }
   }
-  if (tx.violationType === ViolationType.SyncingTooLong && AccountsStorage.cachedNetworkAccount.current.slashing.enableSyncTimeoutSlashing === false) {
+  if (
+    tx.violationType === ViolationType.SyncingTooLong &&
+    AccountsStorage.cachedNetworkAccount.current.slashing.enableSyncTimeoutSlashing === false
+  ) {
     return { isValid: false, reason: 'Sync timeout slashing is disabled' }
   }
-  if (tx.violationType === ViolationType.NodeRefuted && AccountsStorage.cachedNetworkAccount.current.slashing.enableNodeRefutedSlashing === false) {
+  if (
+    tx.violationType === ViolationType.NodeRefuted &&
+    AccountsStorage.cachedNetworkAccount.current.slashing.enableNodeRefutedSlashing === false
+  ) {
     return { isValid: false, reason: 'Refuted node slashing is disabled' }
   }
   try {

@@ -1,9 +1,9 @@
-import {Transaction, TransactionType, TypedTransaction} from '@ethereumjs/tx'
+import { Transaction, TransactionType, TypedTransaction } from '@ethereumjs/tx'
 import { Address } from '@ethereumjs/util'
 import { getSenderAddress } from '@shardeum-foundation/lib-net'
 import { hashSignedObj } from '../setup/helpers'
 import { logFlags } from '..'
-import {ShardeumFlags} from "../shardeum/shardeumFlags";
+import { ShardeumFlags } from '../shardeum/shardeumFlags'
 
 type GetTxSenderAddressResult = { address: Address; isValid: boolean; gasValid: boolean }
 
@@ -93,4 +93,3 @@ export function isStakingEVMTx(
 ): boolean {
   return transaction.to && transaction.to.toString() === ShardeumFlags.stakeTargetAddress
 }
-
