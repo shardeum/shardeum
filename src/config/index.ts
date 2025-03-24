@@ -61,7 +61,7 @@ config = merge(config, {
     p2p: {
       cycleDuration: 60,
       minNodesToAllowTxs: 1, // to allow single node networks
-      baselineNodes: 1280, // config used for baseline for entering recovery, restore, and safety. Should be equivalient to minNodes on network startup
+      baselineNodes: 1280, // config used for baseline for entering recovery, restore, and safety. Should be equivalent to minNodes on network startup
       minNodes: 1280,
       maxNodes: 1280,
       maxJoinedPerCycle: 10,
@@ -461,7 +461,7 @@ if (process.env.APP_IP) {
 config = merge(config, {
   server: {
     p2p: {
-      baselineNodes: process.env.baselineNodes ? parseInt(process.env.baselineNodes) : (config.server.p2p as any).baselineNodes, // config used for baseline for entering recovery, restore, and safety. Should be equivalient to minNodes on network startup
+      baselineNodes: process.env.baselineNodes ? parseInt(process.env.baselineNodes) : (config.server.p2p as any).baselineNodes, // config used for baseline for entering recovery, restore, and safety. Should be equivalent to minNodes on network startup
       minNodes: process.env.minNodes ? parseInt(process.env.minNodes) : (config.server.p2p as any).minNodes,
       maxNodes: process.env.maxNodes ? parseInt(process.env.maxNodes) : (config.server.p2p as any).maxNodes,
       maxRotatedPerCycle: process.env.maxRotatedPerCycle ? parseInt(process.env.maxRotatedPerCycle) : (config.server.p2p as any).maxRotatedPerCycle,
