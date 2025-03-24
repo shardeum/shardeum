@@ -5,8 +5,13 @@
       "minNodes": 10,
       "forceBogonFilteringOn": false,
       "syncingDesiredMinCount": 5,
-      "flexibleRotationDelta": 0,
+      "flexibleRotationEnabled": false,
       "formingNodesPerCycle": 10
+    },
+    "features": {
+      "tickets": {
+        "updateTicketListTimeInMs": 300000
+      }
     },
     "sharding": {
       "nodesPerConsensusGroup": 10
