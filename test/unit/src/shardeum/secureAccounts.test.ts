@@ -146,7 +146,7 @@ describe('secureAccounts', () => {
         amount: '1000000000000000000',
         accountName: 'Foundation',
         nonce: 0,
-        chainId: ShardeumFlags.ChainID
+        chainId: '0x' + ShardeumFlags.ChainID.toString(16)
       }
 
       // Create proper signature
@@ -181,7 +181,7 @@ describe('secureAccounts', () => {
         amount: '1000000000000000000',
         accountName: 'Foundation',
         nonce: 0,
-        chainId: ShardeumFlags.ChainID + 1 // Invalid chain ID
+        chainId: '0x' + (ShardeumFlags.ChainID + 1).toString(16) // Invalid chain ID
       }
 
       // Create proper signature
@@ -203,7 +203,7 @@ describe('secureAccounts', () => {
       expect(result.success).toBe(false)
     })
 
-    it('should reject a transfer transaction with missing chain ID', async () => {
+    it('should reject a transfer transaction with malformed chain ID', async () => {
       // Use the address from the mocked multisig-permissions.json
       const testPrivateKey = '0x1234567890123456789012345678901234567890123456789012345678901234';
       const testWallet = new ethers.Wallet(testPrivateKey);
@@ -212,7 +212,8 @@ describe('secureAccounts', () => {
       const txData = {
         amount: '1000000000000000000',
         accountName: 'Foundation',
-        nonce: 0
+        nonce: 0,
+        chainId: 'invalid_chain_id' // Malformed chain ID
       }
 
       // Create proper signature

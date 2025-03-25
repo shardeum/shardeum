@@ -137,7 +137,7 @@ export interface InternalTx extends InternalTxBase {
   accountName?: string // TransferFromSecureAccount
   nonce?: number // TransferFromSecureAccount
   amount?: string // TransferFromSecureAccount
-  chainId?: number // Chain ID for secure account transfers
+  chainId?: string // Chain ID for secure account transfers (hex string)
   sign: ShardusTypes.Sign | ShardusTypes.Sign[] // Array of signatures for multisig
 }
 

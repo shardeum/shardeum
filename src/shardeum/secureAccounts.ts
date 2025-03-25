@@ -134,7 +134,7 @@ export function validateTransferFromSecureAccount(
     return { success: false, reason: 'Invalid nonce' }
   }
 
-  if (typeof tx.chainId !== 'number' || tx.chainId !== ShardeumFlags.ChainID) {
+  if (typeof tx.chainId !== 'string' || !/^0x[0-9a-fA-F]+$/.test(tx.chainId) || BigInt(tx.chainId) !== BigInt(ShardeumFlags.ChainID)) {
     return { success: false, reason: 'Invalid chain ID' }
   }
 
@@ -157,7 +157,7 @@ export function validateTransferFromSecureAccount(
     amount: tx.amount,
     accountName: tx.accountName,
     nonce: tx.nonce,
-    chainId: tx.chainId
+    chainId: tx.chainId // Now this is a hex string
   }
 
   // Clean multiSigPermissions to remove any keys not in shardusConfig.debug.multisigKeys
