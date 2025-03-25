@@ -8,6 +8,7 @@ const DEFAULT_MAX_BYTES = 15 * 1024 * 1024
 
 export function customGot(maxBytes?: number): Got {
   return got.extend({
+    decompress: false,
     handlers: [
       (options, next) => {
         const downloadLimit = maxBytes ?? shardusConfig?.p2p?.maxResponseSize ?? DEFAULT_MAX_BYTES
@@ -58,6 +59,7 @@ export function customAxios(maxBytes?: number, axiosConfig: AxiosRequestConfig =
   axiosConfig.responseType = 'stream'
   const instance = axios.create({
     ...axiosConfig,
+    decompress: false,
     validateStatus: () => true,
   })
 

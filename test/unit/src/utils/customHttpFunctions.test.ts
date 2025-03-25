@@ -1,5 +1,8 @@
 import { customAxios, customGot } from '../../../../src/utils/customHttpFunctions'
 import * as http from 'node:http'
+import { compareObjectShape } from '@shardeum-foundation/core/dist/utils'
+import * as zlib from 'zlib'
+
 
 jest.mock('../../../../src/index', () => ({
   shardusConfig: {
@@ -82,7 +85,18 @@ describe('cusotmHttpFunctions', () => {
 
         // Start sending chunks
         sendChunk()
-      }
+      }  else if (req.url === '/compressed-json') {
+
+        const data = JSON.stringify({ msg: 'hello world' })
+        const compressed = zlib.gzipSync(data)
+      
+        res.writeHead(200, {
+          'Content-Type': 'application/json',
+          'Content-Encoding': 'gzip',
+          'Content-Length': compressed.length.toString(),
+        })
+        res.end(compressed)
+      }      
     })
 
     server.listen(0, () => {
@@ -126,6 +140,18 @@ describe('cusotmHttpFunctions', () => {
       // Make the request and expect it to fail due to size limit
       await expect(got(`${serverUrl}/chunked-data`)).rejects.toThrow()
     }, 10000) // Timeout after 10 seconds
+
+    test('should reject compressed responses', async () => {
+      const response = await customGot().get(`${serverUrl}/compressed-json`)
+      expect(response.body.slice(0, 2)).toEqual(Buffer.from([0x1f, 0x8b]))
+
+      // 3) (Optional) Manually decompress to check content
+      const decompressed = zlib.gunzipSync(response.body)
+      const parsed = JSON.parse(decompressed.toString('utf8'))
+      expect(parsed).toEqual({ msg: 'hello world' })
+
+    })
+
   })
 
   describe('customAxios', () => {
@@ -146,5 +172,9 @@ describe('cusotmHttpFunctions', () => {
       let response = customAxios().get(`${serverUrl}/chunked-data`)
       await expect(response).rejects.toThrow('Response size exceeds limit of 10240 bytes')
     }, 10000)
+    test('should reject compressed responses', async () => {
+      const response = customAxios().get(`${serverUrl}/compressed-json`)
+      await expect(response).rejects.toThrow(/^Failed to parse JSON/)
+    })
   })
 })
