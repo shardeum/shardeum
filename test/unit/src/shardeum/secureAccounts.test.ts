@@ -145,7 +145,8 @@ describe('secureAccounts', () => {
       const txData = {
         amount: '1000000000000000000',
         accountName: 'Foundation',
-        nonce: 0
+        nonce: 0,
+        chainId: ShardeumFlags.ChainID
       }
 
       // Create proper signature
@@ -168,6 +169,69 @@ describe('secureAccounts', () => {
       const result = validateTransferFromSecureAccount(validTx, shardus)
       expect(result.reason).toBe('')
       expect(result.success).toBe(true)
+    })
+
+    it('should reject a transfer transaction with invalid chain ID', async () => {
+      // Use the address from the mocked multisig-permissions.json
+      const testPrivateKey = '0x1234567890123456789012345678901234567890123456789012345678901234';
+      const testWallet = new ethers.Wallet(testPrivateKey);
+      const testAddress = '0x1234567890123456789012345678901234567890'; // This matches our mocked permission
+      
+      const txData = {
+        amount: '1000000000000000000',
+        accountName: 'Foundation',
+        nonce: 0,
+        chainId: ShardeumFlags.ChainID + 1 // Invalid chain ID
+      }
+
+      // Create proper signature
+      const payload_hash = ethers.keccak256(ethers.toUtf8Bytes(Utils.safeStringify(txData)))
+      const signature = await testWallet.signMessage(payload_hash)
+
+      const invalidTx = {
+        ...txData,
+        sign: [{
+          owner: testAddress,
+          sig: signature
+        }],
+        isInternalTx: true,
+        internalTXType: InternalTXType.TransferFromSecureAccount
+      } as InternalTx
+
+      const result = validateTransferFromSecureAccount(invalidTx, shardus)
+      expect(result.reason).toBe('Invalid chain ID')
+      expect(result.success).toBe(false)
+    })
+
+    it('should reject a transfer transaction with missing chain ID', async () => {
+      // Use the address from the mocked multisig-permissions.json
+      const testPrivateKey = '0x1234567890123456789012345678901234567890123456789012345678901234';
+      const testWallet = new ethers.Wallet(testPrivateKey);
+      const testAddress = '0x1234567890123456789012345678901234567890'; // This matches our mocked permission
+      
+      const txData = {
+        amount: '1000000000000000000',
+        accountName: 'Foundation',
+        nonce: 0
+      }
+
+      // Create proper signature
+      const payload_hash = ethers.keccak256(ethers.toUtf8Bytes(Utils.safeStringify(txData)))
+      const signature = await testWallet.signMessage(payload_hash)
+
+      const invalidTx = {
+        ...txData,
+        sign: [{
+          owner: testAddress,
+          sig: signature
+        }],
+        isInternalTx: true,
+        internalTXType: InternalTXType.TransferFromSecureAccount
+      } as InternalTx
+
+      const result = validateTransferFromSecureAccount(invalidTx, shardus)
+      expect(result.reason).toBe('Invalid chain ID')
+      expect(result.success).toBe(false)
     })
 
     it('should reject invalid transaction type', () => {

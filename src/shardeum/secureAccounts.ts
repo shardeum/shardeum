@@ -134,6 +134,10 @@ export function validateTransferFromSecureAccount(
     return { success: false, reason: 'Invalid nonce' }
   }
 
+  if (typeof tx.chainId !== 'number' || tx.chainId !== ShardeumFlags.ChainID) {
+    return { success: false, reason: 'Invalid chain ID' }
+  }
+
   const secureAccountData = secureAccountDataMap.get(tx.accountName)
   if (!secureAccountData) {
     return { success: false, reason: 'Secure account not found' }
@@ -153,6 +157,7 @@ export function validateTransferFromSecureAccount(
     amount: tx.amount,
     accountName: tx.accountName,
     nonce: tx.nonce,
+    chainId: tx.chainId
   }
 
   // Clean multiSigPermissions to remove any keys not in shardusConfig.debug.multisigKeys
