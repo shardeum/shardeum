@@ -32,6 +32,7 @@ export function isInternalTXGlobal(internalTx: InternalTx): boolean {
 export function isInternalTx(timestampedTx: any): boolean {
   if (timestampedTx && timestampedTx.raw) return false
   if (timestampedTx && timestampedTx.isInternalTx) return true
+  if (timestampedTx?.tx?.isInternalTx) return true
   return false
 }
 
