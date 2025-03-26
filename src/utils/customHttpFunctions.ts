@@ -9,7 +9,7 @@ const DEFAULT_MAX_BYTES = 15 * 1024 * 1024
 export function customGot(maxBytes?: number): Got {
   return got.extend({
     handlers: [
-      (options, next) => {
+      (options, next): any => {
         const downloadLimit = maxBytes ?? shardusConfig?.p2p?.maxResponseSize ?? DEFAULT_MAX_BYTES
         const promiseOrStream = next(options)
 

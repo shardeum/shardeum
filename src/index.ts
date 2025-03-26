@@ -1424,7 +1424,7 @@ const configShardusEndpoints = (): void => {
       // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
       let fromBlock: number = req.query.fromBlock
         ? parseBlockNumber(req.query.fromBlock as string)
-        : (() => {
+        : ((): any => {
             throw new Error('Missing fromBlock')
           })()
       let toBlock: number = req.query.toBlock ? parseBlockNumber(req.query.toBlock as string, latestBlock) : latestBlock

@@ -7,7 +7,7 @@ import { SecureAccount } from '../shardeum/secureAccounts'
 import { deserializeBaseAccount, serializeBaseAccount } from './BaseAccount'
 import { Utils } from '@shardeum-foundation/lib-types'
 
-function validateSecureAccount(obj: SecureAccount) {
+function validateSecureAccount(obj: SecureAccount): void {
   if (
     typeof obj.id !== 'string' ||
     typeof obj.hash !== 'string' ||
