@@ -332,15 +332,15 @@ config = merge(
           /* prettier-ignore */ '0x1e5e12568b7103E8B22cd680A6fa6256DD66ED76': DevSecurityLevel.High,
           /* prettier-ignore */ '0xa58169308e7153B5Ce4ca5cA515cC4d0cBE7770B': DevSecurityLevel.High,
           /* prettier-ignore */ '0x4FE8CaabA0BaC60AE9452DB06a983932C58cC811': DevSecurityLevel.High,
-          /* prettier-ignore */ '0x979B63E576E91eb20B5D89E9aA94FD793E6b19AD': DevSecurityLevel.High,          
+          /* prettier-ignore */ '0x979B63E576E91eb20B5D89E9aA94FD793E6b19AD': DevSecurityLevel.High,
           // always prefix with prettier ignore
         },
         checkAddressFormat: true, //enabled for 1.10.0
         enableCycleRecordDebugTool: false, // only enable if you want to debug variant cycle records
         enableScopedProfiling: false,
-        minMultiSigRequiredForEndpoints: 1,
-        minMultiSigRequiredForGlobalTxs: 1,
-        minSigRequiredForArchiverWhitelist: 1,
+        minMultiSigRequiredForEndpoints: 3,
+        minMultiSigRequiredForGlobalTxs: 3,
+        minSigRequiredForArchiverWhitelist: 3,
       },
     },
   },
