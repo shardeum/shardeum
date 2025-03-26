@@ -298,7 +298,7 @@ config = merge(
           /* prettier-ignore */ 'abb118e65bbd834d3f9c3135f72a3ed883b5c3b85c9e4a647b142f2824663e20': DevSecurityLevel.High,
           /* prettier-ignore */ '154cca8f6394fe43a08b579a4fd5fc666cf69b2b1f54364790f35bf4d612cf66': DevSecurityLevel.High,
           /* prettier-ignore */ 'ee2e6e301f1e4474317f6e3d1e9c9e8d6abccd9a263654e639303e4aadc9ff32': DevSecurityLevel.High,
-          /* prettier-ignore */ 'e55a70ae4ea0a1ef4760d40df72a78016fddbaa70e479d032ddbb6f77a07ddc8': DevSecurityLevel.High,
+          /* prettier-ignore */ '3f7ee9c4bbc42066cb7224e0b278265cf31fe4044b63946caff70f69b1e25917': DevSecurityLevel.High,
           // always prefix with prettier ignore
         },
         multisigKeys: {
@@ -331,6 +331,8 @@ config = merge(
           /* prettier-ignore */ '0x7Fb9b1C5E20bd250870F87659E46bED410221f17': DevSecurityLevel.High,
           /* prettier-ignore */ '0x1e5e12568b7103E8B22cd680A6fa6256DD66ED76': DevSecurityLevel.High,
           /* prettier-ignore */ '0xa58169308e7153B5Ce4ca5cA515cC4d0cBE7770B': DevSecurityLevel.High,
+          /* prettier-ignore */ '0x4FE8CaabA0BaC60AE9452DB06a983932C58cC811': DevSecurityLevel.High,
+          /* prettier-ignore */ '0x979B63E576E91eb20B5D89E9aA94FD793E6b19AD': DevSecurityLevel.High,          
           // always prefix with prettier ignore
         },
         checkAddressFormat: true, //enabled for 1.10.0
