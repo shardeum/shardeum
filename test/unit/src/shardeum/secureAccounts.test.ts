@@ -274,7 +274,8 @@ describe('secureAccounts', () => {
       const txData = {
         amount: '1000000000000000000',
         accountName: 'Foundation',
-        nonce: 1
+        nonce: 1,
+        chainId: '0x' + ShardeumFlags.ChainID.toString(16)
       }
       
       const payload_hash = ethers.keccak256(ethers.toUtf8Bytes(Utils.safeStringify(txData)))
