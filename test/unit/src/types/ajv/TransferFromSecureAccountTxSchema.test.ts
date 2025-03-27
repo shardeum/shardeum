@@ -2,6 +2,7 @@ import { describe, beforeAll, beforeEach, test, expect, jest } from '@jest/globa
 import { initAjvSchemas, verifyPayload } from '../../../../../src/types/ajv/Helpers'
 import { AJVSchemaEnum } from '../../../../../src/types/enum/AJVSchemaEnum'
 import { InternalTXType } from '../../../../../src/shardeum/shardeumTypes'
+import { ShardeumFlags } from '../../../../../src/shardeum/shardeumFlags'
 
 describe('TransferFromSecureAccountTx AJV tests', () => {
     beforeAll(() => {
@@ -21,7 +22,8 @@ describe('TransferFromSecureAccountTx AJV tests', () => {
             amount: '1000000000000000000',
             timestamp: 1234567890,
             from: '0x1234567890abcdef',
-            sign: [{ owner: 'owner1', sig: 'signature1' }]
+            sign: [{ owner: 'owner1', sig: 'signature1' }],
+            chainId: '0x' + ShardeumFlags.ChainID.toString(16)
         }
         const errors = verifyPayload(AJVSchemaEnum.TransferFromSecureAccountTx, obj)
         expect(errors).toBeNull()
@@ -70,7 +72,8 @@ describe('TransferFromSecureAccountTx AJV tests', () => {
             amount: '1000000000000000000',
             timestamp: 1234567890,
             from: '0x1234567890abcdef',
-            sign: [{ owner: 'owner1' }] // missing sig field
+            sign: [{ owner: 'owner1' }],
+            chainId: '0x' + ShardeumFlags.ChainID.toString(16)// missing sig field
         }
         const errors = verifyPayload(AJVSchemaEnum.TransferFromSecureAccountTx, obj)
         expect(errors).not.toBeNull()
