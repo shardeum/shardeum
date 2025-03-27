@@ -150,8 +150,8 @@ config = merge(config, {
       downNodeFilteringEnabled: false, //turning down node filtering off for diagnostics purposes
 
       //initial parameters for problem node rotation
-      enableProblematicNodeRemoval: false,
-      enableProblematicNodeRemovalOnCycle: 20000,
+      enableProblematicNodeRemoval: true,
+      enableProblematicNodeRemovalOnCycle: 0,
       maxProblematicNodeRemovalsPerCycle: 1,
       problematicNodeConsecutiveRefuteThreshold: 6,
       problematicNodeRefutePercentageThreshold: 0.1,
