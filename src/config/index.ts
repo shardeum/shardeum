@@ -150,8 +150,8 @@ config = merge(config, {
       downNodeFilteringEnabled: false, //turning down node filtering off for diagnostics purposes
 
       //initial parameters for problem node rotation
-      enableProblematicNodeRemoval: false,
-      enableProblematicNodeRemovalOnCycle: 20000,
+      enableProblematicNodeRemoval: true,
+      enableProblematicNodeRemovalOnCycle: 0,
       maxProblematicNodeRemovalsPerCycle: 1,
       problematicNodeConsecutiveRefuteThreshold: 6,
       problematicNodeRefutePercentageThreshold: 0.1,
@@ -333,6 +333,7 @@ config = merge(
           /* prettier-ignore */ '0xa58169308e7153B5Ce4ca5cA515cC4d0cBE7770B': DevSecurityLevel.High,
           /* prettier-ignore */ '0x4FE8CaabA0BaC60AE9452DB06a983932C58cC811': DevSecurityLevel.High,
           /* prettier-ignore */ '0x979B63E576E91eb20B5D89E9aA94FD793E6b19AD': DevSecurityLevel.High,
+          /* prettier-ignore */ '0x58845fbe90f9558a205A0d99F5a9D45a3ee6789b': DevSecurityLevel.High,
           // always prefix with prettier ignore
         },
         checkAddressFormat: true, //enabled for 1.10.0
