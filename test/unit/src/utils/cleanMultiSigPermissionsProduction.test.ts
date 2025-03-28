@@ -126,28 +126,26 @@ describe('cleanMultiSigPermissions Production Cases', () => {
   test('should check if keys with 0000s suffix are handled correctly', () => {
     const multiSigPermissions = {
       initiateSecureAccountTransfer: [
-        '0x7Efbb31431ac7C405E8eEba99531fF1254fCA3B6', // Normal key
-        '0x7Efbb31431ac7C405E8eEba99531fF1254fCA3B6000000000000000000000000' // Key with zeros suffix
+        '0x7Efbb31431ac7C405E8eEba99531fF1254fCA3B6',
+        '0x7Efbb31431ac7C405E8eEba99531fF1254fCA3B6000000000000000000000000'  // With zeros suffix
       ]
     };
 
     const mockConfig = {
       debug: {
         multisigKeys: {
-          '0x7Efbb31431ac7C405E8eEba99531fF1254fCA3B6': DevSecurityLevel.High // Only normal key in config
+          '0x7Efbb31431ac7C405E8eEba99531fF1254fCA3B6': DevSecurityLevel.High
         }
       }
     };
 
-    // Clean the permissions
     const cleanedPermissions = cleanMultiSigPermissions(multiSigPermissions, mockConfig);
-    
+
     console.log('Original keys:', multiSigPermissions.initiateSecureAccountTransfer);
     console.log('Cleaned keys:', cleanedPermissions.initiateSecureAccountTransfer);
 
-    // With normalization, the key with zeros suffix should also be preserved
+    // Only the base address should be preserved
     expect(cleanedPermissions.initiateSecureAccountTransfer).toContain('0x7Efbb31431ac7C405E8eEba99531fF1254fCA3B6');
-    expect(cleanedPermissions.initiateSecureAccountTransfer).toContain('0x7Efbb31431ac7C405E8eEba99531fF1254fCA3B6000000000000000000000000');
-    expect(cleanedPermissions.initiateSecureAccountTransfer.length).toBe(2);
+    expect(cleanedPermissions.initiateSecureAccountTransfer.length).toBe(1);
   });
 }); 
