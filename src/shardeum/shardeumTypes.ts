@@ -478,12 +478,14 @@ export interface ChangeConfig {
   cycle: ShardusTypes.Cycle
   config: string
   timestamp: number
+  chainId: string
 }
 
 export interface ApplyChangeConfig {
   type: string
   change: Change
   timestamp: number
+  chainId: string
 }
 
 export interface ChangeNetworkParam {
@@ -492,12 +494,14 @@ export interface ChangeNetworkParam {
   cycle: ShardusTypes.Cycle
   config: string
   timestamp: number
+  chainId: string
 }
 
 export interface ApplyNetworkParam {
   type: string
   change: Change
   timestamp: number
+  chainId: string
 }
 
 // export interface InternalAccount extends NodeAccount, NetworkAccount, DevAccount {}

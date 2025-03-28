@@ -146,6 +146,24 @@ export const validateTxnFields =
             if (!tx.sign) {
               success = false
               reason = 'No signature found'
+              return {
+                success,
+                reason,
+                txnTimestamp,
+              }
+            }
+
+            // Validate chainId
+            if (
+              typeof tx.chainId !== 'string' ||
+              !/^0x[0-9a-fA-F]+$/.test(tx.chainId) ||
+              BigInt(tx.chainId) !== BigInt(ShardeumFlags.ChainID)
+            ) {
+              return {
+                success: false,
+                reason: 'Invalid chain ID',
+                txnTimestamp,
+              }
             }
 
             // Clean multiSigPermissions to remove any keys not in shardusConfig.debug.multisigKeys
@@ -251,6 +269,28 @@ export const validateTxnFields =
           return {
             success: true,
             reason: 'Valid TransferFromSecureAccount transaction',
+            txnTimestamp,
+          }
+        } else if (
+          tx.internalTXType === InternalTXType.ApplyChangeConfig ||
+          tx.internalTXType === InternalTXType.ApplyNetworkParam
+        ) {
+          // Validate chainId for ApplyChangeConfig and ApplyNetworkParam transactions
+          if (
+            typeof tx.chainId !== 'string' ||
+            !/^0x[0-9a-fA-F]+$/.test(tx.chainId) ||
+            BigInt(tx.chainId) !== BigInt(ShardeumFlags.ChainID)
+          ) {
+            return {
+              success: false,
+              reason: 'Invalid chain ID',
+              txnTimestamp,
+            }
+          }
+          
+          return {
+            success: true,
+            reason: 'Valid transaction',
             txnTimestamp,
           }
         } else {

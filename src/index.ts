@@ -196,7 +196,7 @@ export let genesisAccounts: string[] = []
 // Two global variables: at the top of utils/versions.ts
 // Where to call this function: After shradus factory line 146 console.logs ke pehle
 // Add a console log to log out to fetched versions
-// “getNodeInfoAppData()”
+// "getNodeInfoAppData()"
 
 const ERC20_BALANCEOF_CODE = '0x70a08231'
 
@@ -296,7 +296,7 @@ let appStartupTimestamp = 0
  */
 function trySpendServicePoints(points: number, req, key: string): boolean {
   if (isServiceMode()) return true
-  const nowTs = shardeumGetTime()
+  const nowTs = Date.now()
   const maxAge = 1000 * pointsAverageInterval
   const maxAllowedPoints = ShardeumFlags.ServicePointsPerSecond * pointsAverageInterval
   let totalPoints = 0
@@ -429,7 +429,7 @@ function createAndRecordBlock(blockNumber: number, timestamp: number): Block {
 }
 
 function createBlock(timestamp: number, blockNumber: number): Block {
-  const timestampInSecond = timestamp ? Math.round(timestamp / 1000) : Math.round(shardeumGetTime() / 1000)
+  const timestampInSecond = timestamp ? Math.round(timestamp / 1000) : Math.round(Date.now() / 1000)
   const blockData = {
     header: { number: blockNumber, timestamp: timestampInSecond },
     transactions: [],
@@ -1104,7 +1104,6 @@ function logAccessList(message: string, appData): void {
     if (ShardeumFlags.VerboseLogs) console.log(`access list for ${message} ${Utils.safeStringify(appData.accessList)}`)
   }
 }
-
 /***
  *    ######## ##    ## ########  ########   #######  #### ##    ## ########  ######
  *    ##       ###   ## ##     ## ##     ## ##     ##  ##  ###   ##    ##    ##    ##
@@ -2841,6 +2840,7 @@ async function applyInternalTx(
       timestamp: when,
       from: internalTx.from,
       network: networkAccount,
+      chainId: ShardeumFlags.ChainID,
       change: { cycle: changeOnCycle, change: Utils.safeJsonParse(internalTx.config) },
     }
 
@@ -2944,6 +2944,7 @@ async function applyInternalTx(
       timestamp: when,
       from: internalTx.from,
       network: networkAccount,
+      chainId: ShardeumFlags.ChainID,
       change: { cycle: changeOnCycle, change: {}, appData: Utils.safeJsonParse(internalTx.config) },
     }
 
@@ -3357,7 +3358,7 @@ const getOrCreateBlockFromTimestamp = (timestamp: number, scheduleNextBlock = fa
   const block = createAndRecordBlock(blockNumber, newBlockTimestamp)
   if (scheduleNextBlock) {
     const nextBlockTimestamp = newBlockTimestamp + ShardeumFlags.blockProductionRate * 1000
-    const waitTime = nextBlockTimestamp - shardeumGetTime()
+    const waitTime = nextBlockTimestamp - Date.now()
     if (ShardeumFlags.VerboseLogs) console.log('Scheduling next block created which will happen in', waitTime)
     setTimeout(() => {
       getOrCreateBlockFromTimestamp(nextBlockTimestamp, true)
@@ -5800,6 +5801,7 @@ const shardusSetup = (): void => {
         // update: looks like POQ-LS work switched source key to be first, and thus the execution group
         // center.
         // TODO ARCH-6.  as mentioned in other post we should move to an explicit key for picking the execution group
+        // center.
         result.allKeys = result.allKeys.concat(
           result.sourceKeys,
           result.targetKeys,
@@ -8405,3 +8407,4 @@ export function shardeumGetTime(): number {
     shardus.start()
   }
 })()
+

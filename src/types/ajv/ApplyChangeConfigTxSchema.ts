@@ -11,8 +11,9 @@ const schemaApplyChangeConfigTx = {
     network: { type: 'string' },
     change: { type: 'object' },
     timestamp: { type: 'number', exclusiveMinimum: 0 },
+    chainId: { type: 'string' },
   },
-  required: ['isInternalTx', 'internalTXType', 'from', 'network', 'change', 'timestamp'],
+  required: ['isInternalTx', 'internalTXType', 'from', 'network', 'change', 'timestamp', 'chainId'],
   additionalProperties: false,
 }
 
