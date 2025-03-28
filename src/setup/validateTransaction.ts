@@ -62,19 +62,6 @@ export const validateTransaction =
           }
           return { result: 'pass', reason: 'valid' }
         }
-      } else if (
-        tx.internalTXType === InternalTXType.ApplyChangeConfig ||
-        tx.internalTXType === InternalTXType.ApplyNetworkParam
-      ) {
-        // Validate chainId for ApplyChangeConfig and ApplyNetworkParam transactions
-        if (
-          typeof tx.chainId !== 'string' ||
-          !/^0x[0-9a-fA-F]+$/.test(tx.chainId) ||
-          BigInt(tx.chainId) !== BigInt(ShardeumFlags.ChainID)
-        ) {
-          return { result: 'fail', reason: 'Invalid chain ID' }
-        }
-        return { result: 'pass', reason: 'valid' }
       } else if (isSetCertTimeTx(tx)) {
         return { result: 'pass', reason: 'valid' }
       } else if (tx.internalTXType === InternalTXType.InitRewardTimes) {
