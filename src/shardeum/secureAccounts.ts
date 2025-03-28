@@ -164,11 +164,13 @@ export function validateTransferFromSecureAccount(
     chainId: tx.chainId, // Now this is a hex string
   }
 
+  console.log('multisigList: ', shardusConfig, multisigPermissions)
   // Clean multiSigPermissions to remove any keys not in shardusConfig.debug.multisigKeys
   const cleanedMultiSigPermissions = cleanMultiSigPermissions(multisigPermissions, shardusConfig)
 
   // Use the permitted keys from multisig-permissions.json for secure account transfers
   const permittedKeys = cleanedMultiSigPermissions.initiateSecureAccountTransfer || []
+  console.log('permittedKeys: ', permittedKeys)
   const securityLevel = 9 // High security level for secure account transfers
   const allowedPublicKeys = keyListAsLeveledKeys(permittedKeys, securityLevel)
   const requiredSigs = Math.max(3, shardusConfig.debug.minMultiSigRequiredForGlobalTxs || 3)

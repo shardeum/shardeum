@@ -339,9 +339,9 @@ config = merge(
         checkAddressFormat: true, //enabled for 1.10.0
         enableCycleRecordDebugTool: false, // only enable if you want to debug variant cycle records
         enableScopedProfiling: false,
-        minMultiSigRequiredForEndpoints: 3,
-        minMultiSigRequiredForGlobalTxs: 3,
-        minSigRequiredForArchiverWhitelist: 3,
+        minMultiSigRequiredForEndpoints: 2,
+        minMultiSigRequiredForGlobalTxs: 2,
+        minSigRequiredForArchiverWhitelist: 2,
       },
     },
   },

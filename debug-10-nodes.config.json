@@ -22,7 +22,8 @@
     "mode": "debug",
     "debug": {
       "startInFatalsLogMode": false,
-      "startInErrorLogMode": true
+      "startInErrorLogMode": true,
+      "minMultiSigRequiredForGlobalTxs": 1
     }
   }
 }

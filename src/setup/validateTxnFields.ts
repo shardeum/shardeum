@@ -51,6 +51,7 @@ import {
 } from '../utils/multisig'
 import { keyListAsLeveledKeys } from '../utils/keyUtils'
 import multisigPermissions from '../config/multisig-permissions.json'
+import { safeStringify } from '@shardeum-foundation/lib-types/build/src/utils/functions/stringify'
 
 const txTypeToAJVMap = {
   [InternalTXType.InitNetwork]: 'InitNetworkTx',
@@ -168,34 +169,36 @@ export const validateTxnFields =
 
             // Clean multiSigPermissions to remove any keys not in shardusConfig.debug.multisigKeys
             const cleanedMultiSigPermissions = cleanMultiSigPermissions(multisigPermissions, shardusConfig)
-
+            console.log('cleanedMultiSigPermissions', cleanedMultiSigPermissions)
             // Check if this is a key change transaction
             const { isKeyChange, permittedKeys: keyChangePermittedKeys } =
               tx.internalTXType === InternalTXType.ChangeConfig
                 ? isTransactionKeyChange(tx, shardusConfig, cleanedMultiSigPermissions)
                 : { isKeyChange: false, permittedKeys: [] }
-
+            console.log('isKeyChange', isKeyChange)
             // Check if this is a non-key change transaction (only if not a key change)
             const { isNonKeyChange, permittedKeys: nonKeyChangePermittedKeys } =
               !isKeyChange && tx.internalTXType === InternalTXType.ChangeConfig
                 ? isTransactionNonKeyChange(tx, shardusConfig, cleanedMultiSigPermissions)
                 : { isNonKeyChange: false, permittedKeys: [] }
-
+            console.log('isNonKeyChange', isNonKeyChange)
             // Determine which keys are allowed to sign this transaction and the required security level
             let permittedKeys = isKeyChange ? keyChangePermittedKeys : isNonKeyChange ? nonKeyChangePermittedKeys : []
-
+            
             let networkParamChange = false
             if (tx.internalTXType === InternalTXType.ChangeNetworkParam) {
               //network param changes always use the clean list of non key config changers
               permittedKeys = cleanedMultiSigPermissions.changeNonKeyConfigs
               networkParamChange = true
             }
+            console.log('permittedKeys', permittedKeys)
 
             const allowedPublicKeys =
               isKeyChange || isNonKeyChange || networkParamChange
                 ? keyListAsLeveledKeys(permittedKeys, DevSecurityLevel.High)
                 : shardus.getMultisigPublicKeys()
 
+            console.log('allowedPublicKeys', allowedPublicKeys)
             const requiredLevel = DevSecurityLevel.High
 
             const is_array_sig = Array.isArray(tx.sign) === true
@@ -205,10 +208,11 @@ export const validateTxnFields =
             const sigs: Sign[] = is_array_sig ? tx.sign : [tx.sign]
 
             const { sign, ...txWithoutSign } = tx
-
+            console.log('tx', safeStringify(txWithoutSign))
             // if the signatures in the payload is larger than the allowed public keys, it is invalid
             // this prevent loop exhaustion abuses
             const sig_are_valid = verifyMultiSigs(txWithoutSign, sigs, allowedPublicKeys, requiredSigs, requiredLevel)
+            console.log('sig_are_valid', sig_are_valid)
             if (sig_are_valid === true) {
               success = true
               reason = 'Valid'
