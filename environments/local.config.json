@@ -14,10 +14,7 @@
     "mode": "debug",
     "debug": {
       "startInFatalsLogMode": false,
-      "startInErrorLogMode": true,
-      "minMultiSigRequiredForEndpoints": 2,
-      "minMultiSigRequiredForGlobalTxs": 2,
-      "minSigRequiredForArchiverWhitelist": 2
+      "startInErrorLogMode": true
     }
   }
 }
