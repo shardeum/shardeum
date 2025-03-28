@@ -169,19 +169,18 @@ export const validateTxnFields =
 
             // Clean multiSigPermissions to remove any keys not in shardusConfig.debug.multisigKeys
             const cleanedMultiSigPermissions = cleanMultiSigPermissions(multisigPermissions, shardusConfig)
-            console.log('cleanedMultiSigPermissions', cleanedMultiSigPermissions)
+           
             // Check if this is a key change transaction
             const { isKeyChange, permittedKeys: keyChangePermittedKeys } =
               tx.internalTXType === InternalTXType.ChangeConfig
                 ? isTransactionKeyChange(tx, shardusConfig, cleanedMultiSigPermissions)
                 : { isKeyChange: false, permittedKeys: [] }
-            console.log('isKeyChange', isKeyChange)
+            
             // Check if this is a non-key change transaction (only if not a key change)
             const { isNonKeyChange, permittedKeys: nonKeyChangePermittedKeys } =
               !isKeyChange && tx.internalTXType === InternalTXType.ChangeConfig
                 ? isTransactionNonKeyChange(tx, shardusConfig, cleanedMultiSigPermissions)
                 : { isNonKeyChange: false, permittedKeys: [] }
-            console.log('isNonKeyChange', isNonKeyChange)
             // Determine which keys are allowed to sign this transaction and the required security level
             let permittedKeys = isKeyChange ? keyChangePermittedKeys : isNonKeyChange ? nonKeyChangePermittedKeys : []
             
@@ -191,14 +190,12 @@ export const validateTxnFields =
               permittedKeys = cleanedMultiSigPermissions.changeNonKeyConfigs
               networkParamChange = true
             }
-            console.log('permittedKeys', permittedKeys)
 
             const allowedPublicKeys =
               isKeyChange || isNonKeyChange || networkParamChange
                 ? keyListAsLeveledKeys(permittedKeys, DevSecurityLevel.High)
                 : shardus.getMultisigPublicKeys()
-
-            console.log('allowedPublicKeys', allowedPublicKeys)
+            
             const requiredLevel = DevSecurityLevel.High
 
             const is_array_sig = Array.isArray(tx.sign) === true
@@ -208,11 +205,11 @@ export const validateTxnFields =
             const sigs: Sign[] = is_array_sig ? tx.sign : [tx.sign]
 
             const { sign, ...txWithoutSign } = tx
-            console.log('tx', safeStringify(txWithoutSign))
+
             // if the signatures in the payload is larger than the allowed public keys, it is invalid
             // this prevent loop exhaustion abuses
             const sig_are_valid = verifyMultiSigs(txWithoutSign, sigs, allowedPublicKeys, requiredSigs, requiredLevel)
-            console.log('sig_are_valid', sig_are_valid)
+
             if (sig_are_valid === true) {
               success = true
               reason = 'Valid'
@@ -275,28 +272,6 @@ export const validateTxnFields =
             reason: 'Valid TransferFromSecureAccount transaction',
             txnTimestamp,
           }
-        } else if (
-          tx.internalTXType === InternalTXType.ApplyChangeConfig ||
-          tx.internalTXType === InternalTXType.ApplyNetworkParam
-        ) {
-          // Validate chainId for ApplyChangeConfig and ApplyNetworkParam transactions
-          if (
-            typeof tx.chainId !== 'string' ||
-            !/^0x[0-9a-fA-F]+$/.test(tx.chainId) ||
-            BigInt(tx.chainId) !== BigInt(ShardeumFlags.ChainID)
-          ) {
-            return {
-              success: false,
-              reason: 'Invalid chain ID',
-              txnTimestamp,
-            }
-          }
-          
-          return {
-            success: true,
-            reason: 'Valid transaction',
-            txnTimestamp,
-          }
         } else {
           try {
             success = crypto.verifyObj(internalTX as InternalTxWithSingleSign)
@@ -304,6 +279,7 @@ export const validateTxnFields =
             reason = 'Invalid signature for internal tx'
           }
         }
+        
         if (ShardeumFlags.VerboseLogs) console.log('validateTxsField', success, reason)
         return {
           success,
