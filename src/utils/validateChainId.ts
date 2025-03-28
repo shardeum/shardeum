@@ -1,84 +1,65 @@
 /**
- * Utility functions for validating chain IDs
+ * Utility function for validating chain IDs
  */
+
+const isHexString = /^0x[0-9a-fA-F]+$/
+const maxSafeInteger = BigInt(2147483647)
 
 /**
- * Validates if a chain ID is a valid Ethereum chain ID
+ * Validates if a chain ID is valid and optionally matches an expected value
  * 
- * @param chainId The chain ID to validate
- * @returns True if the chain ID is valid, false otherwise
+ * @param givenChainId The chain ID to validate (must be a hex string with 0x prefix)
+ * @param expectedChainId Optional expected chain ID to compare against
+ * @returns True if the chain ID is valid (and matches expected value if provided), false otherwise
  */
-export function isValidChainId(chainId: any): boolean {
-  // Check if chainId is defined
-  if (chainId === undefined || chainId === null) {
+export function validateTxChainId(givenChainId: any, expectedChainId?: number): boolean {
+  // First check if the given chain ID is valid
+  if (givenChainId === undefined || givenChainId === null) {
     return false;
   }
 
-  // Convert to string if it's not already
-  const chainIdStr = typeof chainId === 'string' ? chainId : String(chainId);
-  
-  // Check if it's a valid number string
-  if (!/^\d+$/.test(chainIdStr)) {
+  // Only accept 0x-prefixed hex strings
+  if (typeof givenChainId !== 'string' || !givenChainId.startsWith('0x')) {
     return false;
   }
 
-  // Check if it's in a reasonable range
-  const chainIdNum = Number(chainIdStr);
-  
+  // Validate it's a proper hex string
+  if (!isHexString.test(givenChainId)) {
+    return false;
+  }
+
+  let chainIdBigInt: bigint;
+
+  try {
+    // Convert the hex string to BigInt
+    chainIdBigInt = BigInt(givenChainId);
+  } catch (error) {
+    return false; // Conversion error
+  }
+
   // EIP-155 specifies that chain IDs should be positive integers
   // 0 is reserved, so we check if it's greater than 0
-  if (chainIdNum <= 0 || !Number.isInteger(chainIdNum)) {
+  if (chainIdBigInt <= BigInt(0)) {
     return false;
   }
 
   // Arbitrary large number check to avoid absurdly large chain IDs
   // The largest known chain ID as of now is much smaller than this
-  if (chainIdNum > 2147483647) { // 2^31 - 1, max safe integer that works everywhere
+  if (chainIdBigInt > maxSafeInteger) {
     return false;
   }
 
+  // If expected chain ID is provided, validate it and compare
+  if (expectedChainId !== undefined) {
+    // Check if expected chain ID is valid
+    if (expectedChainId <= 0 || !Number.isInteger(expectedChainId)) {
+      return false;
+    }
+
+    // Compare the chain IDs - convert expected to BigInt for comparison
+    return chainIdBigInt === BigInt(expectedChainId);
+  }
+
+  // If no expected chain ID, just return that the given chain ID is valid
   return true;
-}
-
-/**
- * Gets the chain ID from a transaction object
- * 
- * @param tx The transaction object
- * @param defaultChainId Optional default chain ID to use if not found in transaction
- * @returns The chain ID as a number, or undefined if not found/invalid
- */
-export function getChainId(tx: any, defaultChainId?: number): number | undefined {
-  if (!tx) {
-    return defaultChainId;
-  }
-
-  // Try to get chainId from tx
-  const chainId = tx.chainId;
-
-  if (!isValidChainId(chainId)) {
-    return defaultChainId;
-  }
-
-  return Number(chainId);
-}
-
-/**
- * Validates if a transaction's chain ID matches the expected chain ID
- * 
- * @param tx The transaction object
- * @param expectedChainId The expected chain ID
- * @returns True if the chain IDs match, false otherwise
- */
-export function validateTxChainId(tx: any, expectedChainId: number): boolean {
-  if (!tx || !isValidChainId(expectedChainId)) {
-    return false;
-  }
-
-  const txChainId = getChainId(tx);
-  
-  if (txChainId === undefined) {
-    return false;
-  }
-
-  return txChainId === expectedChainId;
 } 

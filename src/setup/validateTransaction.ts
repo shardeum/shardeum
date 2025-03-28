@@ -11,6 +11,7 @@ import { ethers } from 'ethers'
 import { shardusConfig } from '..'
 import { validateTransferFromSecureAccount } from '../shardeum/secureAccounts'
 import { isSetCertTimeTx } from '../tx/setCertTime'
+import { validateTxChainId } from '../utils/validateChainId'
 
 type Response = {
   result: string
@@ -30,11 +31,7 @@ export const validateTransaction =
         internalTx.internalTXType === InternalTXType.ChangeNetworkParam
       ) {
         // Validate chainId
-        if (
-          typeof tx.chainId !== 'string' ||
-          !/^0x[0-9a-fA-F]+$/.test(tx.chainId) ||
-          BigInt(tx.chainId) !== BigInt(ShardeumFlags.ChainID)
-        ) {
+        if (!validateTxChainId(tx.chainId, ShardeumFlags.ChainID)) {
           return { result: 'fail', reason: 'Invalid chain ID' }
         }
 

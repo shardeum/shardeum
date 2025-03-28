@@ -52,6 +52,7 @@ import {
 import { keyListAsLeveledKeys } from '../utils/keyUtils'
 import multisigPermissions from '../config/multisig-permissions.json'
 import { safeStringify } from '@shardeum-foundation/lib-types/build/src/utils/functions/stringify'
+import { validateTxChainId } from '../utils/validateChainId'
 
 const txTypeToAJVMap = {
   [InternalTXType.InitNetwork]: 'InitNetworkTx',
@@ -155,18 +156,14 @@ export const validateTxnFields =
             }
 
             // Validate chainId
-            if (
-              typeof tx.chainId !== 'string' ||
-              !/^0x[0-9a-fA-F]+$/.test(tx.chainId) ||
-              BigInt(tx.chainId) !== BigInt(ShardeumFlags.ChainID)
-            ) {
+            if (!validateTxChainId(tx.chainId, ShardeumFlags.ChainID)) {
               return {
                 success: false,
                 reason: 'Invalid chain ID',
                 txnTimestamp,
               }
             }
-
+           
             // Clean multiSigPermissions to remove any keys not in shardusConfig.debug.multisigKeys
             const cleanedMultiSigPermissions = cleanMultiSigPermissions(multisigPermissions, shardusConfig)
            
@@ -349,12 +346,15 @@ export const validateTxnFields =
         }
 
         // Chain ID validation
-        let chainId = BigInt(-1)
-        if (transaction && transaction.common.chainId) {
-          chainId = transaction.common.chainId()
+        // Get chain ID from the transaction's common object
+        let chainId: string | undefined
+        if (transaction && transaction.common && transaction.common.chainId) {
+          const chainIdBigInt = transaction.common.chainId()
+          // Convert to 0x-prefixed hex string
+          chainId = `0x${chainIdBigInt.toString(16)}`
         }
 
-        if (chainId !== BigInt(ShardeumFlags.ChainID)) {
+        if (!validateTxChainId(chainId, ShardeumFlags.ChainID)) {
           nestedCountersInstance.countEvent('shardeum', 'validate - invalid chain ID')
           success = false
           reason = `Transaction chain ID is invalid.`
