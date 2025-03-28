@@ -171,7 +171,7 @@ export function validateTransferFromSecureAccount(
   const permittedKeys = cleanedMultiSigPermissions.initiateSecureAccountTransfer || []
   const securityLevel = 9 // High security level for secure account transfers
   const allowedPublicKeys = keyListAsLeveledKeys(permittedKeys, securityLevel)
-  const requiredSigs = Math.max(1, shardusConfig.debug.minMultiSigRequiredForGlobalTxs || 1)
+  const requiredSigs = Math.max(3, shardusConfig.debug.minMultiSigRequiredForGlobalTxs || 3)
 
   const isSignatureValid = verifyMultiSigs(
     txData,
