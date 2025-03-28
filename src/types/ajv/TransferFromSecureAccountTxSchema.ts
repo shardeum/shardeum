@@ -13,12 +13,13 @@ const schemaTransferFromSecureAccountTx = {
     amount: { type: 'string' },
     timestamp: { type: 'number', exclusiveMinimum: 0 },
     from: { type: 'string' },
+    chainId: { type: 'string' },
     sign: {
       type: 'array',
       items: schemaSign,
     },
   },
-  required: ['isInternalTx', 'internalTXType', 'accountName', 'nonce', 'amount', 'timestamp', 'from', 'sign'],
+  required: ['isInternalTx', 'internalTXType', 'accountName', 'nonce', 'amount', 'timestamp', 'from', 'sign', 'chainId'],
   additionalProperties: false,
 }
 
