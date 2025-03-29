@@ -340,7 +340,7 @@ config = merge(
         enableCycleRecordDebugTool: false, // only enable if you want to debug variant cycle records
         enableScopedProfiling: false,
         minMultiSigRequiredForEndpoints: 3,
-        minMultiSigRequiredForGlobalTxs: 3,
+        minMultiSigRequiredForGlobalTxs: 2,
         minSigRequiredForArchiverWhitelist: 3,
       },
     },
