@@ -66,8 +66,7 @@ export async function estimateGas(
     const senderWrappedEVMAccount = AccountsStorage.getAccount(senderShardusAddress) as WrappedEVMAccount
     if (senderWrappedEVMAccount) {
       fixDeserializedWrappedEVMAccount(senderWrappedEVMAccount)
-      const predictedContractAddressString =
-        '0x' + predictContractAddress(senderWrappedEVMAccount).toString('hex')
+      const predictedContractAddressString = '0x' + predictContractAddress(senderWrappedEVMAccount).toString('hex')
       const createdAccount: WrappedEVMAccount = await createAccount(predictedContractAddressString)
       AccountsStorage.addCreatedAccount(predictedContractAddressString, createdAccount)
       preRunTxState._transactionState.insertFirstAccountReads(

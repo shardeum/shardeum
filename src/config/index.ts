@@ -26,14 +26,14 @@ export interface Config {
     mode?: 'debug' | 'release'
     sharding?: {
       nodesPerConsensusGroup: number
-    },
+    }
     features?: {
       tickets?: {
-        updateTicketListTimeInMs?: number,
+        updateTicketListTimeInMs?: number
         ticketTypes?: Array<{
-          type: string;
-          enabled: boolean;
-        }>,
+          type: string
+          enabled: boolean
+        }>
       }
     }
   }
@@ -50,9 +50,7 @@ let config: Config = {
 // eslint-disable-next-line security/detect-non-literal-fs-filename
 if (fs.existsSync(path.join(process.cwd(), FilePaths.CONFIG))) {
   // eslint-disable-next-line security/detect-non-literal-fs-filename
-  const fileConfig = Utils.safeJsonParse(
-    fs.readFileSync(path.join(process.cwd(), FilePaths.CONFIG)).toString()
-  )
+  const fileConfig = Utils.safeJsonParse(fs.readFileSync(path.join(process.cwd(), FilePaths.CONFIG)).toString())
   config = merge(config, fileConfig, { arrayMerge: overwriteMerge })
 }
 
@@ -135,10 +133,10 @@ config = merge(config, {
       rotationEdgeToAvoid: 0, //we are moving away from this feature in current testing.  There seem to be errors related to it
       allowActivePerCycle: 1,
 
-      syncFloorEnabled: true,  //ITN initially false for rotation safety
+      syncFloorEnabled: true, //ITN initially false for rotation safety
       syncingDesiredMinCount: 40, //ITN = 40
 
-      activeRecoveryEnabled: true,//ITN initially false for rotation safety
+      activeRecoveryEnabled: true, //ITN initially false for rotation safety
       allowActivePerCycleRecover: 4,
 
       flexibleRotationEnabled: true, //ITN 1.16.1
@@ -152,8 +150,8 @@ config = merge(config, {
       downNodeFilteringEnabled: false, //turning down node filtering off for diagnostics purposes
 
       //initial parameters for problem node rotation
-      enableProblematicNodeRemoval: false,
-      enableProblematicNodeRemovalOnCycle: 20000,
+      enableProblematicNodeRemoval: true,
+      enableProblematicNodeRemovalOnCycle: 0,
       maxProblematicNodeRemovalsPerCycle: 1,
       problematicNodeConsecutiveRefuteThreshold: 6,
       problematicNodeRefutePercentageThreshold: 0.1,
@@ -248,10 +246,8 @@ config = merge(config, {
       startInServiceMode: ShardeumFlags.startInServiceMode,
       tickets: {
         updateTicketListTimeInMs: 600000,
-        ticketTypes: [
-          { type: 'silver', enabled: true }
-        ]
-      }
+        ticketTypes: [{ type: 'silver', enabled: true }],
+      },
     },
   },
 })
@@ -302,7 +298,7 @@ config = merge(
           /* prettier-ignore */ 'abb118e65bbd834d3f9c3135f72a3ed883b5c3b85c9e4a647b142f2824663e20': DevSecurityLevel.High,
           /* prettier-ignore */ '154cca8f6394fe43a08b579a4fd5fc666cf69b2b1f54364790f35bf4d612cf66': DevSecurityLevel.High,
           /* prettier-ignore */ 'ee2e6e301f1e4474317f6e3d1e9c9e8d6abccd9a263654e639303e4aadc9ff32': DevSecurityLevel.High,
-          /* prettier-ignore */ 'e55a70ae4ea0a1ef4760d40df72a78016fddbaa70e479d032ddbb6f77a07ddc8': DevSecurityLevel.High,
+          /* prettier-ignore */ '3f7ee9c4bbc42066cb7224e0b278265cf31fe4044b63946caff70f69b1e25917': DevSecurityLevel.High,
           // always prefix with prettier ignore
         },
         multisigKeys: {
@@ -335,14 +331,17 @@ config = merge(
           /* prettier-ignore */ '0x7Fb9b1C5E20bd250870F87659E46bED410221f17': DevSecurityLevel.High,
           /* prettier-ignore */ '0x1e5e12568b7103E8B22cd680A6fa6256DD66ED76': DevSecurityLevel.High,
           /* prettier-ignore */ '0xa58169308e7153B5Ce4ca5cA515cC4d0cBE7770B': DevSecurityLevel.High,
+          /* prettier-ignore */ '0x4FE8CaabA0BaC60AE9452DB06a983932C58cC811': DevSecurityLevel.High,
+          /* prettier-ignore */ '0x979B63E576E91eb20B5D89E9aA94FD793E6b19AD': DevSecurityLevel.High,
+          /* prettier-ignore */ '0x58845fbe90f9558a205A0d99F5a9D45a3ee6789b': DevSecurityLevel.High,
           // always prefix with prettier ignore
         },
         checkAddressFormat: true, //enabled for 1.10.0
         enableCycleRecordDebugTool: false, // only enable if you want to debug variant cycle records
         enableScopedProfiling: false,
-        minMultiSigRequiredForEndpoints: 1,
-        minMultiSigRequiredForGlobalTxs: 1,
-        minSigRequiredForArchiverWhitelist: 1
+        minMultiSigRequiredForEndpoints: 3,
+        minMultiSigRequiredForGlobalTxs: 3,
+        minSigRequiredForArchiverWhitelist: 3,
       },
     },
   },
@@ -361,9 +360,7 @@ if (process.env.LOAD_JSON_CONFIGS) {
       // eslint-disable-next-line security/detect-non-literal-fs-filename
       if (fs.existsSync(path.join(process.cwd(), '..', configs[i]))) {
         // eslint-disable-next-line security/detect-non-literal-fs-filename
-        const fileConfig = Utils.safeJsonParse(
-          fs.readFileSync(path.join(process.cwd(), '..', configs[i])).toString()
-        )
+        const fileConfig = Utils.safeJsonParse(fs.readFileSync(path.join(process.cwd(), '..', configs[i])).toString())
         config = merge(config, fileConfig, { arrayMerge: overwriteMerge })
         console.log('config loaded from:', configs[i])
       } else {
@@ -461,19 +458,27 @@ if (process.env.APP_IP) {
 config = merge(config, {
   server: {
     p2p: {
-      baselineNodes: process.env.baselineNodes ? parseInt(process.env.baselineNodes) : (config.server.p2p as any).baselineNodes, // config used for baseline for entering recovery, restore, and safety. Should be equivalient to minNodes on network startup
+      baselineNodes: process.env.baselineNodes
+        ? parseInt(process.env.baselineNodes)
+        : (config.server.p2p as any).baselineNodes, // config used for baseline for entering recovery, restore, and safety. Should be equivalient to minNodes on network startup
       minNodes: process.env.minNodes ? parseInt(process.env.minNodes) : (config.server.p2p as any).minNodes,
       maxNodes: process.env.maxNodes ? parseInt(process.env.maxNodes) : (config.server.p2p as any).maxNodes,
-      maxRotatedPerCycle: process.env.maxRotatedPerCycle ? parseInt(process.env.maxRotatedPerCycle) : (config.server.p2p as any).maxRotatedPerCycle,
-      flexibleRotationDelta: process.env.flexibleRotationDelta ? parseInt(process.env.flexibleRotationDelta) : (config.server.p2p as any).flexibleRotationDelta,
+      maxRotatedPerCycle: process.env.maxRotatedPerCycle
+        ? parseInt(process.env.maxRotatedPerCycle)
+        : (config.server.p2p as any).maxRotatedPerCycle,
+      flexibleRotationDelta: process.env.flexibleRotationDelta
+        ? parseInt(process.env.flexibleRotationDelta)
+        : (config.server.p2p as any).flexibleRotationDelta,
     },
     sharding: {
       nodesPerConsensusGroup: process.env.nodesPerConsensusGroup
         ? parseInt(process.env.nodesPerConsensusGroup)
         : (config.server.sharding as any).nodesPerConsensusGroup,
-      nodesPerEdge: process.env.nodesPerEdge ? parseInt(process.env.nodesPerEdge) : (config.server.sharding as any).nodesPerEdge,
-    }
-  }
+      nodesPerEdge: process.env.nodesPerEdge
+        ? parseInt(process.env.nodesPerEdge)
+        : (config.server.sharding as any).nodesPerEdge,
+    },
+  },
 })
 
 export default config

@@ -2,7 +2,7 @@ import Ajv from 'ajv'
 
 const ajv = new Ajv()
 ajv.addKeyword('isBigInt', {
-  validate: (schema, data) => typeof data === 'bigint'
+  validate: (schema, data) => typeof data === 'bigint',
 })
 
 const schemaMap: Map<string, object> = new Map()

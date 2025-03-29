@@ -1,6 +1,6 @@
-import { addSchema } from '../../utils/serialization/SchemaHelpers';
-import { AJVSchemaEnum } from '../enum/AJVSchemaEnum';
-import { schemaSign } from './SignSchema';
+import { addSchema } from '../../utils/serialization/SchemaHelpers'
+import { AJVSchemaEnum } from '../enum/AJVSchemaEnum'
+import { schemaSign } from './SignSchema'
 
 export const RemoveNodeCert = {
   type: 'object',
@@ -9,12 +9,12 @@ export const RemoveNodeCert = {
     cycle: { type: 'number' },
     sign: schemaSign,
     signs: {
-      type: "array",
-      items: schemaSign
-    }
+      type: 'array',
+      items: schemaSign,
+    },
   },
   required: ['nodePublicKey', 'cycle'],
-  additionalProperties: false
+  additionalProperties: false,
 }
 
 export function initRemoveNodeCert(): void {
@@ -27,5 +27,5 @@ function addSchemaDependencies(): void {
 }
 
 function addSchemas(): void {
-  addSchema(AJVSchemaEnum.RemoveNodeCert, RemoveNodeCert);
+  addSchema(AJVSchemaEnum.RemoveNodeCert, RemoveNodeCert)
 }

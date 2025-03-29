@@ -32,6 +32,7 @@ export function isInternalTXGlobal(internalTx: InternalTx): boolean {
 export function isInternalTx(timestampedTx: any): boolean {
   if (timestampedTx && timestampedTx.raw) return false
   if (timestampedTx && timestampedTx.isInternalTx) return true
+  if (timestampedTx?.tx?.isInternalTx) return true
   return false
 }
 
@@ -54,8 +55,7 @@ export function getTransactionObj(
   }
   if (!transactionObj) {
     try {
-      transactionObj =
-        TransactionFactory.fromSerializedData<TransactionType.AccessListEIP2930>(serializedInput)
+      transactionObj = TransactionFactory.fromSerializedData<TransactionType.AccessListEIP2930>(serializedInput)
     } catch (e) {
       if (ShardeumFlags.VerboseLogs) console.log('Unable to get transaction obj', e)
     }
@@ -129,7 +129,7 @@ export function verifyMultiSigs(
   if (sigs.length > Object.keys(allowedPubkeys).length) return false
 
   let validSigs = 0
-  const payload_hash = ethers.keccak256(ethers.toUtf8Bytes(Utils.safeStringify(rawPayload)))
+  const signedMessage = Utils.safeStringify(rawPayload)
   const seen = new Set()
 
   for (let i = 0; i < sigs.length; i++) {
@@ -142,7 +142,7 @@ export function verifyMultiSigs(
       !seen.has(sigs[i].owner) &&
       allowedPubkeys[sigs[i].owner] &&
       allowedPubkeys[sigs[i].owner] >= requiredSecurityLevel &&
-      ethers.verifyMessage(payload_hash, sigs[i].sig).toLowerCase() === sigs[i].owner.toLowerCase()
+      ethers.verifyMessage(signedMessage, sigs[i].sig).toLowerCase() === sigs[i].owner.toLowerCase()
     ) {
       validSigs++
       seen.add(sigs[i].owner)

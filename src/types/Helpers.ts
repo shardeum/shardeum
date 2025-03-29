@@ -4,11 +4,7 @@ import { BaseAccount } from './BaseAccount'
 import { DevAccount, deserializeDevAccount, serializeDevAccount } from './DevAccount'
 import { NetworkAccount, deserializeNetworkAccount, serializeNetworkAccount } from './NetworkAccount'
 import { NodeAccount, deserializeNodeAccount, serializeNodeAccount } from './NodeAccount'
-import {
-  WrappedEVMAccount,
-  deserializeWrappedEVMAccount,
-  serializeWrappedEVMAccount,
-} from './WrappedEVMAccount'
+import { WrappedEVMAccount, deserializeWrappedEVMAccount, serializeWrappedEVMAccount } from './WrappedEVMAccount'
 import { TypeIdentifierEnum } from './enum/TypeIdentifierEnum'
 import { Utils } from '@shardeum-foundation/lib-types'
 import { deserializeSecureAccount, serializeSecureAccount } from './SecureAccount'
@@ -45,29 +41,15 @@ export const accountSerializer = <T extends BaseAccount>(data: T): VectorBufferS
       break
     case AccountType.NodeAccount:
       nestedCountersInstance.countEvent('binarySerialize', 'NodeAccount')
-      serializeNodeAccount(
-        serializedPayload,
-        data as unknown as NodeAccount,
-        TypeIdentifierEnum.cNodeAccount,
-        true
-      )
+      serializeNodeAccount(serializedPayload, data as unknown as NodeAccount, TypeIdentifierEnum.cNodeAccount, true)
       break
     case AccountType.NodeAccount2:
       nestedCountersInstance.countEvent('binarySerialize', 'NodeAccount2')
-      serializeNodeAccount(
-        serializedPayload,
-        data as unknown as NodeAccount2,
-        TypeIdentifierEnum.cNodeAccount2,
-        true
-      )
+      serializeNodeAccount(serializedPayload, data as unknown as NodeAccount2, TypeIdentifierEnum.cNodeAccount2, true)
       break
     case AccountType.SecureAccount:
       nestedCountersInstance.countEvent('binarySerialize', 'SecureAccount')
-      serializeSecureAccount(
-        serializedPayload,
-        data as unknown as SecureAccount,
-        true
-      )
+      serializeSecureAccount(serializedPayload, data as unknown as SecureAccount, true)
       break
     case AccountType.Account:
     case AccountType.ContractCode:

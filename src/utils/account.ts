@@ -43,7 +43,7 @@ export async function getAccountData(shardus, address: string, req: any): Promis
     const readableAccount = await getReadableAccountInfo(data)
     return readableAccount ? { account: readableAccount } : { account: data }
   } else {
-    let accountType = parseInt(req.query.type)
+    const accountType = parseInt(req.query.type)
     if (AccountType[accountType] == null) {
       return { error: 'Invalid account type' }
     }

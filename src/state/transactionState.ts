@@ -1,12 +1,4 @@
-import {
-  Account,
-  Address,
-  bytesToHex,
-  equalsBytes,
-  hexToBytes,
-  KECCAK256_NULL,
-  unpadBytes,
-} from '@ethereumjs/util'
+import { Account, Address, bytesToHex, equalsBytes, hexToBytes, KECCAK256_NULL, unpadBytes } from '@ethereumjs/util'
 import { ShardeumState } from '.'
 import { ShardeumFlags } from '../shardeum/shardeumFlags'
 import { zeroAddressAccount, zeroAddressStr } from '../utils'
@@ -347,12 +339,7 @@ export default class TransactionState {
     //store all writes to the persistant trie.
   }
 
-  async getAccount(
-    worldStateTrie: Trie,
-    address: Address,
-    originalOnly: boolean,
-    canThrow: boolean
-  ): Promise<Account> {
+  async getAccount(worldStateTrie: Trie, address: Address, originalOnly: boolean, canThrow: boolean): Promise<Account> {
     const addressString = address.toString()
     let account: Account
     if (ShardeumFlags.Virtual0Address && addressString === zeroAddressStr) {
@@ -444,12 +431,7 @@ export default class TransactionState {
     //attempt to get data from tryGetRemoteAccountCB
     //this can be a long wait only suitable in some cases
     if (account == undefined) {
-      const wrappedEVMAccount = await this.tryGetRemoteAccountCB(
-        this,
-        AccountType.Account,
-        addressString,
-        null
-      )
+      const wrappedEVMAccount = await this.tryGetRemoteAccountCB(this, AccountType.Account, addressString, null)
       if (wrappedEVMAccount != undefined) {
         //get account aout of the wrapped evm account
         account = wrappedEVMAccount.account
@@ -487,8 +469,7 @@ export default class TransactionState {
       return account
     }
 
-    if (this.debugTrace)
-      this.debugTraceLog(`getAccount: addr:${addressString} v:${Utils.safeStringify(account)}`)
+    if (this.debugTrace) this.debugTraceLog(`getAccount: addr:${addressString} v:${Utils.safeStringify(account)}`)
     // storage hit!!! data exists in this shard
     //put this in our first reads map
     this.firstAccountReads.set(addressString, storedRlp)
@@ -522,8 +503,7 @@ export default class TransactionState {
     const accountObj = Account.fromAccountData(account)
     const storedRlp = accountObj.serialize()
 
-    if (this.debugTrace)
-      this.debugTraceLog(`putAccount: addr:${addressString} v:${Utils.safeStringify(accountObj)}`)
+    if (this.debugTrace) this.debugTraceLog(`putAccount: addr:${addressString} v:${Utils.safeStringify(accountObj)}`)
 
     //this.allAccountWrites.set(addressString, storedRlp)
 
@@ -562,8 +542,7 @@ export default class TransactionState {
     //first get the account so we can have the correct code hash to look at
     const contractAccount = await this.getAccount(worldStateTrie, contractAddress, originalOnly, canThrow)
     if (contractAccount == undefined) {
-      if (this.debugTrace)
-        this.debugTraceLog(`getContractCode: addr:${addressString} Found no contract account`)
+      if (this.debugTrace) this.debugTraceLog(`getContractCode: addr:${addressString} Found no contract account`)
       return
     }
     const codeHash = contractAccount.codeHash
@@ -649,9 +628,7 @@ export default class TransactionState {
     }
 
     if (this.debugTrace)
-      this.debugTraceLog(
-        `getContractCode: addr:${addressString} codeHashStr:${codeHashStr} v:${codeBytes.length}`
-      )
+      this.debugTraceLog(`getContractCode: addr:${addressString} codeHashStr:${codeHashStr} v:${codeBytes.length}`)
 
     // storage hit!!! data exists in this shard
     //put this in our first reads map
@@ -684,9 +661,7 @@ export default class TransactionState {
 
     if (this.debugTrace)
       this.debugTraceLog(
-        `putContractCode: addr:${addressString} codeHash:${codeHashStr} v:${bytesToHex(
-          contractByteWrite.contractByte
-        )}`
+        `putContractCode: addr:${addressString} codeHash:${codeHashStr} v:${bytesToHex(contractByteWrite.contractByte)}`
       )
 
     this.allContractBytesWrites.set(codeHashStr, contractByteWrite)
@@ -726,9 +701,7 @@ export default class TransactionState {
         const contractStorageWrites = this.allContractStorageWrites.get(addressString)
         if (contractStorageWrites.has(keyString)) {
           const storedRlp = contractStorageWrites.get(keyString)
-          const returnValue = storedRlp
-            ? (RLP.decode(storedRlp ?? new Uint8Array(0)) as Uint8Array)
-            : undefined
+          const returnValue = storedRlp ? (RLP.decode(storedRlp ?? new Uint8Array(0)) as Uint8Array) : undefined
           if (this.debugTrace)
             this.debugTraceLog(
               `getContractStorage: (contractStorageWrites) addr:${addressString} key:${keyString} v:${
@@ -764,11 +737,7 @@ export default class TransactionState {
     //get from accounts db
     //throw new Error('get from accounts db')
     // toShardusAddressWithKey.. use contract address followed by key
-    const storageShardusAddress = toShardusAddressWithKey(
-      addressString,
-      keyString,
-      AccountType.ContractStorage
-    )
+    const storageShardusAddress = toShardusAddressWithKey(addressString, keyString, AccountType.ContractStorage)
     const wrappedAccount = await AccountsStorage.getAccount(storageShardusAddress)
     if (wrappedAccount != null) {
       fixDeserializedWrappedEVMAccount(wrappedAccount)
@@ -814,8 +783,7 @@ export default class TransactionState {
       //event callback to inidicate we do not have the account in this shard
       const isRemoteShard = await this.contractStorageMissCB(this, addressString, keyString)
 
-      if (this.debugTrace)
-        this.debugTraceLog(`getContractStorage: addr:${addressString} key:${keyString} v:notFound`)
+      if (this.debugTrace) this.debugTraceLog(`getContractStorage: addr:${addressString} key:${keyString} v:notFound`)
 
       if (canThrow && isRemoteShard) throw new Error('account not available') //todo smarter throw?
 
@@ -863,9 +831,7 @@ export default class TransactionState {
 
     if (this.debugTrace)
       this.debugTraceLog(
-        `putContractStorage: addr:${addressString} key:${keyString} v:${
-          value ? bytesToHex(value) : undefined
-        }`
+        `putContractStorage: addr:${addressString} key:${keyString} v:${value ? bytesToHex(value) : undefined}`
       )
 
     //here is our take on things:

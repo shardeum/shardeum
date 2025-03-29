@@ -150,7 +150,7 @@ export const ShardeumFlags: ShardeumFlags = {
   DebugRestoreArchiveBatch: 2000,
   CheckNonce: true,
   txNoncePreCheck: false,
-  txBalancePreCheck: true ,
+  txBalancePreCheck: true,
   autoGenerateAccessList: false,
   forwardGenesisAccounts: true,
   UseDBForAccounts: true,

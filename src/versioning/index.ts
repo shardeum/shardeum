@@ -1,8 +1,6 @@
 import { meetsMinimumVersion, VersionValidationResult, nestedCountersInstance } from '@shardeum-foundation/core'
 import { Migration as Migrate } from './types'
 
-
-
 const appliedMigrations = new Set<string>()
 
 /**
