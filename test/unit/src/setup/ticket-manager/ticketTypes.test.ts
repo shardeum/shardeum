@@ -30,7 +30,7 @@ jest.mock('../../../../../src', () => ({
       multisigKeys: {
         "0x1e5e12568b7103E8B22cd680A6fa6256DD66ED76": 3
       },
-      minMultiSigRequiredForGlobalTxs: 1
+      minMultiSigRequiredForGlobalTxs: 3
     },
     features: {
       tickets: {

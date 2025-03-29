@@ -52,7 +52,7 @@ jest.mock('@shardeum-foundation/core', () => {
 jest.mock('../../../../src', () => ({
   shardusConfig: {
     debug: {
-      minMultiSigRequiredForGlobalTxs: 1
+      minMultiSigRequiredForGlobalTxs: 3
     }
   }
 }));
@@ -100,7 +100,7 @@ describe('secureAccounts', () => {
     }
 
     const mockedSrc = jest.requireMock('../../../../src');
-    mockedSrc.shardusConfig.debug.minMultisigRequiredForGlobalTxs = 1;
+    mockedSrc.shardusConfig.debug.minMultisigRequiredForGlobalTxs = 3;
     mockedSrc.createInternalTxReceipt = jest.fn();
     mockedSrc.getApplyTXState = jest.fn().mockReturnValue({
       checkpoint: jest.fn().mockResolvedValue(undefined),
