@@ -148,11 +148,6 @@ export const validateTxnFields =
             if (!tx.sign) {
               success = false
               reason = 'No signature found'
-              return {
-                success,
-                reason,
-                txnTimestamp,
-              }
             }
 
             // Validate chainId
@@ -163,16 +158,13 @@ export const validateTxnFields =
                 txnTimestamp,
               }
             }
-           
             // Clean multiSigPermissions to remove any keys not in shardusConfig.debug.multisigKeys
             const cleanedMultiSigPermissions = cleanMultiSigPermissions(multisigPermissions, shardusConfig)
-           
             // Check if this is a key change transaction
             const { isKeyChange, permittedKeys: keyChangePermittedKeys } =
               tx.internalTXType === InternalTXType.ChangeConfig
                 ? isTransactionKeyChange(tx, shardusConfig, cleanedMultiSigPermissions)
                 : { isKeyChange: false, permittedKeys: [] }
-            
             // Check if this is a non-key change transaction (only if not a key change)
             const { isNonKeyChange, permittedKeys: nonKeyChangePermittedKeys } =
               !isKeyChange && tx.internalTXType === InternalTXType.ChangeConfig
@@ -180,7 +172,6 @@ export const validateTxnFields =
                 : { isNonKeyChange: false, permittedKeys: [] }
             // Determine which keys are allowed to sign this transaction and the required security level
             let permittedKeys = isKeyChange ? keyChangePermittedKeys : isNonKeyChange ? nonKeyChangePermittedKeys : []
-            
             let networkParamChange = false
             if (tx.internalTXType === InternalTXType.ChangeNetworkParam) {
               //network param changes always use the clean list of non key config changers
@@ -192,7 +183,6 @@ export const validateTxnFields =
               isKeyChange || isNonKeyChange || networkParamChange
                 ? keyListAsLeveledKeys(permittedKeys, DevSecurityLevel.High)
                 : shardus.getMultisigPublicKeys()
-            
             const requiredLevel = DevSecurityLevel.High
 
             const is_array_sig = Array.isArray(tx.sign) === true

@@ -2840,7 +2840,6 @@ async function applyInternalTx(
       timestamp: when,
       from: internalTx.from,
       network: networkAccount,
-      chainId: ShardeumFlags.ChainID,
       change: { cycle: changeOnCycle, change: Utils.safeJsonParse(internalTx.config) },
     }
 
@@ -2944,7 +2943,6 @@ async function applyInternalTx(
       timestamp: when,
       from: internalTx.from,
       network: networkAccount,
-      chainId: ShardeumFlags.ChainID,
       change: { cycle: changeOnCycle, change: {}, appData: Utils.safeJsonParse(internalTx.config) },
     }
 
