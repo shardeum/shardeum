@@ -31,7 +31,7 @@ export const validateTransaction =
       ) {
         const devPublicKeys = shardus.getMultisigPublicKeys()
         const is_array_sig = Array.isArray(tx.sign) === true
-        const requiredSigs = Math.max(1, shardusConfig.debug.minMultiSigRequiredForGlobalTxs)
+        const requiredSigs = Math.max(3, shardusConfig.debug.minMultiSigRequiredForGlobalTxs)
         //Ensure old single sig / non-array are still compitable
         const sigs: ShardusTypes.Sign[] = is_array_sig ? tx.sign : [tx.sign]
         const { sign, ...txWithoutSign } = tx
