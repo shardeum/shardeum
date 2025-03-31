@@ -8035,7 +8035,7 @@ async function fetchNetworkAccountFromArchiver(): Promise<WrappedAccount> {
         `get-network-account from archiver pk:${majorityValue.archiver.publicKey} returned null`
       )
     }
-
+    /* prettier-ignore */ nestedCountersInstance.countEvent('network-config-operation', `got config from archiver ${url}`)
     return res.data.networkAccount as WrappedAccount
   } catch (ex) {
     console.error(`[fetchNetworkAccountFromArchiver] ERROR retrieving/processing data from archiver ${url}: `, ex)
@@ -8129,14 +8129,16 @@ export function shardeumGetTime(): number {
   try {
     // Attempt to get and patch config. Error if unable to get config.
     const networkAccount = await fetchNetworkAccountFromArchiver()
-    /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`[index] networkAccount: ${JSON.stringify(networkAccount)}`)
+    /* prettier-ignore */ console.log(`Got network account from archiver:\n ${JSON.stringify(networkAccount)}`)
+    
     AccountsStorage.setCachedNetworkAccount(networkAccount.data)
 
     configToLoad = await updateConfigFromNetworkAccount(config, networkAccount)
   } catch (error) {
     configToLoad = config
     /* prettier-ignore */ nestedCountersInstance.countEvent('network-config-operation', 'Error: Use default configs.')
-    /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`Error: ${formatErrorMessage(error)} \nUsing default configs`)
+    /* prettier-ignore */ console.log(`Error Using default configs: ${formatErrorMessage(error)} \n`)
+    /* prettier-ignore */ console.log(`using default config:\n ${JSON.stringify(configToLoad, null, 2)}`)
   }
 
   // this code is only excuted when starting or setting up the network***
