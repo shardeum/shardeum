@@ -10,7 +10,7 @@ const schemaApplyNetworkParamTx = {
     from: { type: 'string' },
     network: { type: 'string' },
     change: { type: 'object' },
-    timestamp: { type: 'number', exclusiveMinimum: 0 }
+    timestamp: { type: 'number', exclusiveMinimum: 0 },
   },
   required: ['isInternalTx', 'internalTXType', 'from', 'network', 'change', 'timestamp'],
   additionalProperties: false,
