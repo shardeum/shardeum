@@ -58,7 +58,7 @@ describe('nonKeyChange integration tests', () => {
     expect(result.permittedKeys).toEqual(['0xValidKey1', '0xValidKey2']);
   });
 
-  test('isNonKeyChange should work with empty permitted keys after cleaning', () => {
+  it('isNonKeyChange should work with empty permitted keys after cleaning', () => {
     // Mock config with multisig keys
     const currentConfig = {
       debug: {
@@ -105,4 +105,76 @@ describe('nonKeyChange integration tests', () => {
     expect(result.isNonKeyChange).toBe(true);
     expect(result.permittedKeys).toEqual([]);
   });
+
+  it('should return noChange when configs are identical', () => {
+    // Mock config with multisig keys
+    const currentConfig = {
+      debug: {
+        multisigKeys: {
+          '0xValidKey1': 2,
+          '0xValidKey2': 1
+        },
+        someConfig: 'value'
+      }
+    };
+
+    // Mock permissions with valid keys
+    const multiSigPermissions = {
+      changeNonKeyConfigs: ['0xValidKey1', '0xValidKey2']
+    };
+
+    // Mock a transaction with identical config
+    const tx = {
+      config: JSON.stringify(currentConfig), // Same as current config
+      type: 'ChangeConfig',
+      from: '0xSender',
+      cycle: mockCycle,
+      timestamp: Date.now()
+    } as unknown as ChangeConfig;
+
+    // Call isNonKeyChange
+    const result = isNonKeyChange(tx, currentConfig, multiSigPermissions);
+
+    // Verify that isNonKeyChange is false and permittedKeys is empty
+    expect(result.isNonKeyChange).toBe(false);
+    expect(result.permittedKeys).toEqual([]);
+  });
+
+  it('should handle simultaneous key and non-key changes correctly', () => {
+    const currentConfig = {
+      debug: {
+        multisigKeys: {
+          '0xValidKey1': 2,
+          '0xValidKey2': 1
+        },
+        someConfig: 'value'
+      }
+    };
+
+    const tx = {
+      config: JSON.stringify({
+        debug: {
+          multisigKeys: {
+            '0xValidKey1': 2,
+            '0xValidKey3': 1  // Key change
+          },
+          someConfig: 'new-value'  // Non-key change
+        }
+      }),
+      type: 'ChangeConfig',
+      from: '0xSender',
+      cycle: mockCycle,
+      timestamp: Date.now()
+    } as unknown as ChangeConfig;
+
+    const multiSigPermissions = {
+      changeNonKeyConfigs: ['0xValidKey1', '0xValidKey2']
+    };
+
+    const result = isNonKeyChange(tx, currentConfig, multiSigPermissions);
+    // Should return false because key changes take precedence
+    expect(result.isNonKeyChange).toBe(false);
+    expect(result.permittedKeys).toEqual([]);
+  });
+
 }); 

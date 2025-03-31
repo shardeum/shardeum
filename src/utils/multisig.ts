@@ -223,9 +223,6 @@ export function cleanMultiSigPermissions(multiSigPermissions: any, currentConfig
 
     // If the property is an array, filter it to only include valid keys
     if (Array.isArray(value)) {
-      // Create a map to check if a normalized address is already in the array
-      const normalizedAddressesInPermissions = new Map()
-
       // First pass: Keep all original keys that match a normalized key in the config
       cleanedPermissions[permissionType] = []
 
@@ -236,19 +233,6 @@ export function cleanMultiSigPermissions(multiSigPermissions: any, currentConfig
         if (validMultisigKeysMap.has(normalizedKey)) {
           // Add the original key to the cleaned permissions
           cleanedPermissions[permissionType].push(key)
-
-          // Track that we've seen this normalized address
-          if (!normalizedAddressesInPermissions.has(normalizedKey)) {
-            normalizedAddressesInPermissions.set(normalizedKey, true)
-          }
-        }
-      }
-
-      // Now add any keys from the config that weren't in the original permissions
-      for (const [normalizedConfigKey, originalConfigKey] of validMultisigKeysMap.entries()) {
-        // Check if this normalized key is already in the cleaned permissions
-        if (!normalizedAddressesInPermissions.has(normalizedConfigKey)) {
-          cleanedPermissions[permissionType].push(originalConfigKey)
         }
       }
     } else {
