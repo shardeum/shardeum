@@ -196,7 +196,7 @@ export let genesisAccounts: string[] = []
 // Two global variables: at the top of utils/versions.ts
 // Where to call this function: After shradus factory line 146 console.logs ke pehle
 // Add a console log to log out to fetched versions
-// "getNodeInfoAppData()"
+// “getNodeInfoAppData()”
 
 const ERC20_BALANCEOF_CODE = '0x70a08231'
 
@@ -1104,6 +1104,7 @@ function logAccessList(message: string, appData): void {
     if (ShardeumFlags.VerboseLogs) console.log(`access list for ${message} ${Utils.safeStringify(appData.accessList)}`)
   }
 }
+
 /***
  *    ######## ##    ## ########  ########   #######  #### ##    ## ########  ######
  *    ##       ###   ## ##     ## ##     ## ##     ##  ##  ###   ##    ##    ##    ##
@@ -3356,7 +3357,7 @@ const getOrCreateBlockFromTimestamp = (timestamp: number, scheduleNextBlock = fa
   const block = createAndRecordBlock(blockNumber, newBlockTimestamp)
   if (scheduleNextBlock) {
     const nextBlockTimestamp = newBlockTimestamp + ShardeumFlags.blockProductionRate * 1000
-    const waitTime = Math.max(0, nextBlockTimestamp - shardeumGetTime())
+    const waitTime = nextBlockTimestamp - shardeumGetTime()
     if (ShardeumFlags.VerboseLogs) console.log('Scheduling next block created which will happen in', waitTime)
     setTimeout(() => {
       getOrCreateBlockFromTimestamp(nextBlockTimestamp, true)
@@ -8404,4 +8405,3 @@ export function shardeumGetTime(): number {
     shardus.start()
   }
 })()
-
