@@ -221,23 +221,22 @@ export function cleanMultiSigPermissions(multiSigPermissions: any, currentConfig
   for (const permissionType in multiSigPermissions) {
     const value = multiSigPermissions[permissionType]
 
-    // If the property is an array, filter it to only include valid keys
-    if (Array.isArray(value)) {
-      // First pass: Keep all original keys that match a normalized key in the config
-      cleanedPermissions[permissionType] = []
+    // If the property is not an array, throw an error
+    if (!Array.isArray(value)) {
+      throw new Error(`Invalid permissions type: ${permissionType}`)
+    }
 
-      for (const key of value) {
-        const normalizedKey = normalizeEthAddress(key)
+    // First pass: Keep all original keys that match a normalized key in the config
+    cleanedPermissions[permissionType] = []
 
-        // Check if the key is valid
-        if (validMultisigKeysMap.has(normalizedKey)) {
-          // Add the original key to the cleaned permissions
-          cleanedPermissions[permissionType].push(key)
-        }
+    for (const key of value) {
+      const normalizedKey = normalizeEthAddress(key)
+
+      // Check if the key is valid
+      if (validMultisigKeysMap.has(normalizedKey)) {
+        // Add the original key to the cleaned permissions
+        cleanedPermissions[permissionType].push(key)
       }
-    } else {
-      // For non-array properties, copy them as-is
-      cleanedPermissions[permissionType] = value
     }
   }
 

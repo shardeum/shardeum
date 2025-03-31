@@ -3,7 +3,7 @@ import { expect, describe, test } from '@jest/globals'
 import { DevSecurityLevel } from '@shardeum-foundation/core'
 
 describe('cleanMultiSigPermissions', () => {
-  test('should remove keys not in currentConfig.debug.multisigKeys (basic functionality)', () => {
+  it('should remove keys not in currentConfig.debug.multisigKeys (basic functionality)', () => {
     const multiSigPermissions = {
       changeDevKeyList: ['0xValidKey1', '0xInvalidKey1'],
       changeMultiSigKeyList: ['0xValidKey1', '0xInvalidKey2'],
@@ -29,7 +29,7 @@ describe('cleanMultiSigPermissions', () => {
     expect(cleanMultiSigPermissions(multiSigPermissions, currentConfig)).toEqual(expected);
   });
 
-  test('should handle case sensitivity when comparing keys', () => {
+  it('should handle case sensitivity when comparing keys', () => {
     const multiSigPermissions = {
       initiateSecureAccountTransfer: [
         '0xabcdef1234567890abcdef1234567890abcdef12',
@@ -55,7 +55,7 @@ describe('cleanMultiSigPermissions', () => {
     expect(cleanMultiSigPermissions(multiSigPermissions, currentConfig)).toEqual(expected);
   });
 
-  test('should handle real-world keys from the logs', () => {
+  it('should handle real-world keys from the logs', () => {
     // Using keys from your specific error case
     const multiSigPermissions = {
       initiateSecureAccountTransfer: [
@@ -103,7 +103,7 @@ describe('cleanMultiSigPermissions', () => {
     expect(cleanMultiSigPermissions(multiSigPermissions, currentConfig)).toEqual(expected);
   });
 
-  test('should handle exact case matches only', () => {
+  it('should handle exact case matches only', () => {
     // Test if the function requires exact case matches 
     const multiSigPermissions = {
       initiateSecureAccountTransfer: [
@@ -133,7 +133,7 @@ describe('cleanMultiSigPermissions', () => {
     expect(cleanMultiSigPermissions(multiSigPermissions, currentConfig)).toEqual(expected);
   });
 
-  test('should handle keys with different formatting styles', () => {
+  it('should handle keys with different formatting styles', () => {
     // Test with various formats that could be causing issues
     const multiSigPermissions = {
       initiateSecureAccountTransfer: [
@@ -163,7 +163,7 @@ describe('cleanMultiSigPermissions', () => {
     expect(cleanMultiSigPermissions(multiSigPermissions, currentConfig)).toEqual(expected);
   });
 
-  test('should handle key normalization issues', () => {
+  it('should handle key normalization issues', () => {
     // Test both function with slightly different key formats
     const multiSigPermissions = {
       initiateSecureAccountTransfer: [
@@ -191,7 +191,7 @@ describe('cleanMultiSigPermissions', () => {
     });
   });
 
-  test('should return original permissions when currentConfig is invalid', () => {
+  it('should return original permissions when currentConfig is invalid', () => {
     const multiSigPermissions = {
       changeDevKeyList: ['0xKey1', '0xKey2'],
       changeMultiSigKeyList: ['0xKey3']
@@ -202,7 +202,7 @@ describe('cleanMultiSigPermissions', () => {
     expect(cleanMultiSigPermissions(multiSigPermissions, invalidConfig)).toBe(multiSigPermissions);
   });
 
-  test('should return original permissions when currentConfig.debug is missing', () => {
+  it('should return original permissions when currentConfig.debug is missing', () => {
     const multiSigPermissions = {
       changeDevKeyList: ['0xKey1', '0xKey2'],
       changeMultiSigKeyList: ['0xKey3']
@@ -213,7 +213,7 @@ describe('cleanMultiSigPermissions', () => {
     expect(cleanMultiSigPermissions(multiSigPermissions, invalidConfig)).toBe(multiSigPermissions);
   });
 
-  test('should handle empty multiSigPermissions', () => {
+  it('should handle empty multiSigPermissions', () => {
     const multiSigPermissions = {};
 
     const currentConfig = {
@@ -228,7 +228,7 @@ describe('cleanMultiSigPermissions', () => {
     expect(cleanMultiSigPermissions(multiSigPermissions, currentConfig)).toEqual({});
   });
 
-  test('should handle non-array properties in multiSigPermissions', () => {
+  it('should handle non-array properties in multiSigPermissions', () => {
     const multiSigPermissions = {
       changeDevKeyList: ['0xValidKey1', '0xInvalidKey1'],
       someOtherProperty: 'not an array',
@@ -249,10 +249,10 @@ describe('cleanMultiSigPermissions', () => {
       anotherObject: { key: 'value' }
     };
 
-    expect(cleanMultiSigPermissions(multiSigPermissions, currentConfig)).toEqual(expected);
+    expect(() => cleanMultiSigPermissions(multiSigPermissions, currentConfig)).toThrow('Invalid permissions type: someOtherProperty');
   });
 
-  test('should handle empty arrays in multiSigPermissions', () => {
+  it('should handle empty arrays in multiSigPermissions', () => {
     const multiSigPermissions = {
       changeDevKeyList: [],
       changeMultiSigKeyList: ['0xValidKey1']

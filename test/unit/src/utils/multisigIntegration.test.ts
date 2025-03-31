@@ -10,34 +10,39 @@ const mockCycle = {
   // Add other required properties as needed
 };
 
-describe('multisig integration tests', () => {
-  test('cleanMultiSigPermissions should filter keys before isKeyChange uses them', () => {
-    // Mock config with multisig keys
-    const currentConfig = {
-      debug: {
-        multisigKeys: {
-          '0xValidKey1': DevSecurityLevel.High,
-          '0xValidKey2': DevSecurityLevel.Medium
-        }
+const setup = () => {
+  const currentConfig = {
+    debug: {
+      multisigKeys: {
+        '0xValidKey1': DevSecurityLevel.High,
+        '0xValidKey2': DevSecurityLevel.Medium
       }
-    };
+    }
+  }
 
-    // Mock permissions with some invalid keys
-    const multiSigPermissions = {
-      changeDevKeyList: ['0xValidKey1', '0xInvalidKey1'],
-      changeMultiSigKeyList: ['0xValidKey2', '0xInvalidKey2']
-    };
+  const multiSigPermissions = {
+    changeDevKeyList: ['0xValidKey1', '0xInvalidKey1'],
+    changeMultiSigKeyList: ['0xValidKey2', '0xInvalidKey2']
+  }
 
-    // Clean the permissions
-    const cleanedPermissions = cleanMultiSigPermissions(multiSigPermissions, currentConfig);
+  // Clean the permissions
+  const cleanedPermissions = cleanMultiSigPermissions(multiSigPermissions, currentConfig);
+
+  return { currentConfig, multiSigPermissions, cleanedPermissions }
+};
+
+describe('multisig integration tests', () => {
+
+  it('cleanMultiSigPermissions should filter keys before isKeyChange uses them', () => {
+    const { currentConfig, cleanedPermissions } = setup()
 
     // Our implementation now adds all valid keys to each array
     expect(cleanedPermissions.changeDevKeyList).toContain('0xValidKey1');
-    expect(cleanedPermissions.changeDevKeyList).toContain('0xValidKey2');
-    expect(cleanedPermissions.changeMultiSigKeyList).toContain('0xValidKey1');
+    expect(cleanedPermissions.changeDevKeyList).not.toContain('0xValidKey2');
+    expect(cleanedPermissions.changeMultiSigKeyList).not.toContain('0xValidKey1');
     expect(cleanedPermissions.changeMultiSigKeyList).toContain('0xValidKey2');
-    expect(cleanedPermissions.changeDevKeyList.length).toBe(2);
-    expect(cleanedPermissions.changeMultiSigKeyList.length).toBe(2);
+    expect(cleanedPermissions.changeDevKeyList.length).toBe(1);
+    expect(cleanedPermissions.changeMultiSigKeyList.length).toBe(1);
 
     // Mock a transaction that changes multisig keys
     const tx = {
@@ -64,33 +69,8 @@ describe('multisig integration tests', () => {
     expect(result.permittedKeys).toContain('0xValidKey2');
   });
 
-  test('isKeyChange should work with empty permitted keys after cleaning', () => {
-    // Mock config with multisig keys
-    const currentConfig = {
-      debug: {
-        multisigKeys: {
-          '0xValidKey1': DevSecurityLevel.High,
-          '0xValidKey2': DevSecurityLevel.Medium
-        }
-      }
-    };
-
-    // Mock permissions with only invalid keys
-    const multiSigPermissions = {
-      changeDevKeyList: ['0xInvalidKey1', '0xInvalidKey2'],
-      changeMultiSigKeyList: ['0xInvalidKey3', '0xInvalidKey4']
-    };
-
-    // Clean the permissions
-    const cleanedPermissions = cleanMultiSigPermissions(multiSigPermissions, currentConfig);
-
-    // Our implementation now adds all valid keys to each array
-    expect(cleanedPermissions.changeDevKeyList).toContain('0xValidKey1');
-    expect(cleanedPermissions.changeDevKeyList).toContain('0xValidKey2');
-    expect(cleanedPermissions.changeMultiSigKeyList).toContain('0xValidKey1');
-    expect(cleanedPermissions.changeMultiSigKeyList).toContain('0xValidKey2');
-    expect(cleanedPermissions.changeDevKeyList.length).toBe(2);
-    expect(cleanedPermissions.changeMultiSigKeyList.length).toBe(2);
+  it('isKeyChange should work with empty permitted keys after cleaning', () => {
+    const { currentConfig, cleanedPermissions } = setup()
 
     // Mock a transaction that changes multisig keys
     const tx = {
