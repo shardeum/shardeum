@@ -19,12 +19,11 @@ describe('cleanMultiSigPermissions', () => {
       }
     };
 
-    // Note: Our implementation adds all keys from the config to each array,
-    // so the expected result has all valid keys in each array
+    // Only keep valid keys that were in the original permissions
     const expected = {
-      changeDevKeyList: ['0xValidKey1', '0xValidKey2'],
-      changeMultiSigKeyList: ['0xValidKey1', '0xValidKey2'],
-      initiateSecureAccountTransfer: ['0xValidKey2', '0xValidKey1']
+      changeDevKeyList: ['0xValidKey1'],
+      changeMultiSigKeyList: ['0xValidKey1'],
+      initiateSecureAccountTransfer: ['0xValidKey2']
     };
 
     expect(cleanMultiSigPermissions(multiSigPermissions, currentConfig)).toEqual(expected);
@@ -267,10 +266,9 @@ describe('cleanMultiSigPermissions', () => {
       }
     };
 
-    // Note: Our implementation adds all keys from the config to each array,
-    // so even empty arrays will have all valid keys added
+    // Empty arrays should remain empty, only keep valid keys that were in the original permissions
     const expected = {
-      changeDevKeyList: ['0xValidKey1'],
+      changeDevKeyList: [],
       changeMultiSigKeyList: ['0xValidKey1']
     };
 
