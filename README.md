@@ -147,12 +147,64 @@ To test your local Shardeum network using MetaMask:
 `src/index.ts` is mocked for all tests. You can see how its mocked out in the `test/unit/setup.ts` file. Don't import the `index` file directly if you can since it has a lot of dependencies, import the specific files you need in your implementation or test files.
 
 ## Stopping and Cleaning Up
-
 To stop the network and clean up resources:
 
 ```bash
 shardus stop && shardus clean && rm -rf instances
 ```
+
+## Transaction Types on Shardeum
+
+Shardeum uses different transaction types for various operations in the network. Understanding these transaction types is essential for developers working with the Shardeum blockchain.
+
+### 1. EVM Transactions
+These are standard Ethereum-style transactions that can be:
+
+* Regular token transfers
+* Smart contract deployments
+* Smart contract interactions
+
+These transactions are handled through:
+
+* [LegacyTransaction](https://github.com/shardeum/shardeum/blob/dev/src/index.ts#L19)
+* [AccessListEIP2930Transaction](https://github.com/shardeum/shardeum/blob/dev/src/index.ts#L18)
+
+### 2. Internal Transaction Types
+
+Internal transactions are special system-level operations that manage the network's infrastructure, configuration, and staking mechanisms. They're defined in `InternalTXType` enum:
+
+| Code | Transaction Type | Description |
+|------|------------------|-------------|
+| 1 | InitNetwork | Initializes the network with basic parameters |
+| 2 | NodeReward | Deprecated - Previously used for node rewards |
+| 3 | ChangeConfig | Proposes configuration changes to the network |
+| 4 | ApplyChangeConfig | Applies previously proposed configuration changes |
+| 5 | SetCertTime | Sets certification time for network nodes |
+| 6 | Stake | Stakes tokens to participate in network validation |
+| 7 | Unstake | Withdraws staked tokens from the network |
+| 8 | InitRewardTimes | Initializes the reward distribution schedule |
+| 9 | ClaimReward | Claims earned rewards by validators or participants |
+| 10 | ChangeNetworkParam | Proposes changes to network parameters |
+| 11 | ApplyNetworkParam | Applies previously proposed network parameter changes |
+| 12 | Penalty | Applies penalties to misbehaving nodes |
+| 13 | TransferFromSecureAccount | Transfers tokens from secure system accounts |
+
+### Debug Transaction Types
+
+Debug transactions are special transactions (DebugTx) used for testing and debugging purposes, defined in `DebugTXType` enum:
+
+| Code | Transaction Type | Description |
+|------|------------------|-------------|
+| 0 | create | Creates new accounts or contracts |
+| 1 | transfer | Transfers tokens between accounts |
+
+### Transaction Validation
+* EVM transactions are validated for chainId and proper formatting
+* Internal transactions require proper signatures and permissions
+* Debug transactions are only allowed when `debugTxEnabled` flag is set
+* Staking transactions have additional validation for minimum stake amounts and ticket types
+
+Each transaction type serves a specific purpose in the Shardeum network, from regular value transfers to network governance and validation.
 
 ## Health Checks
 Diagnostic endpoints to check the health of the node
