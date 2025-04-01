@@ -2,59 +2,12 @@ import { validateTxChainId } from '../../../../src/utils/validateChainId'
 import { expect, describe, test } from '@jest/globals'
 
 describe('Chain ID Validation', () => {
-  describe('validateTxChainId with no expected chain ID', () => {
-    test('should return true for valid chain IDs', () => {
-      expect(validateTxChainId('0x1')).toBe(true) // Ethereum Mainnet
-      expect(validateTxChainId('0x38')).toBe(true) // BSC
-      expect(validateTxChainId('0x89')).toBe(true) // Polygon
-      expect(validateTxChainId('0x1f92')).toBe(true) // Shardeum (8082)
-      expect(validateTxChainId('0xa')).toBe(true) // Optimism (10)
-      expect(validateTxChainId('0xa4b1')).toBe(true) // Arbitrum (42161)
-      expect(validateTxChainId('0xA4B1')).toBe(true) // Uppercase hex is also valid
-    })
-
-    test('should return false for non-hex string formats', () => {
-      expect(validateTxChainId(1)).toBe(false) // Number is not allowed
-      expect(validateTxChainId('1')).toBe(false) // Decimal string is not allowed
-      expect(validateTxChainId(BigInt(1))).toBe(false) // BigInt is not allowed
-      expect(validateTxChainId('8082')).toBe(false) // Decimal string not allowed
-    })
-
-    test('should return false for undefined or null', () => {
-      expect(validateTxChainId(undefined)).toBe(false)
-      expect(validateTxChainId(null)).toBe(false)
-    })
-
-    test('should return false for invalid hex strings', () => {
-      expect(validateTxChainId('mainnet')).toBe(false)
-      expect(validateTxChainId('chain-1')).toBe(false)
-      expect(validateTxChainId('1a')).toBe(false)
-      expect(validateTxChainId('0xZ')).toBe(false) // Invalid hex
-      expect(validateTxChainId('0x')).toBe(false) // Incomplete hex
-      expect(validateTxChainId('0x0g')).toBe(false) // Invalid hex character
-    })
-
-    test('should return false for zero or negative numbers', () => {
-      expect(validateTxChainId('0x0')).toBe(false) // Hex zero
-      expect(validateTxChainId('-0x1')).toBe(false) // Invalid negative hex
-    })
-
-    test('should return false for excessively large numbers', () => {
-      expect(validateTxChainId('0x' + 'f'.repeat(64))).toBe(false) // Very large hex
-      expect(validateTxChainId('0x80000000')).toBe(false) // Just over 2^31 (2147483648)
-    })
-
-    test('should return false for objects, arrays, and other non-string values', () => {
-      expect(validateTxChainId({})).toBe(false)
-      expect(validateTxChainId([])).toBe(false)
-      expect(validateTxChainId(() => {})).toBe(false)
-      expect(validateTxChainId(true)).toBe(false)
-    })
-  })
+  // Use a default test chain ID
+  const testChainId = 8082
 
   describe('validateTxChainId with expected chain ID', () => {
     test('should validate matching chain IDs', () => {
-      expect(validateTxChainId('0x1', 1)).toBe(true) // Hex string matching decimal
+      expect(validateTxChainId('0x1', 1)).toBe(true) // Ethereum Mainnet
       expect(validateTxChainId('0x1f92', 8082)).toBe(true) // Hex Shardeum matching decimal
       expect(validateTxChainId('0x89', 137)).toBe(true) // Hex Polygon matching decimal
       expect(validateTxChainId('0x38', 56)).toBe(true) // Hex BSC matching decimal
@@ -71,11 +24,49 @@ describe('Chain ID Validation', () => {
       expect(validateTxChainId('0x1', NaN)).toBe(false)
     })
 
-    test('should reject invalid given chainId', () => {
-      expect(validateTxChainId('invalid', 1)).toBe(false)
-      expect(validateTxChainId('0x0', 1)).toBe(false) // Hex zero
-      expect(validateTxChainId(undefined, 1)).toBe(false)
-      expect(validateTxChainId(null, 1)).toBe(false)
+    test('should reject undefined or null expected chainId', () => {
+      // @ts-ignore - TypeScript will complain about these calls, but we want to test the runtime behavior
+      expect(validateTxChainId('0x1', undefined)).toBe(false)
+      // @ts-ignore
+      expect(validateTxChainId('0x1', null)).toBe(false)
+    })
+
+    test('should reject invalid given chainId formats', () => {
+      expect(validateTxChainId(1, testChainId)).toBe(false) // Number is not allowed
+      expect(validateTxChainId('1', testChainId)).toBe(false) // Decimal string is not allowed
+      expect(validateTxChainId(BigInt(1), testChainId)).toBe(false) // BigInt is not allowed
+      expect(validateTxChainId('8082', testChainId)).toBe(false) // Decimal string not allowed
+    })
+
+    test('should reject undefined or null given chainId', () => {
+      expect(validateTxChainId(undefined, testChainId)).toBe(false)
+      expect(validateTxChainId(null, testChainId)).toBe(false)
+    })
+
+    test('should reject invalid hex strings', () => {
+      expect(validateTxChainId('mainnet', testChainId)).toBe(false)
+      expect(validateTxChainId('chain-1', testChainId)).toBe(false)
+      expect(validateTxChainId('1a', testChainId)).toBe(false)
+      expect(validateTxChainId('0xZ', testChainId)).toBe(false) // Invalid hex
+      expect(validateTxChainId('0x', testChainId)).toBe(false) // Incomplete hex
+      expect(validateTxChainId('0x0g', testChainId)).toBe(false) // Invalid hex character
+    })
+
+    test('should reject zero or negative chainId values', () => {
+      expect(validateTxChainId('0x0', testChainId)).toBe(false) // Hex zero
+      expect(validateTxChainId('-0x1', testChainId)).toBe(false) // Invalid negative hex
+    })
+
+    test('should reject excessively large numbers', () => {
+      expect(validateTxChainId('0x' + 'f'.repeat(64), testChainId)).toBe(false) // Very large hex
+      expect(validateTxChainId('0x80000000', testChainId)).toBe(false) // Just over 2^31 (2147483648)
+    })
+
+    test('should reject objects, arrays, and other non-string values', () => {
+      expect(validateTxChainId({}, testChainId)).toBe(false)
+      expect(validateTxChainId([], testChainId)).toBe(false)
+      expect(validateTxChainId(() => {}, testChainId)).toBe(false)
+      expect(validateTxChainId(true, testChainId)).toBe(false)
     })
 
     test('should handle edge cases', () => {
