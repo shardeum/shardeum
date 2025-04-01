@@ -478,7 +478,6 @@ export interface ChangeConfig {
   cycle: ShardusTypes.Cycle
   config: string
   timestamp: number
-  chainId: string
 }
 
 export interface ApplyChangeConfig {
@@ -493,7 +492,6 @@ export interface ChangeNetworkParam {
   cycle: ShardusTypes.Cycle
   config: string
   timestamp: number
-  chainId: string
 }
 
 export interface ApplyNetworkParam {

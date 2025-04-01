@@ -20,7 +20,6 @@ describe('ChangeNetworkParamTx AJV tests', () => {
             cycle: 123,
             config: 'paramConfig',
             timestamp: 1234567890,
-            chainId: '0x1f92',
             sign: [{ owner: 'owner1', sig: 'signature1' }]
         }
         const errors = verifyPayload(AJVSchemaEnum.ChangeNetworkParamTx, obj)
@@ -35,30 +34,12 @@ describe('ChangeNetworkParamTx AJV tests', () => {
             // missing cycle field
             config: 'paramConfig',
             timestamp: 1234567890,
-            chainId: '0x1f92',
             sign: [{ owner: 'owner1', sig: 'signature1' }]
         }
         const errors = verifyPayload(AJVSchemaEnum.ChangeNetworkParamTx, obj)
         expect(errors).not.toBeNull()
         expect(errors?.length).toBe(1)
         expect(errors?.[0]).toContain("should have required property 'cycle'")
-    })
-
-    test('Missing chainId should fail validation', () => {
-        const obj = {
-            isInternalTx: true,
-            internalTXType: InternalTXType.ChangeNetworkParam,
-            type: 'paramType',
-            from: '0x1234567890abcdef',
-            cycle: 123,
-            config: 'paramConfig',
-            timestamp: 1234567890,
-            sign: [{ owner: 'owner1', sig: 'signature1' }]
-        }
-        const errors = verifyPayload(AJVSchemaEnum.ChangeNetworkParamTx, obj)
-        expect(errors).not.toBeNull()
-        expect(errors?.length).toBe(1)
-        expect(errors?.[0]).toContain("should have required property 'chainId'")
     })
 
     test('Wrong internalTXType should fail validation', () => {
@@ -70,7 +51,6 @@ describe('ChangeNetworkParamTx AJV tests', () => {
             cycle: 123,
             config: 'paramConfig',
             timestamp: 1234567890,
-            chainId: '0x1f92',
             sign: [{ owner: 'owner1', sig: 'signature1' }]
         }
         const errors = verifyPayload(AJVSchemaEnum.ChangeNetworkParamTx, obj)
@@ -88,7 +68,6 @@ describe('ChangeNetworkParamTx AJV tests', () => {
             cycle: 123,
             config: 'paramConfig',
             timestamp: 1234567890,
-            chainId: '0x1f92',
             sign: [{ owner: 'owner1', sig: 'signature1' }],
             extraField: 'should not be here'
         }

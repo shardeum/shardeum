@@ -1,4 +1,4 @@
-import { isKeyChange, cleanMultiSigPermissions } from '../../../../src/utils/multisig'
+import { isNonKeyChange, cleanMultiSigPermissions } from '../../../../src/utils/multisig'
 import { expect, describe, test } from '@jest/globals'
 import { ChangeConfig } from '../../../../src/shardeum/shardeumTypes'
 
@@ -9,39 +9,39 @@ const mockCycle = {
   // Add other required properties as needed
 };
 
-describe('multisig integration tests', () => {
-  test('cleanMultiSigPermissions should filter keys before isKeyChange uses them', () => {
+describe('nonKeyChange integration tests', () => {
+  test('cleanMultiSigPermissions should filter keys before isNonKeyChange uses them', () => {
     // Mock config with multisig keys
     const currentConfig = {
       debug: {
         multisigKeys: {
           '0xValidKey1': 2,
           '0xValidKey2': 1
-        }
+        },
+        someConfig: 'value'
       }
     };
 
     // Mock permissions with some invalid keys
     const multiSigPermissions = {
-      changeDevKeyList: ['0xValidKey1', '0xInvalidKey1'],
-      changeMultiSigKeyList: ['0xValidKey2', '0xInvalidKey2']
+      changeNonKeyConfigs: ['0xValidKey1', '0xInvalidKey1', '0xValidKey2']
     };
 
     // Clean the permissions
     const cleanedPermissions = cleanMultiSigPermissions(multiSigPermissions, currentConfig);
 
     // Verify that invalid keys were removed
-    expect(cleanedPermissions.changeDevKeyList).toEqual(['0xValidKey1']);
-    expect(cleanedPermissions.changeMultiSigKeyList).toEqual(['0xValidKey2']);
+    expect(cleanedPermissions.changeNonKeyConfigs).toEqual(['0xValidKey1', '0xValidKey2']);
 
-    // Mock a transaction that changes multisig keys
+    // Mock a transaction that changes non-key configs
     const tx = {
       config: JSON.stringify({
         debug: {
           multisigKeys: {
             '0xValidKey1': 2,
-            '0xValidKey3': 1 // Changed key
-          }
+            '0xValidKey2': 1
+          },
+          someConfig: 'new-value' // Changed non-key config
         }
       }),
       type: 'ChangeConfig',
@@ -50,46 +50,46 @@ describe('multisig integration tests', () => {
       timestamp: Date.now()
     } as unknown as ChangeConfig;
 
-    // Call isKeyChange with cleaned permissions
-    const result = isKeyChange(tx, currentConfig, cleanedPermissions);
+    // Call isNonKeyChange with cleaned permissions
+    const result = isNonKeyChange(tx, currentConfig, cleanedPermissions);
 
     // Verify that only valid keys are in the permitted keys
-    expect(result.isKeyChange).toBe(true);
-    expect(result.permittedKeys).toEqual(['0xValidKey2']);
+    expect(result.isNonKeyChange).toBe(true);
+    expect(result.permittedKeys).toEqual(['0xValidKey1', '0xValidKey2']);
   });
 
-  test('isKeyChange should work with empty permitted keys after cleaning', () => {
+  test('isNonKeyChange should work with empty permitted keys after cleaning', () => {
     // Mock config with multisig keys
     const currentConfig = {
       debug: {
         multisigKeys: {
           '0xValidKey1': 2,
           '0xValidKey2': 1
-        }
+        },
+        someConfig: 'value'
       }
     };
 
     // Mock permissions with only invalid keys
     const multiSigPermissions = {
-      changeDevKeyList: ['0xInvalidKey1', '0xInvalidKey2'],
-      changeMultiSigKeyList: ['0xInvalidKey3', '0xInvalidKey4']
+      changeNonKeyConfigs: ['0xInvalidKey1', '0xInvalidKey2']
     };
 
     // Clean the permissions
     const cleanedPermissions = cleanMultiSigPermissions(multiSigPermissions, currentConfig);
 
     // Verify that all keys were removed
-    expect(cleanedPermissions.changeDevKeyList).toEqual([]);
-    expect(cleanedPermissions.changeMultiSigKeyList).toEqual([]);
+    expect(cleanedPermissions.changeNonKeyConfigs).toEqual([]);
 
-    // Mock a transaction that changes multisig keys
+    // Mock a transaction that changes non-key configs
     const tx = {
       config: JSON.stringify({
         debug: {
           multisigKeys: {
             '0xValidKey1': 2,
-            '0xValidKey3': 1 // Changed key
-          }
+            '0xValidKey2': 1
+          },
+          someConfig: 'new-value' // Changed non-key config
         }
       }),
       type: 'ChangeConfig',
@@ -98,11 +98,11 @@ describe('multisig integration tests', () => {
       timestamp: Date.now()
     } as unknown as ChangeConfig;
 
-    // Call isKeyChange with cleaned permissions
-    const result = isKeyChange(tx, currentConfig, cleanedPermissions);
+    // Call isNonKeyChange with cleaned permissions
+    const result = isNonKeyChange(tx, currentConfig, cleanedPermissions);
 
-    // Verify that isKeyChange is true but permittedKeys is empty
-    expect(result.isKeyChange).toBe(true);
+    // Verify that isNonKeyChange is true but permittedKeys is empty
+    expect(result.isNonKeyChange).toBe(true);
     expect(result.permittedKeys).toEqual([]);
   });
 }); 
