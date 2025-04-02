@@ -22,6 +22,11 @@ scripts/*.json
 #this last one may slows things down, but not sure
 scripts/*/
 !scripts/shardeumValidatorDebuggingScript
+!scripts/environmentGeneration/
+scripts/environmentGeneration/devkeys*
+scripts/environmentGeneration/genesis/
+scripts/environmentGeneration/multisigkeys*
+scripts/environmentGeneration/node-mules*
 .idea
 consensorAccounts.json
 archiverAccounts.json
