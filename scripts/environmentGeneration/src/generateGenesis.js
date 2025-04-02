@@ -1,12 +1,10 @@
 import fs from 'fs-extra'
 import path from 'path'
 import { fileURLToPath } from 'url'
-import pkg from 'xlsx'
+import { getSheetData, SHEETS } from './googleSheets.js'
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
-
-const { readFile, utils } = pkg
 
 /**
  * @param {number} shm - Amount in SHM
@@ -21,41 +19,21 @@ function shmToWei(shm) {
  */
 async function generateGenesis() {
   try {
-    // Read the Excel file
-    const excelPath = path.join(__dirname, '..', 'devkeys.xlsx')
-    console.log(`Reading Excel file: ${excelPath}`)
+    // Get airdrop data from Google Sheets
+    console.log('Fetching airdrop data from Google Sheets...')
+    const data = await getSheetData(SHEETS.AIRDROP)
 
-    if (!(await fs.pathExists(excelPath))) {
-      throw new Error(`Excel file not found at: ${excelPath}`)
+    if (!data || data.length < 2) {
+      throw new Error('No data found in airdrop sheet')
     }
-
-    const workbook = readFile(excelPath)
-    console.log('Available sheets:', workbook.SheetNames)
-
-    // Get the Airdrop sheet
-    const sheetName = 'Airdrop data'
-    if (!workbook.SheetNames.includes(sheetName)) {
-      throw new Error(
-        `Sheet "${sheetName}" not found in Excel file. Available sheets: ${workbook.SheetNames.join(', ')}`
-      )
-    }
-    const worksheet = workbook.Sheets[sheetName]
-
-    // Convert to JSON
-    const data = utils.sheet_to_json(worksheet)
-    console.log(`Found ${data.length} rows in sheet`)
 
     // Create genesis data structure
     const genesisData = {}
 
-    // Process each row
-    data.forEach((row, index) => {
-      // Skip header row
-      if (index === 0) return
-
-      // Get the address and amount columns
-      const address = row['Wallet Address']
-      const shmAmount = parseFloat(row['SHM Allocated'])
+    // Process each row (skip header)
+    data.slice(1).forEach((row) => {
+      const address = row[0] // Wallet Address
+      const shmAmount = parseFloat(row[1]) // SHM Allocated
 
       if (!address || isNaN(shmAmount)) {
         console.warn(`Skipping invalid row:`, row)

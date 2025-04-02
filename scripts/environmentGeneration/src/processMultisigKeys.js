@@ -1,68 +1,57 @@
 import fs from 'fs-extra';
 import path from 'path';
 import { fileURLToPath } from 'url';
-import pkg from 'xlsx';
+import { getSheetData, SHEETS } from './googleSheets.js'
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+const __filename = fileURLToPath(import.meta.url)
+const __dirname = path.dirname(__filename)
 
-const { readFile, utils } = pkg;
-
-const ENVIRONMENTS = ['local', 'devnet', 'stagenet', 'testnet', 'mainnet'];
+const ENVIRONMENTS = ['local', 'devnet', 'stagenet', 'testnet', 'mainnet']
+const OUTPUT_DIR = path.join(__dirname, '..', 'multisigkeys')
 
 // Define the permission types and their corresponding JSON property names
 const PERMISSIONS = {
-  'multisig Keys': 'multisigKeys',
-  'changeDevKey': 'changeDevKey',
-  'changeMultiSigKeyList': 'changeMultiSigKeyList',
-  'initiateSecureAccountTransfer': 'initiateSecureAccountTransfer',
-  'changeNonKeyConfigs': 'changeNonKeyConfigs'
-};
-
-function generateMultisigKeysFile(permissions) {
-  const content = {};
-  
-  // Add each permission type with its array of keys
-  Object.entries(permissions).forEach(([permission, keys]) => {
-    if (keys && keys.length > 0) {
-      content[permission] = keys;
-    }
-  });
-
-  return JSON.stringify(content, null, 2);
+  multisigKeys: 'multisigKeys',
+  changeDevKey: 'changeDevKey',
+  changeMultiSigKeyList: 'changeMultiSigKeyList',
+  initiateSecureAccountTransfer: 'initiateSecureAccountTransfer',
+  changeNonKeyConfigs: 'changeNonKeyConfigs',
 }
 
-async function processMultisigKeys() {
-  try {
-    // Read the Excel file
-    const excelPath = path.join(__dirname, '..', 'devkeys.xlsx');
-    console.log(`Reading Excel file: ${excelPath}`);
-    
-    if (!await fs.pathExists(excelPath)) {
-      throw new Error(`Excel file not found at: ${excelPath}`);
-    }
-    
-    const workbook = readFile(excelPath);
-    console.log('Available sheets:', workbook.SheetNames);
-    
-    // Get the multisig keys sheet
-    const sheetName = 'MS Key Permission Groups';
-    if (!workbook.SheetNames.includes(sheetName)) {
-      throw new Error(`Sheet "${sheetName}" not found in Excel file. Available sheets: ${workbook.SheetNames.join(', ')}`);
-    }
-    const worksheet = workbook.Sheets[sheetName];
-    
-    // Convert to JSON
-    const data = utils.sheet_to_json(worksheet);
-    console.log(`Found ${data.length} rows in sheet`);
-    
-    // Create output directory
-    const outputDir = path.join(__dirname, '..', 'multisigkeys');
-    await fs.ensureDir(outputDir);
-    console.log(`Created output directory: ${outputDir}`);
+/**
+ * @param {string[]} keys - Array of public keys
+ * @returns {string} - JSON string of multisig keys file content
+ */
+function generateMultisigKeysFile(keys) {
+  const content = {
+    multisigKeys: keys.reduce((acc, key) => {
+      acc[key] = 1
+      return acc
+    }, {}),
+  }
 
-    // Get the header row
-    const headerRow = data[0]; // First row contains both property names and environments
+  return JSON.stringify(content, null, 2)
+}
+
+/**
+ * @returns {Promise<void>}
+ */
+async function processMultisigKeys() {
+  console.log('Starting processMultisigKeys...')
+  console.log('Output directory:', OUTPUT_DIR)
+
+  try {
+    console.log('Fetching multisig keys data from Google Sheets...')
+    const data = await getSheetData(SHEETS.MULTISIG)
+
+    if (!data || data.length < 2) {
+      console.error('No data found in sheet')
+      return
+    }
+
+    // Get the header rows
+    const propertyRow = data[0] // First row contains property names
+    const envRow = data[1] // Second row contains environments
 
     // Initialize environment data structures
     const envData = {
@@ -70,67 +59,86 @@ async function processMultisigKeys() {
       devnet: {},
       stagenet: {},
       testnet: {},
-      mainnet: {}
-    };
+      mainnet: {},
+    }
 
     // Process each column
-    let currentProperty = null;
-    let currentEnv = null;
-    
-    Object.entries(headerRow).forEach(([col, value]) => {
-      // Skip the first two columns (keys and Owner)
-      if (col === '__EMPTY' || col === '__EMPTY_1') return;
+    let currentProperty = null
+    let currentEnv = null
 
-      // If this is a property name (not an __EMPTY column)
-      if (!col.startsWith('__EMPTY')) {
-        currentProperty = value; // This is the JSON property name
-        currentEnv = 'local';    // Start with local environment
-        console.log(`Starting new property section: ${currentProperty}`);
-      } else {
-        // This is an environment column
-        currentEnv = value;
+    propertyRow.forEach((property, colIndex) => {
+      // Skip the first two columns (keys and Owner)
+      if (colIndex < 2) return
+
+      // If this is a property name
+      if (PERMISSIONS[property]) {
+        currentProperty = PERMISSIONS[property]
+        currentEnv = 'local' // Start with local environment
+        console.log(`Starting new property section: ${currentProperty}`)
+      } else if (property === '') {
+        // This is an environment column under the current property
+        currentEnv = envRow[colIndex]
       }
 
       // Skip if we don't have a valid environment
       if (!currentEnv || !envData[currentEnv]) {
-        console.warn(`Skipping column ${col}: Invalid environment ${currentEnv}`);
-        return;
+        console.warn(`Skipping column ${colIndex}: Invalid environment ${currentEnv}`)
+        return
       }
 
-      // Process the data rows (starting from index 1)
-      const keys = data.slice(1)
-        .map(row => {
-          const key = row['__EMPTY'];
-          if (!key) return null;
-          
-          const isChecked = row[col] === true || row[col] === 'x' || row[col] === 'X';
-          return isChecked ? key : null;
+      // Process the data rows (starting from index 2)
+      const keys = data
+        .slice(2)
+        .filter((row, rowIndex) => {
+          const isChecked = row[colIndex]?.toUpperCase() === 'TRUE'
+          return isChecked
         })
-        .filter(key => key);
+        .map((row) => row[0]) // First column is the key
 
       if (keys.length > 0) {
-        console.log(`Found ${keys.length} keys for ${currentEnv}.${currentProperty}`);
-        envData[currentEnv][currentProperty] = keys;
+        console.log(`Found ${keys.length} keys for ${currentEnv}.${currentProperty}`)
+        envData[currentEnv][currentProperty] = keys
       }
-    });
+    })
+
+    // Ensure output directory exists
+    await fs.ensureDir(OUTPUT_DIR)
 
     // Generate files for each environment
     for (const [env, permissions] of Object.entries(envData)) {
-      const outputContent = JSON.stringify(permissions, null, 2);
-      const outputPath = path.join(outputDir, `${env}.json`);
-      await fs.writeFile(outputPath, outputContent, 'utf-8');
-      console.log(`Generated ${env}.json with permissions: ${Object.keys(permissions).join(', ')}`);
+      const outputFile = path.join(OUTPUT_DIR, `${env}.json`)
+      const content = JSON.stringify(permissions, null, 2)
+      await fs.writeFile(outputFile, content, 'utf-8')
+      console.log(`Wrote keys to ${outputFile}`)
     }
 
-    console.log('Successfully processed all environments');
+    // Create allMultisigKeys.json
+    const allKeys = new Set()
+    Object.values(envData).forEach((permissions) => {
+      Object.values(permissions).forEach((keys) => {
+        keys.forEach((key) => allKeys.add(key))
+      })
+    })
+
+    const allKeysArray = Array.from(allKeys)
+    console.log(`Found ${allKeysArray.length} unique keys total`)
+    const allKeysContent = generateMultisigKeysFile(allKeysArray)
+    const allKeysFile = path.join(OUTPUT_DIR, 'allMultisigKeys.json')
+    await fs.writeFile(allKeysFile, allKeysContent, 'utf-8')
+
+    console.log('Multisig keys processing completed successfully')
   } catch (error) {
-    console.error('Error processing multisig keys:', error.message);
+    console.error('Error processing multisig keys:', error)
     if (error.stack) {
-      console.error('Stack trace:', error.stack);
+      console.error('Stack trace:', error.stack)
     }
-    process.exit(1);
+    throw error
   }
 }
 
-// Run the processor
-processMultisigKeys(); 
+// Execute the function
+console.log('Script starting...')
+processMultisigKeys().catch((error) => {
+  console.error('Script failed:', error)
+  process.exit(1)
+}) 

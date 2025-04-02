@@ -1,83 +1,156 @@
 # Environment Generation Scripts
 
-This directory contains scripts for generating test environments and configuration data for Shardeum.
+This directory contains scripts for generating environment-specific configuration files from Google Sheets data.
 
 ## Scripts
 
-### `generateGenesis.js`
+### 1. `processDevKeys.js`
 
-Generates a genesis.json file from an Excel spreadsheet containing airdrop data.
+Generates dev key configuration files for different environments.
 
-#### Usage
-1. Place your airdrop data in `devkeys.xlsx` with the following columns:
-   - `Wallet Address`: The Ethereum address to receive tokens
-   - `SHM Allocated`: The amount of SHM tokens to allocate
+**Input:**
+- Google Sheet named "Dev keys"
+- Columns: key, owner, local, devnet, stagenet, testnet, mainnet
+- 'TRUE' in an environment column indicates the key belongs to that environment
 
-2. Run the script:
-```bash
-npm run process:genesis
+**Output:**
+- Creates files in `devkeys/` directory:
+  - `localDevKeys.json`
+  - `devnetDevKeys.json`
+  - `stagenetDevKeys.json`
+  - `testnetDevKeys.json`
+  - `mainnetDevKeys.json`
+
+**Format:**
+```json
+{
+  "devPublicKeys": {
+    "public_key_1": 3,
+    "public_key_2": 3
+  }
+}
 ```
 
-The script will:
-- Read the Excel file
-- Convert SHM amounts to wei
-- Generate a `genesis.json` file in the `genesis` directory
-
-### `processMultisigKeys.js`
+### 2. `processMultisigKeys.js`
 
 Generates multisig key configuration files for different environments.
 
-#### Usage
-1. Place your multisig key data in `devkeys.xlsx` in the "MS Key Permission Groups" sheet
-2. Run the script:
-```bash
-npm run process:multisig
+**Input:**
+- Google Sheet named "MS Key Permission Groups"
+- First row: Permission types (multisigKeys, changeDevKey, etc.)
+- Second row: Environment names under each permission type
+- Data rows: Keys with 'TRUE' indicating permission for that environment
+- First column: Key
+- Second column: Owner
+
+**Output:**
+- Creates files in `multisigkeys/` directory:
+  - `local.json`
+  - `devnet.json`
+  - `stagenet.json`
+  - `testnet.json`
+  - `mainnet.json`
+  - `allMultisigKeys.json`
+
+**Format:**
+```json
+{
+  "multisigKeys": ["key1", "key2"],
+  "changeDevKey": ["key3", "key4"],
+  "changeMultiSigKeyList": ["key5"],
+  "initiateSecureAccountTransfer": ["key6"],
+  "changeNonKeyConfigs": ["key7"]
+}
 ```
 
-The script will:
-- Read the Excel file
-- Process permission groups for each environment
-- Generate environment-specific JSON files in the `multisigkeys` directory
+### 3. `generateGenesis.js`
 
-### `index.js` (Dev Keys Processor)
+Generates genesis configuration files for different environments.
 
-Generates developer key configuration files for different environments.
+**Input:**
+- Google Sheet named "Airdrop data"
+- Columns: address, amount (in SHM)
+- 'TRUE' in an environment column indicates the address belongs to that environment
 
-#### Usage
-1. Place your dev key data in `devkeys.xlsx` in the "Dev keys" sheet
-2. Run the script:
-```bash
-npm run process:devkeys
+**Output:**
+- Creates files in `genesis/` directory:
+  - `local.json`
+  - `devnet.json`
+  - `stagenet.json`
+  - `testnet.json`
+  - `mainnet.json`
+
+**Format:**
+```json
+{
+  "alloc": {
+    "address1": "amount_in_wei1",
+    "address2": "amount_in_wei2"
+  }
+}
 ```
 
-The script will:
-- Read the Excel file
-- Process dev keys for each environment
-- Generate environment-specific JSON files in the `devkeys` directory
+## Usage
 
-## Excel File Structure
+1. Ensure you have the required dependencies installed:
+   ```bash
+   npm install
+   ```
 
-The `devkeys.xlsx` file should contain three sheets:
-1. `Airdrop data` - For genesis file generation
-2. `MS Key Permission Groups` - For multisig key configuration
-3. `Dev keys` - For developer key configuration
+2. Set up Google Sheets authentication:
+   ```bash
+   # Install the googleapis package
+   npm install googleapis
+   
+   # Run the token generation script
+   node src/getToken.js
+   ```
+   - The script will output a URL to visit in your browser
+   - Visit the URL and authorize the application
+   - Copy the authorization code from the browser
+   - Paste the code back into the terminal when prompted
+   - The script will output your access token and refresh token
+   - Copy these tokens and update them in `googleSheets.js`
 
-## Ignored Files
+3. Make sure you have access to the Google Sheet and the necessary OAuth2 credentials are set up in `googleSheets.js`
 
-The following files/directories are ignored by git:
-- `devkeys*` - Excel files containing configuration data
-- `genesis/` - Generated genesis files
-- `multisigkeys/` - Generated multisig key configurations
-- `node-mules*` - Node mule configurations
+4. Run the scripts:
+   ```bash
+   npm run process:devkeys
+   npm run process:multisig
+   npm run generate:genesis
+   ```
 
-## Requirements
+## Google Sheets Setup
 
-- Node.js
-- Excel file with configuration data
-- `xlsx` npm package
+1. Create a Google Sheet with the required structure
+2. Share the sheet with the service account email
+3. Update the `SPREADSHEET_ID` in `googleSheets.js` with your sheet's ID
+4. Ensure the sheet names match exactly:
+   - "Dev keys"
+   - "MS Key Permission Groups"
+   - "Airdrop data"
+
+## Authentication Setup
+
+1. Create a Google Cloud Project and enable the Google Sheets API
+2. Create OAuth 2.0 credentials:
+   - Go to Google Cloud Console > APIs & Services > Credentials
+   - Create OAuth 2.0 Client ID
+   - Set application type as "Desktop app"
+   - Download the credentials JSON file
+3. Update the following in `getToken.js`:
+   - `CLIENT_ID` with your client ID
+   - `CLIENT_SECRET` with your client secret
+   - `REDIRECT_URI` with your redirect URI (default is http://localhost:3010)
+4. Run `node src/getToken.js` to generate the access token
+5. Copy the access token and refresh token from the output
+6. Update the tokens in `googleSheets.js`
 
 ## Notes
 
-- All amounts in the Excel file should be in SHM (will be converted to wei)
-- Configuration files will be created in their respective directories
-- Make sure to keep sensitive data out of version control 
+- All amounts in the airdrop sheet should be in SHM (will be converted to wei)
+- Environment columns should use 'TRUE' to indicate inclusion
+- Keys should be valid public keys
+- The scripts will create the necessary output directories if they don't exist
+- The OAuth2 token will expire after some time and need to be regenerated 
