@@ -13,12 +13,13 @@ const schemaChangeNetworkParamTx = {
     cycle: { type: 'number' },
     config: { type: 'string' },
     timestamp: { type: 'number', exclusiveMinimum: 0 },
+    chainId: { type: 'string' },
     sign: {
       type: 'array',
       items: schemaSign,
     },
   },
-  required: ['isInternalTx', 'internalTXType', 'from', 'cycle', 'config', 'timestamp'],
+  required: ['isInternalTx', 'internalTXType', 'from', 'cycle', 'config', 'timestamp', 'chainId'],
   additionalProperties: false,
 }
 

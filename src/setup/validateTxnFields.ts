@@ -51,6 +51,8 @@ import {
 } from '../utils/multisig'
 import { keyListAsLeveledKeys } from '../utils/keyUtils'
 import multisigPermissions from '../config/multisig-permissions.json'
+import { safeStringify } from '@shardeum-foundation/lib-types/build/src/utils/functions/stringify'
+import { validateTxChainId } from '../utils/validateChainId'
 
 const txTypeToAJVMap = {
   [InternalTXType.InitNetwork]: 'InitNetworkTx',
@@ -148,24 +150,28 @@ export const validateTxnFields =
               reason = 'No signature found'
             }
 
+            // Validate chainId
+            if (!validateTxChainId(tx.chainId, ShardeumFlags.ChainID)) {
+              return {
+                success: false,
+                reason: 'Invalid chain ID',
+                txnTimestamp,
+              }
+            }
             // Clean multiSigPermissions to remove any keys not in shardusConfig.debug.multisigKeys
             const cleanedMultiSigPermissions = cleanMultiSigPermissions(multisigPermissions, shardusConfig)
-
             // Check if this is a key change transaction
             const { isKeyChange, permittedKeys: keyChangePermittedKeys } =
               tx.internalTXType === InternalTXType.ChangeConfig
                 ? isTransactionKeyChange(tx, shardusConfig, cleanedMultiSigPermissions)
                 : { isKeyChange: false, permittedKeys: [] }
-
             // Check if this is a non-key change transaction (only if not a key change)
             const { isNonKeyChange, permittedKeys: nonKeyChangePermittedKeys } =
               !isKeyChange && tx.internalTXType === InternalTXType.ChangeConfig
                 ? isTransactionNonKeyChange(tx, shardusConfig, cleanedMultiSigPermissions)
                 : { isNonKeyChange: false, permittedKeys: [] }
-
             // Determine which keys are allowed to sign this transaction and the required security level
             let permittedKeys = isKeyChange ? keyChangePermittedKeys : isNonKeyChange ? nonKeyChangePermittedKeys : []
-
             let networkParamChange = false
             if (tx.internalTXType === InternalTXType.ChangeNetworkParam) {
               //network param changes always use the clean list of non key config changers
@@ -177,7 +183,6 @@ export const validateTxnFields =
               isKeyChange || isNonKeyChange || networkParamChange
                 ? keyListAsLeveledKeys(permittedKeys, DevSecurityLevel.High)
                 : shardus.getMultisigPublicKeys()
-
             const requiredLevel = DevSecurityLevel.High
 
             const is_array_sig = Array.isArray(tx.sign) === true
@@ -191,6 +196,7 @@ export const validateTxnFields =
             // if the signatures in the payload is larger than the allowed public keys, it is invalid
             // this prevent loop exhaustion abuses
             const sig_are_valid = verifyMultiSigs(txWithoutSign, sigs, allowedPublicKeys, requiredSigs, requiredLevel)
+
             if (sig_are_valid === true) {
               success = true
               reason = 'Valid'
@@ -260,6 +266,7 @@ export const validateTxnFields =
             reason = 'Invalid signature for internal tx'
           }
         }
+        
         if (ShardeumFlags.VerboseLogs) console.log('validateTxsField', success, reason)
         return {
           success,
@@ -329,12 +336,15 @@ export const validateTxnFields =
         }
 
         // Chain ID validation
-        let chainId = BigInt(-1)
-        if (transaction && transaction.common.chainId) {
-          chainId = transaction.common.chainId()
+        // Get chain ID from the transaction's common object
+        let chainId: string | undefined
+        if (transaction && transaction.common && transaction.common.chainId) {
+          const chainIdBigInt = transaction.common.chainId()
+          // Convert to 0x-prefixed hex string
+          chainId = `0x${chainIdBigInt.toString(16)}`
         }
 
-        if (chainId !== BigInt(ShardeumFlags.ChainID)) {
+        if (!validateTxChainId(chainId, ShardeumFlags.ChainID)) {
           nestedCountersInstance.countEvent('shardeum', 'validate - invalid chain ID')
           success = false
           reason = `Transaction chain ID is invalid.`

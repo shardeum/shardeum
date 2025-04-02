@@ -171,20 +171,48 @@ export function isDevKeyChangeDetailed(oldConfig: any, newConfig: any): boolean 
 }
 
 /**
+ * Normalizes an Ethereum address to a consistent format for comparison
+ *
+ * @param address The Ethereum address to normalize
+ * @returns The normalized Ethereum address
+ */
+export function normalizeEthAddress(address: string): string {
+  if (!address) {
+    return ''
+  }
+
+  let normalized = address.trim()
+
+  // Add 0x prefix if missing
+  if (!normalized.toLowerCase().startsWith('0x')) {
+    normalized = '0x' + normalized
+  }
+
+  // Convert to lowercase for comparison purposes
+  // This preserves the address format but allows for case-insensitive comparison
+  return normalized.toLowerCase()
+}
+
+/**
  * Removes keys from multiSigPermissions that are not in currentConfig.debug.multisigKeys
+ * This version normalizes addresses for better matching across case differences and formatting.
  *
  * @param multiSigPermissions The multiSigPermissions object containing lists of permitted keys
  * @param currentConfig The current configuration object containing valid multisig keys
  * @returns A new multiSigPermissions object with invalid keys removed
  */
 export function cleanMultiSigPermissions(multiSigPermissions: any, currentConfig: any): any {
-  // If either input is invalid, return the original permissions
-  if (!multiSigPermissions || !currentConfig?.debug?.multisigKeys) {
+  // Check if either param is falsy
+  if (!multiSigPermissions || !currentConfig || !currentConfig.debug || !currentConfig.debug.multisigKeys) {
     return multiSigPermissions
   }
 
-  // Get the set of valid multisig keys from currentConfig
-  const validMultisigKeys = new Set(Object.keys(currentConfig.debug.multisigKeys))
+  // Create a map of normalized addresses to their original config values
+  const validMultisigKeysMap = new Map()
+  for (const key of Object.keys(currentConfig.debug.multisigKeys)) {
+    const normalizedKey = normalizeEthAddress(key)
+    validMultisigKeysMap.set(normalizedKey, key)
+  }
 
   // Create a new empty object to hold the cleaned permissions
   const cleanedPermissions: Record<string, any> = {}
@@ -193,12 +221,22 @@ export function cleanMultiSigPermissions(multiSigPermissions: any, currentConfig
   for (const permissionType in multiSigPermissions) {
     const value = multiSigPermissions[permissionType]
 
-    // If the property is an array, filter it to only include valid keys
-    if (Array.isArray(value)) {
-      cleanedPermissions[permissionType] = value.filter((key) => validMultisigKeys.has(key))
-    } else {
-      // For non-array properties, copy them as-is
-      cleanedPermissions[permissionType] = value
+    // If the property is not an array, throw an error
+    if (!Array.isArray(value)) {
+      throw new Error(`Invalid permissions type: ${permissionType}`)
+    }
+
+    // First pass: Keep all original keys that match a normalized key in the config
+    cleanedPermissions[permissionType] = []
+
+    for (const key of value) {
+      const normalizedKey = normalizeEthAddress(key)
+
+      // Check if the key is valid
+      if (validMultisigKeysMap.has(normalizedKey)) {
+        // Add the original key to the cleaned permissions
+        cleanedPermissions[permissionType].push(key)
+      }
     }
   }
 

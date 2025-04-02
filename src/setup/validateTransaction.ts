@@ -11,6 +11,7 @@ import { ethers } from 'ethers'
 import { shardusConfig } from '..'
 import { validateTransferFromSecureAccount } from '../shardeum/secureAccounts'
 import { isSetCertTimeTx } from '../tx/setCertTime'
+import { validateTxChainId } from '../utils/validateChainId'
 
 type Response = {
   result: string
@@ -29,6 +30,11 @@ export const validateTransaction =
         tx.internalTXType === InternalTXType.ChangeConfig ||
         internalTx.internalTXType === InternalTXType.ChangeNetworkParam
       ) {
+        // Validate chainId
+        if (!validateTxChainId(tx.chainId, ShardeumFlags.ChainID)) {
+          return { result: 'fail', reason: 'Invalid chain ID' }
+        }
+
         const devPublicKeys = shardus.getMultisigPublicKeys()
         const is_array_sig = Array.isArray(tx.sign) === true
         const requiredSigs = Math.max(3, shardusConfig.debug.minMultiSigRequiredForGlobalTxs)

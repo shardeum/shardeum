@@ -23,6 +23,7 @@ import { DebugComplete } from '@shardeum-foundation/core'
 import { keyListAsLeveledKeys } from '../utils/keyUtils'
 import multisigPermissions from '../config/multisig-permissions.json'
 import { cleanMultiSigPermissions } from '../utils/multisig'
+import { validateTxChainId } from '../utils/validateChainId'
 
 validateSecureAccountConfig(genesisSecureAccounts)
 
@@ -134,14 +135,11 @@ export function validateTransferFromSecureAccount(
     return { success: false, reason: 'Invalid nonce' }
   }
 
-  if (
-    typeof tx.chainId !== 'string' ||
-    !/^0x[0-9a-fA-F]+$/.test(tx.chainId) ||
-    BigInt(tx.chainId) !== BigInt(ShardeumFlags.ChainID)
-  ) {
+
+  if (!validateTxChainId(tx.chainId, ShardeumFlags.ChainID)) {
     return { success: false, reason: 'Invalid chain ID' }
   }
-
+  
   const secureAccountData = secureAccountDataMap.get(tx.accountName)
   if (!secureAccountData) {
     return { success: false, reason: 'Secure account not found' }
@@ -161,14 +159,16 @@ export function validateTransferFromSecureAccount(
     amount: tx.amount,
     accountName: tx.accountName,
     nonce: tx.nonce,
-    chainId: tx.chainId, // Now this is a hex string
+    chainId: tx.chainId, // Use the hex string version
   }
 
+  
   // Clean multiSigPermissions to remove any keys not in shardusConfig.debug.multisigKeys
   const cleanedMultiSigPermissions = cleanMultiSigPermissions(multisigPermissions, shardusConfig)
 
   // Use the permitted keys from multisig-permissions.json for secure account transfers
   const permittedKeys = cleanedMultiSigPermissions.initiateSecureAccountTransfer || []
+  
   const securityLevel = 9 // High security level for secure account transfers
   const allowedPublicKeys = keyListAsLeveledKeys(permittedKeys, securityLevel)
   const requiredSigs = Math.max(3, shardusConfig.debug.minMultiSigRequiredForGlobalTxs || 3)

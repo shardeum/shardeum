@@ -20,6 +20,7 @@ describe('ChangeConfigTx AJV tests', () => {
             cycle: 123,
             config: 'configData',
             timestamp: 1234567890,
+            chainId: '0x1f92',
             sign: [{ owner: 'owner1', sig: 'signature1' }]
         }
         const errors = verifyPayload(AJVSchemaEnum.ChangeConfigTx, obj)
@@ -35,12 +36,30 @@ describe('ChangeConfigTx AJV tests', () => {
             cycle: 123,
             config: 'configData',
             timestamp: 0, // should be > 0
+            chainId: '0x1f92',
             sign: [{ owner: 'owner1', sig: 'signature1' }]
         }
         const errors = verifyPayload(AJVSchemaEnum.ChangeConfigTx, obj)
         expect(errors).not.toBeNull()
         expect(errors?.length).toBe(1)
         expect(errors?.[0]).toContain('should be > 0')
+    })
+
+    test('Missing chainId should fail validation', () => {
+        const obj = {
+            isInternalTx: true,
+            internalTXType: InternalTXType.ChangeConfig,
+            type: 'configType',
+            from: '0x1234567890abcdef',
+            cycle: 123,
+            config: 'configData',
+            timestamp: 1234567890,
+            sign: [{ owner: 'owner1', sig: 'signature1' }]
+        }
+        const errors = verifyPayload(AJVSchemaEnum.ChangeConfigTx, obj)
+        expect(errors).not.toBeNull()
+        expect(errors?.length).toBe(1)
+        expect(errors?.[0]).toContain("should have required property 'chainId'")
     })
 
     test('Invalid sign array should fail validation', () => {
@@ -52,6 +71,7 @@ describe('ChangeConfigTx AJV tests', () => {
             cycle: 123,
             config: 'configData',
             timestamp: 1234567890,
+            chainId: '0x1f92',
             sign: [{ owner: 'owner1' }] // missing sig field
         }
         const errors = verifyPayload(AJVSchemaEnum.ChangeConfigTx, obj)
