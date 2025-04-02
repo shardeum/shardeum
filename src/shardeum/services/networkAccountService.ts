@@ -146,7 +146,7 @@ export const buildFetchNetworkAccountFromArchiver = ({
           )
         }
       }
-
+      /* prettier-ignore */ nestedCountersInstance.countEvent('network-config-operation', `got config from archiver ${url}`)
       return res.data.networkAccount as WrappedAccount
     } catch (ex) {
       console.error(`[fetchNetworkAccountFromArchiver] ERROR retrieving/processing data from archiver ${url}: `, ex)
