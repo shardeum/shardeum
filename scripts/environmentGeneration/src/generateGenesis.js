@@ -11,7 +11,7 @@ const __dirname = path.dirname(__filename)
  * @returns {string} - Amount in wei as a string
  */
 function shmToWei(shm) {
-  return BigInt(Math.floor(shm * 1e18)).toString()
+  return (BigInt(Math.floor(shm)) * BigInt(1e18)).toString()
 }
 
 /**
