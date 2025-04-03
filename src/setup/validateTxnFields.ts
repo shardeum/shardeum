@@ -53,6 +53,9 @@ import { keyListAsLeveledKeys } from '../utils/keyUtils'
 import multisigPermissions from '../config/multisig-permissions.json'
 import { safeStringify } from '@shardeum-foundation/lib-types/build/src/utils/functions/stringify'
 import { validateTxChainId } from '../utils/validateChainId'
+import fs from 'fs'
+import path from 'path'
+import { Utils } from '@shardeum-foundation/lib-types'
 
 const txTypeToAJVMap = {
   [InternalTXType.InitNetwork]: 'InitNetworkTx',
@@ -67,6 +70,29 @@ const txTypeToAJVMap = {
   [InternalTXType.ApplyNetworkParam]: 'ApplyNetworkParamTx',
   [InternalTXType.TransferFromSecureAccount]: 'TransferFromSecureAccountTx',
 }
+
+let finalMultisigPermissions = multisigPermissions
+
+/* eslint-disable security/detect-non-literal-fs-filename */
+/* eslint-disable security/detect-object-injection */
+if (process.env.LOAD_JSON_MULTISIG_PERMISSIONS) {
+  const MSPFilePath = process.env.LOAD_JSON_MULTISIG_PERMISSIONS
+  MSPFilePath.trim()
+
+  try {
+    if (fs.existsSync(path.join(process.cwd(), '../src/config/', MSPFilePath))) {
+      const MSPData = Utils.safeJsonParse(fs.readFileSync(path.join(process.cwd(), '../src/config/', MSPFilePath)).toString())
+      finalMultisigPermissions = MSPData
+      console.log('validateTxnFields: multisig permissions loaded from:', MSPFilePath)
+    } else {
+      throw new Error('validateTxnFields: path to the following multisig permissions file is incorrect:' + MSPFilePath)
+    }
+  } catch (e) {
+    throw new Error('validateTxnFields: error loading multisig permissions file: ' + e)
+  }
+}
+/* eslint-enable security/detect-object-injection */
+/* eslint-enable security/detect-non-literal-fs-filename */
 
 /**
  * Checks that Transaction fields are valid
@@ -159,7 +185,7 @@ export const validateTxnFields =
               }
             }
             // Clean multiSigPermissions to remove any keys not in shardusConfig.debug.multisigKeys
-            const cleanedMultiSigPermissions = cleanMultiSigPermissions(multisigPermissions, shardusConfig)
+            const cleanedMultiSigPermissions = cleanMultiSigPermissions(finalMultisigPermissions, shardusConfig)
             // Check if this is a key change transaction
             const { isKeyChange, permittedKeys: keyChangePermittedKeys } =
               tx.internalTXType === InternalTXType.ChangeConfig
