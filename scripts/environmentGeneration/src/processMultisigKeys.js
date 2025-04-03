@@ -6,26 +6,25 @@ import { getSheetData, SHEETS } from './googleSheets.js'
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
 
-const ENVIRONMENTS = ['local', 'devnet', 'stagenet', 'testnet', 'mainnet']
+const ENVIRONMENTS = ['local', 'devnet', 'testnet', 'stagenet', 'mainnet']
 const OUTPUT_DIR = path.join(__dirname, '..', 'multisigkeys')
 
 // Define the permission types and their corresponding JSON property names
 const PERMISSIONS = {
-  multisigKeys: 'multisigKeys',
   changeDevKey: 'changeDevKey',
   changeMultiSigKeyList: 'changeMultiSigKeyList',
   initiateSecureAccountTransfer: 'initiateSecureAccountTransfer',
   changeNonKeyConfigs: 'changeNonKeyConfigs',
 }
 
-/**
+/**1.
  * @param {string[]} keys - Array of public keys
  * @returns {string} - JSON string of multisig keys file content
  */
 function generateMultisigKeysFile(keys) {
   const content = {
     multisigKeys: keys.reduce((acc, key) => {
-      acc[key] = 1
+      acc[key] = 3
       return acc
     }, {}),
   }
@@ -53,6 +52,8 @@ async function processMultisigKeys() {
     const propertyRow = data[0] // First row contains property names
     const envRow = data[1] // Second row contains environments
 
+    console.log('Environment row:', envRow)
+
     // Initialize environment data structures
     const envData = {
       local: {},
@@ -66,24 +67,28 @@ async function processMultisigKeys() {
     let currentProperty = null
     let currentEnv = null
 
-    propertyRow.forEach((property, colIndex) => {
-      // Skip the first two columns (keys and Owner)
-      if (colIndex < 2) return
+    // Process all columns up to the last environment column
+    for (let colIndex = 2; colIndex < envRow.length; colIndex++) {
+      const property = propertyRow[colIndex]
+      const environment = envRow[colIndex]
+
+      console.log(`Column ${colIndex}: property=${property}, environment=${environment}`)
 
       // If this is a property name
       if (PERMISSIONS[property]) {
         currentProperty = PERMISSIONS[property]
-        currentEnv = 'local' // Start with local environment
-        console.log(`Starting new property section: ${currentProperty}`)
-      } else if (property === '') {
+        currentEnv = environment
+        console.log(`Starting new property section: ${currentProperty} with environment: ${currentEnv}`)
+      } else if (environment && envData[environment]) {
         // This is an environment column under the current property
-        currentEnv = envRow[colIndex]
+        currentEnv = environment
+        console.log(`Processing environment column ${colIndex}: ${currentEnv}`)
       }
 
-      // Skip if we don't have a valid environment
-      if (!currentEnv || !envData[currentEnv]) {
-        console.warn(`Skipping column ${colIndex}: Invalid environment ${currentEnv}`)
-        return
+      // Skip if we don't have a valid environment or property
+      if (!currentEnv || !currentProperty || !envData[currentEnv]) {
+        console.warn(`Skipping column ${colIndex}: Invalid environment ${currentEnv} or property ${currentProperty}`)
+        continue
       }
 
       // Process the data rows (starting from index 2)
@@ -96,10 +101,15 @@ async function processMultisigKeys() {
         .map((row) => row[0]) // First column is the key
 
       if (keys.length > 0) {
+        // Initialize the property array if it doesn't exist
+        if (!envData[currentEnv][currentProperty]) {
+          envData[currentEnv][currentProperty] = []
+        }
+        // Add the keys to the property array
+        envData[currentEnv][currentProperty].push(...keys)
         console.log(`Found ${keys.length} keys for ${currentEnv}.${currentProperty}`)
-        envData[currentEnv][currentProperty] = keys
       }
-    })
+    }
 
     // Ensure output directory exists
     await fs.ensureDir(OUTPUT_DIR)
