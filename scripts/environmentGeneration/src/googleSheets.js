@@ -50,7 +50,9 @@ export async function getSheetData(sheetName) {
 }
 
 export const SHEETS = {
-  AIRDROP: 'Airdrop data',
-  MULTISIG: 'MS Key Permission Groups',
-  DEV_KEYS: 'Dev keys',
+  AIRDROP_GENESIS_ACCOUNTS: 'airdropGenesisAccounts',
+  MULTISIG_KEYS: 'multisigKeys',
+  DEV_PUBLIC_KEYS: 'devPublicKeys',
+  SECURE_ACCOUNTS: 'secureAccounts',
+  DEV_GENESIS_ACCOUNTS: 'devGenesisAccounts'
 }

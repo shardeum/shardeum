@@ -26,19 +26,5 @@
     "RecipientFundsAddress": "0x051b7b30e828ea8c371019e94aea28cdbef47ff8",
     "SecureAccountAddress": "4444444444444444444444444444444444444444000000000000000000000000",
     "SourceFundsBalance": "91440000000000000000000000"
-  },
-  {
-    "Name": "ShardusLicense",
-    "SourceFundsAddress": "0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
-    "RecipientFundsAddress": "0x1be3e07e7c4c2e568c590f71234e0c03f2348734",
-    "SecureAccountAddress": "5555555555555555555555555555555555555555000000000000000000000000",
-    "SourceFundsBalance": "5080000000000000000000000"
-  },
-  {
-    "Name": "Operations",
-    "SourceFundsAddress": "0xffffffffffffffffffffffffffffffffffffffff",
-    "RecipientFundsAddress": "0x633D35F7Fb28d6C6CDa3108253D2d5C799b58c54",
-    "SecureAccountAddress": "6666666666666666666666666666666666666666000000000000000000000000",
-    "SourceFundsBalance": "5000000000000000000000000"
   }
 ]

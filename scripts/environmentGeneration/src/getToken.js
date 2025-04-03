@@ -4,7 +4,7 @@ import readline from 'readline'
 // OAuth2 credentials from Google Cloud Console
 const CLIENT_ID = '1081759689364-pqegojd7co7cfbk5mbgcdlsc3bib4ds2.apps.googleusercontent.com'
 const CLIENT_SECRET = ''
-const REDIRECT_URI = 'http://localhost:3010'
+const REDIRECT_URI = 'http://localhost:3000'
 
 const oauth2Client = new google.auth.OAuth2(CLIENT_ID, CLIENT_SECRET, REDIRECT_URI)
 

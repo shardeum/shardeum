@@ -50,7 +50,6 @@ Generates multisig key configuration files for different environments.
   - `stagenet.json`
   - `testnet.json`
   - `mainnet.json`
-  - `allMultisigKeys.json`
 
 **Format:**
 ```json
