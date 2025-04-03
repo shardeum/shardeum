@@ -34,12 +34,11 @@ let finalGenesisSecureAccounts = genesisSecureAccounts
 let finalMultisigPermissions = multisigPermissions
 
 if (process.env.LOAD_JSON_GENESIS_SECURE_ACCOUNTS) {
-  const GSAFilePath = process.env.LOAD_JSON_GENESIS_SECURE_ACCOUNTS
-  GSAFilePath.trim()
+  const GSAFilePath = process.env.LOAD_JSON_GENESIS_SECURE_ACCOUNTS.trim()
 
   try {
-    if (fs.existsSync(path.join(process.cwd(), '../src/config/', GSAFilePath))) {
-      const GSAData = Utils.safeJsonParse(fs.readFileSync(path.join(process.cwd(), '../src/config/', GSAFilePath)).toString())
+    if (fs.existsSync(GSAFilePath)) {
+      const GSAData = Utils.safeJsonParse(fs.readFileSync(GSAFilePath).toString())
       finalGenesisSecureAccounts = GSAData
       console.log('secureAccounts: genesis secure accounts loaded from:', GSAFilePath)
     } else {
@@ -51,12 +50,11 @@ if (process.env.LOAD_JSON_GENESIS_SECURE_ACCOUNTS) {
 }
 
 if (process.env.LOAD_JSON_MULTISIG_PERMISSIONS) {
-  const MSPFilePath = process.env.LOAD_JSON_MULTISIG_PERMISSIONS
-  MSPFilePath.trim()
+  const MSPFilePath = process.env.LOAD_JSON_MULTISIG_PERMISSIONS.trim()
 
   try {
-    if (fs.existsSync(path.join(process.cwd(), '../src/config/', MSPFilePath))) {
-      const MSPData = Utils.safeJsonParse(fs.readFileSync(path.join(process.cwd(), '../src/config/', MSPFilePath)).toString())
+    if (fs.existsSync(MSPFilePath)) {
+      const MSPData = Utils.safeJsonParse(fs.readFileSync(MSPFilePath).toString())
       finalMultisigPermissions = MSPData
       console.log('secureAccounts: multisig permissions loaded from:', MSPFilePath)
     } else {
@@ -179,11 +177,10 @@ export function validateTransferFromSecureAccount(
     return { success: false, reason: 'Invalid nonce' }
   }
 
-
   if (!validateTxChainId(tx.chainId, ShardeumFlags.ChainID)) {
     return { success: false, reason: 'Invalid chain ID' }
   }
-  
+
   const secureAccountData = secureAccountDataMap.get(tx.accountName)
   if (!secureAccountData) {
     return { success: false, reason: 'Secure account not found' }
@@ -206,13 +203,12 @@ export function validateTransferFromSecureAccount(
     chainId: tx.chainId, // Use the hex string version
   }
 
-  
   // Clean multiSigPermissions to remove any keys not in shardusConfig.debug.multisigKeys
   const cleanedMultiSigPermissions = cleanMultiSigPermissions(finalMultisigPermissions, shardusConfig)
 
   // Use the permitted keys from multisig-permissions.json for secure account transfers
   const permittedKeys = cleanedMultiSigPermissions.initiateSecureAccountTransfer || []
-  
+
   const securityLevel = 9 // High security level for secure account transfers
   const allowedPublicKeys = keyListAsLeveledKeys(permittedKeys, securityLevel)
   const requiredSigs = Math.max(3, shardusConfig.debug.minMultiSigRequiredForGlobalTxs || 3)

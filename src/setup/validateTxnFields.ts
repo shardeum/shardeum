@@ -76,12 +76,11 @@ let finalMultisigPermissions = multisigPermissions
 /* eslint-disable security/detect-non-literal-fs-filename */
 /* eslint-disable security/detect-object-injection */
 if (process.env.LOAD_JSON_MULTISIG_PERMISSIONS) {
-  const MSPFilePath = process.env.LOAD_JSON_MULTISIG_PERMISSIONS
-  MSPFilePath.trim()
+  const MSPFilePath = process.env.LOAD_JSON_MULTISIG_PERMISSIONS.trim()
 
   try {
-    if (fs.existsSync(path.join(process.cwd(), '../src/config/', MSPFilePath))) {
-      const MSPData = Utils.safeJsonParse(fs.readFileSync(path.join(process.cwd(), '../src/config/', MSPFilePath)).toString())
+    if (fs.existsSync(MSPFilePath)) {
+      const MSPData = Utils.safeJsonParse(fs.readFileSync(MSPFilePath).toString())
       finalMultisigPermissions = MSPData
       console.log('validateTxnFields: multisig permissions loaded from:', MSPFilePath)
     } else {
@@ -292,7 +291,7 @@ export const validateTxnFields =
             reason = 'Invalid signature for internal tx'
           }
         }
-        
+
         if (ShardeumFlags.VerboseLogs) console.log('validateTxsField', success, reason)
         return {
           success,
@@ -478,7 +477,7 @@ export const validateTxnFields =
             success = false
             reason = 'Invalid nominee address in stake coins tx'
           } else if (stakeCoinsTx.stake !== transaction.value) {
-            /* prettier-ignore */ if (logFlags.dapp_verbose) console.log( `Tx value and stake amount are different`, stakeCoinsTx.stake.toString(), transaction.value.toString() )
+            /* prettier-ignore */ if (logFlags.dapp_verbose) console.log(`Tx value and stake amount are different`, stakeCoinsTx.stake.toString(), transaction.value.toString())
             success = false
             reason = `Tx value and stake amount are different`
           } else if (stakeCoinsTx.stake < minStakeAmount) {
@@ -531,12 +530,12 @@ export const validateTxnFields =
           if (ShardeumFlags.VerboseLogs) console.log('Validating unstake coins tx fields', appData.internalTx)
           const unstakeCoinsTX = appData.internalTx as UnstakeCoinsTX
           if (unstakeCoinsTX.nominator == null || unstakeCoinsTX.nominator.toLowerCase() !== senderAddress.toString()) {
-            /* prettier-ignore */ nestedCountersInstance.countEvent( 'shardeum-unstaking', 'invalid nominator address in stake coins tx' )
-            /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log( `nominator vs tx signer`, unstakeCoinsTX.nominator, senderAddress.toString() )
+            /* prettier-ignore */ nestedCountersInstance.countEvent('shardeum-unstaking', 'invalid nominator address in stake coins tx')
+            /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`nominator vs tx signer`, unstakeCoinsTX.nominator, senderAddress.toString())
             success = false
             reason = `Invalid nominator address in stake coins tx`
           } else if (unstakeCoinsTX.nominee == null) {
-            /* prettier-ignore */ nestedCountersInstance.countEvent( 'shardeum-unstaking', 'invalid nominee address in stake coins tx' )
+            /* prettier-ignore */ nestedCountersInstance.countEvent('shardeum-unstaking', 'invalid nominee address in stake coins tx')
             success = false
             reason = `Invalid nominee address in stake coins tx`
           }

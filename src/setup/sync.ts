@@ -68,12 +68,10 @@ export const sync = (shardus: Shardus, evmCommon: any) => async (): Promise<void
         /* eslint-disable security/detect-non-literal-fs-filename */
         /* eslint-disable security/detect-object-injection */
         if (process.env.LOAD_JSON_GENESIS) {
-          const genesisFilePath = process.env.LOAD_JSON_GENESIS
-          genesisFilePath.trim()
-        
+          const genesisFilePath = process.env.LOAD_JSON_GENESIS.trim()
           try {
-            if (fs.existsSync(path.join(process.cwd(), '../src/config/', genesisFilePath))) {
-              const genesisData = Utils.safeJsonParse(fs.readFileSync(path.join(process.cwd(), '../src/config/', genesisFilePath)).toString())
+            if (fs.existsSync(genesisFilePath)) {
+              const genesisData = Utils.safeJsonParse(fs.readFileSync(genesisFilePath).toString())
               finalGenesis = genesisData
               console.log('sync.ts: genesis accounts loaded from:', genesisFilePath)
             } else {
@@ -85,12 +83,11 @@ export const sync = (shardus: Shardus, evmCommon: any) => async (): Promise<void
         }
 
         if (process.env.LOAD_JSON_GENESIS_SECURE_ACCOUNTS) {
-          const GSAFilePath = process.env.LOAD_JSON_GENESIS_SECURE_ACCOUNTS
-          GSAFilePath.trim()
-        
+          const GSAFilePath = process.env.LOAD_JSON_GENESIS_SECURE_ACCOUNTS.trim()
+
           try {
-            if (fs.existsSync(path.join(process.cwd(), '../src/config/', GSAFilePath))) {
-              const GSAData = Utils.safeJsonParse(fs.readFileSync(path.join(process.cwd(), '../src/config/', GSAFilePath)).toString())
+            if (fs.existsSync(GSAFilePath)) {
+              const GSAData = Utils.safeJsonParse(fs.readFileSync(GSAFilePath).toString())
               finalGenesisSecureAccounts = GSAData
               console.log('sync.ts: genesis secure accounts loaded from:', GSAFilePath)
             } else {
