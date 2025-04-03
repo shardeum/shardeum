@@ -24,8 +24,50 @@ import { keyListAsLeveledKeys } from '../utils/keyUtils'
 import multisigPermissions from '../config/multisig-permissions.json'
 import { cleanMultiSigPermissions } from '../utils/multisig'
 import { validateTxChainId } from '../utils/validateChainId'
+import fs from 'fs'
+import path from 'path'
+import { Utils } from '@shardeum-foundation/lib-types'
 
-validateSecureAccountConfig(genesisSecureAccounts)
+/* eslint-disable security/detect-non-literal-fs-filename */
+/* eslint-disable security/detect-object-injection */
+let finalGenesisSecureAccounts = genesisSecureAccounts
+let finalMultisigPermissions = multisigPermissions
+
+if (process.env.LOAD_JSON_GENESIS_SECURE_ACCOUNTS) {
+  const GSAFilePath = process.env.LOAD_JSON_GENESIS_SECURE_ACCOUNTS.trim()
+
+  try {
+    if (fs.existsSync(GSAFilePath)) {
+      const GSAData = Utils.safeJsonParse(fs.readFileSync(GSAFilePath).toString())
+      finalGenesisSecureAccounts = GSAData
+      console.log('secureAccounts: genesis secure accounts loaded from:', GSAFilePath)
+    } else {
+      throw new Error('secureAccounts: path to the following genesis secure accounts file is incorrect:' + GSAFilePath)
+    }
+  } catch (e) {
+    throw new Error('secureAccounts: error loading genesis secure accounts file: ' + e)
+  }
+}
+
+if (process.env.LOAD_JSON_MULTISIG_PERMISSIONS) {
+  const MSPFilePath = process.env.LOAD_JSON_MULTISIG_PERMISSIONS.trim()
+
+  try {
+    if (fs.existsSync(MSPFilePath)) {
+      const MSPData = Utils.safeJsonParse(fs.readFileSync(MSPFilePath).toString())
+      finalMultisigPermissions = MSPData
+      console.log('secureAccounts: multisig permissions loaded from:', MSPFilePath)
+    } else {
+      throw new Error('secureAccounts: path to the following multisig permissions file is incorrect:' + MSPFilePath)
+    }
+  } catch (e) {
+    throw new Error('secureAccounts: error loading multisig permissions file: ' + e)
+  }
+}
+/* eslint-enable security/detect-object-injection */
+/* eslint-enable security/detect-non-literal-fs-filename */
+
+validateSecureAccountConfig(finalGenesisSecureAccounts)
 
 export interface SecureAccount extends BaseAccount {
   id: string
@@ -90,7 +132,7 @@ interface SecureAccountData {
 }
 
 export const secureAccountDataMap: Map<string, SecureAccountData> = new Map(
-  genesisSecureAccounts.map((account) => [account.Name, account])
+  finalGenesisSecureAccounts.map((account) => [account.Name, account])
 )
 
 interface CrackedData {
@@ -135,11 +177,10 @@ export function validateTransferFromSecureAccount(
     return { success: false, reason: 'Invalid nonce' }
   }
 
-
   if (!validateTxChainId(tx.chainId, ShardeumFlags.ChainID)) {
     return { success: false, reason: 'Invalid chain ID' }
   }
-  
+
   const secureAccountData = secureAccountDataMap.get(tx.accountName)
   if (!secureAccountData) {
     return { success: false, reason: 'Secure account not found' }
@@ -162,13 +203,12 @@ export function validateTransferFromSecureAccount(
     chainId: tx.chainId, // Use the hex string version
   }
 
-  
   // Clean multiSigPermissions to remove any keys not in shardusConfig.debug.multisigKeys
-  const cleanedMultiSigPermissions = cleanMultiSigPermissions(multisigPermissions, shardusConfig)
+  const cleanedMultiSigPermissions = cleanMultiSigPermissions(finalMultisigPermissions, shardusConfig)
 
   // Use the permitted keys from multisig-permissions.json for secure account transfers
   const permittedKeys = cleanedMultiSigPermissions.initiateSecureAccountTransfer || []
-  
+
   const securityLevel = 9 // High security level for secure account transfers
   const allowedPublicKeys = keyListAsLeveledKeys(permittedKeys, securityLevel)
   const requiredSigs = Math.max(3, shardusConfig.debug.minMultiSigRequiredForGlobalTxs || 3)

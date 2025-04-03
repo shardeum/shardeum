@@ -15,6 +15,8 @@ import { DefaultStateManager } from '@ethereumjs/statemanager'
 import { createNetworkAccount, logFlags, shardeumGetTime } from '..'
 import { Utils } from '@shardeum-foundation/lib-types'
 import { initializeSecureAccount, SecureAccountConfig } from '../shardeum/secureAccounts'
+import fs from 'fs'
+import path from 'path'
 
 function isDebugMode(): boolean {
   // eslint-disable-next-line @typescript-eslint/ban-ts-comment
@@ -60,11 +62,49 @@ export const sync = (shardus: Shardus, evmCommon: any) => async (): Promise<void
         let skippedAccountCount = 0
         let accountCopies = []
 
+        let finalGenesis = genesis
+        let finalGenesisSecureAccounts = genesisSecureAccounts
+
+        /* eslint-disable security/detect-non-literal-fs-filename */
+        /* eslint-disable security/detect-object-injection */
+        if (process.env.LOAD_JSON_GENESIS) {
+          const genesisFilePath = process.env.LOAD_JSON_GENESIS.trim()
+          try {
+            if (fs.existsSync(genesisFilePath)) {
+              const genesisData = Utils.safeJsonParse(fs.readFileSync(genesisFilePath).toString())
+              finalGenesis = genesisData
+              console.log('sync.ts: genesis accounts loaded from:', genesisFilePath)
+            } else {
+              throw new Error('sync.ts: path to the following genesis file is incorrect:' + genesisFilePath)
+            }
+          } catch (e) {
+            throw new Error('sync.ts: error loading genesis file: ' + e)
+          }
+        }
+
+        if (process.env.LOAD_JSON_GENESIS_SECURE_ACCOUNTS) {
+          const GSAFilePath = process.env.LOAD_JSON_GENESIS_SECURE_ACCOUNTS.trim()
+
+          try {
+            if (fs.existsSync(GSAFilePath)) {
+              const GSAData = Utils.safeJsonParse(fs.readFileSync(GSAFilePath).toString())
+              finalGenesisSecureAccounts = GSAData
+              console.log('sync.ts: genesis secure accounts loaded from:', GSAFilePath)
+            } else {
+              throw new Error('sync.ts: path to the following genesis secure accounts file is incorrect:' + GSAFilePath)
+            }
+          } catch (e) {
+            throw new Error('sync.ts: error loading genesis secure accounts file: ' + e)
+          }
+        }
+        /* eslint-enable security/detect-object-injection */
+        /* eslint-enable security/detect-non-literal-fs-filename */
+
         // Create genesis accounts from secure accounts
-        const additionalGenesisAccounts = createGenesisAccountsFromSecureAccounts(genesisSecureAccounts)
+        const additionalGenesisAccounts = createGenesisAccountsFromSecureAccounts(finalGenesisSecureAccounts)
 
         // Merge additional genesis accounts with existing genesis accounts
-        const mergedGenesisAccounts = { ...genesis, ...additionalGenesisAccounts }
+        const mergedGenesisAccounts = { ...finalGenesis, ...additionalGenesisAccounts }
 
         for (const address in mergedGenesisAccounts) {
           const amount = BigInt(mergedGenesisAccounts[address].wei)
@@ -96,7 +136,7 @@ export const sync = (shardus: Shardus, evmCommon: any) => async (): Promise<void
           /* prettier-ignore */ if (logFlags.important_as_error) shardus.log(`node ${nodeId} SETUP GENESIS ACCOUNT: ${address}  amt: ${amount}`);
         }
 
-        for (const secureAccountConfig of genesisSecureAccounts) {
+        for (const secureAccountConfig of finalGenesisSecureAccounts) {
           const cycles = shardus.getLatestCycles()
           const secureAccount = initializeSecureAccount(secureAccountConfig as SecureAccountConfig, cycles)
 
