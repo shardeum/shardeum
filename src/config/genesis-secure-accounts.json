@@ -4,21 +4,21 @@
     "SourceFundsAddress": "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
     "RecipientFundsAddress": "0xf08b4a82ef3ad9c919852a3d32eb5088af9a9153",
     "SecureAccountAddress": "1111111111111111111111111111111111111111000000000000000000000000",
-    "SourceFundsBalance": "55880000000000000000000000"
+    "SourceFundsBalance": "55878999000000000000000000"
   },
   {
     "Name": "Team",
     "SourceFundsAddress": "0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
     "RecipientFundsAddress": "0xde368dce1070dba428b8133265666261ddca9f1a",
     "SecureAccountAddress": "2222222222222222222222222222222222222222000000000000000000000000",
-    "SourceFundsBalance": "71120000000000000000000000"
+    "SourceFundsBalance": "76200000000000000000000000"
   },
   {
     "Name": "Ecosystem",
     "SourceFundsAddress": "0xcccccccccccccccccccccccccccccccccccccccc",
     "RecipientFundsAddress": "0x2cf747f34a61bd23a7cff6974e56012fbc193b7e",
     "SecureAccountAddress": "3333333333333333333333333333333333333333000000000000000000000000",
-    "SourceFundsBalance": "25400000000000000000000000"
+    "SourceFundsBalance": "21194675000000000000000000"
   },
   {
     "Name": "Sale",
@@ -26,19 +26,5 @@
     "RecipientFundsAddress": "0x051b7b30e828ea8c371019e94aea28cdbef47ff8",
     "SecureAccountAddress": "4444444444444444444444444444444444444444000000000000000000000000",
     "SourceFundsBalance": "91440000000000000000000000"
-  },
-  {
-    "Name": "ShardusLicense",
-    "SourceFundsAddress": "0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
-    "RecipientFundsAddress": "0x1be3e07e7c4c2e568c590f71234e0c03f2348734",
-    "SecureAccountAddress": "5555555555555555555555555555555555555555000000000000000000000000",
-    "SourceFundsBalance": "5080000000000000000000000"
-  },
-  {
-    "Name": "Operations",
-    "SourceFundsAddress": "0xffffffffffffffffffffffffffffffffffffffff",
-    "RecipientFundsAddress": "0x633D35F7Fb28d6C6CDa3108253D2d5C799b58c54",
-    "SecureAccountAddress": "6666666666666666666666666666666666666666000000000000000000000000",
-    "SourceFundsBalance": "5000000000000000000000000"
   }
 ]

@@ -1,0 +1,22 @@
+{
+  "name": "dev-keys-processor",
+  "version": "1.0.0",
+  "description": "Process and generate dev keys combinations for different environments",
+  "main": "src/index.js",
+  "type": "module",
+  "scripts": {
+    "start": "node src/index.js",
+    "test": "jest",
+    "process:devkeys": "node src/index.js",
+    "process:multisig": "node src/processMultisigKeys.js",
+    "process:genesis": "node src/generateGenesis.js"
+  },
+  "dependencies": {
+    "fs-extra": "^11.2.0",
+    "googleapis": "^148.0.0",
+    "xlsx": "^0.18.5"
+  },
+  "devDependencies": {
+    "jest": "^29.7.0"
+  }
+}

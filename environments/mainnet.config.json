@@ -1,8 +1,35 @@
 {
-    "server": {
-      "p2p": {
-        "formingNodesPerCycle": 250
+  "server": {
+    "p2p": {
+      "formingNodesPerCycle": 250
+    },
+    "debug": {
+      "devPublicKeys": {
+        "1337e51d288a6ae240c5e91ecffba812d6baff3d643de559604a8f13d63f03d9": 3,
+        "154cca8f6394fe43a08b579a4fd5fc666cf69b2b1f54364790f35bf4d612cf66": 3,
+        "1bc657b085acb240d8315857a1a1c532571e47d409c1bddd8d071b2af530c2be": 3,
+        "3f7ee9c4bbc42066cb7224e0b278265cf31fe4044b63946caff70f69b1e25917": 3,
+        "d5b9be544b7f6d119ea52ce7f82870d4249ad663f0a75e68096df44c7843a9f8": 3,
+        "e7849fa46ebe9e2091599d12e5c11c8fcf9051633065348b05ab7adf0962f192": 3
+      },
+      "multisigKeys": {
+        "0x002D3a2BfE09E3E29b6d38d58CaaD16EEe4C9BC5": 3,
+        "0x7Efbb31431ac7C405E8eEba99531fF1254fCA3B6": 3,
+        "0xCc74bf387F6C102b5a7F828796C57A6D2D19Cb00": 3,
+        "0xE856B2365641eba73Bc430AAC1E8F930dA513D9D": 3,
+        "0x6A83e4e4eB0A2c8f562db6BB64b02a9A6237B314": 3,
+        "0xF82BDA6Ef512e4219C6DCEea896E50e8180a5bff": 3,
+        "0x891DF765C855E9848A18Ed18984B9f57cb3a4d47": 3,
+        "0x4FE8CaabA0BaC60AE9452DB06a983932C58cC811": 3,
+        "0xF2DeB4905AF50A3B13650117Cc8dcFBDEeE90cEF": 3,
+        "0xcb81f1642B76c1dF1D1310e1A79C5adca638619D": 3,
+        "0xC5167c28f9193a3ef2C88dEfb349EfCa2407e340": 3,
+        "0x15B503EBFA35E97919cfd8b50f7ca6Cadd157666": 3,
+        "0xD815DA50966c19261B34Ffa3bE50A30A67D97456": 3,
+        "0x8282F755e784414697421D4b59232E5d194e2262": 3,
+        "0x84C55a4bFfff1ADadb9C46e2B60979F519dAf874": 3,
+        "0x91E6F8E945BEa3A30b77a123740C6fB2506a168f": 3
       }
     }
   }
-  
+}
