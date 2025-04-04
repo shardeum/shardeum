@@ -12,11 +12,11 @@
     "process:genesis": "node src/generateGenesis.js"
   },
   "dependencies": {
-    "fs-extra": "^11.2.0",
-    "googleapis": "^148.0.0",
-    "xlsx": "^0.18.5"
+    "fs-extra": "11.2.0",
+    "googleapis": "148.0.0",
+    "xlsx": "0.18.5"
   },
   "devDependencies": {
-    "jest": "^29.7.0"
+    "jest": "29.7.0"
   }
 }
