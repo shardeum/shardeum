@@ -93,7 +93,7 @@ const ENVIRONMENTS = ['local', 'devnet', 'testnet', 'stagenet', 'mainnet']
 
 // Define the permission types and their corresponding JSON property names
 const PERMISSIONS = {
-  changeDevKey: 'changeDevKey',
+  changeDevKeyList: 'changeDevKeyList',
   changeMultiSigKeyList: 'changeMultiSigKeyList',
   initiateSecureAccountTransfer: 'initiateSecureAccountTransfer',
   changeNonKeyConfigs: 'changeNonKeyConfigs',
@@ -365,31 +365,31 @@ async function importMultisigKeysData() {
   
   const result = {
     local: {
-      changeDevKey: [],
+      changeDevKeyList: [],
       changeMultiSigKeyList: [],
       initiateSecureAccountTransfer: [],
       changeNonKeyConfigs: []
     },
     devnet: {
-      changeDevKey: [],
+      changeDevKeyList: [],
       changeMultiSigKeyList: [],
       initiateSecureAccountTransfer: [],
       changeNonKeyConfigs: []
     },
     testnet: {
-      changeDevKey: [],
+      changeDevKeyList: [],
       changeMultiSigKeyList: [],
       initiateSecureAccountTransfer: [],
       changeNonKeyConfigs: []
     },
     stagenet: {
-      changeDevKey: [],
+      changeDevKeyList: [],
       changeMultiSigKeyList: [],
       initiateSecureAccountTransfer: [],
       changeNonKeyConfigs: []
     },
     mainnet: {
-      changeDevKey: [],
+      changeDevKeyList: [],
       changeMultiSigKeyList: [],
       initiateSecureAccountTransfer: [],
       changeNonKeyConfigs: []
