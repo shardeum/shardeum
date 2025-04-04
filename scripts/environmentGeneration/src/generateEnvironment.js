@@ -405,7 +405,7 @@ function generateSecureAccountsFiles(secureAccountsData, environmentTotals) {
   console.log("\nGenerating secure accounts files...");
   
   // Create secure-accounts directory if it doesn't exist
-  const secureAccountsDir = path.join(process.cwd(), "..", "secure-accounts");
+  const secureAccountsDir = path.join(process.cwd(), ".", "secure-accounts");
   fs.ensureDirSync(secureAccountsDir);
 
   // Generate files for each environment
@@ -454,35 +454,6 @@ function generateSecureAccountsFiles(secureAccountsData, environmentTotals) {
     fs.writeJsonSync(outputPath, secureAccounts, { spaces: 2 });
     console.log(`Generated ${environment}.genesis-secure-accounts.json`);
   }
-
-  // Copy mainnet secure accounts to genesis.json
-  const mainnetSecureAccounts = [];
-  Object.entries(secureAccountsData.mainnet).forEach(([name, account]) => {
-    let adjustedAllocation = account.initialBalance;
-
-    // Adjust Ecosystem account balance
-    if (name === "Ecosystem") {
-      adjustedAllocation -= environmentTotals.mainnet.airdrop;
-    }
-    // Adjust Foundation account balance
-    else if (name === "Foundation") {
-      adjustedAllocation -= environmentTotals.mainnet.dev;
-    }
-
-    mainnetSecureAccounts.push({
-      Name: name,
-      SourceFundsAddress: account.sourceFundsAddress,
-      RecipientFundsAddress: account.recipientFundsAddress,
-      SecureAccountAddress: account.secureAccountAddress,
-      SourceFundsBalance: shmToWei(adjustedAllocation).toString()
-    });
-  });
-  
-  const genesisDir = path.join(process.cwd(), "..", "genesis");
-  fs.ensureDirSync(genesisDir);
-  const genesisPath = path.join(genesisDir, "genesis.json");
-  fs.writeJsonSync(genesisPath, mainnetSecureAccounts, { spaces: 2 });
-  console.log("Copied mainnet secure accounts to genesis.json");
 }
 
 /**
@@ -493,7 +464,7 @@ function generateSecureAccountsFiles(secureAccountsData, environmentTotals) {
 function generateGenesisFiles(airdropData, devGenesisData) {
   console.log("\nGenerating genesis files...");
   
-  const genesisDir = path.join(process.cwd(), "..", "genesis");
+  const genesisDir = path.join(process.cwd(), ".", "genesis");
   fs.ensureDirSync(genesisDir);
 
   for (const environment of ENVIRONMENTS) {
@@ -517,13 +488,6 @@ function generateGenesisFiles(airdropData, devGenesisData) {
     const outputPath = path.join(genesisDir, `${environment}.genesis.json`);
     fs.writeJsonSync(outputPath, combinedData, { spaces: 2 });
     console.log(`Generated combined ${environment}.genesis.json`);
-    
-    // If this is mainnet, also update the main genesis.json file
-    if (environment === 'mainnet') {
-      const mainGenesisPath = path.join(genesisDir, 'genesis.json');
-      fs.writeJsonSync(mainGenesisPath, combinedData, { spaces: 2 });
-      console.log(`Updated main genesis.json with combined accounts`);
-    }
   }
 }
 
@@ -534,18 +498,18 @@ function generateGenesisFiles(airdropData, devGenesisData) {
 function generateDevKeysFiles(devKeysData) {
   console.log("\nGenerating dev keys files...");
   
-  const devKeysDir = path.join(process.cwd(), "..", "devkeys");
+  const devKeysDir = path.join(process.cwd(), ".", "devkeys");
   fs.ensureDirSync(devKeysDir);
 
   for (const env of ENVIRONMENTS) {
     const keys = devKeysData[env];
     
     fs.writeFileSync(
-      path.join(devKeysDir, `${env}DevKeys.json`),
+      path.join(devKeysDir, `${env}.devKeys.json`),
       generateDevKeysFile(keys),
       "utf-8"
     );
-    console.log(`Generated ${env}DevKeys.json with ${keys.length} keys`);
+    console.log(`Generated ${env}.devKeys.json with ${keys.length} keys`);
   }
 }
 
@@ -556,18 +520,128 @@ function generateDevKeysFiles(devKeysData) {
 function generateMultisigKeysFiles(multisigKeysData) {
   console.log("\nGenerating multisig keys files...");
   
-  const multisigDir = path.join(process.cwd(), "..", "multisigkeys");
+  const multisigKeysDir = path.join(process.cwd(), ".", "multisigKeys");
+  fs.ensureDirSync(multisigKeysDir);
+
+  for (const env of ENVIRONMENTS) {
+    // Extract all keys from all permission types for this environment
+    const keys = new Set();
+    
+    // Collect all keys from various permission types
+    Object.keys(multisigKeysData[env]).forEach(permissionType => {
+      multisigKeysData[env][permissionType].forEach(key => keys.add(key));
+    });
+    
+    // Convert to array and generate file
+    const keyArray = Array.from(keys);
+    
+    fs.writeFileSync(
+      path.join(multisigKeysDir, `${env}.MultisigKeys.json`),
+      generateMultisigKeysFile(keyArray),
+      "utf-8"
+    );
+    console.log(`Generated ${env}.MultisigKeys.json with ${keyArray.length} keys`);
+  }
+}
+
+/**
+ * Generate multisig permissions files
+ * @param {Object} multisigKeysData - Multisig keys data
+ */
+function generateMultisigPermissionsFiles(multisigKeysData) {
+  console.log("\nGenerating multisig permissions files...");
+  
+  const multisigDir = path.join(process.cwd(), ".", "multisig-permissions");
   fs.ensureDirSync(multisigDir);
 
-  // Write multisig keys files for each environment
+  // Write multisig permissions files for each environment
   for (const [env, permissions] of Object.entries(multisigKeysData)) {
     fs.writeFileSync(
-      path.join(multisigDir, `${env}.json`),
+      path.join(multisigDir, `${env}.multisig-permissions.json`),
       JSON.stringify(permissions, null, 2),
       "utf-8"
     );
-    console.log(`Generated ${env}.json for multisig keys`);
+    console.log(`Generated ${env}.multisig-permissions.json for multisig keys`);
   }
+}
+
+/**
+ * Auto-inject multisig keys into devGenesisData if they don't already exist there
+ * @param {Object} multisigKeysData - Multisig keys data
+ * @param {Object} devGenesisData - Dev genesis data
+ * @returns {Object} - Updated dev genesis data
+ */
+function autoInjectMultisigDevGenesisAccounts(multisigKeysData, devGenesisData) {
+  console.log("\nAuto-injecting multisig keys into dev genesis accounts...");
+  
+  // Create a new object to avoid modifying the original
+  const updatedDevGenesisData = JSON.parse(JSON.stringify(devGenesisData));
+  
+  // Process each environment
+  for (const environment of ENVIRONMENTS) {
+    console.log(`Processing ${environment} environment...`);
+    
+    // Get all unique multisig keys with any permission for this environment
+    const uniqueMultisigKeys = new Set();
+    
+    // Collect keys from all permission types
+    Object.keys(multisigKeysData[environment]).forEach(permissionType => {
+      multisigKeysData[environment][permissionType].forEach(key => {
+        uniqueMultisigKeys.add(key);
+      });
+    });
+    
+    // Check each multisig key and add to devGenesisData if missing
+    let addedCount = 0;
+    uniqueMultisigKeys.forEach(key => {
+      if (!updatedDevGenesisData[environment][key]) {
+        updatedDevGenesisData[environment][key] = 0;
+        addedCount++;
+      }
+    });
+    
+    console.log(`Added ${addedCount} multisig keys to ${environment} dev genesis accounts`);
+  }
+  
+  return updatedDevGenesisData;
+}
+
+/**
+ * Verify there are no duplicate addresses between airdrop and devGenesis data
+ * @param {Object} airdropData - Airdrop data
+ * @param {Object} devGenesisData - Dev genesis data
+ * @returns {boolean} - True if verification passes (no duplicates)
+ */
+function verifyNoDuplicates(airdropData, devGenesisData) {
+  console.log("\nVerifying no duplicate addresses between airdrop and devGenesis data...");
+  
+  let verificationsPass = true;
+  
+  for (const environment of ENVIRONMENTS) {
+    const airdropAddresses = Object.keys(airdropData[environment]);
+    const devGenesisAddresses = Object.keys(devGenesisData[environment]);
+    
+    // Find duplicates (addresses in both airdrop and devGenesis)
+    const duplicates = airdropAddresses.filter(address => devGenesisAddresses.includes(address));
+    
+    if (duplicates.length > 0) {
+      console.error(`WARNING: Found ${duplicates.length} addresses in both airdrop and devGenesis data for ${environment}:`);
+      duplicates.forEach(address => {
+        console.error(`  - ${address} (Airdrop: ${airdropData[environment][address]} SHM, DevGenesis: ${devGenesisData[environment][address]} SHM)`);
+      });
+      verificationsPass = false;
+    } else {
+      console.log(`✓ No duplicate addresses found between airdrop and devGenesis data for ${environment}`);
+    }
+  }
+  
+  if (verificationsPass) {
+    console.log("✓ All verifications passed - no duplicates found!");
+  } else {
+    console.error("WARNING: Duplicate addresses found! This may result in unexpected token distribution.");
+  }
+  
+  return verificationsPass;
 }
 
 /**
@@ -607,9 +681,16 @@ function generateSummary(environmentTotals, airdropData, devGenesisData, secureA
     // Dev Genesis Accounts Summary
     const devGenesisTotal = environmentTotals[environment].dev;
     const devGenesisCount = Object.keys(devGenesisData[environment]).length;
+    
+    // Count how many keys have 0 balance (likely auto-injected multisig keys)
+    const zeroBalanceCount = Object.entries(devGenesisData[environment])
+      .filter(([key, value]) => value === 0)
+      .length;
+    
     if (devGenesisCount > 0) {
       console.log("\nDev Genesis Accounts:");
       console.log(`  Total: ${devGenesisTotal.toLocaleString()} SHM (${devGenesisCount} accounts)`);
+      console.log(`  Auto-injected multisig keys with 0 balance: ${zeroBalanceCount} keys`);
     } else {
       console.log("\nDev Genesis Accounts: None");
     }
@@ -639,6 +720,48 @@ function generateSummary(environmentTotals, airdropData, devGenesisData, secureA
 }
 
 /**
+ * Copy all mainnet JSON files to their non-environment specific versions
+ */
+function copyMainnetFilesToGeneric() {
+  console.log("\nCopying mainnet files to generic versions...");
+  
+  // Define all the directories we create files in
+  const directories = [
+    path.join(process.cwd(), ".", "secure-accounts"),
+    path.join(process.cwd(), ".", "genesis"),
+    path.join(process.cwd(), ".", "devkeys"),
+    path.join(process.cwd(), ".", "multisigKeys"),
+    path.join(process.cwd(), ".", "multisig-permissions")
+  ];
+  
+  // Process each directory
+  directories.forEach(dir => {
+    if (!fs.existsSync(dir)) {
+      console.log(`Directory ${dir} does not exist, skipping`);
+      return;
+    }
+    
+    // Get all files in the directory
+    const files = fs.readdirSync(dir);
+    
+    // Find mainnet files and create generic versions
+    files.forEach(file => {
+      if (file.startsWith('mainnet.')) {
+        const genericFileName = file.replace('mainnet.', '');
+        const sourcePath = path.join(dir, file);
+        const targetPath = path.join(dir, genericFileName);
+        
+        // Copy the file
+        fs.copyFileSync(sourcePath, targetPath);
+        console.log(`Copied ${file} to ${genericFileName} in ${path.basename(dir)}`);
+      }
+    });
+  });
+  
+  console.log("Finished copying mainnet files to generic versions");
+}
+
+/**
  * Main function to generate the environment
  */
 async function generateEnvironment() {
@@ -652,17 +775,30 @@ async function generateEnvironment() {
     const devKeysData = await importDevKeysData();
     const multisigKeysData = await importMultisigKeysData();
     
+    // Phase 1.5: Verify data integrity
+    verifyNoDuplicates(airdropData, devGenesisData);
+    
+    // New Phase between 1 and 2: Auto-inject multisig keys into dev genesis accounts
+    const updatedDevGenesisData = autoInjectMultisigDevGenesisAccounts(multisigKeysData, devGenesisData);
+    
+    // Re-verify after auto-injection to ensure we didn't create new duplicates
+    verifyNoDuplicates(airdropData, updatedDevGenesisData);
+    
     // Phase 2: Calculate totals
-    const environmentTotals = calculateEnvironmentTotals(airdropData, devGenesisData);
+    const environmentTotals = calculateEnvironmentTotals(airdropData, updatedDevGenesisData);
     
     // Phase 3: Generate output files
     generateSecureAccountsFiles(secureAccountsData, environmentTotals);
-    generateGenesisFiles(airdropData, devGenesisData);
+    generateGenesisFiles(airdropData, updatedDevGenesisData);
     generateDevKeysFiles(devKeysData);
     generateMultisigKeysFiles(multisigKeysData);
+    generateMultisigPermissionsFiles(multisigKeysData);
     
-    // Phase 4: Generate summary
-    generateSummary(environmentTotals, airdropData, devGenesisData, secureAccountsData);
+    // Phase 4: Copy all mainnet files to generic versions
+    copyMainnetFilesToGeneric();
+    
+    // Phase 5: Generate summary
+    generateSummary(environmentTotals, airdropData, updatedDevGenesisData, secureAccountsData);
     
     console.log("\nEnvironment generation completed successfully!");
   } catch (error) {

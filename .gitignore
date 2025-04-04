@@ -25,7 +25,10 @@ scripts/*/
 !scripts/environmentGeneration/
 scripts/environmentGeneration/devkeys*
 scripts/environmentGeneration/genesis/
-scripts/environmentGeneration/multisigkeys*
+scripts/environmentGeneration/multisigKeys*
+scripts/environmentGeneration/multisig-permissions*
+scripts/environmentGeneration/secure-accounts*
+scripts/environmentGeneration/test-output*
 scripts/environmentGeneration/node-mules*
 .idea
 consensorAccounts.json
