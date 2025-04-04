@@ -170,6 +170,7 @@ describe('ShardeumFlags', () => {
         expect(ShardeumFlags.ServicePoints['contract/estimateGas'].direct).toBe(20)
         expect(ShardeumFlags.ServicePoints['tx/:hash']).toBe(5)
         expect(ShardeumFlags.ServicePoints['canUnstake/:nominee/:nominator']).toBe(5)
+        expect(ShardeumFlags.ServicePoints['canStake/:nominee']).toBe(5)
         expect(ShardeumFlags.logServicePointSenders).toBe(false)
         expect(ShardeumFlags.startInServiceMode).toBe(false)
         expect(Array.isArray(ShardeumFlags.allowedEndpointsInServiceMode)).toBe(true)
@@ -181,6 +182,7 @@ describe('ShardeumFlags', () => {
           'GET /account/*',
           'GET /eth_getCode',
           'GET /canUnstake/*',
+          'GET /canStake/*',
         ])
         expect(Array.isArray(ShardeumFlags.controlledRPCEndpoints)).toBe(true)
         expect(ShardeumFlags.controlledRPCEndpoints).toEqual(['contract/estimateGas'])

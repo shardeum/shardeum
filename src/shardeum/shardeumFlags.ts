@@ -34,6 +34,7 @@ export interface ShardeumFlags {
     }
     ['tx/:hash']: number
     ['canUnstake/:nominee/:nominator']: number
+    ['canStake/:nominee']: number
   }
   DebugRestoreFile: string //'accounts-by-ts.json'
   DebugRestoreArchiveBatch: number
@@ -182,6 +183,7 @@ export const ShardeumFlags: ShardeumFlags = {
     ['contract/estimateGas']: { endpoint: 5, direct: 20 },
     ['tx/:hash']: 5,
     ['canUnstake/:nominee/:nominator']: 5,
+    ['canStake/:nominee']: 5,
   },
   generateMemoryPatternData: true,
   StakingEnabled: true,
@@ -262,6 +264,7 @@ export const ShardeumFlags: ShardeumFlags = {
     'GET /account/*',
     'GET /eth_getCode',
     'GET /canUnstake/*',
+    'GET /canStake/*',
   ],
   controlledRPCEndpoints: ['contract/estimateGas'],
   numberOfNodesToInjectPenaltyTx: 5,
