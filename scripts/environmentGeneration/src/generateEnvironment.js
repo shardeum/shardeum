@@ -6,6 +6,89 @@ import { getSheetData, SHEETS } from './googleSheets.js'
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
 
+// Parse command line arguments
+function parseCommandLineArgs() {
+  const args = process.argv.slice(2);
+  const options = {
+    help: false,
+    shardeumPath: null,
+    archiverPath: null
+  };
+
+  for (let i = 0; i < args.length; i++) {
+    const arg = args[i];
+    
+    if (arg === '--help' || arg === '-h') {
+      options.help = true;
+    } else if (arg === '--shardeum-path') {
+      if (i + 1 < args.length) {
+        options.shardeumPath = args[++i];
+      }
+    } else if (arg === '--archiver-path') {
+      if (i + 1 < args.length) {
+        options.archiverPath = args[++i];
+      }
+    }
+  }
+
+  return options;
+}
+
+// Display help message
+function displayHelp() {
+  console.log(`
+Environment Generation Script Help
+=================================
+
+USAGE:
+  node generateEnvironment.js --shardeum-path <PATH_TO_SHARDEUM> --archiver-path <PATH_TO_ARCHIVER>
+
+REQUIRED ARGUMENTS:
+  --shardeum-path <PATH>   Path to the Shardeum directory
+  --archiver-path <PATH>   Path to the Archiver directory
+
+OPTIONS:
+  --help, -h               Display this help message
+
+DESCRIPTION:
+  This script generates environment configuration files for Shardeum networks.
+  It reads data from Google Sheets and creates environment-specific config files.
+  The script will output files to the following locations:
+  - Environment configs: <SHARDEUM_PATH>/environments/
+  - Secure accounts files: <SHARDEUM_PATH>/src/config/ and <ARCHIVER_PATH>/static/
+  
+EXAMPLE:
+  node generateEnvironment.js --shardeum-path /home/user/shardeum --archiver-path /home/user/archiver
+  `);
+}
+
+// Validate command line arguments
+function validateCommandLineArgs(options) {
+  if (options.help) {
+    displayHelp();
+    return false;
+  }
+
+  if (!options.shardeumPath || !options.archiverPath) {
+    console.error("Error: Both --shardeum-path and --archiver-path are required arguments");
+    console.error("Run with --help for usage information");
+    return false;
+  }
+
+  // Check if the paths exist
+  if (!fs.existsSync(options.shardeumPath)) {
+    console.error(`Error: Shardeum path does not exist: ${options.shardeumPath}`);
+    return false;
+  }
+
+  if (!fs.existsSync(options.archiverPath)) {
+    console.error(`Error: Archiver path does not exist: ${options.archiverPath}`);
+    return false;
+  }
+
+  return true;
+}
+
 const ENVIRONMENTS = ['local', 'devnet', 'testnet', 'stagenet', 'mainnet']
 
 // Define the permission types and their corresponding JSON property names
@@ -400,13 +483,18 @@ function calculateEnvironmentTotals(airdropData, devGenesisData) {
  * Generate secure accounts files for each environment
  * @param {Object} secureAccountsData - Secure accounts data
  * @param {Object} environmentTotals - Environment totals
+ * @param {Object} options - Command line options with paths
  */
-function generateSecureAccountsFiles(secureAccountsData, environmentTotals) {
+function generateSecureAccountsFiles(secureAccountsData, environmentTotals, options) {
   console.log("\nGenerating secure accounts files...");
   
-  // Create secure-accounts directory if it doesn't exist
-  const secureAccountsDir = path.join(process.cwd(), ".", "secure-accounts");
-  fs.ensureDirSync(secureAccountsDir);
+  // Create config directory in shardeum/src if it doesn't exist
+  const configDir = path.join(options.shardeumPath, "src/config");
+  fs.ensureDirSync(configDir);
+  
+  // Create archiver static directory if it doesn't exist
+  const archiverStaticDir = path.join(options.archiverPath, "static");
+  fs.ensureDirSync(archiverStaticDir);
 
   // Generate files for each environment
   for (const environment of ENVIRONMENTS) {
@@ -449,10 +537,15 @@ function generateSecureAccountsFiles(secureAccountsData, environmentTotals) {
       );
     }
 
-    // Write the file
-    const outputPath = path.join(secureAccountsDir, `${environment}.genesis-secure-accounts.json`);
-    fs.writeJsonSync(outputPath, secureAccounts, { spaces: 2 });
-    console.log(`Generated ${environment}.genesis-secure-accounts.json`);
+    // Write the file to src/config
+    const configOutputPath = path.join(configDir, `${environment}.genesis-secure-accounts.json`);
+    fs.writeJsonSync(configOutputPath, secureAccounts, { spaces: 2 });
+    console.log(`Generated ${environment}.genesis-secure-accounts.json in ${configDir}`);
+    
+    // Also write to archiver/static
+    const archiverOutputPath = path.join(archiverStaticDir, `${environment}.genesis-secure-accounts.json`);
+    fs.writeJsonSync(archiverOutputPath, secureAccounts, { spaces: 2 });
+    console.log(`Generated ${environment}.genesis-secure-accounts.json in ${archiverStaticDir}`);
   }
 }
 
@@ -460,12 +553,14 @@ function generateSecureAccountsFiles(secureAccountsData, environmentTotals) {
  * Generate genesis files with airdrop and dev genesis accounts
  * @param {Object} airdropData - Airdrop data
  * @param {Object} devGenesisData - Dev genesis data
+ * @param {Object} options - Command line options with paths
  */
-function generateGenesisFiles(airdropData, devGenesisData) {
+function generateGenesisFiles(airdropData, devGenesisData, options) {
   console.log("\nGenerating genesis files...");
   
-  const genesisDir = path.join(process.cwd(), ".", "genesis");
-  fs.ensureDirSync(genesisDir);
+  // Use the src/config directory path from shardeum-path
+  const configDir = path.join(options.shardeumPath, "src/config");
+  fs.ensureDirSync(configDir);
 
   for (const environment of ENVIRONMENTS) {
     const combinedData = {};
@@ -485,9 +580,9 @@ function generateGenesisFiles(airdropData, devGenesisData) {
     });
     
     // Write combined genesis file
-    const outputPath = path.join(genesisDir, `${environment}.genesis.json`);
+    const outputPath = path.join(configDir, `${environment}.genesis.json`);
     fs.writeJsonSync(outputPath, combinedData, { spaces: 2 });
-    console.log(`Generated combined ${environment}.genesis.json`);
+    console.log(`Generated ${environment}.genesis.json in ${configDir}`);
   }
 }
 
@@ -495,6 +590,7 @@ function generateGenesisFiles(airdropData, devGenesisData) {
  * Generate dev keys files
  * @param {Object} devKeysData - Dev keys data
  */
+/*
 function generateDevKeysFiles(devKeysData) {
   console.log("\nGenerating dev keys files...");
   
@@ -512,11 +608,13 @@ function generateDevKeysFiles(devKeysData) {
     console.log(`Generated ${env}.devKeys.json with ${keys.length} keys`);
   }
 }
+*/
 
 /**
  * Generate multisig keys files
  * @param {Object} multisigKeysData - Multisig keys data
  */
+/*
 function generateMultisigKeysFiles(multisigKeysData) {
   console.log("\nGenerating multisig keys files...");
   
@@ -543,25 +641,106 @@ function generateMultisigKeysFiles(multisigKeysData) {
     console.log(`Generated ${env}.MultisigKeys.json with ${keyArray.length} keys`);
   }
 }
+*/
 
 /**
  * Generate multisig permissions files
  * @param {Object} multisigKeysData - Multisig keys data
+ * @param {Object} options - Command line options with paths
  */
-function generateMultisigPermissionsFiles(multisigKeysData) {
+function generateMultisigPermissionsFiles(multisigKeysData, options) {
   console.log("\nGenerating multisig permissions files...");
   
-  const multisigDir = path.join(process.cwd(), ".", "multisig-permissions");
-  fs.ensureDirSync(multisigDir);
+  // Use the src/config directory path from shardeum-path
+  const configDir = path.join(options.shardeumPath, "src/config");
+  fs.ensureDirSync(configDir);
 
   // Write multisig permissions files for each environment
   for (const [env, permissions] of Object.entries(multisigKeysData)) {
+    const outputPath = path.join(configDir, `${env}.multisig-permissions.json`);
     fs.writeFileSync(
-      path.join(multisigDir, `${env}.multisig-permissions.json`),
+      outputPath,
       JSON.stringify(permissions, null, 2),
       "utf-8"
     );
-    console.log(`Generated ${env}.multisig-permissions.json for multisig keys`);
+    console.log(`Generated ${env}.multisig-permissions.json in ${configDir}`);
+  }
+}
+
+/**
+ * Inject dev keys and multisig keys into environment config files
+ * @param {Object} devKeysData - Dev keys data
+ * @param {Object} multisigKeysData - Multisig keys data
+ * @param {Object} options - Command line options with paths
+ */
+function injectKeysIntoEnvironmentConfig(devKeysData, multisigKeysData, options) {
+  console.log("\nInjecting keys into environment config files...");
+  
+  const environmentsDir = path.join(options.shardeumPath, "environments");
+  
+  // Ensure the environments directory exists
+  if (!fs.existsSync(environmentsDir)) {
+    console.error(`Environment directory not found: ${environmentsDir}`);
+    console.error("Please make sure the path to environments is correct");
+    return;
+  }
+
+  for (const env of ENVIRONMENTS) {
+    const configFilePath = path.join(environmentsDir, `${env}.config.json`);
+    
+    // Check if config file exists
+    if (!fs.existsSync(configFilePath)) {
+      console.warn(`Config file for ${env} does not exist: ${configFilePath}`);
+      continue;
+    }
+    
+    console.log(`Processing ${env}.config.json`);
+    
+    try {
+      // Read current config
+      let config = fs.readJsonSync(configFilePath);
+      
+      // Ensure server object exists
+      if (!config.server) {
+        console.log(`Creating server object in ${env}.config.json as it doesn't exist`);
+        config.server = {};
+      }
+      
+      // Ensure debug object exists in server
+      if (!config.server.debug) {
+        console.log(`Creating debug object in ${env}.config.json as it doesn't exist`);
+        config.server.debug = {};
+      }
+      
+      // Prepare dev keys object
+      const devPublicKeys = {};
+      devKeysData[env].forEach(key => {
+        devPublicKeys[key] = DevSecurityLevel.High;
+      });
+      
+      // Prepare multisig keys object
+      const multisigKeys = {};
+      // Extract all keys from all permission types for this environment
+      const keys = new Set();
+      Object.keys(multisigKeysData[env]).forEach(permissionType => {
+        multisigKeysData[env][permissionType].forEach(key => keys.add(key));
+      });
+      // Convert to object with security level
+      Array.from(keys).forEach(key => {
+        multisigKeys[key] = 3; // Security level value
+      });
+      
+      // Inject keys into config
+      config.server.debug.devPublicKeys = devPublicKeys;
+      config.server.debug.multisigKeys = multisigKeys;
+      
+      // Write updated config back to file
+      fs.writeJsonSync(configFilePath, config, { spaces: 2 });
+      
+      console.log(`Updated ${env}.config.json with ${Object.keys(devPublicKeys).length} dev keys and ${Object.keys(multisigKeys).length} multisig keys`);
+    } catch (error) {
+      console.error(`Error updating ${env}.config.json:`, error.message);
+    }
   }
 }
 
@@ -721,17 +900,20 @@ function generateSummary(environmentTotals, airdropData, devGenesisData, secureA
 
 /**
  * Copy all mainnet JSON files to their non-environment specific versions
+ * @param {Object} options - Command line options with paths
  */
-function copyMainnetFilesToGeneric() {
+function copyMainnetFilesToGeneric(options) {
   console.log("\nCopying mainnet files to generic versions...");
   
   // Define all the directories we create files in
   const directories = [
-    path.join(process.cwd(), ".", "secure-accounts"),
-    path.join(process.cwd(), ".", "genesis"),
-    path.join(process.cwd(), ".", "devkeys"),
-    path.join(process.cwd(), ".", "multisigKeys"),
-    path.join(process.cwd(), ".", "multisig-permissions")
+    path.join(options.shardeumPath, "src/config"),
+    path.join(options.archiverPath, "static")
+    // Commented out directories since they're no longer needed
+    // path.join(process.cwd(), ".", "genesis") // No longer needed as genesis files are now in src/config
+    // path.join(process.cwd(), ".", "devkeys"),
+    // path.join(process.cwd(), ".", "multisigKeys"),
+    // path.join(process.cwd(), ".", "multisig-permissions") // No longer needed as multisig-permissions are now in src/config
   ];
   
   // Process each directory
@@ -766,7 +948,15 @@ function copyMainnetFilesToGeneric() {
  */
 async function generateEnvironment() {
   try {
+    // Parse and validate command line arguments
+    const options = parseCommandLineArgs();
+    if (!validateCommandLineArgs(options)) {
+      process.exit(1);
+    }
+    
     console.log("Starting environment generation...\n");
+    console.log(`Using Shardeum path: ${options.shardeumPath}`);
+    console.log(`Using Archiver path: ${options.archiverPath}\n`);
     
     // Phase 1: Import data from all tabs
     const airdropData = await importAirdropData();
@@ -788,14 +978,20 @@ async function generateEnvironment() {
     const environmentTotals = calculateEnvironmentTotals(airdropData, updatedDevGenesisData);
     
     // Phase 3: Generate output files
-    generateSecureAccountsFiles(secureAccountsData, environmentTotals);
-    generateGenesisFiles(airdropData, updatedDevGenesisData);
-    generateDevKeysFiles(devKeysData);
-    generateMultisigKeysFiles(multisigKeysData);
-    generateMultisigPermissionsFiles(multisigKeysData);
+    generateSecureAccountsFiles(secureAccountsData, environmentTotals, options);
+    generateGenesisFiles(airdropData, updatedDevGenesisData, options);
+    
+    // Inject keys into environment config files
+    injectKeysIntoEnvironmentConfig(devKeysData, multisigKeysData, options);
+    
+    // No longer generating separate key files since we're injecting them into the config files
+    // generateDevKeysFiles(devKeysData);
+    // generateMultisigKeysFiles(multisigKeysData);
+    
+    generateMultisigPermissionsFiles(multisigKeysData, options);
     
     // Phase 4: Copy all mainnet files to generic versions
-    copyMainnetFilesToGeneric();
+    copyMainnetFilesToGeneric(options);
     
     // Phase 5: Generate summary
     generateSummary(environmentTotals, airdropData, updatedDevGenesisData, secureAccountsData);
