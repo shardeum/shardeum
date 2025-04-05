@@ -161,7 +161,7 @@ import { accountDeserializer, accountSerializer } from './types/Helpers'
 import { runWithContextAsync } from './utils/RequestContext'
 import { Utils } from '@shardeum-foundation/lib-types'
 import { SafeBalance } from './utils/safeMath'
-import { isStakeUnlocked, verifyStakeTx, verifyUnstakeTx } from './tx/staking/verifyStake'
+import { isRestakingAllowed, isStakeUnlocked, verifyStakeTx, verifyUnstakeTx } from './tx/staking/verifyStake'
 import { AJVSchemaEnum } from './types/enum/AJVSchemaEnum'
 import { filterObjectByWhitelistedProps, initAjvSchemas, verifyPayload } from './types/ajv/Helpers'
 import { Sign, ServerMode } from '@shardeum-foundation/core/dist/shardus/shardus-types'
@@ -1584,6 +1584,27 @@ const configShardusEndpoints = (): void => {
       res.json({ stakeUnlocked })
     } catch (e) {
       if (ShardeumFlags.VerboseLogs) console.log(`Error /canUnstake`, e)
+      res.status(500).send(e.message)
+    }
+  })
+
+  shardus.registerExternalGet('canStake/:nominee', externalApiMiddleware, async (req, res) => {
+    if (trySpendServicePoints(ShardeumFlags.ServicePoints['canStake/:nominee'], req, 'canStake') === false) {
+      res.json({ error: 'node busy' })
+      return
+    }
+
+    try {
+      const nominee = await getAccountData(shardus, req.params['nominee'], { query: { type: 9 } })
+      if (nominee?.account?.data == null) {
+        res.json({ error: 'account not found' })
+        return
+      }
+      const stakeAllowed = isRestakingAllowed(nominee.account.data, AccountsStorage.cachedNetworkAccount)
+
+      res.json({ stakeAllowed })
+    } catch (e) {
+      if (ShardeumFlags.VerboseLogs) console.log(`Error /canStake`, e)
       res.status(500).send(e.message)
     }
   })

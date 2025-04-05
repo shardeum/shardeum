@@ -46,7 +46,7 @@ export function verifyStakeTx(
     //TODO: NEED to potentially write a custom faster test that avoids regex so we can avoid a regex-dos attack
     success = false
     reason = 'Invalid nominee address in stake coins tx'
-  } else if (nomineeAccount && nomineeAccount.stakeTimestamp + networkAccount.current.restakeCooldown > Date.now()) {
+  } else if (isRestakingAllowed(nomineeAccount, networkAccount).restakeAllowed) {
     success = false
     reason = `This node was staked within the last ${
       networkAccount.current.restakeCooldown / 60000
@@ -252,5 +252,40 @@ export function isStakeUnlocked(
     unlocked: true,
     reason: '',
     remainingTime: 0,
+  }
+}
+
+export function isRestakingAllowed(
+  nomineeAccount: NodeAccount2,
+  networkAccount: NetworkAccount
+): {
+  restakeAllowed: boolean
+  reason: string
+  remainingTime: number
+} {
+  if (nomineeAccount == null) {
+    return {
+      restakeAllowed: false,
+      reason: 'Nominee account not found.',
+      remainingTime: 0,
+    }
+  }
+  if (nomineeAccount.stakeTimestamp == null) {
+    return {
+      restakeAllowed: true,
+      reason: 'Nominee account stake timestamp not found.',
+      remainingTime: 0,
+    }
+  }
+  const restakeCooldown = networkAccount.current.restakeCooldown
+  const restakeAllowedTime = nomineeAccount.stakeTimestamp + restakeCooldown
+  const currentTime = Date.now()
+  const remainingTime = Math.max(restakeAllowedTime - currentTime, 0)
+  const reason = `Restaking is not allowed yet. Please wait ${Math.ceil(remainingTime / 1000)} seconds.`
+  const restakeAllowed = remainingTime <= 0
+  return {
+    restakeAllowed,
+    reason,
+    remainingTime,
   }
 }
