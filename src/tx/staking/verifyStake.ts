@@ -46,7 +46,7 @@ export function verifyStakeTx(
     //TODO: NEED to potentially write a custom faster test that avoids regex so we can avoid a regex-dos attack
     success = false
     reason = 'Invalid nominee address in stake coins tx'
-  } else if (isRestakingAllowed(nomineeAccount, networkAccount).restakeAllowed) {
+  } else if (!isRestakingAllowed(nomineeAccount, networkAccount).restakeAllowed) {
     success = false
     reason = `This node was staked within the last ${
       networkAccount.current.restakeCooldown / 60000
