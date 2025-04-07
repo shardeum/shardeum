@@ -4405,9 +4405,7 @@ const shardusSetup = (): void => {
           blockNumber: bigIntToHex(blocks[blockNumberForTx].header.number),
           nonce: bigIntToHex(transaction.nonce),
           blockHash: readableBlocks[blockNumberForTx].hash, // eslint-disable-line security/detect-object-injection
-          cumulativeGasUsed: bigIntToHex(
-            scaleByStabilityFactor(BigInt(ShardeumFlags.constantTxFeeUsd), AccountsStorage.cachedNetworkAccount)
-          ),
+          cumulativeGasUsed: bigIntToHex(baseFee),
           gasUsed: bigIntToHex(baseFee),
           gasRefund: '0x0',
           gasPrice: bigIntToHex(gasPrice),
@@ -4636,9 +4634,7 @@ const shardusSetup = (): void => {
           nonce: bigIntToHex(transaction.nonce),
           // eslint-disable-next-line security/detect-object-injection
           blockHash: readableBlocks[blockNumberForTx].hash,
-          cumulativeGasUsed: bigIntToHex(
-            scaleByStabilityFactor(BigInt(ShardeumFlags.constantTxFeeUsd), AccountsStorage.cachedNetworkAccount)
-          ),
+          cumulativeGasUsed: bigIntToHex(baseFee),
           gasUsed: bigIntToHex(baseFee),
           gasRefund: '0x0',
           gasPrice: bigIntToHex(gasPrice),
