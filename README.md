@@ -77,7 +77,12 @@ npm ci
 3. Network Configuration:
 
 ```bash
-export LOAD_JSON_CONFIGS=debug-10-nodes.config.json
+export LOAD_JSON_CONFIGS=[full-path-to-your-local-shardeum-repo]/debug-10-nodes.config.json
+```
+For instance, if your local shardeum repo is on this path `/Users/john/Desktop/projects/shardeum/` then you would run:
+
+```
+export LOAD_JSON_CONFIGS=/Users/john/Desktop/projects/shardeum/debug-10-nodes.config.json
 ```
 
 Learn more about the different config options [here](local-environment-setup.md)
