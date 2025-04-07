@@ -4315,7 +4315,7 @@ const shardusSetup = (): void => {
           AccountsStorage.cachedNetworkAccount
         )
         const baseFee = transaction.getBaseFee()
-        const txFee = gasPrice * baseFee
+        const txFee = safeMultiply(gasPrice, baseFee)
         const totalAmountToDeduct = stakeCoinsTx.stake + txFee
         if (operatorEVMAccount.account.balance < totalAmountToDeduct) {
           throw new Error('Operator account does not have enough balance to stake')
