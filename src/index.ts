@@ -4308,8 +4308,14 @@ const shardusSetup = (): void => {
         } else {
           operatorEVMAccount.operatorAccountInfo = fixBigIntLiteralsToBigInt(operatorEVMAccount.operatorAccountInfo)
         }
-        const txFeeUsd = BigInt(ShardeumFlags.constantTxFeeUsd)
-        const txFee = scaleByStabilityFactor(txFeeUsd, AccountsStorage.cachedNetworkAccount)
+
+        const gasPrice = calculateGasPrice(
+          ShardeumFlags.baselineTxFee,
+          ShardeumFlags.baselineTxGasUsage,
+          AccountsStorage.cachedNetworkAccount
+        )
+        const baseFee = transaction.getBaseFee()
+        const txFee = gasPrice * baseFee
         const totalAmountToDeduct = stakeCoinsTx.stake + txFee
         if (operatorEVMAccount.account.balance < totalAmountToDeduct) {
           throw new Error('Operator account does not have enough balance to stake')
@@ -4399,14 +4405,10 @@ const shardusSetup = (): void => {
           blockNumber: bigIntToHex(blocks[blockNumberForTx].header.number),
           nonce: bigIntToHex(transaction.nonce),
           blockHash: readableBlocks[blockNumberForTx].hash, // eslint-disable-line security/detect-object-injection
-          cumulativeGasUsed: bigIntToHex(
-            scaleByStabilityFactor(BigInt(ShardeumFlags.constantTxFeeUsd), AccountsStorage.cachedNetworkAccount)
-          ),
-          gasUsed: bigIntToHex(
-            scaleByStabilityFactor(BigInt(ShardeumFlags.constantTxFeeUsd), AccountsStorage.cachedNetworkAccount)
-          ),
+          cumulativeGasUsed: bigIntToHex(baseFee),
+          gasUsed: bigIntToHex(baseFee),
           gasRefund: '0x0',
-          gasPrice: bigIntToHex(transaction.gasPrice),
+          gasPrice: bigIntToHex(gasPrice),
           gasLimit: bigIntToHex(transaction.gasLimit),
           maxFeePerGas: undefined,
           maxPriorityFeePerGas: undefined,
@@ -4508,8 +4510,14 @@ const shardusSetup = (): void => {
         const stake = BigInt(operatorEVMAccount.operatorAccountInfo.stake)
         let reward = BigInt(nodeAccount2.reward)
         const penalty = BigInt(nodeAccount2.penalty)
-        const txFeeUsd = BigInt(ShardeumFlags.constantTxFeeUsd)
-        const txFee = scaleByStabilityFactor(txFeeUsd, AccountsStorage.cachedNetworkAccount)
+
+        const gasPrice = calculateGasPrice(
+          ShardeumFlags.baselineTxFee,
+          ShardeumFlags.baselineTxGasUsage,
+          AccountsStorage.cachedNetworkAccount
+        )
+        const baseFee = transaction.getBaseFee()
+        const txFee = gasPrice * baseFee
         /* prettier-ignore */ if (logFlags.dapp_verbose) console.log('calculating new balance after unstake', currentBalance, stake, reward, penalty, txFee)
         if (nodeAccount2.rewardEndTime === 0 && nodeAccount2.rewardStartTime > 0) {
           // This block will only be reached if the node is inactive and the force unstake flag has been set
@@ -4626,14 +4634,10 @@ const shardusSetup = (): void => {
           nonce: bigIntToHex(transaction.nonce),
           // eslint-disable-next-line security/detect-object-injection
           blockHash: readableBlocks[blockNumberForTx].hash,
-          cumulativeGasUsed: bigIntToHex(
-            scaleByStabilityFactor(BigInt(ShardeumFlags.constantTxFeeUsd), AccountsStorage.cachedNetworkAccount)
-          ),
-          gasUsed: bigIntToHex(
-            scaleByStabilityFactor(BigInt(ShardeumFlags.constantTxFeeUsd), AccountsStorage.cachedNetworkAccount)
-          ),
+          cumulativeGasUsed: bigIntToHex(baseFee),
+          gasUsed: bigIntToHex(baseFee),
           gasRefund: '0x0',
-          gasPrice: bigIntToHex(transaction.gasPrice),
+          gasPrice: bigIntToHex(gasPrice),
           gasLimit: bigIntToHex(transaction.gasLimit),
           maxFeePerGas: undefined,
           maxPriorityFeePerGas: undefined,
