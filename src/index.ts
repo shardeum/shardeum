@@ -3436,15 +3436,7 @@ async function estimateGas(
 
   if (isStakingEVMTx(transaction)) {
     const baseFee = transaction.getBaseFee()
-    const gasPrice =
-      transaction.gasPrice ??
-      calculateGasPrice(
-        ShardeumFlags.baselineTxFee,
-        ShardeumFlags.baselineTxGasUsage,
-        AccountsStorage.cachedNetworkAccount
-      )
-    const txFee = baseFee * gasPrice
-    return { estimateGas: bigIntToHex(txFee) }
+    return { estimateGas: bigIntToHex(baseFee) }
   }
 
   if (caShardusAddress != null) {
