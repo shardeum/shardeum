@@ -3434,6 +3434,19 @@ async function estimateGas(
 
   const caShardusAddress = transaction.to ? toShardusAddress(transaction.to.toString(), AccountType.Account) : null
 
+  if (isStakingEVMTx(transaction)) {
+    const baseFee = transaction.getBaseFee()
+    const gasPrice =
+      transaction.gasPrice ??
+      calculateGasPrice(
+        ShardeumFlags.baselineTxFee,
+        ShardeumFlags.baselineTxGasUsage,
+        AccountsStorage.cachedNetworkAccount
+      )
+    const txFee = baseFee * gasPrice
+    return { estimateGas: bigIntToHex(txFee) }
+  }
+
   if (caShardusAddress != null) {
     const accountIsRemote = isServiceMode() ? false : shardus.isAccountRemote(caShardusAddress)
 
