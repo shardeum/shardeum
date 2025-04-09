@@ -61,7 +61,8 @@
         "0xBec84b95DdC395E506D6d90B94ffD97c5670e528": 3,
         "0x927118b2c279d2FCCA6A621e77a8Cd210A5EFd90": 3,
         "0x85A23AeBA7841d45F3aa1CbbdE760F38587eF6b8": 3
-      }
+      },
+      "enableDebugFlags": false
     }
   }
 }

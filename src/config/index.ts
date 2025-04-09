@@ -343,6 +343,7 @@ config = merge(
         minMultiSigRequiredForEndpoints: 3,
         minMultiSigRequiredForGlobalTxs: 3,
         minSigRequiredForArchiverWhitelist: 3,
+        enableDebugFlags: false,
       },
     },
   },
