@@ -3,6 +3,7 @@
     "p2p": {
       "baselineNodes": 25,
       "minNodes": 25,
+      "maxNodes": 1280,
       "syncingDesiredMinCount": 5,
       "flexibleRotationDelta": 0,
       "formingNodesPerCycle": 25

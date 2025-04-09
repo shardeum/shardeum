@@ -1,7 +1,15 @@
 {
   "server": {
     "p2p": {
-      "formingNodesPerCycle": 250
+      "baselineNodes": 256,
+      "minNodes": 256,
+      "maxNodes": 1280,
+      "syncingDesiredMinCount": 20,
+      "flexibleRotationDelta": 5,
+      "formingNodesPerCycle": 300
+    },
+    "sharding": {
+      "nodesPerConsensusGroup": 128
     },
     "debug": {
       "devPublicKeys": {
