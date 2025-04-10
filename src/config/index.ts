@@ -5,7 +5,7 @@ import { ShardeumFlags } from '../shardeum/shardeumFlags'
 import { DevSecurityLevel } from '@shardeum-foundation/core'
 import { FilePaths } from '../shardeum/shardeumFlags'
 import { Utils } from '@shardeum-foundation/lib-types'
-import { mergeWithOverwrite } from './customMerge'
+import { mergeWithOverwrite } from '../utils/customMerge'
 
 const OVERWRITE_KEYS = ['devPublicKeys', 'multisigKeys']
 
