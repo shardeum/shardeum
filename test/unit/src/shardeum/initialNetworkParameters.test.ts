@@ -125,7 +125,7 @@ describe('Initial Network Parameters', () => {
       expect(initialNetworkParamters.certCycleDuration).toBe(30)
       expect(initialNetworkParamters.enableNodeSlashing).toBe(false)
       expect(initialNetworkParamters.enableRPCEndpoints).toBe(false)
-      expect(initialNetworkParamters.stakeLockTime).toBe(6000)
+      expect(initialNetworkParamters.stakeLockTime).toBe(1000 * 60 * 60 * 24 * 14)
       expect(initialNetworkParamters.chainID).toBe(ShardeumFlags.ChainID)
     })
 
