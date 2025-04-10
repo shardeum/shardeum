@@ -38,9 +38,11 @@ export const mergeWithOverwrite = (target: any, source: any, keysToOverwrite: st
     return target || source
   }
 
-  const processedKeys = keysToOverwrite.map((key) => {
-    return key.replace(/^\.+/, '')
-  })
+ const processedKeys = Array.isArray(keysToOverwrite)
+   ? keysToOverwrite.map((key) => {
+       return key.replace(/^\.+/, '')
+     })
+   : []
 
   const result = merge(target, source, {
     arrayMerge: overwriteMerge,
