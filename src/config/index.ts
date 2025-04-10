@@ -47,7 +47,7 @@ let config: Config = {
   },
 }
 
-console.log('CONFIG FIRST: ', config)
+console.log('CONFIG FIRST: ', JSON.stringify(config, null, 2))
 
 // eslint-disable-next-line security/detect-non-literal-fs-filename
 if (fs.existsSync(path.join(process.cwd(), FilePaths.CONFIG))) {
@@ -56,7 +56,7 @@ if (fs.existsSync(path.join(process.cwd(), FilePaths.CONFIG))) {
   config = merge(config, fileConfig, { arrayMerge: overwriteMerge })
 }
 
-console.log('CONFIG AFTER FILE: ', config)
+console.log('CONFIG AFTER FILE: ', JSON.stringify(config, null, 2))
 
 
 config = merge(config, {
@@ -169,7 +169,7 @@ config = merge(config, {
     },
   },
 })
-console.log('CONFIG AFTER MERGE 1: ', config)
+console.log('CONFIG AFTER MERGE 1: ', JSON.stringify(config, null, 2))
 
 // rateLimiting and loadDetection settings
 config = merge(config, {
@@ -357,7 +357,7 @@ config = merge(
 )
 
 
-console.log('CONFIG AFTER MERGE 2 - BEFORE LOAD JSON CONFIGS: ', config)
+console.log('CONFIG AFTER MERGE 2 - BEFORE LOAD JSON CONFIGS: ', JSON.stringify(config, null, 2))
 
 // load local config files
 if (process.env.LOAD_JSON_CONFIGS) {
@@ -383,7 +383,7 @@ if (process.env.LOAD_JSON_CONFIGS) {
   }
 }
 
-console.log('CONFIG AFTER MERGE 3 - BEFORE LOAD BASE DIR CONFIGS: ', config)
+console.log('CONFIG AFTER MERGE 3 - BEFORE LOAD BASE DIR CONFIGS: ', JSON.stringify(config, null, 2))
 
 // apply env variables
 if (process.env.BASE_DIR) {
@@ -468,7 +468,7 @@ if (process.env.APP_IP) {
   )
 }
 
-console.log('CONFIG BEFORE LAST MERGE: ', config)
+console.log('CONFIG BEFORE LAST MERGE: ', JSON.stringify(config, null, 2))
 
 config = merge(config, {
   server: {
@@ -497,6 +497,6 @@ config = merge(config, {
 })
 
 
-console.log('CONFIG FINAL: ', config)
+console.log('CONFIG FINAL: ', JSON.stringify(config, null, 2))
 
 export default config
