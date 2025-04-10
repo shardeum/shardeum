@@ -47,12 +47,17 @@ let config: Config = {
   },
 }
 
+console.log('CONFIG FIRST: ', config)
+
 // eslint-disable-next-line security/detect-non-literal-fs-filename
 if (fs.existsSync(path.join(process.cwd(), FilePaths.CONFIG))) {
   // eslint-disable-next-line security/detect-non-literal-fs-filename
   const fileConfig = Utils.safeJsonParse(fs.readFileSync(path.join(process.cwd(), FilePaths.CONFIG)).toString())
   config = merge(config, fileConfig, { arrayMerge: overwriteMerge })
 }
+
+console.log('CONFIG AFTER FILE: ', config)
+
 
 config = merge(config, {
   server: {
@@ -164,6 +169,7 @@ config = merge(config, {
     },
   },
 })
+console.log('CONFIG AFTER MERGE 1: ', config)
 
 // rateLimiting and loadDetection settings
 config = merge(config, {
@@ -350,6 +356,9 @@ config = merge(
   { arrayMerge: overwriteMerge }
 )
 
+
+console.log('CONFIG AFTER MERGE 2 - BEFORE LOAD JSON CONFIGS: ', config)
+
 // load local config files
 if (process.env.LOAD_JSON_CONFIGS) {
   const configs = process.env.LOAD_JSON_CONFIGS.split(',')
@@ -373,6 +382,8 @@ if (process.env.LOAD_JSON_CONFIGS) {
     }
   }
 }
+
+console.log('CONFIG AFTER MERGE 3 - BEFORE LOAD BASE DIR CONFIGS: ', config)
 
 // apply env variables
 if (process.env.BASE_DIR) {
@@ -457,6 +468,8 @@ if (process.env.APP_IP) {
   )
 }
 
+console.log('CONFIG BEFORE LAST MERGE: ', config)
+
 config = merge(config, {
   server: {
     p2p: {
@@ -482,5 +495,8 @@ config = merge(config, {
     },
   },
 })
+
+
+console.log('CONFIG FINAL: ', config)
 
 export default config
