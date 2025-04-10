@@ -19,7 +19,17 @@ const schemaTransferFromSecureAccountTx = {
       items: schemaSign,
     },
   },
-  required: ['isInternalTx', 'internalTXType', 'accountName', 'nonce', 'amount', 'timestamp', 'from', 'sign', 'chainId'],
+  required: [
+    'isInternalTx',
+    'internalTXType',
+    'accountName',
+    'nonce',
+    'amount',
+    'timestamp',
+    'from',
+    'sign',
+    'chainId',
+  ],
   additionalProperties: false,
 }
 
