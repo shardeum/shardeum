@@ -4,12 +4,11 @@ const overwriteMerge = (target: any[], source: any[]): any[] => source
 
 const shouldOverwrite = (path: string[], keysToOverwrite: string[]): boolean => {
   const pathStr = path.join('.')
-  const matches = keysToOverwrite.some((key) => {
-    const matches = pathStr === key || pathStr.startsWith(key + '.')
-    return matches
+  return keysToOverwrite.some((key) => {
+    // Check if the path matches exactly or is a child of the key
+    // OR if the key is a parent of the current path
+    return pathStr === key || pathStr.startsWith(key + '.') || key.startsWith(pathStr + '.')
   })
-
-  return matches
 }
 
 interface CustomOptions extends Options {
