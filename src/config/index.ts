@@ -5,8 +5,11 @@ import { ShardeumFlags } from '../shardeum/shardeumFlags'
 import { DevSecurityLevel } from '@shardeum-foundation/core'
 import { FilePaths } from '../shardeum/shardeumFlags'
 import { Utils } from '@shardeum-foundation/lib-types'
+import { mergeWithOverwrite } from '../utils/customMerge'
 
-const overwriteMerge = (target: any[], source: any[]): any[] => source // eslint-disable-line @typescript-eslint/no-explicit-any
+const OVERWRITE_KEYS = ['devPublicKeys', 'multisigKeys']
+
+const overwriteMerge = (target: any[], source: any[]): any[] => source
 
 export interface Config {
   storage?: any // eslint-disable-line @typescript-eslint/no-explicit-any
@@ -363,7 +366,7 @@ if (process.env.LOAD_JSON_CONFIGS) {
       if (fs.existsSync(path.join(process.cwd(), '..', configs[i]))) {
         // eslint-disable-next-line security/detect-non-literal-fs-filename
         const fileConfig = Utils.safeJsonParse(fs.readFileSync(path.join(process.cwd(), '..', configs[i])).toString())
-        config = merge(config, fileConfig, { arrayMerge: overwriteMerge })
+        config = mergeWithOverwrite(config, fileConfig, OVERWRITE_KEYS)
         console.log('config loaded from:', configs[i])
       } else {
         throw new Error('path to the following file is incorrect:' + configs[i])
