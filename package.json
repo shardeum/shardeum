@@ -1,6 +1,6 @@
 {
   "name": "@shardeum-foundation/shardeum",
-  "version": "1.18.0-prerelease.20",
+  "version": "1.18.0-prerelease.21",
   "description": "",
   "main": "dist/src/index.js",
   "license": "MIT",
