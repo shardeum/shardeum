@@ -6,7 +6,8 @@
       "maxNodes": 1280,
       "syncingDesiredMinCount": 5,
       "flexibleRotationDelta": 4,
-      "formingNodesPerCycle": 200
+      "formingNodesPerCycle": 200,
+      "allowEndUserTxnInjections": true
     },
     "sharding": {
       "nodesPerConsensusGroup": 32
