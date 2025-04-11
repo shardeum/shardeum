@@ -7,7 +7,8 @@
       "forceBogonFilteringOn": false,
       "syncingDesiredMinCount": 5,
       "flexibleRotationDelta": 0,
-      "formingNodesPerCycle": 10
+      "formingNodesPerCycle": 10,
+      "allowEndUserTxnInjections": true
     },
     "sharding": {
       "nodesPerConsensusGroup": 10
