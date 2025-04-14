@@ -3438,6 +3438,11 @@ async function estimateGas(
 
   const caShardusAddress = transaction.to ? toShardusAddress(transaction.to.toString(), AccountType.Account) : null
 
+  if (isStakingEVMTx(transaction)) {
+    const baseFee = transaction.getBaseFee()
+    return { estimateGas: bigIntToHex(baseFee) }
+  }
+
   if (caShardusAddress != null) {
     const accountIsRemote = isServiceMode() ? false : shardus.isAccountRemote(caShardusAddress)
 
