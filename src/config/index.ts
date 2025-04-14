@@ -362,14 +362,15 @@ if (process.env.LOAD_JSON_CONFIGS) {
 
   for (let i = 0; i < configs.length; i++) {
     try {
+      const configPath = configs[i]
       // eslint-disable-next-line security/detect-non-literal-fs-filename
-      if (fs.existsSync(path.join(process.cwd(), '..', configs[i]))) {
+      if (fs.existsSync(configPath)) {
         // eslint-disable-next-line security/detect-non-literal-fs-filename
-        const fileConfig = Utils.safeJsonParse(fs.readFileSync(path.join(process.cwd(), '..', configs[i])).toString())
-        config = mergeWithOverwrite(config, fileConfig, OVERWRITE_KEYS)
         console.log('config loaded from:', configs[i])
+        const fileConfig = Utils.safeJsonParse(fs.readFileSync(configPath).toString())
+        config = mergeWithOverwrite(config, fileConfig, OVERWRITE_KEYS)
       } else {
-        throw new Error('path to the following file is incorrect:' + configs[i])
+        throw new Error('path to the following file is incorrect:' + configPath)
       }
     } catch (e) {
       throw new Error('error loading config file: ' + e)
