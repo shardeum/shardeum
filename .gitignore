@@ -23,6 +23,7 @@ scripts/*.json
 scripts/*/
 !scripts/shardeumValidatorDebuggingScript
 !scripts/environmentGeneration/
+!scripts/network-account-compare/
 scripts/environmentGeneration/devkeys*
 scripts/environmentGeneration/genesis/
 scripts/environmentGeneration/multisigKeys*

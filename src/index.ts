@@ -1680,6 +1680,10 @@ const configShardusEndpoints = (): void => {
   })
 
   shardus.registerExternalGet('debug-set-shardeum-flag', debugMiddleware, async (req, res) => {
+    if (!shardusConfig.debug.enableDebugFlags) {
+      res.json({ error: 'debug flags are not enabled' })
+      return
+    }
     let value
     let key
     try {
