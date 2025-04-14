@@ -367,8 +367,8 @@ if (process.env.LOAD_JSON_CONFIGS) {
       if (fs.existsSync(configPath)) {
         // eslint-disable-next-line security/detect-non-literal-fs-filename
         console.log('config loaded from:', configs[i])
-        config = mergeWithOverwrite(config, fileConfig, OVERWRITE_KEYS)
         const fileConfig = Utils.safeJsonParse(fs.readFileSync(configPath).toString())
+        config = mergeWithOverwrite(config, fileConfig, OVERWRITE_KEYS)
       } else {
         throw new Error('path to the following file is incorrect:' + configPath)
       }
