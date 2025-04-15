@@ -2,28 +2,28 @@
   {
     "Name": "Foundation",
     "SourceFundsAddress": "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
-    "RecipientFundsAddress": "0xf08b4a82ef3ad9c919852a3d32eb5088af9a9153",
+    "RecipientFundsAddress": "0x31B8942433BD3f0A4C62EF1F2Af06F47C1dD8c32",
     "SecureAccountAddress": "1111111111111111111111111111111111111111000000000000000000000000",
     "SourceFundsBalance": "55878999000000000000000000"
   },
   {
     "Name": "Team",
     "SourceFundsAddress": "0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
-    "RecipientFundsAddress": "0xde368dce1070dba428b8133265666261ddca9f1a",
+    "RecipientFundsAddress": "0x5Bc620affd7F320297115Ee2D3dC0AF319a1B566",
     "SecureAccountAddress": "2222222222222222222222222222222222222222000000000000000000000000",
     "SourceFundsBalance": "76200000000000000000000000"
   },
   {
     "Name": "Ecosystem",
     "SourceFundsAddress": "0xcccccccccccccccccccccccccccccccccccccccc",
-    "RecipientFundsAddress": "0x2cf747f34a61bd23a7cff6974e56012fbc193b7e",
+    "RecipientFundsAddress": "0x629c55985931fE425e3439145D8A3d0aAf42F4E3",
     "SecureAccountAddress": "3333333333333333333333333333333333333333000000000000000000000000",
     "SourceFundsBalance": "21054025000000000000000000"
   },
   {
     "Name": "Sale",
     "SourceFundsAddress": "0xdddddddddddddddddddddddddddddddddddddddd",
-    "RecipientFundsAddress": "0x051b7b30e828ea8c371019e94aea28cdbef47ff8",
+    "RecipientFundsAddress": "0xFa2004E50e721897095cB606861b0Dc7AC130dE9",
     "SecureAccountAddress": "4444444444444444444444444444444444444444000000000000000000000000",
     "SourceFundsBalance": "91440000000000000000000000"
   }
