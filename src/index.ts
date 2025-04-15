@@ -8305,7 +8305,7 @@ export function shardeumGetTime(): number {
   try {
     // Attempt to get and patch config. Error if unable to get config.
     const networkAccount = await fetchNetworkAccountFromArchiver()
-    AccountsStorage.setCachedNetworkAccount(networkAccount.data)    
+    AccountsStorage.setCachedNetworkAccount(networkAccount.data)
     /* prettier-ignore */ console.log(`Got network account from archiver:\n ${Utils.safeStringify(networkAccount)}`)
     configToLoad = await updateConfigFromNetworkAccount(config, networkAccount)
   } catch (error) {
