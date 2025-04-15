@@ -8249,8 +8249,8 @@ async function updateConfigFromNetworkAccount(inputConfig: Config, account: Wrap
 
 function patchObject(existingObject: Config, changeObj: Partial<WrappedAccount>): void {
   //remove after testing
-  /* prettier-ignore */ if (logFlags.dapp_verbose) console.log(`TESTING existingObject: ${JSON.stringify(existingObject, null, 2)}`)
-  /* prettier-ignore */ if (logFlags.dapp_verbose) console.log(`TESTING changeObj: ${JSON.stringify(changeObj, null, 2)}`)
+  /* prettier-ignore */ if (logFlags.dapp_verbose) console.log(`TESTING existingObject: ${Utils.safeStringify(existingObject)}`)
+  /* prettier-ignore */ if (logFlags.dapp_verbose) console.log(`TESTING changeObj: ${Utils.safeStringify(changeObj)}`)
   for (const changeKey in changeObj) {
     if (changeObj[changeKey] && existingObject.server[changeKey]) {
       const targetObject = existingObject.server[changeKey]
@@ -8305,14 +8305,14 @@ export function shardeumGetTime(): number {
   try {
     // Attempt to get and patch config. Error if unable to get config.
     const networkAccount = await fetchNetworkAccountFromArchiver()
-    /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`[index] networkAccount: ${JSON.stringify(networkAccount)}`)
     AccountsStorage.setCachedNetworkAccount(networkAccount.data)
-
+    /* prettier-ignore */ console.log(`Got network account from archiver:\n ${Utils.safeStringify(networkAccount)}`)
     configToLoad = await updateConfigFromNetworkAccount(config, networkAccount)
   } catch (error) {
     configToLoad = config
     /* prettier-ignore */ nestedCountersInstance.countEvent('network-config-operation', 'Error: Use default configs.')
-    /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`Error: ${formatErrorMessage(error)} \nUsing default configs`)
+    /* prettier-ignore */ console.log(`Error Using default configs: ${formatErrorMessage(error)} \n`)
+    /* prettier-ignore */ console.log(`using default config:\n ${Utils.safeStringify(configToLoad)}`)
   }
 
   // this code is only excuted when starting or setting up the network***
@@ -8326,7 +8326,7 @@ export function shardeumGetTime(): number {
   console.log('Shardus Server Config:')
   /** This is just the ServerConfiguration part of the shardus core configuration*/
   shardusConfig = shardus.config
-  console.log(JSON.stringify(shardusConfig, null, 2))
+  console.log(Utils.safeStringify(shardusConfig))
 
   profilerInstance = shardus.getShardusProfiler()
   configShardusEndpoints()
