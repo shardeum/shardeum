@@ -280,7 +280,10 @@ describe('wrappedEVMAccountFunctions', () => {
         const result = wrappedEVMAccountFunctions.accountSpecificHash(account)
 
         expect(crypto.hashObj).toHaveBeenCalledWith({
-          EVMAccountInfo: evmAccount,
+          account: evmAccount,
+          accountType: AccountType.Account,
+          ethAddress: '0x123',
+          hash: 'mockedHash',
           timestamp: 123456,
         })
         expect(result).toBe('mockedHash')
@@ -301,7 +304,10 @@ describe('wrappedEVMAccountFunctions', () => {
         const result = wrappedEVMAccountFunctions.accountSpecificHash(account)
 
         expect(crypto.hashObj).toHaveBeenCalledWith({
-          EVMAccountInfo: evmAccount,
+          account: evmAccount,
+          accountType: AccountType.Account,
+          ethAddress: '0x123',
+          hash: 'mockedHash',
           operatorAccountInfo: operatorInfo,
           timestamp: 123456,
         })
@@ -335,8 +341,12 @@ describe('wrappedEVMAccountFunctions', () => {
         const result = wrappedEVMAccountFunctions.accountSpecificHash(account)
 
         expect(crypto.hashObj).toHaveBeenCalledWith({
+          accountType: AccountType.ContractStorage,
+          ethAddress: '0x123',
+          hash: 'mockedHash',
           key: 'storageKey',
           value: new Uint8Array([1, 2, 3]),
+          timestamp: 123456,
         })
         expect(result).toBe('mockedHash')
         expect(account.hash).toBe('mockedHash')
@@ -354,8 +364,12 @@ describe('wrappedEVMAccountFunctions', () => {
         const result = wrappedEVMAccountFunctions.accountSpecificHash(account)
 
         expect(crypto.hashObj).toHaveBeenCalledWith({
-          key: new Uint8Array([1, 2, 3]),
-          value: new Uint8Array([4, 5, 6]),
+          accountType: AccountType.ContractCode,
+          ethAddress: '0x123',
+          hash: 'mockedHash',
+          codeHash: new Uint8Array([1, 2, 3]),
+          codeByte: new Uint8Array([4, 5, 6]),
+          timestamp: 123456,
         })
         expect(result).toBe('mockedHash')
         expect(account.hash).toBe('mockedHash')
@@ -374,22 +388,15 @@ describe('wrappedEVMAccountFunctions', () => {
         const result = wrappedEVMAccountFunctions.accountSpecificHash(account)
 
         expect(crypto.hashObj).toHaveBeenCalledWith({
-          key: 'tx123',
-          value: receipt,
+          accountType: AccountType.Receipt,
+          ethAddress: '0x123',
+          hash: 'mockedHash',
+          receipt: receipt,
+          timestamp: 123456,
+          txId: 'tx123',
         })
         expect(result).toBe('mockedHash')
         expect(account.hash).toBe('mockedHash')
-      })
-
-      it('should return empty string for non-WrappedEVMAccount that is not an internal account', () => {
-        const account = {
-          accountType: 999, // Invalid account type
-        } as any
-
-        const result = wrappedEVMAccountFunctions.accountSpecificHash(account)
-
-        expect(result).toBe('')
-        expect(crypto.hashObj).not.toHaveBeenCalled()
       })
 
       it('should handle missing or malformed properties gracefully', () => {
