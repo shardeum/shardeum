@@ -6,6 +6,9 @@ import { DevSecurityLevel, nestedCountersInstance } from '@shardeum-foundation/c
 import { FilePaths } from '../shardeum/shardeumFlags'
 import { Utils } from '@shardeum-foundation/lib-types'
 import { mergeWithOverwrite } from '../utils/customMerge'
+import defaultGenesis from './genesis.json'
+import defaultGenesisSecureAccounts from './genesis-secure-accounts.json'
+import type { SecureAccountConfig } from '../shardeum/secureAccounts'
 
 const OVERWRITE_KEYS = ['devPublicKeys', 'multisigKeys']
 
@@ -495,4 +498,61 @@ config = merge(config, {
   },
 })
 
+// --- GENESIS ACCOUNTS LOADING ---
+let genesis: Record<string, { wei: string }> = defaultGenesis as Record<string, { wei: string }>
+let genesisSecureAccounts: SecureAccountConfig[] = defaultGenesisSecureAccounts
+
+if (process.env.LOAD_JSON_GENESIS) {
+  const genesisFilePath = process.env.LOAD_JSON_GENESIS.trim()
+  try {
+    // eslint-disable-next-line security/detect-non-literal-fs-filename
+    if (fs.existsSync(genesisFilePath)) {
+      // eslint-disable-next-line security/detect-non-literal-fs-filename
+      const genesisData = Utils.safeJsonParse(fs.readFileSync(genesisFilePath).toString())
+      if (genesisData && typeof genesisData === 'object' && !Array.isArray(genesisData)) {
+        genesis = genesisData as Record<string, { wei: string }>
+      } else {
+        genesis = {} as Record<string, { wei: string }>
+      }
+      console.log('config.ts: genesis accounts loaded from:', genesisFilePath)
+      /* prettier-ignore */ nestedCountersInstance?.countEvent('config', 'genesis accounts loaded from:'+ genesisFilePath )
+    } else {
+      /* prettier-ignore */ nestedCountersInstance?.countEvent('config', 'genesis accounts file not found:'+ genesisFilePath )
+      console.error('config.ts: path to the following genesis file is incorrect:', genesisFilePath)
+      throw new Error('config.ts: path to the following genesis file is incorrect:' + genesisFilePath)
+    }
+  } catch (e) {
+    /* prettier-ignore */ nestedCountersInstance?.countEvent('config', 'genesis accounts file error:'+ genesisFilePath )
+    console.error('config.ts: error loading genesis file:', e)
+    throw new Error('config.ts: error loading genesis file: ' + e)
+  }
+} else {
+  /* prettier-ignore */ nestedCountersInstance?.countEvent('config', 'genesis accounts LOAD_JSON_GENESIS not set' )
+  console.log('config: genesis accounts LOAD_JSON_GENESIS not set')
+}
+
+if (process.env.LOAD_JSON_GENESIS_SECURE_ACCOUNTS) {
+  const GSAFilePath = process.env.LOAD_JSON_GENESIS_SECURE_ACCOUNTS.trim()
+  try {
+    if (fs.existsSync(GSAFilePath)) {
+      const GSAData = Utils.safeJsonParse(fs.readFileSync(GSAFilePath).toString())
+      genesisSecureAccounts = GSAData
+      console.log('config.ts: genesis secure accounts loaded from:', GSAFilePath)
+      /* prettier-ignore */ nestedCountersInstance?.countEvent('config', 'genesis secure accounts loaded from:'+ GSAFilePath )
+    } else {
+      /* prettier-ignore */ nestedCountersInstance?.countEvent('config', 'genesis secure accounts file not found:'+ GSAFilePath )
+      console.error('config.ts: path to the following genesis secure accounts file is incorrect:', GSAFilePath)
+      throw new Error('config.ts: path to the following genesis secure accounts file is incorrect:' + GSAFilePath)
+    }
+  } catch (e) {
+    /* prettier-ignore */ nestedCountersInstance?.countEvent('config', 'genesis secure accounts file error:'+ GSAFilePath )
+    console.error('config.ts: error loading genesis secure accounts file:', e)
+    throw new Error('config.ts: error loading genesis secure accounts file: ' + e)
+  }
+} else {
+  /* prettier-ignore */ nestedCountersInstance?.countEvent('config', 'genesis secure accounts LOAD_JSON_GENESIS_SECURE_ACCOUNTS not set' )
+  console.log('config: genesis secure accounts LOAD_JSON_GENESIS_SECURE_ACCOUNTS not set')
+}
+
 export default config
+export { genesis, genesisSecureAccounts }

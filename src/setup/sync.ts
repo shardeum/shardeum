@@ -1,8 +1,6 @@
 import { DevSecurityLevel, nestedCountersInstance, Shardus, ShardusTypes } from '@shardeum-foundation/core'
 import { Account, Address } from '@ethereumjs/util'
-import config from '../config'
-import genesis from '../config/genesis.json'
-import genesisSecureAccounts from '../config/genesis-secure-accounts.json'
+import config, { genesis, genesisSecureAccounts } from '../config'
 import { loadAccountDataFromDB } from '../shardeum/debugRestoreAccounts'
 import { toShardusAddress } from '../shardeum/evmAddress'
 import { ShardeumFlags } from '../shardeum/shardeumFlags'
@@ -11,12 +9,9 @@ import * as WrappedEVMAccountFunctions from '../shardeum/wrappedEVMAccountFuncti
 import { ShardeumState, TransactionState } from '../state'
 import * as AccountsStorage from '../storage/accountStorage'
 import { sleep } from '../utils'
-import { DefaultStateManager } from '@ethereumjs/statemanager'
 import { createNetworkAccount, logFlags, shardeumGetTime } from '..'
 import { Utils } from '@shardeum-foundation/lib-types'
 import { initializeSecureAccount, SecureAccountConfig } from '../shardeum/secureAccounts'
-import fs from 'fs'
-import path from 'path'
 
 function isDebugMode(): boolean {
   // eslint-disable-next-line @typescript-eslint/ban-ts-comment
@@ -62,69 +57,11 @@ export const sync = (shardus: Shardus, evmCommon: any) => async (): Promise<void
         let skippedAccountCount = 0
         let accountCopies = []
 
-        let finalGenesis = genesis
-        let finalGenesisSecureAccounts = genesisSecureAccounts
+        const finalGenesis = genesis
+        const finalGenesisSecureAccounts = genesisSecureAccounts
 
-        /* eslint-disable security/detect-non-literal-fs-filename */
-        /* eslint-disable security/detect-object-injection */
-        if (process.env.LOAD_JSON_GENESIS) {
-          const genesisFilePath = process.env.LOAD_JSON_GENESIS.trim()
-          try {
-            if (fs.existsSync(genesisFilePath)) {
-              const genesisData = Utils.safeJsonParse(fs.readFileSync(genesisFilePath).toString())
-              finalGenesis = genesisData
-              console.log('sync.ts: genesis accounts loaded from:', genesisFilePath)
-              /* prettier-ignore */ nestedCountersInstance?.countEvent('config', 'sync: genesis accounts loaded from:'+ genesisFilePath )
-            } else {
-              /* prettier-ignore */ nestedCountersInstance?.countEvent('config', 'sync: genesis accounts file not found:'+ genesisFilePath )
-              console.error('sync.ts: path to the following genesis file is incorrect:', genesisFilePath)
-              throw new Error('sync.ts: path to the following genesis file is incorrect:' + genesisFilePath)
-            }
-          } catch (e) {
-            /* prettier-ignore */ nestedCountersInstance?.countEvent('config', 'sync: genesis accounts file error:'+ genesisFilePath )
-            console.error('sync.ts: error loading genesis file:', e)
-            throw new Error('sync.ts: error loading genesis file: ' + e)
-          }
-        } else {
-          /* prettier-ignore */ nestedCountersInstance?.countEvent('config', 'sync: genesis accounts LOAD_JSON_GENESIS not set' )
-          console.error('sync: genesis accounts LOAD_JSON_GENESIS not set')
-        }
-
-        if (process.env.LOAD_JSON_GENESIS_SECURE_ACCOUNTS) {
-          const GSAFilePath = process.env.LOAD_JSON_GENESIS_SECURE_ACCOUNTS.trim()
-
-          try {
-            if (fs.existsSync(GSAFilePath)) {
-              const GSAData = Utils.safeJsonParse(fs.readFileSync(GSAFilePath).toString())
-              finalGenesisSecureAccounts = GSAData
-              console.log('sync.ts: genesis secure accounts loaded from:', GSAFilePath)
-              /* prettier-ignore */ nestedCountersInstance?.countEvent('config', 'sync: genesis secure accounts loaded from:'+ GSAFilePath )
-            } else {
-              /* prettier-ignore */ nestedCountersInstance?.countEvent('config', 'sync: genesis secure accounts file not found:'+ GSAFilePath )
-              console.error('sync.ts: path to the following genesis secure accounts file is incorrect:', GSAFilePath)
-              throw new Error('sync.ts: path to the following genesis secure accounts file is incorrect:' + GSAFilePath)
-            }
-          } catch (e) {
-            /* prettier-ignore */ nestedCountersInstance?.countEvent('config', 'sync: genesis secure accounts file error:'+ GSAFilePath )
-            console.error('sync.ts: error loading genesis secure accounts file:', e)
-            throw new Error('sync.ts: error loading genesis secure accounts file: ' + e)
-          }
-        } else {
-          /* prettier-ignore */ nestedCountersInstance?.countEvent('config', 'sync: genesis secure accounts LOAD_JSON_GENESIS_SECURE_ACCOUNTS not set' )
-          console.error('sync: genesis secure accounts LOAD_JSON_GENESIS_SECURE_ACCOUNTS not set')
-        }
-
-        /* eslint-enable security/detect-object-injection */
-        /* eslint-enable security/detect-non-literal-fs-filename */
-
-        // Create genesis accounts from secure accounts
-        const additionalGenesisAccounts = createGenesisAccountsFromSecureAccounts(finalGenesisSecureAccounts)
-
-        // Merge additional genesis accounts with existing genesis accounts
-        const mergedGenesisAccounts = { ...finalGenesis, ...additionalGenesisAccounts }
-
-        for (const address in mergedGenesisAccounts) {
-          const amount = BigInt(mergedGenesisAccounts[address].wei)
+        for (const address in finalGenesis) {
+          const amount = BigInt(finalGenesis[address].wei)
 
           const shardusAccountID = toShardusAddress(address, AccountType.Account)
           const existingAccount = await shardus.getLocalOrRemoteAccount(shardusAccountID)
