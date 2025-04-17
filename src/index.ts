@@ -1702,6 +1702,7 @@ const configShardusEndpoints = (): void => {
 
       // hack to make txFee works with bn.js
       if (key === 'constantTxFee') value = String(value)
+      if (key === 'baselineTxFee') typedValue = String(value)
 
       updateShardeumFlag(key, typedValue)
 
