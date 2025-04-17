@@ -26,7 +26,7 @@ fi
 ENV=$1
 NODE_COUNT=${2:-10}  # Default to 10 nodes if not specified
 CONFIG_DIR="environments"
-CONFIG_FILE="${CONFIG_DIR}/${ENV}.config.json"
+CONFIG_FILE="$(pwd)/${CONFIG_DIR}/${ENV}.config.json"
 
 # Check if the specified environment config exists
 if [ ! -f "$CONFIG_FILE" ]; then
