@@ -19,43 +19,31 @@ export function isInternalAccount(obj: any): obj is InternalAccount {
   return 'id' in obj
 }
 
-export function accountSpecificHash(account: WrappedEVMAccount | InternalAccount): string {
-  let hash
-  delete account.hash
-  if (
-    account.accountType === AccountType.NetworkAccount ||
-    account.accountType === AccountType.NodeAccount ||
-    account.accountType === AccountType.NodeAccount2 ||
-    account.accountType === AccountType.NodeRewardReceipt ||
-    account.accountType === AccountType.StakeReceipt ||
-    account.accountType === AccountType.UnstakeReceipt ||
-    account.accountType === AccountType.InternalTxReceipt ||
-    account.accountType === AccountType.DevAccount ||
-    account.accountType === AccountType.SecureAccount
-  ) {
-    account.hash = crypto.hashObj(account)
-    return account.hash
-  }
-  if (!isWrappedEVMAccount(account)) return ''
-  if (account.accountType === AccountType.Account) {
-    const { account: EVMAccountInfo, operatorAccountInfo, timestamp } = account
-    const accountData = operatorAccountInfo
-      ? { EVMAccountInfo, operatorAccountInfo, timestamp }
-      : { EVMAccountInfo, timestamp }
-    hash = crypto.hashObj(accountData)
-  } else if (account.accountType === AccountType.Debug) {
-    hash = crypto.hashObj(account)
-  } else if (account.accountType === AccountType.ContractStorage) {
-    hash = crypto.hashObj({ key: account.key, value: account.value })
-  } else if (account.accountType === AccountType.ContractCode) {
-    hash = crypto.hashObj({ key: account.codeHash, value: account.codeByte })
-  } else if (account.accountType === AccountType.Receipt) {
-    hash = crypto.hashObj({ key: account.txId, value: account.receipt })
+/**
+ * Computes a specific hash for an account object. This function removes any existing
+ * `hash` property from the account object, calculates a new hash based on the account's
+ * data, and then assigns the calculated hash back to the `hash` property of the account.
+ *
+ * @param account - The account object for which the hash is to be calculated.
+ *                  The object is expected to have key-value pairs representing account data.
+ * @returns The newly calculated hash as a string.
+ */
+export const accountSpecificHash = (account: any): string => {
+  if (account == null || account == undefined) {
+    throw new Error('Account data is null or undefined')
   }
 
-  // hash = hash + '0'.repeat(64 - hash.length)
-  account.hash = hash
-  return hash
+  try {
+    // Remove the existing hash property from the account object
+    delete account.hash
+
+    // Calculate a new hash based on the account's data and assign it to the hash property
+    account.hash = crypto.hashObj(account)
+    return account.hash
+  } catch (error) {
+    console.error('Error calculating account-specific hash:', error)
+    throw new Error('Failed to calculate account-specific hash')
+  }
 }
 
 export function updateEthAccountHash(wrappedEVMAccount: WrappedEVMAccount | InternalAccount): void {
