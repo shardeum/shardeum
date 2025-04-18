@@ -372,14 +372,19 @@ if (process.env.LOAD_JSON_CONFIGS) {
         const fileConfig = Utils.safeJsonParse(fs.readFileSync(configPath).toString())
         config = mergeWithOverwrite(config, fileConfig, OVERWRITE_KEYS)
       } else {
-        console.log('config load failed:', configPath)
+        nestedCountersInstance?.countEvent('config', `LOAD_JSON_CONFIGS failed to load from ${configPath}`)
+        console.error('config load failed:', configPath)
         throw new Error('path to the following file is incorrect:' + configPath)
       }
     } catch (e) {
-      console.log('config load error:', configs[i],  e)
+      nestedCountersInstance?.countEvent('config', `LOAD_JSON_CONFIGS failed to load from ${configs[i]}`)
+      console.error('config load error:', configs[i],  e)
       throw new Error('error loading config file: ' + e)
     }
   }
+} else {
+  nestedCountersInstance?.countEvent('config', 'LOAD_JSON_CONFIGS not set')
+  console.log('LOAD_JSON_CONFIGS not set')
 }
 
 // apply env variables

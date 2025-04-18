@@ -52,6 +52,9 @@ if (process.env.LOAD_JSON_GENESIS_SECURE_ACCOUNTS) {
     console.error('secureAccounts: error loading genesis secure accounts file:', e)
     throw new Error('secureAccounts: error loading genesis secure accounts file: ' + e)
   }
+} else {
+  console.log('secureAccounts: genesis secure accounts LOAD_JSON_GENESIS_SECURE_ACCOUNTS not set')
+  /* prettier-ignore */ nestedCountersInstance?.countEvent('config', 'secureAccounts: LOAD_JSON_GENESIS_SECURE_ACCOUNTS not set' )
 }
 
 if (process.env.LOAD_JSON_MULTISIG_PERMISSIONS) {
@@ -73,6 +76,9 @@ if (process.env.LOAD_JSON_MULTISIG_PERMISSIONS) {
     console.error('secureAccounts: error loading multisig permissions file:', e)
     throw new Error('secureAccounts: error loading multisig permissions file: ' + e)
   }
+} else {
+  console.log('secureAccounts: multisig permissions LOAD_JSON_MULTISIG_PERMISSIONS not set')
+  /* prettier-ignore */ nestedCountersInstance?.countEvent('config', 'secureAccounts: LOAD_JSON_MULTISIG_PERMISSIONS not set' )
 }
 /* eslint-enable security/detect-object-injection */
 /* eslint-enable security/detect-non-literal-fs-filename */
