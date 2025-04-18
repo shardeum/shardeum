@@ -11,7 +11,7 @@ import { updateEthAccountHash } from './wrappedEVMAccountFunctions'
 import { ShardeumFlags } from './shardeumFlags'
 import { toShardusAddress } from './evmAddress'
 
-import { ShardusTypes, DevSecurityLevel, Shardus } from '@shardeum-foundation/core'
+import { ShardusTypes, DevSecurityLevel, Shardus, nestedCountersInstance } from '@shardeum-foundation/core'
 import { verifyMultiSigs } from '../setup/helpers'
 import { createInternalTxReceipt, shardusConfig } from '..'
 import { _shardusWrappedAccount } from './wrappedEVMAccountFunctions'
@@ -41,10 +41,15 @@ if (process.env.LOAD_JSON_GENESIS_SECURE_ACCOUNTS) {
       const GSAData = Utils.safeJsonParse(fs.readFileSync(GSAFilePath).toString())
       finalGenesisSecureAccounts = GSAData
       console.log('secureAccounts: genesis secure accounts loaded from:', GSAFilePath)
+      /* prettier-ignore */ nestedCountersInstance?.countEvent('config', 'secureAccounts: genesis secure accounts loaded from:'+ GSAFilePath )
     } else {
+      /* prettier-ignore */ nestedCountersInstance?.countEvent('config', 'secureAccounts: path to the following genesis secure accounts file is incorrect:'+ GSAFilePath )
+      console.error('secureAccounts: path to the following genesis secure accounts file is incorrect:', GSAFilePath)
       throw new Error('secureAccounts: path to the following genesis secure accounts file is incorrect:' + GSAFilePath)
     }
   } catch (e) {
+    /* prettier-ignore */ nestedCountersInstance?.countEvent('config', 'secureAccounts: error loading genesis secure accounts file:'+ e.message )
+    console.error('secureAccounts: error loading genesis secure accounts file:', e)
     throw new Error('secureAccounts: error loading genesis secure accounts file: ' + e)
   }
 }
@@ -57,10 +62,15 @@ if (process.env.LOAD_JSON_MULTISIG_PERMISSIONS) {
       const MSPData = Utils.safeJsonParse(fs.readFileSync(MSPFilePath).toString())
       finalMultisigPermissions = MSPData
       console.log('secureAccounts: multisig permissions loaded from:', MSPFilePath)
+      /* prettier-ignore */ nestedCountersInstance?.countEvent('config', 'secureAccounts: multisig permissions loaded from:'+ MSPFilePath )
     } else {
+      /* prettier-ignore */ nestedCountersInstance?.countEvent('config', 'secureAccounts: path to the following multisig permissions file is incorrect:'+ MSPFilePath )
+      console.error('secureAccounts: path to the following multisig permissions file is incorrect:', MSPFilePath)
       throw new Error('secureAccounts: path to the following multisig permissions file is incorrect:' + MSPFilePath)
     }
   } catch (e) {
+    /* prettier-ignore */ nestedCountersInstance?.countEvent('config', 'secureAccounts: error loading multisig permissions file:'+ e.message )
+    console.error('secureAccounts: error loading multisig permissions file:', e)
     throw new Error('secureAccounts: error loading multisig permissions file: ' + e)
   }
 }

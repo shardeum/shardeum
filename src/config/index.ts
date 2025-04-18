@@ -2,7 +2,7 @@ import fs from 'fs'
 import path from 'path'
 import merge from 'deepmerge'
 import { ShardeumFlags } from '../shardeum/shardeumFlags'
-import { DevSecurityLevel } from '@shardeum-foundation/core'
+import { DevSecurityLevel, nestedCountersInstance } from '@shardeum-foundation/core'
 import { FilePaths } from '../shardeum/shardeumFlags'
 import { Utils } from '@shardeum-foundation/lib-types'
 import { mergeWithOverwrite } from '../utils/customMerge'
@@ -355,6 +355,7 @@ config = merge(
 
 // load local config files
 if (process.env.LOAD_JSON_CONFIGS) {
+  
   const configs = process.env.LOAD_JSON_CONFIGS.split(',')
   for (let i = 0; i < configs.length; i++) {
     configs[i] = configs[i].trim()
@@ -366,13 +367,16 @@ if (process.env.LOAD_JSON_CONFIGS) {
       // eslint-disable-next-line security/detect-non-literal-fs-filename
       if (fs.existsSync(configPath)) {
         // eslint-disable-next-line security/detect-non-literal-fs-filename
-        console.log('config loaded from:', configs[i])
+        console.log('config loaded from:', configPath)
+        nestedCountersInstance?.countEvent('config', `LOAD_JSON_CONFIGS loaded from ${configPath}`)
         const fileConfig = Utils.safeJsonParse(fs.readFileSync(configPath).toString())
         config = mergeWithOverwrite(config, fileConfig, OVERWRITE_KEYS)
       } else {
+        console.log('config load failed:', configPath)
         throw new Error('path to the following file is incorrect:' + configPath)
       }
     } catch (e) {
+      console.log('config load error:', configs[i],  e)
       throw new Error('error loading config file: ' + e)
     }
   }

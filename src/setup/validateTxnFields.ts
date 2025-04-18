@@ -26,6 +26,7 @@ import {
   getTxSenderAddress,
   emptyCodeHash,
   isStakingEVMTx,
+  formatErrorMessage,
 } from '../utils'
 import {
   crypto,
@@ -83,12 +84,19 @@ if (process.env.LOAD_JSON_MULTISIG_PERMISSIONS) {
       const MSPData = Utils.safeJsonParse(fs.readFileSync(MSPFilePath).toString())
       finalMultisigPermissions = MSPData
       console.log('validateTxnFields: multisig permissions loaded from:', MSPFilePath)
+      nestedCountersInstance.countEvent('config', `LOAD_JSON_MULTISIG_PERMISSIONS ${MSPFilePath}`)
     } else {
+      nestedCountersInstance.countEvent('config', `LOAD_JSON_MULTISIG_PERMISSIONS Failed ${MSPFilePath}`)
+      console.error('validateTxnFields: multisig permissions file not found:', MSPFilePath)
       throw new Error('validateTxnFields: path to the following multisig permissions file is incorrect:' + MSPFilePath)
     }
   } catch (e) {
-    throw new Error('validateTxnFields: error loading multisig permissions file: ' + e)
+    nestedCountersInstance.countEvent('config', `LOAD_JSON_MULTISIG_PERMISSIONS Error ${e.message} ${MSPFilePath}`)
+    console.error('validateTxnFields: error loading multisig permissions file:', formatErrorMessage(e))
+    throw new Error('validateTxnFields: error loading multisig permissions file: ' + formatErrorMessage(e))
   }
+} else {
+  nestedCountersInstance.countEvent('config', `LOAD_JSON_MULTISIG_PERMISSIONS no env set`)
 }
 /* eslint-enable security/detect-object-injection */
 /* eslint-enable security/detect-non-literal-fs-filename */
