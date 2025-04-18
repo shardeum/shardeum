@@ -355,7 +355,6 @@ config = merge(
 
 // load local config files
 if (process.env.LOAD_JSON_CONFIGS) {
-  
   const configs = process.env.LOAD_JSON_CONFIGS.split(',')
   for (let i = 0; i < configs.length; i++) {
     configs[i] = configs[i].trim()
@@ -378,7 +377,7 @@ if (process.env.LOAD_JSON_CONFIGS) {
       }
     } catch (e) {
       nestedCountersInstance?.countEvent('config', `LOAD_JSON_CONFIGS failed to load from ${configs[i]}`)
-      console.error('config load error:', configs[i],  e)
+      console.error('config load error:', configs[i], e)
       throw new Error('error loading config file: ' + e)
     }
   }

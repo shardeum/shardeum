@@ -113,7 +113,7 @@ export const sync = (shardus: Shardus, evmCommon: any) => async (): Promise<void
           /* prettier-ignore */ nestedCountersInstance?.countEvent('config', 'sync: genesis secure accounts LOAD_JSON_GENESIS_SECURE_ACCOUNTS not set' )
           console.error('sync: genesis secure accounts LOAD_JSON_GENESIS_SECURE_ACCOUNTS not set')
         }
-        
+
         /* eslint-enable security/detect-object-injection */
         /* eslint-enable security/detect-non-literal-fs-filename */
 
