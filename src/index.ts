@@ -181,6 +181,7 @@ import { OpaqueTransaction } from '@shardeum-foundation/core/dist/shardus/shardu
 import { TicketTypes, doesTransactionSenderHaveTicketType } from './setup/ticket-manager'
 import { buildFetchNetworkAccountFromArchiver } from './shardeum/services/networkAccountService'
 import { customGot } from './utils/customHttpFunctions'
+import { logEnvSetup } from './setup/environment'
 
 let latestBlock = 0
 export const blocks: BlockMap = {}
@@ -8319,6 +8320,8 @@ export function shardeumGetTime(): number {
   // shardus factory for nodes joining later in the network.
   shardus = shardusFactory(configToLoad)
 
+  logEnvSetup()
+
   //@ts-ignore
   logFlags = shardus.getLogFlags()
   //do not need to have log levels for these flags:
@@ -8339,6 +8342,8 @@ export function shardeumGetTime(): number {
   TicketManager.updateTicketMapAndScheduleNextUpdate()
 
   appStartupTimestamp = shardeumGetTime()
+
+  logEnvSetup()
 
   if (ShardeumFlags.GlobalNetworkAccount) {
     // CODE THAT GETS EXECUTED WHEN NODES START
