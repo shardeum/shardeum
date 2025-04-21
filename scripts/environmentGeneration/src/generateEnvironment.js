@@ -786,6 +786,47 @@ function autoInjectMultisigDevGenesisAccounts(multisigKeysData, devGenesisData) 
 }
 
 /**
+ * Auto-inject secure account recipient addresses into devGenesisData if they don't already exist there
+ * @param {Object} secureAccountsData - Secure accounts data
+ * @param {Object} devGenesisData - Dev genesis data
+ * @returns {Object} - Updated dev genesis data
+ */
+function autoInjectSecureAccountRecipients(secureAccountsData, devGenesisData) {
+  console.log("\nAuto-injecting secure account recipient addresses into dev genesis accounts...");
+  
+  // Create a new object to avoid modifying the original
+  const updatedDevGenesisData = JSON.parse(JSON.stringify(devGenesisData));
+  
+  // Process each environment
+  for (const environment of ENVIRONMENTS) {
+    console.log(`Processing ${environment} environment...`);
+    
+    // Get all recipient addresses from secure accounts for this environment
+    const recipientAddresses = new Set();
+    
+    // Collect recipient addresses from secure accounts
+    Object.values(secureAccountsData[environment]).forEach(account => {
+      if (account.recipientFundsAddress) {
+        recipientAddresses.add(account.recipientFundsAddress);
+      }
+    });
+    
+    // Check each recipient address and add to devGenesisData if missing
+    let addedCount = 0;
+    recipientAddresses.forEach(address => {
+      if (!updatedDevGenesisData[environment][address]) {
+        updatedDevGenesisData[environment][address] = 0;
+        addedCount++;
+      }
+    });
+    
+    console.log(`Added ${addedCount} secure account recipient addresses to ${environment} dev genesis accounts`);
+  }
+  
+  return updatedDevGenesisData;
+}
+
+/**
  * Verify there are no duplicate addresses between airdrop and devGenesis data
  * @param {Object} airdropData - Airdrop data
  * @param {Object} devGenesisData - Dev genesis data
@@ -861,15 +902,32 @@ function generateSummary(environmentTotals, airdropData, devGenesisData, secureA
     const devGenesisTotal = environmentTotals[environment].dev;
     const devGenesisCount = Object.keys(devGenesisData[environment]).length;
     
-    // Count how many keys have 0 balance (likely auto-injected multisig keys)
-    const zeroBalanceCount = Object.entries(devGenesisData[environment])
-      .filter(([key, value]) => value === 0)
+    // Count keys with 0 balance (auto-injected keys)
+    const zeroBalanceEntries = Object.entries(devGenesisData[environment])
+      .filter(([key, value]) => value === 0);
+    const zeroBalanceCount = zeroBalanceEntries.length;
+    
+    // Count how many of the zero balance keys are secure account recipient addresses
+    const secureAccountRecipientAddresses = new Set();
+    Object.values(secureAccountsData[environment]).forEach(account => {
+      if (account.recipientFundsAddress) {
+        secureAccountRecipientAddresses.add(account.recipientFundsAddress);
+      }
+    });
+    
+    const secureRecipientZeroBalanceCount = zeroBalanceEntries
+      .filter(([address]) => secureAccountRecipientAddresses.has(address))
       .length;
+    
+    // The remaining zero balance keys are multisig keys
+    const multisigZeroBalanceCount = zeroBalanceCount - secureRecipientZeroBalanceCount;
     
     if (devGenesisCount > 0) {
       console.log("\nDev Genesis Accounts:");
       console.log(`  Total: ${devGenesisTotal.toLocaleString()} SHM (${devGenesisCount} accounts)`);
-      console.log(`  Auto-injected multisig keys with 0 balance: ${zeroBalanceCount} keys`);
+      console.log(`  Auto-injected accounts with 0 balance: ${zeroBalanceCount} keys total`);
+      console.log(`    - Multisig keys: ${multisigZeroBalanceCount} keys`);
+      console.log(`    - Secure account recipient addresses: ${secureRecipientZeroBalanceCount} addresses`);
     } else {
       console.log("\nDev Genesis Accounts: None");
     }
@@ -969,7 +1027,10 @@ async function generateEnvironment() {
     verifyNoDuplicates(airdropData, devGenesisData);
     
     // New Phase between 1 and 2: Auto-inject multisig keys into dev genesis accounts
-    const updatedDevGenesisData = autoInjectMultisigDevGenesisAccounts(multisigKeysData, devGenesisData);
+    const updatedDevGenesisDataWithMultisig = autoInjectMultisigDevGenesisAccounts(multisigKeysData, devGenesisData);
+    
+    // Auto-inject secure account recipient addresses into dev genesis accounts
+    const updatedDevGenesisData = autoInjectSecureAccountRecipients(secureAccountsData, updatedDevGenesisDataWithMultisig);
     
     // Re-verify after auto-injection to ensure we didn't create new duplicates
     verifyNoDuplicates(airdropData, updatedDevGenesisData);
