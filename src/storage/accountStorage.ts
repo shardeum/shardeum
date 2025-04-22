@@ -11,6 +11,7 @@ import { getContextValue } from '../utils/RequestContext'
 import { shardusGet } from '../utils/requests'
 import { Block } from '@ethereumjs/block'
 import { Utils } from '@shardeum-foundation/lib-types'
+import { nestedCountersInstance } from '@shardeum-foundation/core'
 
 //WrappedEVMAccount
 export let accounts: WrappedEVMAccountMap = {}
@@ -114,11 +115,11 @@ export async function getCachedNetworkAccount(): Promise<NetworkAccount> {
   return cachedNetworkAccount
 }
 
-export async function setAccount(address: string, account: WrappedEVMAccount): Promise<void> {
+export async function setAccount(address: string, account: WrappedEVMAccount): Promise<boolean> {
   try {
     if (ShardeumFlags.debugGlobalAccountUpdateFail && address === networkAccount) {
       console.log('debugGlobalAccountUpdateFail')
-      return
+      return false
     }
 
     if (ShardeumFlags.UseDBForAccounts === true) {
@@ -129,6 +130,7 @@ export async function setAccount(address: string, account: WrappedEVMAccount): P
       }
 
       if (account.timestamp === 0) {
+        /* prettier-ignore */ nestedCountersInstance.countEvent('storage', `setAccount: account.timestamp === 0 `)
         throw new Error(
           `setAccount timestamp should not be 0. accountId: ${address}, data: ${JSON.stringify(account, null, '  ')}`
         )
@@ -136,10 +138,11 @@ export async function setAccount(address: string, account: WrappedEVMAccount): P
       try {
         await storage.createOrReplaceAccountEntry(accountEntry)
       } catch (e) {
+        /* prettier-ignore */ nestedCountersInstance.countEvent('storage', `setAccount: createOrReplaceAccountEntry: error`)
         console.error('Blew up trying to set account', JSON.stringify(accountEntry, null, '  '), e)
         throw e
       }
-
+      /* prettier-ignore */ nestedCountersInstance.countEvent('storage', `setAccount: success`)
       setCachedRIAccount(accountEntry)
 
       if (address === networkAccount) {
@@ -167,7 +170,10 @@ export async function setAccount(address: string, account: WrappedEVMAccount): P
     }
   } catch (e) {
     /* prettier-ignore */ if (logFlags.important_as_fatal) console.log(`Error: while trying to set account`, e.message)
+    /* prettier-ignore */ nestedCountersInstance.countEvent('storage', `setAccount: error`)
+    return false
   }
+  return true
 }
 
 export const setCachedNetworkAccount = (account: NetworkAccount): void => {

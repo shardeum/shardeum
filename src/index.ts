@@ -182,6 +182,7 @@ import { TicketTypes, doesTransactionSenderHaveTicketType } from './setup/ticket
 import { buildFetchNetworkAccountFromArchiver } from './shardeum/services/networkAccountService'
 import { customGot } from './utils/customHttpFunctions'
 import { logEnvSetup } from './setup/environment'
+import { set } from 'lodash'
 
 let latestBlock = 0
 export const blocks: BlockMap = {}
@@ -5894,9 +5895,14 @@ const shardusSetup = (): void => {
 
         //accounts[shardusAddress] = wrappedEVMAccount
         shardus.setDebugSetLastAppAwait(`setAccountData.setAccount(${shardusAddress})`)
-        await AccountsStorage.setAccount(shardusAddress, wrappedEVMAccount)
+        const setResult = await AccountsStorage.setAccount(shardusAddress, wrappedEVMAccount)
         shardus.setDebugSetLastAppAwait(`setAccountData.setAccount(${shardusAddress})`, DebugComplete.Completed)
+
+        if(setResult === false) {
+          /* prettier-ignore */ nestedCountersInstance.countEvent('storage', `setAccountData: setAccount: failed`)
+        }
       }
+      /* prettier-ignore */ nestedCountersInstance.countEvent('storage', 'setAccountData: stored', accountRecords.length)
     },
     async getRelevantData(accountId, timestampedTx, appData) {
       if (ShardeumFlags.VerboseLogs) console.log('Running getRelevantData', accountId, timestampedTx, appData)
@@ -6394,9 +6400,12 @@ const shardusSetup = (): void => {
       // Save updatedAccount to db / persistent storage
       //accounts[accountId] = updatedEVMAccount
       /* prettier-ignore */ shardus.setDebugSetLastAppAwait(`updateAccountFull.AccountsStorage.setAccount(${accountId})`)
-      await AccountsStorage.setAccount(accountId, updatedEVMAccount)
+      const setResult = await AccountsStorage.setAccount(accountId, updatedEVMAccount)
       /* prettier-ignore */ shardus.setDebugSetLastAppAwait(`updateAccountFull.AccountsStorage.setAccount(${accountId})`, DebugComplete.Completed)
 
+      if(setResult === false) {
+        /* prettier-ignore */ nestedCountersInstance.countEvent('storage', `updateAccountFull: setAccount: failed`)
+      }
       if (ShardeumFlags.AppliedTxsMaps) {
         /* eslint-disable security/detect-object-injection */
         const ethTxId = shardusTxIdToEthTxId[txId]
