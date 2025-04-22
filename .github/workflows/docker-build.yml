@@ -3,8 +3,10 @@ name: 'Docker Build and Push'
 on:
   push:
     branches:
+      - 'dev'
       - 'mainnet-launch'
     tags:
+      - '**'
 
 permissions:
   contents: read
@@ -23,7 +25,7 @@ jobs:
           if [[ "${{ github.ref_type }}" == "tag" ]]; then
             echo "IMAGE_TAG=${{ github.ref_name }}" >> $GITHUB_ENV
           else
-            echo "IMAGE_TAG=$(git rev-parse --short HEAD)" >> $GITHUB_ENV
+            echo "IMAGE_TAG=$(git rev-parse --short HEAD)-${{ github.ref_name }}" >> $GITHUB_ENV
           fi
 
       - name: Build
