@@ -1712,6 +1712,94 @@ const configShardusEndpoints = (): void => {
       res.json(`debug-set-shardeum-flag: ${key} ${err.message} `)
     }
   })
+
+  // Register an external GET endpoint for fetching core flags
+  shardus.registerExternalGet('debug-core-flags', debugMiddleware, async (req, res) => {
+    try {
+      // Fetch the core flags from shardus
+      const CoreFlags = shardus.fetchCoreFlags()
+      // Respond with the fetched core flags
+      res.json({ CoreFlags })
+    } catch (e) {
+      // Log an error if fetching core flags fails
+      /* prettier-ignore */ if (logFlags.error) console.log("Problem fetching shardus-core flags", e)
+      // Respond with an error message
+      res.json({ error: e.message })
+    }
+  })
+
+  // Register an external GET endpoint for setting a core flag
+  shardus.registerExternalGet('debug-set-core-flag', debugMiddleware, async (req, res) => {
+    // Check if debug flags are enabled in the configuration
+    if (!shardusConfig.debug.enableDebugFlags) {
+      // Respond with an error if debug flags are not enabled
+      res.json({ error: 'debug flags are not enabled' })
+      return
+    }
+    let value
+    let key
+    try {
+      // Extract key and value from the request query
+      key = req.query.key as string
+      value = req.query.value as string
+      // Check if key or value is null
+      if (key == null || value == null) {
+        // Respond with an error if key or value is null
+        res.json(`debug-set-core-flag: key/value == null`)
+        return
+      }
+
+      let typedValue: boolean | number | string
+
+      // Determine the value type first
+      let valueType // No default type
+
+      // Determine the type of the value
+      if (value === 'true' || value === 'false') {
+        valueType = 'boolean'
+      } else if (!Number.isNaN(Number(value)) && value.trim() !== '') {
+        valueType = 'number'
+      } else if (typeof value === 'string') {
+        valueType = 'string'
+      } else {
+        valueType = 'other'
+      }
+
+      // Use switch case on the determined type
+      switch (valueType) {
+        case 'boolean':
+          // Convert value to boolean
+          typedValue = value === 'true'
+          break
+        case 'number':
+          // Convert value to number
+          typedValue = Number(value)
+          break
+        case 'string':
+          // Keep value as string
+          typedValue = String(value)
+          break
+        default:
+          // Handle any other type
+          /* prettier-ignore */ if (logFlags.error) console.log(`Invalid value type encountered`, value)
+          // Respond with an error if the value type is invalid
+          res.json({ error: `Invalid value type encountered` })
+          return
+      }
+
+      // Update the core flag with the key and typed value
+      shardus.updateCoreFlag(key, typedValue)
+
+      // Respond with the updated key and value
+      res.json({ [key]: typedValue })
+    } catch (err) {
+      // Log an error if setting the core flag fails
+      /* prettier-ignore */ if (logFlags.error) console.log(`Problem setting core flag in debug-set-core-flag`, err)
+      // Respond with an error message
+      res.json(`debug-set-core-flag: ${key} ${err.message} `)
+    }
+  })
+
   shardus.registerExternalGet('debug-set-service-point', debugMiddleware, async (req, res) => {
     let value
     let key1
