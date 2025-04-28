@@ -3,7 +3,7 @@
 </p>
 
 <p align="center">
-  <strong>An EVM-based autoscaling blockchain platform</strong>
+  <strong>An EVM-based autoscaling blockchain platform!</strong>
 </p>
 
 <p align="center">
@@ -14,10 +14,12 @@
 
 ## Table of Contents
 
+- [Table of Contents](#table-of-contents)
 - [Introduction](#introduction)
 - [Features](#features)
 - [Getting Started](#getting-started)
   - [Prerequisites](#prerequisites)
+  - [Setting Up Your Environment](#setting-up-your-environment)
   - [Installation](#installation)
 - [Running the Network Locally](#running-the-network-locally)
   - [Running the JSON-RPC Server](#running-the-json-rpc-server)
@@ -52,11 +54,11 @@ Shardeum is an innovative EVM-compliant blockchain platform that leverages dynam
 
 ### Setting Up Your Environment
 
-Shardeum requires specific versions of Nodejs, Rust and other build tools to run. 
+Shardeum requires specific versions of Nodejs, Rust and other build tools to run.
 
-We have detailed setup instructions [in this page](local-environment-setup.md) 
+We have detailed setup instructions [in this page](local-environment-setup.md)
 
->[!IMPORTANT] 
+> [!IMPORTANT]
 > This is a crucial step, ensure your local environment is correctly set up before proceeding with the next steps
 
 ### Installation
@@ -155,6 +157,7 @@ shardus stop && shardus clean && rm -rf instances
 ```
 
 ## Health Checks
+
 Diagnostic endpoints to check the health of the node
 
 - GET `/is-alive` this endpoint returns 200 if the server is running.
