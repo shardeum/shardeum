@@ -320,7 +320,7 @@ export function isRestakingAllowed(
   const restakeAllowed = remainingTime <= 0
   return {
     restakeAllowed,
-    reason,
+    reason: restakeAllowed ? '' : reason,
     remainingTime,
   }
 }
