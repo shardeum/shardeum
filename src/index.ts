@@ -1579,7 +1579,8 @@ const configShardusEndpoints = (): void => {
         nominator.account,
         nominatee.account,
         shardus,
-        AccountsStorage.cachedNetworkAccount
+        AccountsStorage.cachedNetworkAccount,
+        false // Explicitly check node states in the canUnstake endpoint
       )
 
       res.json({ stakeUnlocked })
