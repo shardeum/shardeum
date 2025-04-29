@@ -239,9 +239,12 @@ export function isStakeUnlocked(
 
   const currentTime = shardus.shardusGetTime()
   if (nominatorAccount.operatorAccountInfo.certExp && nominatorAccount.operatorAccountInfo.certExp > currentTime) {
+    const remainingMinutes = Math.ceil((nominatorAccount.operatorAccountInfo.certExp - currentTime) / 60000)
     return {
       unlocked: false,
-      reason: 'Certificate has not expired yet. Stake is locked until certificate expires.',
+      reason: `Your node is currently registered in the network. To unstake, we need to complete the network deregistration process, which takes ${remainingMinutes} minute${
+        remainingMinutes === 1 ? '' : 's'
+      }. You'll be able to unstake once this process completes.`,
       remainingTime: nominatorAccount.operatorAccountInfo.certExp - currentTime,
     }
   }
