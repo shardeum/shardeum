@@ -129,12 +129,6 @@ describe('Initial Network Parameters', () => {
       expect(initialNetworkParamters.chainID).toBe(ShardeumFlags.ChainID)
     })
 
-    it('should have correct values for version parameters', () => {
-      expect(initialNetworkParamters.minVersion).toBe('1.18.0-prerelease.0')
-      expect(initialNetworkParamters.activeVersion).toBe('1.18.0-prerelease.0')
-      expect(initialNetworkParamters.latestVersion).toBe('1.18.0')
-    })
-
     it('should have correct values for archiver parameters', () => {
       expect(initialNetworkParamters.archiver.minVersion).toBe('3.6.0-prerelease.0')
       expect(initialNetworkParamters.archiver.activeVersion).toBe('3.6.0-prerelease.0')

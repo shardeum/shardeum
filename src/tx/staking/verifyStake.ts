@@ -237,10 +237,19 @@ export function isStakeUnlocked(
     }
   }
 
-  const stakeLockTime = networkAccount.current.stakeLockTime
   const currentTime = shardus.shardusGetTime()
+  if (nominatorAccount.operatorAccountInfo.certExp && nominatorAccount.operatorAccountInfo.certExp > currentTime) {
+    const remainingMinutes = Math.ceil((nominatorAccount.operatorAccountInfo.certExp - currentTime) / 60000)
+    return {
+      unlocked: false,
+      reason: `Your node is currently registered in the network. Deregistration will be completed in ${remainingMinutes} minute${
+        remainingMinutes === 1 ? '' : 's'
+      }. You'll be able to unstake once this completed.`,
+      remainingTime: nominatorAccount.operatorAccountInfo.certExp - currentTime,
+    }
+  }
 
-  // SLT from time of last staking or unstaking
+  const stakeLockTime = networkAccount.current.stakeLockTime
   const timeSinceLastStake = currentTime - nominatorAccount.operatorAccountInfo.lastStakeTimestamp
   if (timeSinceLastStake < stakeLockTime) {
     return {
