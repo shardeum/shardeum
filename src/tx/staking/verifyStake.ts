@@ -237,10 +237,16 @@ export function isStakeUnlocked(
     }
   }
 
-  const stakeLockTime = networkAccount.current.stakeLockTime
   const currentTime = shardus.shardusGetTime()
+  if (nominatorAccount.operatorAccountInfo.certExp && nominatorAccount.operatorAccountInfo.certExp > currentTime) {
+    return {
+      unlocked: false,
+      reason: 'Certificate has not expired yet. Stake is locked until certificate expires.',
+      remainingTime: nominatorAccount.operatorAccountInfo.certExp - currentTime,
+    }
+  }
 
-  // SLT from time of last staking or unstaking
+  const stakeLockTime = networkAccount.current.stakeLockTime
   const timeSinceLastStake = currentTime - nominatorAccount.operatorAccountInfo.lastStakeTimestamp
   if (timeSinceLastStake < stakeLockTime) {
     return {
