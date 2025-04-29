@@ -242,9 +242,9 @@ export function isStakeUnlocked(
     const remainingMinutes = Math.ceil((nominatorAccount.operatorAccountInfo.certExp - currentTime) / 60000)
     return {
       unlocked: false,
-      reason: `Your node is currently registered in the network. To unstake, we need to complete the network deregistration process, which takes ${remainingMinutes} minute${
+      reason: `Your node is currently registered in the network. Deregistration will be completed in ${remainingMinutes} minute${
         remainingMinutes === 1 ? '' : 's'
-      }. You'll be able to unstake once this process completes.`,
+      }. You'll be able to unstake once this completed.`,
       remainingTime: nominatorAccount.operatorAccountInfo.certExp - currentTime,
     }
   }
