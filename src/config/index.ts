@@ -24,6 +24,7 @@ export interface Config {
       }>
       rotationEdgeToAvoid: number
       allowActivePerCycle: number
+      fixApplyReceiptType: boolean
     }
     baseDir: string
     mode?: 'debug' | 'release'
@@ -160,6 +161,9 @@ config = merge(config, {
       problematicNodeRefutePercentageThreshold: 0.1,
       problematicNodeHistoryLength: 100,
       problematicNodeRemovalCycleFrequency: 5,
+
+      // should be removed after rotating and turning on
+      fixApplyReceiptType: false, // enable to not send apply receipts of type Stake in case Unstake and SecureTransfer fail
     },
     features: {
       //This feature will restrict transactions to only coin transfers

@@ -4133,6 +4133,7 @@ const shardusSetup = (): void => {
       // Create an applyResponse which will be used to tell Shardus that the tx has been applied
       /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log('DBG', new Date(), 'attempting to apply tx', txId, ethTxId, tx, wrappedStates, appData)
       const applyResponse = shardus.createApplyResponse(txId, txTimestamp)
+      let accountType: AccountType
 
       // Verify Stake and Unstake transactions. If failed, the verify functions return false
       let verifyResult = {
@@ -4141,15 +4142,18 @@ const shardusSetup = (): void => {
       }
       try {
         if (appData.internalTx && appData.internalTXType === InternalTXType.Stake) {
+          accountType = AccountType.StakeReceipt
           appData.internalTx = getStakeTxBlobFromEVMTx(transaction)
           appData.internalTx.stake = BigInt(appData.internalTx.stake)
           verifyResult = verifyStakeTx(appData.internalTx, senderAddress, wrappedStates)
         }
         if (appData.internalTx && appData.internalTXType === InternalTXType.Unstake) {
+          accountType = AccountType.UnstakeReceipt
           appData.internalTx = getStakeTxBlobFromEVMTx(transaction)
           verifyResult = verifyUnstakeTx(appData.internalTx, senderAddress, wrappedStates, shardus)
         }
         if (appData.internalTx && appData.internalTXType === InternalTXType.TransferFromSecureAccount) {
+          accountType = AccountType.SecureAccount
           verifyResult = verifyTransferFromSecureAccount(appData.internalTx, wrappedStates, shardus)
         }
         if (verifyResult == null) {
@@ -4213,7 +4217,7 @@ const shardusSetup = (): void => {
             readableReceipt,
             amountSpent: '0x0',
             txId,
-            accountType: AccountType.StakeReceipt,
+            accountType: config.server.p2p.fixApplyReceiptType ? accountType : AccountType.StakeReceipt,
             txFrom: appData.internalTx.nominator,
           }
 
