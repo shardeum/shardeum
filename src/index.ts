@@ -4211,7 +4211,7 @@ const shardusSetup = (): void => {
             readableReceipt,
             amountSpent: '0x0',
             txId,
-            accountType,
+            accountType: config.server.p2p.fixApplyReceiptType ? accountType : AccountType.StakeReceipt,
             txFrom: appData.internalTx.nominator,
           }
 
