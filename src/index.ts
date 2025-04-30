@@ -1571,13 +1571,19 @@ const configShardusEndpoints = (): void => {
     try {
       const nominator = await getAccountData(shardus, req.params['nominator'], { query: {} })
       const nominatee = await getAccountData(shardus, req.params['nominee'], { query: { type: 9 } })
-      if (nominatee == null || nominator == null || nominator.account == null || nominatee.account == null) {
+      if (
+        nominatee == null ||
+        nominator == null ||
+        nominator.account == null ||
+        nominatee.account == null ||
+        nominatee.account.data == null
+      ) {
         res.json({ error: 'account not found' })
         return
       }
       const stakeUnlocked = isStakeUnlocked(
         nominator.account,
-        nominatee.account,
+        nominatee.account.data,
         shardus,
         AccountsStorage.cachedNetworkAccount,
         false // Explicitly check node states in the canUnstake endpoint
