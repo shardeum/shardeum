@@ -115,7 +115,7 @@ describe('Initial Network Parameters', () => {
       expect(initialNetworkParamters.nodeRewardInterval).toBe(ONE_HOUR)
       expect(initialNetworkParamters.nodeRewardAmountUsd).toBe(oneSHM)
       expect(initialNetworkParamters.nodePenaltyUsd).toBe(oneSHM * BigInt(10))
-      expect(initialNetworkParamters.stakeRequiredUsd).toBe(oneSHM * BigInt(10))
+      expect(initialNetworkParamters.stakeRequiredUsd).toBe(oneSHM * BigInt(2400))
       expect(initialNetworkParamters.restakeCooldown).toBe(THIRTY_MINUTES)
       expect(initialNetworkParamters.maintenanceInterval).toBe(ONE_DAY)
       expect(initialNetworkParamters.maintenanceFee).toBe(0)
@@ -162,7 +162,7 @@ describe('Initial Network Parameters', () => {
     it('should maintain correct relationships with token constants', () => {
       expect(initialNetworkParamters.nodeRewardAmountUsd).toBe(oneSHM)
       expect(initialNetworkParamters.nodePenaltyUsd).toBe(oneSHM * BigInt(10))
-      expect(initialNetworkParamters.stakeRequiredUsd).toBe(oneSHM * BigInt(10))
+      expect(initialNetworkParamters.stakeRequiredUsd).toBe(oneSHM * BigInt(2400))
     })
 
     it('should maintain correct relationships with ShardeumFlags', () => {
