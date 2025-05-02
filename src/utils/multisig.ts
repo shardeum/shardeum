@@ -85,7 +85,7 @@ export function isNonKeyChange(
     // Check if there are key changes (if so, this is not a non-key change)
     if (
       isKeyChangeDetailed(currentConfig, newConfig, 'multisigKeys') ||
-      isKeyChangeDetailed(currentConfig, newConfig, 'devKeys')
+      isKeyChangeDetailed(currentConfig, newConfig, 'devPublicKeys')
     ) {
       return noChange
     }
