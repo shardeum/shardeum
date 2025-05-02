@@ -154,7 +154,7 @@ export function clearOldPenaltyTxs(shardus: Shardus): void {
   /* prettier-ignore */ nestedCountersInstance.countEvent('shardeum-penalty', `clearOldPenaltyTxs mapSize:${penaltyTxsMap.size}`)
   const now = shardus.shardusGetTime()
   for (const [txId, tx] of penaltyTxsMap.entries()) {
-    const cycleDuration = config.server.p2p.cycleDuration * 1000 //1,000,0000
+    const cycleDuration = config.server.p2p.cycleDuration * 1000
     if (now - tx.timestamp > 5 * cycleDuration) {
       penaltyTxsMap.delete(txId)
       deleteCount++
