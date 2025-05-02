@@ -27,7 +27,7 @@ export function isKeyChange(
 
     // Check what type of key changes are happening
     const isMultisigChange = isKeyChangeDetailed(currentConfig, newConfig, 'multisigKeys')
-    const isDevKeyChange = isKeyChangeDetailed(currentConfig, newConfig, 'devKeys')
+    const isDevKeyChange = isKeyChangeDetailed(currentConfig, newConfig, 'devPublicKeys')
 
     // If no key changes, return early
     if (!isMultisigChange && !isDevKeyChange) {
