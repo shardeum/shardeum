@@ -188,7 +188,7 @@ export function verifyUnstakeTx(
   }
 
   // eslint-disable-next-line security/detect-object-injection
-  if (!isStakeUnlocked(nominatorAccount, nomineeAccount, shardus, wrappedStates[globalAccount].data).unlocked) {
+  if (!isStakeUnlocked(nominatorAccount, nomineeAccount, shardus, wrappedStates[globalAccount].data, true).unlocked) {
     success = false
     reason = `The stake is not unlocked yet!`
   }
@@ -200,12 +200,56 @@ export function isStakeUnlocked(
   nominatorAccount: WrappedEVMAccount,
   nomineeAccount: NodeAccount2,
   shardus: Shardus,
-  networkAccount: NetworkAccount
+  networkAccount: NetworkAccount,
+  skipNodeStateChecks = false
 ): { unlocked: boolean; reason: string; remainingTime: number } {
-  const stakeLockTime = networkAccount.current.stakeLockTime
-  const currentTime = shardus.shardusGetTime()
+  if (!skipNodeStateChecks) {
+    if (shardus.isOnStandbyList(nomineeAccount.id) === true) {
+      return {
+        unlocked: false,
+        reason: "This node is in the network's Standby list. Stake is locked until the node leaves the Standby list!",
+        remainingTime: -1,
+      }
+    } else if (shardus.isNodeActiveByPubKey(nomineeAccount.id) === true) {
+      return {
+        unlocked: false,
+        reason: 'This node is still active in the network. Stake is locked until the node leaves the network!',
+        remainingTime: -1,
+      }
+    } else if (shardus.isNodeSelectedByPubKey(nomineeAccount.id)) {
+      return {
+        unlocked: false,
+        reason: 'This node is still selected in the network. Stake is locked until the node leaves the network!',
+        remainingTime: -1,
+      }
+    } else if (shardus.isNodeReadyByPubKey(nomineeAccount.id)) {
+      return {
+        unlocked: false,
+        reason: 'This node is still in ready state in the network. Stake is locked until the node leaves the network!',
+        remainingTime: -1,
+      }
+    } else if (shardus.isNodeSyncingByPubKey(nomineeAccount.id)) {
+      return {
+        unlocked: false,
+        reason: 'This node is still syncing in the network. Stake is locked until the node leaves the network!',
+        remainingTime: -1,
+      }
+    }
+  }
 
-  // SLT from time of last staking or unstaking
+  const currentTime = shardus.shardusGetTime()
+  if (nominatorAccount.operatorAccountInfo.certExp && nominatorAccount.operatorAccountInfo.certExp > currentTime) {
+    const remainingMinutes = Math.ceil((nominatorAccount.operatorAccountInfo.certExp - currentTime) / 60000)
+    return {
+      unlocked: false,
+      reason: `Your node is currently registered in the network. Deregistration will be completed in ${remainingMinutes} minute${
+        remainingMinutes === 1 ? '' : 's'
+      }. You'll be able to unstake once this completed.`,
+      remainingTime: nominatorAccount.operatorAccountInfo.certExp - currentTime,
+    }
+  }
+
+  const stakeLockTime = networkAccount.current.stakeLockTime
   const timeSinceLastStake = currentTime - nominatorAccount.operatorAccountInfo.lastStakeTimestamp
   if (timeSinceLastStake < stakeLockTime) {
     return {
@@ -285,7 +329,7 @@ export function isRestakingAllowed(
   const restakeAllowed = remainingTime <= 0
   return {
     restakeAllowed,
-    reason,
+    reason: restakeAllowed ? '' : reason,
     remainingTime,
   }
 }

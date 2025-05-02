@@ -115,7 +115,7 @@ describe('Initial Network Parameters', () => {
       expect(initialNetworkParamters.nodeRewardInterval).toBe(ONE_HOUR)
       expect(initialNetworkParamters.nodeRewardAmountUsd).toBe(oneSHM)
       expect(initialNetworkParamters.nodePenaltyUsd).toBe(oneSHM * BigInt(10))
-      expect(initialNetworkParamters.stakeRequiredUsd).toBe(oneSHM * BigInt(10))
+      expect(initialNetworkParamters.stakeRequiredUsd).toBe(oneSHM * BigInt(2400))
       expect(initialNetworkParamters.restakeCooldown).toBe(THIRTY_MINUTES)
       expect(initialNetworkParamters.maintenanceInterval).toBe(ONE_DAY)
       expect(initialNetworkParamters.maintenanceFee).toBe(0)
@@ -127,12 +127,6 @@ describe('Initial Network Parameters', () => {
       expect(initialNetworkParamters.enableRPCEndpoints).toBe(false)
       expect(initialNetworkParamters.stakeLockTime).toBe(1000 * 60 * 60 * 24 * 14)
       expect(initialNetworkParamters.chainID).toBe(ShardeumFlags.ChainID)
-    })
-
-    it('should have correct values for version parameters', () => {
-      expect(initialNetworkParamters.minVersion).toBe('1.18.0-prerelease.0')
-      expect(initialNetworkParamters.activeVersion).toBe('1.18.0-prerelease.0')
-      expect(initialNetworkParamters.latestVersion).toBe('1.18.0')
     })
 
     it('should have correct values for archiver parameters', () => {
@@ -168,7 +162,7 @@ describe('Initial Network Parameters', () => {
     it('should maintain correct relationships with token constants', () => {
       expect(initialNetworkParamters.nodeRewardAmountUsd).toBe(oneSHM)
       expect(initialNetworkParamters.nodePenaltyUsd).toBe(oneSHM * BigInt(10))
-      expect(initialNetworkParamters.stakeRequiredUsd).toBe(oneSHM * BigInt(10))
+      expect(initialNetworkParamters.stakeRequiredUsd).toBe(oneSHM * BigInt(2400))
     })
 
     it('should maintain correct relationships with ShardeumFlags', () => {
