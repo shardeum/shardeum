@@ -36,6 +36,17 @@ export function isInternalTx(timestampedTx: any): boolean {
   return false
 }
 
+export function isMultiSigFoundationTx(timestampedTx: any): boolean {
+  if(isInternalTx(timestampedTx) == false) 
+    return false
+  const internalTx = timestampedTx as InternalTx
+  return (
+    internalTx.internalTXType === InternalTXType.ChangeConfig ||
+    internalTx.internalTXType === InternalTXType.ChangeNetworkParam ||
+    internalTx.internalTXType === InternalTXType.TransferFromSecureAccount
+  )
+}
+
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function isDebugTx(tx: any): boolean {
   return tx.isDebugTx != null
