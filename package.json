@@ -42,7 +42,7 @@
   "author": "",
   "dependencies": {
     "@shardeum-foundation/lib-archiver-discovery": "1.2.0-prerelease.4",
-    "@shardeum-foundation/core": "2.14.1-prerelease.0",
+    "@shardeum-foundation/core": "2.14.1-prerelease.2",
     "@shardeum-foundation/lib-crypto-utils": "4.2.0-prerelease.4",
     "@shardeum-foundation/lib-net": "1.5.0-prerelease.2",
     "@shardeum-foundation/lib-types": "1.3.0-prerelease.3",
