@@ -132,6 +132,7 @@ import * as InitRewardTimesTx from './tx/initRewardTimes'
 import * as PenaltyTx from './tx/penalty/transaction'
 import {
   isDebugTx,
+  isDestLimitTx,
   isInternalTx,
   crypto,
   getInjectedOrGeneratedTimestamp,
@@ -4091,6 +4092,7 @@ const shardusSetup = (): void => {
     //also appdata and wrapped accounts should be passed in?
     validateTransaction: validateTransaction(shardus),
     validateTxnFields: validateTxnFields(shardus, debugAppdata),
+    isDestLimitTx,
     isInternalTx,
     async apply(timestampedTx: ShardusTypes.OpaqueTransaction, wrappedStates, originalAppData) {
       //@ts-ignore
@@ -5357,6 +5359,9 @@ const shardusSetup = (): void => {
 
         // dappFeature1enabled is our coin-transfer-only mode. Crack if it calls EVM
         const isCoinTransfer = isSimpleTransfer || (remoteTargetAccount == null && appData.newCAAddr == null)
+        if(isCoinTransfer){
+          appData.isCoinTransfer = true
+        }
         if (shardusConfig.features.dappFeature1enabled && !isStakeRelatedTx && !isCoinTransfer) {
           nestedCountersInstance.countEvent('shardeum', 'precrack - coin-transfer-only')
           return {

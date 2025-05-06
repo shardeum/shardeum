@@ -28,6 +28,11 @@ export function isInternalTXGlobal(internalTx: InternalTx): boolean {
   )
 }
 
+export function isDestLimitTx(appData:any): boolean {
+  return appData?.isCoinTransfer === true
+}
+
+
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function isInternalTx(timestampedTx: any): boolean {
   if (timestampedTx && timestampedTx.raw) return false
