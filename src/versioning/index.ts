@@ -19,7 +19,7 @@ export const onActiveVersionChange = async (newActiveVersion: string) => {
   const migrations = ['1.9.1', '1.10.2', '1.11.2', '1.11.3', '1.15.4', '1.16.3']
   for (let index = 0; index < migrations.length; index++) {
     const migrationVersion = migrations[index] // eslint-disable-line security/detect-object-injection
-    if (appliedMigrations.has(migrationVersion) !== true) {
+    if (appliedMigrations.has(migrationVersion) === true) {
       continue
     }
     const versionValidationResult = meetsMinimumVersion(migrationVersion, newActiveVersion)
