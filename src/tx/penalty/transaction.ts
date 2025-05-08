@@ -226,8 +226,8 @@ export async function applyPenaltyTX(
   applyResponse: ShardusTypes.ApplyResponse
 ): Promise<void> {
   if (ShardeumFlags.VerboseLogs) console.log(`Running applyPenaltyTX`, tx, wrappedStates)
-  const isValidRequest = validatePenaltyTX(txId, tx, true)
-  if (!isValidRequest) {
+  const isValidRequest = transactionUtils.validatePenaltyTX(txId, tx, true)
+  if (!isValidRequest.isValid) {
     /* prettier-ignore */ if (logFlags.dapp_verbose) console.log(`Invalid penaltyTX, reportedNode ${tx.reportedNodePublickKey}, reason: ${isValidRequest.reason}`)
     nestedCountersInstance.countEvent('shardeum-penalty', `applyPenaltyTX fail `)
     shardus.applyResponseSetFailed(
@@ -242,13 +242,13 @@ export async function applyPenaltyTX(
   let nodeAccount: NodeAccount2
   if (isNodeAccount2(wrappedStates[nodeShardusAddress].data))
     nodeAccount = wrappedStates[nodeShardusAddress].data as NodeAccount2
-  const operatorShardusAddress = toShardusAddress(tx.operatorEVMAddress, AccountType.Account)
+  const operatorShardusAddress = transactionUtils.toShardusAddress(tx.operatorEVMAddress, AccountType.Account)
   let operatorAccount: WrappedEVMAccount
   if (WrappedEVMAccountFunctions.isWrappedEVMAccount(wrappedStates[operatorShardusAddress].data)) {
     operatorAccount = wrappedStates[operatorShardusAddress].data as WrappedEVMAccount
   }
 
-  const { isProcessed, eventTime } = isProcessedPenaltyTx(tx, nodeAccount)
+  const { isProcessed, eventTime } = transactionUtils.isProcessedPenaltyTx(tx, nodeAccount)
   if (isProcessed) {
     /* prettier-ignore */ if (logFlags.dapp_verbose) console.log(`Processed penaltyTX: , TxId: ${txId}, reportedNode ${tx.reportedNodePublickKey}, ${{lastPenaltyTime: nodeAccount.nodeAccountStats.lastPenaltyTime, eventTime}}`)
     shardus.applyResponseSetFailed(
@@ -259,8 +259,9 @@ export async function applyPenaltyTX(
   }
 
   //TODO should we check if it was already penalized?
-  const penaltyAmount = getPenaltyForViolation(tx, nodeAccount.stakeLock)
-  applyPenalty(nodeAccount, operatorAccount, penaltyAmount)
+
+  const penaltyAmount = transactionUtils.getPenaltyForViolation(tx, nodeAccount.stakeLock)
+  transactionUtils.applyPenalty(nodeAccount, operatorAccount, penaltyAmount)
   nodeAccount.nodeAccountStats.penaltyHistory.push({
     type: tx.violationType,
     amount: penaltyAmount,
@@ -282,7 +283,8 @@ export async function applyPenaltyTX(
   nodeAccount.nodeAccountStats.lastPenaltyTime = eventTime
   operatorAccount.timestamp = txTimestamp
 
-  const shardeumState = getApplyTXState(txId)
+  const shardeumState = transactionUtils.getApplyTXState(txId)
+
   shardeumState._transactionState.appData = {}
 
   const operatorEVMAddress: Address = Address.fromString(tx.operatorEVMAddress)
@@ -341,4 +343,20 @@ export async function applyPenaltyTX(
   /* prettier-ignore */
   nestedCountersInstance.countEvent('shardeum-penalty', `Applied PenaltyTX`)
   /* prettier-ignore */ if (logFlags.dapp_verbose) console.log('Applied PenaltyTX', tx.reportedNodePublickKey)
+}
+
+// Exporting internal utility functions for unit testing purposes. These functions are either private
+// or used internally within other functions, and exporting them allows us to mock dependencies
+// and isolate the logic of the main functions during testing.
+export const transactionUtils = {
+  applyPenaltyTX,
+  getApplyTXState,
+  toShardusAddress,
+  createInternalTxReceipt,
+  applyPenalty,
+  getPenaltyForViolation,
+  validatePenaltyTX,
+  recordPenaltyTX,
+  isProcessedPenaltyTx,
+  getPenaltyTxsMap: (): Map<string, PenaltyTX> => penaltyTxsMap,
 }
