@@ -19,7 +19,7 @@ export const initialNetworkParamters: NetworkParameters = {
   maintenanceFee: 0,
   minVersion: '1.18.5-prerelease.1',
   activeVersion: '1.18.5-prerelease.1',
-  latestVersion: '1.18.5',
+  latestVersion: '1.19.0',
   archiver: {
     minVersion: '3.6.0-prerelease.0',
     activeVersion: '3.6.0-prerelease.0',
