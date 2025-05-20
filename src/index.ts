@@ -8192,6 +8192,10 @@ const shardusSetup = (): void => {
       return NGT_TYPES.includes(tx?.['internalTXType'])
     },
     verifyAppJoinData: (data: unknown): string[] | null => verifyPayload(AJVSchemaEnum.AppJoinData, data),
+    getUniqueAppTags: (tx: ShardusTypes.OpaqueTransaction): { [key: string]: string } | null | undefined => {
+      const txId = generateTxId(tx)
+      return { txId }
+    },
     async getNetworkAccountFromArchiver(): Promise<WrappedAccount> {
       try {
         const networkAccount = await fetchNetworkAccountFromArchiver()
