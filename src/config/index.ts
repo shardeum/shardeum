@@ -9,38 +9,75 @@ import { mergeWithOverwrite } from '../utils/customMerge'
 
 const OVERWRITE_KEYS = ['devPublicKeys', 'multisigKeys']
 
-const overwriteMerge = (target: any[], source: any[]): any[] => source
+const overwriteMerge = (target: unknown[], source: unknown[]): unknown[] => source
+
+export interface ExistingArchiver {
+  ip: string
+  port: number
+  publicKey: string
+}
+
+export interface TicketsConfig {
+  updateTicketListTimeInMs?: number
+  ticketTypes?: Array<{ type: string; enabled: boolean }>
+  [key: string]: unknown
+}
+
+export interface FeaturesConfig {
+  dappFeature1enabled?: boolean
+  fixHomeNodeCheckForTXGroupChanges?: boolean
+  archiverDataSubscriptionsUpdate?: boolean
+  startInServiceMode?: boolean
+  tickets?: TicketsConfig
+  [key: string]: unknown
+}
+
+export interface P2PConfig {
+  cycleDuration: number
+  existingArchivers?: ExistingArchiver[]
+  rotationEdgeToAvoid: number
+  allowActivePerCycle: number
+  fixApplyReceiptType: boolean
+  baselineNodes?: number
+  minNodes?: number
+  maxNodes?: number
+  maxRotatedPerCycle?: number
+  flexibleRotationDelta?: number
+  [key: string]: unknown
+}
+
+export interface ShardingConfig {
+  nodesPerConsensusGroup: number
+  nodesPerEdge?: number
+  [key: string]: unknown
+}
+
+export interface ServerConfig {
+  globalAccount: string
+  p2p?: P2PConfig
+  baseDir: string
+  mode?: 'debug' | 'release'
+  sharding?: ShardingConfig
+  features?: FeaturesConfig
+  [key: string]: unknown
+}
+
+export interface StorageOptions {
+  walMode?: boolean
+  exclusiveLockMode?: boolean
+}
+
+export interface StorageConfig {
+  options?: StorageOptions
+}
 
 export interface Config {
-  storage?: any // eslint-disable-line @typescript-eslint/no-explicit-any
-  server: {
-    globalAccount: string
-    p2p?: {
-      cycleDuration: number
-      existingArchivers: Array<{
-        ip: string
-        port: number
-        publicKey: string
-      }>
-      rotationEdgeToAvoid: number
-      allowActivePerCycle: number
-      fixApplyReceiptType: boolean
-    }
-    baseDir: string
-    mode?: 'debug' | 'release'
-    sharding?: {
-      nodesPerConsensusGroup: number
-    }
-    features?: {
-      tickets?: {
-        updateTicketListTimeInMs?: number
-        ticketTypes?: Array<{
-          type: string
-          enabled: boolean
-        }>
-      }
-    }
-  }
+  storage?: StorageConfig
+  server: ServerConfig
+}
+
+export type DeepPartial<T> = {
+  [P in keyof T]?: T[P] extends object ? DeepPartial<T[P]> : T[P]
 }
 
 //TODO: improve typing here
@@ -54,12 +91,14 @@ let config: Config = {
 // eslint-disable-next-line security/detect-non-literal-fs-filename
 if (fs.existsSync(path.join(process.cwd(), FilePaths.CONFIG))) {
   // eslint-disable-next-line security/detect-non-literal-fs-filename
-  const fileConfig = Utils.safeJsonParse(fs.readFileSync(path.join(process.cwd(), FilePaths.CONFIG)).toString())
-  config = merge(config, fileConfig, { arrayMerge: overwriteMerge })
+  const fileConfig = Utils.safeJsonParse(fs.readFileSync(path.join(process.cwd(), FilePaths.CONFIG)).toString()) as unknown as Partial<Config>
+  config = merge<Config>(config, fileConfig, { arrayMerge: overwriteMerge })
 }
 
-config = merge(config, {
-  server: {
+config = merge<Config>(
+  config,
+  {
+    server: {
     p2p: {
       cycleDuration: 60,
       minNodesToAllowTxs: 1, // to allow single node networks
@@ -170,13 +209,17 @@ config = merge(config, {
       dappFeature1enabled: true, //enabled for betanext 1.11.0
     },
   },
-})
+} as unknown as Partial<Config>,
+  { arrayMerge: overwriteMerge }
+)
 
 // rateLimiting and loadDetection settings
-config = merge(config, {
-  server: {
-    rateLimiting: {
-      limitRate: true,
+config = merge<Config>(
+  config,
+  {
+    server: {
+      rateLimiting: {
+        limitRate: true,
       //check out isOverloaded and getWinningLoad to see how these work
       //what ever value is the highest is used to reject TXs at a sliding rate
       //i.e. if the limit is 0.6  and the load is 0.7 then we will reject 25% of TXs randomly (because that is 25% of the way to 1.0 from 0.6)
@@ -210,10 +253,10 @@ config = merge(config, {
       // load below this will trigger a network scale down vote.
     },
   },
-})
+} as unknown as Partial<Config>, { arrayMerge: overwriteMerge })
 
 // Sharding and state manager settings
-config = merge(config, {
+config = merge<Config>(config, {
   server: {
     sharding: {
       nodesPerConsensusGroup: 128, //128 is the final goal
@@ -240,10 +283,10 @@ config = merge(config, {
       awaitingDataCanBailOnReceipt: true,
     },
   },
-})
+} as unknown as Partial<Config>, { arrayMerge: overwriteMerge })
 
 // features
-config = merge(config, {
+config = merge<Config>(config, {
   server: {
     features: {
       //1.1.3
@@ -257,7 +300,7 @@ config = merge(config, {
       },
     },
   },
-})
+} as unknown as Partial<Config>, { arrayMerge: overwriteMerge })
 
 // Debug settings
 config = merge(
@@ -372,8 +415,8 @@ if (process.env.LOAD_JSON_CONFIGS) {
         // eslint-disable-next-line security/detect-non-literal-fs-filename
         console.log('config loaded from:', configPath)
         nestedCountersInstance?.countEvent('config', `LOAD_JSON_CONFIGS loaded from ${configPath}`)
-        const fileConfig = Utils.safeJsonParse(fs.readFileSync(configPath).toString())
-        config = mergeWithOverwrite(config, fileConfig, OVERWRITE_KEYS)
+        const fileConfig = Utils.safeJsonParse(fs.readFileSync(configPath).toString()) as unknown as Partial<Config>
+        config = mergeWithOverwrite<Config>(config, fileConfig, OVERWRITE_KEYS)
       } else {
         nestedCountersInstance?.countEvent('config', `LOAD_JSON_CONFIGS failed to load from ${configPath}`)
         console.error('config load failed:', configPath)
@@ -400,12 +443,12 @@ if (process.env.BASE_DIR) {
     // eslint-disable-next-line security/detect-non-literal-fs-filename
     baseDirFileConfig = Utils.safeJsonParse(fs.readFileSync(path.join(baseDir, FilePaths.CONFIG)).toString())
   }
-  config = merge(config, baseDirFileConfig, { arrayMerge: overwriteMerge })
+  config = merge<Config>(config, baseDirFileConfig as unknown as Partial<Config>, { arrayMerge: overwriteMerge })
   config.server.baseDir = process.env.BASE_DIR
 }
 
 if (process.env.APP_SEEDLIST) {
-  config = merge(
+  config = merge<Config>(
     config,
     {
       server: {
@@ -421,7 +464,7 @@ if (process.env.APP_SEEDLIST) {
           ],
         },
       },
-    },
+    } as unknown as Partial<Config>,
     { arrayMerge: overwriteMerge }
   )
 }
@@ -430,7 +473,7 @@ if (process.env.APP_SEEDLIST) {
 if (process.env.EXISTING_ARCHIVERS) {
   const existingArchivers = Utils.safeJsonParse(process.env.EXISTING_ARCHIVERS)
   if (existingArchivers.length > 0) {
-    config = merge(
+    config = merge<Config>(
       config,
       {
         server: {
@@ -438,14 +481,14 @@ if (process.env.EXISTING_ARCHIVERS) {
             existingArchivers,
           },
         },
-      },
+      } as unknown as Partial<Config>,
       { arrayMerge: overwriteMerge }
     )
   }
 }
 
 if (process.env.APP_MONITOR) {
-  config = merge(
+  config = merge<Config>(
     config,
     {
       server: {
@@ -453,13 +496,13 @@ if (process.env.APP_MONITOR) {
           recipient: `http://${process.env.APP_MONITOR}:3000/api`,
         },
       },
-    },
+    } as unknown as Partial<Config>,
     { arrayMerge: overwriteMerge }
   )
 }
 
 if (process.env.APP_IP) {
-  config = merge(
+  config = merge<Config>(
     config,
     {
       server: {
@@ -468,35 +511,37 @@ if (process.env.APP_IP) {
           internalIp: process.env.APP_IP,
         },
       },
-    },
+  } as unknown as Partial<Config>,
     { arrayMerge: overwriteMerge }
   )
 }
 
-config = merge(config, {
+config = merge<Config>(config, {
   server: {
     p2p: {
       baselineNodes: process.env.baselineNodes
         ? parseInt(process.env.baselineNodes)
-        : (config.server.p2p as any).baselineNodes, // config used for baseline for entering recovery, restore, and safety. Should be equivalient to minNodes on network startup
-      minNodes: process.env.minNodes ? parseInt(process.env.minNodes) : (config.server.p2p as any).minNodes,
-      maxNodes: process.env.maxNodes ? parseInt(process.env.maxNodes) : (config.server.p2p as any).maxNodes,
+        : config.server.p2p?.baselineNodes,
+      minNodes: process.env.minNodes ? parseInt(process.env.minNodes) : config.server.p2p?.minNodes,
+      maxNodes: process.env.maxNodes ? parseInt(process.env.maxNodes) : config.server.p2p?.maxNodes,
       maxRotatedPerCycle: process.env.maxRotatedPerCycle
         ? parseInt(process.env.maxRotatedPerCycle)
-        : (config.server.p2p as any).maxRotatedPerCycle,
+        : config.server.p2p?.maxRotatedPerCycle,
       flexibleRotationDelta: process.env.flexibleRotationDelta
         ? parseInt(process.env.flexibleRotationDelta)
-        : (config.server.p2p as any).flexibleRotationDelta,
+        : config.server.p2p?.flexibleRotationDelta,
     },
     sharding: {
       nodesPerConsensusGroup: process.env.nodesPerConsensusGroup
         ? parseInt(process.env.nodesPerConsensusGroup)
-        : (config.server.sharding as any).nodesPerConsensusGroup,
+        : config.server.sharding?.nodesPerConsensusGroup,
       nodesPerEdge: process.env.nodesPerEdge
         ? parseInt(process.env.nodesPerEdge)
-        : (config.server.sharding as any).nodesPerEdge,
+        : config.server.sharding?.nodesPerEdge,
     },
   },
-})
+} as unknown as Partial<Config>,
+  { arrayMerge: overwriteMerge }
+)
 
 export default config
