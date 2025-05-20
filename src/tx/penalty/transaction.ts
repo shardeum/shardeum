@@ -324,7 +324,7 @@ export async function applyPenaltyTX(
   }
 
   if (ShardeumFlags.supportInternalTxReceipt) {
-    createInternalTxReceipt(
+    await createInternalTxReceipt(
       shardus,
       applyResponse,
       tx,

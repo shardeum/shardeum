@@ -197,14 +197,14 @@ export function validateSetCertTimeState(
   return { result: 'pass', reason: 'valid' }
 }
 
-export function applySetCertTimeTx(
+export async function applySetCertTimeTx(
   shardus,
   tx: SetCertTime,
   wrappedStates: WrappedStates,
   txId: string,
   txTimestamp: number,
   applyResponse: ShardusTypes.ApplyResponse
-): void {
+): Promise<void> {
   /* prettier-ignore */ if (logFlags.dapp_verbose) console.log(`applySetCertTimeTx txTimestamp:${txTimestamp}   tx.timestamp:${tx.timestamp}`, tx)
 
   //TODO this is failing with a warning like this:
@@ -312,6 +312,6 @@ export function applySetCertTimeTx(
   }
 
   if (ShardeumFlags.supportInternalTxReceipt) {
-    createInternalTxReceipt(shardus, applyResponse, tx, tx.nominee, tx.nominator, txTimestamp, txId, amountSpent)
+    await createInternalTxReceipt(shardus, applyResponse, tx, tx.nominee, tx.nominator, txTimestamp, txId, amountSpent)
   }
 }

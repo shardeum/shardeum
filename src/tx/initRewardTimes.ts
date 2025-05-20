@@ -171,14 +171,14 @@ export function validateInitRewardState(
   return { result: 'pass', reason: 'valid' }
 }
 
-export function apply(
+export async function apply(
   shardus,
   tx: InitRewardTimes,
   txId: string,
   txTimestamp: number,
   wrappedStates: WrappedStates,
   applyResponse: ShardusTypes.ApplyResponse
-): void {
+): Promise<void> {
   let nodeAccount: NodeAccount2
   const acct = wrappedStates[tx.nominee].data
   if (isNodeAccount2(acct)) {
@@ -213,7 +213,7 @@ export function apply(
     shardus.applyResponseAddChangedAccount(applyResponse, tx.nominee, wrappedChangedNodeAccount, txId, txTimestamp)
   }
   if (ShardeumFlags.supportInternalTxReceipt) {
-    createInternalTxReceipt(shardus, applyResponse, tx, tx.nominee, nodeAccount.nominator, txTimestamp, txId)
+    await createInternalTxReceipt(shardus, applyResponse, tx, tx.nominee, nodeAccount.nominator, txTimestamp, txId)
   }
   /* prettier-ignore */ nestedCountersInstance.countEvent('shardeum-staking', `Applied InitRewardTimesTX`)
   console.log('Applied InitRewardTimesTX for', tx.nominee)

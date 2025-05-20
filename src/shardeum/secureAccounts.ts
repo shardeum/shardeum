@@ -396,7 +396,7 @@ export async function apply(
   )
 
   if (ShardeumFlags.supportInternalTxReceipt) {
-    createInternalTxReceipt(
+    await createInternalTxReceipt(
       shardus,
       applyResponse,
       tx,
