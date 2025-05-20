@@ -116,20 +116,19 @@ export function validateSetCertTimeState(
 ): { result: string; reason: string } {
   let committedStake = BigInt(0)
 
-  let operatorEVMAccount: WrappedEVMAccount
-  const acct = wrappedStates[toShardusAddress(tx.nominator, AccountType.Account)].data
+  let operatorEVMAccount: WrappedEVMAccount | undefined
+  const acct = wrappedStates[toShardusAddress(tx.nominator, AccountType.Account)]?.data
   if (WrappedEVMAccountFunctions.isWrappedEVMAccount(acct)) {
     operatorEVMAccount = acct
+    fixDeserializedWrappedEVMAccount(operatorEVMAccount)
   }
-  fixDeserializedWrappedEVMAccount(operatorEVMAccount)
   /* prettier-ignore */ if (logFlags.dapp_verbose) console.log('validateSetCertTimeState', tx, operatorEVMAccount)
   if (operatorEVMAccount == undefined) {
     /* prettier-ignore */ if (logFlags.dapp_verbose) console.log(`setCertTime validate state: found no wrapped state for operator account ${tx.nominator}`)
-    if (ShardeumFlags.fixCertExpTiming)
-      return {
-        result: 'fail',
-        reason: `Found no wrapped state for operator account ${tx.nominator}`,
-      }
+    return {
+      result: 'fail',
+      reason: `Found no wrapped state for operator account ${tx.nominator}`,
+    }
   } else {
     const transactionNominee = tx.nominee
     const operatorNominee = operatorEVMAccount.operatorAccountInfo.nominee
