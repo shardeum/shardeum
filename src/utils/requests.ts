@@ -28,15 +28,13 @@ export const shardusPut = async <ResponseType>(
   return response
 }
 
-function containsProtocol(url: string): boolean {
-  if (!url.match('https?://*')) return false
-  return true
+export function hasProtocol(u: string): boolean {
+  return /^https?:\/\//i.test(u.trim())
 }
 
-function normalizeUrl(url: string): string {
-  let normalized = url
-  if (!containsProtocol(url)) normalized = 'http://' + url
-  return normalized
+export function normalizeUrl(u: string): string {
+  const trimmed = u.trim()
+  return hasProtocol(trimmed) ? trimmed : `http://${trimmed}`
 }
 
 const urlFromNode = (node: ShardusTypes.ValidatorNodeDetails, path: string): string => {

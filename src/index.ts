@@ -141,7 +141,7 @@ import {
 } from './setup/helpers'
 import { onActiveVersionChange } from './versioning'
 import { shardusFactory } from '@shardeum-foundation/core'
-import { unsafeGetClientIp } from './utils/requests'
+import { unsafeGetClientIp, normalizeUrl } from './utils/requests'
 import { initialNetworkParamters } from './shardeum/initialNetworkParameters'
 import { oneSHM, networkAccount, ONE_SECOND } from './shardeum/shardeumConstants'
 import { applyPenaltyTX, clearOldPenaltyTxs } from './tx/penalty/transaction'
@@ -1070,19 +1070,9 @@ function deleteApplyTXState(txId: string, context: string): void {
   }
 }
 
-function _containsProtocol(url: string): boolean {
-  if (!url.match('https?://*')) return false
-  return true
-}
-
-function _normalizeUrl(url: string): string {
-  let normalized = url
-  if (!_containsProtocol(url)) normalized = 'http://' + url
-  return normalized
-}
 
 async function _internalHackPostWithResp(url: string, body): Promise<GotResponse<any>> {
-  const normalized = _normalizeUrl(url)
+  const normalized = normalizeUrl(url)
 
   try {
     const res = await customGot().post(normalized, {
