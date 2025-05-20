@@ -83,26 +83,35 @@ export const _readableSHM = (bnum: bigint, autoDecimal = true): string => {
   const unit_SHM = ' shm'
   const unit_WEI = ' wei'
 
-  if (!autoDecimal) return bnum.toString() + unit_WEI
+  const isNegative = bnum < BigInt(0)
+  if (isNegative) {
+    bnum = -bnum
+  }
+
+  if (!autoDecimal) return (isNegative ? '-' : '') + bnum.toString() + unit_WEI
 
   const numString = bnum.toString()
   // 1 eth or 1 SHM === 10^18 wei
   // if wei value gets too big let's convert to SHM in a floating point precision.
   // 14 is where we set this threshold. hardcoded for now.
+  let result: string
+
   if (numString.length > 14) {
     const floating_index = numString.length - 18
 
     if (floating_index <= 0) {
       const mantissa = '0'.repeat(Math.abs(floating_index)) + numString
-      return '0.' + mantissa + unit_SHM
+      result = '0.' + mantissa + unit_SHM
+    } else {
+      const mantissa = numString.slice(floating_index, numString.length)
+      const base = numString.slice(0, floating_index)
+      result = base + '.' + mantissa + unit_SHM
     }
-
-    const mantissa = numString.slice(floating_index, numString.length)
-    const base = numString.slice(0, floating_index)
-    return base + '.' + mantissa + unit_SHM
+  } else {
+    result = bnum.toString() + unit_WEI
   }
 
-  return bnum.toString() + unit_WEI
+  return (isNegative ? '-' : '') + result
 }
 
 export function debug_map_replacer<T, K, V>(key, value: T | Map<K, V>): T | [K, V][] {

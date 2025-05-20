@@ -187,11 +187,10 @@ describe('Serialization Utility Functions', () => {
       expect(() => _readableSHM(123 as any)).toThrow('valid bigint instance')
     })
 
-    // TODO: fix the code to handle negative bigint values
-    // it('should handle negative bigint values', () => {
-    //   const num = BigInt(-12345678901234567890123)
-    //   expect(_readableSHM(num)).toBe('-12345.678901234567890123 shm')
-    // })
+    it('should handle negative bigint values', () => {
+      const num = BigInt('-12345678901234567890123')
+      expect(_readableSHM(num)).toBe('-12345.678901234567890123 shm')
+    })
 
     it('should handle zero value', () => {
       expect(_readableSHM(BigInt(0))).toBe('0 wei')
