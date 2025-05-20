@@ -5385,7 +5385,7 @@ const shardusSetup = (): void => {
               const minBalanceUsd = BigInt(ShardeumFlags.constantTxFeeUsd)
               minBalance =
                 scaleByStabilityFactor(minBalanceUsd, AccountsStorage.cachedNetworkAccount) + transaction.value
-            } else minBalance = transaction.getBaseFee() * gasPrice * transaction.value // tx.gasLimit * tx.gasPrice + tx.value
+            } else minBalance = transaction.getBaseFee() * gasPrice + transaction.value // tx.gasLimit * tx.gasPrice + tx.value
             const accountBalance = appData.balance
             if (accountBalance < minBalance) {
               success = false
