@@ -9,6 +9,10 @@
     "url": "git+https://github.com/shardeum/shardeum.git"
   },
   "homepage": "https://github.com/shardeum/shardeum#readme",
+  "engines": {
+    "node": "18.19.1",
+    "npm": ">=10.2.4"
+  },
   "scripts": {
     "pm2": "cross-env PM2_HOME='./.pm2' pm2",
     "start": "node scripts/start.js && node dist/src/index.js",
