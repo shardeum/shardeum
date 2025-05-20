@@ -14,17 +14,16 @@ describe('retry', () => {
   })
 
   it('should retry a failed function call', async () => {
-    const result = await retry(errorFunc, trueShouldRetry, 3, 0)
-    expect(result).toBe(undefined)
+    await expect(retry(errorFunc, trueShouldRetry, 3, 0)).rejects.toThrow('Max retries reached')
   })
 
   it('should throw an error if retries are exhausted without success', async () => {
-    await expect(await retry(errorFunc, falseShouldRetry, 0, 0)).toBe(undefined)
+    await expect(retry(errorFunc, falseShouldRetry, 0, 0)).rejects.toThrow('Max retries reached')
   })
 
   it('should wait for the specified amount of time between retries', async () => {
     const startTime = Date.now()
-    await retry(errorFunc, trueShouldRetry, 2, 1)
+    await expect(retry(errorFunc, trueShouldRetry, 2, 1)).rejects.toThrow('Max retries reached')
     const endTime = Date.now()
     expect(endTime - startTime).toBeGreaterThanOrEqual(6000)
   })

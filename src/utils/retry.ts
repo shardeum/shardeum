@@ -12,10 +12,10 @@ export async function retry<T>(
   waitTimeSeconds: number,
   execCounter = 1
 ): Promise<T> {
+  if (retries < 0) {
+    throw new Error('Max retries reached')
+  }
   try {
-    if (retries < 0) {
-      return
-    }
     const result = await func()
     await sleep(execCounter * waitTimeSeconds * 1000)
     const shouldRetry = await shouldRetryFunc(result)
