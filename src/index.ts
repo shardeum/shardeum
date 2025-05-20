@@ -598,7 +598,7 @@ initializeSerialization()
 async function accountMiss(): Promise<boolean> {
   //Get the first read version of data that we have collected so far
 
-  // TODO implment this in shardus global server.  It will send the read accounts and TX info to
+  // TODO implement this in shardus global server.  It will send the read accounts and TX info to
   // to a remote shard so that we can restart the EVM
   //shardus.jumpToAccount(txID, address, transferBlob )
 
@@ -625,11 +625,11 @@ async function contractStorageMiss(): Promise<boolean> {
   //   return false
   // }
 
-  // TODO implment this in shardus global server.  It will send the read accounts and TX info to
+  // TODO implement this in shardus global server.  It will send the read accounts and TX info to
   // to a remote shard so that we can restart the EVM
   //shardus.jumpToAccount(txID, address, transferBlob )
 
-  // depending on how thing work out we may also want to jump to
+  // depending on how things work out we may also want to jump to
   //shardus.jumpToContractStorage(txID, address, transferBlob )
 
   //throw new Error('this should only happen in a multi sharded environment')
@@ -5143,10 +5143,10 @@ const shardusSetup = (): void => {
       // shardus.applyResponseSetFailed(applyResponse, reason)
       // return applyResponse //return rather than throw exception
 
-      //TODO need to detect if an execption here is a result of jumping the TX to another thread!
+      //TODO need to detect if an exception here is a result of jumping the TX to another thread!
       // shardus must be made to handle that
 
-      // todo can set a jummped value that we return!
+      // todo can set a jumped value that we return!
 
       //shardeumStateManager.unsetTransactionState(txId)
 
