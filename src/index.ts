@@ -483,9 +483,17 @@ if (ShardeumFlags.UseDBForAccounts === true) {
 
 //let accounts: WrappedEVMAccountMap = {} //relocated
 
-//may need these later.  if so, move to DB
-const appliedTxs = {} //this appears to be unused. will it still be unused if we use receipts as app data
-const shardusTxIdToEthTxId = {} //this appears to only support appliedTxs
+// May need these later. If so, move to DB
+/**
+ * Temporary map of applied transactions keyed by the Ethereum
+ * transaction hash. When `ShardeumFlags.AppliedTxsMaps` is enabled,
+ * this is populated so the JSON-RPC layer can return transaction
+ * details before data is persisted elsewhere.
+ */
+const appliedTxs: Record<string, unknown> = {}
+// Mapping of shardus transaction id to ethereum transaction id
+// used alongside `appliedTxs` when `AppliedTxsMaps` is enabled.
+const shardusTxIdToEthTxId: Record<string, string> = {}
 
 //In debug mode the default value is 100 SHM.  This is needed for certain load test operations
 const defaultBalance = isDebugMode() ? oneSHM * BigInt(100) : BigInt(0)
