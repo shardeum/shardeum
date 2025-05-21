@@ -398,12 +398,37 @@ function contractStorageInvolvedNoOp(
   return true
 }
 
+function logAccessList(message: string, appData): void {
+  if (appData != null && appData.accessList != null) {
+    if (ShardeumFlags.VerboseLogs)
+      console.log(`access list for ${message} ${Utils.safeStringify(appData.accessList)}`)
+  }
+}
+
 function tryGetRemoteAccountCBNoOp(
-  _transactionState: TransactionState,
-  _type: AccountType,
-  _address: string,
-  _key: string
+  transactionState: TransactionState,
+  type: AccountType,
+  address: string,
+  key: string
 ): Promise<WrappedEVMAccount> {
+  if (ShardeumFlags.VerboseLogs) {
+    if (type === AccountType.Account) {
+      console.log(`account miss: ${address} tx:${transactionState.linkedTX}`)
+      transactionState.tryRemoteHistory.account.push(address)
+    } else if (type === AccountType.ContractCode) {
+      console.log(
+        `account bytes miss: ${address} key: ${key} tx:${transactionState.linkedTX}`
+      )
+      transactionState.tryRemoteHistory.codeBytes.push(`${address}_${key}`)
+    } else if (type === AccountType.ContractStorage) {
+      console.log(
+        `account storage miss: ${address} key: ${key} tx:${transactionState.linkedTX}`
+      )
+      transactionState.tryRemoteHistory.storage.push(`${address}_${key}`)
+    }
+    logAccessList('tryGetRemoteAccountCBNoOp access list:', transactionState.appData)
+  }
+
   return undefined
 }
 /* eslint-enable @typescript-eslint/no-unused-vars */
