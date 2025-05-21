@@ -508,6 +508,12 @@ describe('Storage', () => {
       await expect(storage.getRIAccountsCacheSize()).rejects.toThrow('Database error')
     })
 
+    it('should return 0 when the cache is empty', async () => {
+      mockStorage._rawQuery.mockResolvedValue([])
+      const result = await storage.getRIAccountsCacheSize()
+      expect(result).toBe(0)
+    })
+
     it('should throw an error if storage is not initialized', async () => {
       // Simulate storage not being initialized
       storage.initialized = false
