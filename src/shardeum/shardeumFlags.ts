@@ -13,7 +13,6 @@ export interface ShardeumFlags {
   blockProductionRate: number // generate new block every 6s
   initialBlockNumber: number // The initial block number to start the chain at.
   maxNumberOfOldBlocks: number
-  SelfTest: boolean
   ServicePointsPerSecond: number //service function points per second
   SetupGenesisAccount: boolean
   EVMReceiptsAsAccounts: boolean
@@ -144,7 +143,6 @@ export const ShardeumFlags: ShardeumFlags = {
   blockProductionRate: 6,
   initialBlockNumber: 0,
   maxNumberOfOldBlocks: 256,
-  SelfTest: false,
   SetupGenesisAccount: true,
   EVMReceiptsAsAccounts: false,
   DebugRestoreFile: 'account-export.json',
