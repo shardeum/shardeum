@@ -7854,15 +7854,33 @@ const shardusSetup = (): void => {
             console.log('nodereward tx data 1', data.additionalData.hash)
             if (shardus.fastIsPicked(1)) {
               console.log('nodereward tx data 2', data.additionalData.hash)
-              const result = await injectClaimRewardTx(shardus, data)
-              /* prettier-ignore */ if (logFlags.dapp_verbose) console.log('INJECTED_CLAIM_REWARD_TX',result)
+              const account = await shardus.getLocalOrRemoteAccount(data.publicKey)
+              if (
+                account?.data &&
+                isNodeAccount2(account.data) &&
+                (account.data as NodeAccount2).rewardEndTime >= data.additionalData.txData.endTime
+              ) {
+                /* prettier-ignore */ if (logFlags.dapp_verbose) console.log('try-network-transaction rewardEndTime already set')
+              } else {
+                const result = await injectClaimRewardTx(shardus, data)
+                /* prettier-ignore */ if (logFlags.dapp_verbose) console.log('INJECTED_CLAIM_REWARD_TX', result)
+              }
             }
           } else if (data?.additionalData.type === 'nodeInitReward') {
             /* prettier-ignore */ if (logFlags.dapp_verbose) console.log('shardeum-event', `running injectInitRewardTimesTx nodeInitReward`, safeStringify(data))
             if (shardus.fastIsPicked(1)) {
               console.log('nodeInitReward tx data 2', data.additionalData.hash)
-              const result = await InitRewardTimesTx.injectInitRewardTimesTx(shardus, data)
-              /* prettier-ignore */ if (logFlags.dapp_verbose) console.log('INJECTED_INIT_REWARD_TIMES_TX', result)
+              const account = await shardus.getLocalOrRemoteAccount(data.publicKey)
+              if (
+                account?.data &&
+                isNodeAccount2(account.data) &&
+                (account.data as NodeAccount2).rewardStartTime >= data.additionalData.txData.startTime
+              ) {
+                /* prettier-ignore */ if (logFlags.dapp_verbose) console.log('try-network-transaction rewardStartTime already set')
+              } else {
+                const result = await InitRewardTimesTx.injectInitRewardTimesTx(shardus, data)
+                /* prettier-ignore */ if (logFlags.dapp_verbose) console.log('INJECTED_INIT_REWARD_TIMES_TX', result)
+              }
             }
           }
         }
