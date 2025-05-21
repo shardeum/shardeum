@@ -157,7 +157,10 @@ export const ShardeumFlags: ShardeumFlags = {
   UseDBForAccounts: true,
   AppliedTxsMaps: false,
   SaveEVMTries: false,
-  ChainID: process.env.CHAIN_ID ? parseInt(process.env.CHAIN_ID) : 8082,
+  ChainID: (() => {
+    const parsed = parseInt(process.env.CHAIN_ID ?? '', 10)
+    return isNaN(parsed) ? 8082 : parsed
+  })(),
   CheckpointRevertSupport: true,
   UseTXPreCrack: true,
   NewStorageIndex: true,
