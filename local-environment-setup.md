@@ -126,6 +126,7 @@ npm update @shardeum-foundation/archiver
 
 ## Network Configuration
 You can configure the Shardeum network for local development using either the automatic or manual mode.
+If your setup sits behind a proxy, set the `TRUSTED_PROXIES` environment variable or add a `trustedProxies` array to your configuration file. Only requests from these proxies will use the `X-Forwarded-For` header.
 
 ### Automatic Mode
 Apply a pre-configured patch:

@@ -1,6 +1,7 @@
 import { ShardusTypes } from '@shardeum-foundation/core'
 import { AxiosRequestConfig, AxiosResponse } from 'axios'
 import { customAxios } from './customHttpFunctions'
+import proxyaddr = require('proxy-addr')
 
 export const shardusGet = async <ResponseType>(
   url: string,
@@ -137,4 +138,37 @@ export function unsafeGetClientIp(req): string {
   }
   // make sure we return a string or null
   return clientIp as string
+}
+
+/**
+ * Get the client IP address while validating that any proxy in front of
+ * Shardeum is trusted. If the immediate source IP is not trusted, the
+ * X-Forwarded-For header is ignored and the remote address is returned.
+ * @param req express request object
+ * @param trustedProxies list of trusted proxy IP ranges
+ * @returns client IP string or null
+ */
+export function getClientIp(req, trustedProxies: string[] = []): string {
+  if (req == null) {
+    return null
+  }
+
+  const remoteAddress =
+    (req.connection ? req.connection.remoteAddress : null) ||
+    (req.socket ? req.socket.remoteAddress : null) ||
+    null
+
+  const forwarded = req.headers['x-forwarded-for']
+  if (forwarded && remoteAddress) {
+    const trust = proxyaddr.compile(trustedProxies)
+    if (trust(remoteAddress)) {
+      try {
+        return proxyaddr(req, trust) as string
+      } catch {
+        // fall back to remote address on any error
+      }
+    }
+  }
+
+  return remoteAddress as string
 }
