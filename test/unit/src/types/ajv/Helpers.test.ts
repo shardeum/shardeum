@@ -22,10 +22,12 @@ import { initClaimRewardTx } from '../../../../../src/types/ajv/ClaimRewardTxSch
 import { initTransferFromSecureAccountTx } from '../../../../../src/types/ajv/TransferFromSecureAccountTxSchema'
 import { initUnstakeTx } from '../../../../../src/types/ajv/UnstakeTxSchema'
 import { initInitNetworkTx } from '../../../../../src/types/ajv/InitNetworkTxSchema'
+import { initContractCallReq } from '../../../../../src/types/ajv/ContractCallSchema'
 import Ajv from 'ajv'
 
 jest.mock('../../../../../src/utils/serialization/SchemaHelpers', () => ({
   getVerifyFunction: jest.fn(),
+  addSchema: jest.fn(),
 }))
 
 jest.mock('../../../../../src/types/ajv/InjectTxReq', () => ({
@@ -92,6 +94,10 @@ jest.mock('../../../../../src/types/ajv/TransferFromSecureAccountTxSchema', () =
   initTransferFromSecureAccountTx: jest.fn(),
 }))
 
+jest.mock('../../../../../src/types/ajv/ContractCallSchema', () => ({
+  initContractCallReq: jest.fn(),
+}))
+
 jest.mock('../../../../../src/types/ajv/UnstakeTxSchema', () => ({
   initUnstakeTx: jest.fn(),
 }))
@@ -120,6 +126,7 @@ describe('Ajv Helpers', () => {
       expect(initInitRewardTimesTx).toHaveBeenCalledTimes(1)
       expect(initClaimRewardTx).toHaveBeenCalledTimes(1)
       expect(initTransferFromSecureAccountTx).toHaveBeenCalledTimes(1)
+      expect(initContractCallReq).toHaveBeenCalledTimes(1)
       expect(initUnstakeTx).toHaveBeenCalledTimes(1)
       expect(initInitNetworkTx).toHaveBeenCalledTimes(1)
     })

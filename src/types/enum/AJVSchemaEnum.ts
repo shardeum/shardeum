@@ -24,4 +24,5 @@ export enum AJVSchemaEnum {
   NodeRewardTxData = 'NodeRewardTxData',
   NodeInitTxData = 'NodeInitTxData',
   InitRewardTimesTx = 'InitRewardTimesTx',
+  ContractCallReq = 'ContractCallReq',
 }
