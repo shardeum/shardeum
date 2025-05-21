@@ -70,7 +70,6 @@ export interface ShardeumFlags {
   minNodesEVMtx: number
   checkNodesEVMtx: boolean
   allowForceUnstake: boolean
-  ClaimRewardRetryCount: number
   shardeumTimeout: number
   FailedTxLinearBackOffConstantInSecs: number
   fixExtraStakeLessThanMin: boolean
@@ -194,7 +193,6 @@ export const ShardeumFlags: ShardeumFlags = {
   FullCertChecksEnabled: true,
   extraTxTime: 8, // This is to predict the cycleNumber from the tx timestamp + 8s
   minNodesEVMtx: 5,
-  ClaimRewardRetryCount: 20,
   shardeumTimeout: 50000,
   FailedTxLinearBackOffConstantInSecs: 30,
   logServicePointSenders: false,
