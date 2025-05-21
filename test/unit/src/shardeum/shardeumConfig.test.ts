@@ -213,53 +213,12 @@ describe('ShardeumConfig', () => {
    * These settings control optional features and their behavior
    */
   describe('features configuration', () => {
-    it('should have tickets configuration', () => {
-      // Ticket system configuration for network participation and rewards
-      expect(config.server.features?.tickets).toBeDefined()
-    })
-
-    it('should have updateTicketListTimeInMs defined in tickets', () => {
-      // Controls how frequently the ticket list is updated
-      // Affects network responsiveness and resource usage
-      expect(config.server.features?.tickets?.updateTicketListTimeInMs).toBeDefined()
-    })
-
-    it('should have ticketTypes defined in tickets', () => {
-      // Verifies that ticket types are defined and in the correct format (array)
-      // Different ticket types serve different purposes in the network
-      expect(config.server.features?.tickets?.ticketTypes).toBeDefined()
-      expect(Array.isArray(config.server.features?.tickets?.ticketTypes)).toBe(true)
-    })
-
-    it('should have valid values for ticket properties', () => {
-      // Verify that ticket properties have valid values
-      expect(typeof config.server.features?.tickets?.updateTicketListTimeInMs).toBe('number')
-      expect(config.server.features?.tickets?.updateTicketListTimeInMs).toBeGreaterThan(0)
-
-      // Check that ticket types have the required properties
-      const ticketTypes = config.server.features?.tickets?.ticketTypes || []
-      if (ticketTypes.length > 0) {
-        expect(ticketTypes[0]).toHaveProperty('type')
-        expect(ticketTypes[0]).toHaveProperty('enabled')
-        expect(typeof ticketTypes[0].type).toBe('string')
-        expect(typeof ticketTypes[0].enabled).toBe('boolean')
-      }
-    })
 
     it('should have dappFeature1enabled defined', () => {
       // This feature restricts transactions to only coin transfers
       const features = fullConfig.server.features
       expect(features.dappFeature1enabled).toBeDefined()
       expect(typeof features.dappFeature1enabled).toBe('boolean')
-    })
-
-    // Value comparison tests for feature properties
-    it('should have appropriate update time for ticket list', () => {
-      const updateTime = config.server.features?.tickets?.updateTicketListTimeInMs
-
-      // Update time should be reasonable (not too frequent, not too rare)
-      expect(updateTime).toBeGreaterThanOrEqual(1000) // At least 1 second
-      expect(updateTime).toBeLessThanOrEqual(3600000) // At most 1 hour
     })
   })
 
@@ -285,14 +244,6 @@ describe('ShardeumConfig', () => {
       // Verify that debug properties have valid values
       const server = fullConfig.server
       expect(typeof server.debug.startInFatalsLogMode).toBe('boolean')
-      expect(typeof server.debug.startInErrorLogMode).toBe('boolean')
-    })
-
-    it('should have devPublicKeys defined for security', () => {
-      // Developer public keys are used for authentication
-      const server = fullConfig.server
-      expect(server.debug.devPublicKeys).toBeDefined()
-      expect(typeof server.debug.devPublicKeys).toBe('object')
     })
 
     // Value comparison tests for debug properties

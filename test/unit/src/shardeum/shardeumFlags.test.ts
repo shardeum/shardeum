@@ -64,7 +64,6 @@ describe('ShardeumFlags', () => {
       // Feature Flags
       expect(ShardeumFlags.unifiedAccountBalanceEnabled).toBeDefined()
       expect(ShardeumFlags.failedStakeReceipt).toBeDefined()
-      expect(ShardeumFlags.ticketTypesEnabled).toBeDefined()
     })
   })
 
@@ -250,7 +249,6 @@ describe('ShardeumFlags', () => {
         expect(ShardeumFlags.rewardedFalseInInitRewardTx).toBe(true)
         expect(ShardeumFlags.totalUnstakeAmount).toBe(true)
         expect(ShardeumFlags.beta1_11_2).toBe(true)
-        expect(ShardeumFlags.ticketTypesEnabled).toBe(false)
       })
     })
 

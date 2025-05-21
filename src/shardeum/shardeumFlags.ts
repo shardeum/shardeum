@@ -125,7 +125,6 @@ export interface ShardeumFlags {
   debugDefaultBalance: string
   disableSmartContractEndpoints: boolean
   debugGlobalAccountUpdateFail: boolean
-  ticketTypesEnabled: boolean
   debugTxEnabled: boolean
   enableArchiverNetworkAccountValidation: boolean
   accessListSizeLimit: number
@@ -292,7 +291,6 @@ export const ShardeumFlags: ShardeumFlags = {
   debugDefaultBalance: '100', //In debug mode the default value is 100 SHM.  This is needed for certain load test operations
   disableSmartContractEndpoints: true, // Disable smart contract read endpoints by default
   debugGlobalAccountUpdateFail: false,
-  ticketTypesEnabled: false,
   debugTxEnabled: false,
   enableArchiverNetworkAccountValidation: false, //  Enable/disable network account basic validations from archiver
   accessListSizeLimit: 5,

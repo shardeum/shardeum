@@ -15,9 +15,6 @@
       "nodesPerConsensusGroup": 10
     },
     "features": {
-      "tickets": {
-        "updateTicketListTimeInMs": 300000
-      }
     },
     "mode": "debug",
     "debug": {
