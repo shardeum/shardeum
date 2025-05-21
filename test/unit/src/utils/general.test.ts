@@ -126,6 +126,15 @@ describe('getRandom', () => {
 
         expect(result).toEqual([])
     })
+
+    it('should handle negative n by returning an empty array', () => {
+        const arr = [1, 2, 3]
+        const n = -2
+
+        expect(() => getRandom(arr, n)).not.toThrow()
+        const result = getRandom(arr, n)
+        expect(result).toEqual([])
+    })
 })
 
 describe('isWithinRange', () => {
