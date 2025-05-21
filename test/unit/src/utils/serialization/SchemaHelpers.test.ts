@@ -4,11 +4,13 @@ import {
   getVerifyFunction,
   addSchema,
   initializeSerialization,
+  clearSchemas,
 } from '../../../../../src/utils/serialization/SchemaHelpers'
 
 describe('SchemaHelpers', () => {
   beforeEach(() => {
     // Clear any existing schemas between tests
+    clearSchemas()
     jest.clearAllMocks()
   })
 
@@ -31,12 +33,11 @@ describe('SchemaHelpers', () => {
       expect(ajvSpy).toHaveBeenCalledTimes(2)
     })
 
-    // TODO: fix the code to handle empty schema map gracefully.  cant test this until we expose schemaMap
-    // it('should handle empty schema map gracefully', () => {
-    //   const ajvSpy = jest.spyOn(Ajv.prototype, 'addSchema')
-    //   initializeSerialization()
-    //   expect(ajvSpy).not.toHaveBeenCalled()
-    // })
+    it('should handle empty schema map gracefully', () => {
+      const ajvSpy = jest.spyOn(Ajv.prototype, 'addSchema')
+      initializeSerialization()
+      expect(ajvSpy).not.toHaveBeenCalled()
+    })
   })
 
   describe('addSchema and getVerifyFunction', () => {
