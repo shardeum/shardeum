@@ -1,4 +1,5 @@
 #!/bin/bash
+set -euo pipefail
 
 # Script to run Shardeum with a specific environment configuration
 # This script uses the LOAD_JSON_CONFIGS environment variable to specify the configuration file
@@ -49,4 +50,4 @@ if [ $? -eq 0 ]; then
 else
   echo "Error: Failed to start Shardeum network."
   exit 1
-fi 
+fi
