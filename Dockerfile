@@ -1,5 +1,5 @@
 # Build stage
-FROM node:18.19.1 AS builder
+FROM node:18.20.2 AS builder
 
 WORKDIR /usr/src/app
 
@@ -13,7 +13,7 @@ COPY . .
 RUN npm ci
 
 # Production stage
-FROM node:18.19.1-slim
+FROM node:18.20.2-slim
 
 WORKDIR /usr/src/app
 

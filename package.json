@@ -81,7 +81,7 @@
     "@types/heapdump": "0.3.1",
     "@types/jest": "29.5.13",
     "@types/lodash": "4.14.149",
-    "@types/node": "18.19.1",
+    "@types/node": "18.20.2",
     "@typescript-eslint/eslint-plugin": "5.48.0",
     "@typescript-eslint/parser": "5.48.0",
     "@typescript-eslint/typescript-estree": "6.10.0",
