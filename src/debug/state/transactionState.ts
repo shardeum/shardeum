@@ -843,7 +843,6 @@ export default class TransactionState {
     this.touchedCAs.add(addressString)
   }
 
-  //should go away with SaveEVMTries = false
   async exectutePendingCAStateRoots(): Promise<void> {
     //for all touched CAs,
     // get CA storage trie.
@@ -858,7 +857,6 @@ export default class TransactionState {
     // It could be that this is the right answer for version 1 that is on a single shard anyhow!!
   }
 
-  //should go away with SaveEVMTries = false
   async generateTrieProofs(): Promise<void> {
     //alternative to exectutePendingCAStateRoots
     //in this code we would look at all READ CA keys and create a set of proofs on checkpointed trie.

@@ -272,7 +272,6 @@ describe('ShardeumFlags', () => {
         expect(ShardeumFlags.generateMemoryPatternData).toBe(true)
         expect(ShardeumFlags.labTest).toBe(false)
         expect(ShardeumFlags.AppliedTxsMaps).toBe(false)
-        expect(ShardeumFlags.SaveEVMTries).toBe(false)
         expect(ShardeumFlags.CheckpointRevertSupport).toBe(true)
         expect(ShardeumFlags.disableSmartContractEndpoints).toBe(true)
         expect(ShardeumFlags.accessListSizeLimit).toBe(5)

@@ -45,7 +45,6 @@ export interface ShardeumFlags {
   forwardGenesisAccounts: boolean // To send accounts from consensor rather than pulling from archiver
   UseDBForAccounts: boolean //Use Sql to store in memory accounts instead of simple accounts object map
   AppliedTxsMaps: boolean
-  SaveEVMTries: boolean //deprecated.  this was an old option to save evm tries
   ChainID: number // The EVM chain ID.  used by CHAINID opcode.
   CheckpointRevertSupport: boolean
   UseTXPreCrack: boolean
@@ -156,7 +155,6 @@ export const ShardeumFlags: ShardeumFlags = {
   forwardGenesisAccounts: true,
   UseDBForAccounts: true,
   AppliedTxsMaps: false,
-  SaveEVMTries: false,
   ChainID: process.env.CHAIN_ID ? parseInt(process.env.CHAIN_ID) : 8082,
   CheckpointRevertSupport: true,
   UseTXPreCrack: true,

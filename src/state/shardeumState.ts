@@ -98,7 +98,6 @@ export default class ShardeumState implements EVMStateManagerInterface {
 
   _transactionState: TransactionState
 
-  //TODO remvoe this once SaveEVMTries option goes away
   _trie: Trie
 
   // protected _storageTries: { [key: string]: Trie }
@@ -802,7 +801,6 @@ export default class ShardeumState implements EVMStateManagerInterface {
     this._touched.clear()
 
     // not sure yet if we need to implement this..
-    //throw new Error('cleanupTouchedAccounts not implemented yet when SaveEVMTries === false')
     return
 
     // TODO do we need to bring back some of this functionality?
