@@ -287,6 +287,11 @@ describe('Cache', () => {
       // Verify original state
       expect(cache.get(address1).balance).toEqual(BigInt(100))
     })
+
+    test('should not throw when reverting without a checkpoint', () => {
+      expect(() => cache.revert()).not.toThrow()
+      expect(cache._cache).toBeDefined()
+    })
   })
   
   describe('commit method', () => {
