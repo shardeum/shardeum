@@ -7,7 +7,7 @@ import { AccountsEntry } from './storage'
 import * as WrappedEVMAccountFunctions from '../shardeum/wrappedEVMAccountFunctions'
 import { Utils } from '@shardeum-foundation/lib-types'
 
-export async function getCachedRIAccount(address: string): Promise<WrappedEVMAccount> {
+export async function getCachedRIAccount(address: string): Promise<WrappedEVMAccount | undefined> {
   if (ShardeumFlags.enableRIAccountsCache === false || isServiceMode()) return
   try {
     if (ShardeumFlags.UseDBForAccounts === true) {
