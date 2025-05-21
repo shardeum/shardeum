@@ -1,6 +1,6 @@
 export { Bloom } from './bloom/index.js'
 export { BlockBuilder, BuildStatus } from './buildBlock.js'
-export { encodeReceipt } from './runBlock.js'
+export { encodeReceipt } from '@ethereumjs/vm/dist/esm/runBlock.js'
 export * from './types.js'
 import { VM } from './vm.js'
 import { ShardeumFlags } from '../shardeum/shardeumFlags'
