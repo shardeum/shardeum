@@ -87,6 +87,14 @@ export LOAD_JSON_CONFIGS=/Users/john/Desktop/projects/shardeum/debug-10-nodes.co
 
 Learn more about the different config options [here](local-environment-setup.md)
 
+You can also use the convenience script to start a local network with 10 nodes:
+
+```bash
+./scripts/run-env.sh local 10
+```
+
+See [environments/README.md](environments/README.md) for details.
+
 4. Compile project
 
 ```bash
