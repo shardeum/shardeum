@@ -104,7 +104,7 @@ export const shardusPutToNode = async <ResponseType>(
  * @param req
  * @returns
  */
-export function getUserIp(req): string {
+export function getUserIp(req): string | null {
   if (req == null) {
     return null
   }
@@ -122,7 +122,7 @@ export function getUserIp(req): string {
  * @param req
  * @returns
  */
-export function unsafeGetClientIp(req): string {
+export function unsafeGetClientIp(req): string | null {
   if (req == null) {
     return null
   }
@@ -136,5 +136,5 @@ export function unsafeGetClientIp(req): string {
     clientIp = req.connection ? req.connection.remoteAddress : null
   }
   // make sure we return a string or null
-  return clientIp as string
+  return clientIp
 }
