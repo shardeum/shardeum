@@ -245,6 +245,9 @@ export let adminCert: AdminCert = null
 
 const uuidCounter = 1
 
+// Allow a small drift when comparing unstake transaction timestamps
+const UNSTAKE_TIMESTAMP_DRIFT = 5 * ONE_SECOND
+
 interface DependenciesVersions {
   [key: string]: {
     version: string
@@ -4498,13 +4501,32 @@ const shardusSetup = (): void => {
         // get unstake tx from appData.internalTx
         const unstakeCoinsTX: UnstakeCoinsTX = appData.internalTx
 
-        // todo: validate tx timestamp, compare timestamp against account's timestamp
+        // validate tx timestamp against account timestamps
 
         // set stake value, nominee, cert in OperatorAcc (if not set yet)
         const operatorShardusAddress = toShardusAddress(unstakeCoinsTX.nominator, AccountType.Account)
         const nomineeNodeAccount2Address = unstakeCoinsTX.nominee
         // eslint-disable-next-line security/detect-object-injection
         const operatorEVMAccount: WrappedEVMAccount = wrappedStates[operatorShardusAddress].data as WrappedEVMAccount
+
+        // eslint-disable-next-line security/detect-object-injection
+        const nodeAccount2: NodeAccount2 = wrappedStates[nomineeNodeAccount2Address].data as NodeAccount2
+
+        if (
+          txTimestamp < operatorEVMAccount.timestamp - UNSTAKE_TIMESTAMP_DRIFT ||
+          txTimestamp < nodeAccount2.timestamp - UNSTAKE_TIMESTAMP_DRIFT
+        ) {
+          nestedCountersInstance.countEvent(
+            'shardeum-unstaking',
+            'unstake tx timestamp older than account timestamp'
+          )
+          shardus.applyResponseSetFailed(
+            applyResponse,
+            'Transaction timestamp older than account timestamp'
+          )
+          return applyResponse
+        }
+
         operatorEVMAccount.timestamp = txTimestamp
 
         if (operatorEVMAccount.operatorAccountInfo == null) {
@@ -4525,9 +4547,6 @@ const shardusSetup = (): void => {
             `Unable to apply Unstake tx because stake cert has not yet expired. Expiry timestamp ${operatorEVMAccount.operatorAccountInfo.certExp}`
           )
         }
-
-        // eslint-disable-next-line security/detect-object-injection
-        const nodeAccount2: NodeAccount2 = wrappedStates[nomineeNodeAccount2Address].data as NodeAccount2
 
         const currentBalance = operatorEVMAccount.account.balance
         const stake = BigInt(operatorEVMAccount.operatorAccountInfo.stake)

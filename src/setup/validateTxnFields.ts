@@ -28,6 +28,7 @@ import {
   isStakingEVMTx,
   formatErrorMessage,
 } from '../utils'
+import { ONE_SECOND } from '../shardeum/shardeumConstants'
 import {
   crypto,
   getInjectedOrGeneratedTimestamp,
@@ -73,6 +74,9 @@ const txTypeToAJVMap = {
 }
 
 let finalMultisigPermissions = multisigPermissions
+
+// Allow a small drift when comparing unstake transaction timestamps
+const UNSTAKE_TIMESTAMP_DRIFT = 5 * ONE_SECOND
 
 /* eslint-disable security/detect-non-literal-fs-filename */
 /* eslint-disable security/detect-object-injection */
@@ -553,7 +557,15 @@ export const validateTxnFields =
             reason = `This sender account is not found!`
           } else if (appData.nomineeAccount) {
             const nodeAccount = appData.nomineeAccount as NodeAccount2
-            if (!nodeAccount.nominator) {
+            const nominatorAccount = appData.nominatorAccount as WrappedEVMAccount
+
+            if (
+              txnTimestamp < nominatorAccount.timestamp - UNSTAKE_TIMESTAMP_DRIFT ||
+              txnTimestamp < nodeAccount.timestamp - UNSTAKE_TIMESTAMP_DRIFT
+            ) {
+              success = false
+              reason = `Transaction timestamp older than account timestamp`
+            } else if (!nodeAccount.nominator) {
               success = false
               reason = `No one has staked to this account!`
             } else if (_base16BNParser(nodeAccount.stakeLock) === BigInt(0)) {
