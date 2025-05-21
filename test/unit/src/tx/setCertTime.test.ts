@@ -9,6 +9,7 @@ import { getNodeAccountWithRetry, InjectTxToConsensor } from '../../../../src/ha
 import { verify } from '../../../../src/setup/helpers'
 import { isInternalTx } from '../../../../src/setup/helpers'
 import { shardeumGetTime } from '../../../../src/index'
+import { generateTxId, sleep } from '../../../../src/utils'
 import * as WrappedEVMAccountFunctions from '../../../../src/shardeum/wrappedEVMAccountFunctions'
 
 // Mock dependencies
@@ -31,6 +32,10 @@ jest.mock('../../../../src/index', () => ({
         shardedCache: false,
         console: false
     }
+}))
+jest.mock('../../../../src/utils', () => ({
+    ...jest.requireActual('../../../../src/utils'),
+    sleep: jest.fn(),
 }))
 jest.mock('../../../../src/setup/helpers')
 jest.mock('../../../../src/shardeum/wrappedEVMAccountFunctions', () => ({
@@ -213,6 +218,7 @@ describe('setCertTime', () => {
 
                 // mock For shardeumGetTime
                 ; (shardeumGetTime as jest.Mock).mockReturnValue(Date.now())
+                ;(sleep as jest.Mock).mockResolvedValue(undefined)
         })
 
         it('should successfully inject SetCertTime transaction', async () => {
@@ -240,6 +246,37 @@ describe('setCertTime', () => {
             const result = await injectSetCertTimeTx(mockShardus, mockPublicKey, mockActiveNodes)
             expect(result.success).toBe(false)
             expect(result.reason).toContain('Nominator for this node account')
+        })
+
+        it('should produce identical tx hash across nodes', async () => {
+            const originalFlag = ShardeumFlags.txHashingFix
+            ShardeumFlags.txHashingFix = true
+            const cycle = { start: 0, duration: 10, counter: 1 }
+
+            const shardusA: jest.Mocked<Shardus> = {
+                signAsNode: jest.fn((tx) => tx),
+                getLatestCycles: jest.fn(() => [cycle]),
+            } as any
+            const shardusB: jest.Mocked<Shardus> = {
+                signAsNode: jest.fn((tx) => tx),
+                getLatestCycles: jest.fn(() => [cycle]),
+            } as any
+
+            ;(shardeumGetTime as jest.Mock).mockReturnValue(5000)
+            ;(sleep as jest.Mock).mockResolvedValue(undefined)
+
+            await injectSetCertTimeTx(shardusA, mockPublicKey, mockActiveNodes)
+            await injectSetCertTimeTx(shardusB, mockPublicKey, mockActiveNodes)
+
+            const txA = shardusA.signAsNode.mock.calls[0][0]
+            const txB = shardusB.signAsNode.mock.calls[0][0]
+
+            expect(txA.timestamp).toBe(txB.timestamp)
+            const hashA = generateTxId(txA)
+            const hashB = generateTxId(txB)
+            expect(hashA).toBe(hashB)
+
+            ShardeumFlags.txHashingFix = originalFlag
         })
     })
 
