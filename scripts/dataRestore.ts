@@ -59,10 +59,11 @@ async function exportData(
   const targetDB = await createTargetDB(targetDBPath)
   let totalDBRowCount = 0
   let totalJSONRowCount = 0
+  const seenTxIds = new Set<string>()
 
   //for every db found in the root directory, export the rows to a single DB.
   for (const dbFile of dbFiles) {
-    totalDBRowCount += await writeDBToTarget(dbFile, targetDB, batchSize)
+    totalDBRowCount += await writeDBToTarget(dbFile, targetDB, batchSize, seenTxIds)
   }
   await targetDB.close()
 
@@ -79,7 +80,7 @@ async function exportData(
 /* writeDBToTarget combines all the rows from all the source databases in to a single sqliteDB.
    This is required in future and also used as a way to dedupe rows too when exporting to JSON.
  */
-async function writeDBToTarget(dbFile, targetDB, batchSize) {
+async function writeDBToTarget(dbFile, targetDB, batchSize, seenTxIds: Set<string>) {
   console.log('exporting db ', dbFile)
   let rowCount = 0
   let sourceDB = getDB(dbFile)
@@ -91,11 +92,16 @@ async function writeDBToTarget(dbFile, targetDB, batchSize) {
 
       await run(targetDB, 'BEGIN TRANSACTION')
       for (let account of accounts) {
-        const dataStr = Utils.safeStringify(Utils.safeJsonParse(account.data)).replace(/'/g, "''")
-        let insertQuery = `INSERT INTO accountsEntry (accountId, timestamp, data) VALUES (?, ?, ?)`
-        await run(targetDB, insertQuery, [account.accountId, account.timestamp, dataStr])
+        const dataObj = Utils.safeJsonParse(account.data)
+        const txId = dataObj.txId || dataObj.hash
+        if (txId && !seenTxIds.has(txId)) {
+          seenTxIds.add(txId)
+          const dataStr = Utils.safeStringify(dataObj).replace(/'/g, "''")
+          let insertQuery = `INSERT INTO accountsEntry (accountId, timestamp, txId, data) VALUES (?, ?, ?, ?)`
+          await run(targetDB, insertQuery, [account.accountId, account.timestamp, txId, dataStr])
+          rowCount++
+        }
         latestAccountId = account.accountId
-        rowCount++
       }
       await run(targetDB, 'COMMIT')
 
@@ -168,10 +174,12 @@ async function createTargetDB(targetDBPath: string) {
   console.log('creating new database')
   const targetDB = new sqlite3.Database(targetDBPath)
   targetDB.run(
-    'CREATE TABLE if not exists `accountsEntry` (`accountId` VARCHAR(255) NOT NULL, `timestamp` BIGINT NOT NULL, `data` JSON NOT NULL, PRIMARY KEY (`accountId`))'
+    'CREATE TABLE if not exists `accountsEntry` (`accountId` VARCHAR(255) NOT NULL, `timestamp` BIGINT NOT NULL, `txId` VARCHAR(255) NOT NULL, `data` JSON NOT NULL, PRIMARY KEY (`accountId`))'
   )
   await sleep(1000)
   targetDB.run('CREATE INDEX IF NOT EXISTS timestamp1 ON accountsEntry(timestamp)')
+  await sleep(1000)
+  targetDB.run('CREATE UNIQUE INDEX IF NOT EXISTS txIdIdx ON accountsEntry(txId)')
   await sleep(1000)
   console.log('created new target database at', targetDBPath)
   return targetDB

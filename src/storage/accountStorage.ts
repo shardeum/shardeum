@@ -125,6 +125,7 @@ export async function setAccount(address: string, account: WrappedEVMAccount): P
       const accountEntry = {
         accountId: address,
         timestamp: account.timestamp,
+        txId: (account as WrappedEVMAccount).txId || (account as WrappedEVMAccount).hash,
         data: account,
       }
 

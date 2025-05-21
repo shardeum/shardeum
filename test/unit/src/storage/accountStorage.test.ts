@@ -218,11 +218,13 @@ describe('accountStorage', () => {
 
       await setAccount(mockAddress, mockWrappedAccount)
 
-      expect(mockStorageInstance.createOrReplaceAccountEntry).toHaveBeenCalledWith({
-        accountId: mockAddress,
-        timestamp: mockWrappedAccount.timestamp,
-        data: mockWrappedAccount,
-      })
+      expect(mockStorageInstance.createOrReplaceAccountEntry).toHaveBeenCalledWith(
+        expect.objectContaining({
+          accountId: mockAddress,
+          timestamp: mockWrappedAccount.timestamp,
+          data: mockWrappedAccount,
+        })
+      )
     })
 
     it('should handle debugGlobalAccountUpdateFail flag', async () => {
