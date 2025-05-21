@@ -1,16 +1,16 @@
 {
   "server": {
     "p2p": {
-      "baselineNodes": 200,
-      "minNodes": 200,
+      "baselineNodes": 20,
+      "minNodes": 20,
       "maxNodes": 1280,
       "syncingDesiredMinCount": 5,
       "flexibleRotationDelta": 4,
-      "formingNodesPerCycle": 200,
+      "formingNodesPerCycle": 20,
       "allowEndUserTxnInjections": true
     },
     "sharding": {
-      "nodesPerConsensusGroup": 32
+      "nodesPerConsensusGroup": 10
     },
     "mode": "debug",
     "debug": {
