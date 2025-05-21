@@ -7,6 +7,7 @@ import {
   accountExists,
   getAccountTimestamp,
   clearAccounts,
+  fetchAccountDataFromCollector,
 } from '../../../../src/storage/accountStorage'
 import { ShardeumFlags } from '../../../../src/shardeum/shardeumFlags'
 import { WrappedEVMAccount, AccountType } from '../../../../src/shardeum/shardeumTypes'
@@ -200,6 +201,27 @@ describe('accountStorage', () => {
 
       expect(mockStorageInstance.getAccountsEntry).toHaveBeenCalledWith(mockAddress)
       expect(result).toBeUndefined()
+    })
+  })
+
+  describe('fetchAccountDataFromCollector', () => {
+    it('should return null when accounts is undefined', async () => {
+      const mockResponse: AxiosResponse = {
+        data: {
+          success: true,
+          accounts: undefined as any,
+        },
+        status: 200,
+        statusText: 'OK',
+        headers: {},
+        config: {} as any,
+      }
+
+      mockShardusGet.mockResolvedValue(mockResponse)
+
+      await expect(
+        fetchAccountDataFromCollector(mockAddress, '0x1')
+      ).resolves.toBeNull()
     })
   })
 
