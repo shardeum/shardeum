@@ -319,19 +319,14 @@ describe('setCertTime', () => {
             expect(result.reason).toBe('valid')
         })
 
-        // TODO: Potentially a bug. validateSetCertTimeState() is not able to handle the 
-        // edge case wrapped states does not have the operator account. Even if the passed wrapped
-        // states array is supposed to have all accounts, the validateSetCertTimeState function should be 
-        // able to handle the case where the operator account is not found. Currently it will just break
-
-        // it('should reject when operator account is not found', () => {
-        //     const states = { ...mockWrappedStates }
-        //     const operatorAddress = toShardusAddress(validTx.nominator, AccountType.Account)
-        //     delete states[operatorAddress]
-        //     const result = validateSetCertTimeState(validTx, states)
-        //     expect(result.result).toBe('fail')
-        //     expect(result.reason).toContain('Found no wrapped state for operator account')
-        // })
+        it('should reject when operator account is not found', () => {
+            const states = { ...mockWrappedStates }
+            const operatorAddress = toShardusAddress(validTx.nominator, AccountType.Account)
+            delete states[operatorAddress]
+            const result = validateSetCertTimeState(validTx, states)
+            expect(result.result).toBe('fail')
+            expect(result.reason).toContain('Found no wrapped state for operator account')
+        })
 
         it('should reject when nominee mismatch', () => {
             const tx = { ...validTx, nominee: '0x9999' }
