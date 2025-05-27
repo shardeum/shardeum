@@ -5,7 +5,7 @@
       "minNodes": 20,
       "maxNodes": 1280,
       "syncingDesiredMinCount": 5,
-      "flexibleRotationDelta": 4,
+      "flexibleRotationDelta": 0,
       "formingNodesPerCycle": 20,
       "allowEndUserTxnInjections": true
     },
