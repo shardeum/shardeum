@@ -59,7 +59,7 @@ import { fixDeserializedWrappedEVMAccount } from './shardeum/wrappedEVMAccountFu
 import { getAccountShardusAddress } from './shardeum/evmAddress'
 import { Utils } from '@shardeum-foundation/lib-types'
 import { isSetCertTimeTx } from './tx/setCertTime'
-import { ShardusTypes, DebugComplete } from '@shardeum-foundation/core'
+import { ShardusTypes, DebugComplete, Shardus } from '@shardeum-foundation/core'
 import {
   AccountType,
   InternalTXType,
@@ -98,11 +98,11 @@ import { onActiveVersionChange } from './versioning'
 export { sync, validateTransaction, validateTxnFields }
 
 export const setupConfig = {
-    sync: sync(shardus, evmCommon),
+    sync: null as any, // Will be initialized in shardusSetup()
     //validateTransaction is not a standard sharus function.  When we cleanup index.ts we need to move it out of here
     //also appdata and wrapped accounts should be passed in?
-    validateTransaction: validateTransaction(shardus),
-    validateTxnFields: validateTxnFields(shardus, debugAppdata),
+    validateTransaction: null as any, // Will be initialized in shardusSetup()
+    validateTxnFields: null as any, // Will be initialized in shardusSetup()
     isDestLimitTx,
     isInternalTx,
     validate(timestampedTx: ShardusTypes.OpaqueTransaction, appData): {success: boolean, reason: string, status: number} {
@@ -1703,6 +1703,16 @@ export const setupConfig = {
 }
 
 export const shardusSetup = (): void => {
+  // Initialize functions that depend on shardus and evmCommon
+  // Import evmCommon from index to ensure it's initialized
+  const { evmCommon: evmCommonInstance, shardus: shardusInstance, debugAppdata: debugAppdataInstance } = require('./index')
+  
+  // Create a sync function that Shardus can call directly
+  // The sync function factory returns a function, so we call it immediately to get the actual sync function
+  setupConfig.sync = sync(shardusInstance, evmCommonInstance)
+  setupConfig.validateTransaction = validateTransaction(shardusInstance)
+  setupConfig.validateTxnFields = validateTxnFields(shardusInstance, debugAppdataInstance)
+  
   /**
    * interface tx {
    *   type: string
