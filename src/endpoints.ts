@@ -1,5 +1,64 @@
+import { LegacyTxData, AccessListEIP2930Transaction, LegacyTransaction, TransactionFactory, TransactionType } from '@ethereumjs/tx'
+import { Address, Account, bigIntToHex, isHexPrefixed, toBytes, bytesToHex, isHexString } from '@ethereumjs/util'
+import { ShardeumFlags, updateServicePoints, updateShardeumFlag } from './shardeum/shardeumFlags'
+import { blocks, latestBlock, readableBlocks, logFlags, EVM, evmCommon, shardus, shardeumGetTime, blocksByHash, debugServicePointsByType, debugServicePointSpendersByType, isDebugMode, isArchiverMode, stakeCert, adminCert, updateStakeCert, updateAdminCert, genesisAccounts, isReadyToJoinLatestValue, shardusAddressToEVMAccountInfo, shardeumStateTXMap, createBlock, debugAppdata, ShardusTypes } from './index'
+import { secureAccountDataMap } from './shardeum/secureAccounts'
+import { toShardusAddress, toShardusAddressWithKey } from './shardeum/evmAddress'
+import { AccountType, WrappedEVMAccount } from './shardeum/shardeumTypes'
+import { isServiceMode, getCallTXState, getPreRunTXState, getTransactionObj, _internalHackPostWithResp } from './index'
+import { isStakingEVMTx, getTxSenderAddress, isInSenderCache, removeTxFromSenderCache } from './utils'
+import * as AccountsStorage from './storage/accountStorage'
+import { fixDeserializedWrappedEVMAccount } from './shardeum/wrappedEVMAccountFunctions'
+import { EVM as EthereumVirtualMachine } from './evm_v2'
+import { EVMResult } from './evm_v2/types'
+import { nestedCountersInstance } from '@shardeum-foundation/core'
+import { oneSHM, networkAccount } from './shardeum/shardeumConstants'
+import { Utils } from '@shardeum-foundation/lib-types'
+import { crypto, isInternalTx, getInjectedOrGeneratedTimestamp } from './setup/helpers'
+import { unsafeGetClientIp } from './utils/requests'
+import { generateAccessList } from './accesslist'
+import { getAccountData } from './utils/account'
+import { P2P } from '@shardeum-foundation/lib-types'
+import { formatErrorMessage, scaleByStabilityFactor, _readableSHM, calculateGasPrice, replacer, convertBigIntsToHex } from './utils'
+import { verifyPayload } from './types/ajv/Helpers'
+import { AJVSchemaEnum } from './types/enum/AJVSchemaEnum'
+import { isStakeUnlocked, isRestakingAllowed } from './tx/staking/verifyStake'
+import { Request, Response } from 'express'
+import { exec } from 'child_process'
+import { arch, cpus, freemem, totalmem, platform } from 'os'
+import { getShardusDependenciesVersions } from './index'
+import { shardusConfig } from './index'
+import { runWithContextAsync } from './utils/RequestContext'
+import { TicketTypes, doesTransactionSenderHaveTicketType } from './setup/ticket-manager'
+import { getExternalApiMiddleware } from './middleware/externalApiMiddleware'
+import { CertSignaturesResult, queryCertificateHandler, StakeCert, ValidatorError } from './handlers/queryCertificate'
+import { putAdminCertificateHandler, PutAdminCertResult, AdminCert } from './handlers/adminCertificate'
+import { ServerMode } from '@shardeum-foundation/core/dist/shardus/shardus-types'
+import config from './config'
+
+// Module-level variables
+const pointsAverageInterval = 2 // seconds
+const servicePointSpendHistory: { points: number; ts: number }[] = []
+let debugLastTotalServicePoints = 0
+let debugTotalServicePointRequests = 0
+const ERC20_BALANCEOF_CODE = '0x70a08231'
+const ERC20TokenBalanceMap: {
+  to: string
+  data: unknown
+  timestamp: number
+  result: unknown
+}[] = []
+const ERC20TokenCacheSize = 1000
+
+function debug_map_replacer(key: any, value: any): any {
+  if (value instanceof Map) {
+    return Object.fromEntries(value)
+  }
+  return value
+}
+
 export const endpoints = {
-  async function estimateGas(
+  async estimateGas(
     injectedTx: { from: string; maxFeePerGas: string; gas: number } & LegacyTxData
   ): Promise<{ estimateGas: string }> {
     const originalInjectedTx = { ...injectedTx }
@@ -164,7 +223,7 @@ export const endpoints = {
     // That can lead to higher gasUsed during execution than the actual gasUsed
     const estimate = runTxResult.totalGasSpent + (runTxResult.execResult.gasRefund ?? BigInt(0))
     return { estimateGas: bigIntToHex(estimate) }
-  }
+  },
   
   /**
    * Allows us to attempt to spend points.  We have ShardeumFlags.ServicePointsPerSecond
@@ -172,7 +231,7 @@ export const endpoints = {
    * @param points
    * @returns
    */
-  function trySpendServicePoints(points: number, req, key: string): boolean {
+  trySpendServicePoints(points: number, req, key: string): boolean {
     if (isServiceMode()) return true
     const nowTs = shardeumGetTime()
     const maxAge = 1000 * pointsAverageInterval
@@ -232,9 +291,9 @@ export const endpoints = {
   
     nestedCountersInstance.countEvent('shardeum-service-points', 'pass: points available to spend')
     return true
-  }
+  },
 
-    const configShardusEndpoints = (): void => {
+  configShardusEndpoints(): void {
       const debugMiddleware = shardus.getDebugModeMiddleware()
       const debugMiddlewareLow = shardus.getDebugModeMiddlewareLow()
       const debugMiddlewareMedium = shardus.getDebugModeMiddlewareMedium()
@@ -252,7 +311,7 @@ export const endpoints = {
             return
           }
           const points = Number(req.query.points ?? ShardeumFlags.ServicePoints['debug-points'])
-          if (trySpendServicePoints(points, null, 'debug-points') === false) {
+          if (this.trySpendServicePoints(points, null, 'debug-points') === false) {
             res.json({ error: 'node busy', points, servicePointSpendHistory, debugLastTotalServicePoints })
             return
           }
@@ -338,7 +397,7 @@ export const endpoints = {
         }
       })
     
-      async function handleInject(tx, appData, res, ipAddress?: string): Promise<void> {
+      const handleInject = async (tx, appData, res, ipAddress?: string): Promise<void> => {
         if (ShardeumFlags.VerboseLogs) console.log('Transaction injected:', new Date(), tx)
     
         const nodeId = shardus.getNodeId()
@@ -650,7 +709,7 @@ export const endpoints = {
     
       shardus.registerExternalGet('canUnstake/:nominee/:nominator', externalApiMiddleware, async (req, res) => {
         if (
-          trySpendServicePoints(ShardeumFlags.ServicePoints['canUnstake/:nominee/:nominator'], req, 'canUnstake') === false
+          this.trySpendServicePoints(ShardeumFlags.ServicePoints['canUnstake/:nominee/:nominator'], req, 'canUnstake') === false
         ) {
           res.json({ error: 'node busy' })
           return
@@ -685,7 +744,7 @@ export const endpoints = {
       })
     
       shardus.registerExternalGet('canStake/:nominee', externalApiMiddleware, async (req, res) => {
-        if (trySpendServicePoints(ShardeumFlags.ServicePoints['canStake/:nominee'], req, 'canStake') === false) {
+        if (this.trySpendServicePoints(ShardeumFlags.ServicePoints['canStake/:nominee'], req, 'canStake') === false) {
           res.json({ error: 'node busy' })
           return
         }
@@ -835,7 +894,7 @@ export const endpoints = {
       })
     
       shardus.registerExternalGet('account/:address', externalApiMiddleware, async (req, res) => {
-        if (trySpendServicePoints(ShardeumFlags.ServicePoints['account/:address'], req, 'account') === false) {
+        if (this.trySpendServicePoints(ShardeumFlags.ServicePoints['account/:address'], req, 'account') === false) {
           res.json({ error: 'node busy' })
           return
         }
@@ -855,7 +914,7 @@ export const endpoints = {
           return
         }
     
-        if (trySpendServicePoints(ShardeumFlags.ServicePoints['eth_getCode'], req, 'account') === false) {
+        if (this.trySpendServicePoints(ShardeumFlags.ServicePoints['eth_getCode'], req, 'account') === false) {
           res.json({ error: 'node busy' })
           return
         }
@@ -906,7 +965,7 @@ export const endpoints = {
       })
     
       shardus.registerExternalGet('eth_gasPrice', externalApiMiddleware, async (req, res) => {
-        if (trySpendServicePoints(ShardeumFlags.ServicePoints['eth_gasPrice'], req, 'account') === false) {
+        if (this.trySpendServicePoints(ShardeumFlags.ServicePoints['eth_gasPrice'], req, 'account') === false) {
           res.json({ error: 'node busy' })
           return
         }
@@ -932,7 +991,7 @@ export const endpoints = {
           res.json({ result: null, error: 'Smart contract endpoints are disabled' })
           return
         }
-        if (trySpendServicePoints(ShardeumFlags.ServicePoints['contract/call'].endpoint, req, 'call-endpoint') === false) {
+        if (this.trySpendServicePoints(ShardeumFlags.ServicePoints['contract/call'].endpoint, req, 'call-endpoint') === false) {
           res.json({ result: null, error: 'node busy' })
           return
         }
@@ -1020,7 +1079,7 @@ export const endpoints = {
           }
     
           // if we are going to handle the call directly charge 20 points.
-          if (trySpendServicePoints(ShardeumFlags.ServicePoints['contract/call'].direct, req, 'call-direct') === false) {
+          if (this.trySpendServicePoints(ShardeumFlags.ServicePoints['contract/call'].direct, req, 'call-direct') === false) {
             res.json({ result: null, error: 'node busy' })
             return
           }
@@ -1132,7 +1191,7 @@ export const endpoints = {
           return
         }
         if (
-          trySpendServicePoints(ShardeumFlags.ServicePoints['contract/accesslist'].endpoint, req, 'accesslist') === false
+          this.trySpendServicePoints(ShardeumFlags.ServicePoints['contract/accesslist'].endpoint, req, 'accesslist') === false
         ) {
           res.json({ result: null, error: 'node busy' })
           return
@@ -1157,7 +1216,7 @@ export const endpoints = {
           return
         }
         if (
-          trySpendServicePoints(ShardeumFlags.ServicePoints['contract/accesslist'].endpoint, req, 'accesslist') === false
+          this.trySpendServicePoints(ShardeumFlags.ServicePoints['contract/accesslist'].endpoint, req, 'accesslist') === false
         ) {
           res.json({ result: null, error: 'node busy' })
           return
@@ -1198,7 +1257,7 @@ export const endpoints = {
           }
         }
         if (
-          trySpendServicePoints(ShardeumFlags.ServicePoints['contract/estimateGas'].endpoint, req, 'estimateGas') === false
+          this.trySpendServicePoints(ShardeumFlags.ServicePoints['contract/estimateGas'].endpoint, req, 'estimateGas') === false
         ) {
           res.json({ result: null, error: 'node busy' })
           return
@@ -1208,7 +1267,7 @@ export const endpoints = {
           const injectedTx = req.body
           if (ShardeumFlags.VerboseLogs) console.log('EstimateGas endpoint injectedTx', injectedTx)
     
-          const result = await estimateGas(injectedTx)
+          const result = await this.estimateGas(injectedTx)
     
           res.json(result)
         } catch (e) {
@@ -1225,7 +1284,7 @@ export const endpoints = {
       })
     
       shardus.registerExternalGet('tx/:hash', externalApiMiddleware, async (req, res) => {
-        if (trySpendServicePoints(ShardeumFlags.ServicePoints['tx/:hash'], req, 'tx') === false) {
+        if (this.trySpendServicePoints(ShardeumFlags.ServicePoints['tx/:hash'], req, 'tx') === false) {
           res.json({ error: 'node busy' })
           return
         }
@@ -1455,7 +1514,7 @@ export const endpoints = {
           if (ShardeumFlags.VerboseLogs) console.log('queryCertRes', queryCertRes)
           if (queryCertRes.success) {
             const successRes = queryCertRes as CertSignaturesResult
-            stakeCert = successRes.signedStakeCert
+            updateStakeCert(successRes.signedStakeCert)
             /* prettier-ignore */ nestedCountersInstance.countEvent('shardeum-staking', `queryCertificateHandler success`)
           } else {
             /* prettier-ignore */ nestedCountersInstance.countEvent('shardeum-staking', `queryCertificateHandler failed with reason: ${(queryCertRes as ValidatorError).reason}`)
@@ -1507,7 +1566,7 @@ export const endpoints = {
           /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log('certRes', certRes)
           if (certRes.success) {
             const successRes = certRes as PutAdminCertResult
-            adminCert = successRes.signedAdminCert
+            updateAdminCert(successRes.signedAdminCert)
             /* prettier-ignore */ nestedCountersInstance.countEvent('shardeum-admin-certificate', `putAdminCertificateHandler success`)
           } else {
             /* prettier-ignore */ nestedCountersInstance.countEvent('shardeum-admin-certificate', `putAdminCertificateHandler failed with reason: ${(certRes as ValidatorError).reason}`)

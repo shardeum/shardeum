@@ -14,6 +14,8 @@ import {
   hexToBytes,
   isHexString,
 } from '@ethereumjs/util'
+// Re-export for split modules
+export { Address, bytesToHex, hexToBytes }
 import {
   AccessListEIP2930Transaction,
   LegacyTransaction,
@@ -38,8 +40,12 @@ import {
   Shardus,
   DevSecurityLevel,
 } from '@shardeum-foundation/core'
+// Re-export types needed by split modules
+export { ShardusTypes, nestedCountersInstance, DebugComplete }
 import { ContractByteWrite, WarmupStats } from './state/transactionState'
 import { version, devDependencies, dependencies } from '../package.json'
+// Re-export version for split modules
+export { version }
 import {
   AccountType,
   AppJoinData,
@@ -79,8 +85,14 @@ import {
   WrappedEVMAccount,
   WrappedStates,
 } from './shardeum/shardeumTypes'
+// Re-export for split modules
+export { isNodeAccount2 }
 import { getAccountShardusAddress, toShardusAddress, toShardusAddressWithKey } from './shardeum/evmAddress'
+// Re-export for split modules
+export { toShardusAddress, toShardusAddressWithKey }
 import { FilePaths, ShardeumFlags, updateServicePoints, updateShardeumFlag } from './shardeum/shardeumFlags'
+// Re-export for split modules
+export { ShardeumFlags }
 import * as WrappedEVMAccountFunctions from './shardeum/wrappedEVMAccountFunctions'
 import { fixDeserializedWrappedEVMAccount, predictContractAddressDirect } from './shardeum/wrappedEVMAccountFunctions'
 import {
@@ -108,9 +120,15 @@ import {
   isStakingEVMTx,
   convertBigIntsToHex,
 } from './utils'
+// Re-export for split modules
+export { generateTxId, isStakingEVMTx, _base16BNParser, scaleByStabilityFactor, fixBigIntLiteralsToBigInt, formatErrorMessage, getTxSenderAddress, _readableSHM, operatorCLIVersion, operatorGUIVersion }
 
 import { meetsMinimumVersion, isWithinMaximumVersion, VersionValidationResult } from '@shardeum-foundation/core'
+// Re-export for split modules
+export { meetsMinimumVersion, isWithinMaximumVersion, VersionValidationResult }
 import config, { Config } from './config'
+// Re-export for split modules
+export { config }
 import Wallet from 'ethereumjs-wallet'
 import { Block } from '@ethereumjs/block'
 import { ShardeumBlock } from './block/blockchain'
@@ -128,6 +146,8 @@ import {
   StakeCert,
   ValidatorError,
 } from './handlers/queryCertificate'
+// Re-export for split modules
+export { InjectTxToConsensor }
 import * as InitRewardTimesTx from './tx/initRewardTimes'
 import * as PenaltyTx from './tx/penalty/transaction'
 import {
@@ -139,11 +159,15 @@ import {
   verifyMultiSigs,
   verify,
 } from './setup/helpers'
+// Re-export crypto and others for split modules
+export { crypto, verifyMultiSigs }
 import { onActiveVersionChange } from './versioning'
 import { shardusFactory } from '@shardeum-foundation/core'
 import { unsafeGetClientIp } from './utils/requests'
 import { initialNetworkParamters } from './shardeum/initialNetworkParameters'
 import { oneSHM, networkAccount, ONE_SECOND } from './shardeum/shardeumConstants'
+// Re-export networkAccount for split modules
+export { networkAccount }
 import { applyPenaltyTX, clearOldPenaltyTxs } from './tx/penalty/transaction'
 import { getFinalArchiverList, setupArchiverDiscovery } from '@shardeum-foundation/lib-archiver-discovery'
 import { Archiver } from '@shardeum-foundation/lib-archiver-discovery/dist/src/types'
@@ -158,6 +182,8 @@ import { getExternalApiMiddleware } from './middleware/externalApiMiddleware'
 import { AccountsEntry } from './storage/storage'
 import { getCachedRIAccount, setCachedRIAccount } from './storage/riAccountsCache'
 import { isLowStake } from './tx/penalty/penaltyFunctions'
+// Re-export for split modules
+export { isLowStake }
 import { accountDeserializer, accountSerializer } from './types/Helpers'
 import { runWithContextAsync } from './utils/RequestContext'
 import { Utils } from '@shardeum-foundation/lib-types'
@@ -165,6 +191,8 @@ import { SafeBalance } from './utils/safeMath'
 import { isRestakingAllowed, isStakeUnlocked, verifyStakeTx, verifyUnstakeTx } from './tx/staking/verifyStake'
 import { AJVSchemaEnum } from './types/enum/AJVSchemaEnum'
 import { filterObjectByWhitelistedProps, initAjvSchemas, verifyPayload } from './types/ajv/Helpers'
+// Re-export for split modules
+export { verifyPayload }
 import { Sign, ServerMode } from '@shardeum-foundation/core/dist/shardus/shardus-types'
 
 import { safeStringify } from '@shardeum-foundation/lib-types/build/src/utils/functions/stringify'
@@ -184,7 +212,16 @@ import { buildFetchNetworkAccountFromArchiver } from './shardeum/services/networ
 import { customGot } from './utils/customHttpFunctions'
 import { logEnvSetup } from './setup/environment'
 
-let latestBlock = 0
+// Import split modules
+import { endpoints } from './endpoints'
+import { joinFunctions } from './join'
+import { generateAccessList } from './accesslist'
+import { applyInternalTx, applyDebugTx, createInternalTxReceipt } from './internal'
+// Re-export createInternalTxReceipt for other modules
+export { createInternalTxReceipt }
+import { shardusSetup } from './setup'
+
+export let latestBlock = 0
 export const blocks: BlockMap = {}
 export const blocksByHash: { [hash: string]: number } = {}
 export const readableBlocks: { [blockNumber: number | string]: ShardeumBlockOverride } = {}
@@ -202,8 +239,8 @@ export let genesisAccounts: string[] = []
 
 const ERC20_BALANCEOF_CODE = '0x70a08231'
 
-let shardus: Shardus
-let profilerInstance
+export let shardus: Shardus
+export let profilerInstance
 
 //   next shardus core will export the correct type
 export let logFlags = {
@@ -217,6 +254,9 @@ export let logFlags = {
   aalg: false,
   debug: false,
 }
+
+// Export EVM and related variables for split modules
+export let shardeumBlock: ShardeumBlock
 
 // Read the CLI and GUI versions and save them in memory
 readOperatorVersions()
@@ -240,8 +280,16 @@ let lastCertTimeTxTimestamp = 0
 let lastCertTimeTxCycle: number | null = null
 
 export let stakeCert: StakeCert = null
-
 export let adminCert: AdminCert = null
+
+// Update functions for mutable exports
+export function updateStakeCert(cert: StakeCert): void {
+  stakeCert = cert
+}
+
+export function updateAdminCert(cert: AdminCert): void {
+  adminCert = cert
+}
 
 const uuidCounter = 1
 
@@ -254,7 +302,7 @@ interface DependenciesVersions {
 
 let shardusDependenciesVersions: DependenciesVersions = null
 
-function isDebugMode(): boolean {
+export function isDebugMode(): boolean {
   return config.server.mode === 'debug'
 }
 
@@ -277,18 +325,18 @@ const servicePointSpendHistory: { points: number; ts: number }[] = []
 let debugLastTotalServicePoints = 0
 
 //debug map of map. The outer key is the service point type, the inner key is the request ip, the value is the number of points spent
-const debugServicePointSpendersByType: Map<string, Map<string, number>> = new Map()
+export const debugServicePointSpendersByType: Map<string, Map<string, number>> = new Map()
 //debug map of service point types and the number of points spent
-const debugServicePointsByType: Map<string, number> = new Map()
+export const debugServicePointsByType: Map<string, number> = new Map()
 //total number of service points spent, since we last cleared or started the capturing data
 let debugTotalServicePointRequests = 0
 
 //latest value from isReadyToJoin function call
-let isReadyToJoinLatestValue = false
+export let isReadyToJoinLatestValue = false
 //used only for when the nework is...
-let isAdminCertUnexpired = false
+// isAdminCertUnexpired is now managed in join.ts, use getIsAdminCertUnexpired()
 
-let appStartupTimestamp = 0
+export let appStartupTimestamp = 0
 
 function pruneOldBlocks(): void {
   /* eslint-disable security/detect-object-injection */
@@ -362,7 +410,7 @@ function createAndRecordBlock(blockNumber: number, timestamp: number): Block {
   /* eslint-enable security/detect-object-injection */
 }
 
-function createBlock(timestamp: number, blockNumber: number): Block {
+export function createBlock(timestamp: number, blockNumber: number): Block {
   const timestampInSecond = timestamp ? Math.round(timestamp / 1000) : Math.round(shardeumGetTime() / 1000)
   const blockData = {
     header: { number: blockNumber, timestamp: timestampInSecond },
@@ -378,7 +426,7 @@ export function setGenesisAccounts(accounts = []): void {
 }
 
 // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
-function getShardusDependenciesVersions() {
+export function getShardusDependenciesVersions() {
   // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
   const isShardus = ([key, value]) => key.startsWith('@shardeum-foundation')
 
@@ -416,8 +464,8 @@ if (ShardeumFlags.UseDBForAccounts === true) {
 //let accounts: WrappedEVMAccountMap = {} //relocated
 
 //may need these later.  if so, move to DB
-const appliedTxs = {} //this appears to be unused. will it still be unused if we use receipts as app data
-const shardusTxIdToEthTxId = {} //this appears to only support appliedTxs
+export const appliedTxs = {} //this appears to be unused. will it still be unused if we use receipts as app data
+export const shardusTxIdToEthTxId = {} //this appears to only support appliedTxs
 
 //In debug mode the default value is 100 SHM.  This is needed for certain load test operations
 const defaultBalance = isDebugMode() ? oneSHM * BigInt(100) : BigInt(0)
@@ -437,21 +485,20 @@ interface RunStateWithLogs extends RunState {
   logs?: []
 }
 
-let EVM: { -readonly [P in keyof VM] }
-let shardeumBlock: ShardeumBlock
+export let EVM: { -readonly [P in keyof VM] }
 //let transactionStateMap:Map<string, TransactionState>
 
 //Per TX or Eth call shardeum State.  Note the key is the shardus transaction id
-let shardeumStateTXMap: Map<string, ShardeumState>
+export let shardeumStateTXMap: Map<string, ShardeumState>
 //let shardeumStateCallMap:Map<string, ShardeumState>
 //let shardeumStatePool:ShardeumState[]
 // const debugShardeumState: ShardeumState = null
 
 /** This map is bad and needs to be phased out in favor of data we use in app data */
-let shardusAddressToEVMAccountInfo: Map<string, EVMAccountInfo>
+export let shardusAddressToEVMAccountInfo: Map<string, EVMAccountInfo>
 export let evmCommon
 
-let debugAppdata: Map<string, unknown>
+export let debugAppdata: Map<string, unknown>
 
 //todo refactor some object init into here
 async function initEVMSingletons(): Promise<void> {
@@ -773,7 +820,7 @@ export function getStakeTxBlobFromEVMTx(
   return Utils.safeJsonParse(stakeTxString)
 }
 
-async function createAccount(
+export async function createAccount(
   addressStr: string,
   stateManager: ShardeumState,
   balance: bigint = defaultBalance
@@ -804,7 +851,7 @@ async function createAccount(
   return wrappedEVMAccount
 }
 
-function getTransactionObj(tx): Transaction[TransactionType.Legacy] | Transaction[TransactionType.AccessListEIP2930] {
+export function getTransactionObj(tx): Transaction[TransactionType.Legacy] | Transaction[TransactionType.AccessListEIP2930] {
   if (!tx.raw) throw Error('fail')
   let transactionObj
   const serializedInput = toBytes(tx.raw)
@@ -855,7 +902,7 @@ export async function getReadableAccountInfo(account: WrappedEVMAccount): Promis
  * ?? will this work
  * @returns
  */
-function getCallTXState(): ShardeumState {
+export function getCallTXState(): ShardeumState {
   const txId = '9'.repeat(64) // use different txId than debug txs
   if (ShardeumFlags.VerboseLogs) console.log('Creating a call tx ShardeumState for ', txId)
 
@@ -879,7 +926,7 @@ function getCallTXState(): ShardeumState {
   return shardeumState
 }
 
-function getPreRunTXState(txId: string): ShardeumState {
+export function getPreRunTXState(txId: string): ShardeumState {
   if (ShardeumFlags.VerboseLogs) console.log('Creating a call tx ShardeumState for ', txId)
 
   const shardeumState = new ShardeumState({ common: evmCommon })
@@ -935,7 +982,7 @@ export function getApplyTXState(txId: string): ShardeumState {
  * @param txId
  * @param context must be a non format string to avoid counter spam
  */
-function deleteApplyTXState(txId: string, context: string): void {
+export function deleteApplyTXState(txId: string, context: string): void {
   if (shardeumStateTXMap.has(txId)) {
     nestedCountersInstance.countEvent('shardeum', `deleteApplyTXState ${context}`)
     shardeumStateTXMap.delete(txId)
@@ -953,7 +1000,7 @@ function _normalizeUrl(url: string): string {
   return normalized
 }
 
-async function _internalHackPostWithResp(url: string, body): Promise<GotResponse<any>> {
+export async function _internalHackPostWithResp(url: string, body): Promise<GotResponse<any>> {
   const normalized = _normalizeUrl(url)
 
   try {
@@ -1270,405 +1317,7 @@ const configShardusNetworkTransactions = (): void => {
   )
 }
 
-/*** |an
- *    #### ##    ## ######## ######## ########  ##    ##    ###    ##          ######## ##     ##
- *     ##  ###   ##    ##    ##       ##     ## ###   ##   ## ##   ##             ##     ##   ##
- *     ##  ####  ##    ##    ##       ##     ## ####  ##  ##   ##  ##             ##      ## ##
- *     ##  ## ## ##    ##    ######   ########  ## ## ## ##     ## ##             ##       ###
- *     ##  ##  ####    ##    ##       ##   ##   ##  #### ######### ##             ##      ## ##
- *     ##  ##   ###    ##    ##       ##    ##  ##   ### ##     ## ##             ##     ##   ##
- *    #### ##    ##    ##    ######## ##     ## ##    ## ##     ## ########       ##    ##     ##
- */
-
-/**
- * Applies an internal transaction to the given wrapped states and returns an apply response.
- *
- * @param tx - The internal transaction to be applied.
- * @param wrappedStates - The current state of the wrapped accounts.
- * @param txTimestamp - The timestamp of the transaction.
- * @returns A promise that resolves to a ShardusTypes.ApplyResponse object.
- *
- * The function handles different types of internal transactions:
- * - `SetGlobalCodeBytes`: Updates the timestamp of the wrapped EVM account and optionally creates an internal transaction receipt.
- * - `InitNetwork`: Initializes the network account and optionally creates an internal transaction receipt.
- * - `ChangeConfig`: Schedules a configuration change to be applied at a future cycle and optionally creates an internal transaction receipt.
- * - `ApplyChangeConfig`: Applies a scheduled configuration change to the network account and optionally creates an internal transaction receipt.
- * - `ChangeNetworkParam`: Schedules a network parameter change to be applied at a future cycle and optionally creates an internal transaction receipt.
- * - `ApplyNetworkParam`: Applies a scheduled network parameter change to the network account and optionally creates an internal transaction receipt.
- * - `SetCertTimeTx`: Applies a certificate time transaction.
- * - `InitRewardTimes`: Initializes reward times.
- * - `ClaimReward`: Applies a claim reward transaction.
- * - `Penalty`: Applies a penalty transaction.
- * - `TransferFromSecureAccount`: Applies a transfer from a secure account transaction.
- */
-async function applyInternalTx(
-  tx: InternalTx,
-  wrappedStates: WrappedStates,
-  txTimestamp: number
-): Promise<ShardusTypes.ApplyResponse> {
-  const txId = generateTxId(tx)
-  const applyResponse: ShardusTypes.ApplyResponse = shardus.createApplyResponse(txId, txTimestamp)
-  const internalTx = tx as InternalTx
-  if (internalTx.internalTXType === InternalTXType.SetGlobalCodeBytes) {
-    // eslint-disable-next-line security/detect-object-injection
-    const wrappedEVMAccount: WrappedEVMAccount = wrappedStates[internalTx.from].data
-    //just update the timestamp?
-    wrappedEVMAccount.timestamp = txTimestamp
-    //I think this will naturally accomplish the goal of the global update.
-
-    //need to run this to fix buffer types after serialization
-    fixDeserializedWrappedEVMAccount(wrappedEVMAccount)
-    if (ShardeumFlags.supportInternalTxReceipt) {
-      createInternalTxReceipt(shardus, applyResponse, internalTx, networkAccount, networkAccount, txTimestamp, txId)
-    }
-  }
-
-  if (internalTx.internalTXType === InternalTXType.InitNetwork) {
-    // eslint-disable-next-line security/detect-object-injection
-    const network: NetworkAccount = wrappedStates[networkAccount].data
-    if (ShardeumFlags.useAccountWrites) {
-      // eslint-disable-next-line security/detect-object-injection
-      const writtenAccount = wrappedStates[networkAccount]
-      writtenAccount.data.timestamp = txTimestamp
-      const wrappedChangedAccount = WrappedEVMAccountFunctions._shardusWrappedAccount(writtenAccount.data)
-      shardus.applyResponseAddChangedAccount(
-        applyResponse,
-        networkAccount,
-        wrappedChangedAccount as ShardusTypes.WrappedResponse,
-        txId,
-        txTimestamp
-      )
-    } else {
-      network.timestamp = txTimestamp
-    }
-    if (ShardeumFlags.supportInternalTxReceipt) {
-      createInternalTxReceipt(shardus, applyResponse, internalTx, networkAccount, networkAccount, txTimestamp, txId)
-    }
-    /* prettier-ignore */ if (logFlags.important_as_error) console.log(`init_network NETWORK_ACCOUNT: ${Utils.safeStringify(network)}`)
-    /* prettier-ignore */ if (logFlags.important_as_error) shardus.log('Applied init_network transaction', network)
-  }
-  if (internalTx.internalTXType === InternalTXType.ChangeConfig) {
-    /* eslint-disable security/detect-object-injection */
-    // const network: NetworkAccount = wrappedStates[networkAccount].data
-    // const devAccount: DevAccount = wrappedStates[internalTx.from].data
-    /* eslint-enable security/detect-object-injection */
-
-    let changeOnCycle
-    let cycleData: ShardusTypes.Cycle
-
-    //NEED to sign with dev key (probably check this in validate() )
-
-    if (internalTx.cycle === -1) {
-      ;[cycleData] = shardus.getLatestCycles()
-      changeOnCycle = cycleData.counter + 3
-    } else {
-      changeOnCycle = internalTx.cycle
-    }
-
-    const when = txTimestamp + ONE_SECOND * 10
-    // value is the TX that will apply a change to the global network account 0000x0000
-    const value = {
-      isInternalTx: true,
-      internalTXType: InternalTXType.ApplyChangeConfig,
-      timestamp: when,
-      from: internalTx.from,
-      network: networkAccount,
-      change: { cycle: changeOnCycle, change: Utils.safeJsonParse(internalTx.config) },
-    }
-
-    // if (ShardeumFlags.useAccountWrites) {
-    //   /* eslint-disable security/detect-object-injection */
-    //   const networkAccountCopy = wrappedStates[networkAccount]
-    //   const devAccountCopy = wrappedStates[internalTx.from]
-    //   /* eslint-enable security/detect-object-injection */
-    //   networkAccountCopy.data.timestamp = txTimestamp
-    //   devAccountCopy.data.timestamp = txTimestamp
-    //   shardus.applyResponseAddChangedAccount(
-    //     applyResponse,
-    //     networkAccount,
-    //     networkAccountCopy as ShardusTypes.WrappedResponse,
-    //     txId,
-    //     txTimestamp
-    //   )
-    //   shardus.applyResponseAddChangedAccount(
-    //     applyResponse,
-    //     internalTx.from,
-    //     devAccountCopy as ShardusTypes.WrappedResponse,
-    //     txId,
-    //     txTimestamp
-    //   )
-    // } else {
-    //   network.timestamp = txTimestamp
-    //   devAccount.timestamp = txTimestamp
-    // }
-
-    // eslint-disable-next-line security/detect-object-injection
-    const addressHash = wrappedStates[networkAccount].stateId
-    // eslint-disable-next-line security/detect-object-injection
-
-    // Create a copy of the network account to apply modifications and determine the resulting state.
-    const networkAccountCopy = wrappedStates[networkAccount]
-    networkAccountCopy.data.timestamp = when
-    networkAccountCopy.data.listOfChanges.push(value.change)
-    const wrappedChangedAccount = WrappedEVMAccountFunctions._shardusWrappedAccount(networkAccountCopy.data)
-    //value = wrappedChangedAccount
-    const afterStateHash = wrappedChangedAccount.stateId // this is the hash of the network account after it has been modified with a change
-
-    const ourAppDefinedData = applyResponse.appDefinedData as OurAppDefinedData
-    // network will consens that this is the correct value
-    ourAppDefinedData.globalMsg = {
-      address: networkAccount,
-      addressHash,
-      value,
-      when,
-      source: value.from,
-      afterStateHash: afterStateHash,
-    }
-    if (ShardeumFlags.supportInternalTxReceipt) {
-      createInternalTxReceipt(shardus, applyResponse, internalTx, internalTx.from, networkAccount, txTimestamp, txId)
-    }
-    /* prettier-ignore */ if (logFlags.important_as_error) console.log('Applied change_config tx')
-    /* prettier-ignore */ if (logFlags.important_as_error) shardus.log('Applied change_config tx')
-  }
-  if (internalTx.internalTXType === InternalTXType.ApplyChangeConfig) {
-    // eslint-disable-next-line security/detect-object-injection
-    const network: NetworkAccount = wrappedStates[networkAccount].data
-
-    if (ShardeumFlags.useAccountWrites) {
-      // eslint-disable-next-line security/detect-object-injection
-      const networkAccountCopy = wrappedStates[networkAccount]
-      networkAccountCopy.data.timestamp = txTimestamp
-      networkAccountCopy.data.listOfChanges.push(internalTx.change)
-      const wrappedChangedAccount = WrappedEVMAccountFunctions._shardusWrappedAccount(networkAccountCopy.data)
-      shardus.applyResponseAddChangedAccount(
-        applyResponse,
-        networkAccount,
-        wrappedChangedAccount as ShardusTypes.WrappedResponse,
-        txId,
-        txTimestamp
-      )
-    } else {
-      network.timestamp = txTimestamp
-      network.listOfChanges.push(internalTx.change)
-    }
-    /* prettier-ignore */ if (logFlags.important_as_error) console.log(`Applied CHANGE_CONFIG GLOBAL transaction: ${Utils.safeStringify(network)}`)
-    /* prettier-ignore */ if (logFlags.important_as_error) shardus.log('Applied CHANGE_CONFIG GLOBAL transaction', Utils.safeStringify(network))
-    if (ShardeumFlags.supportInternalTxReceipt) {
-      createInternalTxReceipt(shardus, applyResponse, internalTx, internalTx.from, networkAccount, txTimestamp, txId)
-    }
-  }
-  if (internalTx.internalTXType === InternalTXType.ChangeNetworkParam) {
-    let changeOnCycle
-    let cycleData: ShardusTypes.Cycle
-
-    if (internalTx.cycle === -1) {
-      ;[cycleData] = shardus.getLatestCycles()
-      changeOnCycle = cycleData.counter + 1
-    } else {
-      changeOnCycle = internalTx.cycle
-    }
-
-    const when = txTimestamp + ONE_SECOND * 10
-    // value is the TX that will apply a change to the global network account 0000x0000
-    const value = {
-      isInternalTx: true,
-      internalTXType: InternalTXType.ApplyNetworkParam,
-      timestamp: when,
-      from: internalTx.from,
-      network: networkAccount,
-      change: { cycle: changeOnCycle, change: {}, appData: Utils.safeJsonParse(internalTx.config) },
-    }
-
-    // eslint-disable-next-line security/detect-object-injection
-    const addressHash = wrappedStates[networkAccount].stateId
-    // eslint-disable-next-line security/detect-object-injection
-
-    // Create a copy of the network account to apply modifications and determine the resulting state.
-    const networkAccountCopy = wrappedStates[networkAccount]
-    networkAccountCopy.data.timestamp = when
-    networkAccountCopy.data.listOfChanges.push(value.change)
-    const wrappedChangedAccount = WrappedEVMAccountFunctions._shardusWrappedAccount(networkAccountCopy.data)
-    //value = wrappedChangedAccount
-    const afterStateHash = wrappedChangedAccount.stateId // this is the hash of the network account after it has been modified with a change
-
-    const ourAppDefinedData = applyResponse.appDefinedData as OurAppDefinedData
-    // network will consens that this is the correct value
-    ourAppDefinedData.globalMsg = {
-      address: networkAccount,
-      addressHash,
-      value,
-      when,
-      source: value.from,
-      afterStateHash: afterStateHash,
-    }
-    if (ShardeumFlags.supportInternalTxReceipt) {
-      createInternalTxReceipt(shardus, applyResponse, internalTx, internalTx.from, networkAccount, txTimestamp, txId)
-    }
-    /* prettier-ignore */ if (logFlags.important_as_error) console.log('Applied change_network_param tx')
-    /* prettier-ignore */ if (logFlags.important_as_error) shardus.log('Applied change_network_param tx')
-  }
-  if (internalTx.internalTXType === InternalTXType.ApplyNetworkParam) {
-    // eslint-disable-next-line security/detect-object-injection
-    const network: NetworkAccount = wrappedStates[networkAccount].data
-
-    if (ShardeumFlags.useAccountWrites) {
-      // eslint-disable-next-line security/detect-object-injection
-      const networkAccountCopy = wrappedStates[networkAccount]
-      networkAccountCopy.data.timestamp = txTimestamp
-      networkAccountCopy.data.listOfChanges.push(internalTx.change)
-      const wrappedChangedAccount = WrappedEVMAccountFunctions._shardusWrappedAccount(networkAccountCopy.data)
-      shardus.applyResponseAddChangedAccount(
-        applyResponse,
-        networkAccount,
-        wrappedChangedAccount as ShardusTypes.WrappedResponse,
-        txId,
-        txTimestamp
-      )
-    } else {
-      network.timestamp = txTimestamp
-      network.listOfChanges.push(internalTx.change)
-    }
-    if (ShardeumFlags.supportInternalTxReceipt) {
-      createInternalTxReceipt(shardus, applyResponse, internalTx, internalTx.from, networkAccount, txTimestamp, txId)
-    }
-    /* prettier-ignore */ if (logFlags.important_as_error) console.log(`Applied CHANGE_NETWORK_PARAM GLOBAL transaction: ${Utils.safeStringify(network)}`)
-    /* prettier-ignore */ if (logFlags.important_as_error) shardus.log('Applied CHANGE_NETWORK_PARAM GLOBAL transaction', Utils.safeStringify(network))
-  }
-  if (isSetCertTimeTx(internalTx)) {
-    const setCertTimeTx = internalTx as SetCertTime
-    applySetCertTimeTx(shardus, setCertTimeTx, wrappedStates, txId, txTimestamp, applyResponse)
-  }
-  if (internalTx.internalTXType === InternalTXType.InitRewardTimes) {
-    const rewardTimesTx = internalTx as InitRewardTimes
-    InitRewardTimesTx.apply(shardus, rewardTimesTx, txId, txTimestamp, wrappedStates, applyResponse)
-  }
-  if (internalTx.internalTXType === InternalTXType.ClaimReward) {
-    const claimRewardTx = internalTx as ClaimRewardTX
-    try {
-      await applyClaimRewardTx(
-        shardus,
-        claimRewardTx,
-        wrappedStates,
-        txId,
-        txTimestamp,
-        applyResponse,
-        isAdminCertUnexpired
-      )
-    } catch (error) {
-      /* prettier-ignore */ if (logFlags.error) console.error('Error in applyClaimRewardTX', error)
-      shardus.applyResponseSetFailed(
-        applyResponse,
-        `applyClaimRewardTX failed for nominee: ${claimRewardTx.nominee}, reason: ${error?.message ?? error}`
-      )
-    }
-  }
-  if (internalTx.internalTXType === InternalTXType.Penalty) {
-    const penaltyTx = internalTx as PenaltyTX
-    try {
-      await applyPenaltyTX(shardus, penaltyTx, wrappedStates, txId, txTimestamp, applyResponse)
-    } catch (error) {
-      /* prettier-ignore */ if (logFlags.error) console.error('Error in applyPenaltyTX', error)
-      shardus.applyResponseSetFailed(
-        applyResponse,
-        `applyPenaltyTX failed for reportedNode: ${penaltyTx.reportedNodePublickKey}, reason: ${
-          error?.message ?? error
-        }`
-      )
-    }
-  }
-  if (internalTx.internalTXType === InternalTXType.TransferFromSecureAccount) {
-    await applyTransferFromSecureAccount(internalTx, txId, txTimestamp, wrappedStates, shardus, applyResponse)
-  }
-  return applyResponse
-}
-
-export const createInternalTxReceipt = (
-  shardus,
-  applyResponse: ShardusTypes.ApplyResponse,
-  internalTx: InternalTx,
-  from: string,
-  to: string,
-  txTimestamp: number,
-  txId: string,
-  amountSpent = bigIntToHex(BigInt(0)),
-  rewardAmount?: bigint,
-  penaltyAmount?: bigint,
-  secureAccountName?: string
-): void => {
-  const blockForReceipt = getOrCreateBlockFromTimestamp(txTimestamp)
-  const blockNumberForTx = blockForReceipt.header.number.toString()
-  const readableReceipt: ReadableReceipt = {
-    status: 1,
-    transactionHash: '0x' + txId,
-    transactionIndex: '0x1',
-    // eslint-disable-next-line security/detect-object-injection
-    blockNumber: readableBlocks[blockNumberForTx]?.number,
-    nonce: '0x0',
-    blockHash: readableBlocks[blockNumberForTx]?.hash, // eslint-disable-line security/detect-object-injection
-    cumulativeGasUsed: '0x0',
-    gasUsed: '0x0',
-    gasRefund: '0x0',
-    logs: [],
-    logsBloom: '',
-    contractAddress: null,
-    from,
-    to,
-    value: '0x0',
-    data: '0x0',
-    isInternalTx: true,
-    internalTx: { ...internalTx, sign: null },
-    ...(rewardAmount !== undefined && { rewardAmount }),
-    ...(penaltyAmount !== undefined && { penaltyAmount }),
-    ...(secureAccountName !== undefined && { secureAccountName }),
-  }
-
-  const wrappedReceiptAccount = {
-    timestamp: txTimestamp,
-    ethAddress: '0x' + txId,
-    hash: '',
-    receipt: null,
-    readableReceipt,
-    amountSpent,
-    txId: txId,
-    accountType: ShardeumFlags.addInternalTxReceiptAccount ? AccountType.InternalTxReceipt : AccountType.Receipt,
-    txFrom: readableReceipt.from,
-  }
-  const receiptShardusAccount = WrappedEVMAccountFunctions._shardusWrappedAccount(wrappedReceiptAccount)
-  shardus.applyResponseAddReceiptData(applyResponse, receiptShardusAccount, crypto.hashObj(receiptShardusAccount))
-}
-
-async function applyDebugTx(
-  debugTx: DebugTx,
-  wrappedStates: WrappedStates,
-  txTimestamp: number
-): Promise<ShardusTypes.ApplyResponse> {
-  /* eslint-disable security/detect-object-injection */
-  if (ShardeumFlags.VerboseLogs) console.log('Applying debug transaction', debugTx)
-  if (debugTx.debugTXType === DebugTXType.Create) {
-    const fromShardusAddress = toShardusAddress(debugTx.from, AccountType.Debug)
-    const wrappedEVMAccount: WrappedEVMAccount = wrappedStates[fromShardusAddress].data
-    wrappedEVMAccount.timestamp = txTimestamp
-    wrappedEVMAccount.balance += 1
-    fixDeserializedWrappedEVMAccount(wrappedEVMAccount)
-  } else if (debugTx.debugTXType === DebugTXType.Transfer) {
-    const fromAddress = toShardusAddress(debugTx.from, AccountType.Debug)
-    const toAddress = toShardusAddress(debugTx.to, AccountType.Debug)
-    const fromAccount: WrappedEVMAccount = wrappedStates[fromAddress].data
-    const toAccount: WrappedEVMAccount = wrappedStates[toAddress].data
-    fromAccount.timestamp = txTimestamp
-    toAccount.timestamp = txTimestamp
-    fromAccount.balance -= 1
-    toAccount.balance += 1
-    fixDeserializedWrappedEVMAccount(fromAccount)
-    fixDeserializedWrappedEVMAccount(toAccount)
-  }
-
-  const txId = generateTxId(debugTx)
-  return shardus.createApplyResponse(txId, txTimestamp)
-  /* eslint-enable security/detect-object-injection */
-}
-
-function setGlobalCodeByteUpdate(
+export function setGlobalCodeByteUpdate(
   txTimestamp: number,
   wrappedEVMAccount: WrappedEVMAccount,
   applyResponse: ShardusTypes.ApplyResponse
@@ -1700,7 +1349,7 @@ function setGlobalCodeByteUpdate(
   }
 }
 
-async function _transactionReceiptPass(
+export async function _transactionReceiptPass(
   tx,
   txId: string,
   wrappedStates: WrappedStates,
@@ -1776,7 +1425,7 @@ async function _transactionReceiptPass(
   }
 }
 
-const getNetworkAccount = async (): Promise<ShardusTypes.WrappedData> => {
+export const getNetworkAccount = async (): Promise<ShardusTypes.WrappedData> => {
   const globalAccount = shardusConfig.globalAccount
   const wrappedEVMAccount = await AccountsStorage.getAccount(globalAccount)
   if (!wrappedEVMAccount) return null
@@ -1827,7 +1476,7 @@ export const createNetworkAccount = async (
   return account
 }
 
-const createNodeAccount2 = (accountId: string): NodeAccount2 => {
+export const createNodeAccount2 = (accountId: string): NodeAccount2 => {
   const nodeAccount: NodeAccount2 = {
     id: accountId,
     hash: '',
@@ -1855,7 +1504,7 @@ const createNodeAccount2 = (accountId: string): NodeAccount2 => {
   return nodeAccount
 }
 
-const getOrCreateBlockFromTimestamp = (timestamp: number, scheduleNextBlock = false): Block => {
+export const getOrCreateBlockFromTimestamp = (timestamp: number, scheduleNextBlock = false): Block => {
   /* eslint-disable security/detect-object-injection */
   if (ShardeumFlags.VerboseLogs) console.log('Getting block from timestamp', timestamp)
   if (ShardeumFlags.VerboseLogs && blocks[latestBlock]) {
@@ -1901,397 +1550,7 @@ const getOrCreateBlockFromTimestamp = (timestamp: number, scheduleNextBlock = fa
 
 type CodeHashObj = { codeHash: string; contractAddress: string }
 
-async function generateAccessList(
-  injectedTx: ShardusTypes.OpaqueTransaction,
-  warmupList: { accessList: any[]; codeHashes: CodeHashObj[] },
-  caller: string
-): Promise<{
-  shardusMemoryPatterns: null
-  failedAccessList?: boolean
-  accessList: any[]
-  codeHashes: CodeHashObj[]
-}> {
-  try {
-    const transaction = getTransactionObj(injectedTx)
-    const caShardusAddress = transaction.to ? toShardusAddress(transaction.to.toString(), AccountType.Account) : null
-
-    if (caShardusAddress != null) {
-      /* prettier-ignore */ if (logFlags.dapp_verbose || logFlags.aalg) console.log('Generating accessList to ', transaction.to.toString(), caShardusAddress)
-
-      const address = caShardusAddress
-      const accountIsRemote = isServiceMode() ? false : shardus.isAccountRemote(address)
-      //ShardeumFlags.debugLocalAALG === false means that we will skip the remote attempt and run it locally
-      if (accountIsRemote && ShardeumFlags.debugLocalAALG === false) {
-        const consensusNode = shardus.getRandomConsensusNodeForAccount(address)
-        /* prettier-ignore */ if (logFlags.dapp_verbose || logFlags.aalg) console.log(`Node is in remote shard: ${consensusNode?.externalIp}:${consensusNode?.externalPort}`)
-        if (consensusNode != null) {
-          /* prettier-ignore */ if (logFlags.dapp_verbose || logFlags.aalg) console.log(`Node is in remote shard: requesting`)
-
-          const postResp = await _internalHackPostWithResp(
-            `${consensusNode.externalIp}:${consensusNode.externalPort}/contract/accesslist-warmup`,
-            { injectedTx, warmupList }
-          )
-          /* prettier-ignore */ if (logFlags.dapp_verbose || logFlags.aalg) console.log('Accesslist response from node', consensusNode.externalPort, postResp.body)
-          if (postResp != null && postResp.body != null && postResp.body != '' && postResp.body.accessList != null) {
-            /* prettier-ignore */ if (logFlags.dapp_verbose || logFlags.aalg) console.log(`Node is in remote shard: gotResp:${Utils.safeStringify(postResp.body)}`)
-            if (Array.isArray(postResp.body.accessList) && postResp.body.accessList.length > 0) {
-              /* prettier-ignore */ nestedCountersInstance.countEvent('accesslist', `remote shard accessList: ${postResp.body.accessList.length} items, success: ${postResp.body.failedAccessList != true}`)
-              let failed = postResp.body.failedAccessList
-              if (postResp.body.codeHashes == null || postResp.body.codeHashes.length == 0) {
-                failed = true
-              }
-              return {
-                accessList: postResp.body.accessList,
-                shardusMemoryPatterns: postResp.body.shardusMemoryPatterns,
-                codeHashes: postResp.body.codeHashes,
-                failedAccessList: failed,
-              }
-            } else {
-              nestedCountersInstance.countEvent('accesslist', `remote shard accessList: empty`)
-              return { accessList: [], shardusMemoryPatterns: null, codeHashes: [], failedAccessList: true }
-            }
-          }
-        } else {
-          nestedCountersInstance.countEvent('accesslist', `remote shard found no consensus node`)
-          /* prettier-ignore */ if (logFlags.dapp_verbose || logFlags.aalg) console.log(`Node is in remote shard: consensusNode = null`)
-          return { accessList: [], shardusMemoryPatterns: null, codeHashes: [], failedAccessList: true }
-        }
-      } else {
-        /* prettier-ignore */ if (logFlags.dapp_verbose || logFlags.aalg) console.log(`Node is in remote shard: false`)
-      }
-    }
-
-    const txId = generateTxId(injectedTx)
-    const senderAddress = getTxSenderAddress(transaction, txId).address
-    const preRunTxState = getPreRunTXState(txId)
-    const callerEVMAddress = senderAddress.toString()
-    const callerShardusAddress = toShardusAddress(callerEVMAddress, AccountType.Account)
-    let callerAccount = await AccountsStorage.getAccount(callerShardusAddress)
-    const fakeAccountData = {
-      nonce: 0,
-      balance: oneSHM * BigInt(100), // 100 SHM.  This is a temporary account that will never exist.
-    }
-    const fakeAccount = Account.fromAccountData(fakeAccountData)
-    if (callerAccount == null) {
-      const remoteCallerAccount = await shardus.getLocalOrRemoteAccount(callerShardusAddress)
-      if (remoteCallerAccount) {
-        callerAccount = remoteCallerAccount.data as WrappedEVMAccount
-        fixDeserializedWrappedEVMAccount(callerAccount)
-      }
-    }
-    if (callerAccount == null) {
-      /* prettier-ignore */ nestedCountersInstance.countEvent('accesslist', `Unable to find caller account while generating accessList. Using a fake account to estimate gas`)
-      /* prettier-ignore */ if (logFlags.dapp_verbose || logFlags.aalg) console.log(`Unable to find caller account: ${callerShardusAddress} while generating accessList. Using a fake account to generate accessList`)
-    }
-    // temporarily set caller account's nonce same as tx's nonce
-    if (ShardeumFlags.accesslistNonceFix && callerAccount && callerAccount.account) {
-      callerAccount.account.nonce = BigInt(transaction.nonce.toString())
-    }
-
-    preRunTxState._transactionState.insertFirstAccountReads(
-      senderAddress,
-      callerAccount ? callerAccount.account : fakeAccount // todo: using fake account may not work in new ethereumJS
-    )
-
-    let warmupCache = null
-
-    const warmupStats: WarmupStats = {
-      accReq: 0,
-      accRcvd: 0,
-      accRcvdNull: 0,
-      accReqErr: 0,
-      cacheHit: 0,
-      cacheMiss: 0,
-      cacheEmpty: 0,
-      cacheEmptyReqMiss: 0,
-    }
-    //const promises:Promise<ShardusTypes.WrappedDataFromQueue>[] = []
-    //use warmupList to fetch data in parallel.  We will feed this in as cache inputs to the transaction
-    //state
-    if (warmupList != null && warmupList.codeHashes?.length > 0 && warmupList.accessList?.length > 0) {
-      warmupCache = new Map<string, WrappedEVMAccount>()
-
-      const startTime = Date.now()
-      for (const codeHashObj of warmupList.codeHashes) {
-        const shardusAddr = toShardusAddressWithKey(
-          codeHashObj.contractAddress,
-          codeHashObj.codeHash,
-          AccountType.ContractCode
-        )
-        //TODO: tie into code bytes cache! should be a pre-fetch
-
-        //promises.push(shardus.getLocalOrRemoteAccount(shardusAddr, {useRICache:true}))
-        fetchAndCacheAccountData(shardusAddr, warmupCache, warmupStats, true, txId, AccountType.ContractCode)
-      }
-      for (const accesListTuple of warmupList.accessList) {
-        const contractAddress = accesListTuple[0]
-        const storageArray = accesListTuple[1]
-
-        const shardusContractAddr = toShardusAddress(contractAddress, AccountType.Account)
-        //promises.push(shardus.getLocalOrRemoteAccount(shardusContractAddr))
-        fetchAndCacheAccountData(shardusContractAddr, warmupCache, warmupStats, false, txId, AccountType.Account)
-        for (const storageAddr of storageArray) {
-          const shardusStorageAddr = toShardusAddressWithKey(contractAddress, storageAddr, AccountType.ContractStorage)
-          //promises.push(shardus.getLocalOrRemoteAccount(shardusStorageAddr))
-          fetchAndCacheAccountData(
-            shardusStorageAddr,
-            warmupCache,
-            warmupStats,
-            false,
-            txId,
-            AccountType.ContractStorage
-          )
-        }
-      }
-
-      /* prettier-ignore */ if (logFlags.aalg) console.log(`aalg: sending fetch: ${Date.now() - startTime} ms and wait ${ShardeumFlags.aalgWarmupSleep} tx:${txId}`)
-      await sleep(ShardeumFlags.aalgWarmupSleep)
-    }
-
-    //Await all the promises.  TODO more advanced wait that is fault tolerant
-    // const warmupData = await Promise.all(promises)
-
-    // // build a warmupcache from the results we got
-    // const warmupCache = new Map<string, WrappedEVMAccount>()
-    // for(const warmupAcc of warmupData){
-    //   warmupCache.set(warmupAcc.accountId, warmupAcc.data as WrappedEVMAccount )
-    // }
-    preRunTxState._transactionState.warmupCache = warmupCache
-    preRunTxState._transactionState.warmupStats = warmupStats
-
-    if (warmupList != null) {
-      /* prettier-ignore */ if (logFlags.aalg) console.log(`warmup results, before:`, caller, txId, JSON.stringify(warmupStats, null, 2))
-    }
-
-    const customEVM = new EthereumVirtualMachine({
-      common: evmCommon,
-      stateManager: preRunTxState,
-    })
-
-    EVM.stateManager = null
-    EVM.stateManager = preRunTxState
-
-    if (transaction == null) {
-      nestedCountersInstance.countEvent('accesslist', 'transaction is null')
-      return { accessList: [], shardusMemoryPatterns: null, codeHashes: [] }
-    }
-    const txStart = Date.now()
-
-    let runTxResult
-    try {
-      runTxResult = await EVM.runTx(
-        {
-          block: blocks[latestBlock],
-          tx: transaction,
-          // skipNonce: !ShardeumFlags.CheckNonce,
-          skipNonce: true,
-          skipBalance: true,
-          networkAccount: await AccountsStorage.getCachedNetworkAccount(),
-        },
-        customEVM,
-        txId
-      )
-    } finally {
-      customEVM.cleanUp()
-    }
-
-    const elapsed = Date.now() - txStart
-    nestedCountersInstance.countEvent('accesslist-times', `elapsed ${Math.round(elapsed / 1000)} sec`)
-
-    if (warmupList != null) {
-      /* prettier-ignore */ if (logFlags.aalg) console.log(`aalg: results, after: warmed:`, caller, txId, elapsed, JSON.stringify(warmupStats, null, 2))
-      //todo compare warmupList to access list
-    } else {
-      /* prettier-ignore */ if (logFlags.aalg) console.log(`aalg: results, after:`, caller, txId, elapsed, JSON.stringify(warmupStats, null, 2))
-    }
-
-    const readAccounts = preRunTxState._transactionState.getReadAccounts()
-    const writtenAccounts = preRunTxState._transactionState.getWrittenAccounts()
-    const allInvolvedContracts = []
-    const accessList = []
-
-    //get a full picture of the read/write 'bits'
-    const readSet = new Set()
-    const writeSet = new Set()
-    //let readOnlySet = new Set()
-    const writeOnceSet = new Set()
-    const readImmutableSet = new Set()
-
-    //always make the sender rw.  This is because the sender will always spend gas and increment nonce
-    if (senderAddress != null) {
-      const shardusKey = callerShardusAddress
-      writeSet.add(shardusKey)
-      readSet.add(shardusKey)
-    }
-
-    for (const [key, storageMap] of writtenAccounts.contractStorages) {
-      if (!allInvolvedContracts.includes(key)) allInvolvedContracts.push(key)
-
-      let shardusKey = toShardusAddress(key, AccountType.Account)
-      //writeSet.add(shardusKey) //don't assume we write to this account!
-      //let written accounts handle that!
-      for (const storageAddress of storageMap.keys()) {
-        shardusKey = toShardusAddressWithKey(key, storageAddress, AccountType.ContractStorage)
-        writeSet.add(shardusKey)
-      }
-    }
-    for (const [key, storageMap] of readAccounts.contractStorages) {
-      if (!allInvolvedContracts.includes(key)) allInvolvedContracts.push(key)
-
-      let shardusKey = toShardusAddress(key, AccountType.Account)
-      readSet.add(shardusKey) //putting this is just to be "nice"
-      //later we can remove the assumption that a CA is always read
-      for (const storageAddress of storageMap.keys()) {
-        shardusKey = toShardusAddressWithKey(key, storageAddress, AccountType.ContractStorage)
-        readSet.add(shardusKey)
-      }
-    }
-
-    for (const [codeHash, contractByteWrite] of readAccounts.contractBytes) {
-      const contractAddress = contractByteWrite.contractAddress.toString()
-      if (!allInvolvedContracts.includes(contractAddress)) allInvolvedContracts.push(contractAddress)
-
-      const shardusKey = toShardusAddressWithKey(contractAddress, codeHash, AccountType.ContractCode)
-      readSet.add(shardusKey)
-      readImmutableSet.add(shardusKey)
-    }
-
-    if (ShardeumFlags.fixContractBytes) {
-      for (const [contractAddress, contractByteWrite] of writtenAccounts.contractBytes) {
-        // for (const [contractAddress, contractByteWrite] of writtenAccounts.contractBytes) {
-        if (!allInvolvedContracts.includes(contractAddress)) allInvolvedContracts.push(contractAddress)
-        const codeHash = bytesToHex(contractByteWrite.codeHash)
-        const shardusKey = toShardusAddressWithKey(contractAddress, codeHash, AccountType.ContractCode)
-        writeSet.add(shardusKey)
-        //special case shardeum behavoir.  contract bytes can only be written once
-        writeOnceSet.add(shardusKey)
-      }
-    } else {
-      for (const [codeHash, contractByteWrite] of writtenAccounts.contractBytes) {
-        const contractAddress = contractByteWrite.contractAddress.toString()
-        if (!allInvolvedContracts.includes(contractAddress)) allInvolvedContracts.push(contractAddress)
-        const shardusKey = toShardusAddressWithKey(contractAddress, codeHash, AccountType.ContractCode)
-        writeSet.add(shardusKey)
-        //special case shardeum behavoir.  contract bytes can only be written once
-        writeOnceSet.add(shardusKey)
-      }
-    }
-    for (const [key] of writtenAccounts.accounts) {
-      if (!allInvolvedContracts.includes(key)) allInvolvedContracts.push(key)
-      const shardusKey = toShardusAddress(key, AccountType.Account)
-      writeSet.add(shardusKey)
-    }
-    for (const [key] of readAccounts.accounts) {
-      if (!allInvolvedContracts.includes(key)) allInvolvedContracts.push(key)
-      const shardusKey = toShardusAddress(key, AccountType.Account)
-      readSet.add(shardusKey)
-    }
-
-    //process our keys into one of four sets (writeOnceSet defined above)
-    const readOnlySet = new Set()
-    const writeOnlySet = new Set()
-    const readWriteSet = new Set()
-    for (const key of writeSet.values()) {
-      if (readSet.has(key)) {
-        readWriteSet.add(key)
-      } else {
-        writeOnlySet.add(key)
-      }
-    }
-    for (const key of readSet.values()) {
-      if (writeSet.has(key) === false) {
-        readOnlySet.add(key)
-      }
-    }
-    let shardusMemoryPatterns = null
-
-    if (ShardeumFlags.generateMemoryPatternData) {
-      shardusMemoryPatterns = {
-        ro: Array.from(readOnlySet),
-        rw: Array.from(readWriteSet),
-        wo: Array.from(writeOnlySet),
-        on: Array.from(writeOnceSet),
-        ri: Array.from(readImmutableSet),
-      }
-    }
-
-    if (ShardeumFlags.VerboseLogs || logFlags.aalg) {
-      console.log('allInvolvedContracts', allInvolvedContracts)
-      console.log('Read accounts', readAccounts)
-      console.log('Written accounts', writtenAccounts)
-      console.log('Immutable read accounts', readImmutableSet)
-    }
-
-    const allCodeHash = new Map<string, CodeHashObj>()
-
-    for (const address of allInvolvedContracts) {
-      const allKeys = new Set<string>()
-      const readKeysMap = readAccounts.contractStorages.get(address)
-      const writeKeyMap = writtenAccounts.contractStorages.get(address)
-      if (readKeysMap) {
-        for (const [key] of readKeysMap) {
-          if (!allKeys.has(key)) allKeys.add(key)
-        }
-      }
-
-      if (writeKeyMap) {
-        for (const [key] of writeKeyMap) {
-          if (!allKeys.has(key)) allKeys.add(key)
-        }
-      }
-
-      //this is moved before we process contract bytes so that only storage accounts are added to the access list
-      const accessListItem = [address, Array.from(allKeys)]
-      accessList.push(accessListItem)
-
-      for (const [codeHash, byteReads] of readAccounts.contractBytes) {
-        const contractAddress = byteReads.contractAddress.toString()
-        if (contractAddress !== address) continue
-        //if (!allKeys.has(codeHash)) allKeys.add(codeHash)
-        if (!allCodeHash.has(contractAddress)) allCodeHash.set(contractAddress, { codeHash, contractAddress })
-      }
-      for (const [, byteReads] of writtenAccounts.contractBytes) {
-        const codeHash = bytesToHex(byteReads.codeHash)
-        const contractAddress = byteReads.contractAddress.toString()
-        if (contractAddress !== address) continue
-        //if (!allKeys.has(codeHash)) allKeys.add(codeHash)
-        if (!allCodeHash.has(contractAddress)) allCodeHash.set(contractAddress, { codeHash, contractAddress })
-      }
-
-      // const accessListItem = [address, Array.from(allKeys).map((key) => key)]
-      // accessList.push(accessListItem)
-    }
-
-    if (ShardeumFlags.VerboseLogs || logFlags.aalg) console.log('Predicted accessList', accessList)
-
-    if (runTxResult.execResult.exceptionError) {
-      if (ShardeumFlags.VerboseLogs || logFlags.aalg)
-        console.log('Execution Error:', runTxResult.execResult.exceptionError)
-      /* prettier-ignore */ nestedCountersInstance.countEvent('accesslist', `Local Fail with evm error: CA ${transaction.to && ShardeumFlags.VerboseLogs ? transaction.to.toString() : ''}`)
-      return { accessList: [], shardusMemoryPatterns: null, codeHashes: [], failedAccessList: true }
-    }
-    const isEmptyCodeHash = allCodeHash.size === 0
-    if (isEmptyCodeHash) {
-      /* prettier-ignore */ if (ShardeumFlags.VerboseLogs || logFlags.aalg) console.log(`aalg: empty codehash ${txId}
-      allInvolvedContracts:  ${JSON.stringify(allInvolvedContracts, null, 2)}
-
-      readAccounts.contractBytes: ${JSON.stringify(readAccounts.contractBytes, null, 2)}`)
-      nestedCountersInstance.countEvent('accesslist', `Local Fail: empty codeHash`)
-    } else nestedCountersInstance.countEvent('accesslist', `Local Success: true`)
-    return {
-      accessList,
-      shardusMemoryPatterns,
-      codeHashes: Array.from(allCodeHash.values()),
-      failedAccessList: isEmptyCodeHash,
-    }
-  } catch (e) {
-    console.log(`Error: generateAccessList`, e)
-    nestedCountersInstance.countEvent('accesslist', `Local Fail: unknown`)
-    return { accessList: [], shardusMemoryPatterns: null, codeHashes: [] }
-  }
-}
-
-async function fetchAndCacheAccountData(
+export async function fetchAndCacheAccountData(
   shardusAddress: string,
   warmupCache: Map<string, WrappedEVMAccount>,
   warmupStats: WarmupStats,
@@ -2330,7 +1589,7 @@ async function fetchAndCacheAccountData(
   }
 }
 
-function getNodeCountForCertSignatures(): number {
+export function getNodeCountForCertSignatures(): number {
   let latestCycle: ShardusTypes.Cycle
   const latestCycles: ShardusTypes.Cycle[] = shardus.getLatestCycles()
   if (latestCycles && latestCycles.length > 0) [latestCycle] = latestCycles
@@ -2355,7 +1614,7 @@ function periodicMemoryCleanup(): void {
   // setTimeout(periodicMemoryCleanup, 60000)
 }
 
-async function fetchNetworkAccountFromArchiver(): Promise<WrappedAccount> {
+export async function fetchNetworkAccountFromArchiver(): Promise<WrappedAccount> {
   const built = buildFetchNetworkAccountFromArchiver({
     getFinalArchiverList,
     getRandom,
@@ -2480,7 +1739,7 @@ export function shardeumGetTime(): number {
   console.log(Utils.safeStringify(shardusConfig))
 
   profilerInstance = shardus.getShardusProfiler()
-  configShardusEndpoints()
+  endpoints.configShardusEndpoints()
   configShardusNetworkTransactions()
   if (isServiceMode()) AccountsStorage.setAccount(networkAccount, await AccountsStorage.getAccount(networkAccount))
   shardusSetup()

@@ -1,3 +1,47 @@
+import { ShardusTypes } from '@shardeum-foundation/core'
+import { getInjectedOrGeneratedTimestamp, isInternalTx, isDebugTx } from './setup/helpers'
+import { fixBigIntLiteralsToBigInt, generateTxId, getTxSenderAddress, _readableSHM, _base16BNParser, scaleByStabilityFactor, isStakingEVMTx, calculateGasPrice } from './utils'
+import { SafeBalance } from './utils/safeMath'
+import { Utils } from '@shardeum-foundation/lib-types'
+import { emptyCodeHash, zeroAddressStr } from './utils'
+import { ShardeumFlags, shardus, shardeumGetTime, logFlags, EVM, getApplyTXState, deleteApplyTXState, shardeumStateTXMap, shardusAddressToEVMAccountInfo, networkAccount, isDebugMode, shardusConfig, profilerInstance, createAccount, debugAppdata, shardeumBlock, evmCommon, getTransactionObj, getCallTXState, verifyPayload, getNetworkAccount, fetchNetworkAccountFromArchiver, _transactionReceiptPass, shardusTxIdToEthTxId, appliedTxs, blocks, createBlock, blocksByHash, latestBlock, crypto, DebugComplete, version, getStakeTxBlobFromEVMTx } from './index'
+import { applyInternalTx, applyDebugTx } from './internal'
+import { DebugTx, InternalTXType, AccountType, StakeCoinsTX, WrappedEVMAccount, NetworkAccount, OurAppDefinedData, UnstakeCoinsTX, StakeInfo, OperatorAccountInfo, WrappedAccount, InternalTx, ReadableReceipt, NodeAccount2 } from './shardeum/shardeumTypes'
+import { bytesToHex, bigIntToHex, hexToBytes, toBytes, Account, Address } from '@ethereumjs/util'
+import { AccessListEIP2930Transaction } from '@ethereumjs/tx'
+import { toShardusAddressWithKey, toShardusAddress, getAccountShardusAddress } from './shardeum/evmAddress'
+import { nestedCountersInstance } from '@shardeum-foundation/core'
+import { verifyStakeTx, verifyUnstakeTx } from './tx/staking/verifyStake'
+import * as AccountsStorage from './storage/accountStorage'
+import { fixDeserializedWrappedEVMAccount, predictContractAddressDirect } from './shardeum/wrappedEVMAccountFunctions'
+import * as WrappedEVMAccountFunctions from './shardeum/wrappedEVMAccountFunctions'
+import { runTx } from './vm_v7/runTx'
+import { RunTxResult } from './vm_v7'
+import { EVM as EthereumVirtualMachine } from './evm_v2'
+import { ContractByteWrite } from './state/transactionState'
+import { setGlobalCodeByteUpdate } from './index'
+import { __ShardFunctions } from '@shardeum-foundation/core'
+import { getOrCreateBlockFromTimestamp } from './index'
+import { readableBlocks } from './index'
+import { fetchAndCacheAccountData } from './index'
+// TODO: These modules need to be created or the functionality moved elsewhere
+// import { updateNonceAndChargeBalanceForStakeTx } from './tx/staking/applyStakeTx'
+// import { updateNonceAndChargeBalanceForUnstakeTx } from './tx/staking/applyUnstakeTx'
+import { safeStringify } from '@shardeum-foundation/lib-types/build/src/utils/functions/stringify'
+import { updateServicePoints } from './shardeum/shardeumFlags'
+// TODO: This module needs to be created or the functionality moved elsewhere
+// import { updateGlobalNetworkAccount } from './shardeum/shardeumUtils'
+// TODO: This function needs to be exported from queryCertificate or functionality moved elsewhere
+// import { getNodeInfoAppData } from './handlers/queryCertificate'
+import { CertSignaturesResult } from './handlers/queryCertificate'
+import { isWithinRange } from './utils'
+import config from './config'
+import { validateTransaction } from './setup'
+import { crack as crackTransferFromSecureAccount, verify as verifyTransferFromSecureAccount } from './shardeum/secureAccounts'
+import { filterObjectByWhitelistedProps } from './types/ajv/Helpers'
+import { isSetCertTimeTx } from './tx/setCertTime'
+import { generateAccessList } from './accesslist'
+
 export const txFunctions = {
     async apply(timestampedTx: ShardusTypes.OpaqueTransaction, wrappedStates, originalAppData) {
       //@ts-ignore
@@ -1412,6 +1456,10 @@ export const txFunctions = {
           name: 'nominatorAccount',
           type: 'object',
         },
+        {
+          name: 'shardusMemoryPatterns',
+          type: 'object',
+        },
       ])
 
       if (ShardeumFlags.VerboseLogs) console.log('Running getKeyFromTransaction', timestampedTx)
@@ -1420,7 +1468,6 @@ export const txFunctions = {
 
       const timestamp: number = getInjectedOrGeneratedTimestamp(timestampedTx)
 
-      const shardusMemoryPatterns = {}
       if (isInternalTx(tx)) {
         const customTXhash = null
         const internalTx = tx as InternalTx
@@ -1568,6 +1615,7 @@ export const txFunctions = {
 
       const transaction = getTransactionObj(tx)
       const senderAddress = getTxSenderAddress(transaction, txId).address
+      const shardusMemoryPatterns = appData.shardusMemoryPatterns || null
       const result = {
         sourceKeys: [],
         targetKeys: [],
@@ -1763,5 +1811,5 @@ export const txFunctions = {
         shardusMemoryPatterns,
       }
     },
-
+    
 }

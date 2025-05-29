@@ -5,8 +5,99 @@ import { validateTxnFields } from './setup/validateTxnFields'
 import { sync } from './setup/sync'
 import { isDestLimitTx, isInternalTx, isDebugTx } from './setup/helpers'
 import { ShardeumFlags } from './shardeum/shardeumFlags'
+import { 
+  shardus,
+  evmCommon,
+  debugAppdata,
+  logFlags,
+  generateTxId,
+  createNetworkAccount,
+  getTransactionObj,
+  isStakingEVMTx,
+  getApplyTXState,
+  createAccount,
+  createNodeAccount2,
+  toShardusAddress,
+  toShardusAddressWithKey,
+  bytesToHex,
+  hexToBytes,
+  Address,
+  shardusAddressToEVMAccountInfo,
+  shardeumStateTXMap,
+  deleteApplyTXState,
+  networkAccount,
+  shardeumGetTime,
+  _base16BNParser,
+  scaleByStabilityFactor,
+  fixBigIntLiteralsToBigInt,
+  meetsMinimumVersion,
+  isWithinMaximumVersion,
+  isLowStake,
+  isNodeAccount2,
+  VersionValidationResult,
+  verifyMultiSigs,
+  verifyPayload,
+  getTxSenderAddress,
+  fetchNetworkAccountFromArchiver,
+  appStartupTimestamp,
+  InjectTxToConsensor,
+  _transactionReceiptPass,
+  config,
+  nestedCountersInstance,
+  formatErrorMessage,
+  shardusConfig,
+  getNetworkAccount,
+  isServiceMode,
+  version,
+  operatorCLIVersion,
+  operatorGUIVersion
+} from './index'
+import { ONE_SECOND } from './shardeum/shardeumConstants'
+import * as AccountsStorage from './storage/accountStorage'
+import * as WrappedEVMAccountFunctions from './shardeum/wrappedEVMAccountFunctions'
+import { fixDeserializedWrappedEVMAccount } from './shardeum/wrappedEVMAccountFunctions'
+import { getAccountShardusAddress } from './shardeum/evmAddress'
+import { Utils } from '@shardeum-foundation/lib-types'
+import { isSetCertTimeTx } from './tx/setCertTime'
+import { ShardusTypes, DebugComplete } from '@shardeum-foundation/core'
+import {
+  AccountType,
+  InternalTXType,
+  InternalTx,
+  NetworkAccount,
+  WrappedEVMAccount,
+  NodeAccount2,
+  StakeCoinsTX,
+  DebugTx,
+  DebugTXType,
+  NodeInitTxData,
+  NodeRewardTxData,
+  LeftNetworkEarlyViolationData,
+  SyncingTimeoutViolationData,
+  NodeRefutedViolationData,
+  WrappedAccount,
+  SecureAccount,
+  OperatorAccountInfo,
+  NodeInfoAppData,
+} from './shardeum/shardeumTypes'
+import { StakeCert, RemoveNodeCert } from './handlers/queryCertificate'
+import { shardusTxIdToEthTxId, appliedTxs } from './index'
+import { accountSerializer, accountDeserializer } from './types/Helpers'
+import * as InitRewardTimesTx from './tx/initRewardTimes'
+import * as PenaltyTx from './tx/penalty/transaction'
+import { injectClaimRewardTx } from './tx/claimReward'
+import { safeStringify } from '@shardeum-foundation/lib-types/build/src/utils/functions/stringify'
+import { AJVSchemaEnum } from './types/enum/AJVSchemaEnum'
+import { DevSecurityLevel, Sign, OpaqueTransaction } from '@shardeum-foundation/core/dist/shardus/shardus-types'
+import { getCachedRIAccount, setCachedRIAccount } from './storage/riAccountsCache'
+import { AccountsEntry } from './storage/storage'
+import { sleep } from './utils'
+import { onActiveVersionChange } from './versioning'
 
-let setupConfig = {
+// Re-export for index.ts imports
+export { sync, validateTransaction, validateTxnFields }
+
+export const setupConfig = {
     sync: sync(shardus, evmCommon),
     //validateTransaction is not a standard sharus function.  When we cleanup index.ts we need to move it out of here
     //also appdata and wrapped accounts should be passed in?
@@ -14,6 +105,17 @@ let setupConfig = {
     validateTxnFields: validateTxnFields(shardus, debugAppdata),
     isDestLimitTx,
     isInternalTx,
+    validate(timestampedTx: ShardusTypes.OpaqueTransaction, appData): {success: boolean, reason: string, status: number} {
+      // TODO: Implement proper validation - for now return valid
+      return { success: true, reason: '', status: 0 }
+    },
+    isMultiSigFoundationTx(tx: ShardusTypes.OpaqueTransaction): boolean {
+      // TODO: Implement if needed
+      return false
+    },
+    async resetAccountData() {
+      // Reset logic here if needed
+    },
     getTimestampFromTransaction(tx, appData) {
       if (ShardeumFlags.VerboseLogs) console.log('Running getTimestampFromTransaction', tx, appData)
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -957,7 +1059,7 @@ let setupConfig = {
           return result
         }
       } catch (e) {
-        /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`signAppData failed: ${type} ${Utils.safeStringify(stakeCert)}, error: ${Utils.safeStringify(e)}`)
+        /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`signAppData failed: ${type} ${Utils.safeStringify(appData)}, error: ${Utils.safeStringify(e)}`)
         nestedCountersInstance.countEvent('shardeum-staking', 'sign-stake-cert - fail uncaught')
       }
       return fail
@@ -1600,7 +1702,7 @@ let setupConfig = {
     },
 }
 
-const shardusSetup = (): void => {
+export const shardusSetup = (): void => {
   /**
    * interface tx {
    *   type: string

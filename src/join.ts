@@ -1,11 +1,49 @@
-export joinFunctions = {
+import { ShardusTypes, nestedCountersInstance } from '@shardeum-foundation/core'
+import { AppJoinData } from './shardeum/shardeumTypes'
+import { version } from '../package.json'
+import { stakeCert, adminCert, ShardeumFlags, meetsMinimumVersion, isWithinMaximumVersion, logFlags, VersionValidationResult, operatorCLIVersion, operatorGUIVersion, config, _readableSHM, updateAdminCert, updateStakeCert } from './index'
+import * as AccountsStorage from './storage/accountStorage'
+import { Utils } from '@shardeum-foundation/lib-types'
+import { P2P } from '@shardeum-foundation/lib-types'
+import { ShardeumState } from './state'
+import { getAccountData } from './utils/account'
+import { isValidAddress, Address } from '@ethereumjs/util'
+import { toShardusAddress } from './shardeum/evmAddress'
+import { AccountType } from './shardeum/shardeumTypes'
+import { _base16BNParser, scaleByStabilityFactor } from './utils'
+import { StakeCert, ValidatorError, CertSignaturesResult, queryCertificate } from './handlers/queryCertificate'
+// import { verifyStakeCert } from './handlers/queryCertificateHelper'
+import { getCertCycleDuration, injectSetCertTimeTx } from './tx/setCertTime'
+import { shardus, shardeumGetTime } from './index'
+import { AdminCert } from './handlers/adminCertificate'
+import { getNodeCountForCertSignatures } from './index'
+import { DevSecurityLevel } from '@shardeum-foundation/core/dist/shardus/shardus-types'
+import { fetchNetworkAccountFromArchiver } from './index'
+import { initialNetworkParamters } from './shardeum/initialNetworkParameters'
+import { ServerMode } from '@shardeum-foundation/core/dist/shardus/shardus-types'
+import { ONE_SECOND } from './shardeum/shardeumConstants'
+
+// Module-level variables needed by isReadyToJoin
+let cachedNetworkAccount = null
+let cacheExpirationTimestamp = 0
+let lastCertTimeTxTimestamp = 0
+let lastCertTimeTxCycle: number | null = null
+let isReadyToJoinLatestValue = false
+let isAdminCertUnexpiredValue = false
+
+// Export function to get isAdminCertUnexpired value
+export function getIsAdminCertUnexpired(): boolean {
+  return isAdminCertUnexpiredValue
+}
+
+export const joinFunctions = {
         getJoinData() {
       nestedCountersInstance.countEvent('shardeum-staking', 'calling getJoinData')
       const joinData: AppJoinData = {
         version,
         stakeCert,
         adminCert,
-        isAdminCertUnexpired,
+        isAdminCertUnexpired: isAdminCertUnexpiredValue,
       }
       return joinData
     },
@@ -526,13 +564,13 @@ export joinFunctions = {
       }
 
       isReadyToJoinLatestValue = false
-      isAdminCertUnexpired = false
+      isAdminCertUnexpiredValue = false
 
       //process golden ticket first
       if (adminCert && adminCert.certExp > Date.now() && adminCert?.goldenTicket === true) {
         /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log('Join req with admincert and golden ticket')
         isReadyToJoinLatestValue = true
-        isAdminCertUnexpired = true
+        isAdminCertUnexpiredValue = true
         /* prettier-ignore */ nestedCountersInstance.countEvent('shardeum-staking', 'goldenTicket available, isReadyToJoin = true')
         return true
       }
@@ -557,7 +595,7 @@ export joinFunctions = {
           /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`checkAdminCert ${Utils. safeStringify(adminCert)}`)
           if (adminCert.certExp > shardeumGetTime()) {
             isReadyToJoinLatestValue = true
-            isAdminCertUnexpired = true
+            isAdminCertUnexpiredValue = true
             /* prettier-ignore */ nestedCountersInstance.countEvent('shardeum-staking', 'valid admin cert, isReadyToJoin = true')
             /* prettier-ignore */ if (logFlags.important_as_error) console.log('valid admin cert, isReadyToJoin = true')
             return true
@@ -617,7 +655,7 @@ export joinFunctions = {
             /* prettier-ignore */ nestedCountersInstance.countEvent('shardeum-staking', `failed call to injectSetCertTimeTx 2 reason: ${(response as ValidatorError).reason}`)
             return false
           }
-          stakeCert = null //clear stake cert, so we will know to query for it again
+          updateStakeCert(null) //clear stake cert, so we will know to query for it again
           // set lastCertTimeTxTimestamp and cycle
           lastCertTimeTxTimestamp = shardeumGetTime()
           lastCertTimeTxCycle = latestCycle.counter
@@ -641,7 +679,7 @@ export joinFunctions = {
         if (isExpiringSoon) {
           nestedCountersInstance.countEvent('shardeum-staking', 'stakeCert is expired or expiring soon')
           if (ShardeumFlags.fixSetCertTimeTxApply === false) {
-            stakeCert = null //clear stake cert, so we will know to query for it again
+            updateStakeCert(null) //clear stake cert, so we will know to query for it again
           }
           const response = await injectSetCertTimeTx(shardus, publicKey, activeNodes)
           if (response == null) {
@@ -653,7 +691,7 @@ export joinFunctions = {
             return false
           }
           if (ShardeumFlags.fixSetCertTimeTxApply === true) {
-            stakeCert = null //clear stake cert, so we will know to query for it again
+            updateStakeCert(null) //clear stake cert, so we will know to query for it again
           }
           lastCertTimeTxTimestamp = shardeumGetTime()
           lastCertTimeTxCycle = latestCycle.counter
@@ -727,7 +765,7 @@ export joinFunctions = {
         if (isNewCertExpiringSoon) {
           /* prettier-ignore */ nestedCountersInstance.countEvent('shardeum-staking', 'new stakeCert is expiring soon. will inject' + ' setCertTimeTx again')
 
-          stakeCert = null //clear stake cert, so we will know to query for it again
+          updateStakeCert(null) //clear stake cert, so we will know to query for it again
           const response = await injectSetCertTimeTx(shardus, publicKey, activeNodes)
           if (response == null) {
             /* prettier-ignore */ nestedCountersInstance.countEvent('shardeum-staking', `failed call to injectSetCertTimeTx 3 reason: response is null`)
@@ -750,7 +788,7 @@ export joinFunctions = {
             return false
           }
           // cert if valid and not expiring soon
-          stakeCert = signedStakeCert
+          updateStakeCert(signedStakeCert)
 
           nestedCountersInstance.countEvent('shardeum-staking', 'valid cert, isReadyToJoin = true')
           /* prettier-ignore */ if (logFlags.important_as_error) console.log('valid cert, isReadyToJoin = true ', stakeCert)
