@@ -1742,7 +1742,7 @@ export function shardeumGetTime(): number {
   endpoints.configShardusEndpoints()
   configShardusNetworkTransactions()
   if (isServiceMode()) AccountsStorage.setAccount(networkAccount, await AccountsStorage.getAccount(networkAccount))
-  shardusSetup()
+  shardusSetup(shardus, evmCommon, debugAppdata)
   config.server = shardus.config //possibly set the server config to match the merged one?
 
   /** Start process for updating tickets (e.g. silver) */

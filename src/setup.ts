@@ -1702,11 +1702,8 @@ export const setupConfig = {
     },
 }
 
-export const shardusSetup = (): void => {
+export const shardusSetup = (shardusInstance: any, evmCommonInstance: any, debugAppdataInstance: any): void => {
   // Initialize functions that depend on shardus and evmCommon
-  // Import evmCommon from index to ensure it's initialized
-  const { evmCommon: evmCommonInstance, shardus: shardusInstance, debugAppdata: debugAppdataInstance } = require('./index')
-  
   // Create a sync function that Shardus can call directly
   // The sync function factory returns a function, so we call it immediately to get the actual sync function
   setupConfig.sync = sync(shardusInstance, evmCommonInstance)
@@ -1722,7 +1719,7 @@ export const shardusSetup = (): void => {
    *   timestamp: number
    * }
    */
-  shardus.setup(Object.assign({}, Object.assign({}, setupConfig, joinFunctions), txFunctions));
+  shardusInstance.setup(Object.assign({}, Object.assign({}, setupConfig, joinFunctions), txFunctions));
 
-  shardus.registerExceptionHandler()
+  shardusInstance.registerExceptionHandler()
 }
