@@ -823,24 +823,26 @@ export const txFunctions = {
           accountType: AccountType.Receipt,
           txFrom: senderAddress.toString(),
         }
-        // if (ShardeumFlags.EVMReceiptsAsAccounts) {
-        //   transactionFailHashMap[ethTxId] = wrappedFailReceiptAccount
-        //   // const wrappedChangedAccount = WrappedEVMAccountFunctions._shardusWrappedAccount(wrappedFailReceiptAccount)
-        //   // if (shardus.applyResponseAddChangedAccount != null) {
-        //   //   shardus.applyResponseAddChangedAccount(applyResponse, wrappedChangedAccount.accountId, wrappedChangedAccount, txId, wrappedChangedAccount.timestamp)
-        //   // }
-        // } else {
-
-        //   const shardusWrappedAccount = WrappedEVMAccountFunctions._shardusWrappedAccount(wrappedFailReceiptAccount)
-        //   //communicate this in the message back to sharuds so we can attach it to the fail receipt
-        //   shardus.applyResponseAddReceiptData(applyResponse, shardusWrappedAccount, crypto.hashObj(shardusWrappedAccount))
-        //   shardus.applyResponseSetFailed(applyResponse, reason)
-        //   return applyResponse //return rather than throw exception
-        // }
-        // }
+        
+        // Add the failure receipt to the applyResponse
+        if (ShardeumFlags.EVMReceiptsAsAccounts) {
+          const wrappedChangedAccount = WrappedEVMAccountFunctions._shardusWrappedAccount(wrappedReceiptAccount)
+          if (shardus.applyResponseAddChangedAccount != null) {
+            shardus.applyResponseAddChangedAccount(applyResponse, wrappedChangedAccount.accountId, wrappedChangedAccount as ShardusTypes.WrappedResponse, txId, wrappedChangedAccount.timestamp)
+          }
+        } else {
+          const receiptShardusAccount = WrappedEVMAccountFunctions._shardusWrappedAccount(wrappedReceiptAccount)
+          shardus.applyResponseAddReceiptData(applyResponse, receiptShardusAccount, crypto.hashObj(receiptShardusAccount))
+        }
+        
+        // Mark the transaction as failed
+        shardus.applyResponseSetFailed(applyResponse, e.toString())
+        
         /* prettier-ignore */ if (logFlags.error) shardus.log('Unable to apply transaction', e)
         //if (logFlags.dapp_verbose ) console.log('Unable to apply transaction', txId, e)
-        // throw new Error(e)
+        
+        // Return the applyResponse instead of throwing
+        return applyResponse
       }
       if (ShardeumFlags.VerboseLogs) console.log('DBG', 'applied tx', txId, runTxResult)
       if (ShardeumFlags.VerboseLogs) console.log('DBG', 'applied tx eth', ethTxId, runTxResult)
@@ -1459,6 +1461,18 @@ export const txFunctions = {
         {
           name: 'shardusMemoryPatterns',
           type: 'object',
+        },
+        {
+          name: 'codeHashes',
+          type: 'object',
+        },
+        {
+          name: 'accessList',
+          type: 'object',
+        },
+        {
+          name: 'newCAAddr',
+          type: 'string',
         },
       ])
 

@@ -415,6 +415,6 @@ export async function generateAccessList(
     } catch (e) {
       console.log(`Error: generateAccessList`, e)
       nestedCountersInstance.countEvent('accesslist', `Local Fail: unknown`)
-      return { accessList: [], shardusMemoryPatterns: null, codeHashes: [] }
+      return { accessList: [], shardusMemoryPatterns: null, codeHashes: [], failedAccessList: true }
     }
   }

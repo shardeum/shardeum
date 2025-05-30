@@ -30,6 +30,7 @@ let lastCertTimeTxTimestamp = 0
 let lastCertTimeTxCycle: number | null = null
 let isReadyToJoinLatestValue = false
 let isAdminCertUnexpiredValue = false
+let isCheckingReadyToJoin = false
 
 // Export function to get isAdminCertUnexpired value
 export function getIsAdminCertUnexpired(): boolean {
@@ -508,9 +509,24 @@ export const joinFunctions = {
       activeNodes: P2P.P2PTypes.Node[],
       mode: P2P.ModesTypes.Record['mode']
     ): Promise<boolean> {
-      const currentTime = Date.now()
-      let networkAccount = null
-      /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`isReadyToJoin cachedNetworkAccount 1 ${Utils.safeStringify(cachedNetworkAccount)}`)
+      // Prevent concurrent execution
+      if (isCheckingReadyToJoin) {
+        // Return the last known value if already checking
+        return isReadyToJoinLatestValue
+      }
+      
+      isCheckingReadyToJoin = true
+      
+      // Helper function to return and update the latest value
+      const returnValue = (value: boolean): boolean => {
+        isReadyToJoinLatestValue = value
+        return value
+      }
+      
+      try {
+        const currentTime = Date.now()
+        let networkAccount = null
+        /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`isReadyToJoin cachedNetworkAccount 1 ${Utils.safeStringify(cachedNetworkAccount)}`)
       if (currentTime < cacheExpirationTimestamp && cachedNetworkAccount) {
         // Use cached result if it's still valid
         networkAccount = cachedNetworkAccount
@@ -800,6 +816,10 @@ export const joinFunctions = {
 
       // avoid returning undefined, what if the calling code was refactored to check "=== false"...
       /* prettier-ignore */ nestedCountersInstance.countEvent('shardeum-staking', `end of function with no earlier return`)
+      isReadyToJoinLatestValue = false
       return false
+      } finally {
+        isCheckingReadyToJoin = false
+      }
     },
 }
