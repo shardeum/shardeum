@@ -1,0 +1,28 @@
+{
+  "simulation": {
+    "maxFlipsToTest": 1000,
+    "parallelSimulations": 4,
+    "batchSize": 100,
+    "checkpointInterval": 500
+  },
+  "optimization": {
+    "algorithm": "greedy",
+    "maxIterations": 10000,
+    "convergenceThreshold": 0.95,
+    "pruneUnlikelyFlips": true
+  },
+  "targetAccounts": [],
+  "filters": {
+    "minBalanceMismatch": "1000000000000000",
+    "excludeSystemAccounts": true,
+    "cycleRange": {
+      "min": null,
+      "max": null
+    }
+  },
+  "output": {
+    "format": "json",
+    "includeIntermediateResults": false,
+    "verbosity": "normal"
+  }
+}
