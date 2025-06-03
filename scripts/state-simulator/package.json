@@ -1,0 +1,28 @@
+{
+  "name": "@shardeum/state-simulator",
+  "version": "1.0.0",
+  "description": "Blockchain state simulator for transaction replay and balance reconciliation",
+  "main": "dist/index.js",
+  "scripts": {
+    "build": "tsc",
+    "clean": "rm -rf dist",
+    "start": "node dist/index.js",
+    "dev": "ts-node src/index.ts",
+    "simulate": "ts-node src/simulate.ts",
+    "analyze": "ts-node src/analyzer.ts",
+    "test": "jest"
+  },
+  "dependencies": {
+    "sqlite3": "^5.1.6",
+    "better-sqlite3": "^11.5.0",
+    "chalk": "^4.1.2",
+    "commander": "^12.1.0",
+    "p-limit": "^3.1.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "@types/better-sqlite3": "^7.6.11",
+    "ts-node": "^10.9.1",
+    "typescript": "^5.0.0"
+  }
+}
