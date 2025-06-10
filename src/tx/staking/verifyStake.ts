@@ -244,7 +244,7 @@ export function isStakeUnlocked(
       unlocked: false,
       reason: `Your node is currently registered in the network. Deregistration will be completed in ${remainingMinutes} minute${
         remainingMinutes === 1 ? '' : 's'
-      }. You'll be able to unstake once this completed.`,
+      }. You'll be able to unstake once deregistration is complete.`,
       remainingTime: nominatorAccount.operatorAccountInfo.certExp - currentTime,
     }
   }
