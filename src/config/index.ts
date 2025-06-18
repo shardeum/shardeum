@@ -159,7 +159,7 @@ config = merge(config, {
       maxProblematicNodeRemovalsPerCycle: 1,
       problematicNodeConsecutiveRefuteThreshold: 6,
       problematicNodeRefutePercentageThreshold: 0.1,
-      problematicNodeHistoryLength: 100,
+      problematicNodeHistoryLength: 60,
       problematicNodeRemovalCycleFrequency: 5,
 
       // should be removed after rotating and turning on
