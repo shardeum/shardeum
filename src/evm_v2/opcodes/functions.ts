@@ -1155,6 +1155,8 @@ export const handlers: Map<number, OpHandler> = new Map([
       if (length !== BigInt(0)) {
         returnData = runState.memory.read(Number(offset), Number(length))
       }
+      //Temporary log, do not merge to dev enabled.
+      console.log('REVERT opcode called with data:', bytesToHex(returnData))
       runState.interpreter.revert(returnData)
     },
   ],

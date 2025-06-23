@@ -156,7 +156,7 @@ export const ShardeumFlags: ShardeumFlags = {
   CheckNonce: true,
   txNoncePreCheck: false,
   txBalancePreCheck: true,
-  autoGenerateAccessList: false,
+  autoGenerateAccessList: true,
   forwardGenesisAccounts: true,
   UseDBForAccounts: true,
   AppliedTxsMaps: false,
@@ -291,10 +291,11 @@ export const ShardeumFlags: ShardeumFlags = {
   cleanStaleShardeumStateMap: false,
   beta1_11_2: true,
 
-  evmFailOnUnexpectedAccount: true,
+  evmFailOnUnexpectedAccount: true, //this helps catch problems even in single sharded test networks.
   numberOfAccessListRetry: 3,
   useFutureBlockForAccessList: true,
   failedStakeReceipt: true,
+  unifiedAccountBalanceEnabled: true,
   debugDefaultBalance: '100', //In debug mode the default value is 100 SHM.  This is needed for certain load test operations
   disableSmartContractEndpoints: false, // Disable smart contract read endpoints by default. This should be promoted to a network parameter. do not release this feature as a flag.
   debugGlobalAccountUpdateFail: false,

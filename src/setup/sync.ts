@@ -268,7 +268,7 @@ async function manuallyCreateAccount(
   let cycleStart = 0
   if (latestCycles != null && latestCycles.length > 0) {
     cycleStart = latestCycles[0].start * 1000
-    /* prettier-ignore */ if (logFlags.important_as_error) console.log('Tester account created time: ', cycleStart)
+    /* prettier-ignore */ if (logFlags.important_as_error) console.log('Tester account created time: ', cycleStart, ethAccountID)
   }
 
   const wrappedEVMAccount = {

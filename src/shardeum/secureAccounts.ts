@@ -363,7 +363,7 @@ export async function apply(
     await shardeumState.commit()
   } catch (error) {
     // If anything fails, revert all changes
-    await shardeumState.revert()
+    await shardeumState.revert('revert secure account transfer: ' + error.message)
     throw error
   }
 

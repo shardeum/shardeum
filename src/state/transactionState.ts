@@ -458,6 +458,10 @@ export default class TransactionState {
     if (account == undefined) {
       const wrappedEVMAccount = await this.tryGetRemoteAccountCB(this, AccountType.Account, addressString, null)
       if (this.runType === RunType.Apply && ShardeumFlags.evmFailOnUnexpectedAccount) {
+        if (this.debugTrace) {
+          this.debugTraceLog(`getAccount: addr:${addressString} v:notFound. failOnUnexpected EOA/CA account2`)
+        }
+        nestedCountersInstance.countEvent('transactionState', 'getAccountFailOnUnexpectedAccount 2')
         throw new Error('storage account miss during apply()')
       }
       if (wrappedEVMAccount != undefined) {
@@ -557,6 +561,9 @@ export default class TransactionState {
     const accountObj = Account.fromAccountData(account)
     const storedRlp = accountObj.serialize()
     this.firstAccountReads.set(addressString, storedRlp)
+
+    if (this.debugTrace) this.debugTraceLog(`insertFirstAccountReads: addr:${addressString} v:${Utils.safeStringify(accountObj)}`)
+
   }
 
   async getContractCode(
@@ -724,6 +731,11 @@ export default class TransactionState {
     }
     this.firstContractBytesReads.set(codeHashStr, { codeHash, contractByte: codeByte, contractAddress })
     this.touchedCAs.add(addressString)
+
+    if (this.debugTrace)
+      this.debugTraceLog(
+        `insertFirstContractBytesReads: addr:${addressString} codeHash:${codeHashStr} v:<not loggee>`
+      )
   }
 
   async getContractStorage(
@@ -918,6 +930,11 @@ export default class TransactionState {
     }
     contractStorageReads.set(keyString, storedRlp)
     this.touchedCAs.add(addressString)
+
+    if (this.debugTrace)
+      this.debugTraceLog(
+        `insertFirstContractStorageReads: addr:${addressString} key:${keyString} v:${value ? bytesToHex(value) : undefined}`
+      )
   }
 
   //should go away with SaveEVMTries = false
@@ -1029,10 +1046,15 @@ export default class TransactionState {
     //this.allAccountWrites.clear()
   }
 
-  revert(): void {
+  revert(message:string): void {
     if (ShardeumFlags.CheckpointRevertSupport === false) {
       return
     }
+
+    // always on for now consider. before merge to dev curate this log.
+    this.debugTraceLog(`revert: ${message} tx:${this.linkedTX} message:${message}`)
+    // temp but spammy counter to make things easier to debug. curate this later
+    nestedCountersInstance.countEvent('transactionState', `revert:${message} tx:${this.linkedTX}`)
 
     //we need checkpoint / revert stack support for accounts so that gas is handled correctly
 
@@ -1056,6 +1078,9 @@ export default class TransactionState {
       // how does that apply to what we have given that we have no cache.
       //this.flushToCommittedValues()
     }
+  
+    if (this.debugTrace) this.debugTraceLog(`revert callstack: ${new Error().stack}`)
+
 
     if (ShardeumFlags.VerboseLogs) {
       // monitor counts the last tried remote accounts
