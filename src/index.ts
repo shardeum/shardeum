@@ -207,15 +207,15 @@ let profilerInstance
 
 //   next shardus core will export the correct type
 export let logFlags = {
-  verbose: false,
-  dapp_verbose: false,
+  verbose: true,
+  dapp_verbose: true,
   error: true,
   fatal: true,
   important_as_error: true,
   important_as_fatal: true,
-  shardedCache: false,
-  aalg: false,
-  debug: false,
+  shardedCache: true,
+  aalg: true,
+  debug: true,
 }
 
 // Read the CLI and GUI versions and save them in memory
