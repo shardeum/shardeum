@@ -295,6 +295,7 @@ export const ShardeumFlags: ShardeumFlags = {
   numberOfAccessListRetry: 3,
   useFutureBlockForAccessList: true,
   failedStakeReceipt: true,
+  unifiedAccountBalanceEnabled: true,
   debugDefaultBalance: '100', //In debug mode the default value is 100 SHM.  This is needed for certain load test operations
   disableSmartContractEndpoints: false, // Disable smart contract read endpoints by default. This should be promoted to a network parameter. do not release this feature as a flag.
   debugGlobalAccountUpdateFail: false,
