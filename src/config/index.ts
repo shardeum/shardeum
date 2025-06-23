@@ -167,7 +167,7 @@ config = merge(config, {
     },
     features: {
       //This feature will restrict transactions to only coin transfers
-      dappFeature1enabled: true, //enabled for betanext 1.11.0
+      dappFeature1enabled: false, //enabled for betanext 1.11.0
     },
   },
 })
