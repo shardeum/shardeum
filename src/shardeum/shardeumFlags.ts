@@ -156,7 +156,7 @@ export const ShardeumFlags: ShardeumFlags = {
   CheckNonce: true,
   txNoncePreCheck: false,
   txBalancePreCheck: true,
-  autoGenerateAccessList: false,
+  autoGenerateAccessList: true,
   forwardGenesisAccounts: true,
   UseDBForAccounts: true,
   AppliedTxsMaps: false,
@@ -291,7 +291,7 @@ export const ShardeumFlags: ShardeumFlags = {
   cleanStaleShardeumStateMap: false,
   beta1_11_2: true,
 
-  evmFailOnUnexpectedAccount: true,
+  evmFailOnUnexpectedAccount: false, //work around disabled for the moment
   numberOfAccessListRetry: 3,
   useFutureBlockForAccessList: true,
   failedStakeReceipt: true,
