@@ -4,9 +4,9 @@ on:
   push:
     branches:
       - 'dev'
-      - 'mainnet-launch'
     tags:
       - '**'
+  workflow_dispatch:
 
 permissions:
   contents: read
