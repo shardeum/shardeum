@@ -16,6 +16,7 @@ import type { Block, Blockchain, EVMResult, Log } from './types.js'
 import type { Common, EVMStateManagerInterface } from '@ethereumjs/common'
 import { Utils } from '@shardeum-foundation/lib-types'
 import type { Address } from '@ethereumjs/util'
+import { ShardeumFlags } from '../shardeum/shardeumFlags.js'
 const { debug: createDebugLogger } = debugDefault
 
 const debugGas = createDebugLogger('evm:gas')
@@ -706,6 +707,22 @@ export class Interpreter {
     return baseFee
   }
 
+  /**
+   * Returns the Blob Base Fee of the block as proposed in [EIP-7516](https://eips.ethereum.org/EIPS/eip-7516)
+   */
+  getBlobBaseFee(): bigint {
+    if (ShardeumFlags.supportDenCunFork) {
+      return BigInt(ShardeumFlags.fixedBlobBaseFee)
+    }
+    
+    // Fallback to block's blob gas price if available
+    const blobBaseFee = this._env.block.header.getBlobGasPrice?.()
+    if (blobBaseFee === undefined) {
+      // If no blob base fee is configured and block doesn't provide one, throw error
+      throw new Error('Block has no Blob Base Fee')
+    }
+    return blobBaseFee
+  }
   /**
    * Returns the chain ID for current chain. Introduced for the
    * CHAINID opcode proposed in [EIP-1344](https://eips.ethereum.org/EIPS/eip-1344).

@@ -643,6 +643,14 @@ export const handlers: Map<number, OpHandler> = new Map([
       }
     },
   ],
+  // 0x4a: BLOBBASEFEE
+  [
+    0x4a,
+    function (runState): void {
+      runState.stack.push(runState.interpreter.getBlobBaseFee())
+    },
+  ],
+
   // 0x50 range - 'storage' and execution
   // 0x50: POP
   [

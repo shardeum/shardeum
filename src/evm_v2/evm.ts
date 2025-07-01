@@ -942,6 +942,7 @@ function defaultBlock(): Block {
       prevRandao: zeros(32),
       gasLimit: BigInt(0),
       baseFeePerGas: undefined,
+      getBlobGasPrice: () => BigInt(1), // Default blob gas price for default block
     },
   }
 }
