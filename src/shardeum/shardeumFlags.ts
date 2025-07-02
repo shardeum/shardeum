@@ -291,7 +291,7 @@ export const ShardeumFlags: ShardeumFlags = {
   cleanStaleShardeumStateMap: false,
   beta1_11_2: true,
 
-  evmFailOnUnexpectedAccount: false, //work around disabled for the moment
+  evmFailOnUnexpectedAccount: true, //this helps catch problems even in single sharded test networks.
   numberOfAccessListRetry: 3,
   useFutureBlockForAccessList: true,
   failedStakeReceipt: true,
