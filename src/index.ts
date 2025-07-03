@@ -183,6 +183,7 @@ import { TicketTypes, doesTransactionSenderHaveTicketType } from './setup/ticket
 import { buildFetchNetworkAccountFromArchiver } from './shardeum/services/networkAccountService'
 import { customGot } from './utils/customHttpFunctions'
 import { logEnvSetup } from './setup/environment'
+import { fireAndForget } from './utils/promises'
 
 let latestBlock = 0
 export const blocks: BlockMap = {}
@@ -3690,7 +3691,7 @@ async function generateAccessList(
         //TODO: tie into code bytes cache! should be a pre-fetch
 
         //promises.push(shardus.getLocalOrRemoteAccount(shardusAddr, {useRICache:true}))
-        fetchAndCacheAccountData(shardusAddr, warmupCache, warmupStats, true, txId, AccountType.ContractCode)
+        fireAndForget(() => fetchAndCacheAccountData(shardusAddr, warmupCache, warmupStats, true, txId, AccountType.ContractCode))
       }
       for (const accesListTuple of warmupList.accessList) {
         const contractAddress = accesListTuple[0]
@@ -3698,18 +3699,18 @@ async function generateAccessList(
 
         const shardusContractAddr = toShardusAddress(contractAddress, AccountType.Account)
         //promises.push(shardus.getLocalOrRemoteAccount(shardusContractAddr))
-        fetchAndCacheAccountData(shardusContractAddr, warmupCache, warmupStats, false, txId, AccountType.Account)
+        fireAndForget(() => fetchAndCacheAccountData(shardusContractAddr, warmupCache, warmupStats, false, txId, AccountType.Account))
         for (const storageAddr of storageArray) {
           const shardusStorageAddr = toShardusAddressWithKey(contractAddress, storageAddr, AccountType.ContractStorage)
           //promises.push(shardus.getLocalOrRemoteAccount(shardusStorageAddr))
-          fetchAndCacheAccountData(
+          fireAndForget(() => fetchAndCacheAccountData(
             shardusStorageAddr,
             warmupCache,
             warmupStats,
             false,
             txId,
             AccountType.ContractStorage
-          )
+          ))
         }
       }
 
@@ -6632,7 +6633,7 @@ const shardusSetup = (): void => {
       for (const account of accountRecords) {
         const decodedAccount = account as AccountsEntry
         shardus.setDebugSetLastAppAwait(`setCachedRIAccountData(${decodedAccount.accountId})`)
-        setCachedRIAccount(decodedAccount)
+        fireAndForget(() => setCachedRIAccount(decodedAccount))
         shardus.setDebugSetLastAppAwait(`setCachedRIAccountData(${decodedAccount.accountId})`, DebugComplete.Completed)
       }
     },
@@ -6876,7 +6877,7 @@ const shardusSetup = (): void => {
         //This next log is usefull but very heavy on the output lines:
         //Updating to be on only with verbose logs
         /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log('running transactionReceiptPass', txId, tx, wrappedStates, applyResponse)
-        _transactionReceiptPass(tx, txId, wrappedStates, applyResponse)
+        fireAndForget(() => _transactionReceiptPass(tx, txId, wrappedStates, applyResponse))
       }
 
       //clear this out of the shardeum state map
@@ -7749,7 +7750,7 @@ const shardusSetup = (): void => {
                 nodeId: data.nodeId,
               } as NodeInitTxData
               console.log('node-activated', 'injectInitRewardTimesTx', data.publicKey, txData)
-              shardus.serviceQueue.addNetworkTx('nodeInitReward', shardus.signAsNode(txData), data.publicKey)
+              fireAndForget(() => shardus.serviceQueue.addNetworkTx('nodeInitReward', shardus.signAsNode(txData), data.publicKey))
             }
           }
         } else if (eventType === 'node-deactivated') {
@@ -7766,7 +7767,7 @@ const shardusSetup = (): void => {
                 nodeId: data.nodeId,
               } as NodeRewardTxData
               console.log('node-deactivates', 'injectClaimRewardTx', data.publicKey, txData)
-              shardus.serviceQueue.addNetworkTx('nodeReward', shardus.signAsNode(txData), data.publicKey)
+              fireAndForget(() => shardus.serviceQueue.addNetworkTx('nodeReward', shardus.signAsNode(txData), data.publicKey))
             }
           }
         } else if (
