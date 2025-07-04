@@ -17,8 +17,8 @@ export const initialNetworkParamters: NetworkParameters = {
   restakeCooldown: THIRTY_MINUTES,
   maintenanceInterval: ONE_DAY,
   maintenanceFee: 0,
-  minVersion: '1.19.0',
-  activeVersion: '1.19.0',
+  minVersion: '1.19.1',
+  activeVersion: '1.19.1',
   latestVersion: '1.19.1',
   archiver: {
     minVersion: '3.6.0-prerelease.0',
