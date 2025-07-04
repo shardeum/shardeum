@@ -1073,6 +1073,9 @@ export default class TransactionState {
       // how does that apply to what we have given that we have no cache.
       //this.flushToCommittedValues()
     }
+  
+    if (this.debugTrace) this.debugTraceLog(`revert callstack: ${new Error().stack}`)
+
 
     if (ShardeumFlags.VerboseLogs) {
       // monitor counts the last tried remote accounts

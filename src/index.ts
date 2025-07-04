@@ -3963,9 +3963,28 @@ async function generateAccessList(
     if (runTxResult.execResult.exceptionError) {
       if (ShardeumFlags.VerboseLogs || logFlags.aalg)
         console.log('Execution Error:', runTxResult.execResult.exceptionError)
+
+      //temp extra logs.
+      if (ShardeumFlags.VerboseLogs || logFlags.aalg) {
+        // For the raw revert reason data (hex):
+        console.log('Raw return value:', runTxResult.execResult.returnValue.toString('hex'));
+
+        try{
+          const revertReason = decodeRevertReason(runTxResult.execResult.returnValue);
+          console.log('Decoded revert reason:', revertReason);
+        } catch (decodeError) {
+          console.error('Error decoding revert reason:', decodeError);
+        }
+
+        console.log('Full runTxResult:', runTxResult);
+      }
+
       /* prettier-ignore */ nestedCountersInstance.countEvent('accesslist', `Local Fail with evm error: CA ${transaction.to && ShardeumFlags.VerboseLogs ? transaction.to.toString() : ''}`)
       return { accessList: [], shardusMemoryPatterns: null, codeHashes: [], failedAccessList: true }
     }
+
+
+
     const isEmptyCodeHash = allCodeHash.size === 0
     if (isEmptyCodeHash) {
       /* prettier-ignore */ if (ShardeumFlags.VerboseLogs || logFlags.aalg) console.log(`aalg: empty codehash ${txId}
@@ -3985,6 +4004,27 @@ async function generateAccessList(
     nestedCountersInstance.countEvent('accesslist', `Local Fail: unknown`)
     return { accessList: [], shardusMemoryPatterns: null, codeHashes: [] }
   }
+}
+
+// No dependencies needed
+function decodeRevertReason(returnValue) {
+  // returnValue is a Buffer or hex string
+  const buf = Buffer.isBuffer(returnValue)
+    ? returnValue
+    : Buffer.from(returnValue.replace(/^0x/, ''), 'hex');
+
+  // Check for Error(string) selector
+  if (buf.slice(0, 4).toString('hex') !== '08c379a0') {
+    return '(no revert reason or not Error(string))';
+  }
+
+  // ABI decode: offset (32 bytes), then string length (32 bytes), then string
+  // Skip selector (4 bytes) + offset (32 bytes)
+  const strLen = buf.readUInt32BE(36 + 28); // string length is at byte 36 (4+32), but only last 4 bytes matter
+  const strStart = 68; // 4 (selector) + 32 (offset) + 32 (length)
+  const reason = buf.slice(strStart, strStart + strLen).toString();
+
+  return reason;
 }
 
 async function fetchAndCacheAccountData(
