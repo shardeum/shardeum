@@ -1046,10 +1046,15 @@ export default class TransactionState {
     //this.allAccountWrites.clear()
   }
 
-  revert(): void {
+  revert(message:string): void {
     if (ShardeumFlags.CheckpointRevertSupport === false) {
       return
     }
+
+    // always on for now consider. before merge to dev curate this log.
+    this.debugTraceLog(`revert: ${message} tx:${this.linkedTX} message:${message}`)
+    // temp but spammy counter to make things easier to debug. curate this later
+    nestedCountersInstance.countEvent('transactionState', `revert:${message} tx:${this.linkedTX}`)
 
     //we need checkpoint / revert stack support for accounts so that gas is handled correctly
 

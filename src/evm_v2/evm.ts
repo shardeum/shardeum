@@ -43,7 +43,8 @@ import type {
   EVMRunCodeOpts,
   ExecResult,
 } from './types.js'
-import type { EVMStateManagerInterface } from '@ethereumjs/common'
+//import type { EVMStateManagerInterface } from '@ethereumjs/common'
+import type { EVMStateManagerInterface } from './interfaces.js'
 import { ShardeumFlags } from '../shardeum/shardeumFlags'
 const { debug: createDebugLogger } = debugDefault
 
@@ -721,7 +722,7 @@ export class EVM implements EVMInterface {
     }
     if (err && !(this.common.hardfork() === Hardfork.Chainstart && err.error === ERROR.CODESTORE_OUT_OF_GAS)) {
       result.execResult.logs = []
-      await this.journal.revert()
+      await this.journal.revert('runCall: out of gas')
       if (this.common.isActivatedEIP(1153)) this.transientStorage.revert()
       if (this.DEBUG) {
         debug(`message checkpoint reverted`)
