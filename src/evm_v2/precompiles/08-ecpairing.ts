@@ -27,7 +27,7 @@ export function precompile08(opts: PrecompileInput): ExecResult {
     return OOGResult(opts.gasLimit)
   }
 
-  const returnData = hexToBytes(ec_pairing(bytesToUnprefixedHex(inputData)))
+  const returnData = hexToBytes('0x' + ec_pairing(bytesToUnprefixedHex(inputData)))
 
   // check ecpairing success or failure by comparing the output length
   if (returnData.length !== 32) {
