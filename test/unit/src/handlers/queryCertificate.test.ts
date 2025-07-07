@@ -58,7 +58,7 @@ describe('queryCertificate', () => {
     })
 
     it('should return success', async () => {
-      const mockResponse = { data: { account: { data: { id: 'abcd1234', success: true } } } }
+      const mockResponse = { data: { account: { data: { id: 'abcd1234', success: true, nominator: 'nominatorAddress' } } } }
       ;(shardusGetFromNode as jest.Mock).mockResolvedValue(mockResponse)
       ;(shardusPutToNode as jest.Mock).mockResolvedValue({
         data: {
@@ -85,6 +85,25 @@ describe('queryCertificate', () => {
 
       expect(result.success).toBe(true)
       expect(result.signedStakeCert).not.toBeNull()
+    })
+
+    it('should handle error when shardusPutToNode throws', async () => {
+      const mockResponse = { data: { account: { data: { id: 'abcd1234', success: true, nominator: 'nominatorAddress' } } } }
+      ;(shardusGetFromNode as jest.Mock).mockResolvedValue(mockResponse)
+      ;(shardusPutToNode as jest.Mock).mockRejectedValue(new Error('Network error'))
+      
+      // @ts-ignore
+      const mockShardus: Shardus = {
+        signAsNode: jest.fn().mockReturnValue({
+          nominator: 'account1234',
+          nominee: 'nominiee1234',
+          sign: '0xabcd',
+        }),
+      }
+
+      const result = await queryCertificate(mockShardus, 'publicKey', activeNodesMock)
+      
+      expect(result).toEqual({ success: false, reason: 'Failed to get query certificate' })
     })
   })
 
@@ -170,6 +189,31 @@ describe('queryCertificate', () => {
       expect(result).toEqual({ success: false, reason: 'Failed to fetch operator account state' })
     })
 
+    it('should handle when node account is not found', async () => {
+      const reqMock = {
+        body: {
+          nominee: '8780a8ba77e8b9088989fedac0b4f80c3017c91fd46ea09cf6306b6fd70ce561',
+          nominator: '0xb01DffeB41A2f4B3Bcc693d377879C8D4635EF2d',
+          sign: {},
+        } as QueryCertRequest,
+      } as Request
+
+      ;(crypto.verifyObj as jest.Mock).mockReturnValue(true)
+
+      // @ts-ignore
+      const mockShardus: Shardus = {
+        getLocalOrRemoteAccount: jest.fn()
+          .mockReturnValueOnce({ // First call returns operator account
+            accountId: 'account1234',
+            data: { ethAddress: '0xb01DffeB41A2f4B3Bcc693d377879C8D4635EF2d' },
+          })
+          .mockReturnValueOnce(null), // Second call returns null for node account
+      }
+
+      const result = await queryCertificateHandler(reqMock, mockShardus)
+      expect(result).toEqual({ success: false, reason: 'Failed to fetch node account state' })
+    })
+
     it('should handle operatorAccountInfo is null', async () => {
       const reqMock = {
         body: {
@@ -252,6 +296,7 @@ describe('queryCertificate', () => {
     })
 
     it('should return resp successfully', async () => {
+      const currentTime = Date.now()
       const reqMock = {
         body: {
           nominee: '8780a8ba77e8b9088989fedac0b4f80c3017c91fd46ea09cf6306b6fd70ce561',
@@ -264,17 +309,28 @@ describe('queryCertificate', () => {
 
       // @ts-ignore
       const mockShardus: Shardus = {
-        getLocalOrRemoteAccount: jest.fn().mockReturnValue({
-          accountId: 'account1234',
-          data: { ethAddress: '0xb01DffeB41A2f4B3Bcc693d377879C8D4635EF2d', operatorAccountInfo: {} },
-        }),
+        getLocalOrRemoteAccount: jest.fn()
+          .mockReturnValueOnce({ // First call - operator account
+            accountId: 'account1234',
+            data: { 
+              ethAddress: '0xb01DffeB41A2f4B3Bcc693d377879C8D4635EF2d', 
+              operatorAccountInfo: {
+                stake: BigInt(10000),
+                certExp: currentTime + 86400000
+              }
+            },
+          })
+          .mockReturnValueOnce({ // Second call - node account
+            accountId: 'nodeAccount1234',
+            data: { id: 'node123' },
+          }),
         getAppDataSignatures: jest.fn().mockReturnValue({
           success: true,
           signatures: ['0xabcd', '0xpoiu'],
         }),
       }
 
-      ;(shardeumGetTime as jest.Mock).mockReturnValue(Date.now())
+      ;(shardeumGetTime as jest.Mock).mockReturnValue(currentTime)
 
       const result = (await queryCertificateHandler(reqMock, mockShardus)) as CertSignaturesResult
       expect(result.success).toBe(true)
@@ -309,16 +365,37 @@ describe('queryCertificate', () => {
       const result = await getNodeAccountWithRetry('nodeAccountId', activeNodesMock)
       expect(result).toEqual({ success: false, reason: 'node busy' })
     })
+
+    it('should handle exception thrown by getNodeAccount', async () => {
+      ;(shardusGetFromNode as jest.Mock).mockRejectedValue(new Error('Network failure'))
+
+      const result = await getNodeAccountWithRetry('nodeAccountId', activeNodesMock)
+      // After retries are exhausted, it returns 'node busy' regardless of the actual error
+      expect(result).toEqual({ success: false, reason: 'node busy' })
+    })
+
+    it('should retry multiple times on failure before giving up', async () => {
+      ;(shardusGetFromNode as jest.Mock)
+        .mockRejectedValueOnce(new Error('Network error 1'))
+        .mockRejectedValueOnce(new Error('Network error 2'))
+        .mockRejectedValueOnce(new Error('Network error 3'))
+        .mockRejectedValueOnce(new Error('Network error 4'))
+
+      const result = await getNodeAccountWithRetry('nodeAccountId', activeNodesMock)
+      
+      expect(result).toEqual({ success: false, reason: 'node busy' })
+      expect(shardusGetFromNode).toHaveBeenCalledTimes(4) // maxNodeAccountRetries + 1
+    })
   })
 
   describe('InjectTxToConsensor', () => {
     const txMock = {} as any
-    const nodesMock: ShardusTypes.ValidatorNodeDetails[] = [{ id: 'node1' }] as any
+    const nodesMock: ShardusTypes.ValidatorNodeDetails[] = [{ id: 'node1' }, { id: 'node2' }] as any
 
     it('should return success if at least one request succeeds', async () => {
       jest
         .spyOn(require('../../../../src/utils/requests'), 'shardusPostToNode')
-        .mockResolvedValueOnce({ data: { success: true } })
+        .mockResolvedValue({ data: { success: true } })
 
       const result = await InjectTxToConsensor(nodesMock, txMock)
       expect(result.success).toBe(true)
@@ -331,6 +408,44 @@ describe('queryCertificate', () => {
 
       const result = await InjectTxToConsensor(nodesMock, txMock)
       expect(result.success).toBe(false)
+    })
+
+    it('should handle exception thrown by shardusPostToNode', async () => {
+      jest
+        .spyOn(require('../../../../src/utils/requests'), 'shardusPostToNode')
+        .mockRejectedValue(new Error('Post failed'))
+
+      const result = await InjectTxToConsensor(nodesMock, txMock)
+      expect(result).toEqual({ success: false, reason: 'Post failed' })
+    })
+
+    it('should handle timeout in raceForSuccess', async () => {
+      jest
+        .spyOn(require('../../../../src/utils/requests'), 'shardusPostToNode')
+        .mockImplementation(() => new Promise(() => {})) // Never resolving promise
+
+      const result = await InjectTxToConsensor([{ id: 'node1' }] as any, txMock)
+      expect(result).toEqual({ success: false, reason: 'Timeout: Operation did not complete within the allowed time.' })
+    }, 6000)
+
+    it('should handle mixed success and rejection responses', async () => {
+      const postSpy = jest.spyOn(require('../../../../src/utils/requests'), 'shardusPostToNode')
+      postSpy
+        .mockRejectedValueOnce(new Error('First node failed'))
+        .mockResolvedValueOnce({ data: { success: true, txid: '123' } })
+
+      const result = await InjectTxToConsensor(nodesMock, txMock)
+      expect(result.success).toBe(true)
+    })
+
+    it('should return unsuccessful response when all promises fail', async () => {
+      const postSpy = jest.spyOn(require('../../../../src/utils/requests'), 'shardusPostToNode')
+      postSpy
+        .mockResolvedValueOnce({ data: { success: false, reason: 'validation failed' } })
+        .mockResolvedValueOnce({ data: { success: false, reason: 'duplicate tx' } })
+
+      const result = await InjectTxToConsensor(nodesMock, txMock)
+      expect(result).toEqual({ success: false, reason: 'duplicate tx' })
     })
   })
 
