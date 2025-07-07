@@ -47,7 +47,7 @@ export function serializeNodeAccount(
   }
 
   stream.writeString(obj.stakeLock.toString())
-  stream.writeBigUInt64(BigInt(obj.stakeTimestamp.toString()))
+  stream.writeBigUInt64(BigInt(obj.stakeTimestamp))
   stream.writeString(obj.reward.toString())
   stream.writeBigUInt64(BigInt(obj.rewardStartTime))
   stream.writeBigUInt64(BigInt(obj.rewardEndTime))
@@ -56,7 +56,7 @@ export function serializeNodeAccount(
   stream.writeString(Utils.safeStringify(obj.nodeAccountStats))
 
   stream.writeUInt8(obj.rewarded ? 1 : 0) // Serialize boolean as UInt8
-  stream.writeBigUInt64(BigInt(obj.rewardRate.toString()))
+  stream.writeBigUInt64(obj.rewardRate)
 }
 
 export function deserializeNodeAccount(stream: VectorBufferStream): NodeAccount {

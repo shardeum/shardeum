@@ -362,7 +362,7 @@ export interface NetworkAccount extends BaseAccount {
 //type guard
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function isNetworkAccount(obj: any): obj is NetworkAccount {
-  return 'current' in obj && 'listOfChanges' in obj && 'next' in obj
+  return obj != null && typeof obj === 'object' && 'current' in obj && 'listOfChanges' in obj && 'next' in obj
 }
 
 export interface NetworkParameters {
@@ -426,7 +426,7 @@ export interface NodeAccount2 extends BaseAccount {
 //type guard
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function isNodeAccount2(obj: any): obj is NodeAccount2 {
-  return 'nodeAccountStats' in obj && 'rewardStartTime' in obj && 'rewardEndTime' in obj
+  return obj != null && typeof obj === 'object' && 'nodeAccountStats' in obj && 'rewardStartTime' in obj && 'rewardEndTime' in obj
 }
 
 export interface NodeAccountStats {

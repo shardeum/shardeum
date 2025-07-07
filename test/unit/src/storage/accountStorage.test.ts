@@ -243,7 +243,7 @@ describe('accountStorage', () => {
       expect(mockStorageInstance.createOrReplaceAccountEntry).not.toHaveBeenCalled()
     })
 
-    it('should log error when important_as_fatal is true', async () => {
+    it('should log error when storage fails and important_as_fatal is true', async () => {
       const mockBaseDir = '/test/base/dir'
       const mockDbPath = '/test/db/path'
       const mockError = new Error('Storage error')
@@ -255,15 +255,20 @@ describe('accountStorage', () => {
       ;(Storage as jest.Mock).mockImplementation(() => mockStorageInstance)
       logFlags.important_as_fatal = true
 
-      const consoleSpy = jest.spyOn(console, 'log')
+      const consoleLogSpy = jest.spyOn(console, 'log').mockImplementation(() => {})
+      const consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation(() => {})
 
       await init(mockBaseDir, mockDbPath)
 
-      try {
-        await setAccount(mockAddress, mockWrappedAccount)
-      } catch (e) {
-        expect(consoleSpy).toHaveBeenCalledWith('Error: while trying to set account', 'Storage error')
-      }
+      await setAccount(mockAddress, mockWrappedAccount)
+      
+      expect(consoleErrorSpy).toHaveBeenCalledWith(
+        'Blew up trying to set account',
+        expect.any(String),
+        mockError
+      )
+      
+      expect(consoleLogSpy).toHaveBeenCalledWith('Error: while trying to set account', 'Storage error')
     })
   })
 
