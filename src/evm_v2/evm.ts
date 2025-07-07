@@ -722,7 +722,7 @@ export class EVM implements EVMInterface {
     }
     if (err && !(this.common.hardfork() === Hardfork.Chainstart && err.error === ERROR.CODESTORE_OUT_OF_GAS)) {
       result.execResult.logs = []
-      await this.journal.revert('runCall: out of gas')
+      await this.journal.revert('runCall:' + err.error)
       if (this.common.isActivatedEIP(1153)) this.transientStorage.revert()
       if (this.DEBUG) {
         debug(`message checkpoint reverted`)
