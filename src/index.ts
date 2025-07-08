@@ -2025,14 +2025,19 @@ const configShardusEndpoints = (): void => {
 
       if (callResult.execResult.exceptionError) {
         if (ShardeumFlags.VerboseLogs) console.log('Execution Error:', callResult.execResult.exceptionError)
+        
+        let revertReason = callResult.execResult.exceptionError.error as string
+        
+        const decodedReason = decodeRevertReasonFromReturnValue(callResult.execResult.returnValue);
+        if (decodedReason) {
+          revertReason = decodedReason;
+        }
+        
         res.json({
           result: {
             error: {
               code: -32000,
-              message:
-                `execution reverted: ${callResult.execResult.exceptionError.errorType} ` +
-                `${callResult.execResult.exceptionError.error}`,
-              data: bytesToHex(callResult.execResult.returnValue),
+              message: `execution reverted: ${revertReason}`,
             },
           },
         })
@@ -3564,7 +3569,7 @@ async function estimateGas(
 
   if (runTxResult.execResult.exceptionError) {
     if (ShardeumFlags.VerboseLogs) console.log('Execution Error:', runTxResult.execResult.exceptionError)
-    throw new Error(runTxResult.execResult.exceptionError)
+    throw new Error(runTxResult.execResult.exceptionError.error)
   }
 
   if (!isValid) {
@@ -3587,6 +3592,7 @@ async function generateAccessList(
   failedAccessList?: boolean
   accessList: any[]
   codeHashes: CodeHashObj[]
+  failureReason?: string
 }> {
   try {
     const transaction = getTransactionObj(injectedTx)
@@ -3639,7 +3645,7 @@ async function generateAccessList(
         }
         nestedCountersInstance.countEvent('accesslist', `give up after ${ShardeumFlags.numberOfAccessListRetry} tries`)
         /* prettier-ignore */ if (logFlags.dapp_verbose || logFlags.aalg) console.log(`AccessList: give up after ${ShardeumFlags.numberOfAccessListRetry} tries`)
-        return { accessList: [], shardusMemoryPatterns: null, codeHashes: [], failedAccessList: true }
+        return { accessList: [], shardusMemoryPatterns: null, codeHashes: [], failedAccessList: true, failureReason: `Remote shard access list generation failed after ${ShardeumFlags.numberOfAccessListRetry} retries` }
       } else {
         /* prettier-ignore */ if (logFlags.dapp_verbose || logFlags.aalg) console.log(`Node is in remote shard: false`)
       }
@@ -3768,7 +3774,7 @@ async function generateAccessList(
 
     if (transaction == null) {
       nestedCountersInstance.countEvent('accesslist', 'transaction is null')
-      return { accessList: [], shardusMemoryPatterns: null, codeHashes: [] }
+      return { accessList: [], shardusMemoryPatterns: null, codeHashes: [], failedAccessList: true, failureReason: 'Transaction object is null' }
     }
     const txStart = Date.now()
 
@@ -3977,7 +3983,7 @@ async function generateAccessList(
         console.log('Raw return value:', runTxResult.execResult.returnValue.toString('hex'));
 
         try{
-          const revertReason = decodeRevertReason(runTxResult.execResult.returnValue);
+          const revertReason = decodeRevertReasonFromReturnValue(runTxResult.execResult.returnValue);
           console.log('Decoded revert reason:', revertReason);
         } catch (decodeError) {
           console.error('Error decoding revert reason:', decodeError);
@@ -3987,7 +3993,9 @@ async function generateAccessList(
       }
 
       /* prettier-ignore */ nestedCountersInstance.countEvent('accesslist', `Local Fail with evm error: CA ${transaction.to && ShardeumFlags.VerboseLogs ? transaction.to.toString() : ''}`)
-      return { accessList: [], shardusMemoryPatterns: null, codeHashes: [], failedAccessList: true }
+      const revertReason = runTxResult.execResult.returnValue ? decodeRevertReasonFromReturnValue(runTxResult.execResult.returnValue) : null
+      const errorDetails = revertReason ? `: ${revertReason}` : ''
+      return { accessList: [], shardusMemoryPatterns: null, codeHashes: [], failedAccessList: true, failureReason: `EVM execution error: ${runTxResult.execResult.exceptionError.error}${errorDetails}` }
     }
 
 
@@ -4005,33 +4013,39 @@ async function generateAccessList(
       shardusMemoryPatterns,
       codeHashes: Array.from(allCodeHash.values()),
       failedAccessList: isEmptyCodeHash,
+      failureReason: isEmptyCodeHash ? 'No code hashes found for involved contracts' : undefined,
     }
   } catch (e) {
     console.log(`Error: generateAccessList`, e)
     nestedCountersInstance.countEvent('accesslist', `Local Fail: unknown`)
-    return { accessList: [], shardusMemoryPatterns: null, codeHashes: [] }
+    return { accessList: [], shardusMemoryPatterns: null, codeHashes: [], failedAccessList: true, failureReason: `Unexpected error: ${e.message || e}` }
   }
 }
 
-// No dependencies needed
-function decodeRevertReason(returnValue) {
-  // returnValue is a Buffer or hex string
-  const buf = Buffer.isBuffer(returnValue)
-    ? returnValue
-    : Buffer.from(returnValue.replace(/^0x/, ''), 'hex');
-
-  // Check for Error(string) selector
-  if (buf.slice(0, 4).toString('hex') !== '08c379a0') {
-    return '(no revert reason or not Error(string))';
+// Helper function to decode revert reason from EVM return data
+function decodeRevertReasonFromReturnValue(returnValue: Uint8Array): string | null {
+  if (!returnValue || returnValue.length === 0) {
+    return null;
   }
-
-  // ABI decode: offset (32 bytes), then string length (32 bytes), then string
-  // Skip selector (4 bytes) + offset (32 bytes)
-  const strLen = buf.readUInt32BE(36 + 28); // string length is at byte 36 (4+32), but only last 4 bytes matter
-  const strStart = 68; // 4 (selector) + 32 (offset) + 32 (length)
-  const reason = buf.slice(strStart, strStart + strLen).toString();
-
-  return reason;
+  
+  try {
+    const returnDataHex = bytesToHex(returnValue);
+    
+    // Check if it's a standard Error(string) revert (selector 0x08c379a0)
+    if (returnDataHex.startsWith('0x08c379a0') && returnDataHex.length >= 138) {
+      const lengthHex = '0x' + returnDataHex.slice(74, 138);
+      const stringLength = parseInt(lengthHex, 16);
+      
+      if (stringLength > 0) {
+        const stringHex = returnDataHex.slice(138, 138 + stringLength * 2);
+        return Buffer.from(stringHex, 'hex').toString('utf8');
+      }
+    }
+  } catch (e) {
+    // If decoding fails, return null
+  }
+  
+  return null;
 }
 
 async function fetchAndCacheAccountData(
@@ -5178,7 +5192,14 @@ const shardusSetup = (): void => {
           s: bigIntToHex(transaction.s),
         }
         if (runTxResult.execResult.exceptionError) {
-          readableReceipt.reason = runTxResult.execResult.exceptionError.error
+          let revertReason = runTxResult.execResult.exceptionError.error as string
+          
+          const decodedReason = decodeRevertReasonFromReturnValue(runTxResult.execResult.returnValue);
+          if (decodedReason) {
+            revertReason = decodedReason;
+          }
+          
+          readableReceipt.reason = revertReason
         }
         wrappedReceiptAccount = {
           timestamp: txTimestamp,
@@ -5521,6 +5542,7 @@ const shardusSetup = (): void => {
               failedAccessList,
               accessList: generatedAccessList,
               codeHashes,
+              failureReason,
             } = await generateAccessList(tx, appData?.warmupList, 'txPrecrackData')
             profilerInstance.scopedProfileSectionEnd('accesslist-generate')
 
@@ -5537,14 +5559,19 @@ const shardusSetup = (): void => {
             appData.shardusMemoryPatterns = shardusMemoryPatterns
             appData.codeHashes = codeHashes
             if (failedAccessList) {
-              return { status: false, reason: `Failed to generate access list ${Date.now() - aalgStart}` }
+              const elapsedTime = Date.now() - aalgStart
+              const targetAddress = transaction.to ? transaction.to.toString() : 'contract deployment'
+              const failureDetails = failureReason ? `: ${failureReason}` : ''
+              return { status: false, reason: `Failed to generate access list for ${targetAddress} (elapsed: ${elapsedTime}ms)${failureDetails}` }
             }
 
             if (appData.accessList && appData.accessList.length > 0) {
               /* prettier-ignore */ nestedCountersInstance.countEvent('shardeum', 'precrack' + ' -' + ' generateAccessList success: true')
             } else {
               /* prettier-ignore */ nestedCountersInstance.countEvent('shardeum', 'precrack' + ' -' + ' generateAccessList success: false')
-              return { status: false, reason: `Failed to generate access list2 ${Date.now() - aalgStart}` }
+              const elapsedTime = Date.now() - aalgStart
+              const targetAddress = transaction.to ? transaction.to.toString() : 'contract deployment'
+              return { status: false, reason: `Failed to generate access list for ${targetAddress} (elapsed: ${elapsedTime}ms): Empty access list returned` }
             }
           }
         }
