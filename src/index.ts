@@ -2024,14 +2024,19 @@ const configShardusEndpoints = (): void => {
 
       if (callResult.execResult.exceptionError) {
         if (ShardeumFlags.VerboseLogs) console.log('Execution Error:', callResult.execResult.exceptionError)
+        
+        let revertReason = callResult.execResult.exceptionError.error as string
+        
+        const decodedReason = decodeRevertReasonFromReturnValue(callResult.execResult.returnValue);
+        if (decodedReason) {
+          revertReason = decodedReason;
+        }
+        
         res.json({
           result: {
             error: {
               code: -32000,
-              message:
-                `execution reverted: ${callResult.execResult.exceptionError.errorType} ` +
-                `${callResult.execResult.exceptionError.error}`,
-              data: bytesToHex(callResult.execResult.returnValue),
+              message: `execution reverted: ${revertReason}`,
             },
           },
         })
@@ -3970,7 +3975,7 @@ async function generateAccessList(
         console.log('Raw return value:', runTxResult.execResult.returnValue.toString('hex'));
 
         try{
-          const revertReason = decodeRevertReason(runTxResult.execResult.returnValue);
+          const revertReason = decodeRevertReasonFromReturnValue(runTxResult.execResult.returnValue);
           console.log('Decoded revert reason:', revertReason);
         } catch (decodeError) {
           console.error('Error decoding revert reason:', decodeError);
@@ -4006,25 +4011,30 @@ async function generateAccessList(
   }
 }
 
-// No dependencies needed
-function decodeRevertReason(returnValue) {
-  // returnValue is a Buffer or hex string
-  const buf = Buffer.isBuffer(returnValue)
-    ? returnValue
-    : Buffer.from(returnValue.replace(/^0x/, ''), 'hex');
-
-  // Check for Error(string) selector
-  if (buf.slice(0, 4).toString('hex') !== '08c379a0') {
-    return '(no revert reason or not Error(string))';
+// Helper function to decode revert reason from EVM return data
+function decodeRevertReasonFromReturnValue(returnValue: Uint8Array): string | null {
+  if (!returnValue || returnValue.length === 0) {
+    return null;
   }
-
-  // ABI decode: offset (32 bytes), then string length (32 bytes), then string
-  // Skip selector (4 bytes) + offset (32 bytes)
-  const strLen = buf.readUInt32BE(36 + 28); // string length is at byte 36 (4+32), but only last 4 bytes matter
-  const strStart = 68; // 4 (selector) + 32 (offset) + 32 (length)
-  const reason = buf.slice(strStart, strStart + strLen).toString();
-
-  return reason;
+  
+  try {
+    const returnDataHex = bytesToHex(returnValue);
+    
+    // Check if it's a standard Error(string) revert (selector 0x08c379a0)
+    if (returnDataHex.startsWith('0x08c379a0') && returnDataHex.length >= 138) {
+      const lengthHex = '0x' + returnDataHex.slice(74, 138);
+      const stringLength = parseInt(lengthHex, 16);
+      
+      if (stringLength > 0) {
+        const stringHex = returnDataHex.slice(138, 138 + stringLength * 2);
+        return Buffer.from(stringHex, 'hex').toString('utf8');
+      }
+    }
+  } catch (e) {
+    // If decoding fails, return null
+  }
+  
+  return null;
 }
 
 async function fetchAndCacheAccountData(
@@ -5171,7 +5181,14 @@ const shardusSetup = (): void => {
           s: bigIntToHex(transaction.s),
         }
         if (runTxResult.execResult.exceptionError) {
-          readableReceipt.reason = runTxResult.execResult.exceptionError.error
+          let revertReason = runTxResult.execResult.exceptionError.error as string
+          
+          const decodedReason = decodeRevertReasonFromReturnValue(runTxResult.execResult.returnValue);
+          if (decodedReason) {
+            revertReason = decodedReason;
+          }
+          
+          readableReceipt.reason = revertReason
         }
         wrappedReceiptAccount = {
           timestamp: txTimestamp,
