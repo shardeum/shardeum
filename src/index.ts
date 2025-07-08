@@ -3568,7 +3568,7 @@ async function estimateGas(
 
   if (runTxResult.execResult.exceptionError) {
     if (ShardeumFlags.VerboseLogs) console.log('Execution Error:', runTxResult.execResult.exceptionError)
-    throw new Error(runTxResult.execResult.exceptionError)
+    throw new Error(runTxResult.execResult.exceptionError.error)
   }
 
   if (!isValid) {
@@ -3591,6 +3591,7 @@ async function generateAccessList(
   failedAccessList?: boolean
   accessList: any[]
   codeHashes: CodeHashObj[]
+  failureReason?: string
 }> {
   try {
     const transaction = getTransactionObj(injectedTx)
@@ -3643,7 +3644,7 @@ async function generateAccessList(
         }
         nestedCountersInstance.countEvent('accesslist', `give up after ${ShardeumFlags.numberOfAccessListRetry} tries`)
         /* prettier-ignore */ if (logFlags.dapp_verbose || logFlags.aalg) console.log(`AccessList: give up after ${ShardeumFlags.numberOfAccessListRetry} tries`)
-        return { accessList: [], shardusMemoryPatterns: null, codeHashes: [], failedAccessList: true }
+        return { accessList: [], shardusMemoryPatterns: null, codeHashes: [], failedAccessList: true, failureReason: `Remote shard access list generation failed after ${ShardeumFlags.numberOfAccessListRetry} retries` }
       } else {
         /* prettier-ignore */ if (logFlags.dapp_verbose || logFlags.aalg) console.log(`Node is in remote shard: false`)
       }
@@ -3766,7 +3767,7 @@ async function generateAccessList(
 
     if (transaction == null) {
       nestedCountersInstance.countEvent('accesslist', 'transaction is null')
-      return { accessList: [], shardusMemoryPatterns: null, codeHashes: [] }
+      return { accessList: [], shardusMemoryPatterns: null, codeHashes: [], failedAccessList: true, failureReason: 'Transaction object is null' }
     }
     const txStart = Date.now()
 
@@ -3985,7 +3986,9 @@ async function generateAccessList(
       }
 
       /* prettier-ignore */ nestedCountersInstance.countEvent('accesslist', `Local Fail with evm error: CA ${transaction.to && ShardeumFlags.VerboseLogs ? transaction.to.toString() : ''}`)
-      return { accessList: [], shardusMemoryPatterns: null, codeHashes: [], failedAccessList: true }
+      const revertReason = runTxResult.execResult.returnValue ? decodeRevertReasonFromReturnValue(runTxResult.execResult.returnValue) : null
+      const errorDetails = revertReason ? `: ${revertReason}` : ''
+      return { accessList: [], shardusMemoryPatterns: null, codeHashes: [], failedAccessList: true, failureReason: `EVM execution error: ${runTxResult.execResult.exceptionError.error}${errorDetails}` }
     }
 
 
@@ -4003,11 +4006,12 @@ async function generateAccessList(
       shardusMemoryPatterns,
       codeHashes: Array.from(allCodeHash.values()),
       failedAccessList: isEmptyCodeHash,
+      failureReason: isEmptyCodeHash ? 'No code hashes found for involved contracts' : undefined,
     }
   } catch (e) {
     console.log(`Error: generateAccessList`, e)
     nestedCountersInstance.countEvent('accesslist', `Local Fail: unknown`)
-    return { accessList: [], shardusMemoryPatterns: null, codeHashes: [] }
+    return { accessList: [], shardusMemoryPatterns: null, codeHashes: [], failedAccessList: true, failureReason: `Unexpected error: ${e.message || e}` }
   }
 }
 
@@ -5531,6 +5535,7 @@ const shardusSetup = (): void => {
               failedAccessList,
               accessList: generatedAccessList,
               codeHashes,
+              failureReason,
             } = await generateAccessList(tx, appData?.warmupList, 'txPrecrackData')
             profilerInstance.scopedProfileSectionEnd('accesslist-generate')
 
@@ -5547,14 +5552,19 @@ const shardusSetup = (): void => {
             appData.shardusMemoryPatterns = shardusMemoryPatterns
             appData.codeHashes = codeHashes
             if (failedAccessList) {
-              return { status: false, reason: `Failed to generate access list ${Date.now() - aalgStart}` }
+              const elapsedTime = Date.now() - aalgStart
+              const targetAddress = transaction.to ? transaction.to.toString() : 'contract deployment'
+              const failureDetails = failureReason ? `: ${failureReason}` : ''
+              return { status: false, reason: `Failed to generate access list for ${targetAddress} (elapsed: ${elapsedTime}ms)${failureDetails}` }
             }
 
             if (appData.accessList && appData.accessList.length > 0) {
               /* prettier-ignore */ nestedCountersInstance.countEvent('shardeum', 'precrack' + ' -' + ' generateAccessList success: true')
             } else {
               /* prettier-ignore */ nestedCountersInstance.countEvent('shardeum', 'precrack' + ' -' + ' generateAccessList success: false')
-              return { status: false, reason: `Failed to generate access list2 ${Date.now() - aalgStart}` }
+              const elapsedTime = Date.now() - aalgStart
+              const targetAddress = transaction.to ? transaction.to.toString() : 'contract deployment'
+              return { status: false, reason: `Failed to generate access list for ${targetAddress} (elapsed: ${elapsedTime}ms): Empty access list returned` }
             }
           }
         }
