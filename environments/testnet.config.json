@@ -1,7 +1,7 @@
 {
   "server": {
     "p2p": {
-      "baselineNodes": 20,
+      "baselineNodes": 5,
       "minNodes": 20,
       "maxNodes": 1280,
       "syncingDesiredMinCount": 5,
