@@ -169,7 +169,7 @@ export function precompile05(opts: PrecompileInput): ExecResult {
     }
   }
 
-  const res = setLengthLeft(bigIntToBytes(R), Number(mLen))
+  const res = setLengthLeft(R, Number(mLen))
   if (opts._debug !== undefined) {
     opts._debug(`MODEXP (0x05) return value=${bytesToHex(res)}`)
   }
