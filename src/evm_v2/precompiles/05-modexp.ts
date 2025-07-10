@@ -126,19 +126,13 @@ export function precompile05(opts: PrecompileInput): ExecResult {
     return OOGResult(opts.gasLimit)
   }
 
-  if (bLen === BigInt(0)) {
+  if (bLen === BigInt(0) && mLen === BigInt(0)) {
     return {
       executionGasUsed: gasUsed,
-      returnValue: setLengthLeft(bigIntToBytes(BigInt(0)), Number(mLen)),
+      returnValue: new Uint8Array(),
     }
   }
 
-  if (mLen === BigInt(0)) {
-    return {
-      executionGasUsed: gasUsed,
-      returnValue: new Uint8Array(0),
-    }
-  }
 
   const maxInt = BigInt(Number.MAX_SAFE_INTEGER)
   const maxSize = BigInt(2147483647) // @ethereumjs/util setLengthRight limitation
@@ -150,10 +144,6 @@ export function precompile05(opts: PrecompileInput): ExecResult {
     return OOGResult(opts.gasLimit)
   }
 
-  const B = bytesToBigInt(setLengthRight(data.subarray(Number(bStart), Number(bEnd)), Number(bLen)))
-  const E = bytesToBigInt(setLengthRight(data.subarray(Number(eStart), Number(eEnd)), Number(eLen)))
-  const M = bytesToBigInt(setLengthRight(data.subarray(Number(mStart), Number(mEnd)), Number(mLen)))
-
   if (mEnd > maxInt) {
     if (opts._debug !== undefined) {
       opts._debug(`MODEXP (0x05) failed: OOG`)
@@ -161,11 +151,22 @@ export function precompile05(opts: PrecompileInput): ExecResult {
     return OOGResult(opts.gasLimit)
   }
 
+  const B = bytesToBigInt(setLengthRight(data.subarray(Number(bStart), Number(bEnd)), Number(bLen)))
+  const E = bytesToBigInt(setLengthRight(data.subarray(Number(eStart), Number(eEnd)), Number(eLen)))
+  const M = bytesToBigInt(setLengthRight(data.subarray(Number(mStart), Number(mEnd)), Number(mLen)))
+
+
+
   let R
   if (M === BigInt(0)) {
-    R = BigInt(0)
+    R = new Uint8Array()
   } else {
     R = expmod(B, E, M)
+    if (R === BigInt(0)) {
+      R = new Uint8Array()
+    } else {
+      R = bigIntToBytes(R)
+    }
   }
 
   const res = setLengthLeft(bigIntToBytes(R), Number(mLen))
@@ -175,6 +176,6 @@ export function precompile05(opts: PrecompileInput): ExecResult {
 
   return {
     executionGasUsed: gasUsed,
-    returnValue: setLengthLeft(bigIntToBytes(R), Number(mLen)),
+    returnValue: res,
   }
 }
