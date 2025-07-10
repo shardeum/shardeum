@@ -28,10 +28,9 @@ export function isInternalTXGlobal(internalTx: InternalTx): boolean {
   )
 }
 
-export function isDestLimitTx(appData:any): boolean {
+export function isDestLimitTx(appData: any): boolean {
   return appData?.isCoinTransfer === true
 }
-
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function isInternalTx(timestampedTx: any): boolean {
@@ -42,8 +41,7 @@ export function isInternalTx(timestampedTx: any): boolean {
 }
 
 export function isMultiSigFoundationTx(timestampedTx: any): boolean {
-  if(isInternalTx(timestampedTx) == false) 
-    return false
+  if (isInternalTx(timestampedTx) == false) return false
   const internalTx = timestampedTx as InternalTx
   return (
     internalTx.internalTXType === InternalTXType.ChangeConfig ||

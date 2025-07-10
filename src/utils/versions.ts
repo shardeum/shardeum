@@ -8,7 +8,7 @@ export let operatorGUIVersion = ''
 export function readOperatorVersions(): { operatorCLIVersion: string; operatorGUIVersion: string } {
   let cliVersion = ''
   let guiVersion = ''
-  
+
   // Read the operator version from the CLI
   try {
     // eslint-disable-next-line security/detect-non-literal-fs-filename

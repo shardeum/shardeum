@@ -426,7 +426,13 @@ export interface NodeAccount2 extends BaseAccount {
 //type guard
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function isNodeAccount2(obj: any): obj is NodeAccount2 {
-  return obj != null && typeof obj === 'object' && 'nodeAccountStats' in obj && 'rewardStartTime' in obj && 'rewardEndTime' in obj
+  return (
+    obj != null &&
+    typeof obj === 'object' &&
+    'nodeAccountStats' in obj &&
+    'rewardStartTime' in obj &&
+    'rewardEndTime' in obj
+  )
 }
 
 export interface NodeAccountStats {

@@ -5,14 +5,7 @@ import { Message } from './message.js'
 import { getActivePrecompiles } from './precompiles/index.js'
 
 // Export runtime values
-export {
-  EOF,
-  EVM,
-  EvmError,
-  EVMErrorMessage,
-  getActivePrecompiles,
-  Message,
-}
+export { EOF, EVM, EvmError, EVMErrorMessage, getActivePrecompiles, Message }
 
 // Export types
 export type { InterpreterStep } from './interpreter.js'

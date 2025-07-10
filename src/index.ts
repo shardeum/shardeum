@@ -3691,7 +3691,9 @@ async function generateAccessList(
         //TODO: tie into code bytes cache! should be a pre-fetch
 
         //promises.push(shardus.getLocalOrRemoteAccount(shardusAddr, {useRICache:true}))
-        fireAndForget(() => fetchAndCacheAccountData(shardusAddr, warmupCache, warmupStats, true, txId, AccountType.ContractCode))
+        fireAndForget(() =>
+          fetchAndCacheAccountData(shardusAddr, warmupCache, warmupStats, true, txId, AccountType.ContractCode)
+        )
       }
       for (const accesListTuple of warmupList.accessList) {
         const contractAddress = accesListTuple[0]
@@ -3699,18 +3701,22 @@ async function generateAccessList(
 
         const shardusContractAddr = toShardusAddress(contractAddress, AccountType.Account)
         //promises.push(shardus.getLocalOrRemoteAccount(shardusContractAddr))
-        fireAndForget(() => fetchAndCacheAccountData(shardusContractAddr, warmupCache, warmupStats, false, txId, AccountType.Account))
+        fireAndForget(() =>
+          fetchAndCacheAccountData(shardusContractAddr, warmupCache, warmupStats, false, txId, AccountType.Account)
+        )
         for (const storageAddr of storageArray) {
           const shardusStorageAddr = toShardusAddressWithKey(contractAddress, storageAddr, AccountType.ContractStorage)
           //promises.push(shardus.getLocalOrRemoteAccount(shardusStorageAddr))
-          fireAndForget(() => fetchAndCacheAccountData(
-            shardusStorageAddr,
-            warmupCache,
-            warmupStats,
-            false,
-            txId,
-            AccountType.ContractStorage
-          ))
+          fireAndForget(() =>
+            fetchAndCacheAccountData(
+              shardusStorageAddr,
+              warmupCache,
+              warmupStats,
+              false,
+              txId,
+              AccountType.ContractStorage
+            )
+          )
         }
       }
 
@@ -5360,7 +5366,7 @@ const shardusSetup = (): void => {
 
         // dappFeature1enabled is our coin-transfer-only mode. Crack if it calls EVM
         const isCoinTransfer = isSimpleTransfer || (remoteTargetAccount == null && appData.newCAAddr == null)
-        if(isCoinTransfer){
+        if (isCoinTransfer) {
           appData.isCoinTransfer = true
         }
         if (shardusConfig.features.dappFeature1enabled && !isStakeRelatedTx && !isCoinTransfer) {
@@ -7750,7 +7756,9 @@ const shardusSetup = (): void => {
                 nodeId: data.nodeId,
               } as NodeInitTxData
               console.log('node-activated', 'injectInitRewardTimesTx', data.publicKey, txData)
-              fireAndForget(() => shardus.serviceQueue.addNetworkTx('nodeInitReward', shardus.signAsNode(txData), data.publicKey))
+              fireAndForget(() =>
+                shardus.serviceQueue.addNetworkTx('nodeInitReward', shardus.signAsNode(txData), data.publicKey)
+              )
             }
           }
         } else if (eventType === 'node-deactivated') {
@@ -7767,7 +7775,9 @@ const shardusSetup = (): void => {
                 nodeId: data.nodeId,
               } as NodeRewardTxData
               console.log('node-deactivates', 'injectClaimRewardTx', data.publicKey, txData)
-              fireAndForget(() => shardus.serviceQueue.addNetworkTx('nodeReward', shardus.signAsNode(txData), data.publicKey))
+              fireAndForget(() =>
+                shardus.serviceQueue.addNetworkTx('nodeReward', shardus.signAsNode(txData), data.publicKey)
+              )
             }
           }
         } else if (
