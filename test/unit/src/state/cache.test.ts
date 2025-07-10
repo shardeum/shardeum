@@ -26,7 +26,9 @@ describe('Cache', () => {
   beforeAll(() => {
     // Set up the accounts with some distinguishing properties
     account1.balance = BigInt(100)
+    account1.nonce = BigInt(1)
     account2.balance = BigInt(200)
+    account2.nonce = BigInt(2)
   })
   
   beforeEach(() => {
@@ -364,6 +366,222 @@ describe('Cache', () => {
       
       const result = cache.lookup(address1) as ShardeumAccount
       expect(result.virtual).toBe(true)
+    })
+  })
+  
+  describe('_lookupAccount method', () => {
+    test('should retrieve account from trie', async () => {
+      const trieAccount = new Account()
+      trieAccount.balance = BigInt(300)
+      
+      mockTrie.get.mockResolvedValue(trieAccount.serialize())
+      
+      const result = await cache._lookupAccount(address1)
+      expect(result).toBeDefined()
+      expect(result!.balance).toEqual(BigInt(300))
+      expect(mockTrie.get).toHaveBeenCalledWith('0x1234567890123456789012345678901234567890')
+    })
+    
+    test('should return undefined if account not in trie', async () => {
+      mockTrie.get.mockResolvedValue(null)
+      
+      const result = await cache._lookupAccount(address1)
+      expect(result).toBeUndefined()
+    })
+  })
+  
+  describe('Edge cases and concurrent operations', () => {
+    test('should handle multiple checkpoints with complex state changes', () => {
+      // Initial state
+      cache.put(address1, account1)
+      
+      // First checkpoint
+      cache.checkpoint()
+      const modifiedAccount1 = new Account()
+      modifiedAccount1.balance = BigInt(150)
+      cache.put(address1, modifiedAccount1)
+      cache.put(address2, account2)
+      
+      // Second checkpoint
+      cache.checkpoint()
+      cache.del(address1)
+      const modifiedAccount2 = new Account()
+      modifiedAccount2.balance = BigInt(250)
+      cache.put(address2, modifiedAccount2)
+      
+      // Third checkpoint
+      cache.checkpoint()
+      const newAccount = new Account()
+      newAccount.balance = BigInt(300)
+      cache.put(address1, newAccount)
+      
+      // Verify current state
+      expect(cache.get(address1).balance).toEqual(BigInt(300))
+      expect(cache.get(address2).balance).toEqual(BigInt(250))
+      
+      // Revert third checkpoint
+      cache.revert()
+      expect(cache.keyIsDeleted(address1)).toBe(true)
+      expect(cache.get(address2).balance).toEqual(BigInt(250))
+      
+      // Revert second checkpoint
+      cache.revert()
+      expect(cache.get(address1).balance).toEqual(BigInt(150))
+      expect(cache.get(address2).balance).toEqual(BigInt(200))
+      
+      // Revert first checkpoint
+      cache.revert()
+      expect(cache.get(address1).balance).toEqual(BigInt(100))
+      expect(cache.lookup(address2)).toBeUndefined()
+    })
+    
+    test('should handle warm with null addresses in array', async () => {
+      await cache.warm([null as any, undefined as any, ''])
+      expect(mockTrie.get).not.toHaveBeenCalled()
+    })
+    
+    test('should handle warm with invalid hex addresses', async () => {
+      // The warm method will throw on invalid hex, so we test that it throws
+      await expect(cache.warm(['invalid-hex'])).rejects.toThrow()
+      
+      // Valid but short hex should also throw due to invalid address length
+      await expect(cache.warm(['0x12'])).rejects.toThrow('Invalid address length')
+    })
+    
+    test('should handle flush with no modifications', async () => {
+      // Add account from trie (not modified)
+      cache.put(address1, account1, true)
+      
+      await cache.flush()
+      
+      expect(mockTrie.put).not.toHaveBeenCalled()
+      expect(mockTrie.del).not.toHaveBeenCalled()
+    })
+    
+    test('should handle flush with mixed operations', async () => {
+      // Modified account
+      cache.put(address1, account1)
+      
+      // Deleted account that was modified
+      cache.put(address2, account2)
+      cache.del(address2)
+      
+      // Account from trie (not modified)
+      const account3 = new Account()
+      account3.balance = BigInt(300)
+      const address3 = new Address(Buffer.from('0xfedcba9876543210fedcba9876543210fedcba98'.slice(2), 'hex'))
+      cache.put(address3, account3, true)
+      
+      await cache.flush()
+      
+      // Should update modified account
+      expect(mockTrie.put).toHaveBeenCalledTimes(1)
+      expect(mockTrie.put).toHaveBeenCalledWith(
+        expect.any(Buffer),
+        account1.serialize()
+      )
+      
+      // Should delete the deleted account
+      expect(mockTrie.del).toHaveBeenCalledTimes(1)
+      
+      // Should verify the deleted account's state after flush
+      const deletedAccount = cache.lookup(address2)
+      expect(deletedAccount).toBeDefined()
+      expect(cache.keyIsDeleted(address2)).toBe(true)
+    })
+    
+    test('should handle checkpoint and commit with no changes', () => {
+      cache.put(address1, account1)
+      
+      cache.checkpoint()
+      // No changes
+      cache.commit()
+      
+      expect(cache.get(address1).balance).toEqual(BigInt(100))
+      expect(cache._checkpoints.length).toBe(0)
+    })
+    
+    test('should handle deep checkpoint nesting', () => {
+      const checkpointCount = 10
+      cache.put(address1, account1)
+      
+      // Create nested checkpoints
+      for (let i = 0; i < checkpointCount; i++) {
+        cache.checkpoint()
+        const account = new Account()
+        account.balance = BigInt((i + 2) * 100)
+        cache.put(address1, account)
+      }
+      
+      // Verify we have the correct number of checkpoints
+      expect(cache._checkpoints.length).toBe(checkpointCount)
+      expect(cache.get(address1).balance).toEqual(BigInt(1100))
+      
+      // Revert all checkpoints
+      for (let i = checkpointCount; i > 0; i--) {
+        cache.revert()
+        expect(cache.get(address1).balance).toEqual(BigInt(i * 100))
+      }
+      
+      // Back to original state
+      expect(cache.get(address1).balance).toEqual(BigInt(100))
+      expect(cache._checkpoints.length).toBe(0)
+    })
+    
+    test('should handle operations on cache after clear', () => {
+      cache.put(address1, account1)
+      cache.put(address2, account2)
+      
+      cache.clear()
+      
+      // Should be able to add new accounts after clear
+      cache.put(address1, account2)
+      expect(cache.get(address1).balance).toEqual(BigInt(200))
+      
+      // Old account2 should not exist
+      expect(cache.lookup(address2)).toBeUndefined()
+    })
+    
+    test('should handle virtual flag correctly through serialization', () => {
+      const virtualAccount = new Account() as ShardeumAccount
+      virtualAccount.balance = BigInt(100)
+      virtualAccount.virtual = true
+      
+      cache._update(address1, virtualAccount, false, false, true)
+      
+      // The virtual flag should be preserved when looking up
+      const retrieved = cache.lookup(address1) as ShardeumAccount
+      expect(retrieved.virtual).toBe(true)
+      expect(retrieved.balance).toEqual(BigInt(100))
+    })
+    
+    test('should handle getOrLoad with concurrent modifications', async () => {
+      const trieAccount = new Account()
+      trieAccount.balance = BigInt(300)
+      
+      mockTrie.get.mockResolvedValue(trieAccount.serialize())
+      
+      // Pre-populate cache before getOrLoad
+      cache.put(address1, account1)
+      
+      // Now getOrLoad should return the cached version
+      const result = await cache.getOrLoad(address1)
+      
+      // Should return the cached version, not the trie version
+      expect(result.balance).toEqual(BigInt(100))
+      
+      // Trie should not have been called since account was in cache
+      expect(mockTrie.get).not.toHaveBeenCalled()
+    })
+    
+    test('should handle empty cache iterations in flush', async () => {
+      // Create an empty cache
+      const emptyCache = new Cache(mockTrie)
+      
+      await emptyCache.flush()
+      
+      expect(mockTrie.put).not.toHaveBeenCalled()
+      expect(mockTrie.del).not.toHaveBeenCalled()
     })
   })
 }) 
