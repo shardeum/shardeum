@@ -1,0 +1,177 @@
+name: Security Review
+
+on:
+  issue_comment:
+    types: [created]
+
+jobs:
+  security-review:
+    # Only run on pull request comments
+    if: github.event.issue.pull_request && contains(github.event.comment.body, 'do security review')
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: read
+      pull-requests: write # To create comments on PRs
+      #issues: read # To read issues
+      actions: read # To read workflow runs
+      statuses: read # To read commit statuses
+
+    steps:
+      - name: Check team membership
+        id: team_check
+        uses: shardeum/get-user-teams-membership@v3
+        with:
+          username: ${{ github.event.comment.user.login }}
+          organization: shardeum
+          team: 'Tech Team'
+          GITHUB_TOKEN: ${{ secrets.SECURITY_REVIEW_PAT }}
+
+      - name: Debug team check output
+        run: |
+          echo "Team check output: '${{ steps.team_check.outputs.isTeamMember }}'"
+          echo "Teams list: '${{ steps.team_check.outputs.teams }}'"
+          echo "Username checked: '${{ github.event.comment.user.login }}'"
+          echo "Organization: 'shardeum'"
+          echo "Team: 'Tech Team'"
+
+      - name: Verify authorization
+        if: ${{ steps.team_check.outputs.isTeamMember != 'true' }}
+        uses: actions/github-script@v7
+        with:
+          script: |
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: `@${{ github.event.comment.user.login }} Sorry, only members of the Tech Team are authorized to request security reviews.`
+            });
+            core.setFailed('User is not authorized to request security review');
+
+      - name: Get PR details
+        if: ${{ steps.team_check.outputs.isTeamMember == 'true' }}
+        id: pr
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const pr = await github.rest.pulls.get({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              pull_number: context.issue.number
+            });
+            return pr.data;
+
+      - name: Checkout current repository
+        if: steps.team_check.outputs.isTeamMember == 'true'
+        uses: actions/checkout@v4
+        with:
+          # Checkout the PR branch
+          ref: ${{ fromJSON(steps.pr.outputs.result).head.sha }}
+
+      - name: Checkout argus-agent repository
+        if: steps.team_check.outputs.isTeamMember == 'true'
+        uses: actions/checkout@v4
+        with:
+          repository: shardeum/argus-agent
+          path: argus-agent
+
+      - name: Set up Python
+        if: steps.team_check.outputs.isTeamMember == 'true'
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        if: steps.team_check.outputs.isTeamMember == 'true'
+        run: |
+          cd argus-agent
+          if [ -f requirements.txt ]; then
+            pip install --no-cache-dir -r requirements.txt
+          fi
+
+      - name: Run security review
+        if: steps.team_check.outputs.isTeamMember == 'true'
+        id: security_review
+        run: |
+          cd argus-agent
+          # Construct the pull request URL
+          PR_URL="https://github.com/${{ github.repository }}/pull/${{ github.event.issue.number }}"
+
+          # Run the security review and capture output
+          python agent.py --pull-request "$PR_URL" 2>&1 | tee security_review_output.txt || true
+
+          # Check if output file exists and has content
+          if [ -f security_review_output.txt ] && [ -s security_review_output.txt ]; then
+            # Escape special characters and save to artifact
+            echo "REVIEW_OUTPUT_FILE=security_review_output.txt" >> $GITHUB_OUTPUT
+            echo "has_output=true" >> $GITHUB_OUTPUT
+          else
+            echo "has_output=false" >> $GITHUB_OUTPUT
+          fi
+        env:
+          # Use GITHUB_TOKEN which already has necessary permissions for reading PR data
+          GITHUB_ACCESS_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # Google Gemini API authentication
+          GOOGLE_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          # Optional integrations
+          #SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN || secrets.ORG_SLACK_BOT_TOKEN }}
+          #LINEAR_API_KEY: ${{ secrets.LINEAR_API_KEY || secrets.ORG_LINEAR_API_KEY }}
+
+      - name: Upload review output
+        if: ${{ steps.team_check.outputs.isTeamMember == 'true' && steps.security_review.outputs.has_output == 'true' }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: security-review-output
+          path: argus-agent/security_review_output.txt
+
+      - name: Read review output
+        id: read_output
+        if: steps.team_check.outputs.isTeamMember == 'true' && steps.security_review.outputs.has_output == 'true'
+        run: |
+          # Read and prepare output for comment
+          cd argus-agent
+          # Base64 encode to handle special characters
+          ENCODED_OUTPUT=$(base64 -w 0 security_review_output.txt | head -c 60000)
+          echo "encoded_report=${ENCODED_OUTPUT}" >> $GITHUB_OUTPUT
+
+      - name: Comment on PR with results
+        uses: actions/github-script@v7
+        if: ${{ steps.team_check.outputs.isTeamMember == 'true' && always() }}
+        with:
+          script: |
+            const hasOutput = '${{ steps.security_review.outputs.has_output }}' === 'true';
+            const encodedOutput = '${{ steps.read_output.outputs.encoded_report }}';
+            let comment;
+
+            if (hasOutput && encodedOutput) {
+              // Decode base64 output
+              const output = Buffer.from(encodedOutput, 'base64').toString('utf-8');
+              
+              // Format the report in a collapsible section
+              comment = `## 🔍 Security Review Report
+              
+            <details>
+            <summary>Click to expand security review details</summary>
+
+            \`\`\`
+            ${output}
+            \`\`\`
+
+            </details>
+
+            ---
+            *Generated by [argus-agent](https://github.com/shardeum/argus-agent) security review*`;
+            } else {
+              comment = `## 🔍 Security Review Report
+              
+            ❌ Failed to generate security review report. Please check the [action logs](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}) for details.
+
+            You can also download the full output as an artifact if available.`;
+            }
+
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: comment
+            });
