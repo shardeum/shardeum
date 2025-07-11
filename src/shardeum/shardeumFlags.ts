@@ -133,6 +133,7 @@ export interface ShardeumFlags {
   enableArchiverNetworkAccountValidation: boolean
   accessListSizeLimit: number
   supportDenCunFork: boolean
+  atomicContractDeployment: boolean
 }
 
 export const ShardeumFlags: ShardeumFlags = {
@@ -303,7 +304,8 @@ export const ShardeumFlags: ShardeumFlags = {
   debugTxEnabled: false,
   enableArchiverNetworkAccountValidation: false, //  Enable/disable network account basic validations from archiver
   accessListSizeLimit: 5,
-  supportDenCunFork: true
+  supportDenCunFork: true,
+  atomicContractDeployment: process.env.ATOMIC_CONTRACT_DEPLOYMENT === 'true' || false, // Enable atomic contract deployment to prevent race conditions
 }
 
 export function updateShardeumFlag(key: string, value: string | number | boolean): void {

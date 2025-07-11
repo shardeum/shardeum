@@ -145,6 +145,7 @@ import { unsafeGetClientIp } from './utils/requests'
 import { initialNetworkParamters } from './shardeum/initialNetworkParameters'
 import { oneSHM, networkAccount, ONE_SECOND } from './shardeum/shardeumConstants'
 import { applyPenaltyTX, clearOldPenaltyTxs } from './tx/penalty/transaction'
+import { processContractDeployments } from './shardeum/contractDeployment'
 import { getFinalArchiverList, setupArchiverDiscovery } from '@shardeum-foundation/lib-archiver-discovery'
 import { Archiver } from '@shardeum-foundation/lib-archiver-discovery/dist/src/types'
 //import blockedAt from 'blocked-at'
@@ -5033,35 +5034,92 @@ const shardusSetup = (): void => {
         }
       }
 
-      //Keep a map of CA addresses to codeHash
-      //use this later in the loop of account updates to set the correct account code hash values
-      const accountToCodeHash: Map<string, Uint8Array> = new Map()
+      if (ShardeumFlags.atomicContractDeployment) {
+        await processContractDeployments(
+          shardus,
+          contractBytesWrites,
+          accountWrites,
+          txTimestamp,
+          txId,
+          applyResponse,
+          validatorStakedAccounts
+        )
+      } else {
+        // Use existing logic
+        //Keep a map of CA addresses to codeHash
+        //use this later in the loop of account updates to set the correct account code hash values
+        const accountToCodeHash: Map<string, Uint8Array> = new Map()
 
-      if (ShardeumFlags.VerboseLogs) console.log(`DBG: all contractBytes writes`, contractBytesWrites)
+        if (ShardeumFlags.VerboseLogs) console.log(`DBG: all contractBytes writes`, contractBytesWrites)
 
-      for (const contractBytesEntry of contractBytesWrites.entries()) {
-        //1. wrap and save/update this to shardeum accounts[] map
-        const contractByteWrite: ContractByteWrite = contractBytesEntry[1]
-        const codeHashStr = bytesToHex(contractByteWrite.codeHash)
-        const wrappedEVMAccount: WrappedEVMAccount = {
-          timestamp: txTimestamp,
-          codeHash: contractByteWrite.codeHash,
-          codeByte: contractByteWrite.contractByte,
-          ethAddress: codeHashStr,
-          contractAddress: contractByteWrite.contractAddress.toString(),
-          hash: '',
-          accountType: AccountType.ContractCode,
+        for (const contractBytesEntry of contractBytesWrites.entries()) {
+          //1. wrap and save/update this to shardeum accounts[] map
+          const contractByteWrite: ContractByteWrite = contractBytesEntry[1]
+          const codeHashStr = bytesToHex(contractByteWrite.codeHash)
+          const wrappedEVMAccount: WrappedEVMAccount = {
+            timestamp: txTimestamp,
+            codeHash: contractByteWrite.codeHash,
+            codeByte: contractByteWrite.contractByte,
+            ethAddress: codeHashStr,
+            contractAddress: contractByteWrite.contractAddress.toString(),
+            hash: '',
+            accountType: AccountType.ContractCode,
+          }
+
+          //add our codehash to the map entry for the CA address
+          accountToCodeHash.set(contractByteWrite.contractAddress.toString(), contractByteWrite.codeHash)
+
+          if (ShardeumFlags.globalCodeBytes === true) {
+            //set this globally instead!
+            setGlobalCodeByteUpdate(txTimestamp, wrappedEVMAccount, applyResponse)
+          } else {
+            const wrappedChangedAccount = WrappedEVMAccountFunctions._shardusWrappedAccount(wrappedEVMAccount)
+            //attach to applyResponse
+            if (shardus.applyResponseAddChangedAccount != null) {
+              shardus.applyResponseAddChangedAccount(
+                applyResponse,
+                wrappedChangedAccount.accountId,
+                wrappedChangedAccount as ShardusTypes.WrappedResponse,
+                txId,
+                wrappedChangedAccount.timestamp
+              )
+            }
+          }
         }
+        /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log('DBG: accountsToCodeHash', accountToCodeHash)
+        /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log('DBG: all account writes', shardeumState._transactionState.logAccountWrites(accountWrites))
 
-        //add our codehash to the map entry for the CA address
-        accountToCodeHash.set(contractByteWrite.contractAddress.toString(), contractByteWrite.codeHash)
+        // Handle Account type last, because CAs may depend on CA:Storage or CA:Bytecode updates
+        //wrap these accounts and keys up and add them to the applyResponse as additional involved accounts
+        for (const account of accountWrites.entries()) {
+          //1. wrap and save/update this to shardeum accounts[] map
+          const addressStr = account[0]
+          if (ShardeumFlags.Virtual0Address && addressStr === zeroAddressStr) {
+            //do not inform shardus about the 0 address account
+            continue
+          }
+          const accountObj = Account.fromRlpSerializedAccount(account[1])
 
-        if (ShardeumFlags.globalCodeBytes === true) {
-          //set this globally instead!
-          setGlobalCodeByteUpdate(txTimestamp, wrappedEVMAccount, applyResponse)
-        } else {
+          const wrappedEVMAccount: WrappedEVMAccount = {
+            timestamp: txTimestamp,
+            account: accountObj,
+            ethAddress: addressStr,
+            hash: '',
+            accountType: AccountType.Account,
+          }
+          if (validatorStakedAccounts.has(addressStr))
+            wrappedEVMAccount.operatorAccountInfo = validatorStakedAccounts.get(addressStr)
+          //If this account has an entry in the map use it to set the codeHash.
+          // the ContractCode "account" will get pushed later as a global TX
+          if (accountToCodeHash.has(addressStr)) {
+            accountObj.codeHash = accountToCodeHash.get(addressStr)
+          }
+
+          // I think data is unwrapped too much and we should be using wrappedEVMAccount directly as data
           const wrappedChangedAccount = WrappedEVMAccountFunctions._shardusWrappedAccount(wrappedEVMAccount)
-          //attach to applyResponse
+
+          // and the added it to the apply response (not implemented yet)
+          //Attach the written account data to the apply response.  This will allow it to be shared with other shards if needed.
           if (shardus.applyResponseAddChangedAccount != null) {
             shardus.applyResponseAddChangedAccount(
               applyResponse,
@@ -5072,69 +5130,25 @@ const shardusSetup = (): void => {
             )
           }
         }
-      }
-      /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log('DBG: accountsToCodeHash', accountToCodeHash)
-      /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log('DBG: all account writes', shardeumState._transactionState.logAccountWrites(accountWrites))
 
-      // Handle Account type last, because CAs may depend on CA:Storage or CA:Bytecode updates
-      //wrap these accounts and keys up and add them to the applyResponse as additional involved accounts
-      for (const account of accountWrites.entries()) {
-        //1. wrap and save/update this to shardeum accounts[] map
-        const addressStr = account[0]
-        if (ShardeumFlags.Virtual0Address && addressStr === zeroAddressStr) {
-          //do not inform shardus about the 0 address account
-          continue
-        }
-        const accountObj = Account.fromRlpSerializedAccount(account[1])
-
-        const wrappedEVMAccount: WrappedEVMAccount = {
-          timestamp: txTimestamp,
-          account: accountObj,
-          ethAddress: addressStr,
-          hash: '',
-          accountType: AccountType.Account,
-        }
-        if (validatorStakedAccounts.has(addressStr))
-          wrappedEVMAccount.operatorAccountInfo = validatorStakedAccounts.get(addressStr)
-        //If this account has an entry in the map use it to set the codeHash.
-        // the ContractCode "account" will get pushed later as a global TX
-        if (accountToCodeHash.has(addressStr)) {
-          accountObj.codeHash = accountToCodeHash.get(addressStr)
-        }
-
-        // I think data is unwrapped too much and we should be using wrappedEVMAccount directly as data
-        const wrappedChangedAccount = WrappedEVMAccountFunctions._shardusWrappedAccount(wrappedEVMAccount)
-
-        // and the added it to the apply response (not implemented yet)
-        //Attach the written account data to the apply response.  This will allow it to be shared with other shards if needed.
-        if (shardus.applyResponseAddChangedAccount != null) {
-          shardus.applyResponseAddChangedAccount(
-            applyResponse,
-            wrappedChangedAccount.accountId,
-            wrappedChangedAccount as ShardusTypes.WrappedResponse,
-            txId,
-            wrappedChangedAccount.timestamp
-          )
-        }
-      }
-
-      if (accountWrites.size === 0) {
-        // it means SHM transfer fail
-        // loop through original wrappedStates and add them to the applyResponse
-        for (const accountId in wrappedStates) {
-          if (wrappedStates[accountId].timestamp === 0) continue
-          const wrappedData: ShardusTypes.WrappedData = wrappedStates[accountId]
-          if (shardus.applyResponseAddChangedAccount != null) {
-            shardus.applyResponseAddChangedAccount(
-              applyResponse,
-              wrappedData.accountId,
-              wrappedData as ShardusTypes.WrappedResponse,
-              txId,
-              wrappedData.timestamp
-            )
+        if (accountWrites.size === 0) {
+          // it means SHM transfer fail
+          // loop through original wrappedStates and add them to the applyResponse
+          for (const accountId in wrappedStates) {
+            if (wrappedStates[accountId].timestamp === 0) continue
+            const wrappedData: ShardusTypes.WrappedData = wrappedStates[accountId]
+            if (shardus.applyResponseAddChangedAccount != null) {
+              shardus.applyResponseAddChangedAccount(
+                applyResponse,
+                wrappedData.accountId,
+                wrappedData as ShardusTypes.WrappedResponse,
+                txId,
+                wrappedData.timestamp
+              )
+            }
           }
         }
-      }
+      } // End of else block for atomic deployment
 
       //TODO also create an account for the receipt (nested in the returned runTxResult should be a receipt with a list of logs)
       // We are ready to loop over the receipts and add them
@@ -8436,6 +8450,7 @@ export function shardeumGetTime(): number {
   // this code is only excuted when starting or setting up the network***
   // shardus factory for nodes joining later in the network.
   shardus = shardusFactory(configToLoad)
+  // Make shardus globally accessible for contract deployment module
 
   logEnvSetup()
 
