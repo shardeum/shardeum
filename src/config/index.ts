@@ -32,13 +32,7 @@ export interface Config {
       nodesPerConsensusGroup: number
     }
     features?: {
-      tickets?: {
-        updateTicketListTimeInMs?: number
-        ticketTypes?: Array<{
-          type: string
-          enabled: boolean
-        }>
-      }
+      [key: string]: any
     }
   }
 }
@@ -251,10 +245,6 @@ config = merge(config, {
       //1.1.4
       archiverDataSubscriptionsUpdate: true,
       startInServiceMode: ShardeumFlags.startInServiceMode,
-      tickets: {
-        updateTicketListTimeInMs: 600000,
-        ticketTypes: [{ type: 'silver', enabled: true }],
-      },
     },
   },
 })

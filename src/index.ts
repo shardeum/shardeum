@@ -176,10 +176,8 @@ import {
   verify as verifyTransferFromSecureAccount,
   secureAccountDataMap,
 } from './shardeum/secureAccounts'
-import * as TicketManager from './setup/ticket-manager'
 import { getHeapStatistics } from 'v8'
 import { OpaqueTransaction } from '@shardeum-foundation/core/dist/shardus/shardus-types'
-import { TicketTypes, doesTransactionSenderHaveTicketType } from './setup/ticket-manager'
 import { buildFetchNetworkAccountFromArchiver } from './shardeum/services/networkAccountService'
 import { customGot } from './utils/customHttpFunctions'
 import { logEnvSetup } from './setup/environment'
@@ -2455,30 +2453,8 @@ const configShardusEndpoints = (): void => {
   })
 
   shardus.registerExternalGet('is-genesis-node/:nominator', async (req, res) => {
-    const isTicketTypesEnabled = ShardeumFlags.ticketTypesEnabled
-    /* prettier-ignore */ if (logFlags.debug) console.log(`[is-genesis-node] isTicketsEnabled: ${isTicketTypesEnabled}`)
-    if (!isTicketTypesEnabled) {
-      return res.json({ success: true, reason: 'Ticket types are not enabled' })
-    }
-    let senderAddress: Address
-    try {
-      senderAddress = Address.fromString(req.params['nominator'])
-    } catch (error) {
-      return res.json({ success: false, reason: 'Invalid address' })
-    }
-    const doesNominatorHaveTicketTypeResponse: { success: boolean; reason: string; enabled: boolean } =
-      doesTransactionSenderHaveTicketType({ ticketType: TicketTypes.SILVER, senderAddress })
-    /* prettier-ignore */ if (logFlags.debug) console.log(
-      `[is-genesis-node] doesNominatorHaveTicketTypeResponse: ${doesNominatorHaveTicketTypeResponse}`
-    )
-    if (doesNominatorHaveTicketTypeResponse.enabled && !doesNominatorHaveTicketTypeResponse.success) {
-      return res.json({
-        success: doesNominatorHaveTicketTypeResponse.success,
-        reason: doesNominatorHaveTicketTypeResponse.reason,
-      })
-    } else {
-      return res.json({ success: true, reason: 'Genesis Node detected' })
-    }
+    // ticket types are deprecated; always return success
+    return res.json({ success: true, reason: 'Genesis Node detected' })
   })
 }
 
@@ -8368,9 +8344,6 @@ export function shardeumGetTime(): number {
   if (isServiceMode()) AccountsStorage.setAccount(networkAccount, await AccountsStorage.getAccount(networkAccount))
   shardusSetup()
   config.server = shardus.config //possibly set the server config to match the merged one?
-
-  /** Start process for updating tickets (e.g. silver) */
-  TicketManager.updateTicketMapAndScheduleNextUpdate()
 
   appStartupTimestamp = shardeumGetTime()
 
