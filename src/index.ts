@@ -777,11 +777,29 @@ async function tryGetRemoteAccountCB(
 ): Promise<WrappedEVMAccount> {
   let retry = 0
   let maxRetry = 1 // default for contract storage accounts
-  if (type === AccountType.Account) maxRetry = 2 // for CA accounts
-  else if (type === AccountType.ContractCode && key != emptyCodeHash) maxRetry = 3 // for codebytes
+  
+  if (type === AccountType.Account) {
+    maxRetry = 2
+  } else if (type === AccountType.ContractCode && key != emptyCodeHash) {
+    const nodeId = shardus.getNodeId()
+    const isNearRotation = shardus.isNodeInRotationBounds(nodeId)
+    maxRetry = isNearRotation ? ShardeumFlags.contractCodeFetchRetriesRotation : ShardeumFlags.contractCodeFetchRetries
+    
+    console.log(`Contract code fetch: rotation=${isNearRotation}, maxRetry=${maxRetry}`)
+  }
 
-  const shardusAddress = toShardusAddressWithKey(address, key, type)
+  const shardusAddress = (type === AccountType.Account || key === null) 
+    ? toShardusAddress(address, type)
+    : toShardusAddressWithKey(address, key, type)
   let remoteShardusAccount
+  
+  const getRetryDelay = (attempt: number): number => {
+    const delay = Math.min(
+      ShardeumFlags.contractCodeFetchRetryDelay * Math.pow(2, attempt),
+      ShardeumFlags.contractCodeFetchMaxRetryDelay
+    )
+    return delay
+  }
 
   const txid = transactionState.linkedTX
   //utilize warm up cache that lives on a TransactionState object
@@ -816,35 +834,184 @@ async function tryGetRemoteAccountCB(
     //getLocalOrRemoteAccount can throw if the remote node gives us issues
     //we want to catch these and retry
     try {
-      /* prettier-ignore */ if (logFlags.aalg || ShardeumFlags.VerboseLogs) console.log(`${Date.now()} Trying to get remote account for address: ${address}, type: ${type}, key: ${key} retry: ${retry}`)
-      retry++
-      remoteShardusAccount = await shardus.getLocalOrRemoteAccount(shardusAddress, {
+      if (retry > 0) {
+        const delay = getRetryDelay(retry - 1)
+        console.log(`Retry delay: ${delay}ms for attempt ${retry}`)
+        await sleep(delay)
+      }
+      
+      console.log(`${Date.now()} Trying to get remote account for address: ${address}, type: ${type}, key: ${key} retry: ${retry}`)
+      
+      const fetchOptions: any = {
         useRICache: true,
         canThrowException: true,
-      })
+      }
+      
+      if (ShardeumFlags.enableFallbackNodeSelection && retry > 0) {
+        const fallbackNodes = getFallbackNodesForAddress(shardusAddress, type)
+        if (fallbackNodes.length > 0) {
+          fetchOptions.preferredNodes = fallbackNodes
+          console.log(`Using fallback nodes for retry ${retry}:`, fallbackNodes)
+        }
+      }
+      
+      retry++
+      remoteShardusAccount = await shardus.getLocalOrRemoteAccount(shardusAddress, fetchOptions)
     } catch (ex) {
+      const errorContext = {
+        address,
+        type: AccountType[type],
+        key: key ? key.substring(0, 8) + '...' : 'null',
+        retry,
+        error: ex.message || 'Unknown error',
+        timestamp: Date.now()
+      }
+      
+      console.log('Remote account fetch error:', errorContext)
+      nestedCountersInstance.countEvent('contract-code-fetch', `retry-${retry}-error`)
+      
       continue
     }
-    //if this is true we will trust a null response and let it be the value of the account
-    //with this flag true it means we will trust that we see a null account an not an error
     if (ShardeumFlags.tryGetRemoteAccountCB_OnlyErrorsLoop && remoteShardusAccount == null) {
-      //lets accept the null, because it may be an actually empty account that is not created yet.
       break
     }
   }
 
   if (remoteShardusAccount == undefined) {
-    /* prettier-ignore */ if (ShardeumFlags.VerboseLogs || logFlags.aalg) console.log(`${Date.now()} Found no remote account for address: ${address}, type: ${type}, key: ${key}, retry: ${retry}`)
-    if (type === AccountType.Account || type === AccountType.ContractCode) {
-      /* prettier-ignore */ nestedCountersInstance.countEvent('shardeum', `tryRemoteAccountCB: fail. type: ${type}, address: ${address}, key: ${key}`)
+    const errorContext = {
+      address,
+      type: AccountType[type],
+      key: key ? key.substring(0, 8) + '...' : 'null',
+      retries: retry,
+      isRotating: shardus.isNodeInRotationBounds(shardus.getNodeId()),
+      timestamp: Date.now()
     }
-    //this could be new account
+    
+    console.log(`${Date.now()} Found no remote account:`, errorContext)
+    
+    if (type === AccountType.Account || type === AccountType.ContractCode) {
+      nestedCountersInstance.countEvent('shardeum', `tryRemoteAccountCB: fail. type: ${AccountType[type]}`)
+      if (errorContext.isRotating) {
+        nestedCountersInstance.countEvent('contract-code-fetch', `rotation-failure-${AccountType[type]}`)
+      }
+    }
     return undefined
   }
   const fixedEVMAccount = remoteShardusAccount.data as WrappedEVMAccount
   fixDeserializedWrappedEVMAccount(fixedEVMAccount)
-  /* prettier-ignore */ if (ShardeumFlags.VerboseLogs || logFlags.aalg) console.log(`${Date.now()} Successfully found remote account for address: ${address}, type: ${type}, key: ${key}, retry: ${retry}`, fixedEVMAccount)
+  console.log(`${Date.now()} Successfully found remote account for address: ${address}, type: ${type}, key: ${key}, retry: ${retry}`, fixedEVMAccount)
   return fixedEVMAccount
+}
+
+function getFallbackNodesForAddress(shardusAddress: string, accountType: AccountType): string[] {
+  try {
+    const consensusNodes = shardus.getConsenusGroupForAccount(shardusAddress)
+    if (!consensusNodes || consensusNodes.length === 0) {
+      /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log('No consensus nodes found for address:', shardusAddress)
+      return []
+    }
+
+    const stableNodes = consensusNodes.filter(node => {
+      try {
+        const inRotationBounds = shardus.isNodeInRotationBounds(node.id)
+        return !inRotationBounds
+      } catch (e) {
+        /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log('Error checking rotation bounds for node:', node.id, e)
+        return false
+      }
+    })
+    
+    // If no stable nodes found, fall back to using all consensus nodes
+    const nodesToUse = stableNodes.length > 0 ? stableNodes : consensusNodes
+    
+    // Only use advanced center-based selection for contract code fetches
+    if (accountType === AccountType.ContractCode || accountType === AccountType.ContractStorage) {
+      // Get rotation indexes for nodes and sort by how centered they are
+      const nodesWithRotationInfo = nodesToUse.map(node => {
+        try {
+          const rotationInfo = shardus.getNodeRotationIndex(node.id)
+          // Calculate distance from center (0.5 means center of rotation range)
+          const centerDistance = rotationInfo.total > 0 
+            ? Math.abs((rotationInfo.idx / rotationInfo.total) - 0.5)
+            : 0.5 // Default to middle if no rotation info
+          return {
+            node,
+            rotationIndex: rotationInfo.idx,
+            totalNodes: rotationInfo.total,
+            centerDistance,
+            hasRotationInfo: true
+          }
+        } catch (e) {
+          // If rotation info is not available (early in network formation), use default
+          /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log('Could not get rotation info for node:', node.id, e)
+          return {
+            node,
+            rotationIndex: 0,
+            totalNodes: 0,
+            centerDistance: 0.5,
+            hasRotationInfo: false
+          }
+        }
+      })
+
+      // Sort by center distance (closer to center first) and active status as secondary criteria
+      nodesWithRotationInfo.sort((a, b) => {
+        // If one node has rotation info and the other doesn't, prefer the one with info
+        if (a.hasRotationInfo !== b.hasRotationInfo) {
+          return a.hasRotationInfo ? -1 : 1
+        }
+        
+        // First sort by center distance (smaller distance = more centered)
+        const distanceDiff = a.centerDistance - b.centerDistance
+        if (Math.abs(distanceDiff) > 0.001) {
+          return distanceDiff
+        }
+        
+        // If equal distance from center, prefer active nodes
+        const aActive = shardus.isNodeActive(a.node.id) ? 1 : 0
+        const bActive = shardus.isNodeActive(b.node.id) ? 1 : 0
+        return bActive - aActive
+      })
+
+      // Return node IDs for top 3 most centered nodes
+      const fallbackNodeIds = nodesWithRotationInfo.slice(0, 3).map(item => item.node.id)
+      
+      /* prettier-ignore */ if (ShardeumFlags.VerboseLogs && fallbackNodeIds.length > 0) {
+        const selectedNodesInfo = nodesWithRotationInfo.slice(0, 3).map(item => ({
+          id: item.node.id,
+          rotationIndex: `${item.rotationIndex}/${item.totalNodes}`,
+          centerDistance: item.centerDistance.toFixed(3)
+        }))
+        console.log(`Found ${fallbackNodeIds.length} fallback nodes for address ${shardusAddress} (selected most centered):`, selectedNodesInfo)
+      }
+      
+      return fallbackNodeIds
+    } else {
+      // For non-contract fetches, use simple active node prioritization
+      const activeNodes = nodesToUse.filter(node => {
+        try {
+          return shardus.isNodeActive(node.id)
+        } catch (e) {
+          return false
+        }
+      })
+      
+      // If we have active nodes, use them; otherwise use all available nodes
+      const finalNodes = activeNodes.length > 0 ? activeNodes : nodesToUse
+      
+      // Return first 3 nodes
+      const fallbackNodeIds = finalNodes.slice(0, 3).map(node => node.id)
+      
+      /* prettier-ignore */ if (ShardeumFlags.VerboseLogs && fallbackNodeIds.length > 0) {
+        console.log(`Found ${fallbackNodeIds.length} fallback nodes for address ${shardusAddress}:`, fallbackNodeIds)
+      }
+      
+      return fallbackNodeIds
+    }
+  } catch (error) {
+    /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log('Error getting fallback nodes:', error)
+    return []
+  }
 }
 
 export function getStakeTxBlobFromEVMTx(

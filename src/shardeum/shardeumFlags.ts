@@ -133,6 +133,11 @@ export interface ShardeumFlags {
   enableArchiverNetworkAccountValidation: boolean
   accessListSizeLimit: number
   supportDenCunFork: boolean
+  contractCodeFetchRetries: number
+  contractCodeFetchRetriesRotation: number
+  contractCodeFetchRetryDelay: number
+  contractCodeFetchMaxRetryDelay: number
+  enableFallbackNodeSelection: boolean
 }
 
 export const ShardeumFlags: ShardeumFlags = {
@@ -303,7 +308,12 @@ export const ShardeumFlags: ShardeumFlags = {
   debugTxEnabled: false,
   enableArchiverNetworkAccountValidation: false, //  Enable/disable network account basic validations from archiver
   accessListSizeLimit: 5,
-  supportDenCunFork: true
+  supportDenCunFork: true,
+  contractCodeFetchRetries: 3, // Default retries for contract code
+  contractCodeFetchRetriesRotation: 10, // Retries during rotation
+  contractCodeFetchRetryDelay: 100, // Initial retry delay in ms
+  contractCodeFetchMaxRetryDelay: 2000, // Max retry delay in ms
+  enableFallbackNodeSelection: true // Enable fallback node selection for remote fetches
 }
 
 export function updateShardeumFlag(key: string, value: string | number | boolean): void {
