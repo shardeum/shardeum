@@ -525,13 +525,9 @@ let debugAppdata: Map<string, unknown>
 async function initEVMSingletons(): Promise<void> {
   const chainIDBN = BigInt(ShardeumFlags.ChainID)
 
-  // setting up only to 'istanbul' hardfork for now
+  // setting up to 'cancun' hardfork
   // https://github.com/ethereumjs/ethereumjs-monorepo/blob/master/packages/common/src/chains/mainnet.json
-  if (ShardeumFlags.supportDenCunFork) {
-    evmCommon = new Common({ chain: 'mainnet', hardfork: Hardfork.Cancun, eips: [3855, 5656, 1153] })
-  } else {
-  evmCommon = new Common({ chain: 'mainnet', hardfork: Hardfork.Istanbul, eips: [3855] })
-  }
+  evmCommon = new Common({ chain: 'mainnet', hardfork: Hardfork.Cancun, eips: [3855, 5656, 1153] })
 
   //hack override this function.  perhaps a nice thing would be to use forCustomChain to create a custom common object
   evmCommon.chainId = (): bigint => {
@@ -1363,8 +1359,8 @@ const configShardusEndpoints = (): void => {
   }
 
   shardus.registerExternalPost('inject-with-warmup', externalApiMiddleware, async (req, res) => {
-    if (ShardeumFlags.disableSmartContractEndpoints) {
-      res.json({ result: null, error: 'Smart contract endpoints are disabled' })
+    if (!AccountsStorage.cachedNetworkAccount.current.smartContractSupport) {
+      res.json({ result: null, error: 'Smart contracts are not supported' })
       return
     }
 
@@ -1770,7 +1766,7 @@ const configShardusEndpoints = (): void => {
   })
 
   shardus.registerExternalGet('eth_getCode', externalApiMiddleware as any, async (req, res) => {
-    if (ShardeumFlags.disableSmartContractEndpoints) {
+    if (!AccountsStorage.cachedNetworkAccount.current.smartContractSupport) {
       res.json({ contractCode: '0x' })
       return
     }
@@ -1848,8 +1844,8 @@ const configShardusEndpoints = (): void => {
     // if(isDebugMode()){
     //   return res.json(`endpoint not available`)
     // }
-    if (ShardeumFlags.disableSmartContractEndpoints) {
-      res.json({ result: null, error: 'Smart contract endpoints are disabled' })
+    if (!AccountsStorage.cachedNetworkAccount.current.smartContractSupport) {
+      res.json({ result: null, error: 'Smart contracts are not supported' })
       return
     }
     if (trySpendServicePoints(ShardeumFlags.ServicePoints['contract/call'].endpoint, req, 'call-endpoint') === false) {
@@ -2052,8 +2048,8 @@ const configShardusEndpoints = (): void => {
   })
 
   shardus.registerExternalPost('contract/accesslist', externalApiMiddleware, async (req, res) => {
-    if (ShardeumFlags.disableSmartContractEndpoints) {
-      res.json({ result: null, error: 'Smart contract endpoints are disabled' })
+    if (!AccountsStorage.cachedNetworkAccount.current.smartContractSupport) {
+      res.json({ result: null, error: 'Smart contracts are not supported' })
       return
     }
     if (
@@ -2077,8 +2073,8 @@ const configShardusEndpoints = (): void => {
   })
 
   shardus.registerExternalPost('contract/accesslist-warmup', externalApiMiddleware, async (req, res) => {
-    if (ShardeumFlags.disableSmartContractEndpoints) {
-      res.json({ result: null, error: 'Smart contract endpoints are disabled' })
+    if (!AccountsStorage.cachedNetworkAccount.current.smartContractSupport) {
+      res.json({ result: null, error: 'Smart contracts are not supported' })
       return
     }
     if (
@@ -5445,16 +5441,16 @@ const shardusSetup = (): void => {
         //else if (remoteShardusAccount == null && appData.newCAAddr == null) shouldGenerateAccesslist = false //resolve which is correct from merge!
         else if (remoteTargetAccount == null && appData.newCAAddr == null) shouldGenerateAccesslist = false
 
-        // dappFeature1enabled is our coin-transfer-only mode. Crack if it calls EVM
+        // Check if smart contracts are supported. If not, only allow coin transfers
         const isCoinTransfer = isSimpleTransfer || (remoteTargetAccount == null && appData.newCAAddr == null)
         if(isCoinTransfer){
           appData.isCoinTransfer = true
         }
-        if (shardusConfig.features.dappFeature1enabled && !isStakeRelatedTx && !isCoinTransfer) {
+        if (!AccountsStorage.cachedNetworkAccount.current.smartContractSupport && !isStakeRelatedTx && !isCoinTransfer) {
           nestedCountersInstance.countEvent('shardeum', 'precrack - coin-transfer-only')
           return {
             status: false,
-            reason: `coin-transfer-only mode enabled. Only simple transfers are allowed.`,
+            reason: `Smart contracts are not supported. Only simple transfers are allowed.`,
           }
         }
 

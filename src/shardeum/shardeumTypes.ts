@@ -405,6 +405,7 @@ export interface NetworkParameters {
   enableRPCEndpoints: boolean
   stakeLockTime: number
   chainID: number
+  smartContractSupport: boolean
 }
 
 export interface NodeAccount2 extends BaseAccount {

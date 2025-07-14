@@ -47,4 +47,5 @@ export const initialNetworkParamters: NetworkParameters = {
   enableRPCEndpoints: false,
   stakeLockTime: 1000 * 60 * 60 * 24 * 14, // 1000 ms * 60s * 60m * 24h * 14d = 2 weeks in ms
   chainID: ShardeumFlags.ChainID, // 8082
+  smartContractSupport: false,
 }

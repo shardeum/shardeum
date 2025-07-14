@@ -126,13 +126,11 @@ export interface ShardeumFlags {
   useFutureBlockForAccessList: boolean
   failedStakeReceipt: boolean // For stake/unstake TXs that fail the checks in apply(), create an EVM receipt marked as failed
   debugDefaultBalance: string
-  disableSmartContractEndpoints: boolean
   debugGlobalAccountUpdateFail: boolean
   ticketTypesEnabled: boolean
   debugTxEnabled: boolean
   enableArchiverNetworkAccountValidation: boolean
   accessListSizeLimit: number
-  supportDenCunFork: boolean
 }
 
 export const ShardeumFlags: ShardeumFlags = {
@@ -297,13 +295,11 @@ export const ShardeumFlags: ShardeumFlags = {
   failedStakeReceipt: true,
   unifiedAccountBalanceEnabled: true,
   debugDefaultBalance: '100', //In debug mode the default value is 100 SHM.  This is needed for certain load test operations
-  disableSmartContractEndpoints: false, // Disable smart contract read endpoints by default. This should be promoted to a network parameter. do not release this feature as a flag.
   debugGlobalAccountUpdateFail: false,
   ticketTypesEnabled: false,
   debugTxEnabled: false,
   enableArchiverNetworkAccountValidation: false, //  Enable/disable network account basic validations from archiver
   accessListSizeLimit: 5,
-  supportDenCunFork: true
 }
 
 export function updateShardeumFlag(key: string, value: string | number | boolean): void {

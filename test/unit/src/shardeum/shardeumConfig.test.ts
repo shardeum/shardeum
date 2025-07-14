@@ -246,12 +246,7 @@ describe('ShardeumConfig', () => {
       }
     })
 
-    it('should have dappFeature1enabled defined', () => {
-      // This feature restricts transactions to only coin transfers
-      const features = fullConfig.server.features
-      expect(features.dappFeature1enabled).toBeDefined()
-      expect(typeof features.dappFeature1enabled).toBe('boolean')
-    })
+    // Removed test for dappFeature1enabled as it has been replaced by network parameter smartContractSupport
 
     // Value comparison tests for feature properties
     it('should have appropriate update time for ticket list', () => {

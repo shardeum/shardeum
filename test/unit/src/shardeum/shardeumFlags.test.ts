@@ -274,7 +274,7 @@ describe('ShardeumFlags', () => {
         expect(ShardeumFlags.AppliedTxsMaps).toBe(false)
         expect(ShardeumFlags.SaveEVMTries).toBe(false)
         expect(ShardeumFlags.CheckpointRevertSupport).toBe(true)
-        expect(ShardeumFlags.disableSmartContractEndpoints).toBe(false)
+        // Removed test for disableSmartContractEndpoints as it has been replaced by network parameter smartContractSupport
         expect(ShardeumFlags.accessListSizeLimit).toBe(5)
       })
     })
