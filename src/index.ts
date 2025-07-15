@@ -5277,7 +5277,7 @@ const shardusSetup = (): void => {
         let remoteTargetAccount
         appData.requestNewTimestamp = true // force all evm txs to generate a new timestamp
 
-        const isEIP2930 = AccountsStorage.cachedNetworkAccount.current.smartContractSupport && transaction instanceof AccessListEIP2930Transaction && transaction.AccessListJSON != null
+        const isEIP2930 = AccountsStorage.cachedNetworkAccount?.current?.smartContractSupport && transaction instanceof AccessListEIP2930Transaction && transaction.AccessListJSON != null
         if (isEIP2930) {
           const eip2930Tx = transaction as AccessListEIP2930Transaction
 
@@ -5612,7 +5612,7 @@ const shardusSetup = (): void => {
       ])
 
       // DO NOT enable in production. Improve filterObjectByWhitelistedProps instead
-      if (AccountsStorage.cachedNetworkAccount.current.smartContractSupport) {
+      if (AccountsStorage.cachedNetworkAccount?.current?.smartContractSupport) {
         appData = passedAppData
       }
 
@@ -5841,7 +5841,7 @@ const shardusSetup = (): void => {
         // Note: The below code is being removed because usage of appData properties should only be used for staking
         //       data at this time. Also, for security reasons, only appData properties internalTx, internalTxType,
         //       networkAccount, monimeeAccount, and nominatorAccount should be used in this function.
-        if (AccountsStorage.cachedNetworkAccount.current.smartContractSupport && transaction instanceof AccessListEIP2930Transaction && transaction.AccessListJSON != null) {
+        if (AccountsStorage.cachedNetworkAccount?.current?.smartContractSupport && transaction instanceof AccessListEIP2930Transaction && transaction.AccessListJSON != null) {
           for (const accessList of transaction.AccessListJSON) {
             const address = accessList.address
             if (address) {
@@ -5872,7 +5872,7 @@ const shardusSetup = (): void => {
             result.storageKeys = result.storageKeys.concat(storageKeys)
           }
         } else {
-          if (AccountsStorage.cachedNetworkAccount.current.smartContractSupport && ShardeumFlags.autoGenerateAccessList && appData.accessList) {
+          if (AccountsStorage.cachedNetworkAccount?.current?.smartContractSupport && ShardeumFlags.autoGenerateAccessList && appData.accessList) {
             shardusMemoryPatterns = appData.shardusMemoryPatterns
             // we have pre-generated accessList
             for (const accessListItem of appData.accessList) {
