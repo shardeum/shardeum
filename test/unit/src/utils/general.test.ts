@@ -11,54 +11,55 @@ import {
 } from '../../../../src/utils/general'
 
 let networkAccount: NetworkAccount = {
-    id: 'test-id',
-    accountType: AccountType.NetworkAccount,
-    current: {
-        title: 'Test Network',
-        description: 'Test Network Description',
-        nodeRewardInterval: 100,
-        nodeRewardAmountUsd: BigInt(1000),
-        nodePenaltyUsd: BigInt(500),
-        stakeRequiredUsd: BigInt(5000),
-        restakeCooldown: 100,
-        maintenanceInterval: 100,
-        maintenanceFee: 10,
-        stabilityScaleMul: 1,
-        stabilityScaleDiv: 1,
-        minVersion: '1.0.0',
-        activeVersion: '1.0.0',
-        latestVersion: '1.0.0',
-        archiver: {
-            minVersion: '1.0.0',
-            activeVersion: '1.0.0',
-            latestVersion: '1.0.0'
-        },
-        txPause: false,
-        certCycleDuration: 100,
-        enableNodeSlashing: false,
-        qa: {
-            qaTestNumber: 1,
-            qaTestBoolean: true,
-            qaTestPercent: 100,
-            qaTestSemver: '1.0.0'
-        },
-        slashing: {
-            enableLeftNetworkEarlySlashing: false,
-            enableSyncTimeoutSlashing: false,
-            enableNodeRefutedSlashing: false,
-            leftNetworkEarlyPenaltyPercent: 10,
-            syncTimeoutPenaltyPercent: 10,
-            nodeRefutedPenaltyPercent: 10
-        },
-        enableRPCEndpoints: true,
-        stakeLockTime: 100,
-        chainID: 8080
+  id: 'test-id',
+  accountType: AccountType.NetworkAccount,
+  current: {
+    title: 'Test Network',
+    description: 'Test Network Description',
+    nodeRewardInterval: 100,
+    nodeRewardAmountUsd: BigInt(1000),
+    nodePenaltyUsd: BigInt(500),
+    stakeRequiredUsd: BigInt(5000),
+    restakeCooldown: 100,
+    maintenanceInterval: 100,
+    maintenanceFee: 10,
+    stabilityScaleMul: 1,
+    stabilityScaleDiv: 1,
+    minVersion: '1.0.0',
+    activeVersion: '1.0.0',
+    latestVersion: '1.0.0',
+    archiver: {
+      minVersion: '1.0.0',
+      activeVersion: '1.0.0',
+      latestVersion: '1.0.0',
     },
-    listOfChanges: [],
-    next: {},
-    hash: 'test-hash',
-    timestamp: Date.now(),
-    mode: ShardusTypes.ServerMode.Release
+    txPause: false,
+    certCycleDuration: 100,
+    enableNodeSlashing: false,
+    qa: {
+      qaTestNumber: 1,
+      qaTestBoolean: true,
+      qaTestPercent: 100,
+      qaTestSemver: '1.0.0',
+    },
+    slashing: {
+      enableLeftNetworkEarlySlashing: false,
+      enableSyncTimeoutSlashing: false,
+      enableNodeRefutedSlashing: false,
+      leftNetworkEarlyPenaltyPercent: 10,
+      syncTimeoutPenaltyPercent: 10,
+      nodeRefutedPenaltyPercent: 10,
+    },
+    enableRPCEndpoints: true,
+    stakeLockTime: 100,
+    chainID: 8080,
+    smartContractSupport: false,
+  },
+  listOfChanges: [],
+  next: {},
+  hash: 'test-hash',
+  timestamp: Date.now(),
+  mode: ShardusTypes.ServerMode.Release,
 }
 
 
