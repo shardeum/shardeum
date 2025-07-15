@@ -154,7 +154,7 @@ export const ShardeumFlags: ShardeumFlags = {
   CheckNonce: true,
   txNoncePreCheck: false,
   txBalancePreCheck: true,
-  autoGenerateAccessList: true,
+  autoGenerateAccessList: false,
   forwardGenesisAccounts: true,
   UseDBForAccounts: true,
   AppliedTxsMaps: false,
@@ -289,7 +289,7 @@ export const ShardeumFlags: ShardeumFlags = {
   cleanStaleShardeumStateMap: false,
   beta1_11_2: true,
 
-  evmFailOnUnexpectedAccount: true, //this helps catch problems even in single sharded test networks.
+  evmFailOnUnexpectedAccount: false, // DO NOT enable in production. Only for testing smart contracts
   numberOfAccessListRetry: 3,
   useFutureBlockForAccessList: true,
   failedStakeReceipt: true,
