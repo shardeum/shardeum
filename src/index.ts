@@ -5279,6 +5279,7 @@ const shardusSetup = (): void => {
 
         const isEIP2930 = AccountsStorage.cachedNetworkAccount?.current?.smartContractSupport && transaction instanceof AccessListEIP2930Transaction && transaction.AccessListJSON != null
         if (isEIP2930) {
+          // smartcontracts-MAINNET feature blocker: we must not utilize EIP2930 access lists directly, they need to run via AALG-wu
           const eip2930Tx = transaction as AccessListEIP2930Transaction
 
           const tooManyAddresses = eip2930Tx.AccessListJSON?.length > ShardeumFlags.accessListSizeLimit
@@ -5431,13 +5432,17 @@ const shardusSetup = (): void => {
           if (ShardeumFlags.txBalancePreCheck) {
             appData.balance = balance
           }
-
           //force all EVM transactions including simple ones to generate a timestamp
         }
+
         let shouldGenerateAccesslist = true
-        if (ShardeumFlags.autoGenerateAccessList === false) shouldGenerateAccesslist = false
-        else if (isStakeRelatedTx) shouldGenerateAccesslist = false
-        else if (isSimpleTransfer) shouldGenerateAccesslist = false
+        if (AccountsStorage.cachedNetworkAccount?.current?.smartContractSupport && ShardeumFlags.autoGenerateAccessList === false){
+          // generally autoGenerateAccessList will be true, but it is available for certain types of debugging
+          shouldGenerateAccesslist = false
+        } else if (isStakeRelatedTx || isSimpleTransfer) {
+          // these types of TXs do not need access list generation
+          shouldGenerateAccesslist = false
+        }
         //else if (remoteShardusAccount == null && appData.newCAAddr == null) shouldGenerateAccesslist = false //resolve which is correct from merge!
         else if (remoteTargetAccount == null && appData.newCAAddr == null) shouldGenerateAccesslist = false
 
@@ -5613,6 +5618,8 @@ const shardusSetup = (): void => {
 
       // DO NOT enable in production. Improve filterObjectByWhitelistedProps instead
       if (AccountsStorage.cachedNetworkAccount?.current?.smartContractSupport) {
+        // smartcontracts-MAINNET feature blocker: proper AJV validation/filtering of appData
+        // this must be per type of transaction
         appData = passedAppData
       }
 

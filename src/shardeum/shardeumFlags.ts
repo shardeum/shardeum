@@ -154,7 +154,7 @@ export const ShardeumFlags: ShardeumFlags = {
   CheckNonce: true,
   txNoncePreCheck: false,
   txBalancePreCheck: true,
-  autoGenerateAccessList: false,
+  autoGenerateAccessList: true, // this is gated by smartContractSupport.  It is used to generate access list for smart contract calls.
   forwardGenesisAccounts: true,
   UseDBForAccounts: true,
   AppliedTxsMaps: false,
@@ -289,7 +289,8 @@ export const ShardeumFlags: ShardeumFlags = {
   cleanStaleShardeumStateMap: false,
   beta1_11_2: true,
 
-  evmFailOnUnexpectedAccount: false, // DO NOT enable in production. Only for testing smart contracts
+  evmFailOnUnexpectedAccount: true, //gated by smartContractSupport. ensures that fetched state is correct when running smart contract apply()
+  // This is to ensure that we fail a transaction if the accounts were not identified and fetched up front.
   numberOfAccessListRetry: 3,
   useFutureBlockForAccessList: true,
   failedStakeReceipt: true,
