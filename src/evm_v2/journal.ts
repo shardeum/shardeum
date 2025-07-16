@@ -2,7 +2,8 @@ import { Hardfork } from '@ethereumjs/common'
 import { Address, RIPEMD160_ADDRESS_STRING, bytesToUnprefixedHex, stripHexPrefix, toBytes } from '@ethereumjs/util'
 import debugDefault from 'debug'
 
-import type { Common, EVMStateManagerInterface } from '@ethereumjs/common'
+import type { Common/*, EVMStateManagerInterface*/ } from '@ethereumjs/common'
+import type { EVMStateManagerInterface } from './interfaces'
 import type { Account } from '@ethereumjs/util'
 import type { Debugger } from 'debug'
 const { debug: createDebugLogger } = debugDefault
@@ -96,7 +97,7 @@ export class Journal {
     await this.stateManager.checkpoint()
   }
 
-  async revert(): Promise<void> {
+  async revert(message:string): Promise<void> {
     // Loop backwards over the journal diff and stop if we are at a lower height than current journal height
     // During this process, delete all items.
     // TODO check this logic, if there is this array: height [4,3,4] and we revert height 4, then the final
@@ -145,7 +146,7 @@ export class Journal {
 
     this.journalHeight--
 
-    await this.stateManager.revert()
+    await this.stateManager.revert(message)
   }
 
   public cleanJournal(): void {

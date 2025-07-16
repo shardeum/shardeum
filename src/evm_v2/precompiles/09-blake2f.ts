@@ -181,10 +181,10 @@ export function precompile09(opts: PrecompileInput): ExecResult {
     }
   }
 
-  const rounds = new DataView(data.subarray(0, 4).buffer).getUint32(0)
-  const hRaw = new DataView(data.buffer, 4, 64)
-  const mRaw = new DataView(data.buffer, 68, 128)
-  const tRaw = new DataView(data.buffer, 196, 16)
+  const rounds = new DataView(data.buffer, data.byteOffset, 4).getUint32(0)
+  const hRaw = new DataView(data.buffer, data.byteOffset + 4, 64)
+  const mRaw = new DataView(data.buffer, data.byteOffset + 68, 128)
+  const tRaw = new DataView(data.buffer, data.byteOffset + 196, 16)
   // final
   const f = lastByte === 1
 

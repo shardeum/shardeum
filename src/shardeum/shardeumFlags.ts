@@ -121,9 +121,11 @@ export interface ShardeumFlags {
   debugExtraNonceLookup: boolean
   cleanStaleShardeumStateMap: boolean
   beta1_11_2: boolean
+  evmFailOnUnexpectedAccount: boolean
+  numberOfAccessListRetry: number
+  useFutureBlockForAccessList: boolean
   failedStakeReceipt: boolean // For stake/unstake TXs that fail the checks in apply(), create an EVM receipt marked as failed
   debugDefaultBalance: string
-  disableSmartContractEndpoints: boolean
   debugGlobalAccountUpdateFail: boolean
   ticketTypesEnabled: boolean
   debugTxEnabled: boolean
@@ -152,7 +154,7 @@ export const ShardeumFlags: ShardeumFlags = {
   CheckNonce: true,
   txNoncePreCheck: false,
   txBalancePreCheck: true,
-  autoGenerateAccessList: false,
+  autoGenerateAccessList: true, // this is gated by smartContractSupport.  It is used to generate access list for smart contract calls.
   forwardGenesisAccounts: true,
   UseDBForAccounts: true,
   AppliedTxsMaps: false,
@@ -287,10 +289,13 @@ export const ShardeumFlags: ShardeumFlags = {
   cleanStaleShardeumStateMap: false,
   beta1_11_2: true,
 
-  unifiedAccountBalanceEnabled: true,
+  evmFailOnUnexpectedAccount: true, //gated by smartContractSupport. ensures that fetched state is correct when running smart contract apply()
+  // This is to ensure that we fail a transaction if the accounts were not identified and fetched up front.
+  numberOfAccessListRetry: 3,
+  useFutureBlockForAccessList: true,
   failedStakeReceipt: true,
+  unifiedAccountBalanceEnabled: true,
   debugDefaultBalance: '100', //In debug mode the default value is 100 SHM.  This is needed for certain load test operations
-  disableSmartContractEndpoints: true, // Disable smart contract read endpoints by default
   debugGlobalAccountUpdateFail: false,
   ticketTypesEnabled: false,
   debugTxEnabled: false,

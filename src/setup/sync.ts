@@ -14,6 +14,7 @@ import { sleep } from '../utils'
 import { DefaultStateManager } from '@ethereumjs/statemanager'
 import { createNetworkAccount, logFlags, shardeumGetTime } from '..'
 import { Utils } from '@shardeum-foundation/lib-types'
+import { RunType } from '../state/transactionState'
 import { initializeSecureAccount, SecureAccountConfig } from '../shardeum/secureAccounts'
 import fs from 'fs'
 import path from 'path'
@@ -267,7 +268,7 @@ async function manuallyCreateAccount(
   let cycleStart = 0
   if (latestCycles != null && latestCycles.length > 0) {
     cycleStart = latestCycles[0].start * 1000
-    /* prettier-ignore */ if (logFlags.important_as_error) console.log('Tester account created time: ', cycleStart)
+    /* prettier-ignore */ if (logFlags.important_as_error) console.log('Tester account created time: ', cycleStart, ethAccountID)
   }
 
   const wrappedEVMAccount = {
@@ -323,7 +324,8 @@ function getDebugTXState(evmCommon: any): ShardeumState {
       },
       txId,
       undefined,
-      undefined
+      undefined,
+      RunType.Apply
     )
     shardeumState.setTransactionState(transactionState)
   } else {

@@ -119,7 +119,8 @@ describe('ShardeumFlags', () => {
         expect(ShardeumFlags.CheckNonce).toBe(true)
         expect(ShardeumFlags.txNoncePreCheck).toBe(false)
         expect(ShardeumFlags.txBalancePreCheck).toBe(true)
-        expect(ShardeumFlags.autoGenerateAccessList).toBe(false)
+        expect(ShardeumFlags.autoGenerateAccessList).toBe(true)
+        expect(ShardeumFlags.evmFailOnUnexpectedAccount).toBe(true)
         expect(ShardeumFlags.UseTXPreCrack).toBe(true)
         expect(ShardeumFlags.chargeConstantTxFee).toBe(false)
         expect(ShardeumFlags.constantTxFeeUsd).toBe('10000000000000000')
@@ -274,7 +275,7 @@ describe('ShardeumFlags', () => {
         expect(ShardeumFlags.AppliedTxsMaps).toBe(false)
         expect(ShardeumFlags.SaveEVMTries).toBe(false)
         expect(ShardeumFlags.CheckpointRevertSupport).toBe(true)
-        expect(ShardeumFlags.disableSmartContractEndpoints).toBe(true)
+        // Removed test for disableSmartContractEndpoints as it has been replaced by network parameter smartContractSupport
         expect(ShardeumFlags.accessListSizeLimit).toBe(5)
       })
     })

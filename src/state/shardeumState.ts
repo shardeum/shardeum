@@ -13,7 +13,8 @@ import {
   bigIntToHex,
 } from '@ethereumjs/util'
 import { RLP } from '@ethereumjs/rlp'
-import { AccountFields, Chain, Common, EVMStateManagerInterface, Hardfork, StorageDump } from '@ethereumjs/common'
+import { AccountFields, Chain, Common, /*EVMStateManagerInterface,*/ Hardfork, StorageDump } from '@ethereumjs/common'
+import type { EVMStateManagerInterface } from '../evm_v2/interfaces'
 import type { StorageRange } from '@ethereumjs/common/src'
 import { OriginalStorageCache } from './cache/originalStorageCache'
 import { CacheType, AccountCache, StorageCache } from './cache/index'
@@ -475,9 +476,9 @@ export default class ShardeumState implements EVMStateManagerInterface {
    * Reverts the current change-set to the instance since the
    * last call to checkpoint.
    */
-  async revert(): Promise<void> {
+  async revert(message:string): Promise<void> {
     if (this._transactionState != null) {
-      this._transactionState.revert()
+      this._transactionState.revert(message)
     }
     return
   }

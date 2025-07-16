@@ -111,12 +111,12 @@ export async function runTx(
   if (opts.tx.supports(Capability.EIP2718TypedTransaction) && this.common.isActivatedEIP(2718) === true) {
     // Is it an Access List transaction?
     if (this.common.isActivatedEIP(2930) === false) {
-      await evm.journal.revert()
+      await evm.journal.revert('runTx: EIP 2930 not activated')
       const msg = _errorMsg('Cannot run transaction: EIP 2930 is not activated.', this, opts.block, opts.tx)
       throw new Error(msg)
     }
     if (opts.tx.supports(Capability.EIP1559FeeMarket) && this.common.isActivatedEIP(1559) === false) {
-      await evm.journal.revert()
+      await evm.journal.revert('runTx: EIP 1559 not activated')
       const msg = _errorMsg('Cannot run transaction: EIP 1559 is not activated.', this, opts.block, opts.tx)
       throw new Error(msg)
     }
@@ -134,7 +134,7 @@ export async function runTx(
   // chainId validation
   const chainId = opts.tx.common.chainId()
   if (BigInt(chainId) !== BigInt(ShardeumFlags.ChainID)) {
-    await evm.journal.revert()
+    await evm.journal.revert('runTx: Invalid chainId')
     const msg = _errorMsg(
       `Invalid chainId: expected ${ShardeumFlags.ChainID}, got ${chainId}`,
       this,
@@ -152,7 +152,7 @@ export async function runTx(
     }
     return result
   } catch (e: any) {
-    await evm.journal.revert()
+    await evm.journal.revert('runTX: Error while running transaction: ' + e.message)
     if (this.DEBUG) {
       debug(`tx checkpoint reverted`)
     }
