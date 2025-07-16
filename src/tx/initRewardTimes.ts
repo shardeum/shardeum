@@ -87,42 +87,33 @@ export function validateFields(tx: InitRewardTimes, shardus: Shardus): { success
     /* prettier-ignore */ nestedCountersInstance.countEvent('shardeum-staking', `validateFields InitRewardTimes fail nodeActivatedTime missing`)
     return { success: false, reason: 'nodeActivatedTime field is not found in setRewardTimes Tx' }
   }
-  if (tx.nodeActivatedTime < 0 || tx.nodeActivatedTime > shardeumGetTime()) {
-    /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log('validateFields InitRewardTimes fail nodeActivatedTime is not correct ', tx)
-    /* prettier-ignore */ nestedCountersInstance.countEvent('shardeum-staking', `validateFields InitRewardTimes fail nodeActivatedTime is not correct `)
-    return { success: false, reason: 'nodeActivatedTime is not correct in setRewardTimes Tx' }
-  }
+
   const isValid = crypto.verifyObj(tx)
   if (!isValid) {
     /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log('validateFields InitRewardTimes fail Invalid signature', tx)
     /* prettier-ignore */ nestedCountersInstance.countEvent('shardeum-staking', `validateFields InitRewardTimes fail Invalid signature`)
     return { success: false, reason: 'Invalid signature' }
   }
-
   // only allow claim reward txs for tx data that is in the serviceQueue
   if (!shardus.serviceQueue.containsTxData(tx.txData)) {
     /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log('validateFields InitRewardTimes fail node not in serviceQueue', tx)
     /* prettier-ignore */ nestedCountersInstance.countEvent('shardeum-staking', `validateFields InitRewardTimes fail node not in serviceQueue`)
     return { success: false, reason: 'node not in serviceQueue' }
   }
-
   // check txData matches tx
   if (tx.txData.startTime !== tx.nodeActivatedTime) {
     /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log('validateFields InitRewardTimes fail txData.startTime does not match nodeActivatedTime', tx)
     /* prettier-ignore */ nestedCountersInstance.countEvent('shardeum-staking', `validateFields InitRewardTimes fail txData.startTime does not match nodeActivatedTime`)
     return { success: false, reason: 'txData.startTime does not match nodeActivatedTime' }
   }
-
   if (tx.txData.publicKey !== tx.nominee) {
     /* prettier-ignore */ nestedCountersInstance.countEvent('shardeum-staking', `validateFields InitRewardTimes fail txData.publicKey does not match tx.nominee`)
     /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log('validateFields InitRewardTimes fail txData.publicKey does not match tx.nominee', tx)
     return { success: false, reason: 'txData.publicKey does not match tx.nominee' }
   }
-
   /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log('validateFields InitRewardTimes success', tx)
   return { success: true, reason: 'valid' }
 }
-
 export function validate(tx: InitRewardTimes, shardus: Shardus): { result: string; reason: string } {
   /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log('Validating InitRewardTimesTX', tx)
 
