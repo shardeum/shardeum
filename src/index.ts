@@ -38,7 +38,7 @@ import {
   Shardus,
   DevSecurityLevel,
 } from '@shardeum-foundation/core'
-import { ContractByteWrite, WarmupStats } from './state/transactionState'
+import { ContractByteWrite, WarmupStats, RunType } from './state/transactionState'
 import { version, devDependencies, dependencies } from '../package.json'
 import {
   AccountType,
@@ -526,9 +526,9 @@ let debugAppdata: Map<string, unknown>
 async function initEVMSingletons(): Promise<void> {
   const chainIDBN = BigInt(ShardeumFlags.ChainID)
 
-  // setting up only to 'istanbul' hardfork for now
+  // setting up to 'cancun' hardfork
   // https://github.com/ethereumjs/ethereumjs-monorepo/blob/master/packages/common/src/chains/mainnet.json
-  evmCommon = new Common({ chain: 'mainnet', hardfork: Hardfork.Istanbul, eips: [3855] })
+  evmCommon = new Common({ chain: 'mainnet', hardfork: Hardfork.Cancun, eips: [3855, 5656, 1153] })
 
   //hack override this function.  perhaps a nice thing would be to use forCustomChain to create a custom common object
   evmCommon.chainId = (): bigint => {
@@ -1002,7 +1002,8 @@ function getCallTXState(): ShardeumState {
     },
     txId,
     undefined,
-    undefined
+    undefined,
+    RunType.Call
   )
   shardeumState.setTransactionState(transactionState)
   return shardeumState
@@ -1025,7 +1026,8 @@ function getPreRunTXState(txId: string): ShardeumState {
     },
     txId,
     undefined,
-    undefined
+    undefined,
+    RunType.PreRun
   )
   shardeumState.setTransactionState(transactionState)
   return shardeumState
@@ -1049,7 +1051,8 @@ export function getApplyTXState(txId: string): ShardeumState {
       },
       txId,
       undefined,
-      undefined
+      undefined,
+      RunType.Apply
     )
     shardeumState.setTransactionState(transactionState)
     shardeumStateTXMap.set(txId, shardeumState)
@@ -1357,8 +1360,8 @@ const configShardusEndpoints = (): void => {
   }
 
   shardus.registerExternalPost('inject-with-warmup', externalApiMiddleware, async (req, res) => {
-    if (ShardeumFlags.disableSmartContractEndpoints) {
-      res.json({ result: null, error: 'Smart contract endpoints are disabled' })
+    if (!AccountsStorage.cachedNetworkAccount.current.smartContractSupport) {
+      res.json({ result: null, error: 'Smart contracts are not supported' })
       return
     }
 
@@ -1764,7 +1767,7 @@ const configShardusEndpoints = (): void => {
   })
 
   shardus.registerExternalGet('eth_getCode', externalApiMiddleware as any, async (req, res) => {
-    if (ShardeumFlags.disableSmartContractEndpoints) {
+    if (!AccountsStorage.cachedNetworkAccount.current.smartContractSupport) {
       res.json({ contractCode: '0x' })
       return
     }
@@ -1842,8 +1845,8 @@ const configShardusEndpoints = (): void => {
     // if(isDebugMode()){
     //   return res.json(`endpoint not available`)
     // }
-    if (ShardeumFlags.disableSmartContractEndpoints) {
-      res.json({ result: null, error: 'Smart contract endpoints are disabled' })
+    if (!AccountsStorage.cachedNetworkAccount.current.smartContractSupport) {
+      res.json({ result: null, error: 'Smart contracts are not supported' })
       return
     }
     if (trySpendServicePoints(ShardeumFlags.ServicePoints['contract/call'].endpoint, req, 'call-endpoint') === false) {
@@ -2018,14 +2021,19 @@ const configShardusEndpoints = (): void => {
 
       if (callResult.execResult.exceptionError) {
         if (ShardeumFlags.VerboseLogs) console.log('Execution Error:', callResult.execResult.exceptionError)
+        
+        let revertReason = callResult.execResult.exceptionError.error as string
+        
+        const decodedReason = decodeRevertReasonFromReturnValue(callResult.execResult.returnValue);
+        if (decodedReason) {
+          revertReason = decodedReason;
+        }
+        
         res.json({
           result: {
             error: {
               code: -32000,
-              message:
-                `execution reverted: ${callResult.execResult.exceptionError.errorType} ` +
-                `${callResult.execResult.exceptionError.error}`,
-              data: bytesToHex(callResult.execResult.returnValue),
+              message: `execution reverted: ${revertReason}`,
             },
           },
         })
@@ -2041,8 +2049,8 @@ const configShardusEndpoints = (): void => {
   })
 
   shardus.registerExternalPost('contract/accesslist', externalApiMiddleware, async (req, res) => {
-    if (ShardeumFlags.disableSmartContractEndpoints) {
-      res.json({ result: null, error: 'Smart contract endpoints are disabled' })
+    if (!AccountsStorage.cachedNetworkAccount.current.smartContractSupport) {
+      res.json({ result: null, error: 'Smart contracts are not supported' })
       return
     }
     if (
@@ -2066,8 +2074,8 @@ const configShardusEndpoints = (): void => {
   })
 
   shardus.registerExternalPost('contract/accesslist-warmup', externalApiMiddleware, async (req, res) => {
-    if (ShardeumFlags.disableSmartContractEndpoints) {
-      res.json({ result: null, error: 'Smart contract endpoints are disabled' })
+    if (!AccountsStorage.cachedNetworkAccount.current.smartContractSupport) {
+      res.json({ result: null, error: 'Smart contracts are not supported' })
       return
     }
     if (
@@ -3557,7 +3565,7 @@ async function estimateGas(
 
   if (runTxResult.execResult.exceptionError) {
     if (ShardeumFlags.VerboseLogs) console.log('Execution Error:', runTxResult.execResult.exceptionError)
-    throw new Error(runTxResult.execResult.exceptionError)
+    throw new Error(runTxResult.execResult.exceptionError.error)
   }
 
   if (!isValid) {
@@ -3580,22 +3588,27 @@ async function generateAccessList(
   failedAccessList?: boolean
   accessList: any[]
   codeHashes: CodeHashObj[]
+  failureReason?: string
 }> {
   try {
     const transaction = getTransactionObj(injectedTx)
     const caShardusAddress = transaction.to ? toShardusAddress(transaction.to.toString(), AccountType.Account) : null
 
     if (caShardusAddress != null) {
-      /* prettier-ignore */ if (logFlags.dapp_verbose || logFlags.aalg) console.log('Generating accessList to ', transaction.to.toString(), caShardusAddress)
+      /* prettier-ignore */ if (logFlags.dapp_verbose || logFlags.aalg) console.log('Generating accessList to ', transaction.to.toString(), caShardusAddress, " caller: ", caller)
 
       const address = caShardusAddress
       const accountIsRemote = isServiceMode() ? false : shardus.isAccountRemote(address)
       //ShardeumFlags.debugLocalAALG === false means that we will skip the remote attempt and run it locally
       if (accountIsRemote && ShardeumFlags.debugLocalAALG === false) {
+        let success = false
+        let retry = 0
+        while (success === false && retry < ShardeumFlags.numberOfAccessListRetry) {
+          retry++
         const consensusNode = shardus.getRandomConsensusNodeForAccount(address)
         /* prettier-ignore */ if (logFlags.dapp_verbose || logFlags.aalg) console.log(`Node is in remote shard: ${consensusNode?.externalIp}:${consensusNode?.externalPort}`)
         if (consensusNode != null) {
-          /* prettier-ignore */ if (logFlags.dapp_verbose || logFlags.aalg) console.log(`Node is in remote shard: requesting`)
+            /* prettier-ignore */ if (logFlags.dapp_verbose || logFlags.aalg) console.log(`Node is in remote shard: requesting ${consensusNode.externalIp} ${consensusNode.externalPort} count: ${retry}`)
 
           const postResp = await _internalHackPostWithResp(
             `${consensusNode.externalIp}:${consensusNode.externalPort}/contract/accesslist-warmup`,
@@ -3610,6 +3623,7 @@ async function generateAccessList(
               if (postResp.body.codeHashes == null || postResp.body.codeHashes.length == 0) {
                 failed = true
               }
+                if (failed === false) success = true
               return {
                 accessList: postResp.body.accessList,
                 shardusMemoryPatterns: postResp.body.shardusMemoryPatterns,
@@ -3618,17 +3632,22 @@ async function generateAccessList(
               }
             } else {
               nestedCountersInstance.countEvent('accesslist', `remote shard accessList: empty`)
-              return { accessList: [], shardusMemoryPatterns: null, codeHashes: [], failedAccessList: true }
             }
           }
         } else {
           nestedCountersInstance.countEvent('accesslist', `remote shard found no consensus node`)
           /* prettier-ignore */ if (logFlags.dapp_verbose || logFlags.aalg) console.log(`Node is in remote shard: consensusNode = null`)
-          return { accessList: [], shardusMemoryPatterns: null, codeHashes: [], failedAccessList: true }
         }
+        }
+        nestedCountersInstance.countEvent('accesslist', `give up after ${ShardeumFlags.numberOfAccessListRetry} tries`)
+        /* prettier-ignore */ if (logFlags.dapp_verbose || logFlags.aalg) console.log(`AccessList: give up after ${ShardeumFlags.numberOfAccessListRetry} tries`)
+        return { accessList: [], shardusMemoryPatterns: null, codeHashes: [], failedAccessList: true, failureReason: `Remote shard access list generation failed after ${ShardeumFlags.numberOfAccessListRetry} retries` }
       } else {
         /* prettier-ignore */ if (logFlags.dapp_verbose || logFlags.aalg) console.log(`Node is in remote shard: false`)
       }
+    } else {
+      /* prettier-ignore */ if (logFlags.dapp_verbose || logFlags.aalg) console.log(`caShardusAddress == null, this is probably a deploy`, transaction.to)
+      nestedCountersInstance.countEvent('accesslist', `caShardusAddress == null, this is probably a deploy`)
     }
 
     const txId = generateTxId(injectedTx)
@@ -3737,6 +3756,8 @@ async function generateAccessList(
 
     if (warmupList != null) {
       /* prettier-ignore */ if (logFlags.aalg) console.log(`warmup results, before:`, caller, txId, JSON.stringify(warmupStats, null, 2))
+    } else {
+      /* prettier-ignore */ if (logFlags.aalg) console.log(`warmup results, before: no warmupList`, caller, txId)
     }
 
     const customEVM = new EthereumVirtualMachine({
@@ -3749,15 +3770,23 @@ async function generateAccessList(
 
     if (transaction == null) {
       nestedCountersInstance.countEvent('accesslist', 'transaction is null')
-      return { accessList: [], shardusMemoryPatterns: null, codeHashes: [] }
+      return { accessList: [], shardusMemoryPatterns: null, codeHashes: [], failedAccessList: true, failureReason: 'Transaction object is null' }
     }
     const txStart = Date.now()
 
     let runTxResult
     try {
+      let latestBlockForAccessList = blocks[latestBlock]
+      if (ShardeumFlags.useFutureBlockForAccessList) {
+        latestBlockForAccessList = getOrCreateBlockFromTimestamp(
+          shardeumGetTime() + 1000 * 7,
+          false
+        )
+      }
+      console.log(`generating access list for tx ${txId} with block`, latestBlockForAccessList.header)
       runTxResult = await EVM.runTx(
         {
-          block: blocks[latestBlock],
+          block: latestBlockForAccessList,
           tx: transaction,
           // skipNonce: !ShardeumFlags.CheckNonce,
           skipNonce: true,
@@ -3943,9 +3972,30 @@ async function generateAccessList(
     if (runTxResult.execResult.exceptionError) {
       if (ShardeumFlags.VerboseLogs || logFlags.aalg)
         console.log('Execution Error:', runTxResult.execResult.exceptionError)
+
+      //temp extra logs.
+      if (ShardeumFlags.VerboseLogs || logFlags.aalg) {
+        // For the raw revert reason data (hex):
+        console.log('Raw return value:', runTxResult.execResult.returnValue.toString('hex'));
+
+        try{
+          const revertReason = decodeRevertReasonFromReturnValue(runTxResult.execResult.returnValue);
+          console.log('Decoded revert reason:', revertReason);
+        } catch (decodeError) {
+          console.error('Error decoding revert reason:', decodeError);
+        }
+
+        console.log('Full runTxResult:', runTxResult);
+      }
+
       /* prettier-ignore */ nestedCountersInstance.countEvent('accesslist', `Local Fail with evm error: CA ${transaction.to && ShardeumFlags.VerboseLogs ? transaction.to.toString() : ''}`)
-      return { accessList: [], shardusMemoryPatterns: null, codeHashes: [], failedAccessList: true }
+      const revertReason = runTxResult.execResult.returnValue ? decodeRevertReasonFromReturnValue(runTxResult.execResult.returnValue) : null
+      const errorDetails = revertReason ? `: ${revertReason}` : ''
+      return { accessList: [], shardusMemoryPatterns: null, codeHashes: [], failedAccessList: true, failureReason: `EVM execution error: ${runTxResult.execResult.exceptionError.error}${errorDetails}` }
     }
+
+
+
     const isEmptyCodeHash = allCodeHash.size === 0
     if (isEmptyCodeHash) {
       /* prettier-ignore */ if (ShardeumFlags.VerboseLogs || logFlags.aalg) console.log(`aalg: empty codehash ${txId}
@@ -3959,12 +4009,39 @@ async function generateAccessList(
       shardusMemoryPatterns,
       codeHashes: Array.from(allCodeHash.values()),
       failedAccessList: isEmptyCodeHash,
+      failureReason: isEmptyCodeHash ? 'No code hashes found for involved contracts' : undefined,
     }
   } catch (e) {
     console.log(`Error: generateAccessList`, e)
     nestedCountersInstance.countEvent('accesslist', `Local Fail: unknown`)
-    return { accessList: [], shardusMemoryPatterns: null, codeHashes: [] }
+    return { accessList: [], shardusMemoryPatterns: null, codeHashes: [], failedAccessList: true, failureReason: `Unexpected error: ${e.message || e}` }
   }
+}
+
+// Helper function to decode revert reason from EVM return data
+function decodeRevertReasonFromReturnValue(returnValue: Uint8Array): string | null {
+  if (!returnValue || returnValue.length === 0) {
+    return null;
+  }
+  
+  try {
+    const returnDataHex = bytesToHex(returnValue);
+    
+    // Check if it's a standard Error(string) revert (selector 0x08c379a0)
+    if (returnDataHex.startsWith('0x08c379a0') && returnDataHex.length >= 138) {
+      const lengthHex = '0x' + returnDataHex.slice(74, 138);
+      const stringLength = parseInt(lengthHex, 16);
+      
+      if (stringLength > 0) {
+        const stringHex = returnDataHex.slice(138, 138 + stringLength * 2);
+        return Buffer.from(stringHex, 'hex').toString('utf8');
+      }
+    }
+  } catch (e) {
+    // If decoding fails, return null
+  }
+  
+  return null;
 }
 
 async function fetchAndCacheAccountData(
@@ -5111,7 +5188,14 @@ const shardusSetup = (): void => {
           s: bigIntToHex(transaction.s),
         }
         if (runTxResult.execResult.exceptionError) {
-          readableReceipt.reason = runTxResult.execResult.exceptionError.error
+          let revertReason = runTxResult.execResult.exceptionError.error as string
+          
+          const decodedReason = decodeRevertReasonFromReturnValue(runTxResult.execResult.returnValue);
+          if (decodedReason) {
+            revertReason = decodedReason;
+          }
+          
+          readableReceipt.reason = revertReason
         }
         wrappedReceiptAccount = {
           timestamp: txTimestamp,
@@ -5200,8 +5284,9 @@ const shardusSetup = (): void => {
         let remoteTargetAccount
         appData.requestNewTimestamp = true // force all evm txs to generate a new timestamp
 
-        const isEIP2930 = transaction instanceof AccessListEIP2930Transaction && transaction.AccessListJSON != null
+        const isEIP2930 = AccountsStorage.cachedNetworkAccount?.current?.smartContractSupport && transaction instanceof AccessListEIP2930Transaction && transaction.AccessListJSON != null
         if (isEIP2930) {
+          // smartcontracts-MAINNET feature blocker: we must not utilize EIP2930 access lists directly, they need to run via AALG-wu
           const eip2930Tx = transaction as AccessListEIP2930Transaction
 
           const tooManyAddresses = eip2930Tx.AccessListJSON?.length > ShardeumFlags.accessListSizeLimit
@@ -5354,26 +5439,30 @@ const shardusSetup = (): void => {
           if (ShardeumFlags.txBalancePreCheck) {
             appData.balance = balance
           }
-
           //force all EVM transactions including simple ones to generate a timestamp
         }
+
         let shouldGenerateAccesslist = true
-        if (ShardeumFlags.autoGenerateAccessList === false) shouldGenerateAccesslist = false
-        else if (isStakeRelatedTx) shouldGenerateAccesslist = false
-        else if (isSimpleTransfer) shouldGenerateAccesslist = false
+        if (AccountsStorage.cachedNetworkAccount?.current?.smartContractSupport && ShardeumFlags.autoGenerateAccessList === false){
+          // generally autoGenerateAccessList will be true, but it is available for certain types of debugging
+          shouldGenerateAccesslist = false
+        } else if (isStakeRelatedTx || isSimpleTransfer) {
+          // these types of TXs do not need access list generation
+          shouldGenerateAccesslist = false
+        }
         //else if (remoteShardusAccount == null && appData.newCAAddr == null) shouldGenerateAccesslist = false //resolve which is correct from merge!
         else if (remoteTargetAccount == null && appData.newCAAddr == null) shouldGenerateAccesslist = false
 
-        // dappFeature1enabled is our coin-transfer-only mode. Crack if it calls EVM
+        // Check if smart contracts are supported. If not, only allow coin transfers
         const isCoinTransfer = isSimpleTransfer || (remoteTargetAccount == null && appData.newCAAddr == null)
         if (isCoinTransfer) {
           appData.isCoinTransfer = true
         }
-        if (shardusConfig.features.dappFeature1enabled && !isStakeRelatedTx && !isCoinTransfer) {
+        if (!AccountsStorage.cachedNetworkAccount.current.smartContractSupport && !isStakeRelatedTx && !isCoinTransfer) {
           nestedCountersInstance.countEvent('shardeum', 'precrack - coin-transfer-only')
           return {
             status: false,
-            reason: `coin-transfer-only mode enabled. Only simple transfers are allowed.`,
+            reason: `Smart contracts are not supported. Only simple transfers are allowed.`,
           }
         }
 
@@ -5454,6 +5543,7 @@ const shardusSetup = (): void => {
               failedAccessList,
               accessList: generatedAccessList,
               codeHashes,
+              failureReason,
             } = await generateAccessList(tx, appData?.warmupList, 'txPrecrackData')
             profilerInstance.scopedProfileSectionEnd('accesslist-generate')
 
@@ -5470,14 +5560,19 @@ const shardusSetup = (): void => {
             appData.shardusMemoryPatterns = shardusMemoryPatterns
             appData.codeHashes = codeHashes
             if (failedAccessList) {
-              return { status: false, reason: `Failed to generate access list ${Date.now() - aalgStart}` }
+              const elapsedTime = Date.now() - aalgStart
+              const targetAddress = transaction.to ? transaction.to.toString() : 'contract deployment'
+              const failureDetails = failureReason ? `: ${failureReason}` : ''
+              return { status: false, reason: `Failed to generate access list for ${targetAddress} (elapsed: ${elapsedTime}ms)${failureDetails}` }
             }
 
             if (appData.accessList && appData.accessList.length > 0) {
               /* prettier-ignore */ nestedCountersInstance.countEvent('shardeum', 'precrack' + ' -' + ' generateAccessList success: true')
             } else {
               /* prettier-ignore */ nestedCountersInstance.countEvent('shardeum', 'precrack' + ' -' + ' generateAccessList success: false')
-              return { status: false, reason: `Failed to generate access list2 ${Date.now() - aalgStart}` }
+              const elapsedTime = Date.now() - aalgStart
+              const targetAddress = transaction.to ? transaction.to.toString() : 'contract deployment'
+              return { status: false, reason: `Failed to generate access list for ${targetAddress} (elapsed: ${elapsedTime}ms): Empty access list returned` }
             }
           }
         }
@@ -5505,7 +5600,7 @@ const shardusSetup = (): void => {
 
     //@ts-ignore
     crack(timestampedTx, passedAppData) {
-      const appData: any = filterObjectByWhitelistedProps(passedAppData, [
+      let appData: any = filterObjectByWhitelistedProps(passedAppData, [
         {
           name: 'internalTx',
           type: 'object',
@@ -5528,13 +5623,20 @@ const shardusSetup = (): void => {
         },
       ])
 
+      // DO NOT enable in production. Improve filterObjectByWhitelistedProps instead
+      if (AccountsStorage.cachedNetworkAccount?.current?.smartContractSupport) {
+        // smartcontracts-MAINNET feature blocker: proper AJV validation/filtering of appData
+        // this must be per type of transaction
+        appData = passedAppData
+      }
+
       if (ShardeumFlags.VerboseLogs) console.log('Running getKeyFromTransaction', timestampedTx)
       //@ts-ignore
       const { tx } = timestampedTx
 
       const timestamp: number = getInjectedOrGeneratedTimestamp(timestampedTx)
 
-      const shardusMemoryPatterns = {}
+      let shardusMemoryPatterns = {}
       if (isInternalTx(tx)) {
         const customTXhash = null
         const internalTx = tx as InternalTx
@@ -5753,67 +5855,67 @@ const shardusSetup = (): void => {
         // Note: The below code is being removed because usage of appData properties should only be used for staking
         //       data at this time. Also, for security reasons, only appData properties internalTx, internalTxType,
         //       networkAccount, monimeeAccount, and nominatorAccount should be used in this function.
-        // if (transaction instanceof AccessListEIP2930Transaction && transaction.AccessListJSON != null) {
-        //   for (const accessList of transaction.AccessListJSON) {
-        //     const address = accessList.address
-        //     if (address) {
-        //       const shardusAddr = toShardusAddress(address, AccountType.Account)
-        //       shardusAddressToEVMAccountInfo.set(shardusAddr, {
-        //         evmAddress: address,
-        //         type: AccountType.Account,
-        //       })
-        //       otherAccountKeys.push(shardusAddr)
-        //
-        //       //TODO: we need some new logic that can check each account to try loading each CA "early"
-        //       //and figure so we will at least know the code hash to load
-        //       //probably should also do some work with memory access patterns too.
-        //     }
-        //     //let storageKeys = accessList.storageKeys.map(key => toShardusAddress(key, AccountType.ContractStorage))
-        //     const storageKeys = []
-        //     for (const storageKey of accessList.storageKeys) {
-        //       //let shardusAddr = toShardusAddress(storageKey, AccountType.ContractStorage)
-        //       const shardusAddr = toShardusAddressWithKey(address, storageKey, AccountType.ContractStorage)
-        //
-        //       shardusAddressToEVMAccountInfo.set(shardusAddr, {
-        //         evmAddress: shardusAddr,
-        //         contractAddress: address,
-        //         type: AccountType.ContractStorage,
-        //       })
-        //       storageKeys.push(shardusAddr)
-        //     }
-        //     result.storageKeys = result.storageKeys.concat(storageKeys)
-        //   }
-        // } else {
-        //   if (ShardeumFlags.autoGenerateAccessList && appData.accessList) {
-        //     shardusMemoryPatterns = appData.shardusMemoryPatterns
-        //     // we have pre-generated accessList
-        //     for (const accessListItem of appData.accessList) {
-        //       const address = accessListItem[0]
-        //       if (address) {
-        //         const shardusAddr = toShardusAddress(address, AccountType.Account)
-        //         shardusAddressToEVMAccountInfo.set(shardusAddr, {
-        //           evmAddress: address,
-        //           type: AccountType.Account,
-        //         })
-        //         otherAccountKeys.push(shardusAddr)
-        //       }
-        //       //let storageKeys = accessListItem.storageKeys.map(key => toShardusAddress(key, AccountType.ContractStorage))
-        //       const storageKeys = []
-        //       for (const storageKey of accessListItem[1]) {
-        //         //let shardusAddr = toShardusAddress(storageKey, AccountType.ContractStorage)
-        //         const shardusAddr = toShardusAddressWithKey(address, storageKey, AccountType.ContractStorage)
-        //
-        //         shardusAddressToEVMAccountInfo.set(shardusAddr, {
-        //           evmAddress: storageKey,
-        //           contractAddress: address,
-        //           type: AccountType.ContractStorage,
-        //         })
-        //         storageKeys.push(shardusAddr)
-        //       }
-        //       result.storageKeys = result.storageKeys.concat(storageKeys)
-        //     }
-        //   }
-        // }
+        if (AccountsStorage.cachedNetworkAccount?.current?.smartContractSupport && transaction instanceof AccessListEIP2930Transaction && transaction.AccessListJSON != null) {
+          for (const accessList of transaction.AccessListJSON) {
+            const address = accessList.address
+            if (address) {
+              const shardusAddr = toShardusAddress(address, AccountType.Account)
+              shardusAddressToEVMAccountInfo.set(shardusAddr, {
+                evmAddress: address,
+                type: AccountType.Account,
+              })
+              otherAccountKeys.push(shardusAddr)
+        
+              //TODO: we need some new logic that can check each account to try loading each CA "early"
+              //and figure so we will at least know the code hash to load
+              //probably should also do some work with memory access patterns too.
+            }
+            //let storageKeys = accessList.storageKeys.map(key => toShardusAddress(key, AccountType.ContractStorage))
+            const storageKeys = []
+            for (const storageKey of accessList.storageKeys) {
+              //let shardusAddr = toShardusAddress(storageKey, AccountType.ContractStorage)
+              const shardusAddr = toShardusAddressWithKey(address, storageKey, AccountType.ContractStorage)
+        
+              shardusAddressToEVMAccountInfo.set(shardusAddr, {
+                evmAddress: shardusAddr,
+                contractAddress: address,
+                type: AccountType.ContractStorage,
+              })
+              storageKeys.push(shardusAddr)
+            }
+            result.storageKeys = result.storageKeys.concat(storageKeys)
+          }
+        } else {
+          if (AccountsStorage.cachedNetworkAccount?.current?.smartContractSupport && ShardeumFlags.autoGenerateAccessList && appData.accessList) {
+            shardusMemoryPatterns = appData.shardusMemoryPatterns
+            // we have pre-generated accessList
+            for (const accessListItem of appData.accessList) {
+              const address = accessListItem[0]
+              if (address) {
+                const shardusAddr = toShardusAddress(address, AccountType.Account)
+                shardusAddressToEVMAccountInfo.set(shardusAddr, {
+                  evmAddress: address,
+                  type: AccountType.Account,
+                })
+                otherAccountKeys.push(shardusAddr)
+              }
+              //let storageKeys = accessListItem.storageKeys.map(key => toShardusAddress(key, AccountType.ContractStorage))
+              const storageKeys = []
+              for (const storageKey of accessListItem[1]) {
+                //let shardusAddr = toShardusAddress(storageKey, AccountType.ContractStorage)
+                const shardusAddr = toShardusAddressWithKey(address, storageKey, AccountType.ContractStorage)
+        
+                shardusAddressToEVMAccountInfo.set(shardusAddr, {
+                  evmAddress: storageKey,
+                  contractAddress: address,
+                  type: AccountType.ContractStorage,
+                })
+                storageKeys.push(shardusAddr)
+              }
+              result.storageKeys = result.storageKeys.concat(storageKeys)
+            }
+          }
+        }
         /***
          DO NOT REMOVE - END
          ***/

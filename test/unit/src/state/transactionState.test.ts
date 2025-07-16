@@ -1,6 +1,6 @@
 import { describe, beforeEach, test, expect, jest, beforeAll } from '@jest/globals'
 import { Account, Address, bytesToHex, hexToBytes, KECCAK256_NULL } from '@ethereumjs/util'
-import TransactionState from '../../../../src/state/transactionState'
+import TransactionState, { RunType } from '../../../../src/state/transactionState'
 import ShardeumState from '../../../../src/state/shardeumState'
 import * as AccountsStorage from '../../../../src/storage/accountStorage'
 import { AccountType, WrappedEVMAccount } from '../../../../src/shardeum/shardeumTypes'
@@ -83,7 +83,8 @@ describe('TransactionState', () => {
         mockCallbacks,
         linkedTX,
         firstReads,
-        firstContractStorageReads
+        firstContractStorageReads,
+        RunType.Apply
       )
 
       expect(transactionState.linkedTX).toBe(linkedTX)
@@ -94,7 +95,7 @@ describe('TransactionState', () => {
     })
 
     test('should initialize callbacks correctly', () => {
-      transactionState.initData(mockShardeumState, mockCallbacks, 'tx123', null, null)
+      transactionState.initData(mockShardeumState, mockCallbacks, 'tx123', null, null, RunType.Apply)
 
       expect(transactionState.accountMissCB).toBe(mockCallbacks.storageMiss)
       expect(transactionState.contractStorageMissCB).toBe(mockCallbacks.contractStorageMiss)
@@ -108,7 +109,7 @@ describe('TransactionState', () => {
   describe('resetTransactionState', () => {
     test('should reset all state maps and counters', () => {
       // Initialize with some data
-      transactionState.initData(mockShardeumState, mockCallbacks, 'tx123', new Map(), new Map())
+      transactionState.initData(mockShardeumState, mockCallbacks, 'tx123', new Map(), new Map(), RunType.Apply)
       transactionState.allAccountWrites.set(addressString1, account1.serialize())
       transactionState.checkpointCount = 5
 
@@ -170,7 +171,7 @@ describe('TransactionState', () => {
 
   describe('getAccount', () => {
     beforeEach(() => {
-      transactionState.initData(mockShardeumState, mockCallbacks, 'tx123', null, null)
+      transactionState.initData(mockShardeumState, mockCallbacks, 'tx123', null, null, RunType.Apply)
     })
 
     test('should return account from allAccountWrites if present', async () => {
@@ -293,7 +294,7 @@ describe('TransactionState', () => {
 
   describe('putAccount', () => {
     beforeEach(() => {
-      transactionState.initData(mockShardeumState, mockCallbacks, 'tx123', null, null)
+      transactionState.initData(mockShardeumState, mockCallbacks, 'tx123', null, null, RunType.Apply)
     })
 
     test('should add account to current checkpoint if checkpoints exist', () => {
@@ -332,7 +333,7 @@ describe('TransactionState', () => {
 
   describe('insertFirstAccountReads', () => {
     beforeEach(() => {
-      transactionState.initData(mockShardeumState, mockCallbacks, 'tx123', null, null)
+      transactionState.initData(mockShardeumState, mockCallbacks, 'tx123', null, null, RunType.Apply)
     })
 
     test('should insert account into firstAccountReads', () => {
@@ -351,7 +352,7 @@ describe('TransactionState', () => {
     const codeHashStr = bytesToHex(codeHash)
 
     beforeEach(() => {
-      transactionState.initData(mockShardeumState, mockCallbacks, 'tx123', null, null)
+      transactionState.initData(mockShardeumState, mockCallbacks, 'tx123', null, null, RunType.Apply)
       // Mock getAccount to return account with codeHash
       jest.spyOn(transactionState, 'getAccount').mockResolvedValue({
         ...account1,
@@ -431,7 +432,7 @@ describe('TransactionState', () => {
 
   describe('putContractCode', () => {
     beforeEach(() => {
-      transactionState.initData(mockShardeumState, mockCallbacks, 'tx123', null, null)
+      transactionState.initData(mockShardeumState, mockCallbacks, 'tx123', null, null, RunType.Apply)
     })
 
     test('should store contract code with calculated hash', async () => {
@@ -470,7 +471,7 @@ describe('TransactionState', () => {
     const storedRlp = RLP.encode(value)
 
     beforeEach(() => {
-      transactionState.initData(mockShardeumState, mockCallbacks, 'tx123', null, null)
+      transactionState.initData(mockShardeumState, mockCallbacks, 'tx123', null, null, RunType.Apply)
     })
 
     test('should return value from allContractStorageWrites if present', async () => {
@@ -530,7 +531,7 @@ describe('TransactionState', () => {
 
   describe('putContractStorage', () => {
     beforeEach(() => {
-      transactionState.initData(mockShardeumState, mockCallbacks, 'tx123', null, null)
+      transactionState.initData(mockShardeumState, mockCallbacks, 'tx123', null, null, RunType.Apply)
     })
 
     test('should store contract storage value', async () => {
@@ -558,7 +559,7 @@ describe('TransactionState', () => {
 
   describe('checkpoint, commit, and revert', () => {
     beforeEach(() => {
-      transactionState.initData(mockShardeumState, mockCallbacks, 'tx123', null, null)
+      transactionState.initData(mockShardeumState, mockCallbacks, 'tx123', null, null, RunType.Apply)
     })
 
     test('checkpoint should create new write stack layer', () => {
@@ -602,7 +603,7 @@ describe('TransactionState', () => {
       transactionState.checkpoint()
       transactionState.allAccountWritesStack[1].set(addressString2, account2.serialize())
 
-      transactionState.revert()
+      transactionState.revert('test revert')
 
       expect(transactionState.checkpointCount).toBe(1)
       expect(transactionState.allAccountWritesStack.length).toBe(1)
@@ -619,7 +620,7 @@ describe('TransactionState', () => {
       transactionState.commit()
       expect(transactionState.checkpointCount).toBe(0)
 
-      transactionState.revert()
+      transactionState.revert('test revert')
       expect(transactionState.checkpointCount).toBe(0)
 
       ShardeumFlags.CheckpointRevertSupport = true
@@ -628,7 +629,7 @@ describe('TransactionState', () => {
 
   describe('getReadAccounts', () => {
     beforeEach(() => {
-      transactionState.initData(mockShardeumState, mockCallbacks, 'tx123', null, null)
+      transactionState.initData(mockShardeumState, mockCallbacks, 'tx123', null, null, RunType.Apply)
     })
 
     test('should return all first read data', () => {
@@ -650,7 +651,7 @@ describe('TransactionState', () => {
 
   describe('getWrittenAccounts', () => {
     beforeEach(() => {
-      transactionState.initData(mockShardeumState, mockCallbacks, 'tx123', null, null)
+      transactionState.initData(mockShardeumState, mockCallbacks, 'tx123', null, null, RunType.Apply)
     })
 
     test('should return committed writes and all contract data', () => {
@@ -688,7 +689,7 @@ describe('TransactionState', () => {
 
   describe('getTransferBlob', () => {
     beforeEach(() => {
-      transactionState.initData(mockShardeumState, mockCallbacks, 'tx123', null, null)
+      transactionState.initData(mockShardeumState, mockCallbacks, 'tx123', null, null, RunType.Apply)
     })
 
     test('should return first reads for transfer', () => {
@@ -704,7 +705,7 @@ describe('TransactionState', () => {
 
   describe('flushToCommittedValues', () => {
     beforeEach(() => {
-      transactionState.initData(mockShardeumState, mockCallbacks, 'tx123', null, null)
+      transactionState.initData(mockShardeumState, mockCallbacks, 'tx123', null, null, RunType.Apply)
     })
 
     test('should flatten one layer at a time', () => {
@@ -723,7 +724,7 @@ describe('TransactionState', () => {
 
   describe('Edge cases and error handling', () => {
     beforeEach(() => {
-      transactionState.initData(mockShardeumState, mockCallbacks, 'tx123', null, null)
+      transactionState.initData(mockShardeumState, mockCallbacks, 'tx123', null, null, RunType.Apply)
     })
 
     test('should handle undefined callbacks gracefully', async () => {

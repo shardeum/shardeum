@@ -301,9 +301,9 @@ describe('ShardeumState', () => {
     })
 
     test('revert should delegate to transaction state', async () => {
-      await shardeumState.revert()
+      await shardeumState.revert('test revert message')
 
-      expect(mockTransactionState.revert).toHaveBeenCalled()
+      expect(mockTransactionState.revert).toHaveBeenCalledWith('test revert message')
     })
   })
 

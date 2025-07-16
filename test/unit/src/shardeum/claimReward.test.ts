@@ -248,6 +248,7 @@ describe('claimReward', () => {
       enableRPCEndpoints: false,
       stakeLockTime: 6000,
       chainID: 8082,
+      smartContractSupport: false,
     }
 
     /**

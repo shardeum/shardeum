@@ -3,7 +3,7 @@ module.exports = {
   testEnvironment: 'node',
   testTimeout: 5000000, // the more node involve in testing, the higher the timeout requires
   verbose: true,
-  roots: ['<rootDir>/test/unit'],
+  roots: ['<rootDir>/test/unit','<rootDir>/test/testCases'],
   setupFiles: ['<rootDir>/test/unit/setup.ts'],
   testMatch: ['**/__tests__/**/*.+(ts|tsx|js)', '**/?(*.)+(spec|test).+(ts|tsx|js)'],
   transform: {

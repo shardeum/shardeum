@@ -396,6 +396,18 @@ export const validateTxnFields =
             minBalance = scaleByStabilityFactor(minBalanceUsd, AccountsStorage.cachedNetworkAccount) + transaction.value
           } else minBalance = transaction.getUpfrontCost() // tx.gasLimit * tx.gasPrice + tx.value
           const accountBalance = appData.balance
+          if (accountBalance == null) {
+            success = false
+            reason = `Sender account balance not found. Sender: ${senderAddress.toString()}`
+            /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`balance fail: sender ${senderAddress.toString()} account balance not found`)
+            nestedCountersInstance.countEvent('shardeum', 'validate - balance not found')
+          }
+          if (minBalance == null) {
+            success = false
+            reason = `Transaction min balance not found. TxHash: ${txHash}`
+            /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`balance fail: transaction ${txHash} min balance not found`)
+            nestedCountersInstance.countEvent('shardeum', 'validate - min balance not found')
+          }
           if (accountBalance < minBalance) {
             success = false
             reason = `Sender Insufficient Balance. Sender: ${senderAddress.toString()}, MinBalance: ${minBalance.toString()}, Account balance: ${accountBalance.toString()}, Difference: ${(
@@ -447,7 +459,7 @@ export const validateTxnFields =
         }
 
         const isStakeRelatedTx: boolean = isStakingEVMTx(transaction)
-        if (shardusConfig.features.dappFeature1enabled && appData && !appData.internalTx && !isStakeRelatedTx) {
+        if (!AccountsStorage.cachedNetworkAccount.current.smartContractSupport && appData && !appData.internalTx && !isStakeRelatedTx) {
           const isCoinTransfer =
             transaction.value != null &&
             transaction.to != null &&

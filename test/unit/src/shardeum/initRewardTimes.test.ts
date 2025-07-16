@@ -145,6 +145,7 @@ describe('initRewardTimes', () => {
       enableRPCEndpoints: false,
       stakeLockTime: 6000,
       chainID: ShardeumFlags.ChainID,
+      smartContractSupport: false,
     }
 
     // Create mock network account that holds global network state
