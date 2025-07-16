@@ -448,10 +448,10 @@ describe('initRewardTimes', () => {
 
         // Verify results
         expect(result.success).toBe(false)
-        expect(result.reason).toBe('nodeActivatedTime is not correct in setRewardTimes Tx')
+        expect(result.reason).toBe('txData.startTime does not match nodeActivatedTime')
         expect(nestedCountersInstance.countEvent).toHaveBeenCalledWith(
           'shardeum-staking',
-          'validateFields InitRewardTimes fail nodeActivatedTime is not correct '
+          'validateFields InitRewardTimes fail txData.startTime does not match nodeActivatedTime'
         )
       })
     })
