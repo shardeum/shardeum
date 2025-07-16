@@ -165,10 +165,6 @@ config = merge(config, {
       // should be removed after rotating and turning on
       fixApplyReceiptType: false, // enable to not send apply receipts of type Stake in case Unstake and SecureTransfer fail
     },
-    features: {
-      //This feature will restrict transactions to only coin transfers
-      dappFeature1enabled: false, //enabled for betanext 1.11.0
-    },
   },
 })
 

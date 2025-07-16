@@ -422,7 +422,10 @@ export default class TransactionState {
     //  check this before trying to read from local db at this point
     // we need an extra check if this is executeCreate or executeCall (not a simple SHM transfer)
     const codeBytesInvolved = this.firstContractBytesReads.size > 0 || this.allContractBytesWrites.size > 0
-    if (this.runType === RunType.Apply && ShardeumFlags.evmFailOnUnexpectedAccount && codeBytesInvolved) {
+    if (this.runType === RunType.Apply 
+      && ShardeumFlags.evmFailOnUnexpectedAccount 
+      && codeBytesInvolved 
+      && AccountsStorage.cachedNetworkAccount?.current?.smartContractSupport) {
       if (this.debugTrace) {
         this.debugTraceLog(`getAccount: addr:${addressString} v:notFound. failOnUnexpected EOA/CA account`)
       }
@@ -457,7 +460,9 @@ export default class TransactionState {
     //this can be a long wait only suitable in some cases
     if (account == undefined) {
       const wrappedEVMAccount = await this.tryGetRemoteAccountCB(this, AccountType.Account, addressString, null)
-      if (this.runType === RunType.Apply && ShardeumFlags.evmFailOnUnexpectedAccount) {
+      if (this.runType === RunType.Apply 
+        && ShardeumFlags.evmFailOnUnexpectedAccount 
+        && AccountsStorage.cachedNetworkAccount?.current?.smartContractSupport) {
         if (this.debugTrace) {
           this.debugTraceLog(`getAccount: addr:${addressString} v:notFound. failOnUnexpected EOA/CA account2`)
         }
@@ -618,7 +623,11 @@ export default class TransactionState {
     const codeBytesInvolved = this.firstContractBytesReads.size > 0 || this.allContractBytesWrites.size > 0
     // also need to check if it is querying empty code byte
     const isEmptyCode = equalsBytes(codeHash, KECCAK256_NULL)
-    if (this.runType === RunType.Apply && ShardeumFlags.evmFailOnUnexpectedAccount && codeBytesInvolved && isEmptyCode === false) {
+    if (this.runType === RunType.Apply 
+      && ShardeumFlags.evmFailOnUnexpectedAccount 
+      && codeBytesInvolved && isEmptyCode === false
+      && AccountsStorage.cachedNetworkAccount?.current?.smartContractSupport
+    ) {
       if (this.debugTrace) {
         this.debugTraceLog(`getContractCode: addr:${addressString} codeHash: ${codeHashStr} v:notFound. failOnUnexpected codeByte account`)
       }
@@ -783,7 +792,9 @@ export default class TransactionState {
       throw new Error('unable to proceed, cant involve contract storage')
     }
     //  check this before trying to read from local db at this point
-    if (this.runType === RunType.Apply && ShardeumFlags.evmFailOnUnexpectedAccount) {
+    if (this.runType === RunType.Apply 
+      && ShardeumFlags.evmFailOnUnexpectedAccount 
+      && AccountsStorage.cachedNetworkAccount?.current?.smartContractSupport) {
       if (this.debugTrace) {
         this.debugTraceLog(`getContractStorage: addr:${addressString} key:${keyString} v:notFound. failOnUnexpected storage account`)
       }

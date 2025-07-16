@@ -526,13 +526,9 @@ let debugAppdata: Map<string, unknown>
 async function initEVMSingletons(): Promise<void> {
   const chainIDBN = BigInt(ShardeumFlags.ChainID)
 
-  // setting up only to 'istanbul' hardfork for now
+  // setting up to 'cancun' hardfork
   // https://github.com/ethereumjs/ethereumjs-monorepo/blob/master/packages/common/src/chains/mainnet.json
-  if (ShardeumFlags.supportDenCunFork) {
-    evmCommon = new Common({ chain: 'mainnet', hardfork: Hardfork.Cancun, eips: [3855, 5656, 1153] })
-  } else {
-  evmCommon = new Common({ chain: 'mainnet', hardfork: Hardfork.Istanbul, eips: [3855] })
-  }
+  evmCommon = new Common({ chain: 'mainnet', hardfork: Hardfork.Cancun, eips: [3855, 5656, 1153] })
 
   //hack override this function.  perhaps a nice thing would be to use forCustomChain to create a custom common object
   evmCommon.chainId = (): bigint => {
@@ -1364,8 +1360,8 @@ const configShardusEndpoints = (): void => {
   }
 
   shardus.registerExternalPost('inject-with-warmup', externalApiMiddleware, async (req, res) => {
-    if (ShardeumFlags.disableSmartContractEndpoints) {
-      res.json({ result: null, error: 'Smart contract endpoints are disabled' })
+    if (!AccountsStorage.cachedNetworkAccount.current.smartContractSupport) {
+      res.json({ result: null, error: 'Smart contracts are not supported' })
       return
     }
 
@@ -1771,7 +1767,7 @@ const configShardusEndpoints = (): void => {
   })
 
   shardus.registerExternalGet('eth_getCode', externalApiMiddleware as any, async (req, res) => {
-    if (ShardeumFlags.disableSmartContractEndpoints) {
+    if (!AccountsStorage.cachedNetworkAccount.current.smartContractSupport) {
       res.json({ contractCode: '0x' })
       return
     }
@@ -1849,8 +1845,8 @@ const configShardusEndpoints = (): void => {
     // if(isDebugMode()){
     //   return res.json(`endpoint not available`)
     // }
-    if (ShardeumFlags.disableSmartContractEndpoints) {
-      res.json({ result: null, error: 'Smart contract endpoints are disabled' })
+    if (!AccountsStorage.cachedNetworkAccount.current.smartContractSupport) {
+      res.json({ result: null, error: 'Smart contracts are not supported' })
       return
     }
     if (trySpendServicePoints(ShardeumFlags.ServicePoints['contract/call'].endpoint, req, 'call-endpoint') === false) {
@@ -2053,8 +2049,8 @@ const configShardusEndpoints = (): void => {
   })
 
   shardus.registerExternalPost('contract/accesslist', externalApiMiddleware, async (req, res) => {
-    if (ShardeumFlags.disableSmartContractEndpoints) {
-      res.json({ result: null, error: 'Smart contract endpoints are disabled' })
+    if (!AccountsStorage.cachedNetworkAccount.current.smartContractSupport) {
+      res.json({ result: null, error: 'Smart contracts are not supported' })
       return
     }
     if (
@@ -2078,8 +2074,8 @@ const configShardusEndpoints = (): void => {
   })
 
   shardus.registerExternalPost('contract/accesslist-warmup', externalApiMiddleware, async (req, res) => {
-    if (ShardeumFlags.disableSmartContractEndpoints) {
-      res.json({ result: null, error: 'Smart contract endpoints are disabled' })
+    if (!AccountsStorage.cachedNetworkAccount.current.smartContractSupport) {
+      res.json({ result: null, error: 'Smart contracts are not supported' })
       return
     }
     if (
@@ -5288,8 +5284,9 @@ const shardusSetup = (): void => {
         let remoteTargetAccount
         appData.requestNewTimestamp = true // force all evm txs to generate a new timestamp
 
-        const isEIP2930 = transaction instanceof AccessListEIP2930Transaction && transaction.AccessListJSON != null
+        const isEIP2930 = AccountsStorage.cachedNetworkAccount?.current?.smartContractSupport && transaction instanceof AccessListEIP2930Transaction && transaction.AccessListJSON != null
         if (isEIP2930) {
+          // smartcontracts-MAINNET feature blocker: we must not utilize EIP2930 access lists directly, they need to run via AALG-wu
           const eip2930Tx = transaction as AccessListEIP2930Transaction
 
           const tooManyAddresses = eip2930Tx.AccessListJSON?.length > ShardeumFlags.accessListSizeLimit
@@ -5442,26 +5439,30 @@ const shardusSetup = (): void => {
           if (ShardeumFlags.txBalancePreCheck) {
             appData.balance = balance
           }
-
           //force all EVM transactions including simple ones to generate a timestamp
         }
+
         let shouldGenerateAccesslist = true
-        if (ShardeumFlags.autoGenerateAccessList === false) shouldGenerateAccesslist = false
-        else if (isStakeRelatedTx) shouldGenerateAccesslist = false
-        else if (isSimpleTransfer) shouldGenerateAccesslist = false
+        if (AccountsStorage.cachedNetworkAccount?.current?.smartContractSupport && ShardeumFlags.autoGenerateAccessList === false){
+          // generally autoGenerateAccessList will be true, but it is available for certain types of debugging
+          shouldGenerateAccesslist = false
+        } else if (isStakeRelatedTx || isSimpleTransfer) {
+          // these types of TXs do not need access list generation
+          shouldGenerateAccesslist = false
+        }
         //else if (remoteShardusAccount == null && appData.newCAAddr == null) shouldGenerateAccesslist = false //resolve which is correct from merge!
         else if (remoteTargetAccount == null && appData.newCAAddr == null) shouldGenerateAccesslist = false
 
-        // dappFeature1enabled is our coin-transfer-only mode. Crack if it calls EVM
+        // Check if smart contracts are supported. If not, only allow coin transfers
         const isCoinTransfer = isSimpleTransfer || (remoteTargetAccount == null && appData.newCAAddr == null)
         if (isCoinTransfer) {
           appData.isCoinTransfer = true
         }
-        if (shardusConfig.features.dappFeature1enabled && !isStakeRelatedTx && !isCoinTransfer) {
+        if (!AccountsStorage.cachedNetworkAccount.current.smartContractSupport && !isStakeRelatedTx && !isCoinTransfer) {
           nestedCountersInstance.countEvent('shardeum', 'precrack - coin-transfer-only')
           return {
             status: false,
-            reason: `coin-transfer-only mode enabled. Only simple transfers are allowed.`,
+            reason: `Smart contracts are not supported. Only simple transfers are allowed.`,
           }
         }
 
@@ -5622,8 +5623,12 @@ const shardusSetup = (): void => {
         },
       ])
 
-      //unsafe hack , DO NOT MERGE to dev.   improve filterObjectByWhitelistedProps instead
-      appData = passedAppData
+      // DO NOT enable in production. Improve filterObjectByWhitelistedProps instead
+      if (AccountsStorage.cachedNetworkAccount?.current?.smartContractSupport) {
+        // smartcontracts-MAINNET feature blocker: proper AJV validation/filtering of appData
+        // this must be per type of transaction
+        appData = passedAppData
+      }
 
       if (ShardeumFlags.VerboseLogs) console.log('Running getKeyFromTransaction', timestampedTx)
       //@ts-ignore
@@ -5850,7 +5855,7 @@ const shardusSetup = (): void => {
         // Note: The below code is being removed because usage of appData properties should only be used for staking
         //       data at this time. Also, for security reasons, only appData properties internalTx, internalTxType,
         //       networkAccount, monimeeAccount, and nominatorAccount should be used in this function.
-        if (transaction instanceof AccessListEIP2930Transaction && transaction.AccessListJSON != null) {
+        if (AccountsStorage.cachedNetworkAccount?.current?.smartContractSupport && transaction instanceof AccessListEIP2930Transaction && transaction.AccessListJSON != null) {
           for (const accessList of transaction.AccessListJSON) {
             const address = accessList.address
             if (address) {
@@ -5881,7 +5886,7 @@ const shardusSetup = (): void => {
             result.storageKeys = result.storageKeys.concat(storageKeys)
           }
         } else {
-          if (ShardeumFlags.autoGenerateAccessList && appData.accessList) {
+          if (AccountsStorage.cachedNetworkAccount?.current?.smartContractSupport && ShardeumFlags.autoGenerateAccessList && appData.accessList) {
             shardusMemoryPatterns = appData.shardusMemoryPatterns
             // we have pre-generated accessList
             for (const accessListItem of appData.accessList) {
