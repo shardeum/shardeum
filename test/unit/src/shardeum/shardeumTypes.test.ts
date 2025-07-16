@@ -351,6 +351,7 @@ describe('shardeumTypes', () => {
           enableRPCEndpoints: true,
           stakeLockTime: 3600,
           chainID: 1,
+          smartContractSupport: true,
         }
         expect(params.title).toBe('Test Network')
         expect(params.nodeRewardAmountUsd).toBe(BigInt(100))
