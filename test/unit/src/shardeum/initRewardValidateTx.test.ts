@@ -72,16 +72,7 @@ describe('validateFields', () => {
     const tx = { ...baseTx, nodeActivatedTime: -1 }
     expect(validateFields(tx as any, mockShardus)).toEqual({
       success: false,
-      reason: 'nodeActivatedTime is not correct in setRewardTimes Tx',
-    })
-  })
-  it('returns false for nodeActivatedTime in the future', () => {
-    const futureTime = 1720938700 + 1000
-    ;(shardeumGetTime as jest.Mock).mockReturnValue(1720938700000)
-    const tx = { ...baseTx, nodeActivatedTime: futureTime, txData: { ...baseTx.txData, startTime: futureTime } }
-    expect(validateFields(tx as any, mockShardus)).toEqual({
-      success: false,
-      reason: 'nodeActivatedTime is not correct in setRewardTimes Tx',
+      reason: 'txData.startTime does not match nodeActivatedTime',
     })
   })
   it('returns false for nodeActivatedTime too far in the past', () => {
@@ -92,7 +83,7 @@ describe('validateFields', () => {
     const tx = { ...baseTx, nodeActivatedTime: pastTime, txData: { ...baseTx.txData, startTime: 1568591444 } }
     expect(validateFields(tx as any, mockShardus)).toEqual({
       success: false,
-      reason: 'nodeActivatedTime is not correct in setRewardTimes Tx',
+      reason: 'txData.startTime does not match nodeActivatedTime',
     })
   })
   it('returns false for invalid signature', () => {

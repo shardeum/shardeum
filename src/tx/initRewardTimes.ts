@@ -88,12 +88,6 @@ export function validateFields(tx: InitRewardTimes, shardus: Shardus): { success
     return { success: false, reason: 'nodeActivatedTime field is not found in setRewardTimes Tx' }
   }
 
-  const txNodeActivatedTimeMs = tx.nodeActivatedTime * 1000
-  if (tx.nodeActivatedTime < 0 || txNodeActivatedTimeMs > shardeumGetTime()) {
-    /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log('validateFields InitRewardTimes fail nodeActivatedTime is not correct ', tx)
-    /* prettier-ignore */ nestedCountersInstance.countEvent('shardeum-staking', `validateFields InitRewardTimes fail nodeActivatedTime is not correct `)
-    return { success: false, reason: 'nodeActivatedTime is not correct in setRewardTimes Tx' }
-  }
   const isValid = crypto.verifyObj(tx)
   if (!isValid) {
     /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log('validateFields InitRewardTimes fail Invalid signature', tx)
