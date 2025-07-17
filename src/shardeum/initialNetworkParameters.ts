@@ -14,6 +14,7 @@ export const initialNetworkParamters: NetworkParameters = {
   nodeRewardAmountUsd: oneSHM,
   nodePenaltyUsd: oneSHM * BigInt(10),
   stakeRequiredUsd: oneSHM * BigInt(2400),
+  nodeRewardCap: oneSHM * BigInt(10001),
   restakeCooldown: THIRTY_MINUTES,
   maintenanceInterval: ONE_DAY,
   maintenanceFee: 0,

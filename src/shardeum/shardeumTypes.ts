@@ -371,6 +371,7 @@ export interface NetworkParameters {
   nodeRewardInterval: number
   nodeRewardAmountUsd: bigint
   nodePenaltyUsd: bigint
+  nodeRewardCap: bigint
   stakeRequiredUsd: bigint
   restakeCooldown: number
   maintenanceInterval: number

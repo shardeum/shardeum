@@ -28,6 +28,10 @@ export interface NetworkAccountResponse {
           dataType: string
           value: string
         }
+        nodeRewardCap: {
+          dataType: string
+          value: string
+        }
         nodeRewardInterval: number
         qa: {
           qaTestBoolean: boolean

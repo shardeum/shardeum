@@ -19,7 +19,7 @@ import { jest, describe, test, expect, beforeEach } from '@jest/globals'
 import * as crypto from '@shardeum-foundation/lib-crypto-utils'
 import { nestedCountersInstance, ShardusTypes } from '@shardeum-foundation/core'
 import { Address } from '@ethereumjs/util'
-import { networkAccount } from '../../../../src/shardeum/shardeumConstants'
+import { networkAccount, oneSHM } from '../../../../src/shardeum/shardeumConstants'
 import * as claimReward from '../../../../src/tx/claimReward'
 import {
   AccountType,
@@ -215,6 +215,7 @@ describe('claimReward', () => {
       nodeRewardAmountUsd: BigInt(100), // Base reward amount in USD
       nodePenaltyUsd: BigInt(500), // Penalty amount in USD
       stakeRequiredUsd: BigInt(5000), // Required stake amount in USD
+      nodeRewardCap: oneSHM * BigInt(10001),
       restakeCooldown: 100, // Cooldown period for restaking
       maintenanceInterval: 100,
       maintenanceFee: 0,

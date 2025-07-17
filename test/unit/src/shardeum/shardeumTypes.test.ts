@@ -33,6 +33,7 @@ import {
   AppJoinData,
 } from '../../../../src/shardeum/shardeumTypes'
 import { Account } from '@ethereumjs/util'
+import { oneSHM } from '../../../../src/shardeum/shardeumConstants'
 
 describe('shardeumTypes', () => {
   describe('Enums', () => {
@@ -318,6 +319,7 @@ describe('shardeumTypes', () => {
           nodeRewardAmountUsd: BigInt(100),
           nodePenaltyUsd: BigInt(50),
           stakeRequiredUsd: BigInt(1000),
+          nodeRewardCap: oneSHM * BigInt(10001),
           restakeCooldown: 7200,
           maintenanceInterval: 86400,
           maintenanceFee: 10,

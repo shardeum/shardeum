@@ -284,7 +284,27 @@ export async function applyClaimRewardTx(
   //re-parse reward since it was saved as hex
   nodeAccount.reward = _base16BNParser(nodeAccount.reward)
   //add the reward because nodes can cycle without unstaking
-  nodeAccount.reward = nodeAccount.reward + rewardedAmount
+  const nodeRewardCap = _base16BNParser(network.current.nodeRewardCap)
+  const finalReward = nodeAccount.reward + rewardedAmount
+  if (finalReward > nodeRewardCap) {
+    nestedCountersInstance.countEvent('shardeum-staking', 'applyClaimRewardTx failed nodeRewardCap exceeded')
+    if (logFlags.dapp_verbose) {
+      console.log(
+        `applyClaimRewardTx fail nodeRewardCap exceeded: finalReward=${_readableSHM(finalReward)}, cap=${_readableSHM(
+          nodeRewardCap
+        )}, nominee=${tx.nominee}`
+      )
+    }
+    shardus.applyResponseSetFailed(
+      applyResponse,
+      `applyClaimReward failed: nodeRewardCap exceeded for nominee ${tx.nominee} finalReward: ${_readableSHM(
+        finalReward
+      )}, cap: ${_readableSHM(nodeRewardCap)}`
+    )
+    return
+  }
+  nodeAccount.reward = finalReward
+
   nodeAccount.timestamp = txTimestamp
 
   nodeAccount.rewarded = true
