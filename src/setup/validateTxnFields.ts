@@ -459,12 +459,7 @@ export const validateTxnFields =
         }
 
         const isStakeRelatedTx: boolean = isStakingEVMTx(transaction)
-        if (
-          !AccountsStorage.cachedNetworkAccount.current.smartContractSupport &&
-          appData &&
-          !appData.internalTx &&
-          !isStakeRelatedTx
-        ) {
+        if (!AccountsStorage.cachedNetworkAccount.current.smartContractSupport && appData && !appData.internalTx && !isStakeRelatedTx) {
           const isCoinTransfer =
             transaction.value != null &&
             transaction.to != null &&

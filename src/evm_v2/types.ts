@@ -7,7 +7,7 @@ import type { AsyncDynamicGasHandler, SyncDynamicGasHandler } from './opcodes/ga
 import type { OpHandler } from './opcodes/index.js'
 import type { CustomPrecompile } from './precompiles/index.js'
 import type { PrecompileFunc } from './precompiles/types.js'
-import type { Common /*, EVMStateManagerInterface*/ } from '@ethereumjs/common'
+import type { Common/*, EVMStateManagerInterface*/ } from '@ethereumjs/common'
 import type { EVMStateManagerInterface } from './interfaces'
 import type { Account, Address, AsyncEventEmitter } from '@ethereumjs/util'
 
@@ -141,7 +141,7 @@ export type EVMEvents = {
 export interface EVMInterface {
   journal: {
     commit(): Promise<void>
-    revert(message: string): Promise<void>
+    revert(message:string): Promise<void>
     checkpoint(): Promise<void>
     cleanJournal(): void
     cleanup(): Promise<void>
