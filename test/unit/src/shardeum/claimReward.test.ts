@@ -1,13 +1,13 @@
 /**
  * Test suite for the claimReward functionality in the Shardeum blockchain
  * This file tests the claiming of rewards for node operators after node deactivation
- * 
+ *
  * The test suite covers:
  * 1. Transaction injection - Creating and submitting reward claim transactions
  * 2. Transaction validation - Verifying transaction format and signatures
  * 3. State validation - Checking account states and reward eligibility
  * 4. Reward application - Processing and distributing rewards
- * 
+ *
  * Key components tested:
  * - Node accounts: Represent validator nodes in the network
  * - Operator accounts: Manage node operations and receive rewards
@@ -47,19 +47,19 @@ import * as indexModule from '../../../../src/index'
  * Mock Implementation Details
  * -------------------------
  * Key mock behaviors:
- * 
+ *
  * crypto.verifyObj:
  * - Simulates cryptographic signature verification
  * - Returns true for valid signatures, false for invalid ones
- * 
+ *
  * generateTxId:
  * - Provides consistent transaction IDs for testing
  * - Helps track transaction flow through the system
- * 
+ *
  * _base16BNParser:
  * - Converts values to BigInt format
  * - Handles network parameters and reward calculations
- * 
+ *
  * scaleByStabilityFactor:
  * - Simulates network stability adjustments
  * - Scales reward amounts based on network conditions
@@ -117,17 +117,17 @@ const mockGetApplyTXState = indexModule.getApplyTXState as jest.Mock
  * Account Structure Details
  * -----------------------
  * Three main account types are tested:
- * 
+ *
  * 1. Node Account (mockNodeAccount):
  *    - Tracks node operation time
  *    - Manages reward status and amounts
  *    - Stores operational statistics
- * 
+ *
  * 2. Network Account (mockNetworkAccount):
  *    - Defines reward rates and intervals
  *    - Controls network parameters
  *    - Manages network operation mode
- * 
+ *
  * 3. Operator Account (mockOperatorAccount):
  *    - Receives node rewards
  *    - Tracks total earnings and operation time
@@ -422,7 +422,6 @@ describe('claimReward', () => {
       }
       return false
     })
-
     ;(WrappedEVMAccountFunctions.isInternalAccount as unknown as jest.Mock).mockImplementation((data: unknown) => {
       if (data && typeof data === 'object' && 'accountType' in data && data.accountType === AccountType.NodeAccount2) {
         return true
@@ -1009,7 +1008,6 @@ describe('claimReward', () => {
         }
         return typeof value === 'bigint' ? value : BigInt(0)
       })
-
       ;(scaleByStabilityFactor as jest.Mock).mockImplementation((value: unknown) => {
         if (value === BigInt(100)) {
           return BigInt(1000) // Scaled reward amount
@@ -1360,6 +1358,122 @@ describe('claimReward', () => {
       // Restore original flag state
       ShardeumFlags.supportInternalTxReceipt = originalFlag
     })
+
+    /**
+     * Test capping of node reward at nodeRewardCap (from config)
+     * Verifies that rewards cannot exceed the configured cap
+     */
+    test('should cap node reward at nodeRewardCap (from config)', async () => {
+      // Set up a huge duration and reward so the calculated reward would exceed the cap
+      mockNodeAccount.rewardStartTime = 1000
+      mockClaimRewardTx.nodeDeactivatedTime = 1000 + 10 ** 10 // Large duration
+      mockTxData.endTime = mockClaimRewardTx.nodeDeactivatedTime
+      mockNodeAccount.rewarded = false
+      mockNodeAccount.reward = BigInt(0)
+      // Set the cap to a test value (e.g., 10001 SHM)
+      const testCap = oneSHM * BigInt('10001')
+      mockNetworkAccount.current.nodeRewardCap = testCap
+      // Mock reward calculation to return a value above the cap
+      ;(_base16BNParser as jest.Mock).mockImplementation((value: unknown) => {
+        if (value === mockNetworkAccount.current.nodeRewardAmountUsd) {
+          return BigInt(100)
+        }
+        if (value === mockNetworkAccount.current.nodeRewardCap) {
+          return testCap
+        }
+        return typeof value === 'bigint' ? value : BigInt(0)
+      })
+      ;(scaleByStabilityFactor as jest.Mock).mockImplementation((value: unknown) => {
+        if (value === BigInt(100)) {
+          // Return a huge reward amount to force exceeding the cap
+          return oneSHM * BigInt('20000')
+        }
+        return typeof value === 'bigint' ? value : BigInt(0)
+      })
+
+      await claimReward.applyClaimRewardTx(
+        mockShardus,
+        mockClaimRewardTx,
+        mockWrappedStates,
+        mockTxId,
+        mockTimestamp,
+        mockApplyResponse
+      )
+
+      // Should fail due to exceeding cap
+      expect(mockShardus.applyResponseSetFailed).toHaveBeenCalledWith(
+        mockApplyResponse,
+        expect.stringContaining('nodeRewardCap exceeded')
+      )
+      // Node reward should not exceed the cap from config
+      expect(mockNodeAccount.reward).toBeLessThanOrEqual(mockNetworkAccount.current.nodeRewardCap)
+      // Event should be counted
+      expect(nestedCountersInstance.countEvent).toHaveBeenCalledWith(
+        'shardeum-staking',
+        'applyClaimRewardTx failed nodeRewardCap exceeded'
+      )
+    })
+
+    /**
+     * Test that a reward below the cap is accepted and applied
+     */
+    test('should accept reward below nodeRewardCap', async () => {
+      mockNodeAccount.rewardStartTime = 1000
+      mockClaimRewardTx.nodeDeactivatedTime = 2000 // Small duration
+      mockTxData.endTime = mockClaimRewardTx.nodeDeactivatedTime
+      mockNodeAccount.rewarded = false
+      mockNodeAccount.reward = BigInt(0)
+      const testCap = oneSHM * BigInt('10001')
+      mockNetworkAccount.current.nodeRewardCap = testCap
+      mockNetworkAccount.current.nodeRewardInterval = 1000 // 1 second in ms
+      // Patch _readableSHM to always return a string
+      const utils = require('../../../../src/utils')
+      utils._readableSHM = jest.fn(() => 'mockSHM')
+      // Mock reward calculation to return a value below the cap
+      ;(_base16BNParser as jest.Mock).mockImplementation((value: unknown) => {
+        if (value === mockNetworkAccount.current.nodeRewardAmountUsd) {
+          return BigInt(100)
+        }
+        if (value === mockNetworkAccount.current.nodeRewardCap) {
+          return testCap
+        }
+        if (value === mockNodeAccount.reward) {
+          return BigInt(0)
+        }
+        if (value === mockNodeAccount.nodeAccountStats.totalReward) {
+          return BigInt(0)
+        }
+        if (
+          mockOperatorAccount.operatorAccountInfo &&
+          value === mockOperatorAccount.operatorAccountInfo.operatorStats.totalNodeReward
+        ) {
+          return BigInt(0)
+        }
+        return typeof value === 'bigint' ? value : BigInt(0)
+      })
+      ;(scaleByStabilityFactor as jest.Mock).mockImplementation((value: unknown) => {
+        if (value === BigInt(100)) {
+          // Return a small reward amount to stay below the cap
+          return oneSHM * BigInt('1')
+        }
+        return typeof value === 'bigint' ? value : BigInt(0)
+      })
+
+      await claimReward.applyClaimRewardTx(
+        mockShardus,
+        mockClaimRewardTx,
+        mockWrappedStates,
+        mockTxId,
+        mockTimestamp,
+        mockApplyResponse
+      )
+
+      // Should succeed, not fail
+      expect(mockShardus.applyResponseSetFailed).not.toHaveBeenCalled()
+      expect(mockNodeAccount.rewarded).toBe(true)
+      expect(mockNodeAccount.reward).toBeGreaterThan(BigInt(0))
+      expect(mockNodeAccount.reward).toBeLessThan(testCap)
+    })
   })
 })
 
@@ -1370,17 +1484,17 @@ describe('claimReward', () => {
  *    - Input format checking
  *    - Address validation
  *    - Timestamp verification
- * 
+ *
  * 2. State Validation:
  *    - Account existence
  *    - Reward eligibility
  *    - Previous claim status
- * 
+ *
  * 3. Reward Calculation:
  *    - Duration computation
  *    - Rate application
  *    - Stability scaling
- * 
+ *
  * 4. State Updates:
  *    - Account modification
  *    - History recording
@@ -1391,15 +1505,15 @@ describe('claimReward', () => {
  * Edge Case Coverage
  * ----------------
  * Tests handle special scenarios:
- * 
+ *
  * 1. Seed Nodes:
  *    - Zero start time handling
  *    - Special reward calculations
- * 
+ *
  * 2. Time Boundaries:
  *    - Network start conditions
  *    - Deactivation timing
- * 
+ *
  * 3. Account States:
  *    - Missing accounts
  *    - Incomplete information
@@ -1410,12 +1524,12 @@ describe('claimReward', () => {
  * Feature Flag Impact
  * -----------------
  * Flag-dependent behaviors:
- * 
+ *
  * useAccountWrites:
  * - Enables detailed state change tracking
  * - Records account modifications
  * - Maintains transaction history
- * 
+ *
  * supportInternalTxReceipt:
  * - Generates detailed transaction records
  * - Tracks reward distributions
