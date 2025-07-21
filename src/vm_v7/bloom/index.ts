@@ -67,7 +67,7 @@ export class Bloom {
    * Bitwise or blooms together.
    */
   or(bloom: Bloom): void {
-    for (let i = 0; i <= BYTE_SIZE; i++) {
+    for (let i = 0; i < BYTE_SIZE; i++) {
       this.bitvector[i] = this.bitvector[i] | bloom.bitvector[i]
     }
   }
