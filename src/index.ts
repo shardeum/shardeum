@@ -2023,6 +2023,7 @@ const configShardusEndpoints = (): void => {
       }
 
       if (callResult.execResult.exceptionError) {
+        if (ShardeumFlags.VerboseLogs) console.log('Execution Error:', callResult.execResult.exceptionError)
         // Extract error type from exceptionError
         let revertReason = callResult.execResult.exceptionError.error as string
         const errorType = callResult.execResult.exceptionError.errorType || 'unknown'
