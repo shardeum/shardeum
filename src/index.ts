@@ -3619,7 +3619,11 @@ async function estimateGas(
   // For the estimate, we add the gasRefund to the gasUsed because gasRefund is subtracted after execution.
   // That can lead to higher gasUsed during execution than the actual gasUsed
   const estimate = runTxResult.totalGasSpent + (runTxResult.execResult.gasRefund ?? BigInt(0))
-  return { estimateGas: bigIntToHex(estimate) }
+  
+  // Add a 20% buffer to the estimate to account for execution variations
+  const estimateWithBuffer = (estimate * BigInt(120)) / BigInt(100)
+  
+  return { estimateGas: bigIntToHex(estimateWithBuffer) }
 }
 
 type CodeHashObj = { codeHash: string; contractAddress: string }
