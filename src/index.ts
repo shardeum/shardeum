@@ -528,12 +528,14 @@ async function initEVMSingletons(): Promise<void> {
 
   // setting up to 'cancun' hardfork
   // https://github.com/ethereumjs/ethereumjs-monorepo/blob/master/packages/common/src/chains/mainnet.json
-  evmCommon = new Common({ chain: 'mainnet', hardfork: Hardfork.Cancun, eips: [3855, 5656, 1153] })
-
+  evmCommon = Common.custom(
+    { chainId: ShardeumFlags.ChainID, networkId: ShardeumFlags.ChainID, name: 'shardeum' },
+    { baseChain: 'mainnet', hardfork: Hardfork.Cancun, eips: [3855, 5656, 1153] }
+  )
   //hack override this function.  perhaps a nice thing would be to use forCustomChain to create a custom common object
-  evmCommon.chainId = (): bigint => {
-    return BigInt(chainIDBN.toString(10))
-  }
+  // evmCommon.chainId = (): bigint => {
+  //   return BigInt(chainIDBN.toString(10))
+  // }
 
   //let shardeumStateManager = new ShardeumState({ common }) //as StateManager
 
@@ -3448,8 +3450,13 @@ async function estimateGas(
     gasLimit: injectedTx.gasLimit ? injectedTx.gasLimit : blockForTx.header.gasLimit,
   }
 
+  const customCommon = Common.custom(
+    { chainId: ShardeumFlags.ChainID, networkId: ShardeumFlags.ChainID, name: 'shardeum' },
+    { baseChain: 'mainnet' }
+  )
+
   const transaction: LegacyTransaction | AccessListEIP2930Transaction =
-    TransactionFactory.fromTxData<TransactionType.Legacy>(txData)
+    TransactionFactory.fromTxData<TransactionType.Legacy>(txData, { common: customCommon })
   if (ShardeumFlags.VerboseLogs) console.log(`parsed tx`, transaction)
 
   const from = injectedTx.from !== undefined ? Address.fromString(injectedTx.from) : Address.zero()
