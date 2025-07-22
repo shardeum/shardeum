@@ -3650,9 +3650,8 @@ async function estimateGas(
   const preWarmedAddresses = new Set<string>()
   preWarmedAddresses.add(callerEVMAddress.toString()) // Sender is always warm
   if (transaction.to) {
-    preWarmedAddresses.add(transaction.to.toString()) // Recipient is always warm  
+    preWarmedAddresses.add(transaction.to.toString()) // Recipient is always warm
   }
-  preWarmedAddresses.add(blockForTx.header.coinbase.toString()) // Coinbase is warm (EIP-3651)
   
   // Calculate additional accounts that would be cold
   let coldAccountAccesses = 0
