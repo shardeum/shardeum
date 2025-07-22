@@ -3527,6 +3527,33 @@ async function estimateGas(
     callerAccount ? callerAccount.account : fakeAccount
   )
 
+  if (transaction.to && caShardusAddress) {
+    const contractAccount = await AccountsStorage.getAccount(caShardusAddress)
+    
+    if (ShardeumFlags.VerboseLogs) {
+      console.log(`EstimateGas: Loading contract account for ${transaction.to.toString()}`, contractAccount ? 'found' : 'not found')
+    }
+    if (contractAccount && contractAccount.account) {
+      preRunTxState._transactionState.insertFirstAccountReads(
+        transaction.to,
+        contractAccount.account
+      )
+    }
+    
+    const contractCodeAddress = toShardusAddress(transaction.to.toString(), AccountType.ContractCode)
+    const contractCode = await AccountsStorage.getAccount(contractCodeAddress)
+    
+    if (ShardeumFlags.VerboseLogs) {
+      console.log(`EstimateGas: Loading contract code for ${transaction.to.toString()}`, contractCode ? 'found' : 'not found', contractCode?.codeByte ? 'has bytecode' : 'no bytecode')
+    }
+    if (contractCode && contractCode.codeByte) {
+      preRunTxState._transactionState.insertFirstContractBytesReads(
+        transaction.to,
+        contractCode.codeByte
+      )
+    }
+  }
+
   const customEVM = new EthereumVirtualMachine({
     common: evmCommon,
     stateManager: preRunTxState,
