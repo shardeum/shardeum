@@ -13,6 +13,7 @@ import {
   toBytes,
   hexToBytes,
   isHexString,
+  KECCAK256_NULL_S,
 } from '@ethereumjs/util'
 import {
   AccessListEIP2930Transaction,
@@ -3540,17 +3541,25 @@ async function estimateGas(
       )
     }
     
-    const contractCodeAddress = toShardusAddress(transaction.to.toString(), AccountType.ContractCode)
-    const contractCode = await AccountsStorage.getAccount(contractCodeAddress)
-    
-    if (ShardeumFlags.VerboseLogs) {
-      console.log(`EstimateGas: Loading contract code for ${transaction.to.toString()}`, contractCode ? 'found' : 'not found', contractCode?.codeByte ? 'has bytecode' : 'no bytecode')
-    }
-    if (contractCode && contractCode.codeByte) {
-      preRunTxState._transactionState.insertFirstContractBytesReads(
-        transaction.to,
-        contractCode.codeByte
-      )
+    // Load contract code if contract has code
+    if (contractAccount && contractAccount.account && contractAccount.account.codeHash) {
+      const codeHash = contractAccount.account.codeHash
+      const codeHashHex = bytesToHex(codeHash)
+      
+      if (codeHashHex !== KECCAK256_NULL_S) {
+        const contractCodeAddress = toShardusAddressWithKey(transaction.to.toString(), codeHashHex, AccountType.ContractCode)
+        const contractCode = await AccountsStorage.getAccount(contractCodeAddress)
+        
+        if (ShardeumFlags.VerboseLogs) {
+          console.log(`EstimateGas: Loading contract code for ${transaction.to.toString()}`, contractCode ? 'found' : 'not found', contractCode?.codeByte ? 'has bytecode' : 'no bytecode')
+        }
+        if (contractCode && contractCode.codeByte) {
+          preRunTxState._transactionState.insertFirstContractBytesReads(
+            transaction.to,
+            contractCode.codeByte
+          )
+        }
+      }
     }
   }
 
