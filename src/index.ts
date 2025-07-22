@@ -3444,9 +3444,18 @@ async function estimateGas(
     injectedTx.gasLimit = MAX_GASLIMIT
   }
 
+  // Calculate a reasonable gas price for estimation
+  const networkAccount = await AccountsStorage.getCachedNetworkAccount()
+  const estimationGasPrice = calculateGasPrice(
+    ShardeumFlags.baselineTxFee,
+    ShardeumFlags.baselineTxGasUsage,
+    networkAccount
+  )
+
   const txData = {
     ...injectedTx,
     gasLimit: injectedTx.gasLimit ? injectedTx.gasLimit : blockForTx.header.gasLimit,
+    gasPrice: estimationGasPrice,
   }
 
   const transaction: LegacyTransaction | AccessListEIP2930Transaction =
