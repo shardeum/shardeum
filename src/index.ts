@@ -3450,7 +3450,7 @@ async function estimateGas(
   }
 
   const transaction: LegacyTransaction | AccessListEIP2930Transaction =
-    TransactionFactory.fromTxData<TransactionType.Legacy>(txData)
+    TransactionFactory.fromTxData<TransactionType.Legacy>(txData, { common: evmCommon })
   if (ShardeumFlags.VerboseLogs) console.log(`parsed tx`, transaction)
 
   const from = injectedTx.from !== undefined ? Address.fromString(injectedTx.from) : Address.zero()
