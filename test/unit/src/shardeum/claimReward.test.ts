@@ -1362,9 +1362,17 @@ describe('claimReward', () => {
     /**
      * Test capping of node reward at nodeRewardCap (from config)
      * Verifies that rewards cannot exceed the configured cap
+     *
+     * In this test, the mocks for _base16BNParser and scaleByStabilityFactor are set up so that
+     * the calculated rewardedAmount inside applyClaimRewardTx will be GREATER than nodeRewardCap.
+     * This is achieved by returning a very large value from scaleByStabilityFactor, so that:
+     *   rewardedAmount = nodeRewardAmount * (durationInNetwork * 1000) / nodeRewardInterval
+     * will exceed the cap. The test then asserts that the transaction fails and the reward is not updated.
+     *
+     * Note: rewardedAmount is not directly referenced here because it is a local variable in the implementation.
      */
-    test('should cap node reward at nodeRewardCap (from config)', async () => {
-      // Set up a huge duration and reward so the calculated reward would exceed the cap
+    test('should fail if rewardedAmount exceeds nodeRewardCap (from config)', async () => {
+      // Set up a huge duration and reward so the calculated rewardedAmount would exceed the cap
       mockNodeAccount.rewardStartTime = 1000
       mockClaimRewardTx.nodeDeactivatedTime = 1000 + 10 ** 10 // Large duration
       mockTxData.endTime = mockClaimRewardTx.nodeDeactivatedTime
@@ -1400,13 +1408,13 @@ describe('claimReward', () => {
         mockApplyResponse
       )
 
-      // Should fail due to exceeding cap
+      // Should fail due to rewardedAmount exceeding cap
       expect(mockShardus.applyResponseSetFailed).toHaveBeenCalledWith(
         mockApplyResponse,
         expect.stringContaining('nodeRewardCap exceeded')
       )
-      // Node reward should not exceed the cap from config
-      expect(mockNodeAccount.reward).toBeLessThanOrEqual(mockNetworkAccount.current.nodeRewardCap)
+      // Node reward should remain unchanged (not updated)
+      expect(mockNodeAccount.reward).toBe(BigInt(0))
       // Event should be counted
       expect(nestedCountersInstance.countEvent).toHaveBeenCalledWith(
         'shardeum-staking',
@@ -1416,8 +1424,16 @@ describe('claimReward', () => {
 
     /**
      * Test that a reward below the cap is accepted and applied
+     *
+     * In this test, the mocks for _base16BNParser and scaleByStabilityFactor are set up so that
+     * the calculated rewardedAmount inside applyClaimRewardTx will be LESS than nodeRewardCap.
+     * This is achieved by returning a small value from scaleByStabilityFactor, so that:
+     *   rewardedAmount = nodeRewardAmount * (durationInNetwork * 1000) / nodeRewardInterval
+     * will be below the cap. The test then asserts that the transaction succeeds and the reward is updated.
+     *
+     * Note: rewardedAmount is not directly referenced here because it is a local variable in the implementation.
      */
-    test('should accept reward below nodeRewardCap', async () => {
+    test('should accept reward when rewardedAmount is below nodeRewardCap', async () => {
       mockNodeAccount.rewardStartTime = 1000
       mockClaimRewardTx.nodeDeactivatedTime = 2000 // Small duration
       mockTxData.endTime = mockClaimRewardTx.nodeDeactivatedTime
