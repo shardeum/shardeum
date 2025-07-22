@@ -9,6 +9,7 @@ import {
     findMajorityResult,
     comparePropertiesTypes
 } from '../../../../src/utils/general'
+import { oneSHM } from '../../../../src/shardeum/shardeumConstants'
 
 let networkAccount: NetworkAccount = {
   id: 'test-id',
@@ -19,6 +20,7 @@ let networkAccount: NetworkAccount = {
     nodeRewardInterval: 100,
     nodeRewardAmountUsd: BigInt(1000),
     nodePenaltyUsd: BigInt(500),
+    nodeRewardCap: oneSHM * BigInt(10001), //10001 SHM
     stakeRequiredUsd: BigInt(5000),
     restakeCooldown: 100,
     maintenanceInterval: 100,

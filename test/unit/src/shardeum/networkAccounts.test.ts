@@ -6,6 +6,7 @@ import {
     AccountType,
 } from '../../../../src/shardeum/shardeumTypes'
 import { ShardusTypes } from '@shardeum-foundation/core'
+import { oneSHM } from '../../../../src/shardeum/shardeumConstants'
 
 describe('Network Accounts', () => {
     describe('isNetworkAccount', () => {
@@ -20,6 +21,7 @@ describe('Network Accounts', () => {
                 nodeRewardAmountUsd: BigInt(1000),
                 nodePenaltyUsd: BigInt(500),
                 stakeRequiredUsd: BigInt(5000),
+                nodeRewardCap: oneSHM * BigInt(10001),
                 restakeCooldown: 100,
                 maintenanceInterval: 100,
                 maintenanceFee: 10,
