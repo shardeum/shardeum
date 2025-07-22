@@ -3606,7 +3606,75 @@ async function estimateGas(
     customEVM.cleanUp()
   }
 
-  if (ShardeumFlags.VerboseLogs) console.log('Predicted gasUsed', runTxResult.totalGasSpent)
+  // Collect accessed accounts and storage to calculate cold access costs
+  const readAccounts = preRunTxState._transactionState.getReadAccounts()
+  const writtenAccounts = preRunTxState._transactionState.getWrittenAccounts()
+  
+  // Count unique accounts accessed (excluding those we pre-loaded)
+  const accessedAccounts = new Set<string>()
+  
+  // Add read accounts
+  for (const [address] of readAccounts.accounts) {
+    accessedAccounts.add(address)
+  }
+  
+  // Add written accounts
+  for (const [address] of writtenAccounts.accounts) {
+    accessedAccounts.add(address)
+  }
+  
+  // Count storage slots accessed
+  let coldStorageSlots = 0
+  
+  // Count read storage slots
+  for (const [contractAddress, storageMap] of readAccounts.contractStorages) {
+    coldStorageSlots += storageMap.size
+  }
+  
+  // Count written storage slots (if not already counted in reads)
+  for (const [contractAddress, storageMap] of writtenAccounts.contractStorages) {
+    const readStorageMap = readAccounts.contractStorages.get(contractAddress)
+    if (readStorageMap) {
+      // Only count slots that weren't already read
+      for (const slot of storageMap.keys()) {
+        if (!readStorageMap.has(slot)) {
+          coldStorageSlots++
+        }
+      }
+    } else {
+      coldStorageSlots += storageMap.size
+    }
+  }
+  
+  // Exclude pre-warmed addresses
+  const preWarmedAddresses = new Set<string>()
+  preWarmedAddresses.add(callerEVMAddress.toString()) // Sender is always warm
+  if (transaction.to) {
+    preWarmedAddresses.add(transaction.to.toString()) // Recipient is always warm  
+  }
+  preWarmedAddresses.add(blockForTx.header.coinbase.toString()) // Coinbase is warm (EIP-3651)
+  
+  // Calculate additional accounts that would be cold
+  let coldAccountAccesses = 0
+  for (const address of accessedAccounts) {
+    if (!preWarmedAddresses.has(address)) {
+      coldAccountAccesses++
+    }
+  }
+  
+  if (ShardeumFlags.VerboseLogs) {
+    console.log('EstimateGas: Results:', {
+      totalGasSpent: runTxResult.totalGasSpent,
+      executionGasUsed: runTxResult.execResult.executionGasUsed,
+      gasRefund: runTxResult.gasRefund,
+      baseFee: transaction.getBaseFee(),
+      logs: runTxResult.execResult.logs?.length || 0,
+      createdAddresses: runTxResult.execResult.createdAddresses?.size || 0,
+      coldAccountAccesses,
+      coldStorageSlots,
+      accessedAccounts: accessedAccounts.size
+    })
+  }
 
   if (runTxResult.execResult.exceptionError) {
     if (ShardeumFlags.VerboseLogs) console.log('Execution Error:', runTxResult.execResult.exceptionError)
@@ -3616,12 +3684,32 @@ async function estimateGas(
   if (!isValid) {
     removeTxFromSenderCache(txId)
   }
+  
   // For the estimate, we add the gasRefund to the gasUsed because gasRefund is subtracted after execution.
   // That can lead to higher gasUsed during execution than the actual gasUsed
   const estimate = runTxResult.totalGasSpent + (runTxResult.execResult.gasRefund ?? BigInt(0))
   
-  // Add a 20% buffer to the estimate to account for execution variations
-  const estimateWithBuffer = (estimate * BigInt(120)) / BigInt(100)
+  // Add gas for cold account accesses (2600 gas per account)
+  const coldAccountGas = BigInt(coldAccountAccesses) * BigInt(2600)
+  
+  // Add gas for cold storage accesses (2100 gas per slot)
+  const coldStorageGas = BigInt(coldStorageSlots) * BigInt(2100)
+  
+  // Calculate total with cold access costs
+  const estimateWithColdAccess = estimate + coldAccountGas + coldStorageGas
+  
+  // Add a 10% buffer on top of cold access adjustments
+  const estimateWithBuffer = (estimateWithColdAccess * BigInt(110)) / BigInt(100)
+  
+  if (ShardeumFlags.VerboseLogs) {
+    console.log('EstimateGas: Final calculation:', {
+      baseEstimate: estimate,
+      coldAccountGas,
+      coldStorageGas,
+      totalWithCold: estimateWithColdAccess,
+      finalWithBuffer: estimateWithBuffer
+    })
+  }
   
   return { estimateGas: bigIntToHex(estimateWithBuffer) }
 }
