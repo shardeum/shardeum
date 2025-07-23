@@ -13,6 +13,7 @@ import {
   toBytes,
   hexToBytes,
   isHexString,
+  KECCAK256_NULL_S,
 } from '@ethereumjs/util'
 import {
   AccessListEIP2930Transaction,
@@ -199,7 +200,7 @@ export let genesisAccounts: string[] = []
 // Two global variables: at the top of utils/versions.ts
 // Where to call this function: After shradus factory line 146 console.logs ke pehle
 // Add a console log to log out to fetched versions
-// “getNodeInfoAppData()”
+// "getNodeInfoAppData()"
 
 const ERC20_BALANCEOF_CODE = '0x70a08231'
 
@@ -3412,6 +3413,46 @@ const getOrCreateBlockFromTimestamp = (timestamp: number, scheduleNextBlock = fa
   return block
 }
 
+function createTxForEstimation(txData, common) {
+  if ('maxFeePerGas' in txData) {
+    return TransactionFactory.fromTxData({ ...txData, type: 2 }, { common });
+  } else if ('accessList' in txData) {
+    return TransactionFactory.fromTxData({ ...txData, type: 1 }, { common });
+  } else {
+    return TransactionFactory.fromTxData({ ...txData, type: 0 }, { common });
+  }
+}
+
+
+function validateTransactionFee(tx: any, blockBaseFee: bigint) {
+  // Skip for pre-London hardforks
+  if (!tx.common.isActivatedEIP(1559)) return
+
+  if (tx.type === TransactionType.FeeMarketEIP1559) {
+    // EIP-1559: Ensure maxFeePerGas >= baseFee
+    if (tx.maxFeePerGas < blockBaseFee) {
+      throw new Error(
+        `Transaction's maxFeePerGas (${tx.maxFeePerGas}) is less than the block's baseFeePerGas (${blockBaseFee})`
+      )
+    }
+  } 
+  // Legacy (0) and EIP-2930 (1): DO NOT enforce baseFee
+}
+
+function buildTransactionForEstimation(txData: any, common: any) {
+  if ('maxFeePerGas' in txData) {
+    // EIP-1559 transaction
+    return TransactionFactory.fromTxData({ ...txData, type: TransactionType.FeeMarketEIP1559 }, { common })
+  } else if ('accessList' in txData) {
+    // EIP-2930 transaction
+    return TransactionFactory.fromTxData({ ...txData, type: TransactionType.AccessListEIP2930 }, { common })
+  } else {
+    // Legacy transaction
+    return TransactionFactory.fromTxData({ ...txData, type: TransactionType.Legacy }, { common })
+  }
+}
+
+
 async function estimateGas(
   injectedTx: { from: string; maxFeePerGas: string; gas: number } & LegacyTxData
 ): Promise<{ estimateGas: string }> {
@@ -3445,9 +3486,17 @@ async function estimateGas(
     injectedTx.gasLimit = MAX_GASLIMIT
   }
 
+  // Calculate a reasonable gas price for estimation
+  const networkAccount = await AccountsStorage.getCachedNetworkAccount()
+  const estimationGasPrice = calculateGasPrice(
+    ShardeumFlags.baselineTxFee,
+    ShardeumFlags.baselineTxGasUsage,
+    networkAccount
+  )
   const txData = {
     ...injectedTx,
     gasLimit: injectedTx.gasLimit ? injectedTx.gasLimit : blockForTx.header.gasLimit,
+    gasPrice: estimationGasPrice,
   }
 
   const customCommon = Common.custom(
@@ -3455,8 +3504,11 @@ async function estimateGas(
     { baseChain: 'mainnet' }
   )
 
-  const transaction: LegacyTransaction | AccessListEIP2930Transaction =
-    TransactionFactory.fromTxData<TransactionType.Legacy>(txData, { common: customCommon })
+  
+  const transaction = buildTransactionForEstimation(txData, customCommon)
+
+  validateTransactionFee(transaction, blockForTx.header.baseFeePerGas)
+
   if (ShardeumFlags.VerboseLogs) console.log(`parsed tx`, transaction)
 
   const from = injectedTx.from !== undefined ? Address.fromString(injectedTx.from) : Address.zero()
@@ -3534,6 +3586,43 @@ async function estimateGas(
     callerAccount ? callerAccount.account : fakeAccount
   )
 
+
+  if (transaction.to && caShardusAddress) {
+    const contractAccount = await AccountsStorage.getAccount(caShardusAddress)
+
+    if (ShardeumFlags.VerboseLogs) {
+      console.log(`EstimateGas: Loading contract account for ${transaction.to.toString()}`, contractAccount ? 'found' : 'not found')
+    }
+    if (contractAccount && contractAccount.account) {
+      preRunTxState._transactionState.insertFirstAccountReads(
+        transaction.to,
+        contractAccount.account
+      )
+    }
+
+    // Load contract code if contract has code
+    if (contractAccount && contractAccount.account && contractAccount.account.codeHash) {
+      const codeHash = contractAccount.account.codeHash
+      const codeHashHex = bytesToHex(codeHash)
+
+      if (codeHashHex !== KECCAK256_NULL_S) {
+        const contractCodeAddress = toShardusAddressWithKey(transaction.to.toString(), codeHashHex, AccountType.ContractCode)
+        const contractCode = await AccountsStorage.getAccount(contractCodeAddress)
+
+        if (ShardeumFlags.VerboseLogs) {
+          console.log(`EstimateGas: Loading contract code for ${transaction.to.toString()}`, contractCode ? 'found' : 'not found', contractCode?.codeByte ? 'has bytecode' : 'no bytecode')
+        }
+        if (contractCode && contractCode.codeByte) {
+          preRunTxState._transactionState.insertFirstContractBytesReads(
+            transaction.to,
+            contractCode.codeByte
+          )
+        }
+      }
+    }
+  }
+
+
   const customEVM = new EthereumVirtualMachine({
     common: evmCommon,
     stateManager: preRunTxState,
@@ -3568,7 +3657,74 @@ async function estimateGas(
     customEVM.cleanUp()
   }
 
-  if (ShardeumFlags.VerboseLogs) console.log('Predicted gasUsed', runTxResult.totalGasSpent)
+  // Collect accessed accounts and storage to calculate cold access costs
+  const readAccounts = preRunTxState._transactionState.getReadAccounts()
+  const writtenAccounts = preRunTxState._transactionState.getWrittenAccounts()
+
+  // Count unique accounts accessed (excluding those we pre-loaded)
+  const accessedAccounts = new Set<string>()
+
+  // Add read accounts
+  for (const [address] of readAccounts.accounts) {
+    accessedAccounts.add(address)
+  }
+
+  // Add written accounts
+  for (const [address] of writtenAccounts.accounts) {
+    accessedAccounts.add(address)
+  }
+
+  // Count storage slots accessed
+  let coldStorageSlots = 0
+
+  // Count read storage slots
+  for (const [contractAddress, storageMap] of readAccounts.contractStorages) {
+    coldStorageSlots += storageMap.size
+  }
+
+  // Count written storage slots (if not already counted in reads)
+  for (const [contractAddress, storageMap] of writtenAccounts.contractStorages) {
+    const readStorageMap = readAccounts.contractStorages.get(contractAddress)
+    if (readStorageMap) {
+      // Only count slots that weren't already read
+      for (const slot of storageMap.keys()) {
+        if (!readStorageMap.has(slot)) {
+          coldStorageSlots++
+        }
+      }
+    } else {
+      coldStorageSlots += storageMap.size
+    }
+  }
+
+  // Exclude pre-warmed addresses
+  const preWarmedAddresses = new Set<string>()
+  preWarmedAddresses.add(callerEVMAddress.toString()) // Sender is always warm
+  if (transaction.to) {
+    preWarmedAddresses.add(transaction.to.toString()) // Recipient is always warm
+  }
+
+  // Calculate additional accounts that would be cold
+  let coldAccountAccesses = 0
+  for (const address of accessedAccounts) {
+    if (!preWarmedAddresses.has(address)) {
+      coldAccountAccesses++
+    }
+  }
+
+  if (ShardeumFlags.VerboseLogs) {
+    console.log('EstimateGas: Results:', {
+      totalGasSpent: runTxResult.totalGasSpent,
+      executionGasUsed: runTxResult.execResult.executionGasUsed,
+      gasRefund: runTxResult.gasRefund,
+      baseFee: transaction.getBaseFee(),
+      logs: runTxResult.execResult.logs?.length || 0,
+      createdAddresses: runTxResult.execResult.createdAddresses?.size || 0,
+      coldAccountAccesses,
+      coldStorageSlots,
+      accessedAccounts: accessedAccounts.size
+    })
+  }
 
   if (runTxResult.execResult.exceptionError) {
     if (ShardeumFlags.VerboseLogs) console.log('Execution Error:', runTxResult.execResult.exceptionError)
@@ -3578,10 +3734,36 @@ async function estimateGas(
   if (!isValid) {
     removeTxFromSenderCache(txId)
   }
-  // For the estimate, we add the gasRefund to the gasUsed because gasRefund is subtracted after execution.
+  // For the estimate, we subtract the gasRefund from the gasUsed because gasRefund is subtracted after execution.
   // That can lead to higher gasUsed during execution than the actual gasUsed
-  const estimate = runTxResult.totalGasSpent + (runTxResult.execResult.gasRefund ?? BigInt(0))
-  return { estimateGas: bigIntToHex(estimate) }
+  const gasRefund = runTxResult.execResult.gasRefund ?? BigInt(0)
+  const maxRefund = runTxResult.totalGasSpent / BigInt(5) // 20% cap
+  const cappedRefund = gasRefund < maxRefund ? gasRefund : maxRefund
+  const estimate = runTxResult.totalGasSpent - cappedRefund
+  
+  // Add gas for cold account accesses (2600 gas per account)
+  const coldAccountGas = BigInt(coldAccountAccesses) * BigInt(2600)
+
+  // Add gas for cold storage accesses (2100 gas per slot)
+  const coldStorageGas = BigInt(coldStorageSlots) * BigInt(2100)
+
+  // Calculate total with cold access costs
+  const estimateWithColdAccess = BigInt(estimate) + BigInt(coldAccountGas) + BigInt(coldStorageGas)
+
+  // Add a 10% buffer on top of cold access adjustments
+  const estimateWithBuffer = (estimateWithColdAccess * BigInt(110)) / BigInt(100)
+
+  if (ShardeumFlags.VerboseLogs) {
+    console.log('EstimateGas: Final calculation:', {
+      baseEstimate: estimate,
+      coldAccountGas,
+      coldStorageGas,
+      totalWithCold: estimateWithColdAccess,
+      finalWithBuffer: estimateWithBuffer
+    })
+  }
+
+  return { estimateGas: bigIntToHex(estimateWithBuffer) }
 }
 
 type CodeHashObj = { codeHash: string; contractAddress: string }
