@@ -295,7 +295,7 @@ export const ShardeumFlags: ShardeumFlags = {
   useFutureBlockForAccessList: true,
   failedStakeReceipt: true,
   unifiedAccountBalanceEnabled: true,
-  debugDefaultBalance: '100', //In debug mode the default value is 100 SHM.  This is needed for certain load test operations
+  debugDefaultBalance: '0',
   debugGlobalAccountUpdateFail: false,
   ticketTypesEnabled: false,
   debugTxEnabled: false,

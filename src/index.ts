@@ -489,7 +489,7 @@ const appliedTxs = {} //this appears to be unused. will it still be unused if we
 const shardusTxIdToEthTxId = {} //this appears to only support appliedTxs
 
 //In debug mode the default value is 100 SHM.  This is needed for certain load test operations
-const defaultBalance = isDebugMode() ? oneSHM * BigInt(100) : BigInt(0)
+const defaultBalance = BigInt(0)
 
 // TODO move this to a db table
 // const transactionFailHashMap: any = {}
@@ -1953,7 +1953,7 @@ const configShardusEndpoints = (): void => {
       } else {
         const acctData = {
           nonce: 0,
-          balance: oneSHM * BigInt(100), // 100 SHM.  This is a temporary account that will never exist.
+          balance: BigInt(0),
         }
         const fakeAccount = Account.fromAccountData(acctData)
         callTxState._transactionState.insertFirstAccountReads(opt.caller, fakeAccount)
@@ -3507,7 +3507,7 @@ async function estimateGas(
 
   const fakeAccountData = {
     nonce: 0,
-    balance: oneSHM * BigInt(100), // 100 SHM.  This is a temporary account that will never exist.
+    balance: BigInt(0),
   }
   const fakeAccount = Account.fromAccountData(fakeAccountData)
   if (callerAccount == null) {
@@ -3664,7 +3664,7 @@ async function generateAccessList(
     let callerAccount = await AccountsStorage.getAccount(callerShardusAddress)
     const fakeAccountData = {
       nonce: 0,
-      balance: oneSHM * BigInt(100), // 100 SHM.  This is a temporary account that will never exist.
+      balance: BigInt(0),
     }
     const fakeAccount = Account.fromAccountData(fakeAccountData)
     if (callerAccount == null) {
