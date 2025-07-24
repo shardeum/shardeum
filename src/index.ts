@@ -3467,13 +3467,17 @@ async function estimateGas(
       // If no gas limit is specified use the last block gas limit as an upper bound.
       // injectedTx.gas = blockForTx.header.gasLimit.div(new BN(10).pow(new BN(8))) as any
       // injectedTx.gasLimit = blockForTx.header.gasLimit.div(new BN(10).pow(new BN(8))) as any
-      injectedTx.gasLimit = blockForTx.header.gasLimit
+      if (blockForTx && blockForTx.header) {
+        injectedTx.gasLimit = blockForTx.header.gasLimit
+      } else {
+        injectedTx.gasLimit = MAX_GASLIMIT
+      }
     } else {
       injectedTx.gasLimit = BigInt(injectedTx.gas)
     }
   } catch (error) {
     if (ShardeumFlags.VerboseLogs) console.log('Injected tx without gasLimit', error)
-    injectedTx.gasLimit = BigInt('0x1C9C380') // 30 M Gas
+    injectedTx.gasLimit = MAX_GASLIMIT
   }
 
   // we set this max gasLimit to prevent DDOS attacks with high gasLimits
@@ -3495,7 +3499,11 @@ async function estimateGas(
   )
   const txData = {
     ...injectedTx,
-    gasLimit: injectedTx.gasLimit ? injectedTx.gasLimit : blockForTx.header.gasLimit,
+    gasLimit: injectedTx.gasLimit
+      ? injectedTx.gasLimit
+      : blockForTx && blockForTx.header
+      ? blockForTx.header.gasLimit
+      : MAX_GASLIMIT,
     gasPrice: estimationGasPrice,
   }
 
@@ -3504,10 +3512,11 @@ async function estimateGas(
     { baseChain: 'mainnet' }
   )
 
-  
   const transaction = buildTransactionForEstimation(txData, customCommon)
 
-  validateTransactionFee(transaction, blockForTx.header.baseFeePerGas)
+  if (blockForTx && blockForTx.header) {
+    validateTransactionFee(transaction, blockForTx.header.baseFeePerGas)
+  }
 
   if (ShardeumFlags.VerboseLogs) console.log(`parsed tx`, transaction)
 
