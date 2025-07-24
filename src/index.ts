@@ -3743,31 +3743,14 @@ async function estimateGas(
   if (!isValid) {
     removeTxFromSenderCache(txId)
   }
-  // For the estimate, we subtract the gasRefund from the gasUsed because gasRefund is subtracted after execution.
-  // That can lead to higher gasUsed during execution than the actual gasUsed
-  const gasRefund = runTxResult.execResult.gasRefund ?? BigInt(0)
-  const maxRefund = runTxResult.totalGasSpent / BigInt(5) // 20% cap
-  const cappedRefund = gasRefund < maxRefund ? gasRefund : maxRefund
-  const estimate = runTxResult.totalGasSpent - cappedRefund
-  
-  // Add gas for cold account accesses (2600 gas per account)
-  const coldAccountGas = BigInt(coldAccountAccesses) * BigInt(2600)
-
-  // Add gas for cold storage accesses (2100 gas per slot)
-  const coldStorageGas = BigInt(coldStorageSlots) * BigInt(2100)
-
-  // Calculate total with cold access costs
-  const estimateWithColdAccess = BigInt(estimate) + BigInt(coldAccountGas) + BigInt(coldStorageGas)
+  const estimate = runTxResult.totalGasSpent   // already refund-capped
 
   // Add a 10% buffer on top of cold access adjustments
-  const estimateWithBuffer = (estimateWithColdAccess * BigInt(110)) / BigInt(100)
+  const estimateWithBuffer = (estimate * BigInt(110)) / BigInt(100)
 
   if (ShardeumFlags.VerboseLogs) {
     console.log('EstimateGas: Final calculation:', {
       baseEstimate: estimate,
-      coldAccountGas,
-      coldStorageGas,
-      totalWithCold: estimateWithColdAccess,
       finalWithBuffer: estimateWithBuffer
     })
   }
