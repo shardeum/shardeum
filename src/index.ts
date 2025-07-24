@@ -3413,16 +3413,6 @@ const getOrCreateBlockFromTimestamp = (timestamp: number, scheduleNextBlock = fa
   return block
 }
 
-function createTxForEstimation(txData, common) {
-  if ('maxFeePerGas' in txData) {
-    return TransactionFactory.fromTxData({ ...txData, type: 2 }, { common });
-  } else if ('accessList' in txData) {
-    return TransactionFactory.fromTxData({ ...txData, type: 1 }, { common });
-  } else {
-    return TransactionFactory.fromTxData({ ...txData, type: 0 }, { common });
-  }
-}
-
 
 function validateTransactionFee(tx: any, blockBaseFee: bigint) {
   // Skip for pre-London hardforks
