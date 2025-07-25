@@ -73,7 +73,7 @@
     "sqlite3": "5.1.6"
   },
   "devDependencies": {
-    "@shardeum-foundation/archiver": "3.7.2",
+    "@shardeum-foundation/archiver": "3.7.7-prerelease.0",
     "@shardeum-foundation/monitor-server": "2.10.0",
     "@shardeum-foundation/tools-shardus-cli": "4.5.0",
     "@types/decimal.js": "7.4.0",
