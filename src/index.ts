@@ -4193,7 +4193,8 @@ async function generateAccessList(
           rawReturnValue: runTxResult.execResult.returnValue ? bytesToHex(runTxResult.execResult.returnValue) : null,
           returnValueLength: runTxResult.execResult.returnValue ? runTxResult.execResult.returnValue.length : 0,
           finalErrorDetails: errorDetails,
-          finalFailureReason: `EVM execution error: ${runTxResult.execResult.exceptionError.error}${errorDetails}`,
+          verboseFailureReason: `EVM execution error: ${runTxResult.execResult.exceptionError.error}${errorDetails}`,
+          cleanFailureReason: formatCleanErrorMessage(runTxResult.execResult.exceptionError.error, revertReason),
           // Additional execution context
           executionGasUsed: runTxResult.execResult.executionGasUsed?.toString(),
           gasLimit: transaction.gasLimit?.toString(),
@@ -4210,7 +4211,7 @@ async function generateAccessList(
         shardusMemoryPatterns: null,
         codeHashes: [],
         failedAccessList: true,
-        failureReason: `EVM execution error: ${runTxResult.execResult.exceptionError.error}${errorDetails}`,
+        failureReason: formatCleanErrorMessage(runTxResult.execResult.exceptionError.error, revertReason),
       }
     }
 
@@ -4384,6 +4385,50 @@ function decodeRevertReasonFromReturnValue(returnValue: Uint8Array): string | nu
     console.log('Error decoding revert reason:', e)
     // If decoding fails, return the raw hex as a fallback
     return `Raw revert data: ${bytesToHex(returnValue)}`
+  }
+}
+
+/**
+ * Formats EVM execution errors into clean, user-friendly messages
+ * instead of verbose PreCrack failure messages
+ */
+function formatCleanErrorMessage(errorType: string, revertReason: string | null): string {
+  // Handle out of gas errors
+  if (errorType.toLowerCase().includes('out of gas') || errorType.toLowerCase().includes('oog')) {
+    return 'out of gas'
+  }
+
+  // Handle specific error types
+  switch (errorType.toLowerCase()) {
+    case 'revert':
+      return revertReason || 'revert (no data)'
+    case 'invalid opcode':
+      return 'invalid opcode'
+    case 'stack underflow':
+      return 'stack underflow'
+    case 'stack overflow':
+      return 'stack overflow'
+    case 'invalid jump':
+      return 'invalid jump'
+    case 'invalid instruction':
+      return 'invalid instruction'
+    case 'bad jump destination':
+      return 'bad jump destination'
+    case 'static state change':
+      return 'static state change'
+    default:
+      // For panic codes and other specific errors
+      if (errorType.includes('Panic:')) {
+        return errorType // Keep panic messages as they are already clean
+      }
+      
+      // If we have a revert reason, use it
+      if (revertReason) {
+        return revertReason
+      }
+      
+      // Otherwise return the error type
+      return errorType
   }
 }
 
