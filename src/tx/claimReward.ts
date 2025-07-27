@@ -371,7 +371,7 @@ export async function applyClaimRewardTx(
   }
 
   if (ShardeumFlags.supportInternalTxReceipt) {
-    createInternalTxReceipt(
+    await createInternalTxReceipt(
       shardus,
       applyResponse,
       tx,

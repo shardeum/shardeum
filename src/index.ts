@@ -2830,7 +2830,15 @@ async function applyInternalTx(
     //need to run this to fix buffer types after serialization
     fixDeserializedWrappedEVMAccount(wrappedEVMAccount)
     if (ShardeumFlags.supportInternalTxReceipt) {
-      createInternalTxReceipt(shardus, applyResponse, internalTx, networkAccount, networkAccount, txTimestamp, txId)
+      await createInternalTxReceipt(
+        shardus,
+        applyResponse,
+        internalTx,
+        networkAccount,
+        networkAccount,
+        txTimestamp,
+        txId
+      )
     }
   }
 
@@ -2853,7 +2861,15 @@ async function applyInternalTx(
       network.timestamp = txTimestamp
     }
     if (ShardeumFlags.supportInternalTxReceipt) {
-      createInternalTxReceipt(shardus, applyResponse, internalTx, networkAccount, networkAccount, txTimestamp, txId)
+      await createInternalTxReceipt(
+        shardus,
+        applyResponse,
+        internalTx,
+        networkAccount,
+        networkAccount,
+        txTimestamp,
+        txId
+      )
     }
     /* prettier-ignore */ if (logFlags.important_as_error) console.log(`init_network NETWORK_ACCOUNT: ${Utils.safeStringify(network)}`)
     /* prettier-ignore */ if (logFlags.important_as_error) shardus.log('Applied init_network transaction', network)
@@ -2936,7 +2952,15 @@ async function applyInternalTx(
       afterStateHash: afterStateHash,
     }
     if (ShardeumFlags.supportInternalTxReceipt) {
-      createInternalTxReceipt(shardus, applyResponse, internalTx, internalTx.from, networkAccount, txTimestamp, txId)
+      await createInternalTxReceipt(
+        shardus,
+        applyResponse,
+        internalTx,
+        internalTx.from,
+        networkAccount,
+        txTimestamp,
+        txId
+      )
     }
     /* prettier-ignore */ if (logFlags.important_as_error) console.log('Applied change_config tx')
     /* prettier-ignore */ if (logFlags.important_as_error) shardus.log('Applied change_config tx')
@@ -2965,7 +2989,15 @@ async function applyInternalTx(
     /* prettier-ignore */ if (logFlags.important_as_error) console.log(`Applied CHANGE_CONFIG GLOBAL transaction: ${Utils.safeStringify(network)}`)
     /* prettier-ignore */ if (logFlags.important_as_error) shardus.log('Applied CHANGE_CONFIG GLOBAL transaction', Utils.safeStringify(network))
     if (ShardeumFlags.supportInternalTxReceipt) {
-      createInternalTxReceipt(shardus, applyResponse, internalTx, internalTx.from, networkAccount, txTimestamp, txId)
+      await createInternalTxReceipt(
+        shardus,
+        applyResponse,
+        internalTx,
+        internalTx.from,
+        networkAccount,
+        txTimestamp,
+        txId
+      )
     }
   }
   if (internalTx.internalTXType === InternalTXType.ChangeNetworkParam) {
@@ -3013,7 +3045,15 @@ async function applyInternalTx(
       afterStateHash: afterStateHash,
     }
     if (ShardeumFlags.supportInternalTxReceipt) {
-      createInternalTxReceipt(shardus, applyResponse, internalTx, internalTx.from, networkAccount, txTimestamp, txId)
+      await createInternalTxReceipt(
+        shardus,
+        applyResponse,
+        internalTx,
+        internalTx.from,
+        networkAccount,
+        txTimestamp,
+        txId
+      )
     }
     /* prettier-ignore */ if (logFlags.important_as_error) console.log('Applied change_network_param tx')
     /* prettier-ignore */ if (logFlags.important_as_error) shardus.log('Applied change_network_param tx')
@@ -3040,18 +3080,26 @@ async function applyInternalTx(
       network.listOfChanges.push(internalTx.change)
     }
     if (ShardeumFlags.supportInternalTxReceipt) {
-      createInternalTxReceipt(shardus, applyResponse, internalTx, internalTx.from, networkAccount, txTimestamp, txId)
+      await createInternalTxReceipt(
+        shardus,
+        applyResponse,
+        internalTx,
+        internalTx.from,
+        networkAccount,
+        txTimestamp,
+        txId
+      )
     }
     /* prettier-ignore */ if (logFlags.important_as_error) console.log(`Applied CHANGE_NETWORK_PARAM GLOBAL transaction: ${Utils.safeStringify(network)}`)
     /* prettier-ignore */ if (logFlags.important_as_error) shardus.log('Applied CHANGE_NETWORK_PARAM GLOBAL transaction', Utils.safeStringify(network))
   }
   if (isSetCertTimeTx(internalTx)) {
     const setCertTimeTx = internalTx as SetCertTime
-    applySetCertTimeTx(shardus, setCertTimeTx, wrappedStates, txId, txTimestamp, applyResponse)
+    await applySetCertTimeTx(shardus, setCertTimeTx, wrappedStates, txId, txTimestamp, applyResponse)
   }
   if (internalTx.internalTXType === InternalTXType.InitRewardTimes) {
     const rewardTimesTx = internalTx as InitRewardTimes
-    InitRewardTimesTx.apply(shardus, rewardTimesTx, txId, txTimestamp, wrappedStates, applyResponse)
+    await InitRewardTimesTx.apply(shardus, rewardTimesTx, txId, txTimestamp, wrappedStates, applyResponse)
   }
   if (internalTx.internalTXType === InternalTXType.ClaimReward) {
     const claimRewardTx = internalTx as ClaimRewardTX
@@ -3093,7 +3141,7 @@ async function applyInternalTx(
   return applyResponse
 }
 
-export const createInternalTxReceipt = (
+export const createInternalTxReceipt = async (
   shardus,
   applyResponse: ShardusTypes.ApplyResponse,
   internalTx: InternalTx,
@@ -3105,9 +3153,18 @@ export const createInternalTxReceipt = (
   rewardAmount?: bigint,
   penaltyAmount?: bigint,
   secureAccountName?: string
-): void => {
+): Promise<void> => {
   const blockForReceipt = getOrCreateBlockFromTimestamp(txTimestamp)
   const blockNumberForTx = blockForReceipt.header.number.toString()
+
+  const receiptAccountType =
+    ShardeumFlags.addInternalTxReceiptAccount ? AccountType.InternalTxReceipt : AccountType.Receipt
+  const receiptAddress = toShardusAddress(txId, receiptAccountType)
+  const existingReceipt = await shardus.getLocalOrRemoteAccount(receiptAddress)
+  if (existingReceipt) {
+    /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`Duplicate receipt for txId ${txId} already exists. Skipping creation.`)
+    return
+  }
   const readableReceipt: ReadableReceipt = {
     status: 1,
     transactionHash: '0x' + txId,

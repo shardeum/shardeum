@@ -365,25 +365,25 @@ describe('setCertTime', () => {
 
         const mockApplyResponse = {} as ShardusTypes.ApplyResponse
 
-        it('should successfully apply transaction', () => {
-            applySetCertTimeTx(mockShardus, validTx, mockWrappedStates, 'txId', 1000, mockApplyResponse)
+        it('should successfully apply transaction', async () => {
+            await applySetCertTimeTx(mockShardus, validTx, mockWrappedStates, 'txId', 1000, mockApplyResponse)
             expect(mockShardus.applyResponseAddChangedAccount).toHaveBeenCalled()
         })
 
-        it('should fail when state validation fails', () => {
+        it('should fail when state validation fails', async () => {
             mockNetworkAccount.current.stakeRequiredUsd = BigInt(2000)
-            applySetCertTimeTx(mockShardus, validTx, mockWrappedStates, 'txId', 1000, mockApplyResponse)
+            await applySetCertTimeTx(mockShardus, validTx, mockWrappedStates, 'txId', 1000, mockApplyResponse)
             expect(mockShardus.applyResponseSetFailed).toHaveBeenCalled()
         })
 
-        it('should charge tx fee when cert is not expired', () => {
-            applySetCertTimeTx(mockShardus, validTx, mockWrappedStates, 'txId', 1000, mockApplyResponse)
+        it('should charge tx fee when cert is not expired', async () => {
+            await applySetCertTimeTx(mockShardus, validTx, mockWrappedStates, 'txId', 1000, mockApplyResponse)
             expect(mockOperatorEVMAccount.account.balance).toBeDefined()
         })
 
-        it('should not charge tx fee when cert is expired', () => {
+        it('should not charge tx fee when cert is expired', async () => {
             mockOperatorEVMAccount.operatorAccountInfo.certExp = 1000
-            applySetCertTimeTx(mockShardus, validTx, mockWrappedStates, 'txId', 2000, mockApplyResponse)
+            await applySetCertTimeTx(mockShardus, validTx, mockWrappedStates, 'txId', 2000, mockApplyResponse)
             expect(mockOperatorEVMAccount.account.balance).toBe(BigInt(4096))
         })
     })
