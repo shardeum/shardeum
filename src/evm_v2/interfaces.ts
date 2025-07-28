@@ -1,6 +1,5 @@
-import { AccountFields, Proof, StorageDump, StorageRange } from "@ethereumjs/common"
-import { Account, Address } from "@ethereumjs/util"
-
+import { AccountFields, Proof, StorageDump, StorageRange } from '@ethereumjs/common'
+import { Account, Address } from '@ethereumjs/util'
 
 export interface StateManagerInterface {
   getAccount(address: Address): Promise<Account | undefined>
@@ -14,7 +13,7 @@ export interface StateManagerInterface {
   clearContractStorage(address: Address): Promise<void>
   checkpoint(): Promise<void>
   commit(): Promise<void>
-  revert(message:string): Promise<void>
+  revert(message: string): Promise<void>
   getStateRoot(): Promise<Uint8Array>
   setStateRoot(stateRoot: Uint8Array, clearCache?: boolean): Promise<void>
   getProof?(address: Address, storageSlots: Uint8Array[]): Promise<Proof>

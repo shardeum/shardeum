@@ -476,7 +476,7 @@ export default class ShardeumState implements EVMStateManagerInterface {
    * Reverts the current change-set to the instance since the
    * last call to checkpoint.
    */
-  async revert(message:string): Promise<void> {
+  async revert(message: string): Promise<void> {
     if (this._transactionState != null) {
       this._transactionState.revert(message)
     }
