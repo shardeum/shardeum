@@ -2800,7 +2800,7 @@ const configShardusNetworkTransactions = (): void => {
  * @returns A promise that resolves to a ShardusTypes.ApplyResponse object.
  *
  * The function handles different types of internal transactions:
- * - `SetGlobalCodeBytes`: Updates the timestamp of the wrapped EVM account and optionally creates an internal transaction receipt.
+ * - (SetGlobalCodeBytes has been removed - was deprecated)
  * - `InitNetwork`: Initializes the network account and optionally creates an internal transaction receipt.
  * - `ChangeConfig`: Schedules a configuration change to be applied at a future cycle and optionally creates an internal transaction receipt.
  * - `ApplyChangeConfig`: Applies a scheduled configuration change to the network account and optionally creates an internal transaction receipt.
@@ -2820,19 +2820,7 @@ async function applyInternalTx(
   const txId = generateTxId(tx)
   const applyResponse: ShardusTypes.ApplyResponse = shardus.createApplyResponse(txId, txTimestamp)
   const internalTx = tx as InternalTx
-  if (internalTx.internalTXType === InternalTXType.SetGlobalCodeBytes) {
-    // eslint-disable-next-line security/detect-object-injection
-    const wrappedEVMAccount: WrappedEVMAccount = wrappedStates[internalTx.from].data
-    //just update the timestamp?
-    wrappedEVMAccount.timestamp = txTimestamp
-    //I think this will naturally accomplish the goal of the global update.
-
-    //need to run this to fix buffer types after serialization
-    fixDeserializedWrappedEVMAccount(wrappedEVMAccount)
-    if (ShardeumFlags.supportInternalTxReceipt) {
-      createInternalTxReceipt(shardus, applyResponse, internalTx, networkAccount, networkAccount, txTimestamp, txId)
-    }
-  }
+  // SetGlobalCodeBytes case removed - deprecated flag
 
   if (internalTx.internalTXType === InternalTXType.InitNetwork) {
     // eslint-disable-next-line security/detect-object-injection
@@ -3179,37 +3167,7 @@ async function applyDebugTx(
   /* eslint-enable security/detect-object-injection */
 }
 
-function setGlobalCodeByteUpdate(
-  txTimestamp: number,
-  wrappedEVMAccount: WrappedEVMAccount,
-  applyResponse: ShardusTypes.ApplyResponse
-): void {
-  const globalAddress = getAccountShardusAddress(wrappedEVMAccount)
-  const when = txTimestamp + 1000 * 10
-  const value = {
-    isInternalTx: true,
-    internalTXType: InternalTXType.SetGlobalCodeBytes,
-    // type: 'apply_code_bytes', //extra, for debug
-    timestamp: when,
-    accountData: wrappedEVMAccount,
-    from: globalAddress,
-  }
 
-  //value = shardus.signAsNode(value)
-
-  const addressHash = WrappedEVMAccountFunctions._calculateAccountHash(wrappedEVMAccount)
-  const afterStateHash = addressHash
-
-  const ourAppDefinedData = applyResponse.appDefinedData as OurAppDefinedData
-  ourAppDefinedData.globalMsg = {
-    address: globalAddress,
-    addressHash,
-    value,
-    when,
-    source: globalAddress,
-    afterStateHash: afterStateHash,
-  }
-}
 
 async function _transactionReceiptPass(
   tx,
@@ -5080,21 +5038,16 @@ const shardusSetup = (): void => {
         //add our codehash to the map entry for the CA address
         accountToCodeHash.set(contractByteWrite.contractAddress.toString(), contractByteWrite.codeHash)
 
-        if (ShardeumFlags.globalCodeBytes === true) {
-          //set this globally instead!
-          setGlobalCodeByteUpdate(txTimestamp, wrappedEVMAccount, applyResponse)
-        } else {
-          const wrappedChangedAccount = WrappedEVMAccountFunctions._shardusWrappedAccount(wrappedEVMAccount)
-          //attach to applyResponse
-          if (shardus.applyResponseAddChangedAccount != null) {
-            shardus.applyResponseAddChangedAccount(
-              applyResponse,
-              wrappedChangedAccount.accountId,
-              wrappedChangedAccount as ShardusTypes.WrappedResponse,
-              txId,
-              wrappedChangedAccount.timestamp
-            )
-          }
+        const wrappedChangedAccount = WrappedEVMAccountFunctions._shardusWrappedAccount(wrappedEVMAccount)
+        //attach to applyResponse
+        if (shardus.applyResponseAddChangedAccount != null) {
+          shardus.applyResponseAddChangedAccount(
+            applyResponse,
+            wrappedChangedAccount.accountId,
+            wrappedChangedAccount as ShardusTypes.WrappedResponse,
+            txId,
+            wrappedChangedAccount.timestamp
+          )
         }
       }
       /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log('DBG: accountsToCodeHash', accountToCodeHash)
@@ -5684,9 +5637,7 @@ const shardusSetup = (): void => {
           allKeys: [],
           timestamp: timestamp,
         }
-        if (internalTx.internalTXType === InternalTXType.SetGlobalCodeBytes) {
-          keys.sourceKeys = [internalTx.from]
-        } else if (internalTx.internalTXType === InternalTXType.InitNetwork) {
+        if (internalTx.internalTXType === InternalTXType.InitNetwork) {
           keys.targetKeys = [networkAccount]
         } else if (internalTx.internalTXType === InternalTXType.ChangeConfig) {
           keys.sourceKeys = [tx.from]
@@ -6081,14 +6032,7 @@ const shardusSetup = (): void => {
         shardus.setDebugSetLastAppAwait('getRelevantData.AccountsStorage.getAccount 4')
         let wrappedEVMAccount: NetworkAccount | WrappedEVMAccount = await AccountsStorage.getAccount(accountId)
         shardus.setDebugSetLastAppAwait('getRelevantData.AccountsStorage.getAccount 4', DebugComplete.Completed)
-        if (internalTx.internalTXType === InternalTXType.SetGlobalCodeBytes) {
-          if (wrappedEVMAccount == null) {
-            accountCreated = true
-          }
-          if (internalTx.accountData) {
-            wrappedEVMAccount = internalTx.accountData
-          }
-        }
+        // SetGlobalCodeBytes case removed - deprecated flag
         if (internalTx.internalTXType === InternalTXType.InitNetwork) {
           if (!wrappedEVMAccount) {
             if (accountId === networkAccount) {
@@ -8252,9 +8196,7 @@ const shardusSetup = (): void => {
     getTxSenderAddress(tx) {
       if (isInternalTx(tx) || isDebugTx(tx)) {
         const internalTx = tx as InternalTx
-        if (internalTx.internalTXType === InternalTXType.SetGlobalCodeBytes) {
-          return internalTx.from
-        } else if (internalTx.internalTXType === InternalTXType.InitNetwork) {
+        if (internalTx.internalTXType === InternalTXType.InitNetwork) {
           return internalTx.network
         } else if (internalTx.internalTXType === InternalTXType.ChangeConfig) {
           return internalTx.from

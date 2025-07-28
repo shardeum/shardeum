@@ -78,10 +78,7 @@ describe('isInternalTXGlobal', () => {
     sign: { owner: 'test', sig: 'test' },
   })
 
-  it('should identify SetGlobalCodeBytes as global', () => {
-    const tx = createMockInternalTx(InternalTXType.SetGlobalCodeBytes)
-    expect(isInternalTXGlobal(tx)).toBe(true)
-  })
+  // Test for SetGlobalCodeBytes removed - deprecated flag
 
   it('should identify ApplyChangeConfig as global', () => {
     const tx = createMockInternalTx(InternalTXType.ApplyChangeConfig)

@@ -51,7 +51,6 @@ const colors = {
 
 // Internal TX Type mapping
 const InternalTXType = {
-  0: "SetGlobalCodeBytes",
   1: "InitNetwork",
   2: "NodeReward",
   3: "ChangeConfig",

@@ -21,7 +21,7 @@ export function verify(obj: any, expectedPk?: string): boolean {
 
 export function isInternalTXGlobal(internalTx: InternalTx): boolean {
   return (
-    internalTx.internalTXType === InternalTXType.SetGlobalCodeBytes ||
+    // SetGlobalCodeBytes removed - deprecated flag
     internalTx.internalTXType === InternalTXType.ApplyChangeConfig ||
     internalTx.internalTXType === InternalTXType.InitNetwork ||
     internalTx.internalTXType === InternalTXType.ApplyNetworkParam
