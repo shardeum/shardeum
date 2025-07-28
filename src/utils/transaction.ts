@@ -1,4 +1,4 @@
-import { Transaction, TransactionType, TypedTransaction } from '@ethereumjs/tx'
+import { Transaction, TransactionType, TypedTransaction, LegacyTransaction, AccessListEIP2930Transaction, FeeMarketEIP1559Transaction, BlobEIP4844Transaction } from '@ethereumjs/tx'
 import { Address } from '@ethereumjs/util'
 import { getSenderAddress } from '@shardeum-foundation/lib-net'
 import { hashSignedObj } from '../setup/helpers'
@@ -89,7 +89,7 @@ export function removeTxFromSenderCache(txid: string): void {
 }
 
 export function isStakingEVMTx(
-  transaction: Transaction[TransactionType.Legacy] | Transaction[TransactionType.AccessListEIP2930]
+  transaction: LegacyTransaction | AccessListEIP2930Transaction | FeeMarketEIP1559Transaction | BlobEIP4844Transaction
 ): boolean {
   return transaction.to && transaction.to.toString() === ShardeumFlags.stakeTargetAddress
 }
