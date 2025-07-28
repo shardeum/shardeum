@@ -92,7 +92,7 @@ export interface EVMAccountInfo {
 }
 
 export enum InternalTXType {
-  SetGlobalCodeBytes = 0, //Deprecated
+  // Value 0 was previously SetGlobalCodeBytes (removed - deprecated)
   InitNetwork = 1,
   NodeReward = 2, //Deprecated
   ChangeConfig = 3,

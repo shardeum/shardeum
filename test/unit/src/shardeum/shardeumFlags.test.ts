@@ -32,7 +32,7 @@ describe('ShardeumFlags', () => {
       expect(ShardeumFlags.contractStorageKeySilo).toBeDefined()
       expect(ShardeumFlags.contractStoragePrefixBitLength).toBeDefined()
       expect(ShardeumFlags.contractCodeKeySilo).toBeDefined()
-      expect(ShardeumFlags.globalCodeBytes).toBeDefined()
+      // globalCodeBytes test removed - deprecated flag
       expect(ShardeumFlags.UseDBForAccounts).toBeDefined()
 
       // Network Configuration
@@ -71,7 +71,7 @@ describe('ShardeumFlags', () => {
         expect(ShardeumFlags.contractStorageKeySilo).toBe(true)
         expect(ShardeumFlags.contractStoragePrefixBitLength).toBe(3)
         expect(ShardeumFlags.contractCodeKeySilo).toBe(false)
-        expect(ShardeumFlags.globalCodeBytes).toBe(false)
+        // globalCodeBytes test removed - deprecated flag
         expect(ShardeumFlags.UseDBForAccounts).toBe(true)
       })
     })

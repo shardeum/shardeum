@@ -58,7 +58,7 @@ describe('shardeumTypes', () => {
 
     describe('InternalTXType', () => {
       it('should have correct values for internal transaction types', () => {
-        expect(InternalTXType.SetGlobalCodeBytes).toBe(0)
+        // Test for SetGlobalCodeBytes removed - deprecated flag
         expect(InternalTXType.InitNetwork).toBe(1)
         expect(InternalTXType.NodeReward).toBe(2)
         expect(InternalTXType.ChangeConfig).toBe(3)

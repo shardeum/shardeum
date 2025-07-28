@@ -4,7 +4,6 @@ export interface ShardeumFlags {
   contractStorageKeySilo: boolean
   contractStoragePrefixBitLength: number
   contractCodeKeySilo: boolean
-  globalCodeBytes: boolean
   VerboseLogs: boolean
   debugTraceLogs: boolean
   Virtual0Address: boolean
@@ -137,7 +136,6 @@ export const ShardeumFlags: ShardeumFlags = {
   contractStorageKeySilo: true,
   contractStoragePrefixBitLength: 3,
   contractCodeKeySilo: false,
-  globalCodeBytes: false,
   VerboseLogs: false,
   debugTraceLogs: false,
   Virtual0Address: true,
