@@ -1,8 +1,4 @@
-import {
-  ShardeumFlags,
-  updateShardeumFlag,
-  updateServicePoints,
-} from '../../../../src/shardeum/shardeumFlags'
+import { ShardeumFlags, updateShardeumFlag, updateServicePoints } from '../../../../src/shardeum/shardeumFlags'
 
 /**
  * Comprehensive test suite for ShardeumFlags
@@ -91,7 +87,7 @@ describe('ShardeumFlags', () => {
         expect(ShardeumFlags.debugLocalAALG).toBe(false)
         expect(ShardeumFlags.debugExtraNonceLookup).toBe(false)
         expect(ShardeumFlags.debugGlobalAccountUpdateFail).toBe(false)
-        expect(ShardeumFlags.debugDefaultBalance).toBe('100')
+        expect(ShardeumFlags.debugDefaultBalance).toBe('0')
         expect(ShardeumFlags.debugTxEnabled).toBe(false)
         expect(ShardeumFlags.blockedAtVerbose).toBe(false)
       })

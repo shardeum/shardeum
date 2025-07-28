@@ -81,7 +81,7 @@ export async function estimateGas(
 
   const fakeAccountData = {
     nonce: 0,
-    balance: oneSHM * BigInt(100), // 100 SHM.  This is a temporary account that will never exist.
+    balance: BigInt(0),
   }
   const fakeAccount = Account.fromAccountData(fakeAccountData)
   preRunTxState._transactionState.insertFirstAccountReads(
