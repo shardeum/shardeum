@@ -17,7 +17,7 @@ import {
 import * as WrappedEVMAccountFunctions from '../../../../src/shardeum/wrappedEVMAccountFunctions'
 import { generateTxId, sleep, _base16BNParser } from '../../../../src/utils'
 import * as initRewardTimes from '../../../../src/tx/initRewardTimes'
-import { networkAccount } from '../../../../src/shardeum/shardeumConstants'
+import { networkAccount, oneSHM } from '../../../../src/shardeum/shardeumConstants'
 
 // Mock dependencies
 jest.mock('@shardeum-foundation/core')
@@ -112,6 +112,7 @@ describe('initRewardTimes', () => {
       nodeRewardAmountUsd: BigInt(100), // Base reward amount for nodes
       nodePenaltyUsd: BigInt(500),
       stakeRequiredUsd: BigInt(5000),
+      nodeRewardCap: oneSHM * BigInt(10001),
       restakeCooldown: 100,
       maintenanceInterval: 100,
       maintenanceFee: 10,

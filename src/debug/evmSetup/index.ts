@@ -6,6 +6,7 @@ import { ShardeumState } from '../state'
 import { EVMAccountInfo } from '../../shardeum/shardeumTypes'
 import { ShardusTypes } from '@shardeum-foundation/core'
 import { EVM as EthereumVirtualMachine } from '../../evm_v2'
+import { oneSHM } from '../../shardeum/shardeumConstants'
 
 let shardeumBlock: ShardeumBlock
 export let evmCommon: Common
@@ -30,6 +31,7 @@ export const networkAccount: ShardusTypes.WrappedData = {
       minVersion: '1.3.0',
       nodePenaltyUsd: '8ac7230489e80000',
       nodeRewardAmountUsd: '0de0b6b3a7640000',
+      nodeRewardCap: oneSHM * BigInt(10001), //10001 SHM
       nodeRewardInterval: 3600000,
       stabilityScaleDiv: 1000,
       stabilityScaleMul: 1000,
