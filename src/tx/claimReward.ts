@@ -135,19 +135,27 @@ export function validateClaimRewardTx(tx: ClaimRewardTX, shardus: Shardus): { is
     return { isValid: false, reason: 'txData not in serviceQueue for ClaimReward tx' }
   }
 
-  // Verify the transaction data structure to prevent type confusion
-  // nodeReward should have endTime field, nodeInitReward should have startTime field
-  if (!tx.txData.endTime) {
-    /* prettier-ignore */ nestedCountersInstance.countEvent('shardeum-staking', `validateClaimRewardTx fail missing endTime`)
-    /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log('validateClaimRewardTx fail missing endTime', tx)
-    return { isValid: false, reason: 'txData must have endTime field' }
+  // Verify the transaction type in service queue
+  const latestEntry = shardus.serviceQueue.getLatestNetworkTxEntryForSubqueueKey(tx.txData.publicKey)
+  if (!latestEntry) {
+    /* prettier-ignore */ nestedCountersInstance.countEvent('shardeum-staking', `validateClaimRewardTx fail no service queue entry found for publicKey`)
+    /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log('validateClaimRewardTx fail no service queue entry found for publicKey', tx)
+    return { isValid: false, reason: 'No service queue entry found for publicKey' }
   }
   
-  // Ensure this is not a nodeInitReward transaction (which would have startTime instead of endTime)
-  if ('startTime' in tx.txData) {
-    /* prettier-ignore */ nestedCountersInstance.countEvent('shardeum-staking', `validateClaimRewardTx fail wrong tx type - has startTime field`)
-    /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log('validateClaimRewardTx fail wrong tx type - has startTime field', tx)
-    return { isValid: false, reason: 'Service queue tx appears to be nodeInitReward type (has startTime)' }
+  // Verify it's the same transaction by comparing hash
+  const txDataHash = crypto.hashObj(tx.txData)
+  if (latestEntry.hash !== txDataHash) {
+    /* prettier-ignore */ nestedCountersInstance.countEvent('shardeum-staking', `validateClaimRewardTx fail transaction hash mismatch`)
+    /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log('validateClaimRewardTx fail transaction hash mismatch', tx)
+    return { isValid: false, reason: 'Transaction hash mismatch - not the same transaction' }
+  }
+  
+  // Verify correct transaction type
+  if (latestEntry.tx.type !== 'nodeReward') {
+    /* prettier-ignore */ nestedCountersInstance.countEvent('shardeum-staking', `validateClaimRewardTx fail wrong service queue tx type: ${latestEntry.tx.type}`)
+    /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log('validateClaimRewardTx fail wrong service queue tx type', tx)
+    return { isValid: false, reason: 'Service queue tx must be nodeReward type' }
   }
 
   // check txData matches tx
