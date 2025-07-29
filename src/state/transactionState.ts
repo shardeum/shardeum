@@ -351,6 +351,60 @@ export default class TransactionState {
     //store all writes to the persistant trie.
   }
 
+  /**
+   * Helper method to safely retrieve remote account with enhanced error handling
+   * @param accountType - Type of account to retrieve
+   * @param addressString - Address as string
+   * @param key - Optional key for contract storage/code
+   * @param maxRetries - Maximum number of retry attempts
+   * @returns Promise<WrappedEVMAccount | undefined>
+   */
+  private async safeGetRemoteAccount(
+    accountType: AccountType,
+    addressString: string,
+    key: string | null = null,
+    maxRetries: number = 2
+  ): Promise<WrappedEVMAccount | undefined> {
+    let attempts = 0
+    let lastError: Error | undefined
+    
+    while (attempts < maxRetries) {
+      try {
+        const wrappedEVMAccount = await this.tryGetRemoteAccountCB(this, accountType, addressString, key)
+        if (wrappedEVMAccount !== undefined) {
+          if (this.debugTrace) {
+            this.debugTraceLog(
+              `safeGetRemoteAccount: success on attempt ${attempts + 1} for addr:${addressString} type:${accountType}`
+            )
+          }
+          return wrappedEVMAccount
+        }
+      } catch (error) {
+        lastError = error as Error
+        if (this.debugTrace) {
+          this.debugTraceLog(
+            `safeGetRemoteAccount: attempt ${attempts + 1} failed for addr:${addressString} type:${accountType} error:${error.message}`
+          )
+        }
+      }
+      
+      attempts++
+      
+      // Add a small delay between retries to avoid overwhelming the network
+      if (attempts < maxRetries) {
+        await new Promise(resolve => setTimeout(resolve, 50 * attempts))
+      }
+    }
+    
+    if (this.debugTrace && lastError) {
+      this.debugTraceLog(
+        `safeGetRemoteAccount: all ${maxRetries} attempts failed for addr:${addressString} type:${accountType} lastError:${lastError.message}`
+      )
+    }
+    
+    return undefined
+  }
+
   async getAccount(worldStateTrie: Trie, address: Address, originalOnly: boolean, canThrow: boolean): Promise<Account> {
     const addressString = address.toString()
     let account: Account
@@ -456,29 +510,44 @@ export default class TransactionState {
         `getAccount:(AccountsStorage) addr:${addressString} balance:${account?.balance} nonce:${account?.nonce}`
       )
 
-    //attempt to get data from tryGetRemoteAccountCB
+    //attempt to get data from tryGetRemoteAccountCB with enhanced error handling
     //this can be a long wait only suitable in some cases
     if (account == undefined) {
-      const wrappedEVMAccount = await this.tryGetRemoteAccountCB(this, AccountType.Account, addressString, null)
+      const wrappedEVMAccount = await this.safeGetRemoteAccount(AccountType.Account, addressString, null)
+      
+      // Enhanced error handling for account misses during apply
       if (
         this.runType === RunType.Apply &&
         ShardeumFlags.evmFailOnUnexpectedAccount &&
-        AccountsStorage.cachedNetworkAccount?.current?.smartContractSupport
+        AccountsStorage.cachedNetworkAccount?.current?.smartContractSupport &&
+        wrappedEVMAccount === undefined
       ) {
-        if (this.debugTrace) {
-          this.debugTraceLog(`getAccount: addr:${addressString} v:notFound. failOnUnexpected EOA/CA account2`)
+        // Check if this might be a legitimate new account creation scenario
+        const isLikelyNewAccount = addressString !== zeroAddressStr && 
+          !this.firstAccountReads.has(addressString) && 
+          !this.allAccountWrites.has(addressString) &&
+          !this.allAccountWritesStack.some(stack => stack.has(addressString))
+        
+        if (isLikelyNewAccount) {
+          if (this.debugTrace) {
+            console.log(`getAccount: addr:${addressString} treating as new account creation`)
+          }
+          nestedCountersInstance.countEvent('transactionState', 'getAccountNewAccountCreation')
+          throw new Error('storage account miss during apply()')
+        } else {
+          if (this.debugTrace) {
+            this.debugTraceLog(`getAccount: addr:${addressString} v:notFound after safe retry. failOnUnexpected EOA/CA account2`)
+          }
+          nestedCountersInstance.countEvent('transactionState', 'getAccountFailOnUnexpectedAccount 2')
+          throw new Error('storage account miss during apply()')
         }
-        nestedCountersInstance.countEvent('transactionState', 'getAccountFailOnUnexpectedAccount 2')
-        throw new Error('storage account miss during apply()')
-      }
-      if (wrappedEVMAccount != undefined) {
-        //get account aout of the wrapped evm account
+      } else if (wrappedEVMAccount != undefined) {
+        //get account out of the wrapped evm account
         account = wrappedEVMAccount.account
         storedRlp = account.serialize()
-
         if (this.debugTrace)
           this.debugTraceLog(
-            `getAccount:(tryGetRemoteAccountCB) addr:${addressString} balance:${account?.balance} nonce:${account?.nonce}`
+            `getAccount:(safeGetRemoteAccount) addr:${addressString} balance:${account?.balance} nonce:${account?.nonce}`
           )
       }
     }
@@ -656,17 +725,16 @@ export default class TransactionState {
       codeBytes = storedCodeByte
     }
 
-    //attempt to get data from tryGetRemoteAccountCB
+    //attempt to get data from safeGetRemoteAccount with enhanced error handling
     //this can be a long wait only suitable in some cases
     if (codeBytes == undefined) {
-      const wrappedEVMAccount = await this.tryGetRemoteAccountCB(
-        this,
+      const wrappedEVMAccount = await this.safeGetRemoteAccount(
         AccountType.ContractCode,
         addressString,
         codeHashStr
       )
       if (wrappedEVMAccount != undefined && wrappedEVMAccount.codeByte) {
-        //get account aout of the wrapped evm account
+        //get account out of the wrapped evm account
         codeBytes = wrappedEVMAccount.codeByte
       }
     }
@@ -796,18 +864,34 @@ export default class TransactionState {
       throw new Error('unable to proceed, cant involve contract storage')
     }
     //  check this before trying to read from local db at this point
+    // Enhanced error handling for contract storage misses during apply
     if (
       this.runType === RunType.Apply &&
       ShardeumFlags.evmFailOnUnexpectedAccount &&
       AccountsStorage.cachedNetworkAccount?.current?.smartContractSupport
     ) {
-      if (this.debugTrace) {
-        this.debugTraceLog(
-          `getContractStorage: addr:${addressString} key:${keyString} v:notFound. failOnUnexpected storage account`
-        )
+      // Check if this might be a new contract storage slot
+      const isLikelyNewStorageSlot = !this.firstContractStorageReads.has(addressString) ||
+        !this.firstContractStorageReads.get(addressString)?.has(keyString)
+      
+      if (isLikelyNewStorageSlot) {
+        if (this.debugTrace) {
+          this.debugTraceLog(
+            `getContractStorage: addr:${addressString} key:${keyString} treating as new storage slot`
+          )
+        }
+        nestedCountersInstance.countEvent('transactionState', 'getContractStorageNewSlot')
+        // TODO: Allow new storage slot by continuing with the normal flow?
+        throw new Error('storage account miss during apply()')
+      } else {
+        if (this.debugTrace) {
+          this.debugTraceLog(
+            `getContractStorage: addr:${addressString} key:${keyString} v:notFound. failOnUnexpected storage account`
+          )
+        }
+        nestedCountersInstance.countEvent('transactionState', 'getContractStorageFailOnUnexpected')
+        throw new Error('storage account miss during apply()')
       }
-      nestedCountersInstance.countEvent('transactionState', 'getContractStorageFailOnUnexpected')
-      throw new Error('storage account miss during apply()')
     }
 
     let storedRlp
@@ -824,17 +908,16 @@ export default class TransactionState {
       storedValue = storedRlp ? RLP.decode(storedRlp) : undefined
     }
 
-    //attempt to get data from tryGetRemoteAccountCB
+    //attempt to get data from safeGetRemoteAccount with enhanced error handling
     //this can be a long wait only suitable in some cases
     if (storedValue == undefined) {
-      const wrappedEVMAccount = await this.tryGetRemoteAccountCB(
-        this,
+      const wrappedEVMAccount = await this.safeGetRemoteAccount(
         AccountType.ContractStorage,
         addressString,
         keyString
       )
       if (wrappedEVMAccount != undefined && wrappedEVMAccount.value) {
-        //get account aout of the wrapped evm account
+        //get account out of the wrapped evm account
         storedRlp = wrappedEVMAccount.value
         storedValue = storedRlp ? RLP.decode(storedRlp) : undefined
       }
