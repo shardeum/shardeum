@@ -135,6 +135,21 @@ export function validateClaimRewardTx(tx: ClaimRewardTX, shardus: Shardus): { is
     return { isValid: false, reason: 'txData not in serviceQueue for ClaimReward tx' }
   }
 
+  // Verify the transaction data structure to prevent type confusion
+  // nodeReward should have endTime field, nodeInitReward should have startTime field
+  if (!tx.txData.endTime) {
+    /* prettier-ignore */ nestedCountersInstance.countEvent('shardeum-staking', `validateClaimRewardTx fail missing endTime`)
+    /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log('validateClaimRewardTx fail missing endTime', tx)
+    return { isValid: false, reason: 'txData must have endTime field' }
+  }
+  
+  // Ensure this is not a nodeInitReward transaction (which would have startTime instead of endTime)
+  if ('startTime' in tx.txData) {
+    /* prettier-ignore */ nestedCountersInstance.countEvent('shardeum-staking', `validateClaimRewardTx fail wrong tx type - has startTime field`)
+    /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log('validateClaimRewardTx fail wrong tx type - has startTime field', tx)
+    return { isValid: false, reason: 'Service queue tx appears to be nodeInitReward type (has startTime)' }
+  }
+
   // check txData matches tx
   if (tx.txData.endTime !== tx.nodeDeactivatedTime) {
     /* prettier-ignore */ nestedCountersInstance.countEvent('shardeum-staking', `validateClaimRewardTx fail txData.endTime does not match tx.nodeDeactivatedTime`)
@@ -259,6 +274,15 @@ export async function applyClaimRewardTx(
     //throw new Error(`applyClaimReward failed because durationInNetwork is less than or equal 0`)
     shardus.applyResponseSetFailed(applyResponse, `applyClaimReward failed because durationInNetwork is less than 0`)
     return
+  }
+  
+  // Apply maximum reward duration cap to prevent exploitation
+  const MAX_REWARD_DURATION_DAYS = 365 // 1 year maximum
+  const MAX_REWARD_DURATION_MS = MAX_REWARD_DURATION_DAYS * 24 * 60 * 60 * 1000
+  if (durationInNetwork > MAX_REWARD_DURATION_MS) {
+    /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`Capping reward duration from ${durationInNetwork}ms to ${MAX_REWARD_DURATION_MS}ms for nominee ${tx.nominee}`)
+    nestedCountersInstance.countEvent('shardeum-staking', `applyClaimRewardTx duration capped`)
+    durationInNetwork = MAX_REWARD_DURATION_MS
   }
 
   // special case for seed nodes:
