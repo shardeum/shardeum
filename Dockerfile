@@ -1,19 +1,19 @@
 # Build stage
-FROM node:18.19.1 AS builder
+FROM node:20.19.3 AS builder
 
 WORKDIR /usr/src/app
 
 RUN apt update && apt install -y build-essential \
     && apt clean \
     && rm -rf /var/lib/apt/lists/*
-RUN curl -sSf https://sh.rustup.rs | sh -s -- -y --default-toolchain 1.74.1
+RUN curl -sSf https://sh.rustup.rs | sh -s -- -y --default-toolchain 1.85.1
 ENV PATH="/root/.cargo/bin:${PATH}"
 
 COPY . .
 RUN npm ci
 
 # Production stage
-FROM node:18.19.1-slim
+FROM node:20.19.3-slim
 
 WORKDIR /usr/src/app
 
