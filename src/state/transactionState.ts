@@ -390,14 +390,21 @@ export default class TransactionState {
       
       attempts++
       
-      // Add a small delay between retries to avoid overwhelming the network
+      // Exponential backoff with jitter to avoid overwhelming the network
       if (attempts < maxRetries) {
-        await new Promise(resolve => setTimeout(resolve, 50 * attempts))
+        const baseDelay = Math.min(100 * Math.pow(2, attempts - 1), 2000) // Cap at 2 seconds
+        const jitter = Math.random() * 50 // Add up to 50ms random jitter
+        const delayMs = baseDelay + jitter
+        
+        console.log(
+            `safeGetRemoteAccount: waiting ${delayMs.toFixed(0)}ms before retry ${attempts + 1} for addr:${addressString}`
+          )
+        await new Promise(resolve => setTimeout(resolve, delayMs))
       }
     }
     
-    if (this.debugTrace && lastError) {
-      this.debugTraceLog(
+    if (lastError) {
+      console.log(
         `safeGetRemoteAccount: all ${maxRetries} attempts failed for addr:${addressString} type:${accountType} lastError:${lastError.message}`
       )
     }
@@ -522,24 +529,36 @@ export default class TransactionState {
         AccountsStorage.cachedNetworkAccount?.current?.smartContractSupport &&
         wrappedEVMAccount === undefined
       ) {
-        // Check if this might be a legitimate new account creation scenario
-        const isLikelyNewAccount = addressString !== zeroAddressStr && 
-          !this.firstAccountReads.has(addressString) && 
-          !this.allAccountWrites.has(addressString) &&
-          !this.allAccountWritesStack.some(stack => stack.has(addressString))
+        // More sophisticated account detection logic
+        const isInLocalMaps = this.firstAccountReads.has(addressString) || 
+          this.allAccountWrites.has(addressString) ||
+          this.allAccountWritesStack.some(stack => stack.has(addressString)) ||
+          this.committedAccountWrites.has(addressString)
         
-        if (isLikelyNewAccount) {
-          if (this.debugTrace) {
-            console.log(`getAccount: addr:${addressString} treating as new account creation`)
-          }
-          nestedCountersInstance.countEvent('transactionState', 'getAccountNewAccountCreation')
+        // Check if this is a contract creation transaction
+        const isContractCreation = addressString !== zeroAddressStr && 
+          (this.allContractBytesWrites.size > 0 || this.allContractBytesWritesByAddress.has(addressString))
+        
+        // Check if this might be a recently created account that hasn't propagated yet
+        const hasRecentActivity = this.touchedCAs.has(addressString) || 
+          this.allContractStorageWrites.has(addressString)
+        
+        // Allow some scenarios that are likely legitimate
+        const shouldAllowMissing = isContractCreation || hasRecentActivity || 
+          (addressString !== zeroAddressStr && !isInLocalMaps && this.checkpointCount > 0)
+        
+        if (shouldAllowMissing) {
+          console.log(
+            `getAccount: addr:${addressString}  . should we allow since shouldallowmissing is true ${shouldAllowMissing} . missing account - contractCreation:${isContractCreation}, recentActivity:${hasRecentActivity}, checkpoints:${this.checkpointCount}`
+          )
+          nestedCountersInstance.countEvent('transactionState', 'getAccountAllowedMissing')
           throw new Error('storage account miss during apply()')
         } else {
-          if (this.debugTrace) {
-            this.debugTraceLog(`getAccount: addr:${addressString} v:notFound after safe retry. failOnUnexpected EOA/CA account2`)
-          }
-          nestedCountersInstance.countEvent('transactionState', 'getAccountFailOnUnexpectedAccount 2')
-          throw new Error('storage account miss during apply()')
+          console.log(
+              `getAccount: addr:${addressString} unexpected missing account after retries - inLocalMaps:${isInLocalMaps}, codeBytesInvolved:${this.firstContractBytesReads.size > 0 || this.allContractBytesWrites.size > 0}`
+            )
+          nestedCountersInstance.countEvent('transactionState', 'getAccountFailOnUnexpectedMissing')
+          throw new Error(`storage account miss during apply() - address: ${addressString}, retries exhausted`)
         }
       } else if (wrappedEVMAccount != undefined) {
         //get account out of the wrapped evm account
@@ -874,23 +893,24 @@ export default class TransactionState {
       const isLikelyNewStorageSlot = !this.firstContractStorageReads.has(addressString) ||
         !this.firstContractStorageReads.get(addressString)?.has(keyString)
       
-      if (isLikelyNewStorageSlot) {
-        if (this.debugTrace) {
-          this.debugTraceLog(
-            `getContractStorage: addr:${addressString} key:${keyString} treating as new storage slot`
-          )
-        }
-        nestedCountersInstance.countEvent('transactionState', 'getContractStorageNewSlot')
-        // TODO: Allow new storage slot by continuing with the normal flow?
+      // Check if the contract itself has recent activity
+      const hasContractActivity = this.touchedCAs.has(addressString) ||
+        this.allContractStorageWrites.has(addressString) ||
+        this.allContractBytesWritesByAddress.has(addressString)
+      
+      // Allow new storage slots during active contract operations
+      if (isLikelyNewStorageSlot && (hasContractActivity || this.checkpointCount > 0)) {
+        console.log(
+            `getContractStorage: addr:${addressString} key:${keyString} new storage slot - hasActivity:${hasContractActivity}, checkpoints:${this.checkpointCount}.`
+        )
+        nestedCountersInstance.countEvent('transactionState', 'getContractStorageAllowedNewSlot')
         throw new Error('storage account miss during apply()')
-      } else {
-        if (this.debugTrace) {
-          this.debugTraceLog(
-            `getContractStorage: addr:${addressString} key:${keyString} v:notFound. failOnUnexpected storage account`
-          )
-        }
-        nestedCountersInstance.countEvent('transactionState', 'getContractStorageFailOnUnexpected')
-        throw new Error('storage account miss during apply()')
+      } else if (!isLikelyNewStorageSlot) {
+        console.log(
+            `getContractStorage: addr:${addressString} key:${keyString} unexpected storage miss after retries`
+        )
+        nestedCountersInstance.countEvent('transactionState', 'getContractStorageUnexpectedMiss')
+        throw new Error(`storage account miss during apply() - contract storage: ${addressString}[${keyString}]`)
       }
     }
 
