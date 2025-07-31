@@ -13,15 +13,18 @@
     "test": "jest"
   },
   "dependencies": {
-    "sqlite3": "^5.1.6",
+        "@ethereumjs/tx": "5.0.0",
+        "@ethereumjs/util": "9.0.0",
     "better-sqlite3": "^11.5.0",
     "chalk": "^4.1.2",
     "commander": "^12.1.0",
-    "p-limit": "^3.1.0"
+    "gts": "^6.0.2",
+    "p-limit": "^3.1.0",
+    "sqlite3": "^5.1.6"
   },
   "devDependencies": {
-    "@types/node": "^20.0.0",
     "@types/better-sqlite3": "^7.6.11",
+    "@types/node": "^20.0.0",
     "ts-node": "^10.9.1",
     "typescript": "^5.0.0"
   }

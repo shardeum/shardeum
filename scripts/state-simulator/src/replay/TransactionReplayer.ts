@@ -1,5 +1,5 @@
 import ShardeumState from '../../../../dist/src/state/shardeumState'
-import TransactionState from '../../../../dist/src/state/transactionState'
+import TransactionState, { RunType } from '../../../../dist/src/state/transactionState'
 import { Address, Account } from '@ethereumjs/util'
 import { DatabaseInterface } from '../database/DatabaseInterface'
 import { TransactionData, ReceiptData, AccountData } from '../types'
@@ -8,6 +8,20 @@ import { AccountType, WrappedEVMAccount, NetworkAccount } from '../../../../dist
 import { calculateGasPrice, scaleByStabilityFactor } from '../../../../dist/src/utils'
 import { ShardeumFlags } from '../../../../dist/src/shardeum/shardeumFlags'
 import chalk from 'chalk'
+
+// import {
+//   Account,
+//   Address,
+//   bytesToHex,
+//   bigIntToHex,
+//   isHexPrefixed,
+//   //fromAscii,
+//   isValidAddress,
+//   toAscii,
+//   toBytes,
+//   hexToBytes,
+//   isHexString,
+// } from '@ethereumjs/util'
 
 export interface ReplayResult {
   transactionId: string
@@ -51,7 +65,7 @@ export class TransactionReplayer {
       monitorEventCB: () => {},
     }
 
-    this.transactionState.initData(this.state, callbacks, 'simulation-tx-' + Date.now(), new Map(), new Map())
+    this.transactionState.initData(this.state, callbacks, 'simulation-tx-' + Date.now(), new Map(), new Map(), RunType.PreRun)
 
     // CRITICAL: ShardeumState requires a TransactionState to be set for account operations
     this.state.setTransactionState(this.transactionState)
