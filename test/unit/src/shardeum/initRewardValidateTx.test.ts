@@ -153,6 +153,11 @@ describe('validateFields', () => {
       },
     }
     ;(shardeumGetTime as jest.Mock).mockReturnValue(1752480455000)
+    // Update mock to handle this specific tx
+    mockShardus.getLatestCycles.mockReturnValue([{
+      start: 1752480275,
+      activatedPublicKeys: ['162c15ef77dece29ee9f46b333dc8de5167102be485034986aa0318c42951a2a']
+    }])
     expect(validateFields(tx as any, mockShardus)).toEqual({ success: true, reason: 'valid' })
   })
 })
