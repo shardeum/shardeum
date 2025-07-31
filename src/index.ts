@@ -2024,19 +2024,64 @@ const configShardusEndpoints = (): void => {
 
       if (callResult.execResult.exceptionError) {
         if (ShardeumFlags.VerboseLogs) console.log('Execution Error:', callResult.execResult.exceptionError)
-
+        // Extract error type from exceptionError
         let revertReason = callResult.execResult.exceptionError.error as string
+        const errorType = callResult.execResult.exceptionError.errorType || 'unknown'
+        const isOutOfGas =
+          revertReason.toLowerCase().includes('out of gas') || revertReason.toLowerCase().includes('oog')
 
-        const decodedReason = decodeRevertReasonFromReturnValue(callResult.execResult.returnValue)
+        // Get decoded revert reason if available
+        let decodedReason = null
+        if (callResult.execResult.returnValue && callResult.execResult.returnValue.length > 0) {
+          decodedReason = decodeRevertReasonFromReturnValue(callResult.execResult.returnValue)
+        } else if (isOutOfGas) {
+          decodedReason = 'out of gas'
+        }
+
+        // Enhanced error reason determination
         if (decodedReason) {
           revertReason = decodedReason
+        } else if (callResult.execResult.returnValue && callResult.execResult.returnValue.length > 0) {
+          // If we have return data but couldn't decode it, show the raw data
+          const rawHex = bytesToHex(callResult.execResult.returnValue)
+          revertReason = `revert with data: ${rawHex}`
+        } else {
+          // No return data - could be a simple require() failure or out of gas
+          if (isOutOfGas) {
+            revertReason = 'out of gas'
+          } else {
+            // Check the error type for more context
+            switch (errorType) {
+              case 'EvmError':
+                revertReason = `EVM error: ${revertReason}`
+                break
+              case 'VmError':
+                revertReason = `VM error: ${revertReason}`
+                break
+              default:
+                revertReason = `${errorType}: ${revertReason}`
+            }
+          }
+        }
+
+        // Format the error message to be more descriptive
+        let errorMessage = 'execution reverted'
+
+        // Only add the revert reason if it's not just 'revert'
+        if (revertReason && revertReason !== 'revert') {
+          // Check if the reason already contains 'revert' to avoid duplication
+          if (revertReason.toLowerCase().includes('revert')) {
+            errorMessage = revertReason
+          } else {
+            errorMessage = `${errorMessage}: ${revertReason}`
+          }
         }
 
         res.json({
           result: {
             error: {
               code: -32000,
-              message: `execution reverted: ${revertReason}`,
+              message: errorMessage,
             },
           },
         })
@@ -3170,8 +3215,6 @@ async function applyDebugTx(
   /* eslint-enable security/detect-object-injection */
 }
 
-
-
 async function _transactionReceiptPass(
   tx,
   txId: string,
@@ -3371,7 +3414,6 @@ const getOrCreateBlockFromTimestamp = (timestamp: number, scheduleNextBlock = fa
   return block
 }
 
-
 function validateTransactionFee(tx: any, blockBaseFee: bigint) {
   // Skip for pre-London hardforks
   if (!tx.common.isActivatedEIP(1559)) return
@@ -3383,7 +3425,7 @@ function validateTransactionFee(tx: any, blockBaseFee: bigint) {
         `Transaction's maxFeePerGas (${tx.maxFeePerGas}) is less than the block's baseFeePerGas (${blockBaseFee})`
       )
     }
-  } 
+  }
   // Legacy (0) and EIP-2930 (1): DO NOT enforce baseFee
 }
 
@@ -3399,7 +3441,6 @@ function buildTransactionForEstimation(txData: any, common: any) {
     return TransactionFactory.fromTxData({ ...txData, type: TransactionType.Legacy }, { common })
   }
 }
-
 
 async function estimateGas(
   injectedTx: { from: string; maxFeePerGas: string; gas: number } & LegacyTxData
@@ -4072,16 +4113,101 @@ async function generateAccessList(
       }
 
       /* prettier-ignore */ nestedCountersInstance.countEvent('accesslist', `Local Fail with evm error: CA ${transaction.to && ShardeumFlags.VerboseLogs ? transaction.to.toString() : ''}`)
+      // Extract error type from exceptionError
+      const errorType = runTxResult.execResult.exceptionError?.error || 'revert'
+
+      // Additional safety check for malformed error objects
+      if (ShardeumFlags.VerboseLogs || logFlags.aalg) {
+        console.log('Exception error object:', {
+          hasExceptionError: !!runTxResult.execResult.exceptionError,
+          errorValue: runTxResult.execResult.exceptionError?.error,
+          errorType: typeof runTxResult.execResult.exceptionError?.error,
+          hasReturnValue: !!runTxResult.execResult.returnValue,
+          returnValueLength: runTxResult.execResult.returnValue?.length || 0,
+        })
+      }
+
+      // Check for out of gas error specifically
+      const isOutOfGas = errorType.toLowerCase().includes('out of gas') || errorType.toLowerCase().includes('oog')
+
+      // Get decoded revert reason if available
       const revertReason = runTxResult.execResult.returnValue
         ? decodeRevertReasonFromReturnValue(runTxResult.execResult.returnValue)
+        : isOutOfGas
+        ? 'out of gas'
         : null
-      const errorDetails = revertReason ? `: ${revertReason}` : ''
+
+      // Include both the error type and the revert reason for more detailed error reporting
+      // Improved logic to ensure we always provide meaningful error details
+      let errorDetails = ''
+      if (revertReason) {
+        // We have a decoded revert reason, use it
+        errorDetails = `: ${revertReason}`
+      } else if (errorType !== 'revert') {
+        // We have a specific error type that's not just 'revert', use it
+        errorDetails = `: ${errorType}`
+      } else if (runTxResult.execResult.returnValue && runTxResult.execResult.returnValue.length > 0) {
+        // We have return data but couldn't decode it, show raw hex for debugging
+        const rawHex = bytesToHex(runTxResult.execResult.returnValue)
+        errorDetails = `: revert with data ${rawHex}`
+      } else {
+        // No return data at all - try to provide more context about the revert
+        let contextInfo = 'no data'
+
+        // Check if we have gas information that might indicate the cause
+        if (runTxResult.execResult.executionGasUsed && runTxResult.execResult.gasUsed) {
+          const gasUsed = runTxResult.execResult.executionGasUsed
+          const gasLimit = transaction.gasLimit
+          const gasRatio = Number(gasUsed) / Number(gasLimit)
+
+          if (gasRatio > 0.95) {
+            contextInfo = 'likely out of gas'
+          } else if (gasUsed === BigInt(0)) {
+            contextInfo = 'execution failed immediately'
+          } else {
+            contextInfo = `gas used: ${gasUsed}/${gasLimit}`
+          }
+        }
+
+        // Check if we have any logs that might provide context
+        if (runTxResult.execResult.logs && runTxResult.execResult.logs.length > 0) {
+          contextInfo += `, ${runTxResult.execResult.logs.length} log(s)`
+        }
+
+        // Check if this is a contract creation that failed
+        if (!transaction.to) {
+          contextInfo += ', contract creation failed'
+        }
+
+        errorDetails = `: revert (${contextInfo})`
+      }
+      // Log the full error details for debugging
+      if (ShardeumFlags.VerboseLogs || logFlags.aalg) {
+        console.log('Full EVM execution error details:', {
+          errorType: runTxResult.execResult.exceptionError.error,
+          revertReason,
+          rawReturnValue: runTxResult.execResult.returnValue ? bytesToHex(runTxResult.execResult.returnValue) : null,
+          returnValueLength: runTxResult.execResult.returnValue ? runTxResult.execResult.returnValue.length : 0,
+          finalErrorDetails: errorDetails,
+          verboseFailureReason: `EVM execution error: ${runTxResult.execResult.exceptionError.error}${errorDetails}`,
+          cleanFailureReason: formatCleanErrorMessage(runTxResult.execResult.exceptionError.error, revertReason),
+          // Additional execution context
+          executionGasUsed: runTxResult.execResult.executionGasUsed?.toString(),
+          gasLimit: transaction.gasLimit?.toString(),
+          contractAddress: transaction.to?.toString() || 'contract creation',
+          transactionValue: transaction.value?.toString(),
+          transactionDataLength: transaction.data?.length || 0,
+          logsCount: runTxResult.execResult.logs?.length || 0,
+          createdAddress: runTxResult.createdAddress?.toString() || null,
+        })
+      }
+
       return {
         accessList: [],
         shardusMemoryPatterns: null,
         codeHashes: [],
         failedAccessList: true,
-        failureReason: `EVM execution error: ${runTxResult.execResult.exceptionError.error}${errorDetails}`,
+        failureReason: formatCleanErrorMessage(runTxResult.execResult.exceptionError.error, revertReason),
       }
     }
 
@@ -4116,6 +4242,9 @@ async function generateAccessList(
 // Helper function to decode revert reason from EVM return data
 function decodeRevertReasonFromReturnValue(returnValue: Uint8Array): string | null {
   if (!returnValue || returnValue.length === 0) {
+    if (ShardeumFlags.VerboseLogs) {
+      console.log('decodeRevertReasonFromReturnValue: No return value provided')
+    }
     return null
   }
 
@@ -4123,20 +4252,180 @@ function decodeRevertReasonFromReturnValue(returnValue: Uint8Array): string | nu
     const returnDataHex = bytesToHex(returnValue)
 
     // Check if it's a standard Error(string) revert (selector 0x08c379a0)
-    if (returnDataHex.startsWith('0x08c379a0') && returnDataHex.length >= 138) {
-      const lengthHex = '0x' + returnDataHex.slice(74, 138)
-      const stringLength = parseInt(lengthHex, 16)
+    if (returnDataHex.startsWith('0x08c379a0')) {
+      // Standard revert with message
+      // Format: 0x08c379a0 + 32 bytes offset (usually 0x20) + 32 bytes length + string data
+      try {
+        // Skip the first 4 bytes (selector) and decode the ABI-encoded string
+        const dataWithoutSelector = '0x' + returnDataHex.slice(10)
 
-      if (stringLength > 0) {
-        const stringHex = returnDataHex.slice(138, 138 + stringLength * 2)
-        return Buffer.from(stringHex, 'hex').toString('utf8')
+        // Try to get the position of the string data (usually 0x20 or 32 in decimal)
+        if (dataWithoutSelector.length >= 64) {
+          const offset = parseInt(dataWithoutSelector.slice(0, 64), 16)
+
+          // Now get the length of the string
+          if (dataWithoutSelector.length >= 64 + 64) {
+            const length = parseInt(dataWithoutSelector.slice(64, 64 + 64), 16)
+
+            // Now extract the string data
+            if (dataWithoutSelector.length >= 64 + 64 + length * 2) {
+              const stringHex = dataWithoutSelector.slice(64 + 64, 64 + 64 + length * 2)
+              return Buffer.from(stringHex, 'hex').toString('utf8')
+            }
+          }
+        }
+      } catch (innerError) {
+        console.log('Error decoding standard revert string:', innerError)
+      }
+
+      // Fallback if the above parsing fails
+      if (returnDataHex.length >= 138) {
+        try {
+          const lengthHex = '0x' + returnDataHex.slice(74, 138)
+          const stringLength = parseInt(lengthHex, 16)
+
+          if (stringLength > 0 && returnDataHex.length >= 138 + stringLength * 2) {
+            const stringHex = returnDataHex.slice(138, 138 + stringLength * 2)
+            return Buffer.from(stringHex, 'hex').toString('utf8')
+          }
+        } catch (fallbackError) {
+          console.log('Error in fallback standard revert string decoding:', fallbackError)
+        }
+      }
+
+      // If we couldn't parse it properly, at least indicate it's a standard revert
+      return 'Error message (failed to decode)'
+    }
+
+    // Check for Panic codes (0x4e487b71) - added in Solidity 0.8.0
+    if (returnDataHex.startsWith('0x4e487b71')) {
+      try {
+        // Panic code is in the last 32 bytes
+        if (returnDataHex.length >= 74) {
+          const panicCode = parseInt(returnDataHex.slice(66, 74), 16)
+          let panicReason
+
+          // Map panic codes to human-readable messages
+          switch (panicCode) {
+            case 0x00:
+              panicReason = 'generic compiler inserted panic'
+              break
+            case 0x01:
+              panicReason = 'assert failed'
+              break
+            case 0x11:
+              panicReason = 'arithmetic overflow/underflow'
+              break
+            case 0x12:
+              panicReason = 'division or modulo by zero'
+              break
+            case 0x21:
+              panicReason = 'invalid enum value conversion'
+              break
+            case 0x22:
+              panicReason = 'storage byte array accessed with incorrect index'
+              break
+            case 0x31:
+              panicReason = 'pop() on empty array'
+              break
+            case 0x32:
+              panicReason = 'array access out of bounds'
+              break
+            case 0x41:
+              panicReason = 'memory allocation overflow'
+              break
+            case 0x51:
+              panicReason = 'zero initialization for undefined internal function'
+              break
+            default:
+              panicReason = `unknown panic code (0x${panicCode.toString(16)})`
+          }
+
+          return `Panic: ${panicReason}`
+        }
+      } catch (panicError) {
+        console.log('Error decoding panic:', panicError)
+      }
+
+      return 'Panic (failed to decode code)'
+    }
+
+    // Check for require failures without messages (old style)
+    if (returnDataHex === '0x' || returnDataHex.length <= 2) {
+      return 'require() failed'
+    }
+
+    // Check for custom errors (no standard selector, but data present)
+    if (returnDataHex.length >= 10) {
+      // For custom errors, we can at least return the selector
+      const selector = returnDataHex.slice(0, 10) // First 4 bytes (8 hex chars + '0x')
+
+      // Try to provide more context about common selectors
+      switch (selector) {
+        case '0xf4d678b8':
+          return 'ReentrancyGuard: reentrant call'
+        case '0x8c379a00':
+          return 'Error (malformed)'
+        case '0x01336cea':
+          return 'Ownable: caller is not the owner'
+        case '0x7939f424':
+          return 'Transfer failed'
+        default:
+          return `Custom error with selector: ${selector}`
       }
     }
+
+    // If we get here, we have some data but couldn't identify the format
+    return `Unknown revert format: ${returnDataHex}`
   } catch (e) {
-    // If decoding fails, return null
+    console.log('Error decoding revert reason:', e)
+    // If decoding fails, return the raw hex as a fallback
+    return `Raw revert data: ${bytesToHex(returnValue)}`
+  }
+}
+
+/**
+ * Formats EVM execution errors into clean, user-friendly messages
+ * instead of verbose PreCrack failure messages
+ */
+function formatCleanErrorMessage(errorType: string, revertReason: string | null): string {
+  // Handle out of gas errors
+  if (errorType.toLowerCase().includes('out of gas') || errorType.toLowerCase().includes('oog')) {
+    return 'out of gas'
   }
 
-  return null
+  // Handle specific error types
+  switch (errorType.toLowerCase()) {
+    case 'revert':
+      return revertReason || 'revert (no data)'
+    case 'invalid opcode':
+      return 'invalid opcode'
+    case 'stack underflow':
+      return 'stack underflow'
+    case 'stack overflow':
+      return 'stack overflow'
+    case 'invalid jump':
+      return 'invalid jump'
+    case 'invalid instruction':
+      return 'invalid instruction'
+    case 'bad jump destination':
+      return 'bad jump destination'
+    case 'static state change':
+      return 'static state change'
+    default:
+      // For panic codes and other specific errors
+      if (errorType.includes('Panic:')) {
+        return errorType // Keep panic messages as they are already clean
+      }
+
+      // If we have a revert reason, use it
+      if (revertReason) {
+        return revertReason
+      }
+
+      // Otherwise return the error type
+      return errorType
+  }
 }
 
 async function fetchAndCacheAccountData(
@@ -5278,11 +5567,66 @@ const shardusSetup = (): void => {
           s: bigIntToHex(transaction.s),
         }
         if (runTxResult.execResult.exceptionError) {
+          // Extract error type from exceptionError
           let revertReason = runTxResult.execResult.exceptionError.error as string
 
-          const decodedReason = decodeRevertReasonFromReturnValue(runTxResult.execResult.returnValue)
+          // Additional safety check for malformed error objects
+          if (ShardeumFlags.VerboseLogs) {
+            console.log('Receipt generation - Exception error object:', {
+              hasExceptionError: !!runTxResult.execResult.exceptionError,
+              errorValue: runTxResult.execResult.exceptionError?.error,
+              errorType: typeof runTxResult.execResult.exceptionError?.error,
+              hasReturnValue: !!runTxResult.execResult.returnValue,
+              returnValueLength: runTxResult.execResult.returnValue?.length || 0,
+            })
+          }
+          const isOutOfGas =
+            revertReason.toLowerCase().includes('out of gas') || revertReason.toLowerCase().includes('oog')
+
+          // Get decoded revert reason if available
+          const decodedReason = runTxResult.execResult.returnValue
+            ? decodeRevertReasonFromReturnValue(runTxResult.execResult.returnValue)
+            : isOutOfGas
+            ? 'out of gas'
+            : null
+
+          // Improved revert reason handling to provide more details
           if (decodedReason) {
             revertReason = decodedReason
+          } else if (runTxResult.execResult.returnValue && runTxResult.execResult.returnValue.length > 0) {
+            // We have return data but couldn't decode it, show raw hex for debugging
+            const rawHex = bytesToHex(runTxResult.execResult.returnValue)
+            revertReason = `revert with data ${rawHex}`
+          } else if (revertReason === 'revert') {
+            // No return data at all - try to provide more context about the revert
+            let contextInfo = 'no data'
+
+            // Check if we have gas information that might indicate the cause
+            if (runTxResult.execResult.executionGasUsed) {
+              const gasUsed = runTxResult.execResult.executionGasUsed
+              const gasLimit = transaction.gasLimit
+              const gasRatio = Number(gasUsed) / Number(gasLimit)
+
+              if (gasRatio > 0.95) {
+                contextInfo = 'likely out of gas'
+              } else if (gasUsed === BigInt(0)) {
+                contextInfo = 'execution failed immediately'
+              } else {
+                contextInfo = `gas used: ${gasUsed}/${gasLimit}`
+              }
+            }
+
+            // Check if we have any logs that might provide context
+            if (runTxResult.execResult.logs && runTxResult.execResult.logs.length > 0) {
+              contextInfo += `, ${runTxResult.execResult.logs.length} log(s)`
+            }
+
+            // Check if this is a contract creation that failed
+            if (!transaction.to) {
+              contextInfo += ', contract creation failed'
+            }
+
+            revertReason = `revert (${contextInfo})`
           }
 
           readableReceipt.reason = revertReason
