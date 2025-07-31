@@ -372,20 +372,16 @@ export default class TransactionState {
       try {
         const wrappedEVMAccount = await this.tryGetRemoteAccountCB(this, accountType, addressString, key)
         if (wrappedEVMAccount !== undefined) {
-          if (this.debugTrace) {
-            this.debugTraceLog(
+          console.log(
               `safeGetRemoteAccount: success on attempt ${attempts + 1} for addr:${addressString} type:${accountType}`
-            )
-          }
+          )
           return wrappedEVMAccount
         }
       } catch (error) {
         lastError = error as Error
-        if (this.debugTrace) {
-          this.debugTraceLog(
+        console.log(
             `safeGetRemoteAccount: attempt ${attempts + 1} failed for addr:${addressString} type:${accountType} error:${error.message}`
-          )
-        }
+        )
       }
       
       attempts++
@@ -398,7 +394,7 @@ export default class TransactionState {
         
         console.log(
             `safeGetRemoteAccount: waiting ${delayMs.toFixed(0)}ms before retry ${attempts + 1} for addr:${addressString}`
-          )
+        )
         await new Promise(resolve => setTimeout(resolve, delayMs))
       }
     }
