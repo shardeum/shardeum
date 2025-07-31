@@ -87,7 +87,7 @@ describe('SHA256 (0x02) Precompile', () => {
       const result = precompile02(input)
 
       expect(result).toEqual(OOGResult(BigInt(71)))
-      expect(mockDebug).toHaveBeenCalledWith('KECCAK256 (0x02) failed: OOG')
+      expect(mockDebug).toHaveBeenCalledWith('SHA256 (0x02) failed: OOG')
     })
 
     it('should handle exact gas limit', () => {
@@ -220,10 +220,10 @@ describe('SHA256 (0x02) Precompile', () => {
       const result = precompile02(input)
 
       expect(mockDebug).toHaveBeenCalledWith(
-        expect.stringContaining('Run KECCAK256 (0x02) precompile')
+        expect.stringContaining('Run SHA256 (0x02) precompile')
       )
       expect(mockDebug).toHaveBeenCalledWith(
-        expect.stringContaining('KECCAK256 (0x02) return hash=')
+        expect.stringContaining('SHA256 (0x02) return hash=')
       )
       // Note: The debug messages incorrectly say KECCAK256 instead of SHA256
     })
