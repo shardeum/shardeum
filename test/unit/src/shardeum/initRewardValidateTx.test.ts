@@ -29,13 +29,28 @@ describe('validateFields', () => {
   }
   let mockShardus: any
   let verifyObjMock
+  const mockTxDataHash = 'mockTxDataHash'
+  
   beforeEach(() => {
     jest.clearAllMocks()
     ;(shardeumGetTime as jest.Mock).mockReturnValue(1720938700000)
+    ;(crypto.hashObj as jest.Mock).mockReturnValue(mockTxDataHash)
     mockShardus = {
       serviceQueue: {
         containsTxData: jest.fn(() => true),
+        getLatestNetworkTxEntryForSubqueueKey: jest.fn().mockReturnValue({
+          hash: mockTxDataHash,
+          tx: {
+            type: 'nodeInitReward'
+          }
+        }),
       },
+      getLatestCycles: jest.fn().mockReturnValue([
+        {
+          start: 1720938699,
+          activatedPublicKeys: ['a'.repeat(64)]
+        }
+      ]),
     }
     verifyObjMock = jest.spyOn(crypto, 'verifyObj').mockReturnValue(true)
   })

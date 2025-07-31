@@ -49,6 +49,7 @@ describe('initRewardTimes', () => {
   const mockSignature = 'mockSignature'
   const mockTxId = 'mockTxId'
   const mockTimestamp = 2000 // Transaction timestamp, after startTime
+  const mockTxDataHash = 'mockTxDataHash' // Mock hash for txData
 
   // Mock objects for testing
   let mockShardus: jest.Mocked<any>
@@ -60,6 +61,9 @@ describe('initRewardTimes', () => {
 
   beforeEach(() => {
     jest.clearAllMocks()
+    
+    // Mock crypto functions
+    ;(crypto.hashObj as jest.Mock).mockReturnValue(mockTxDataHash)
 
     // Initialize mock Shardus instance with required methods
     mockShardus = {
@@ -68,9 +72,21 @@ describe('initRewardTimes', () => {
       put: jest.fn(), // For submitting transactions
       serviceQueue: {
         containsTxData: jest.fn().mockReturnValue(true), // Default to valid service queue state
+        getLatestNetworkTxEntryForSubqueueKey: jest.fn().mockReturnValue({
+          hash: mockTxDataHash,
+          tx: {
+            type: 'nodeInitReward'
+          }
+        }), // Mock service queue entry for validation
       },
       applyResponseSetFailed: jest.fn(), // For handling failed transactions
       applyResponseAddChangedAccount: jest.fn(), // For recording account state changes
+      getLatestCycles: jest.fn().mockReturnValue([
+        {
+          start: 1000,
+          activatedPublicKeys: [mockPublicKey]
+        }
+      ]), // Mock cycle data for temporal validation
     }
 
     // Initialize mock node account statistics

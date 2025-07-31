@@ -147,6 +147,7 @@ describe('claimReward', () => {
   const mockSignature = 'mockSignature'
   const mockTxId = 'mockTxId'
   const mockTimestamp = 3000 // Transaction timestamp, after endTime
+  const mockTxDataHash = 'mockTxDataHash' // Mock hash for txData
 
   // Mock objects
   let mockShardus: jest.Mocked<any>
@@ -159,6 +160,9 @@ describe('claimReward', () => {
 
   beforeEach(() => {
     jest.clearAllMocks()
+    
+    // Mock crypto functions
+    ;(crypto.hashObj as jest.Mock).mockReturnValue(mockTxDataHash)
 
     // Initialize mock Shardus instance
     mockShardus = {
@@ -167,6 +171,12 @@ describe('claimReward', () => {
       put: jest.fn().mockReturnValue(mockClaimRewardTx), // Return the mock tx for successful injection
       serviceQueue: {
         containsTxData: jest.fn().mockReturnValue(true),
+        getLatestNetworkTxEntryForSubqueueKey: jest.fn().mockReturnValue({
+          hash: mockTxDataHash,
+          tx: {
+            type: 'nodeReward'
+          }
+        }), // Mock service queue entry for validation
       },
       getNode: jest.fn().mockReturnValue(null), // Default to node not active
       applyResponseSetFailed: jest.fn(),
