@@ -4,8 +4,22 @@ import { SignedNodeRewardTxData, SignedNodeInitTxData } from '../../../../src/sh
 import { validateFields as validateInitRewardFields } from '../../../../src/tx/initRewardTimes'
 import { validateClaimRewardTx } from '../../../../src/tx/claimReward'
 
-// Mock crypto module
-crypto.init('69fa4195670576c0160d660c3be36556ff8d504725be8a59b5a96509e0c994bc')
+// Mock modules
+jest.mock('@shardeum-foundation/core')
+jest.mock('@shardeum-foundation/lib-crypto-utils')
+jest.mock('../../../../src/index', () => ({
+  shardeumGetTime: jest.fn(() => Date.now()),
+}))
+
+// Initialize mocked crypto functions
+const mockHashObj = jest.fn()
+const mockVerifyObj = jest.fn()
+;(crypto.hashObj as jest.Mock) = mockHashObj
+;(crypto.verifyObj as jest.Mock) = mockVerifyObj
+;(crypto.init as jest.Mock) = jest.fn()
+
+// Set up global mocks
+global.ShardeumFlags = { VerboseLogs: false }
 
 // Mock shardus instance
 const createMockShardus = () => ({
@@ -22,6 +36,9 @@ const createMockShardus = () => ({
 describe('Reward System Security Tests', () => {
   beforeEach(() => {
     jest.clearAllMocks()
+    // Set default return values for mocked crypto functions
+    mockHashObj.mockReturnValue('mockTxDataHash')
+    mockVerifyObj.mockReturnValue(true)
   })
 
   describe('Service Queue Schema Validation', () => {
@@ -93,7 +110,7 @@ describe('Reward System Security Tests', () => {
         },
       }
       
-      const txDataHash = crypto.hashObj(txData)
+      const txDataHash = 'mockTxDataHash'
       
       // Mock service queue to contain the tx
       mockShardus.serviceQueue.containsTxData.mockReturnValue(true)
@@ -142,7 +159,7 @@ describe('Reward System Security Tests', () => {
         },
       }
       
-      const txDataHash = crypto.hashObj(txData)
+      const txDataHash = 'mockTxDataHash'
       
       // Mock service queue to contain the tx
       mockShardus.serviceQueue.containsTxData.mockReturnValue(true)
@@ -205,9 +222,13 @@ describe('Reward System Security Tests', () => {
         },
       }
       
-      const txDataHash = crypto.hashObj(txData)
+      const txDataHash = 'mockTxDataHash'
       
       mockShardus.serviceQueue.containsTxData.mockReturnValue(true)
+      mockShardus.getLatestCycles.mockReturnValue([{
+        start: 946684800000,
+        activatedPublicKeys: []
+      }])
       mockShardus.serviceQueue.getLatestNetworkTxEntryForSubqueueKey.mockReturnValue({
         hash: txDataHash,
         tx: {
@@ -251,9 +272,13 @@ describe('Reward System Security Tests', () => {
         },
       }
       
-      const txDataHash = crypto.hashObj(txData)
+      const txDataHash = 'mockTxDataHash'
       
       mockShardus.serviceQueue.containsTxData.mockReturnValue(true)
+      mockShardus.getLatestCycles.mockReturnValue([{
+        start: Date.now(),
+        activatedPublicKeys: ['0'.repeat(64)]
+      }])
       
       // Mock returning a different transaction (different hash)
       mockShardus.serviceQueue.getLatestNetworkTxEntryForSubqueueKey.mockReturnValue({
@@ -337,8 +362,12 @@ describe('Reward System Security Tests', () => {
 
       // Even if it somehow passed, InitRewardTimes would reject it due to type mismatch
       mockShardus.serviceQueue.containsTxData.mockReturnValue(true)
+      mockShardus.getLatestCycles.mockReturnValue([{
+        start: 946684800000,
+        activatedPublicKeys: ['0'.repeat(64)]
+      }])
       
-      const maliciousHash = crypto.hashObj(maliciousNodeReward)
+      const maliciousHash = 'maliciousTxHash'
       mockShardus.serviceQueue.getLatestNetworkTxEntryForSubqueueKey.mockReturnValue({
         hash: maliciousHash,
         tx: {
