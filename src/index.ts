@@ -3215,8 +3215,6 @@ async function applyDebugTx(
   /* eslint-enable security/detect-object-injection */
 }
 
-
-
 async function _transactionReceiptPass(
   tx,
   txId: string,
@@ -3416,7 +3414,6 @@ const getOrCreateBlockFromTimestamp = (timestamp: number, scheduleNextBlock = fa
   return block
 }
 
-
 function validateTransactionFee(tx: any, blockBaseFee: bigint) {
   // Skip for pre-London hardforks
   if (!tx.common.isActivatedEIP(1559)) return
@@ -3428,7 +3425,7 @@ function validateTransactionFee(tx: any, blockBaseFee: bigint) {
         `Transaction's maxFeePerGas (${tx.maxFeePerGas}) is less than the block's baseFeePerGas (${blockBaseFee})`
       )
     }
-  } 
+  }
   // Legacy (0) and EIP-2930 (1): DO NOT enforce baseFee
 }
 
@@ -3444,7 +3441,6 @@ function buildTransactionForEstimation(txData: any, common: any) {
     return TransactionFactory.fromTxData({ ...txData, type: TransactionType.Legacy }, { common })
   }
 }
-
 
 async function estimateGas(
   injectedTx: { from: string; maxFeePerGas: string; gas: number } & LegacyTxData
@@ -4119,7 +4115,7 @@ async function generateAccessList(
       /* prettier-ignore */ nestedCountersInstance.countEvent('accesslist', `Local Fail with evm error: CA ${transaction.to && ShardeumFlags.VerboseLogs ? transaction.to.toString() : ''}`)
       // Extract error type from exceptionError
       const errorType = runTxResult.execResult.exceptionError?.error || 'revert'
-      
+
       // Additional safety check for malformed error objects
       if (ShardeumFlags.VerboseLogs || logFlags.aalg) {
         console.log('Exception error object:', {
@@ -4127,7 +4123,7 @@ async function generateAccessList(
           errorValue: runTxResult.execResult.exceptionError?.error,
           errorType: typeof runTxResult.execResult.exceptionError?.error,
           hasReturnValue: !!runTxResult.execResult.returnValue,
-          returnValueLength: runTxResult.execResult.returnValue?.length || 0
+          returnValueLength: runTxResult.execResult.returnValue?.length || 0,
         })
       }
 
@@ -4157,13 +4153,13 @@ async function generateAccessList(
       } else {
         // No return data at all - try to provide more context about the revert
         let contextInfo = 'no data'
-        
+
         // Check if we have gas information that might indicate the cause
         if (runTxResult.execResult.executionGasUsed && runTxResult.execResult.gasUsed) {
           const gasUsed = runTxResult.execResult.executionGasUsed
           const gasLimit = transaction.gasLimit
           const gasRatio = Number(gasUsed) / Number(gasLimit)
-          
+
           if (gasRatio > 0.95) {
             contextInfo = 'likely out of gas'
           } else if (gasUsed === BigInt(0)) {
@@ -4172,17 +4168,17 @@ async function generateAccessList(
             contextInfo = `gas used: ${gasUsed}/${gasLimit}`
           }
         }
-        
+
         // Check if we have any logs that might provide context
         if (runTxResult.execResult.logs && runTxResult.execResult.logs.length > 0) {
           contextInfo += `, ${runTxResult.execResult.logs.length} log(s)`
         }
-        
+
         // Check if this is a contract creation that failed
         if (!transaction.to) {
           contextInfo += ', contract creation failed'
         }
-        
+
         errorDetails = `: revert (${contextInfo})`
       }
       // Log the full error details for debugging
@@ -4421,12 +4417,12 @@ function formatCleanErrorMessage(errorType: string, revertReason: string | null)
       if (errorType.includes('Panic:')) {
         return errorType // Keep panic messages as they are already clean
       }
-      
+
       // If we have a revert reason, use it
       if (revertReason) {
         return revertReason
       }
-      
+
       // Otherwise return the error type
       return errorType
   }
@@ -5573,7 +5569,7 @@ const shardusSetup = (): void => {
         if (runTxResult.execResult.exceptionError) {
           // Extract error type from exceptionError
           let revertReason = runTxResult.execResult.exceptionError.error as string
-          
+
           // Additional safety check for malformed error objects
           if (ShardeumFlags.VerboseLogs) {
             console.log('Receipt generation - Exception error object:', {
@@ -5581,7 +5577,7 @@ const shardusSetup = (): void => {
               errorValue: runTxResult.execResult.exceptionError?.error,
               errorType: typeof runTxResult.execResult.exceptionError?.error,
               hasReturnValue: !!runTxResult.execResult.returnValue,
-              returnValueLength: runTxResult.execResult.returnValue?.length || 0
+              returnValueLength: runTxResult.execResult.returnValue?.length || 0,
             })
           }
           const isOutOfGas =
@@ -5593,7 +5589,7 @@ const shardusSetup = (): void => {
             : isOutOfGas
             ? 'out of gas'
             : null
-          
+
           // Improved revert reason handling to provide more details
           if (decodedReason) {
             revertReason = decodedReason
@@ -5604,13 +5600,13 @@ const shardusSetup = (): void => {
           } else if (revertReason === 'revert') {
             // No return data at all - try to provide more context about the revert
             let contextInfo = 'no data'
-            
+
             // Check if we have gas information that might indicate the cause
             if (runTxResult.execResult.executionGasUsed) {
               const gasUsed = runTxResult.execResult.executionGasUsed
               const gasLimit = transaction.gasLimit
               const gasRatio = Number(gasUsed) / Number(gasLimit)
-              
+
               if (gasRatio > 0.95) {
                 contextInfo = 'likely out of gas'
               } else if (gasUsed === BigInt(0)) {
@@ -5619,17 +5615,17 @@ const shardusSetup = (): void => {
                 contextInfo = `gas used: ${gasUsed}/${gasLimit}`
               }
             }
-            
+
             // Check if we have any logs that might provide context
             if (runTxResult.execResult.logs && runTxResult.execResult.logs.length > 0) {
               contextInfo += `, ${runTxResult.execResult.logs.length} log(s)`
             }
-            
+
             // Check if this is a contract creation that failed
             if (!transaction.to) {
               contextInfo += ', contract creation failed'
             }
-            
+
             revertReason = `revert (${contextInfo})`
           }
 
