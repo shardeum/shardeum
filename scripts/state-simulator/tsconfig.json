@@ -2,6 +2,7 @@
   "extends": "../../tsconfig.json",
   "compilerOptions": {
     "outDir": "./dist",
+    "rootDir": "src", // <--- Fix: Only src is the root for this project
     "module": "commonjs",
     "target": "es2020",
     "lib": ["es2020"],
@@ -23,7 +24,8 @@
     "noFallthroughCasesInSwitch": true,
     "declaration": false,
     "declarationMap": false,
-    "sourceMap": true
+    "sourceMap": true,
+    "baseUrl": "../../" // Allow module resolution from parent
   },
   "include": ["src/**/*"],
   "exclude": ["node_modules", "dist"]
