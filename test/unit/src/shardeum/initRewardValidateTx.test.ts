@@ -29,13 +29,28 @@ describe('validateFields', () => {
   }
   let mockShardus: any
   let verifyObjMock
+  const mockTxDataHash = 'mockTxDataHash'
+  
   beforeEach(() => {
     jest.clearAllMocks()
     ;(shardeumGetTime as jest.Mock).mockReturnValue(1720938700000)
+    ;(crypto.hashObj as jest.Mock).mockReturnValue(mockTxDataHash)
     mockShardus = {
       serviceQueue: {
         containsTxData: jest.fn(() => true),
+        getLatestNetworkTxEntryForSubqueueKey: jest.fn().mockReturnValue({
+          hash: mockTxDataHash,
+          tx: {
+            type: 'nodeInitReward'
+          }
+        }),
       },
+      getLatestCycles: jest.fn().mockReturnValue([
+        {
+          start: 1720938699,
+          activatedPublicKeys: ['a'.repeat(64)]
+        }
+      ]),
     }
     verifyObjMock = jest.spyOn(crypto, 'verifyObj').mockReturnValue(true)
   })
@@ -138,6 +153,11 @@ describe('validateFields', () => {
       },
     }
     ;(shardeumGetTime as jest.Mock).mockReturnValue(1752480455000)
+    // Update mock to handle this specific tx
+    mockShardus.getLatestCycles.mockReturnValue([{
+      start: 1752480275,
+      activatedPublicKeys: ['162c15ef77dece29ee9f46b333dc8de5167102be485034986aa0318c42951a2a']
+    }])
     expect(validateFields(tx as any, mockShardus)).toEqual({ success: true, reason: 'valid' })
   })
 })

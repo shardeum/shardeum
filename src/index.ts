@@ -2554,6 +2554,18 @@ const configShardusNetworkTransactions = (): void => {
         /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log('Invalid signature for internal tx', Utils.safeStringify(tx))
         return false
       }
+      
+      // Strict schema validation - reject any extra fields
+      const allowedFields = ['publicKey', 'nodeId', 'endTime', 'sign']
+      const txKeys = Object.keys(tx)
+      for (const key of txKeys) {
+        if (!allowedFields.includes(key)) {
+          /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`registerBeforeAddVerifier - nodeReward: fail unexpected field ${key}`, Utils.safeStringify(tx))
+          /* prettier-ignore */ nestedCountersInstance.countEvent('shardeum-staking', `registerBeforeAddVerifier nodeReward fail unexpected field ${key}`)
+          return false
+        }
+      }
+      
       const shardusAddress = tx.publicKey?.toLowerCase()
       const account = await shardus.getLocalOrRemoteAccount(shardusAddress)
       if (!account) {
@@ -2686,6 +2698,18 @@ const configShardusNetworkTransactions = (): void => {
         /* prettier-ignore */ nestedCountersInstance.countEvent('shardeum-staking', `validate nodeInitReward fail Invalid signature`)
         return false
       }
+      
+      // Strict schema validation - reject any extra fields
+      const allowedFields = ['publicKey', 'nodeId', 'startTime', 'sign']
+      const txKeys = Object.keys(tx)
+      for (const key of txKeys) {
+        if (!allowedFields.includes(key)) {
+          /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`registerBeforeAddVerifier - nodeInitReward: fail unexpected field ${key}`, Utils.safeStringify(tx))
+          /* prettier-ignore */ nestedCountersInstance.countEvent('shardeum-staking', `registerBeforeAddVerifier nodeInitReward fail unexpected field ${key}`)
+          return false
+        }
+      }
+      
       const shardusAddress = tx.publicKey?.toLowerCase()
       const account = await shardus.getLocalOrRemoteAccount(shardusAddress)
       if (!account) {
