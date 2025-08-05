@@ -785,8 +785,7 @@ export default class TransactionState {
     originalOnly: boolean,
     canThrow: boolean
   ): Promise<Uint8Array> {
-    // BEGIN DEBUG LOGGING
-    console.log(`[getContractStorage] ENTER: contractAddress=${contractAddress.toString()} key=${bytesToHex(key)} originalOnly=${originalOnly} canThrow=${canThrow}`);
+    /* prettier-ignore */ if (logFlags.dapp_verbose) console.log(`[getContractStorage] ENTER: contractAddress=${contractAddress.toString()} key=${bytesToHex(key)} originalOnly=${originalOnly} canThrow=${canThrow}`);
     const logContext = {
       contractAddress: contractAddress.toString(),
       key: bytesToHex(key),
@@ -796,7 +795,6 @@ export default class TransactionState {
       evmFailOnUnexpectedAccount: ShardeumFlags.evmFailOnUnexpectedAccount,
       smartContractSupport: AccountsStorage.cachedNetworkAccount?.current?.smartContractSupport
     };
-    // END DEBUG LOGGING
 
     const addressString = contractAddress.toString()
     const keyString = bytesToHex(key)
@@ -807,7 +805,7 @@ export default class TransactionState {
         if (contractStorageWrites.has(keyString)) {
           const storedRlp = contractStorageWrites.get(keyString)
           const returnValue = storedRlp ? (RLP.decode(storedRlp ?? new Uint8Array(0)) as Uint8Array) : undefined
-          console.log(`[getContractStorage] HIT allContractStorageWrites:`, { ...logContext, source: 'allContractStorageWrites', value: returnValue ? bytesToHex(returnValue) : undefined });
+          /* prettier-ignore */ if (logFlags.dapp_verbose) console.log(`[getContractStorage] HIT allContractStorageWrites:`, { ...logContext, source: 'allContractStorageWrites', value: returnValue ? bytesToHex(returnValue) : undefined });
           if (this.debugTrace)
             this.debugTraceLog(
               `getContractStorage: (contractStorageWrites) addr:${addressString} key:${keyString} v:${
@@ -817,14 +815,14 @@ export default class TransactionState {
           return returnValue
         }
       }
-      console.log(`[getContractStorage] MISS allContractStorageWrites:`, { ...logContext });
+      /* prettier-ignore */ if (logFlags.dapp_verbose) console.log(`[getContractStorage] MISS allContractStorageWrites:`, { ...logContext });
     }
     if (this.firstContractStorageReads.has(addressString)) {
       const contractStorageReads = this.firstContractStorageReads.get(addressString)
       if (contractStorageReads.has(keyString)) {
         const storedRlp = contractStorageReads.get(keyString)
         const returnValue = storedRlp ? (RLP.decode(storedRlp ?? new Uint8Array(0)) as Uint8Array) : undefined
-        console.log(`[getContractStorage] HIT firstContractStorageReads:`, { ...logContext, source: 'firstContractStorageReads', value: returnValue ? bytesToHex(returnValue) : undefined });
+        /* prettier-ignore */ if (logFlags.dapp_verbose) console.log(`[getContractStorage] HIT firstContractStorageReads:`, { ...logContext, source: 'firstContractStorageReads', value: returnValue ? bytesToHex(returnValue) : undefined });
         if (this.debugTrace)
           this.debugTraceLog(
             `getContractStorage: (contractStorageReads) addr:${addressString} key:${keyString} v:${
@@ -833,11 +831,11 @@ export default class TransactionState {
           )
         return returnValue
       }
-      console.log(`[getContractStorage] MISS firstContractStorageReads:`, { ...logContext });
+      /* prettier-ignore */ if (logFlags.dapp_verbose) console.log(`[getContractStorage] MISS firstContractStorageReads:`, { ...logContext });
     }
 
     if (this.contractStorageInvolvedCB(this, addressString, keyString, false) === false) {
-      console.log(`[getContractStorage] ERROR: contractStorageInvolvedCB returned false`, { ...logContext });
+      /* prettier-ignore */ if (logFlags.dapp_verbose) console.log(`[getContractStorage] ERROR: contractStorageInvolvedCB returned false`, { ...logContext });
       throw new Error('unable to proceed, cant involve contract storage')
     }
     //  check this before trying to read from local db at this point
@@ -847,16 +845,16 @@ export default class TransactionState {
       AccountsStorage.cachedNetworkAccount?.current?.smartContractSupport
     ) {
       // Log access lists and all relevant state ONLY when error is about to be thrown
-      console.log(`[getContractStorage] ERROR: storage account miss during apply() - failOnUnexpected triggered`, { ...logContext });
-      console.log(`[getContractStorage] DEBUG: allContractStorageWrites keys:`, Array.from(this.allContractStorageWrites.keys()));
+      /* prettier-ignore */ if (logFlags.dapp_verbose) console.log(`[getContractStorage] ERROR: storage account miss during apply() - failOnUnexpected triggered`, { ...logContext });
+      /* prettier-ignore */ if (logFlags.dapp_verbose) console.log(`[getContractStorage] DEBUG: allContractStorageWrites keys:`, Array.from(this.allContractStorageWrites.keys()));
       if (this.allContractStorageWrites.has(contractAddress.toString())) {
         const csw = this.allContractStorageWrites.get(contractAddress.toString());
-        console.log(`[getContractStorage] DEBUG: allContractStorageWrites[${contractAddress.toString()}] keys:`, csw ? Array.from(csw.keys()) : 'undefined');
+        /* prettier-ignore */ if (logFlags.dapp_verbose) console.log(`[getContractStorage] DEBUG: allContractStorageWrites[${contractAddress.toString()}] keys:`, csw ? Array.from(csw.keys()) : 'undefined');
       }
-      console.log(`[getContractStorage] DEBUG: firstContractStorageReads keys:`, Array.from(this.firstContractStorageReads.keys()));
+      /* prettier-ignore */ if (logFlags.dapp_verbose) console.log(`[getContractStorage] DEBUG: firstContractStorageReads keys:`, Array.from(this.firstContractStorageReads.keys()));
       if (this.firstContractStorageReads.has(contractAddress.toString())) {
         const fcsr = this.firstContractStorageReads.get(contractAddress.toString());
-        console.log(`[getContractStorage] DEBUG: firstContractStorageReads[${contractAddress.toString()}] keys:`, fcsr ? Array.from(fcsr.keys()) : 'undefined');
+        /* prettier-ignore */ if (logFlags.dapp_verbose) console.log(`[getContractStorage] DEBUG: firstContractStorageReads[${contractAddress.toString()}] keys:`, fcsr ? Array.from(fcsr.keys()) : 'undefined');
       }
       // Log committedAccountWrites and other relevant maps if needed
       if (this.debugTrace) {
