@@ -17,13 +17,13 @@ jest.mock('../../../../src/shardeum/shardeumFlags', () => ({
     VerboseLogs: false,
     debugTraceLogs: false,
     CheckpointRevertSupport: true,
-    fixContractBytes: false
-  }
+    fixContractBytes: false,
+  },
 }))
 jest.mock('../../../../src/shardeum/evmAddress')
 jest.mock('../../../../src/shardeum/wrappedEVMAccountFunctions')
 jest.mock('../../../../src/index', () => ({
-  shardeumGetTime: jest.fn(() => 1234567890)
+  shardeumGetTime: jest.fn(() => 1234567890),
 }))
 
 describe('TransactionState', () => {
@@ -62,7 +62,7 @@ describe('TransactionState', () => {
       accountInvolved: jest.fn(() => true),
       contractStorageInvolved: jest.fn(() => true),
       tryGetRemoteAccountCB: jest.fn(() => Promise.resolve(undefined)),
-      monitorEventCB: jest.fn()
+      monitorEventCB: jest.fn(),
     } as any
 
     // Create mock trie
@@ -76,7 +76,7 @@ describe('TransactionState', () => {
     test('should initialize transaction state with provided data', () => {
       const linkedTX = 'tx123'
       const firstReads = new Map([[addressString1, account1.serialize()]])
-      const firstContractStorageReads = new Map([['contract1', new Map([['key1', Buffer.from('value1')]])]]) 
+      const firstContractStorageReads = new Map([['contract1', new Map([['key1', Buffer.from('value1')]])]])
 
       transactionState.initData(
         mockShardeumState,
@@ -131,7 +131,7 @@ describe('TransactionState', () => {
         nonce: '1234',
         balance: '5678',
         storageRoot: Buffer.from('storageRoot'),
-        codeHash: Buffer.from('codeHash')
+        codeHash: Buffer.from('codeHash'),
       }
 
       TransactionState.fixAccountFields(account)
@@ -145,7 +145,7 @@ describe('TransactionState', () => {
         nonce: '0x1234',
         balance: '0x5678',
         storageRoot: Buffer.from('storageRoot'),
-        codeHash: Buffer.from('codeHash')
+        codeHash: Buffer.from('codeHash'),
       }
 
       TransactionState.fixAccountFields(account)
@@ -159,7 +159,7 @@ describe('TransactionState', () => {
         nonce: '0x1234',
         balance: '0x5678',
         storageRoot: { data: [1, 2, 3, 4] },
-        codeHash: { data: [5, 6, 7, 8] }
+        codeHash: { data: [5, 6, 7, 8] },
       }
 
       TransactionState.fixAccountFields(account)
@@ -216,7 +216,7 @@ describe('TransactionState', () => {
         accountType: AccountType.Account,
         ethAddress: addressString1,
         account: account1,
-        timestamp: 0
+        timestamp: 0,
       } as any
 
       ;(AccountsStorage.getAccount as jest.Mock).mockImplementation(() => Promise.resolve(wrappedAccount))
@@ -235,7 +235,7 @@ describe('TransactionState', () => {
         accountType: AccountType.Account,
         ethAddress: addressString1,
         account: account1,
-        timestamp: 0
+        timestamp: 0,
       } as any
 
       mockCallbacks.tryGetRemoteAccountCB.mockResolvedValue(wrappedAccount)
@@ -268,9 +268,9 @@ describe('TransactionState', () => {
       mockCallbacks.tryGetRemoteAccountCB.mockResolvedValue(undefined)
       mockCallbacks.storageMiss.mockResolvedValue(true) // isRemoteShard = true
 
-      await expect(
-        transactionState.getAccount(mockTrie, address1, false, true)
-      ).rejects.toThrow('account in remote shard, abort')
+      await expect(transactionState.getAccount(mockTrie, address1, false, true)).rejects.toThrow(
+        'account in remote shard, abort'
+      )
     })
 
     test('should return zero address account for virtual 0 address', async () => {
@@ -286,9 +286,9 @@ describe('TransactionState', () => {
     test('should throw error if account cannot be involved', async () => {
       mockCallbacks.accountInvolved.mockReturnValue(false)
 
-      await expect(
-        transactionState.getAccount(mockTrie, address1, false, false)
-      ).rejects.toThrow('unable to proceed, cant involve account')
+      await expect(transactionState.getAccount(mockTrie, address1, false, false)).rejects.toThrow(
+        'unable to proceed, cant involve account'
+      )
     })
   })
 
@@ -356,7 +356,7 @@ describe('TransactionState', () => {
       // Mock getAccount to return account with codeHash
       jest.spyOn(transactionState, 'getAccount').mockResolvedValue({
         ...account1,
-        codeHash
+        codeHash,
       } as any)
     })
 
@@ -364,7 +364,7 @@ describe('TransactionState', () => {
       transactionState.allContractBytesWrites.set(codeHashStr, {
         contractByte: codeBytes,
         codeHash,
-        contractAddress: address1
+        contractAddress: address1,
       })
 
       const result = await transactionState.getContractCode(mockTrie, address1, false, false)
@@ -376,7 +376,7 @@ describe('TransactionState', () => {
       transactionState.allContractBytesWritesByAddress.set(addressString1, {
         contractByte: codeBytes,
         codeHash,
-        contractAddress: address1
+        contractAddress: address1,
       })
 
       const result = await transactionState.getContractCode(mockTrie, address1, false, false)
@@ -388,7 +388,7 @@ describe('TransactionState', () => {
       transactionState.firstContractBytesReads.set(codeHashStr, {
         contractByte: codeBytes,
         codeHash,
-        contractAddress: address1
+        contractAddress: address1,
       })
 
       const result = await transactionState.getContractCode(mockTrie, address1, true, false)
@@ -401,7 +401,7 @@ describe('TransactionState', () => {
         accountType: AccountType.ContractCode,
         ethAddress: addressString1,
         codeByte: codeBytes,
-        timestamp: 0
+        timestamp: 0,
       } as any
 
       ;(AccountsStorage.getAccount as jest.Mock).mockImplementation(() => Promise.resolve(wrappedAccount))
@@ -458,9 +458,9 @@ describe('TransactionState', () => {
       mockCallbacks.accountInvolved.mockReturnValue(false)
       const codeBytes = Buffer.from('0x608060405260', 'hex')
 
-      await expect(
-        transactionState.putContractCode(address1, codeBytes)
-      ).rejects.toThrow('unable to proceed, cant involve contract code account')
+      await expect(transactionState.putContractCode(address1, codeBytes)).rejects.toThrow(
+        'unable to proceed, cant involve contract code account'
+      )
     })
   })
 
@@ -497,7 +497,7 @@ describe('TransactionState', () => {
         accountType: AccountType.ContractStorage,
         ethAddress: addressString1,
         value: storedRlp,
-        timestamp: 0
+        timestamp: 0,
       } as any
 
       ;(AccountsStorage.getAccount as jest.Mock).mockImplementation(() => Promise.resolve(wrappedAccount))
@@ -523,9 +523,9 @@ describe('TransactionState', () => {
       mockCallbacks.tryGetRemoteAccountCB.mockResolvedValue({ value: undefined })
       mockCallbacks.contractStorageMiss.mockResolvedValue(true)
 
-      await expect(
-        transactionState.getContractStorage(mockTrie, address1, key, false, true)
-      ).rejects.toThrow('account not available')
+      await expect(transactionState.getContractStorage(mockTrie, address1, key, false, true)).rejects.toThrow(
+        'account not available'
+      )
     })
   })
 
@@ -551,9 +551,9 @@ describe('TransactionState', () => {
       const key = Buffer.from('0x01', 'hex')
       const value = Buffer.from('0x1234', 'hex')
 
-      await expect(
-        transactionState.putContractStorage(address1, key, value)
-      ).rejects.toThrow('unable to proceed, cant involve contract storage')
+      await expect(transactionState.putContractStorage(address1, key, value)).rejects.toThrow(
+        'unable to proceed, cant involve contract storage'
+      )
     })
   })
 
@@ -638,7 +638,7 @@ describe('TransactionState', () => {
       transactionState.firstContractBytesReads.set('codeHash1', {
         contractByte: Buffer.from('code'),
         codeHash: Buffer.from('hash'),
-        contractAddress: address1
+        contractAddress: address1,
       })
 
       const result = transactionState.getReadAccounts()
@@ -660,7 +660,7 @@ describe('TransactionState', () => {
       transactionState.allContractBytesWrites.set('hash1', {
         contractByte: Buffer.from('code'),
         codeHash: Buffer.from('hash'),
-        contractAddress: address1
+        contractAddress: address1,
       })
 
       const result = transactionState.getWrittenAccounts()
@@ -676,7 +676,7 @@ describe('TransactionState', () => {
       transactionState.allContractBytesWritesByAddress.set(addressString1, {
         contractByte: Buffer.from('code'),
         codeHash: Buffer.from('hash'),
-        contractAddress: address1
+        contractAddress: address1,
       })
 
       const result = transactionState.getWrittenAccounts()
@@ -730,9 +730,7 @@ describe('TransactionState', () => {
     test('should handle undefined callbacks gracefully', async () => {
       transactionState.accountInvolvedCB = undefined
 
-      await expect(
-        transactionState.getAccount(mockTrie, address1, false, false)
-      ).rejects.toThrow()
+      await expect(transactionState.getAccount(mockTrie, address1, false, false)).rejects.toThrow()
     })
 
     test('should handle empty address in warm scenarios', () => {
@@ -743,7 +741,7 @@ describe('TransactionState', () => {
 
     test('should handle logging methods without errors', () => {
       const accountWrites = new Map([[addressString1, account1.serialize()]])
-      
+
       const loggedWrites = transactionState.logAccountWrites(accountWrites)
       expect(loggedWrites.size).toBe(1)
 

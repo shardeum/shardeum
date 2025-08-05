@@ -98,10 +98,19 @@ export default class TransactionState {
   firstContractStorageReads: Map<string, Map<string, Uint8Array>>
   allContractStorageWrites: Map<string, Map<string, Uint8Array>>
 
+  // CRITICAL FIX: Adding checkpoint stack for contract storage to prevent state corruption on revert
+  // Previously, revert() would clear ALL storage changes, not just those from the current checkpoint
+  allContractStorageWritesStack: Map<string, Map<string, Uint8Array>>[]
+
   // contract account key: value data
   firstContractBytesReads: Map<string, ContractByteWrite>
   allContractBytesWrites: Map<string, ContractByteWrite>
   allContractBytesWritesByAddress: Map<string, ContractByteWrite>
+
+  // CRITICAL FIX: Adding checkpoint stacks for contract bytecode to prevent state corruption on revert
+  // Previously, revert() would clear ALL bytecode changes, not just those from the current checkpoint
+  allContractBytesWritesStack: Map<string, ContractByteWrite>[]
+  allContractBytesWritesByAddressStack: Map<string, ContractByteWrite>[]
 
   // pending contract storage commits
   pendingContractStorageCommits: Map<string, Map<string, Uint8Array>>
@@ -179,6 +188,12 @@ export default class TransactionState {
     this.allContractBytesWrites = new Map()
     this.allContractBytesWritesByAddress = new Map()
 
+    // CRITICAL FIX: Initialize the new checkpoint stacks for storage and bytecode
+    this.allAccountWritesStack = []
+    this.allContractStorageWritesStack = []
+    this.allContractBytesWritesStack = []
+    this.allContractBytesWritesByAddressStack = []
+
     this.pendingContractStorageCommits = new Map()
     this.pendingContractBytesCommits = new Map()
 
@@ -228,6 +243,11 @@ export default class TransactionState {
     this.firstContractBytesReads = new Map()
     this.allContractBytesWrites = new Map()
     this.allContractBytesWritesByAddress = new Map()
+
+    // CRITICAL FIX: Initialize the new checkpoint stacks for storage and bytecode
+    this.allContractStorageWritesStack = []
+    this.allContractBytesWritesStack = []
+    this.allContractBytesWritesByAddressStack = []
 
     this.pendingContractStorageCommits = new Map()
     this.pendingContractBytesCommits = new Map()
@@ -591,6 +611,33 @@ export default class TransactionState {
     const codeHashStr = bytesToHex(codeHash)
 
     if (originalOnly === false) {
+      // CRITICAL FIX: First check the checkpoint stacks for the most recent writes
+      // Search from newest to oldest checkpoint
+      for (let i = this.allContractBytesWritesStack.length - 1; i >= 0; i--) {
+        const stackBytesWrites = this.allContractBytesWritesStack[i]
+        if (stackBytesWrites.has(codeHashStr)) {
+          const codeBytes = stackBytesWrites.get(codeHashStr).contractByte
+          if (this.debugTrace)
+            this.debugTraceLog(
+              `getContractCode: (stack[${i}]) addr:${addressString} codeHashStr:${codeHashStr} v:${codeBytes.length} - Fixed checkpoint read`
+            )
+          return codeBytes
+        }
+      }
+
+      for (let i = this.allContractBytesWritesByAddressStack.length - 1; i >= 0; i--) {
+        const stackBytesByAddressWrites = this.allContractBytesWritesByAddressStack[i]
+        if (stackBytesByAddressWrites.has(addressString)) {
+          const codeBytes = stackBytesByAddressWrites.get(addressString).contractByte
+          if (this.debugTrace)
+            this.debugTraceLog(
+              `getContractCode: (addressStack[${i}]) addr:${addressString} v:${codeBytes.length} - Fixed checkpoint read`
+            )
+          return codeBytes
+        }
+      }
+
+      // Then check the current maps (for when no checkpoints are active)
       if (this.allContractBytesWrites.has(codeHashStr)) {
         const codeBytes = this.allContractBytesWrites.get(codeHashStr).contractByte
         if (this.debugTrace)
@@ -721,13 +768,27 @@ export default class TransactionState {
       contractAddress,
     }
 
+    // CRITICAL FIX: Write to the top of the checkpoint stacks to ensure proper isolation
+    // If we have checkpoints, write to the top of the stacks
+    if (this.allContractBytesWritesStack.length > 0) {
+      const topBytesWrites = this.allContractBytesWritesStack[this.allContractBytesWritesStack.length - 1]
+      topBytesWrites.set(codeHashStr, contractByteWrite)
+
+      const topBytesByAddressWrites =
+        this.allContractBytesWritesByAddressStack[this.allContractBytesWritesByAddressStack.length - 1]
+      topBytesByAddressWrites.set(addressString, contractByteWrite)
+    } else {
+      // No checkpoints active, write to the current maps
+      this.allContractBytesWrites.set(codeHashStr, contractByteWrite)
+      this.allContractBytesWritesByAddress.set(addressString, contractByteWrite)
+    }
+
     if (this.debugTrace)
       this.debugTraceLog(
-        `putContractCode: addr:${addressString} codeHash:${codeHashStr} v:${bytesToHex(contractByteWrite.contractByte)}`
+        `putContractCode: addr:${addressString} codeHash:${codeHashStr} v:${bytesToHex(
+          contractByteWrite.contractByte
+        )} - Fixed checkpoint isolation`
       )
-
-    this.allContractBytesWrites.set(codeHashStr, contractByteWrite)
-    this.allContractBytesWritesByAddress.set(addressString, contractByteWrite)
 
     this.touchedCAs.add(addressString)
   }
@@ -762,6 +823,27 @@ export default class TransactionState {
     const keyString = bytesToHex(key)
 
     if (originalOnly === false) {
+      // CRITICAL FIX: First check the checkpoint stack for the most recent writes
+      // Search from newest to oldest checkpoint
+      for (let i = this.allContractStorageWritesStack.length - 1; i >= 0; i--) {
+        const stackStorageWrites = this.allContractStorageWritesStack[i]
+        if (stackStorageWrites.has(addressString)) {
+          const contractStorageWrites = stackStorageWrites.get(addressString)
+          if (contractStorageWrites.has(keyString)) {
+            const storedRlp = contractStorageWrites.get(keyString)
+            const returnValue = storedRlp ? (RLP.decode(storedRlp ?? new Uint8Array(0)) as Uint8Array) : undefined
+            if (this.debugTrace)
+              this.debugTraceLog(
+                `getContractStorage: (stack[${i}]) addr:${addressString} key:${keyString} v:${
+                  returnValue ? bytesToHex(returnValue) : undefined
+                } - Fixed checkpoint read`
+              )
+            return returnValue
+          }
+        }
+      }
+
+      // Then check the current map (for when no checkpoints are active)
       if (this.allContractStorageWrites.has(addressString)) {
         const contractStorageWrites = this.allContractStorageWrites.get(addressString)
         if (contractStorageWrites.has(keyString)) {
@@ -899,18 +981,33 @@ export default class TransactionState {
 
     value = unpadBytes(value) // Trims leading zeros from a Uint8Array.
 
-    // Step 1 update the account storage
+    // CRITICAL FIX: Write to the top of the checkpoint stack to ensure proper isolation
     const storedRlp = RLP.encode(value)
-    let contractStorageWrites = this.allContractStorageWrites.get(addressString)
-    if (contractStorageWrites == null) {
-      contractStorageWrites = new Map()
-      this.allContractStorageWrites.set(addressString, contractStorageWrites)
+
+    // If we have checkpoints, write to the top of the stack
+    if (this.allContractStorageWritesStack.length > 0) {
+      const topStorageWrites = this.allContractStorageWritesStack[this.allContractStorageWritesStack.length - 1]
+      let contractStorageWrites = topStorageWrites.get(addressString)
+      if (contractStorageWrites == undefined) {
+        contractStorageWrites = new Map()
+        topStorageWrites.set(addressString, contractStorageWrites)
+      }
+      contractStorageWrites.set(keyString, storedRlp)
+    } else {
+      // No checkpoints active, write to the current map
+      let contractStorageWrites = this.allContractStorageWrites.get(addressString)
+      if (contractStorageWrites == undefined) {
+        contractStorageWrites = new Map()
+        this.allContractStorageWrites.set(addressString, contractStorageWrites)
+      }
+      contractStorageWrites.set(keyString, storedRlp)
     }
-    contractStorageWrites.set(keyString, storedRlp)
 
     if (this.debugTrace)
       this.debugTraceLog(
-        `putContractStorage: addr:${addressString} key:${keyString} v:${value ? bytesToHex(value) : undefined}`
+        `putContractStorage: addr:${addressString} key:${keyString} v:${
+          value ? bytesToHex(value) : undefined
+        } - Fixed checkpoint isolation`
       )
 
     //here is our take on things:
@@ -1000,17 +1097,27 @@ export default class TransactionState {
       return
     }
 
-    //we need checkpoint / revert stack support for accounts so that gas is handled correctly
-    //this.allAccountWritesStack.push(this.allAccountWrites)
-    this.allAccountWritesStack.push(new Map<string, Uint8Array>())
+    // CRITICAL FIX: Properly checkpoint ALL state types to prevent corruption on revert
+    // Push current writes to their respective stacks and create new maps for the next checkpoint level
 
+    // Checkpoint account writes (original implementation)
+    this.allAccountWritesStack.push(new Map<string, Uint8Array>())
     this.allAccountWrites = new Map()
 
-    //this.canCommit = true
-    this.checkpointCount++
+    // CRITICAL FIX: Checkpoint contract storage writes
+    // This ensures that on revert, only the current checkpoint's storage changes are discarded
+    this.allContractStorageWritesStack.push(new Map<string, Map<string, Uint8Array>>())
+    this.allContractStorageWrites = new Map()
 
-    // if (this.debugTrace) this.debugTraceLog(`checkpointCount:${this.checkpointCount} checkpoint `)
-    // if (this.debugTrace) console.log('checkpoint: allAccountWritesStack', this.logAccountWritesStack(this.allAccountWritesStack))
+    // CRITICAL FIX: Checkpoint contract bytecode writes
+    // This ensures that on revert, only the current checkpoint's bytecode changes are discarded
+    this.allContractBytesWritesStack.push(new Map<string, ContractByteWrite>())
+    this.allContractBytesWrites = new Map()
+
+    this.allContractBytesWritesByAddressStack.push(new Map<string, ContractByteWrite>())
+    this.allContractBytesWritesByAddress = new Map()
+
+    this.checkpointCount++
   }
 
   commit(): void {
@@ -1050,14 +1157,55 @@ export default class TransactionState {
     if (this.debugTrace) this.debugTraceLog(`checkpointCount:${this.checkpointCount} commit `)
 
     if (this.checkpointCount > 0) {
-      //pop the top checkpoint
+      // CRITICAL FIX: Commit ALL state types properly by merging checkpoint data
+
+      // Commit account writes (original implementation)
       const accountWrites = this.allAccountWritesStack.pop()
-      const newTop = this.allAccountWritesStack[this.allAccountWritesStack.length - 1]
+      const newTopAccount = this.allAccountWritesStack[this.allAccountWritesStack.length - 1]
       //flatten these values to the new top
       for (const [key, value] of accountWrites.entries()) {
-        newTop.set(key, value)
+        newTopAccount.set(key, value)
       }
-      // if (this.debugTrace) console.log('commit: updated allAccountWritesStack', this.logAccountWritesStack(this.allAccountWritesStack))
+
+      // CRITICAL FIX: Commit contract storage writes
+      // Merge the current checkpoint's storage changes into the parent checkpoint
+      if (this.allContractStorageWritesStack.length > 0) {
+        const storageWrites = this.allContractStorageWritesStack.pop()
+        const newTopStorage = this.allContractStorageWritesStack[this.allContractStorageWritesStack.length - 1]
+        // Merge storage writes from current checkpoint to parent
+        for (const [address, storageMap] of storageWrites.entries()) {
+          if (!newTopStorage.has(address)) {
+            newTopStorage.set(address, new Map())
+          }
+          const parentStorageMap = newTopStorage.get(address)
+          for (const [key, value] of storageMap.entries()) {
+            parentStorageMap.set(key, value)
+          }
+        }
+      }
+
+      // CRITICAL FIX: Commit contract bytecode writes
+      // Merge the current checkpoint's bytecode changes into the parent checkpoint
+      if (this.allContractBytesWritesStack.length > 0) {
+        const bytesWrites = this.allContractBytesWritesStack.pop()
+        const newTopBytes = this.allContractBytesWritesStack[this.allContractBytesWritesStack.length - 1]
+        // Merge bytecode writes from current checkpoint to parent
+        for (const [key, value] of bytesWrites.entries()) {
+          newTopBytes.set(key, value)
+        }
+      }
+
+      if (this.allContractBytesWritesByAddressStack.length > 0) {
+        const bytesByAddressWrites = this.allContractBytesWritesByAddressStack.pop()
+        const newTopBytesByAddress =
+          this.allContractBytesWritesByAddressStack[this.allContractBytesWritesByAddressStack.length - 1]
+        // Merge bytecode by address writes from current checkpoint to parent
+        for (const [key, value] of bytesByAddressWrites.entries()) {
+          newTopBytesByAddress.set(key, value)
+        }
+      }
+
+      if (this.debugTrace) this.debugTraceLog('commit: Fixed storage/bytecode commit merging')
     } else if (this.checkpointCount === 0) {
       // if (this.debugTrace) console.log('commit: allAccountWritesStack', this.logAccountWritesStack(this.allAccountWritesStack))
       this.flushToCommittedValues()
@@ -1077,21 +1225,44 @@ export default class TransactionState {
     // temp but spammy counter to make things easier to debug. curate this later
     nestedCountersInstance.countEvent('transactionState', `revert:${message} tx:${this.linkedTX}`)
 
-    //we need checkpoint / revert stack support for accounts so that gas is handled correctly
+    // CRITICAL FIX: Properly revert ALL state types by popping from their respective stacks
+    // This prevents the corruption where ALL storage/bytecode changes were cleared instead of just the current checkpoint
 
-    //the top of the stack becomes our base level set of values.
-    //this.allAccountWrites = this.allAccountWritesStack.pop()
-
+    // Revert account writes (original implementation)
     this.allAccountWrites = this.allAccountWritesStack.pop()
     this.allAccountWrites.clear()
 
-    //other saved values do not need a stack and are simply cleared:
-    //this.allAccountWrites.clear()
-    this.allContractStorageWrites.clear()
-    this.allContractBytesWritesByAddress.clear()
+    // CRITICAL FIX: Revert contract storage writes from the stack
+    // This ensures only the current checkpoint's storage changes are discarded, not ALL storage changes
+    if (this.allContractStorageWritesStack.length > 0) {
+      this.allContractStorageWrites = this.allContractStorageWritesStack.pop()
+      this.allContractStorageWrites.clear()
+    } else {
+      // Safety: if stack is empty, clear the current map
+      this.allContractStorageWrites.clear()
+    }
+
+    // CRITICAL FIX: Revert contract bytecode writes from the stack
+    // This ensures only the current checkpoint's bytecode changes are discarded, not ALL bytecode changes
+    if (this.allContractBytesWritesStack.length > 0) {
+      this.allContractBytesWrites = this.allContractBytesWritesStack.pop()
+      this.allContractBytesWrites.clear()
+    } else {
+      // Safety: if stack is empty, clear the current map
+      this.allContractBytesWrites.clear()
+    }
+
+    if (this.allContractBytesWritesByAddressStack.length > 0) {
+      this.allContractBytesWritesByAddress = this.allContractBytesWritesByAddressStack.pop()
+      this.allContractBytesWritesByAddress.clear()
+    } else {
+      // Safety: if stack is empty, clear the current map
+      this.allContractBytesWritesByAddress.clear()
+    }
 
     this.checkpointCount--
-    if (this.debugTrace) this.debugTraceLog(`checkpointCount:${this.checkpointCount} revert `)
+    if (this.debugTrace)
+      this.debugTraceLog(`checkpointCount:${this.checkpointCount} revert - Fixed storage/bytecode reverting`)
     if (this.debugTrace)
       console.log('revert: allAccountWritesStack', this.logAccountWritesStack(this.allAccountWritesStack))
     if (this.checkpointCount === 0) {
