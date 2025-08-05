@@ -142,7 +142,7 @@ export function validateClaimRewardTx(tx: ClaimRewardTX, shardus: Shardus): { is
     /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log('validateClaimRewardTx fail no service queue entry found for publicKey', tx)
     return { isValid: false, reason: 'No service queue entry found for publicKey' }
   }
-  
+
   // Verify it's the same transaction by comparing hash
   const txDataHash = crypto.hashObj(tx.txData)
   if (latestEntry.hash !== txDataHash) {
@@ -150,7 +150,7 @@ export function validateClaimRewardTx(tx: ClaimRewardTX, shardus: Shardus): { is
     /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log('validateClaimRewardTx fail transaction hash mismatch', tx)
     return { isValid: false, reason: 'Transaction hash mismatch - not the same transaction' }
   }
-  
+
   // Verify correct transaction type
   if (latestEntry.tx.type !== 'nodeReward') {
     /* prettier-ignore */ nestedCountersInstance.countEvent('shardeum-staking', `validateClaimRewardTx fail wrong service queue tx type: ${latestEntry.tx.type}`)
@@ -283,7 +283,7 @@ export async function applyClaimRewardTx(
     shardus.applyResponseSetFailed(applyResponse, `applyClaimReward failed because durationInNetwork is less than 0`)
     return
   }
-  
+
   // Apply maximum reward duration cap to prevent exploitation
   const MAX_REWARD_DURATION_DAYS = 365 // 1 year maximum
   const MAX_REWARD_DURATION_MS = MAX_REWARD_DURATION_DAYS * 24 * 60 * 60 * 1000

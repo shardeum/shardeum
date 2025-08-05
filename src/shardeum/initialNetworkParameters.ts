@@ -46,7 +46,8 @@ export const initialNetworkParamters: NetworkParameters = {
     nodeRefutedPenaltyPercent: 0.2,
   },
   enableRPCEndpoints: false,
-  stakeLockTime: 1000 * 60 * 60 * 24 * 14, // 1000 ms * 60s * 60m * 24h * 14d = 2 weeks in ms
+  stakeLockTime: 1000 * 60 * 30, // 1000 ms * 60s * 30m = 30 minutes in ms
+  //stakeLockTime: 1000 * 60 * 60 * 24 * 14, // 1000 ms * 60s * 60m * 24h * 14d = 2 weeks in ms
   chainID: ShardeumFlags.ChainID, // 8082
   smartContractSupport: false,
 }
