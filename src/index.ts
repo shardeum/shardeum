@@ -775,6 +775,7 @@ async function tryGetRemoteAccountCB(
   address: string,
   key: string
 ): Promise<WrappedEVMAccount> {
+  const startTime = Date.now()
   let retry = 0
   let maxRetry = 1 // default for contract storage accounts
   if (type === AccountType.Account) maxRetry = 2 // for CA accounts
@@ -782,10 +783,22 @@ async function tryGetRemoteAccountCB(
 
   const shardusAddress = toShardusAddressWithKey(address, key, type)
   let remoteShardusAccount
+  if (logFlags.dapp_verbose) {
+    console.log(
+      `[tryGetRemoteAccountCB] started - tx:${transactionState.linkedTX} type:${type} addr:${address} key:${key} shardusAddr:${shardusAddress} maxRetry:${maxRetry}`
+    )
 
+    // Check if we're fetching a shared codebyte (same hash)
+    if (type === AccountType.ContractCode && key && key !== emptyCodeHash) {
+      console.log(
+        `[tryGetRemoteAccountCB] Fetching shared codebyte - tx:${transactionState.linkedTX} codeHash:${key} addr:${address}`
+      )
+    }
+  }
   const txid = transactionState.linkedTX
   //utilize warm up cache that lives on a TransactionState object
   if (transactionState?.warmupCache != null) {
+    /* prettier-ignore */ if (logFlags.dapp_verbose) console.log(`[tryGetRemoteAccountCB] Warmup cache available - tx:${txid} addr:${address} type:${type} key:${key} cacheSize:${transactionState.warmupCache.size}`)
     if (transactionState.warmupCache.has(shardusAddress)) {
       const fixedEVMAccount = transactionState.warmupCache.get(shardusAddress)
       if (fixedEVMAccount != null) {
@@ -818,10 +831,14 @@ async function tryGetRemoteAccountCB(
     try {
       /* prettier-ignore */ if (logFlags.aalg || ShardeumFlags.VerboseLogs) console.log(`${Date.now()} Trying to get remote account for address: ${address}, type: ${type}, key: ${key} retry: ${retry}`)
       retry++
+      const beforeFetch = Date.now()
+      /* prettier-ignore */ if (logFlags.dapp_verbose) console.log(`[tryGetRemoteAccountCB] Calling getLocalOrRemoteAccount - tx:${txid} addr:${address} type:${type} key:${key} retry:${retry} timeElapsed:${beforeFetch - startTime}ms`)
       remoteShardusAccount = await shardus.getLocalOrRemoteAccount(shardusAddress, {
         useRICache: true,
         canThrowException: true,
       })
+      const afterFetch = Date.now()
+      /* prettier-ignore */ if (logFlags.dapp_verbose) console.log(`[tryGetRemoteAccountCB] getLocalOrRemoteAccount returned - tx:${txid} addr:${address} type:${type} key:${key} retry:${retry} fetchTime:${afterFetch - beforeFetch}ms found:${remoteShardusAccount != null}`)
     } catch (ex) {
       continue
     }
@@ -833,7 +850,11 @@ async function tryGetRemoteAccountCB(
     }
   }
 
+  const endTime = Date.now()
+  const totalTime = endTime - startTime
+
   if (remoteShardusAccount == undefined) {
+    /* prettier-ignore */ if (logFlags.dapp_verbose) console.log(`[tryGetRemoteAccountCB] tryGetRemoteAccountCB FAILED - tx:${txid} addr:${address} type:${type} key:${key} totalRetries:${retry} totalTime:${totalTime}ms`)
     /* prettier-ignore */ if (ShardeumFlags.VerboseLogs || logFlags.aalg) console.log(`${Date.now()} Found no remote account for address: ${address}, type: ${type}, key: ${key}, retry: ${retry}`)
     if (type === AccountType.Account || type === AccountType.ContractCode) {
       /* prettier-ignore */ nestedCountersInstance.countEvent('shardeum', `tryRemoteAccountCB: fail. type: ${type}, address: ${address}, key: ${key}`)
@@ -843,6 +864,15 @@ async function tryGetRemoteAccountCB(
   }
   const fixedEVMAccount = remoteShardusAccount.data as WrappedEVMAccount
   fixDeserializedWrappedEVMAccount(fixedEVMAccount)
+  /* prettier-ignore */ if (logFlags.dapp_verbose) console.log(`[tryGetRemoteAccountCB] SUCCESS - tx:${txid} addr:${address} type:${type} key:${key} totalRetries:${retry} totalTime:${totalTime}ms accountType:${fixedEVMAccount.accountType} timestamp:${fixedEVMAccount.timestamp}`)
+
+  // Log warmup stats if available
+  if (logFlags.dapp_verbose && transactionState?.warmupStats) {
+    console.log(
+      `[tryGetRemoteAccountCB] Warmup stats - tx:${txid} accReq:${transactionState.warmupStats.accReq} accRcvd:${transactionState.warmupStats.accRcvd} cacheHit:${transactionState.warmupStats.cacheHit} cacheMiss:${transactionState.warmupStats.cacheMiss}`
+    )
+  }
+
   /* prettier-ignore */ if (ShardeumFlags.VerboseLogs || logFlags.aalg) console.log(`${Date.now()} Successfully found remote account for address: ${address}, type: ${type}, key: ${key}, retry: ${retry}`, fixedEVMAccount)
   return fixedEVMAccount
 }
@@ -2554,7 +2584,7 @@ const configShardusNetworkTransactions = (): void => {
         /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log('Invalid signature for internal tx', Utils.safeStringify(tx))
         return false
       }
-      
+
       // Strict schema validation - reject any extra fields
       const allowedFields = ['publicKey', 'nodeId', 'endTime', 'sign']
       const txKeys = Object.keys(tx)
@@ -2565,7 +2595,7 @@ const configShardusNetworkTransactions = (): void => {
           return false
         }
       }
-      
+
       const shardusAddress = tx.publicKey?.toLowerCase()
       const account = await shardus.getLocalOrRemoteAccount(shardusAddress)
       if (!account) {
@@ -2698,7 +2728,7 @@ const configShardusNetworkTransactions = (): void => {
         /* prettier-ignore */ nestedCountersInstance.countEvent('shardeum-staking', `validate nodeInitReward fail Invalid signature`)
         return false
       }
-      
+
       // Strict schema validation - reject any extra fields
       const allowedFields = ['publicKey', 'nodeId', 'startTime', 'sign']
       const txKeys = Object.keys(tx)
@@ -2709,7 +2739,7 @@ const configShardusNetworkTransactions = (): void => {
           return false
         }
       }
-      
+
       const shardusAddress = tx.publicKey?.toLowerCase()
       const account = await shardus.getLocalOrRemoteAccount(shardusAddress)
       if (!account) {
@@ -4237,6 +4267,8 @@ async function generateAccessList(
 
     const isEmptyCodeHash = allCodeHash.size === 0
     if (isEmptyCodeHash) {
+      /* prettier-ignore */ if (logFlags.dapp_verbose) console.log(`[generateAccessList] empty codehash ${txId}
+      allInvolvedContracts:  ${JSON.stringify(allInvolvedContracts, null, 2)}`)
       /* prettier-ignore */ if (ShardeumFlags.VerboseLogs || logFlags.aalg) console.log(`aalg: empty codehash ${txId}
       allInvolvedContracts:  ${JSON.stringify(allInvolvedContracts, null, 2)}
 
