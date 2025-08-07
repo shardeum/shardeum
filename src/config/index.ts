@@ -155,12 +155,15 @@ config = merge(config, {
 
       //initial parameters for problem node rotation
       enableProblematicNodeRemoval: false,
-      enableProblematicNodeRemovalOnCycle: 0,
+      enableProblematicNodeRemovalOnCycle: 20,
       maxProblematicNodeRemovalsPerCycle: 1,
-      problematicNodeConsecutiveRefuteThreshold: 6,
-      problematicNodeRefutePercentageThreshold: 0.1,
+      problematicNodeConsecutiveRefuteThreshold: 3,
+      problematicNodeRefutePercentageThreshold: 0.05,
       problematicNodeHistoryLength: 60,
-      problematicNodeRemovalCycleFrequency: 5,
+      problematicNodeRemovalCycleFrequency: 2,
+      problematicNodeRemovalSafetyDelta: 2, //how many nodes we can remove before we hit the safety threshold
+      useProblematicNodeCacheV2: true, // use new cache for problematic nodes
+      enableProblematicNodeCacheBuilding: true, // enable building of the cache for problematic nodes
 
       // should be removed after rotating and turning on
       fixApplyReceiptType: false, // enable to not send apply receipts of type Stake in case Unstake and SecureTransfer fail
