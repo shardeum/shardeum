@@ -1,5 +1,6 @@
 import Database from 'better-sqlite3'
 import * as path from 'path'
+import * as fs from 'fs'
 import {
   AccountData,
   TransactionData,
@@ -16,6 +17,16 @@ export class DatabaseInterface {
   private processedDb: Database.Database
 
   constructor(dataPath: string) {
+    console.log(`Initializing database interface with data path: ${dataPath}`)
+    if (!fs.existsSync(dataPath)) {
+      throw new Error(`Data path does not exist: ${dataPath}`)
+    }
+    const firstDB = path.join(dataPath, 'accounts.sqlite3')
+    if (!fs.existsSync(firstDB)) {
+      throw new Error(`Database file does not exist: ${firstDB}`)
+    }
+
+    this.accountsDb = new Database(path.join(dataPath, 'accounts.sqlite3'), { readonly: true })
     this.accountsDb = new Database(path.join(dataPath, 'accounts.sqlite3'), { readonly: true })
     this.transactionsDb = new Database(path.join(dataPath, 'transactions.sqlite3'), { readonly: true })
     this.receiptsDb = new Database(path.join(dataPath, 'receipts.sqlite3'), { readonly: true })

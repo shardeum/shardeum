@@ -16,7 +16,7 @@ program
 program
   .command('simulate')
   .description('Run full simulation to find transactions to flip')
-  .option('-i, --input <path>', 'Path to superset data directory', '../simulate/superset')
+  .option('-i, --input <path>', 'Path to superset data directory', '../state-simulator/superset')
   .option('-o, --output <path>', 'Path to output directory', './output')
   .option('-m, --max-flips <number>', 'Maximum number of flips to test', parseInt)
   .option('-a, --accounts <accounts...>', 'Specific account IDs to target')
@@ -47,7 +47,7 @@ program
 program
   .command('analyze')
   .description('Analyze balance mismatches without running simulation')
-  .option('-i, --input <path>', 'Path to superset data directory', '../simulate/superset')
+  .option('-i, --input <path>', 'Path to superset data directory', '../state-simulator/superset')
   .option('-o, --output <path>', 'Path to output directory', './output')
   .option('-s, --subset <number>', 'Limit analysis to a subset of accounts/transactions', parseInt)
   .action(async (options) => {
@@ -100,7 +100,7 @@ program
 program
   .command('inspect-tx <txId>')
   .description('Inspect a specific transaction')
-  .option('-i, --input <path>', 'Path to superset data directory', '../simulate/superset')
+  .option('-i, --input <path>', 'Path to superset data directory', '../state-simulator/superset')
   .action(async (txId, options) => {
     try {
       const db = new DatabaseInterface(path.resolve(options.input))
@@ -118,7 +118,7 @@ program
 program
   .command('stats')
   .description('Show database statistics')
-  .option('-i, --input <path>', 'Path to superset data directory', '../simulate/superset')
+  .option('-i, --input <path>', 'Path to superset data directory', '../state-simulator/superset')
   .action(async (options) => {
     try {
       const db = new DatabaseInterface(path.resolve(options.input))
