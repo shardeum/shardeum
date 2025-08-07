@@ -257,7 +257,7 @@ function generateArrayStorageSlots(startSlot: number, endSlot: number): string[]
     slots.push(lengthSlot)
     
     // First few array elements
-    const arrayBase = keccak256(hexToBytes(lengthSlot))
+    const arrayBase = keccak256(hexToBytes('0x' + lengthSlot))
     for (let j = 0; j < 5; j++) {
       const elementSlot = (BigInt('0x' + bytesToHex(arrayBase)) + BigInt(j)).toString(16).padStart(64, '0')
       slots.push(elementSlot)
