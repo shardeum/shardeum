@@ -8,6 +8,13 @@ import { getAccount } from '../storage/accountStorage'
 import { toShardusAddressWithKey } from '../shardeum/evmAddress'
 import { KECCAK256_NULL_S } from '@ethereumjs/util'
 
+// Gas constants for batch operations
+const ARRAY_OPERATION_GAS_PER_OP = BigInt(10000) // Gas cost per array operation
+const EVENT_EMISSION_GAS_PER_OP = BigInt(1500)   // Gas cost per LOG operation
+const SECONDARY_STORAGE_GAS_PER_OP = BigInt(7600) // Gas cost per secondary storage update (counters, mappings)
+const MEMORY_EXPANSION_GAS_PER_WORD = BigInt(3)   // Gas cost per 32-byte word for memory expansion
+const BYTES_PER_WORD = 32                         // Number of bytes in an EVM word
+
 export interface GasEstimationResult {
   baseGas: bigint
   additionalGas: bigint
@@ -55,16 +62,16 @@ export function calculateBatchOperationGas(estimatedOperations: number, dataLeng
   total: bigint
 } {
   // Array operations involving storage updates
-  const arrayOperationGas = BigInt(estimatedOperations) * BigInt(10000)
+  const arrayOperationGas = BigInt(estimatedOperations) * ARRAY_OPERATION_GAS_PER_OP
   
   // Event emissions (LOG operations)
-  const eventGas = BigInt(estimatedOperations) * BigInt(1500)
+  const eventGas = BigInt(estimatedOperations) * EVENT_EMISSION_GAS_PER_OP
   
   // Secondary storage updates (counters, mappings)
-  const secondaryStorageGas = BigInt(estimatedOperations) * BigInt(7600)
+  const secondaryStorageGas = BigInt(estimatedOperations) * SECONDARY_STORAGE_GAS_PER_OP
   
   // Memory expansion costs
-  const memoryGas = BigInt(Math.floor(dataLength / 32)) * BigInt(3)
+  const memoryGas = BigInt(Math.floor(dataLength / BYTES_PER_WORD)) * MEMORY_EXPANSION_GAS_PER_WORD
   
   const total = arrayOperationGas + eventGas + secondaryStorageGas + memoryGas
   
