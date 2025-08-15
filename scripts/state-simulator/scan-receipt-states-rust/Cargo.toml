@@ -1,0 +1,37 @@
+[package]
+name = "scan-receipt-states"
+version = "1.1.0"
+edition = "2021"
+authors = ["Shardeum Team"]
+description = "High-performance blockchain state consistency validator for Shardeum receipts"
+
+[dependencies]
+rusqlite = { version = "0.32", features = ["bundled"] }
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+simd-json = "0.13"
+clap = { version = "4.5", features = ["derive"] }
+chrono = "0.4"
+hex = "0.4"
+primitive-types = "0.13"
+anyhow = "1.0"
+thiserror = "2.0"
+rustc-hash = "2.0"  # Faster hashing for FxHashMap
+arc-swap = "1.7"    # Atomic reference counting for string interning
+
+[profile.release]
+opt-level = 3
+lto = true
+codegen-units = 1
+panic = "abort"
+strip = true
+
+[profile.release-optimized]
+inherits = "release"
+opt-level = 3
+lto = "fat"
+codegen-units = 1
+panic = "abort"
+strip = true
+
+# CPU-specific optimizations are already enabled via SIMD auto-detection
