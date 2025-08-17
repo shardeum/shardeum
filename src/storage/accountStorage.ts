@@ -11,6 +11,7 @@ import { getContextValue } from '../utils/RequestContext'
 import { shardusGet } from '../utils/requests'
 import { Block } from '@ethereumjs/block'
 import { Utils } from '@shardeum-foundation/lib-types'
+import { persistenceWatchdog } from '../monitoring/persistenceWatchdog'
 
 //WrappedEVMAccount
 export let accounts: WrappedEVMAccountMap = {}
@@ -115,9 +116,16 @@ export async function getCachedNetworkAccount(): Promise<NetworkAccount> {
 }
 
 export async function setAccount(address: string, account: WrappedEVMAccount): Promise<void> {
+  let accountSaved = false
+  
   try {
     if (ShardeumFlags.debugGlobalAccountUpdateFail && address === networkAccount) {
       console.log('debugGlobalAccountUpdateFail')
+      // Still notify watchdog that this was intentionally skipped
+      if (ShardeumFlags.persistenceWatchdogEnabled) {
+        // Mark as saved since this is an intentional skip for debug purposes
+        persistenceWatchdog.markAccountSaved(address)
+      }
       return
     }
 
@@ -133,13 +141,10 @@ export async function setAccount(address: string, account: WrappedEVMAccount): P
           `setAccount timestamp should not be 0. accountId: ${address}, data: ${JSON.stringify(account, null, '  ')}`
         )
       }
-      try {
-        await storage.createOrReplaceAccountEntry(accountEntry)
-      } catch (e) {
-        console.error('Blew up trying to set account', JSON.stringify(accountEntry, null, '  '), e)
-        throw e
-      }
-
+      
+      await storage.createOrReplaceAccountEntry(accountEntry)
+      accountSaved = true // Mark as saved after successful storage
+      
       setCachedRIAccount(accountEntry)
 
       if (address === networkAccount) {
@@ -164,9 +169,23 @@ export async function setAccount(address: string, account: WrappedEVMAccount): P
     } else {
       // eslint-disable-next-line security/detect-object-injection
       accounts[address] = account
+      accountSaved = true // Mark as saved after successful storage
+    }
+    
+    // Notify persistence watchdog of successful account save
+    if (ShardeumFlags.persistenceWatchdogEnabled && accountSaved) {
+      persistenceWatchdog.markAccountSaved(address)
     }
   } catch (e) {
-    /* prettier-ignore */ if (logFlags.important_as_fatal) console.log(`Error: while trying to set account`, e.message)
+    /* prettier-ignore */ if (logFlags.important_as_fatal) console.log(`Error: while trying to set account for ${address}:`, e.message)
+    
+    // Notify watchdog of failed save attempt
+    if (ShardeumFlags.persistenceWatchdogEnabled) {
+      persistenceWatchdog.markAccountFailed(address, e.message)
+    }
+    
+    // Re-throw the error to maintain existing behavior
+    throw e
   }
 }
 

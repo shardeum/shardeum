@@ -130,6 +130,14 @@ export interface ShardeumFlags {
   debugTxEnabled: boolean
   enableArchiverNetworkAccountValidation: boolean
   accessListSizeLimit: number
+  
+  // Persistence Watchdog Configuration
+  persistenceWatchdogEnabled: boolean
+  persistenceWatchdogCheckInterval: number
+  persistenceWatchdogTimeoutThreshold: number
+  persistenceWatchdogReportInterval: number
+  persistenceWatchdogVerbose: boolean
+  persistenceWatchdogMaxJobRetention: number
 }
 
 export const ShardeumFlags: ShardeumFlags = {
@@ -197,6 +205,14 @@ export const ShardeumFlags: ShardeumFlags = {
   ClaimRewardRetryCount: 20,
   shardeumTimeout: 50000,
   FailedTxLinearBackOffConstantInSecs: 30,
+  
+  // Persistence Watchdog Configuration
+  persistenceWatchdogEnabled: true,
+  persistenceWatchdogCheckInterval: 10000, // 10 seconds
+  persistenceWatchdogTimeoutThreshold: 30000, // 30 seconds
+  persistenceWatchdogReportInterval: 300000, // 5 minutes
+  persistenceWatchdogVerbose: true,
+  persistenceWatchdogMaxJobRetention: 600000, // 10 minutes
   logServicePointSenders: false,
   labTest: false,
   lowStakePercent: 0.2,

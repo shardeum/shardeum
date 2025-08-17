@@ -84,6 +84,7 @@ import { getAccountShardusAddress, toShardusAddress, toShardusAddressWithKey } f
 import { FilePaths, ShardeumFlags, updateServicePoints, updateShardeumFlag } from './shardeum/shardeumFlags'
 import * as WrappedEVMAccountFunctions from './shardeum/wrappedEVMAccountFunctions'
 import { fixDeserializedWrappedEVMAccount, predictContractAddressDirect } from './shardeum/wrappedEVMAccountFunctions'
+import { persistenceWatchdog } from './monitoring/persistenceWatchdog'
 import {
   emptyCodeHash,
   replacer,
@@ -5699,6 +5700,11 @@ const shardusSetup = (): void => {
 
       //shardeumStateManager.unsetTransactionState(txId)
 
+      // DON'T track account persistence in apply()
+      // The problem: apply() is called for ALL accounts in a transaction, but nodes only
+      // save accounts they're responsible for. Creating jobs here leads to incomplete jobs.
+      // Solution: Track persistence at the actual save point in updateAccountFull (already implemented)
+
       return applyResponse
     },
     getTimestampFromTransaction(tx, appData) {
@@ -6481,6 +6487,29 @@ const shardusSetup = (): void => {
 
     async setAccountData(accountRecords) {
       /* prettier-ignore */ if (logFlags.dapp_verbose) console.log(`Running setAccountData`, accountRecords)
+      
+      // Create watchdog job for sync operations
+      const accountIds: string[] = []
+      for (const account of accountRecords) {
+        const wrappedEVMAccount = account as WrappedEVMAccount
+        const shardusAddress = getAccountShardusAddress(wrappedEVMAccount)
+        accountIds.push(shardusAddress)
+      }
+      
+      // Create a sync job to track these account updates
+      const syncJobId = `sync-${Date.now()}-${Math.random().toString(36).substring(7)}`
+      if (ShardeumFlags.persistenceWatchdogEnabled && accountIds.length > 0) {
+        if (ShardeumFlags.persistenceWatchdogVerbose) {
+          console.log(`PersistenceWatchdog: Creating sync job ${syncJobId} for ${accountIds.length} accounts`)
+        }
+        persistenceWatchdog.createJob(
+          syncJobId,
+          null, // No receipt for sync operations
+          accountIds,
+          'sync'
+        )
+      }
+      
       // update our in memory accounts map
       for (const account of accountRecords) {
         const wrappedEVMAccount = account as WrappedEVMAccount
@@ -6910,6 +6939,31 @@ const shardusSetup = (): void => {
 
       // oof, we dont have the TXID!!!
       const txId = applyResponse?.txId
+      
+      // Create persistence tracking job for this specific account
+      // This is the right place to track because updateAccountFull is only called
+      // for accounts this node is responsible for
+      if (ShardeumFlags.persistenceWatchdogEnabled && txId && accountId) {
+        // Check if a job already exists for this transaction
+        const existingJob = persistenceWatchdog.getJob(txId)
+        if (!existingJob) {
+          // Create a new job for this transaction with just this account
+          persistenceWatchdog.createJob(
+            txId,
+            applyResponse,
+            [accountId],
+            'consensus'
+          )
+          if (ShardeumFlags.persistenceWatchdogVerbose) {
+            console.log(`PersistenceWatchdog: Created job for tx ${txId} with account ${accountId} in updateAccountFull`)
+          }
+        } else if (!existingJob.accountsToSave.some(acc => acc.accountId === accountId)) {
+          // Job exists but doesn't track this account - this shouldn't happen
+          if (ShardeumFlags.persistenceWatchdogVerbose) {
+            console.log(`PersistenceWatchdog: Warning - job exists for tx ${txId} but doesn't track account ${accountId}`)
+          }
+        }
+      }
       // let transactionState = transactionStateMap.get(txId)
       // if (transactionState == null) {
       //   transactionState = new TransactionState()
@@ -6994,6 +7048,11 @@ const shardusSetup = (): void => {
       /* prettier-ignore */ shardus.setDebugSetLastAppAwait(`updateAccountFull.AccountsStorage.setAccount(${accountId})`)
       await AccountsStorage.setAccount(accountId, updatedEVMAccount)
       /* prettier-ignore */ shardus.setDebugSetLastAppAwait(`updateAccountFull.AccountsStorage.setAccount(${accountId})`, DebugComplete.Completed)
+      
+      // Mark account as saved in persistence watchdog
+      if (ShardeumFlags.persistenceWatchdogEnabled) {
+        persistenceWatchdog.markAccountSaved(accountId)
+      }
 
       if (ShardeumFlags.AppliedTxsMaps) {
         /* eslint-disable security/detect-object-injection */
@@ -7459,6 +7518,14 @@ const shardusSetup = (): void => {
         //Updating to be on only with verbose logs
         /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log('running transactionReceiptPass', txId, tx, wrappedStates, applyResponse)
         fireAndForget(() => _transactionReceiptPass(tx, txId, wrappedStates, applyResponse))
+        
+        // DO NOT track receipt processing in persistence watchdog
+        // Receipt pass doesn't actually save accounts - it only sends cached app data
+        // The accounts are already tracked during the consensus/apply phase
+        // Creating jobs here leads to incomplete jobs since no accounts are saved
+        
+        // Previous code removed: Receipt jobs were creating false positives
+        // as transactionReceiptPass doesn't call updateAccountFull or save accounts
       }
 
       //clear this out of the shardeum state map
@@ -8960,6 +9027,21 @@ export function shardeumGetTime(): number {
       let nodeAddress: string
       let expected = shardeumGetTime() + cycleInterval
       let drift: number
+      
+      // Initialize persistence watchdog
+      if (ShardeumFlags.persistenceWatchdogEnabled) {
+        persistenceWatchdog.updateConfig({
+          enabled: ShardeumFlags.persistenceWatchdogEnabled,
+          checkInterval: ShardeumFlags.persistenceWatchdogCheckInterval,
+          timeoutThreshold: ShardeumFlags.persistenceWatchdogTimeoutThreshold,
+          reportInterval: ShardeumFlags.persistenceWatchdogReportInterval,
+          verbose: ShardeumFlags.persistenceWatchdogVerbose,
+          maxJobRetention: ShardeumFlags.persistenceWatchdogMaxJobRetention,
+        })
+        persistenceWatchdog.init()
+        console.log('PersistenceWatchdog initialized')
+      }
+      
       await shardus.start()
 
       // THIS CODE IS CALLED ON EVERY NODE ON EVERY CYCLE
