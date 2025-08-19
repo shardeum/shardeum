@@ -5359,7 +5359,7 @@ const shardusSetup = (): void => {
 
         // dappFeature1enabled is our coin-transfer-only mode. Crack if it calls EVM
         const isCoinTransfer = isSimpleTransfer || (remoteTargetAccount == null && appData.newCAAddr == null)
-        if(isCoinTransfer){
+        if (isCoinTransfer) {
           appData.isCoinTransfer = true
         }
         if (shardusConfig.features.dappFeature1enabled && !isStakeRelatedTx && !isCoinTransfer) {
