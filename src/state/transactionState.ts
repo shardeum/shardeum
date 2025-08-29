@@ -89,10 +89,17 @@ export default class TransactionState {
   firstContractStorageReads: Map<string, Map<string, Uint8Array>>
   allContractStorageWrites: Map<string, Map<string, Uint8Array>>
 
+  // contract storage checkpoint stacks
+  allContractStorageWritesStack: Map<string, Map<string, Uint8Array>>[]
+
   // contract account key: value data
   firstContractBytesReads: Map<string, ContractByteWrite>
   allContractBytesWrites: Map<string, ContractByteWrite>
   allContractBytesWritesByAddress: Map<string, ContractByteWrite>
+
+  // contract bytecode checkpoint stacks
+  allContractBytesWritesStack: Map<string, ContractByteWrite>[]
+  allContractBytesWritesByAddressStack: Map<string, ContractByteWrite>[]
 
   // pending contract storage commits
   pendingContractStorageCommits: Map<string, Map<string, Uint8Array>>
@@ -165,10 +172,13 @@ export default class TransactionState {
 
     this.firstContractStorageReads = new Map()
     this.allContractStorageWrites = new Map()
+    this.allContractStorageWritesStack = []
 
     this.firstContractBytesReads = new Map()
     this.allContractBytesWrites = new Map()
     this.allContractBytesWritesByAddress = new Map()
+    this.allContractBytesWritesStack = []
+    this.allContractBytesWritesByAddressStack = []
 
     this.pendingContractStorageCommits = new Map()
     this.pendingContractBytesCommits = new Map()
@@ -212,10 +222,13 @@ export default class TransactionState {
 
     this.firstContractStorageReads = new Map()
     this.allContractStorageWrites = new Map()
+    this.allContractStorageWritesStack = []
 
     this.firstContractBytesReads = new Map()
     this.allContractBytesWrites = new Map()
     this.allContractBytesWritesByAddress = new Map()
+    this.allContractBytesWritesStack = []
+    this.allContractBytesWritesByAddressStack = []
 
     this.pendingContractStorageCommits = new Map()
     this.pendingContractBytesCommits = new Map()
@@ -918,7 +931,17 @@ export default class TransactionState {
     //this.allAccountWritesStack.push(this.allAccountWrites)
     this.allAccountWritesStack.push(new Map<string, Uint8Array>())
 
+    // Save current contract storage state to stack
+    this.allContractStorageWritesStack.push(new Map(this.allContractStorageWrites))
+
+    // Save current contract bytecode state to stacks
+    this.allContractBytesWritesStack.push(new Map(this.allContractBytesWrites))
+    this.allContractBytesWritesByAddressStack.push(new Map(this.allContractBytesWritesByAddress))
+
     this.allAccountWrites = new Map()
+    this.allContractStorageWrites = new Map()
+    this.allContractBytesWrites = new Map()
+    this.allContractBytesWritesByAddress = new Map()
 
     //this.canCommit = true
     this.checkpointCount++
@@ -971,6 +994,35 @@ export default class TransactionState {
       for (const [key, value] of accountWrites.entries()) {
         newTop.set(key, value)
       }
+
+      // Handle contract storage stack
+      const contractStorageWrites = this.allContractStorageWritesStack.pop()
+      const newStorageTop = this.allContractStorageWritesStack[this.allContractStorageWritesStack.length - 1]
+      //flatten contract storage values to the new top
+      for (const [address, storageMap] of contractStorageWrites.entries()) {
+        if (!newStorageTop.has(address)) {
+          newStorageTop.set(address, new Map())
+        }
+        const targetStorageMap = newStorageTop.get(address)
+        for (const [key, value] of storageMap.entries()) {
+          targetStorageMap.set(key, value)
+        }
+      }
+
+      // Handle contract bytecode stacks
+      const contractBytesWrites = this.allContractBytesWritesStack.pop()
+      const newBytesTop = this.allContractBytesWritesStack[this.allContractBytesWritesStack.length - 1]
+      for (const [key, value] of contractBytesWrites.entries()) {
+        newBytesTop.set(key, value)
+      }
+
+      const contractBytesByAddressWrites = this.allContractBytesWritesByAddressStack.pop()
+      const newBytesByAddressTop =
+        this.allContractBytesWritesByAddressStack[this.allContractBytesWritesByAddressStack.length - 1]
+      for (const [key, value] of contractBytesByAddressWrites.entries()) {
+        newBytesByAddressTop.set(key, value)
+      }
+
       // if (this.debugTrace) console.log('commit: updated allAccountWritesStack', this.logAccountWritesStack(this.allAccountWritesStack))
     } else if (this.checkpointCount === 0) {
       // if (this.debugTrace) console.log('commit: allAccountWritesStack', this.logAccountWritesStack(this.allAccountWritesStack))
@@ -994,10 +1046,12 @@ export default class TransactionState {
     this.allAccountWrites = this.allAccountWritesStack.pop()
     this.allAccountWrites.clear()
 
-    //other saved values do not need a stack and are simply cleared:
-    //this.allAccountWrites.clear()
-    this.allContractStorageWrites.clear()
-    this.allContractBytesWritesByAddress.clear()
+    // Restore contract storage from stack instead of clearing
+    this.allContractStorageWrites = this.allContractStorageWritesStack.pop() || new Map()
+
+    // Restore contract bytecode from stacks instead of clearing
+    this.allContractBytesWrites = this.allContractBytesWritesStack.pop() || new Map()
+    this.allContractBytesWritesByAddress = this.allContractBytesWritesByAddressStack.pop() || new Map()
 
     this.checkpointCount--
     if (this.debugTrace) this.debugTraceLog(`checkpointCount:${this.checkpointCount} revert `)
