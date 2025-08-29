@@ -202,10 +202,7 @@ export async function queryAccountsEntryByRanges(accountStart, accountEnd, maxRe
       if (typeof result.data === 'string') {
         result.data = Utils.safeJsonParse(result.data)
       }
-      processedResults.push({ 
-        accountData: result.data, 
-        accountId: result.accountId 
-      })
+      processedResults.push(result.data)
     }
     return processedResults
   } else {
@@ -243,10 +240,7 @@ export async function queryAccountsEntryByRanges2(
       if (typeof result.data === 'string') {
         result.data = Utils.safeJsonParse(result.data)
       }
-      processedResults.push({
-        accountData: result.data,
-        accountId: result.accountId
-      })
+      processedResults.push(result.data)
     }
     return processedResults
   } else {
