@@ -12,7 +12,6 @@ const cContractStorageAccountVersion = 1
  */
 export interface ContractStorageAccount extends BaseAccount {
   accountType: AccountType.ContractStorage
-  ethAddress: string    // Contract address (required for existing architecture compatibility)
   hash: string         // Account hash (required by Shardus)
   timestamp: number    // Account timestamp (required by Shardus)
   key: string          // Storage key (essential)
@@ -21,7 +20,7 @@ export interface ContractStorageAccount extends BaseAccount {
 
 /**
  * Serialize ContractStorageAccount with minimal overhead.
- * Only serializes the 6 essential fields, eliminating 11+ unused fields.
+ * Only serializes the 5 essential fields, eliminating 12+ unused fields.
  */
 export function serializeContractStorageAccount(
   stream: VectorBufferStream, 
@@ -37,7 +36,6 @@ export function serializeContractStorageAccount(
   serializeBaseAccount(stream, obj, false)
   
   // Serialize essential ContractStorage fields only
-  stream.writeString(obj.ethAddress)
   stream.writeString(obj.hash)
   stream.writeBigUInt64(BigInt(obj.timestamp))
   stream.writeString(obj.key)
@@ -55,7 +53,6 @@ export function deserializeContractStorageAccount(stream: VectorBufferStream): C
   }
 
   const baseAccount = deserializeBaseAccount(stream)
-  const ethAddress = stream.readString()
   const hash = stream.readString()
   const timestamp = Number(stream.readBigUInt64())
   const key = stream.readString()
@@ -65,7 +62,6 @@ export function deserializeContractStorageAccount(stream: VectorBufferStream): C
   const obj: ContractStorageAccount = {
     ...baseAccount,
     accountType: AccountType.ContractStorage,
-    ethAddress,
     hash,
     timestamp,
     key,
@@ -89,7 +85,6 @@ export function toContractStorageAccount(wrappedAccount: WrappedEVMAccount): Con
 
   return {
     accountType: AccountType.ContractStorage,
-    ethAddress: wrappedAccount.ethAddress,
     hash: wrappedAccount.hash,
     timestamp: wrappedAccount.timestamp,
     key: wrappedAccount.key,
@@ -107,7 +102,6 @@ export function toContractStorageAccount(wrappedAccount: WrappedEVMAccount): Con
 export function toWrappedEVMAccount(contractStorage: ContractStorageAccount): WrappedEVMAccount {
   return {
     accountType: contractStorage.accountType,
-    ethAddress: contractStorage.ethAddress,
     hash: contractStorage.hash,
     timestamp: contractStorage.timestamp,
     key: contractStorage.key,
@@ -117,6 +111,7 @@ export function toWrappedEVMAccount(contractStorage: ContractStorageAccount): Wr
     codeHash: undefined,
     codeByte: undefined,
     contractAddress: undefined,
+    ethAddress: undefined,
     receipt: undefined,
     readableReceipt: undefined,
     amountSpent: undefined,

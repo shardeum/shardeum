@@ -16,7 +16,6 @@ describe('ContractStorageAccount', () => {
   // Test fixtures - Sample values to use across tests
   const validContractStorage: ContractStorageAccount = {
     accountType: AccountType.ContractStorage,
-    ethAddress: '0x742c3cF37907A1e0F7C4e6b8E0fD2DB2E6C19E57',
     hash: '0xabcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890',
     timestamp: 1640995200000,
     key: '0x0000000000000000000000000000000000000000000000000000000000000001',
@@ -25,7 +24,6 @@ describe('ContractStorageAccount', () => {
 
   const minimalContractStorage: ContractStorageAccount = {
     accountType: AccountType.ContractStorage,
-    ethAddress: '0x742c3cF37907A1e0F7C4e6b8E0fD2DB2E6C19E57',
     hash: 'minhash',
     timestamp: 123456789,
     key: '0x01',
@@ -73,7 +71,6 @@ describe('ContractStorageAccount', () => {
       expect(stream.readUInt8()).toBe(1) // Version
       expect(stream.readUInt8()).toBe(1) // BaseAccount version
       expect(stream.readUInt16()).toBe(AccountType.ContractStorage) // accountType
-      expect(stream.readString()).toBe(validContractStorage.ethAddress)
       expect(stream.readString()).toBe(validContractStorage.hash)
       expect(Number(stream.readBigUInt64())).toBe(validContractStorage.timestamp)
       expect(stream.readString()).toBe(validContractStorage.key)
@@ -114,7 +111,6 @@ describe('ContractStorageAccount', () => {
       stream.readUInt8() // Version
       stream.readUInt8() // BaseAccount version
       stream.readUInt16() // accountType
-      stream.readString() // ethAddress
       stream.readString() // hash
       stream.readBigUInt64() // timestamp
       stream.readString() // key
@@ -171,7 +167,6 @@ describe('ContractStorageAccount', () => {
 
       // Verify all fields match
       expect(deserialized.accountType).toBe(validContractStorage.accountType)
-      expect(deserialized.ethAddress).toBe(validContractStorage.ethAddress)
       expect(deserialized.hash).toBe(validContractStorage.hash)
       expect(deserialized.timestamp).toBe(validContractStorage.timestamp)
       expect(deserialized.key).toBe(validContractStorage.key)
@@ -213,7 +208,6 @@ describe('ContractStorageAccount', () => {
       const contractStorage = toContractStorageAccount(bloatedWrappedAccount)
 
       expect(contractStorage.accountType).toBe(AccountType.ContractStorage)
-      expect(contractStorage.ethAddress).toBe(bloatedWrappedAccount.ethAddress)
       expect(contractStorage.hash).toBe(bloatedWrappedAccount.hash)
       expect(contractStorage.timestamp).toBe(bloatedWrappedAccount.timestamp)
       expect(contractStorage.key).toBe(bloatedWrappedAccount.key)
@@ -235,7 +229,7 @@ describe('ContractStorageAccount', () => {
         key: undefined,
       }
 
-      expect(() => toContractStorageAccount(incompleteAccount)).toThrow('ContractStorage account missing essential fields')
+      expect(() => toContractStorageAccount(incompleteAccount)).toThrow('ContractStorage account missing essential fields (key or value)')
     })
 
     it('should handle Uint8Array vs Buffer conversion', () => {
@@ -256,7 +250,6 @@ describe('ContractStorageAccount', () => {
       const wrappedAccount = toWrappedEVMAccount(validContractStorage)
 
       expect(wrappedAccount.accountType).toBe(validContractStorage.accountType)
-      expect(wrappedAccount.ethAddress).toBe(validContractStorage.ethAddress)
       expect(wrappedAccount.hash).toBe(validContractStorage.hash)
       expect(wrappedAccount.timestamp).toBe(validContractStorage.timestamp)
       expect(wrappedAccount.key).toBe(validContractStorage.key)
@@ -267,6 +260,7 @@ describe('ContractStorageAccount', () => {
       expect(wrappedAccount.codeHash).toBeUndefined()
       expect(wrappedAccount.codeByte).toBeUndefined()
       expect(wrappedAccount.contractAddress).toBeUndefined()
+      expect(wrappedAccount.ethAddress).toBeUndefined()
       expect(wrappedAccount.receipt).toBeUndefined()
       expect(wrappedAccount.operatorAccountInfo).toBeUndefined()
     })
@@ -283,7 +277,6 @@ describe('ContractStorageAccount', () => {
 
       // Should get back a WrappedEVMAccount with only essential fields populated
       expect(deserialized.accountType).toBe(validContractStorage.accountType)
-      expect(deserialized.ethAddress).toBe(validContractStorage.ethAddress)
       expect(deserialized.hash).toBe(validContractStorage.hash)
       expect(deserialized.timestamp).toBe(validContractStorage.timestamp)
       expect(deserialized.key).toBe(validContractStorage.key)
@@ -353,7 +346,6 @@ describe('ContractStorageAccount', () => {
 
       // Essential data should be preserved
       expect(deserialized.accountType).toBe(bloatedWrappedAccount.accountType)
-      expect(deserialized.ethAddress).toBe(bloatedWrappedAccount.ethAddress)
       expect(deserialized.hash).toBe(bloatedWrappedAccount.hash)
       expect(deserialized.timestamp).toBe(bloatedWrappedAccount.timestamp)
       expect(deserialized.key).toBe(bloatedWrappedAccount.key)
@@ -376,7 +368,6 @@ describe('ContractStorageAccount', () => {
     it('should work with edge case values', () => {
       const edgeCaseAccount: ContractStorageAccount = {
         accountType: AccountType.ContractStorage,
-        ethAddress: '', // Empty address
         hash: '', // Empty hash
         timestamp: 0, // Zero timestamp
         key: '', // Empty key
@@ -388,7 +379,6 @@ describe('ContractStorageAccount', () => {
       const deserialized = accountDeserializer(buffer) as WrappedEVMAccount
 
       expect(deserialized.accountType).toBe(edgeCaseAccount.accountType)
-      expect(deserialized.ethAddress).toBe('')
       expect(deserialized.hash).toBe('')
       expect(deserialized.timestamp).toBe(0)
       expect(deserialized.key).toBe('')

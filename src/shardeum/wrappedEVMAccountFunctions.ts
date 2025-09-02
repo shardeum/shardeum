@@ -105,6 +105,7 @@ function fixWrappedEVMAccountBuffers(wrappedEVMAccount: WrappedEVMAccount): void
 }
 
 export function predictContractAddress(wrappedEVMAccount: WrappedEVMAccount): Buffer {
+  // not being used anymore but comment
   if (wrappedEVMAccount.accountType != AccountType.Account) {
     throw new Error('predictContractAddress requires AccountType.Account')
   }
