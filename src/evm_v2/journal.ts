@@ -6,6 +6,7 @@ import type { Common /*, EVMStateManagerInterface*/ } from '@ethereumjs/common'
 import type { EVMStateManagerInterface } from './interfaces'
 import type { Account } from '@ethereumjs/util'
 import type { Debugger } from 'debug'
+import { Utils } from '@shardeum-foundation/lib-types'
 const { debug: createDebugLogger } = debugDefault
 
 type AddressString = string
@@ -192,14 +193,21 @@ export class Journal {
   }
 
   addAlwaysWarmSlot(addressStr: string, slotStr: string, addToAccessList = false): void {
+    console.log(`[JOURNAL_DEBUG] Adding always warm slot: ${addressStr} ${slotStr}`)
     const address = stripHexPrefix(addressStr)
     this.addAlwaysWarmAddress(address, addToAccessList)
     const slotsSet = this.alwaysWarmJournal.get(address)!
+    console.log(`[JOURNAL_DEBUG] Always warm slots for address ${address}: ${Array.from(slotsSet.values())}`)
     const slot = stripHexPrefix(slotStr)
+    console.log(`[JOURNAL_DEBUG] Adding always warm slot: ${slot}`)
     slotsSet.add(slot)
+    console.log(`[JOURNAL_DEBUG] Always warm slots for address ${address} after add: ${Array.from(slotsSet.values())}`)
     if (addToAccessList && this.accessList !== undefined) {
+      console.log(`[JOURNAL_DEBUG] Adding always warm slot to access list: ${slot}`)
       this.accessList.get(address)!.add(slot)
+      console.log(`[JOURNAL_DEBUG] Access list for address ${address}: ${Array.from(this.accessList.get(address)!.values())}`)
     }
+    console.log(`[JOURNAL_DEBUG] Always warm journal: ${Utils.safeStringify(this.alwaysWarmJournal)}`)
   }
 
   /**

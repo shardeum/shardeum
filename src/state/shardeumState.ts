@@ -23,6 +23,7 @@ import { ShardeumFlags } from '../shardeum/shardeumFlags'
 import { Trie } from '@ethereumjs/trie'
 import type { Debugger } from 'debug'
 import { logFlags } from '..'
+import { Utils } from '@shardeum-foundation/lib-types'
 
 const debug = createDebugLogger('vm:state')
 
@@ -197,11 +198,13 @@ export default class ShardeumState implements EVMStateManagerInterface {
     //side run system on the side for now
     if (this._transactionState != null) {
       testAccount = await this._transactionState.getAccount(null, address, false, false)
+      console.log(`Debug: getAccount: returning transactionState account:${Utils.safeStringify(testAccount)} for address ${address.toString()}`)
       return testAccount
     }
 
     if (ShardeumFlags.VerboseLogs) console.log('Unable to find transactionState', address)
-    return
+    console.log(`Debug: getAccount: returning undefined for address ${address.toString()}`)
+    return undefined
   }
 
   /**
@@ -297,10 +300,13 @@ export default class ShardeumState implements EVMStateManagerInterface {
   async getContractStorage(address: Address, key: Uint8Array, originalOnly = false): Promise<Buffer> {
     let testAccount
     if (this._transactionState != null) {
+      console.log(`Debug: getContractStorage: calling transactionState for address ${address.toString()} key ${bytesToHex(key)}`)
       testAccount = await this._transactionState.getContractStorage(null, address, key, originalOnly, false)
+      console.log(`Debug: getContractStorage: returning transactionState value:${Utils.safeStringify(testAccount)}`)
       return testAccount
     }
     if (ShardeumFlags.VerboseLogs) console.log('Unable to find transactionState', address)
+    console.log(`Debug: getContractStorage: returning undefined for address ${address.toString()} key ${bytesToHex(key)}`)
     return
   }
 
@@ -314,10 +320,13 @@ export default class ShardeumState implements EVMStateManagerInterface {
    */
   async getOriginalContractStorage(address: Address, key: Buffer): Promise<Uint8Array> {
     if (this._transactionState != null) {
+      console.log(`Debug: getOriginalContractStorage: calling transactionState for address ${address.toString()} key ${bytesToHex(key)}`)
       const testAccount = await this._transactionState.getContractStorage(null, address, key, true, false)
+      console.log(`Debug: getOriginalContractStorage: returning transactionState value:${Utils.safeStringify(testAccount)}`)
       return testAccount
     }
     if (ShardeumFlags.VerboseLogs) console.log('Unable to find transactionState', address)
+    console.log(`Debug: getOriginalContractStorage: returning undefined for address ${address.toString()} key ${bytesToHex(key)}`)
     return
   }
 
@@ -411,7 +420,7 @@ export default class ShardeumState implements EVMStateManagerInterface {
 
     if (this._transactionState != null) {
       //side run system on the side for now
-      this._transactionState.putContractStorage(address, key, value)
+      await this._transactionState.putContractStorage(address, key, value)
     }
     return
   }

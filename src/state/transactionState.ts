@@ -352,17 +352,21 @@ export default class TransactionState {
   }
 
   async getAccount(worldStateTrie: Trie, address: Address, originalOnly: boolean, canThrow: boolean): Promise<Account> {
+    console.log(`Debug: getAccount: ${address.toString()} originalOnly:${originalOnly} canThrow:${canThrow}`)
     const addressString = address.toString()
     let account: Account
     if (ShardeumFlags.Virtual0Address && addressString === zeroAddressStr) {
+      console.log(`Debug: getAccount: returning zeroAddressAccount`)
       return zeroAddressAccount
     }
 
     if (originalOnly === false) {
       //first check our map as these are the most current account values
       if (this.allAccountWrites.has(addressString)) {
+        console.log(`Debug: getAccount: returning allAccountWrites`)
         const storedRlp = this.allAccountWrites.get(addressString)
         account = storedRlp ? Account.fromRlpSerializedAccount(storedRlp) : undefined
+        console.log(`Debug: getAccount: returning allAccountWrites account:${account?.toString()}`)
         if (this.debugTrace)
           this.debugTraceLog(
             `getAccount:(allAccountWrites) addr:${addressString} balance:${account?.balance} nonce:${account?.nonce}`
@@ -378,6 +382,7 @@ export default class TransactionState {
         if (accountWrites.has(addressString)) {
           const storedRlp = accountWrites.get(addressString)
           account = storedRlp ? Account.fromRlpSerializedAccount(storedRlp) : undefined
+          console.log(`Debug: getAccount: returning allAccountWritesStack account:${account?.toString()}`)
           if (this.debugTrace)
             this.debugTraceLog(
               `getAccount:(allAccountWritesStack-skipped) addr:${addressString} balance:${account?.balance} nonce:${account?.nonce}`
@@ -396,6 +401,7 @@ export default class TransactionState {
     if (this.committedAccountWrites.has(addressString)) {
       const storedRlp = this.committedAccountWrites.get(addressString)
       account = storedRlp ? Account.fromRlpSerializedAccount(storedRlp) : undefined
+      console.log(`Debug: getAccount: returning committedAccountWrites account:${account?.toString()}`)
       if (this.debugTrace)
         this.debugTraceLog(
           `getAccount:(committedAccountWrites) addr:${addressString} balance:${account?.balance} nonce:${account?.nonce}`
@@ -406,6 +412,7 @@ export default class TransactionState {
     if (this.firstAccountReads.has(addressString)) {
       const storedRlp = this.firstAccountReads.get(addressString)
       account = storedRlp ? Account.fromRlpSerializedAccount(storedRlp) : undefined
+      console.log(`Debug: getAccount: returning firstAccountReads account:${Utils.safeStringify(account)} for address ${addressString}`)
       if (this.debugTrace)
         this.debugTraceLog(
           `getAccount:(firstAccountReads) addr:${addressString} balance:${account?.balance} nonce:${account?.nonce}`
@@ -414,6 +421,7 @@ export default class TransactionState {
     }
 
     if (this.accountInvolvedCB(this, addressString, true) === false) {
+      console.log(`Debug: getAccount: returning accountInvolvedCB false for address ${addressString}`)
       throw new Error(`unable to proceed, cant involve account for txId ${this.linkedTX}`)
     }
 
@@ -426,6 +434,7 @@ export default class TransactionState {
       codeBytesInvolved &&
       AccountsStorage.cachedNetworkAccount?.current?.smartContractSupport
     ) {
+      console.log(`Debug: getAccount: returning failOnUnexpectedAccount ${addressString}`)
       if (this.debugTrace) {
         this.debugTraceLog(`getAccount: addr:${addressString} v:notFound. failOnUnexpected EOA/CA account`)
       }
@@ -469,6 +478,7 @@ export default class TransactionState {
           this.debugTraceLog(`getAccount: addr:${addressString} v:notFound. failOnUnexpected EOA/CA account2`)
         }
         nestedCountersInstance.countEvent('transactionState', 'getAccountFailOnUnexpectedAccount 2')
+        console.log(`[STORAGE_MISS_DEBUG] ACCOUNT_MISS_DURING_APPLY: txId=${this.linkedTX} address=${addressString} runType=${this.runType}`)
         throw new Error('storage account miss during apply()')
       }
       if (wrappedEVMAccount != undefined) {
@@ -581,14 +591,35 @@ export default class TransactionState {
   ): Promise<Uint8Array> {
     const addressString = contractAddress.toString()
 
+    console.log(`DEBUG getContractCode: addr:${addressString} originalOnly:${originalOnly} canThrow:${canThrow} txId:${this.linkedTX}`)
     //first get the account so we can have the correct code hash to look at
     const contractAccount = await this.getAccount(worldStateTrie, contractAddress, originalOnly, canThrow)
+    console.log(`DEBUG getContractCode: addr:${addressString} contractAccount:${Utils.safeStringify(contractAccount)} originalOnly:${originalOnly} txId:${this.linkedTX}`)
     if (contractAccount == undefined) {
+      console.log(`DEBUG getContractCode: addr:${addressString} Found no contract account txId:${this.linkedTX}`)
       if (this.debugTrace) this.debugTraceLog(`getContractCode: addr:${addressString} Found no contract account`)
+      
+      // // For PreRun mode (access list generation), record the contract code access attempt even if account is missing
+      // // This ensures the contract address is captured for fallback code hash collection
+      if (this.runType === RunType.PreRun) {
+        console.log(`DEBUG getContractCode: addr:${addressString} Recording failed contract access attempt originalOnly:${originalOnly} txId:${this.linkedTX}`)
+        // // Use a unique identifier for failed contract access attempts to avoid conflicts
+        // const failedAccessKey = `FAILED_ACCESS_${addressString}_${Date.now()}`
+        // this.firstContractBytesReads.set(failedAccessKey, {
+        //   codeHash: new Uint8Array(0), // Empty code hash indicates failed access
+        //   contractByte: new Uint8Array(0),
+        //   contractAddress: contractAddress, 
+        // })
+        // if (this.debugTrace) {
+        //   this.debugTraceLog(`getContractCode: PreRun mode - recorded failed contract access for ${addressString}`)
+        // }
+      }
+      
       return
     }
     const codeHash = contractAccount.codeHash
     const codeHashStr = bytesToHex(codeHash)
+    console.log(`DEBUG getContractCode: addr:${addressString} codeHashStr:${codeHashStr} originalOnly:${originalOnly} txId:${this.linkedTX}`)
 
     if (originalOnly === false) {
       if (this.allContractBytesWrites.has(codeHashStr)) {
@@ -618,6 +649,7 @@ export default class TransactionState {
     }
 
     if (this.accountInvolvedCB(this, addressString, true) === false) {
+      console.log(`DEBUG getContractCode: addr:${addressString} codeHashStr:${codeHashStr} originalOnly:${originalOnly} txId:${this.linkedTX} account not involved`)
       throw new Error(`unable to proceed, cant involve contract bytes account for txId ${this.linkedTX}`)
     }
     //  check this before trying to read from local db at this point
@@ -632,6 +664,7 @@ export default class TransactionState {
       isEmptyCode === false &&
       AccountsStorage.cachedNetworkAccount?.current?.smartContractSupport
     ) {
+      console.log(`DEBUG getContractCode: addr:${addressString} codeHashStr:${codeHashStr} originalOnly:${originalOnly} txId:${this.linkedTX} failOnUnexpected codeByte account`)
       if (this.debugTrace) {
         this.debugTraceLog(
           `getContractCode: addr:${addressString} codeHash: ${codeHashStr} v:notFound. failOnUnexpected codeByte account`
@@ -650,6 +683,7 @@ export default class TransactionState {
     //need: contract address,  code hash  for toShardusAddressWithKey
     const bytesShardusAddress = toShardusAddressWithKey(addressString, codeHashStr, AccountType.ContractCode)
     const wrappedAccount = await AccountsStorage.getAccount(bytesShardusAddress)
+    console.log(`DEBUG getContractCode: addr:${addressString} codeHashStr:${codeHashStr} originalOnly:${originalOnly} txId:${this.linkedTX} wrappedAccount:${Utils.safeStringify(wrappedAccount)}`)
     if (wrappedAccount != null) {
       fixDeserializedWrappedEVMAccount(wrappedAccount)
       storedCodeByte = wrappedAccount.codeByte
@@ -659,12 +693,14 @@ export default class TransactionState {
     //attempt to get data from tryGetRemoteAccountCB
     //this can be a long wait only suitable in some cases
     if (codeBytes == undefined) {
+      console.log(`DEBUG getContractCode: addr:${addressString} codeHashStr:${codeHashStr} originalOnly:${originalOnly} txId:${this.linkedTX} trying remote`)
       const wrappedEVMAccount = await this.tryGetRemoteAccountCB(
         this,
         AccountType.ContractCode,
         addressString,
         codeHashStr
       )
+      console.log(`DEBUG getContractCode: addr:${addressString} codeHashStr:${codeHashStr} originalOnly:${originalOnly} txId:${this.linkedTX} wrappedEVMAccount:${Utils.safeStringify(wrappedEVMAccount?.codeHash)}`)
       if (wrappedEVMAccount != undefined && wrappedEVMAccount.codeByte) {
         //get account aout of the wrapped evm account
         codeBytes = wrappedEVMAccount.codeByte
@@ -673,10 +709,11 @@ export default class TransactionState {
 
     //Storage miss!!!, account not on this shard
     if (codeBytes == undefined) {
+      console.log(`DEBUG getContractCode: addr:${addressString} codeHashStr:${codeHashStr} originalOnly:${originalOnly} txId:${this.linkedTX} storage miss`)
       //event callback to inidicate we do not have the account in this shard
       // not 100% if we should await this, may need some group discussion
       const isRemoteShard = await this.accountMissCB(this, codeHashStr)
-
+      console.log(`DEBUG getContractCode: addr:${addressString} codeHashStr:${codeHashStr} originalOnly:${originalOnly} txId:${this.linkedTX} isRemoteShard:${isRemoteShard}`)
       if (this.debugTrace)
         this.debugTraceLog(
           `getContractCode: addr:${addressString} codeHashStr:${codeHashStr} v:undefined isRemoteShard:${isRemoteShard}`
@@ -686,6 +723,7 @@ export default class TransactionState {
 
       //return unitiazlied new code bytes
       //todo need to insert it into a map of new / virtual accounts?
+      console.log(`DEBUG getContractCode: addr:${addressString} codeHashStr:${codeHashStr} originalOnly:${originalOnly} txId:${this.linkedTX} returning empty code bytes`)
       return new Uint8Array(0)
     }
 
@@ -694,6 +732,7 @@ export default class TransactionState {
 
     // storage hit!!! data exists in this shard
     //put this in our first reads map
+    console.log(`DEBUG getContractCode: addr:${addressString} codeHashStr:${codeHashStr} originalOnly:${originalOnly} txId:${this.linkedTX} storage hit, adding to firstContractBytesReads`)
     this.firstContractBytesReads.set(codeHashStr, {
       codeHash: codeHash,
       contractByte: codeBytes,
@@ -793,6 +832,7 @@ export default class TransactionState {
     }
 
     if (this.contractStorageInvolvedCB(this, addressString, keyString, false) === false) {
+      console.log(`[STORAGE_MISS_DEBUG] CANNOT_INVOLVE_CONTRACT_STORAGE: txId=${this.linkedTX} contractAddr=${addressString} storageKey=${keyString} runType=${this.runType}`)
       throw new Error('unable to proceed, cant involve contract storage')
     }
     //  check this before trying to read from local db at this point
@@ -807,6 +847,7 @@ export default class TransactionState {
         )
       }
       nestedCountersInstance.countEvent('transactionState', 'getContractStorageFailOnUnexpected')
+      console.log(`[STORAGE_MISS_DEBUG] CONTRACT_STORAGE_MISS_DURING_APPLY: txId=${this.linkedTX} contractAddr=${addressString} storageKey=${keyString} runType=${this.runType}`)
       throw new Error('storage account miss during apply()')
     }
 
@@ -894,6 +935,7 @@ export default class TransactionState {
     const keyString = bytesToHex(key)
 
     if (this.contractStorageInvolvedCB(this, addressString, keyString, true) === false) {
+      console.log(`[STORAGE_MISS_DEBUG] CANNOT_INVOLVE_CONTRACT_STORAGE_WRITE: txId=${this.linkedTX} contractAddr=${addressString} storageKey=${keyString} runType=${this.runType}`)
       throw new Error('unable to proceed, cant involve contract storage')
     }
 
