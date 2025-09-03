@@ -603,16 +603,16 @@ export default class TransactionState {
       // // This ensures the contract address is captured for fallback code hash collection
       if (this.runType === RunType.PreRun) {
         console.log(`DEBUG getContractCode: addr:${addressString} Recording failed contract access attempt originalOnly:${originalOnly} txId:${this.linkedTX}`)
-        // // Use a unique identifier for failed contract access attempts to avoid conflicts
-        // const failedAccessKey = `FAILED_ACCESS_${addressString}_${Date.now()}`
-        // this.firstContractBytesReads.set(failedAccessKey, {
-        //   codeHash: new Uint8Array(0), // Empty code hash indicates failed access
-        //   contractByte: new Uint8Array(0),
-        //   contractAddress: contractAddress, 
-        // })
-        // if (this.debugTrace) {
-        //   this.debugTraceLog(`getContractCode: PreRun mode - recorded failed contract access for ${addressString}`)
-        // }
+        // Use a unique identifier for failed contract access attempts to avoid conflicts
+        const failedAccessKey = `FAILED_ACCESS_${addressString}_${Date.now()}`
+        this.firstContractBytesReads.set(failedAccessKey, {
+          codeHash: new Uint8Array(0), // Empty code hash indicates failed access
+          contractByte: new Uint8Array(0),
+          contractAddress: contractAddress, 
+        })
+        if (this.debugTrace) {
+          this.debugTraceLog(`getContractCode: PreRun mode - recorded failed contract access for ${addressString}`)
+        }
       }
       
       return
