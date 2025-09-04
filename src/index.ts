@@ -80,7 +80,7 @@ import {
   WrappedEVMAccount,
   WrappedStates,
 } from './shardeum/shardeumTypes'
-import { getAccountShardusAddress, toShardusAddress, toShardusAddressWithKey } from './shardeum/evmAddress'
+import { toShardusAddress, toShardusAddressWithKey } from './shardeum/evmAddress'
 import { FilePaths, ShardeumFlags, updateServicePoints, updateShardeumFlag } from './shardeum/shardeumFlags'
 import * as WrappedEVMAccountFunctions from './shardeum/wrappedEVMAccountFunctions'
 import { fixDeserializedWrappedEVMAccount, predictContractAddressDirect } from './shardeum/wrappedEVMAccountFunctions'
@@ -5220,19 +5220,26 @@ const shardusSetup = (): void => {
           continue
         }
 
+        console.log('[2702-apply] The wrappedStates are', wrappedStates)
+        console.log('[2702-apply] The appData is', appData)
+
         // eslint-disable-next-line security/detect-object-injection
         const wrappedEVMAccount: WrappedEVMAccount = wrappedStates[accountId].data as WrappedEVMAccount
         fixDeserializedWrappedEVMAccount(wrappedEVMAccount)
         let address
-        if (wrappedEVMAccount.accountType === AccountType.ContractCode)
+        if (wrappedEVMAccount.accountType === AccountType.ContractCode) {
           address = Address.fromString(wrappedEVMAccount.contractAddress)
-        else address = Address.fromString(wrappedEVMAccount.ethAddress)
+        } else if (wrappedEVMAccount.accountType === AccountType.ContractStorage) {
+          address = originalAppData.newCAAddr
+        } else {
+          address = Address.fromString(wrappedEVMAccount.ethAddress)
+        }
 
         if (ShardeumFlags.VerboseLogs) {
           const ourNodeShardData = shardus.stateManager.currentCycleShardData.nodeShardData
           const minP = ourNodeShardData.consensusStartPartition
           const maxP = ourNodeShardData.consensusEndPartition
-          const shardusAddress = getAccountShardusAddress(wrappedEVMAccount)
+          const shardusAddress = accountId
           const { homePartition } = __ShardFunctions.addressToPartition(
             shardus.stateManager.currentCycleShardData.shardGlobals,
             shardusAddress
@@ -6479,13 +6486,23 @@ const shardusSetup = (): void => {
       if (!isServiceMode()) await AccountsStorage.clearAccounts()
     },
 
-    async setAccountData(accountRecords) {
+    /**
+     * Sets account data by storing wrapped EVM accounts using their corresponding Shardus addresses.
+     * This function receives paired data containing both the account data and its computed accountId,
+     * ensuring consistency especially for ContractStorage accounts where the accountId may differ
+     * from the computed address based on ethAddress.
+     * 
+     * @param accountRecords - Array of objects containing account data and their corresponding Shardus addresses
+     * @param accountRecords[].accountData - The wrapped EVM account data to be stored
+     * @param accountRecords[].accountId - The Shardus address (accountId) where this account should be stored
+     * 
+     */
+    async setAccountData(accountRecords: Array<{ accountData: unknown; accountId: string }>) {
       /* prettier-ignore */ if (logFlags.dapp_verbose) console.log(`Running setAccountData`, accountRecords)
       // update our in memory accounts map
-      for (const account of accountRecords) {
-        const wrappedEVMAccount = account as WrappedEVMAccount
-
-        const shardusAddress = getAccountShardusAddress(wrappedEVMAccount)
+      for (const accountRecord of accountRecords) {
+        const wrappedEVMAccount = accountRecord.accountData as WrappedEVMAccount
+        const shardusAddress = accountRecord.accountId 
 
         if (
           wrappedEVMAccount.accountType !== AccountType.NetworkAccount &&
@@ -6766,7 +6783,8 @@ const shardusSetup = (): void => {
         //EIP 2930 needs to write to this map as hints
 
         //codeHashKeys
-
+        console.log('getRelevantData The tx is,', tx)
+        console.log('getRelevantData The appData is,', appData)
         const evmAccountInfo = shardusAddressToEVMAccountInfo.get(accountId)
         let evmAccountID = null
         let accountType = AccountType.Account //assume account ok?
@@ -6830,13 +6848,13 @@ const shardusSetup = (): void => {
         } else if (accountType === AccountType.ContractStorage) {
           wrappedEVMAccount = {
             timestamp: 0,
-            key: evmAccountID,
+            key: evmAccountID, // storage key
             value: Buffer.from([]),
-            ethAddress: evmAccountInfo.contractAddress, // storage key
+            ethAddress: evmAccountInfo.contractAddress, // contract address
             hash: '',
             accountType: AccountType.ContractStorage,
           }
-          /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`Creating new contract storage account key:${evmAccountID} in contract address ${wrappedEVMAccount.ethAddress}`)
+          /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`Creating new contract storage account key:${evmAccountID} in contract address ${evmAccountInfo.contractAddress}`)
         } else if (accountType === AccountType.ContractCode) {
           wrappedEVMAccount = {
             timestamp: 0,
@@ -6875,8 +6893,9 @@ const shardusSetup = (): void => {
         const wrappedResults = []
         const dbResults = await AccountsStorage.queryAccountsEntryByRanges(accountStart, accountEnd, maxRecords)
 
-        for (const wrappedEVMAccount of dbResults) {
-          const wrapped = WrappedEVMAccountFunctions._shardusWrappedAccount(wrappedEVMAccount)
+        for (const result of dbResults) {
+          const { accountData, accountId } = result
+          const wrapped = WrappedEVMAccountFunctions._shardusWrappedAccount(accountData, accountId)
           wrappedResults.push(wrapped)
         }
         return wrappedResults
@@ -6892,7 +6911,7 @@ const shardusSetup = (): void => {
         if (id < start || id > end) continue
 
         // Add to results (wrapping is redundant?)
-        const wrapped = WrappedEVMAccountFunctions._shardusWrappedAccount(wrappedEVMAccount)
+        const wrapped = WrappedEVMAccountFunctions._shardusWrappedAccount(wrappedEVMAccount, addressStr)
         results.push(wrapped)
 
         // Return results early if maxRecords reached
@@ -6955,12 +6974,13 @@ const shardusSetup = (): void => {
         /* prettier-ignore */ shardus.setDebugSetLastAppAwait(`shardeumState._transactionState.commitAccount(${addressStr})`, DebugComplete.Completed)
       } else if (updatedEVMAccount.accountType === AccountType.ContractStorage) {
         //if ContractAccount?
-        const addressStr = updatedEVMAccount.ethAddress
-        const key = updatedEVMAccount.key
-        const bufferValue = updatedEVMAccount.value
-        /* prettier-ignore */ shardus.setDebugSetLastAppAwait(`shardeumState._transactionState.commitContractStorage(${addressStr})`)
-        await shardeumState._transactionState.commitContractStorage(addressStr, key, bufferValue)
-        /* prettier-ignore */ shardus.setDebugSetLastAppAwait(`shardeumState._transactionState.commitContractStorage(${addressStr})`, DebugComplete.Completed)
+        // const addressStr = updatedEVMAccount.ethAddress
+        // const key = updatedEVMAccount.key
+        // const bufferValue = updatedEVMAccount.value
+        /* prettier-ignore */ shardus.setDebugSetLastAppAwait(`shardeumState._transactionState.commitContractStorage(${wrappedData.accountId})`)
+        // function has no definition in the codebase, no point in calling it
+        // await shardeumState._transactionState.commitContractStorage(addressStr, key, bufferValue)
+        /* prettier-ignore */ shardus.setDebugSetLastAppAwait(`shardeumState._transactionState.commitContractStorage(${wrappedData.accountId})`, DebugComplete.Completed)
       } else if (updatedEVMAccount.accountType === AccountType.ContractCode) {
         const contractAddress = updatedEVMAccount.contractAddress
         const codeHash = updatedEVMAccount.codeHash
@@ -7036,7 +7056,7 @@ const shardusSetup = (): void => {
       offset = 0,
       accountOffset = ''
     ): Promise<ShardusTypes.WrappedData[]> {
-      const results: WrappedEVMAccount[] = []
+      const results: Array<{ accountData: WrappedEVMAccount; accountId: string }> = []
       const start = parseInt(accountStart, 16)
       const end = parseInt(accountEnd, 16)
 
@@ -7054,9 +7074,10 @@ const shardusSetup = (): void => {
           accountOffset
         )
 
-        for (const wrappedEVMAccount of dbResults) {
+        for (const result of dbResults) {
           // Process and add to finalResults
-          const wrapped = WrappedEVMAccountFunctions._shardusWrappedAccount(wrappedEVMAccount)
+          const { accountData, accountId } = result
+          const wrapped = WrappedEVMAccountFunctions._shardusWrappedAccount(accountData, accountId)
           finalResults.push(wrapped)
         }
         return finalResults
@@ -7073,11 +7094,8 @@ const shardusSetup = (): void => {
         const timestamp = wrappedEVMAccount.timestamp
         if (timestamp < tsStart || timestamp > tsEnd) continue
 
-        // // Add to results
-        // const wrapped = WrappedEVMAccountFunctions._shardusWrappedAccount(wrappedEVMAccount)
-        // results.push(wrapped)
-        // Add to results
-        results.push(wrappedEVMAccount)
+        // Add to results with accountId
+        results.push({ accountData: wrappedEVMAccount, accountId: addressStr })
         // we can't exit early. this is hard on perf
         // This data needs to eventually live in a DB and then the sort and max records will be natural.
 
@@ -7085,7 +7103,7 @@ const shardusSetup = (): void => {
         // if (results.length >= maxRecords) return results
       }
       //critical to sort by timestamp before we cull max records
-      results.sort((a, b) => a.timestamp - b.timestamp)
+      results.sort((a, b) => a.accountData.timestamp - b.accountData.timestamp)
 
       // let sortByTsThenAddress = function (a,b){
       //   if(a.timestamp === b.timestamp){
@@ -7115,7 +7133,7 @@ const shardusSetup = (): void => {
       if (results.length > 0) {
         //start at offset!
         for (let i = offset; i < results.length; i++) {
-          const wrappedEVMAccount = results[i] // eslint-disable-line security/detect-object-injection
+          const result = results[i] // eslint-disable-line security/detect-object-injection
           // if(startTS === wrappedEVMAccount.timestamp){
           //   sameTS = true
           // }
@@ -7138,15 +7156,16 @@ const shardusSetup = (): void => {
             break //no extras allowed
           }
           count++
-          cappedResults.push(wrappedEVMAccount)
+          cappedResults.push(result)
         }
       }
 
       /* prettier-ignore */ if (logFlags.dapp_verbose) shardus.log( `getAccountDataByRange: extra:${extra} ${Utils.safeStringify({ accountStart, accountEnd, tsStart, tsEnd, maxRecords, offset, })}` )
 
-      for (const wrappedEVMAccount of cappedResults) {
+      for (const result of cappedResults) {
         // Process and add to finalResults
-        const wrapped = WrappedEVMAccountFunctions._shardusWrappedAccount(wrappedEVMAccount)
+        const { accountData, accountId } = result
+        const wrapped = WrappedEVMAccountFunctions._shardusWrappedAccount(accountData, accountId)
         finalResults.push(wrapped)
       }
 
@@ -7186,7 +7205,7 @@ const shardusSetup = (): void => {
         const wrappedEVMAccount = await AccountsStorage.getAccount(address)
         /* prettier-ignore */ shardus.setDebugSetLastAppAwait(`getAccountDataByList.AccountsStorage.getAccount(${address})`, DebugComplete.Completed)
         if (wrappedEVMAccount) {
-          const wrapped = WrappedEVMAccountFunctions._shardusWrappedAccount(wrappedEVMAccount)
+          const wrapped = WrappedEVMAccountFunctions._shardusWrappedAccount(wrappedEVMAccount, address)
           results.push(wrapped)
         }
       }
@@ -7200,7 +7219,7 @@ const shardusSetup = (): void => {
       for (const address of addressList) {
         const wrappedEVMAccount = await getCachedRIAccount(address)
         if (wrappedEVMAccount) {
-          const wrapped = WrappedEVMAccountFunctions._shardusWrappedAccount(wrappedEVMAccount)
+          const wrapped = WrappedEVMAccountFunctions._shardusWrappedAccount(wrappedEVMAccount, address)
           results.push(wrapped)
           /* prettier-ignore */ nestedCountersInstance.countEvent('cache', 'getCachedRIAccountData-hit')
         }

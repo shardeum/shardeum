@@ -16,13 +16,13 @@ export function getAccountShardusAddress(account: WrappedEVMAccount | InternalAc
     const addressSource = account.ethAddress
     if (account.accountType === AccountType.ContractStorage) {
       //addressSource = account.key
-      const shardusAddress = toShardusAddressWithKey(account.ethAddress, account.key, account.accountType)
+      const shardusAddress = toShardusAddressWithKey(addressSource, account.key, account.accountType)
       return shardusAddress
     }
     if (account.accountType === AccountType.ContractCode) {
       //in this case ethAddress is the code hash which is what we want for the key
       //account.codeHash.toString()
-      const shardusAddress = toShardusAddressWithKey(account.contractAddress, account.ethAddress, account.accountType)
+      const shardusAddress = toShardusAddressWithKey(account.contractAddress, addressSource, account.accountType)
       return shardusAddress
     }
     if (
@@ -36,7 +36,7 @@ export function getAccountShardusAddress(account: WrappedEVMAccount | InternalAc
       return shardusAddress
     }
     if (account.accountType === AccountType.NodeRewardReceipt) {
-      return account.ethAddress
+      return addressSource
     }
     const shardusAddress = toShardusAddress(addressSource, account.accountType)
     return shardusAddress
@@ -174,7 +174,7 @@ export function toShardusAddressWithKey(
     return hashedAddress.toLowerCase()
   }
 
-  // Handle ContractCode with original raw key behavior  
+  // Handle ContractCode with original raw key behavior
   if (ShardeumFlags.contractCodeKeySilo === false && accountType === AccountType.ContractCode) {
     if (secondaryAddressStr.length === 64) {
       return secondaryAddressStr.toLowerCase()

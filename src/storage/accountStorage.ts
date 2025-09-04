@@ -194,7 +194,7 @@ export async function clearAccounts(): Promise<void> {
   }
 }
 
-export async function queryAccountsEntryByRanges(accountStart, accountEnd, maxRecords): Promise<WrappedEVMAccount[]> {
+export async function queryAccountsEntryByRanges(accountStart, accountEnd, maxRecords): Promise<Array<{ accountData: WrappedEVMAccount; accountId: string }>> {
   if (ShardeumFlags.UseDBForAccounts === true) {
     const processedResults = []
     const results = await storage.queryAccountsEntryByRanges(accountStart, accountEnd, maxRecords)
@@ -202,7 +202,10 @@ export async function queryAccountsEntryByRanges(accountStart, accountEnd, maxRe
       if (typeof result.data === 'string') {
         result.data = Utils.safeJsonParse(result.data)
       }
-      processedResults.push(result.data)
+      processedResults.push({ 
+        accountData: result.data, 
+        accountId: result.accountId 
+      })
     }
     return processedResults
   } else {
@@ -218,7 +221,7 @@ export async function queryAccountsEntryByRanges2(
   maxRecords,
   offset,
   accountOffset
-): Promise<WrappedEVMAccount[]> {
+): Promise<Array<{ accountData: WrappedEVMAccount; accountId: string }>> {
   if (ShardeumFlags.UseDBForAccounts === true) {
     const processedResults = []
     let results
@@ -240,7 +243,10 @@ export async function queryAccountsEntryByRanges2(
       if (typeof result.data === 'string') {
         result.data = Utils.safeJsonParse(result.data)
       }
-      processedResults.push(result.data)
+      processedResults.push({
+        accountData: result.data,
+        accountId: result.accountId
+      })
     }
     return processedResults
   } else {
