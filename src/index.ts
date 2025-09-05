@@ -190,6 +190,8 @@ let latestBlock = 0
 export const blocks: BlockMap = {}
 export const blocksByHash: { [hash: string]: number } = {}
 export const readableBlocks: { [blockNumber: number | string]: ShardeumBlockOverride } = {}
+const DAO_HARDFORK_START_BLOCK = 1920000
+const DAO_HARDFORK_END_BLOCK = 1920009
 
 //Cache network account
 let cachedNetworkAccount = null
@@ -441,7 +443,7 @@ function createBlock(timestamp: number, blockNumber: number): Block {
   }
   
   // Handle DAO hard fork blocks (1920000-1920009) - require specific extraData for mainnet compatibility
-  if (blockNumber >= 1920000 && blockNumber <= 1920009) {
+  if (blockNumber >= DAO_HARDFORK_START_BLOCK && blockNumber <= DAO_HARDFORK_END_BLOCK) {
     blockData.header.extraData = '0x' + Buffer.from('dao-hard-fork', 'utf8').toString('hex')
   }
   
