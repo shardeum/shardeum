@@ -432,11 +432,17 @@ function createAndRecordBlock(blockNumber: number, timestamp: number): Block {
 
 function createBlock(timestamp: number, blockNumber: number): Block {
   const timestampInSecond = timestamp ? Math.round(timestamp / 1000) : Math.round(shardeumGetTime() / 1000)
-  const blockData = {
+  const blockData: any = {
     header: { number: blockNumber, timestamp: timestampInSecond },
     transactions: [],
     uncleHeaders: [],
   }
+  
+  // Handle DAO hard fork blocks (1920000-1920009) - require specific extraData for mainnet compatibility
+  if (blockNumber >= 1920000 && blockNumber <= 1920009) {
+    blockData.header.extraData = '0x' + Buffer.from('dao-hard-fork', 'utf8').toString('hex')
+  }
+  
   const block = Block.fromBlockData(blockData, { common: evmCommon })
   return block
 }
