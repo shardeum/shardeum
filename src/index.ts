@@ -4804,13 +4804,21 @@ const shardusSetup = (): void => {
         shardus.setDebugSetLastAppAwait(`apply():runTx`)
 
         try {
+          // Prefer live wrapped network account; fall back to cached if missing
+          const fallbackNetworkAcc = await AccountsStorage.getCachedNetworkAccount()
+          const networkAcc = (wrappedNetworkAccount && (wrappedNetworkAccount as any).data)
+            ? (wrappedNetworkAccount as any).data
+            : fallbackNetworkAcc
+
+          const runOpts: any = {
+            block: blockForTx,
+            tx: transaction,
+            skipNonce: !ShardeumFlags.CheckNonce,
+          }
+          if (networkAcc) runOpts.networkAccount = networkAcc
+
           runTxResult = await EVM.runTx(
-            {
-              block: blockForTx,
-              tx: transaction,
-              skipNonce: !ShardeumFlags.CheckNonce,
-              networkAccount: wrappedNetworkAccount.data,
-            },
+            runOpts,
             customEVM,
             txId
           )
