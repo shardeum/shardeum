@@ -52,7 +52,7 @@ export async function initEVMSingletons(): Promise<void> {
 
   // setting up only to 'istanbul' hardfork for now
   // https://github.com/ethereumjs/ethereumjs-monorepo/blob/master/packages/common/src/chains/mainnet.json
-  evmCommon = new Common({ chain: 'mainnet', hardfork: Hardfork.Istanbul, eips: [3855] })
+  evmCommon = new Common({ chain: 'sepolia', hardfork: Hardfork.Istanbul, eips: [3855] })
 
   //hack override this function.  perhaps a nice thing would be to use forCustomChain to create a custom common object
   evmCommon.chainId = (): bigint => {
