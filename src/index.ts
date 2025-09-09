@@ -5230,7 +5230,8 @@ const shardusSetup = (): void => {
         if (wrappedEVMAccount.accountType === AccountType.ContractCode) {
           address = Address.fromString(wrappedEVMAccount.contractAddress)
         } else if (wrappedEVMAccount.accountType === AccountType.ContractStorage) {
-          address = originalAppData.newCAAddr
+          // Get the first contract address from the access list
+          address = appData.accessList[0][0]
         } else {
           address = Address.fromString(wrappedEVMAccount.ethAddress)
         }
@@ -5246,7 +5247,7 @@ const shardusSetup = (): void => {
           )
           const accountIsRemote = __ShardFunctions.partitionInWrappingRange(homePartition, minP, maxP) === false
 
-          /* prettier-ignore */ console.log('DBG', 'tx insert data', txId, `accountIsRemote: ${accountIsRemote} acc:${address} key:${wrappedEVMAccount.key} type:${wrappedEVMAccount.accountType}`)
+          /* prettier-ignore */ console.log('DBG', 'tx insert data', txId, `accountIsRemote: ${accountIsRemote} accId:${shardusAddress} ca:${address} key:${wrappedEVMAccount.key} type:${wrappedEVMAccount.accountType}`)
         }
 
         if (wrappedEVMAccount.accountType === AccountType.Account) {
@@ -6491,18 +6492,18 @@ const shardusSetup = (): void => {
      * This function receives paired data containing both the account data and its computed accountId,
      * ensuring consistency especially for ContractStorage accounts where the accountId may differ
      * from the computed address based on ethAddress.
-     * 
+     *
      * @param accountRecords - Array of objects containing account data and their corresponding Shardus addresses
      * @param accountRecords[].accountData - The wrapped EVM account data to be stored
      * @param accountRecords[].accountId - The Shardus address (accountId) where this account should be stored
-     * 
+     *
      */
     async setAccountData(accountRecords: Array<{ accountData: unknown; accountId: string }>) {
       /* prettier-ignore */ if (logFlags.dapp_verbose) console.log(`Running setAccountData`, accountRecords)
       // update our in memory accounts map
       for (const accountRecord of accountRecords) {
         const wrappedEVMAccount = accountRecord.accountData as WrappedEVMAccount
-        const shardusAddress = accountRecord.accountId 
+        const shardusAddress = accountRecord.accountId
 
         if (
           wrappedEVMAccount.accountType !== AccountType.NetworkAccount &&
