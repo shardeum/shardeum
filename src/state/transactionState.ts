@@ -103,6 +103,10 @@ export default class TransactionState {
   allContractBytesWrites: Map<string, ContractByteWrite>
   allContractBytesWritesByAddress: Map<string, ContractByteWrite>
 
+  // Stack for contract bytecode checkpointing
+  allContractBytesWritesStack: Map<string, ContractByteWrite>[]
+  allContractBytesWritesByAddressStack: Map<string, ContractByteWrite>[]
+
   // pending contract storage commits
   pendingContractStorageCommits: Map<string, Map<string, Uint8Array>>
   pendingContractBytesCommits: Map<string, Map<string, WrappedEVMAccount>>
@@ -228,6 +232,8 @@ export default class TransactionState {
     this.firstContractBytesReads = new Map()
     this.allContractBytesWrites = new Map()
     this.allContractBytesWritesByAddress = new Map()
+    this.allContractBytesWritesStack = []
+    this.allContractBytesWritesByAddressStack = []
 
     this.pendingContractStorageCommits = new Map()
     this.pendingContractBytesCommits = new Map()
@@ -1004,6 +1010,10 @@ export default class TransactionState {
     //this.allAccountWritesStack.push(this.allAccountWrites)
     this.allAccountWritesStack.push(new Map<string, Uint8Array>())
 
+    // Also checkpoint contract bytecode writes
+    this.allContractBytesWritesStack.push(new Map(this.allContractBytesWrites))
+    this.allContractBytesWritesByAddressStack.push(new Map(this.allContractBytesWritesByAddress))
+
     this.allAccountWrites = new Map()
 
     //this.canCommit = true
@@ -1085,10 +1095,22 @@ export default class TransactionState {
     this.allAccountWrites = this.allAccountWritesStack.pop()
     this.allAccountWrites.clear()
 
+    // Restore contract bytecode writes from stack
+    if (this.allContractBytesWritesStack.length > 0) {
+      this.allContractBytesWrites = this.allContractBytesWritesStack.pop()
+    } else {
+      this.allContractBytesWrites.clear()
+    }
+
+    if (this.allContractBytesWritesByAddressStack.length > 0) {
+      this.allContractBytesWritesByAddress = this.allContractBytesWritesByAddressStack.pop()
+    } else {
+      this.allContractBytesWritesByAddress.clear()
+    }
+
     //other saved values do not need a stack and are simply cleared:
     //this.allAccountWrites.clear()
     this.allContractStorageWrites.clear()
-    this.allContractBytesWritesByAddress.clear()
 
     this.checkpointCount--
     if (this.debugTrace) this.debugTraceLog(`checkpointCount:${this.checkpointCount} revert `)
