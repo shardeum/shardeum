@@ -554,10 +554,10 @@ export default class TransactionState {
 
     if (this.debugTrace) this.debugTraceLog(`putAccount: addr:${addressString} v:${Utils.safeStringify(accountObj)}`)
 
-    //this.allAccountWrites.set(addressString, storedRlp)
-
-    //this.checkpoints[this.checkpoints.length - 1]
-    if (this.allAccountWritesStack.length > 0) {
+    // When CheckpointRevertSupport is enabled, always write to allAccountWrites
+    if (ShardeumFlags.CheckpointRevertSupport) {
+      this.allAccountWrites.set(addressString, storedRlp)
+    } else if (this.allAccountWritesStack.length > 0) {
       const accountWrites = this.allAccountWritesStack[this.allAccountWritesStack.length - 1]
       accountWrites.set(addressString, storedRlp)
     } else {
@@ -1011,8 +1011,8 @@ export default class TransactionState {
     }
 
     //we need checkpoint / revert stack support for accounts so that gas is handled correctly
-    //this.allAccountWritesStack.push(this.allAccountWrites)
-    this.allAccountWritesStack.push(new Map<string, Uint8Array>())
+    this.allAccountWritesStack.push(new Map(this.allAccountWrites))
+    //this.allAccountWritesStack.push(new Map<string, Uint8Array>())
 
     // Also checkpoint contract bytecode writes
     this.allContractBytesWritesStack.push(new Map(this.allContractBytesWrites))
@@ -1084,6 +1084,15 @@ export default class TransactionState {
     } else if (this.checkpointCount === 0) {
       // if (this.debugTrace) console.log('commit: allAccountWritesStack', this.logAccountWritesStack(this.allAccountWritesStack))
       this.flushToCommittedValues()
+      
+      // Move allAccountWrites to committedAccountWrites when checkpointCount is 0
+      // This handles the case where CheckpointRevertSupport is enabled but no checkpoints are active
+      if (ShardeumFlags.CheckpointRevertSupport) {
+        for (const [key, value] of this.allAccountWrites.entries()) {
+          this.committedAccountWrites.set(key, value)
+        }
+        this.allAccountWrites.clear()
+      }
     }
 
     //not 100% sure if we should do this...
@@ -1109,7 +1118,6 @@ export default class TransactionState {
 
       if (this.allAccountWritesStack.length > 0) {
         this.allAccountWrites = this.allAccountWritesStack.pop()
-        this.allAccountWrites.clear()
       } else {
         this.allAccountWrites.clear()
       }
@@ -1200,11 +1208,13 @@ export default class TransactionState {
     } else {
       // this version commits one layer at a time /////
       const accountWrites = this.allAccountWritesStack.pop()
-      for (const [key, value] of accountWrites.entries()) {
-        //if our flattened list does not have the value yet
-        if (this.committedAccountWrites.has(key) === false) {
-          //then flatten the value from the stack into it
-          this.committedAccountWrites.set(key, value)
+      if (accountWrites) {
+        for (const [key, value] of accountWrites.entries()) {
+          //if our flattened list does not have the value yet
+          if (this.committedAccountWrites.has(key) === false) {
+            //then flatten the value from the stack into it
+            this.committedAccountWrites.set(key, value)
+          }
         }
       }
     }
