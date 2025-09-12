@@ -4486,6 +4486,7 @@ async function fetchAndCacheAccountData(
   } catch (er) {
     const elapsed = Date.now() - startTime
     warmupStats.accReqErr++
+    warmupCache.set(shardusAddress, undefined)
     nestedCountersInstance.countEvent('aalg-warmup', `account er: ${er.message}`)
     /* prettier-ignore */ if (logFlags.aalg) console.log('aalg: fetchAndCacheAccountData-error', elapsed, txid, shardusAddress, type)
   }
