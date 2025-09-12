@@ -1065,6 +1065,10 @@ export default class TransactionState {
 
     if (this.checkpointCount > 0) {
       this.checkpointCount--
+    } else {
+      // Safeguard: Prevent negative checkpoint count
+      if (this.debugTrace) this.debugTraceLog(`Warning: Attempted commit with checkpointCount=0, ignoring to prevent negative count`)
+      nestedCountersInstance.countEvent('transactionState', 'commit-at-zero-checkpoint')
     }
     if (this.debugTrace) this.debugTraceLog(`checkpointCount:${this.checkpointCount} commit `)
 
@@ -1098,38 +1102,45 @@ export default class TransactionState {
 
     //we need checkpoint / revert stack support for accounts so that gas is handled correctly
 
-    //the top of the stack becomes our base level set of values.
-    //this.allAccountWrites = this.allAccountWritesStack.pop()
-
-    if (this.allAccountWritesStack.length > 0) {
-      this.allAccountWrites = this.allAccountWritesStack.pop()
-      this.allAccountWrites.clear()
-    } else {
-      this.allAccountWrites.clear()
-    }
-
-    // Restore contract bytecode writes from stack
-    if (this.allContractBytesWritesStack.length > 0) {
-      this.allContractBytesWrites = this.allContractBytesWritesStack.pop()
-    } else {
-      this.allContractBytesWrites.clear()
-    }
-
-    if (this.allContractBytesWritesByAddressStack.length > 0) {
-      this.allContractBytesWritesByAddress = this.allContractBytesWritesByAddressStack.pop()
-    } else {
-      this.allContractBytesWritesByAddress.clear()
-    }
-
-    // Restore contract storage writes from stack
-    if (this.allContractStorageWritesStack.length > 0) {
-      this.allContractStorageWrites = this.allContractStorageWritesStack.pop()
-    } else {
-      this.allContractStorageWrites.clear()
-    }
-
+    // Only perform revert operations if we have a checkpoint to revert to
     if (this.checkpointCount > 0) {
+      //the top of the stack becomes our base level set of values.
+      //this.allAccountWrites = this.allAccountWritesStack.pop()
+
+      if (this.allAccountWritesStack.length > 0) {
+        this.allAccountWrites = this.allAccountWritesStack.pop()
+        this.allAccountWrites.clear()
+      } else {
+        this.allAccountWrites.clear()
+      }
+
+      // Restore contract bytecode writes from stack
+      if (this.allContractBytesWritesStack.length > 0) {
+        this.allContractBytesWrites = this.allContractBytesWritesStack.pop()
+      } else {
+        this.allContractBytesWrites.clear()
+      }
+
+      if (this.allContractBytesWritesByAddressStack.length > 0) {
+        this.allContractBytesWritesByAddress = this.allContractBytesWritesByAddressStack.pop()
+      } else {
+        this.allContractBytesWritesByAddress.clear()
+      }
+
+      // Restore contract storage writes from stack
+      if (this.allContractStorageWritesStack.length > 0) {
+        this.allContractStorageWrites = this.allContractStorageWritesStack.pop()
+      } else {
+        this.allContractStorageWrites.clear()
+      }
+
       this.checkpointCount--
+    } else {
+      // Safeguard: Prevent negative checkpoint count and skip revert operations
+      if (this.debugTrace) this.debugTraceLog(`Warning: Attempted revert with checkpointCount=0, skipping revert operations to prevent state corruption`)
+      nestedCountersInstance.countEvent('transactionState', `revert-at-zero-checkpoint:${message}`)
+      // Don't clear any state when there's no checkpoint to revert to
+      return
     }
     if (this.debugTrace) this.debugTraceLog(`checkpointCount:${this.checkpointCount} revert `)
     if (this.debugTrace)
