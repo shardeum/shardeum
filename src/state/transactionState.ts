@@ -554,11 +554,10 @@ export default class TransactionState {
 
     if (this.debugTrace) this.debugTraceLog(`putAccount: addr:${addressString} v:${Utils.safeStringify(accountObj)}`)
 
-    // write to allAccountWrites when checkpointing is enabled
-    // The checkpoint system preserves allAccountWrites in the stack for revert
-    if (ShardeumFlags.CheckpointRevertSupport && this.checkpointCount > 0) {
-      this.allAccountWrites.set(addressString, storedRlp)
-    } else if (this.allAccountWritesStack.length > 0) {
+    //this.allAccountWrites.set(addressString, storedRlp)
+
+    //this.checkpoints[this.checkpoints.length - 1]
+    if (this.allAccountWritesStack.length > 0) {
       const accountWrites = this.allAccountWritesStack[this.allAccountWritesStack.length - 1]
       accountWrites.set(addressString, storedRlp)
     } else {
@@ -1012,8 +1011,8 @@ export default class TransactionState {
     }
 
     //we need checkpoint / revert stack support for accounts so that gas is handled correctly
-    // Save current state to stack before clearing for new changes
-    this.allAccountWritesStack.push(new Map(this.allAccountWrites))
+    //this.allAccountWritesStack.push(this.allAccountWrites)
+    this.allAccountWritesStack.push(new Map<string, Uint8Array>())
 
     // Also checkpoint contract bytecode writes
     this.allContractBytesWritesStack.push(new Map(this.allContractBytesWrites))
@@ -1110,6 +1109,7 @@ export default class TransactionState {
 
       if (this.allAccountWritesStack.length > 0) {
         this.allAccountWrites = this.allAccountWritesStack.pop()
+        this.allAccountWrites.clear()
       } else {
         this.allAccountWrites.clear()
       }
