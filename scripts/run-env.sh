@@ -1,4 +1,11 @@
 #!/bin/bash
+set -euo pipefail
+
+# Ensure this script is run with bash, not sh
+if [ -z "$BASH_VERSION" ]; then
+  echo "Error: This script must be run with bash."
+  exit 1
+fi
 
 # Script to run Shardeum with a specific environment configuration
 # This script uses the LOAD_JSON_CONFIGS environment variable to specify the configuration file
@@ -49,4 +56,4 @@ if [ $? -eq 0 ]; then
 else
   echo "Error: Failed to start Shardeum network."
   exit 1
-fi 
+fi
