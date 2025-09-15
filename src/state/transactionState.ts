@@ -103,6 +103,13 @@ export default class TransactionState {
   allContractBytesWrites: Map<string, ContractByteWrite>
   allContractBytesWritesByAddress: Map<string, ContractByteWrite>
 
+  // Stack for contract bytecode checkpointing
+  allContractBytesWritesStack: Map<string, ContractByteWrite>[]
+  allContractBytesWritesByAddressStack: Map<string, ContractByteWrite>[]
+
+  // Stack for contract storage checkpointing
+  allContractStorageWritesStack: Map<string, Map<string, Uint8Array>>[]
+
   // pending contract storage commits
   pendingContractStorageCommits: Map<string, Map<string, Uint8Array>>
   pendingContractBytesCommits: Map<string, Map<string, WrappedEVMAccount>>
@@ -228,6 +235,9 @@ export default class TransactionState {
     this.firstContractBytesReads = new Map()
     this.allContractBytesWrites = new Map()
     this.allContractBytesWritesByAddress = new Map()
+    this.allContractBytesWritesStack = []
+    this.allContractBytesWritesByAddressStack = []
+    this.allContractStorageWritesStack = []
 
     this.pendingContractStorageCommits = new Map()
     this.pendingContractBytesCommits = new Map()
@@ -544,10 +554,10 @@ export default class TransactionState {
 
     if (this.debugTrace) this.debugTraceLog(`putAccount: addr:${addressString} v:${Utils.safeStringify(accountObj)}`)
 
-    //this.allAccountWrites.set(addressString, storedRlp)
-
-    //this.checkpoints[this.checkpoints.length - 1]
-    if (this.allAccountWritesStack.length > 0) {
+    // When CheckpointRevertSupport is enabled, always write to allAccountWrites
+    if (ShardeumFlags.CheckpointRevertSupport) {
+      this.allAccountWrites.set(addressString, storedRlp)
+    } else if (this.allAccountWritesStack.length > 0) {
       const accountWrites = this.allAccountWritesStack[this.allAccountWritesStack.length - 1]
       accountWrites.set(addressString, storedRlp)
     } else {
@@ -1001,8 +1011,15 @@ export default class TransactionState {
     }
 
     //we need checkpoint / revert stack support for accounts so that gas is handled correctly
-    //this.allAccountWritesStack.push(this.allAccountWrites)
-    this.allAccountWritesStack.push(new Map<string, Uint8Array>())
+    this.allAccountWritesStack.push(new Map(this.allAccountWrites))
+    //this.allAccountWritesStack.push(new Map<string, Uint8Array>())
+
+    // Also checkpoint contract bytecode writes
+    this.allContractBytesWritesStack.push(new Map(this.allContractBytesWrites))
+    this.allContractBytesWritesByAddressStack.push(new Map(this.allContractBytesWritesByAddress))
+
+    // Also checkpoint contract storage writes
+    this.allContractStorageWritesStack.push(new Map(this.allContractStorageWrites))
 
     this.allAccountWrites = new Map()
 
@@ -1046,7 +1063,13 @@ export default class TransactionState {
     //I think it is best to clear this. this will allow the newest values to get in
     //this does make some assumptions about how many times commit is called though..
 
-    this.checkpointCount--
+    if (this.checkpointCount > 0) {
+      this.checkpointCount--
+    } else {
+      // Safeguard: Prevent negative checkpoint count
+      if (this.debugTrace) this.debugTraceLog(`Warning: Attempted commit with checkpointCount=0, ignoring to prevent negative count`)
+      nestedCountersInstance.countEvent('transactionState', 'commit-at-zero-checkpoint')
+    }
     if (this.debugTrace) this.debugTraceLog(`checkpointCount:${this.checkpointCount} commit `)
 
     if (this.checkpointCount > 0) {
@@ -1061,6 +1084,15 @@ export default class TransactionState {
     } else if (this.checkpointCount === 0) {
       // if (this.debugTrace) console.log('commit: allAccountWritesStack', this.logAccountWritesStack(this.allAccountWritesStack))
       this.flushToCommittedValues()
+      
+      // Move allAccountWrites to committedAccountWrites when checkpointCount is 0
+      // This handles the case where CheckpointRevertSupport is enabled but no checkpoints are active
+      if (ShardeumFlags.CheckpointRevertSupport) {
+        for (const [key, value] of this.allAccountWrites.entries()) {
+          this.committedAccountWrites.set(key, value)
+        }
+        this.allAccountWrites.clear()
+      }
     }
 
     //not 100% sure if we should do this...
@@ -1079,18 +1111,45 @@ export default class TransactionState {
 
     //we need checkpoint / revert stack support for accounts so that gas is handled correctly
 
-    //the top of the stack becomes our base level set of values.
-    //this.allAccountWrites = this.allAccountWritesStack.pop()
+    // Only perform revert operations if we have a checkpoint to revert to
+    if (this.checkpointCount > 0) {
+      //the top of the stack becomes our base level set of values.
+      //this.allAccountWrites = this.allAccountWritesStack.pop()
 
-    this.allAccountWrites = this.allAccountWritesStack.pop()
-    this.allAccountWrites.clear()
+      if (this.allAccountWritesStack.length > 0) {
+        this.allAccountWrites = this.allAccountWritesStack.pop()
+      } else {
+        this.allAccountWrites.clear()
+      }
 
-    //other saved values do not need a stack and are simply cleared:
-    //this.allAccountWrites.clear()
-    this.allContractStorageWrites.clear()
-    this.allContractBytesWritesByAddress.clear()
+      // Restore contract bytecode writes from stack
+      if (this.allContractBytesWritesStack.length > 0) {
+        this.allContractBytesWrites = this.allContractBytesWritesStack.pop()
+      } else {
+        this.allContractBytesWrites.clear()
+      }
 
-    this.checkpointCount--
+      if (this.allContractBytesWritesByAddressStack.length > 0) {
+        this.allContractBytesWritesByAddress = this.allContractBytesWritesByAddressStack.pop()
+      } else {
+        this.allContractBytesWritesByAddress.clear()
+      }
+
+      // Restore contract storage writes from stack
+      if (this.allContractStorageWritesStack.length > 0) {
+        this.allContractStorageWrites = this.allContractStorageWritesStack.pop()
+      } else {
+        this.allContractStorageWrites.clear()
+      }
+
+      this.checkpointCount--
+    } else {
+      // Safeguard: Prevent negative checkpoint count and skip revert operations
+      if (this.debugTrace) this.debugTraceLog(`Warning: Attempted revert with checkpointCount=0, skipping revert operations to prevent state corruption`)
+      nestedCountersInstance.countEvent('transactionState', `revert-at-zero-checkpoint:${message}`)
+      // Don't clear any state when there's no checkpoint to revert to
+      return
+    }
     if (this.debugTrace) this.debugTraceLog(`checkpointCount:${this.checkpointCount} revert `)
     if (this.debugTrace)
       console.log('revert: allAccountWritesStack', this.logAccountWritesStack(this.allAccountWritesStack))
@@ -1149,11 +1208,13 @@ export default class TransactionState {
     } else {
       // this version commits one layer at a time /////
       const accountWrites = this.allAccountWritesStack.pop()
-      for (const [key, value] of accountWrites.entries()) {
-        //if our flattened list does not have the value yet
-        if (this.committedAccountWrites.has(key) === false) {
-          //then flatten the value from the stack into it
-          this.committedAccountWrites.set(key, value)
+      if (accountWrites) {
+        for (const [key, value] of accountWrites.entries()) {
+          //if our flattened list does not have the value yet
+          if (this.committedAccountWrites.has(key) === false) {
+            //then flatten the value from the stack into it
+            this.committedAccountWrites.set(key, value)
+          }
         }
       }
     }

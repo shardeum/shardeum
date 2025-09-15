@@ -405,7 +405,7 @@ export default class ShardeumState implements EVMStateManagerInterface {
 
     if (this._transactionState != null) {
       //side run system on the side for now
-      this._transactionState.putContractStorage(address, key, value)
+      await this._transactionState.putContractStorage(address, key, value)
     }
     return
   }

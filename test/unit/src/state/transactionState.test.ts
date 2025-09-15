@@ -302,14 +302,41 @@ describe('TransactionState', () => {
 
       transactionState.putAccount(address1, account1)
 
-      const topStack = transactionState.allAccountWritesStack[transactionState.allAccountWritesStack.length - 1]
-      expect(topStack.has(addressString1)).toBe(true)
+      // When CheckpointRevertSupport is enabled, putAccount writes to allAccountWrites
+      expect(transactionState.allAccountWrites.has(addressString1)).toBe(true)
     })
 
-    test('should add account to firstAccountReads if no checkpoints', () => {
+    test('should add account to allAccountWrites when CheckpointRevertSupport is enabled', () => {
+      transactionState.putAccount(address1, account1)
+
+      // When CheckpointRevertSupport is enabled, putAccount writes to allAccountWrites
+      expect(transactionState.allAccountWrites.has(addressString1)).toBe(true)
+    })
+
+    test('should add account to firstAccountReads when CheckpointRevertSupport is disabled', () => {
+      ShardeumFlags.CheckpointRevertSupport = false
+      
       transactionState.putAccount(address1, account1)
 
       expect(transactionState.firstAccountReads.has(addressString1)).toBe(true)
+      expect(transactionState.allAccountWrites.has(addressString1)).toBe(false)
+      
+      // Reset flag
+      ShardeumFlags.CheckpointRevertSupport = true
+    })
+
+    test('should add account to stack when CheckpointRevertSupport is disabled but stack exists', () => {
+      ShardeumFlags.CheckpointRevertSupport = false
+      transactionState.allAccountWritesStack.push(new Map())
+      
+      transactionState.putAccount(address1, account1)
+
+      const topStack = transactionState.allAccountWritesStack[transactionState.allAccountWritesStack.length - 1]
+      expect(topStack.has(addressString1)).toBe(true)
+      expect(transactionState.firstAccountReads.has(addressString1)).toBe(false)
+      
+      // Reset flag
+      ShardeumFlags.CheckpointRevertSupport = true
     })
 
     test('should ignore virtual 0 address when flag is set', () => {
@@ -318,7 +345,7 @@ describe('TransactionState', () => {
 
       transactionState.putAccount(zeroAddress, account1)
 
-      expect(transactionState.firstAccountReads.has(zeroAddressStr)).toBe(false)
+      expect(transactionState.allAccountWrites.has(zeroAddressStr)).toBe(false)
       ShardeumFlags.Virtual0Address = false
     })
 
@@ -596,18 +623,32 @@ describe('TransactionState', () => {
     })
 
     test('revert should discard checkpoint changes', () => {
+      // Add account1 before first checkpoint
+      transactionState.putAccount(address1, account1)
+      
+      // First checkpoint - saves account1 to stack, clears allAccountWrites
       transactionState.checkpoint()
-      const checkpoint1 = new Map([[addressString1, account1.serialize()]])
-      transactionState.allAccountWritesStack[0] = checkpoint1
-
+      
+      // Add account2 after checkpoint
+      transactionState.putAccount(address2, account2)
+      
+      // Second checkpoint - saves account2 to stack, clears allAccountWrites  
       transactionState.checkpoint()
-      transactionState.allAccountWritesStack[1].set(addressString2, account2.serialize())
+      
+      // Add another account after second checkpoint
+      const address3 = new Address(Buffer.from('0xfedcba9876543210fedcba9876543210fedcba98'.slice(2), 'hex'))
+      const account3 = new Account()
+      account3.balance = BigInt(300)
+      transactionState.putAccount(address3, account3)
 
+      // Revert second checkpoint
       transactionState.revert('test revert')
 
       expect(transactionState.checkpointCount).toBe(1)
       expect(transactionState.allAccountWritesStack.length).toBe(1)
-      expect(transactionState.allAccountWrites.size).toBe(0)
+      // After revert, allAccountWrites should contain account2 from before the second checkpoint
+      expect(transactionState.allAccountWrites.size).toBe(1)
+      expect(transactionState.allAccountWrites.has(addressString2)).toBe(true)
       expect(transactionState.allContractStorageWrites.size).toBe(0)
     })
 
