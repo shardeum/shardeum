@@ -37,6 +37,11 @@ export const accountSpecificHash = (account: any): string => {
     // Remove the existing hash property from the account object
     delete account.hash
 
+    // For ContractStorage accounts, also remove ethAddress before hashing
+    if (account.accountType === AccountType.ContractStorage && account.ethAddress) {
+      delete account.ethAddress
+    }
+
     // Calculate a new hash based on the account's data and assign it to the hash property
     account.hash = crypto.hashObj(account)
     return account.hash
@@ -55,16 +60,30 @@ export function _calculateAccountHash(account: WrappedEVMAccount | InternalAccou
 }
 
 export function _shardusWrappedAccount(
-  wrappedEVMAccount: WrappedEVMAccount | InternalAccount
+  wrappedEVMAccount: WrappedEVMAccount | InternalAccount,
+  shardusAddress?: string
 ): ShardusTypes.WrappedData {
-  const reuseHash = wrappedEVMAccount.accountType === AccountType.ContractCode && wrappedEVMAccount.hash // Use cached hash if available for ContractCode
-  const wrappedChangedAccount = {
-    accountId: getAccountShardusAddress(wrappedEVMAccount),
-    stateId: reuseHash ? wrappedEVMAccount.hash : _calculateAccountHash(wrappedEVMAccount),
-    data: wrappedEVMAccount,
-    timestamp: wrappedEVMAccount.timestamp,
+  try {
+    const reuseHash = wrappedEVMAccount.accountType === AccountType.ContractCode && wrappedEVMAccount.hash // Use cached hash if available for ContractCode
+
+    let accountId: string
+    if (shardusAddress) {
+      accountId = shardusAddress
+    } else {
+      accountId = getAccountShardusAddress(wrappedEVMAccount)
+    }
+
+    const wrappedChangedAccount = {
+      accountId,
+      stateId: reuseHash ? wrappedEVMAccount.hash : _calculateAccountHash(wrappedEVMAccount),
+      data: wrappedEVMAccount,
+      timestamp: wrappedEVMAccount.timestamp,
+    }
+    return wrappedChangedAccount
+  } catch (error) {
+    console.error('Error in _shardusWrappedAccount:', error)
+    throw error
   }
-  return wrappedChangedAccount
 }
 
 /**
@@ -105,6 +124,7 @@ function fixWrappedEVMAccountBuffers(wrappedEVMAccount: WrappedEVMAccount): void
 }
 
 export function predictContractAddress(wrappedEVMAccount: WrappedEVMAccount): Buffer {
+  // not being used anymore but comment
   if (wrappedEVMAccount.accountType != AccountType.Account) {
     throw new Error('predictContractAddress requires AccountType.Account')
   }

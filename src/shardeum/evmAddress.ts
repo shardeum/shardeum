@@ -16,13 +16,13 @@ export function getAccountShardusAddress(account: WrappedEVMAccount | InternalAc
     const addressSource = account.ethAddress
     if (account.accountType === AccountType.ContractStorage) {
       //addressSource = account.key
-      const shardusAddress = toShardusAddressWithKey(account.ethAddress, account.key, account.accountType)
+      const shardusAddress = toShardusAddressWithKey(addressSource, account.key, account.accountType)
       return shardusAddress
     }
     if (account.accountType === AccountType.ContractCode) {
       //in this case ethAddress is the code hash which is what we want for the key
       //account.codeHash.toString()
-      const shardusAddress = toShardusAddressWithKey(account.contractAddress, account.ethAddress, account.accountType)
+      const shardusAddress = toShardusAddressWithKey(account.contractAddress, addressSource, account.accountType)
       return shardusAddress
     }
     if (
@@ -36,7 +36,7 @@ export function getAccountShardusAddress(account: WrappedEVMAccount | InternalAc
       return shardusAddress
     }
     if (account.accountType === AccountType.NodeRewardReceipt) {
-      return account.ethAddress
+      return addressSource
     }
     const shardusAddress = toShardusAddress(addressSource, account.accountType)
     return shardusAddress
@@ -156,12 +156,27 @@ export function toShardusAddressWithKey(
     return shardusAddress
   }
 
-  if (
-    (ShardeumFlags.contractStorageKeySilo === false && accountType === AccountType.ContractStorage) ||
-    (ShardeumFlags.contractCodeKeySilo === false && accountType === AccountType.ContractCode)
-  ) {
+  // Handle ContractStorage with collision prevention
+  if (ShardeumFlags.contractStorageKeySilo === false && accountType === AccountType.ContractStorage) {
+    if (addressStr.length != 42) {
+      throw new Error('must pass in a 42 character hex address for Account type ContractStorage.')
+    }
     if (secondaryAddressStr.length === 64) {
-      //unexpected case but lets allow it
+      const hashedAddress = crypto.hash(secondaryAddressStr + addressStr)
+      return hashedAddress.toLowerCase()
+    }
+    if (secondaryAddressStr.length != 66) {
+      throw new Error(
+        `must pass in a 66 character 32 byte address for non Account types. use the key for storage and codehash contractbytes ${addressStr.length}`
+      )
+    }
+    const hashedAddress = crypto.hash(secondaryAddressStr + addressStr)
+    return hashedAddress.toLowerCase()
+  }
+
+  // Handle ContractCode with original raw key behavior
+  if (ShardeumFlags.contractCodeKeySilo === false && accountType === AccountType.ContractCode) {
+    if (secondaryAddressStr.length === 64) {
       return secondaryAddressStr.toLowerCase()
     }
     if (secondaryAddressStr.length != 66) {
@@ -169,7 +184,8 @@ export function toShardusAddressWithKey(
         `must pass in a 66 character 32 byte address for non Account types. use the key for storage and codehash contractbytes ${addressStr.length}`
       )
     }
-    return secondaryAddressStr.slice(2).toLowerCase()
+    const result = secondaryAddressStr.slice(2).toLowerCase()
+    return result
   }
 
   if (

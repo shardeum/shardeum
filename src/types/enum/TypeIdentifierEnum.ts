@@ -8,5 +8,6 @@ export enum TypeIdentifierEnum {
   cNodeAccount,
   cNodeAccount2,
   cSecureAccount = 13,
+  cContractStorageAccount,
   cUnknown,
 }

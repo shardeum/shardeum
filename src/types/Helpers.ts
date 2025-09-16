@@ -8,6 +8,12 @@ import { WrappedEVMAccount, deserializeWrappedEVMAccount, serializeWrappedEVMAcc
 import { TypeIdentifierEnum } from './enum/TypeIdentifierEnum'
 import { Utils } from '@shardeum-foundation/lib-types'
 import { deserializeSecureAccount, serializeSecureAccount } from './SecureAccount'
+import {
+  deserializeContractStorageAccount,
+  serializeContractStorageAccount,
+  toWrappedEVMAccount,
+  toContractStorageAccount,
+} from './ContractStorageAccount'
 
 export const binarySerializer = <T>(
   data: T,
@@ -51,9 +57,14 @@ export const accountSerializer = <T extends BaseAccount>(data: T): VectorBufferS
       nestedCountersInstance.countEvent('binarySerialize', 'SecureAccount')
       serializeSecureAccount(serializedPayload, data as unknown as SecureAccount, true)
       break
+    case AccountType.ContractStorage: {
+      nestedCountersInstance.countEvent('binarySerialize', 'ContractStorageAccount')
+      const contractStorage = toContractStorageAccount(data as unknown as WrappedEVMAccount)
+      serializeContractStorageAccount(serializedPayload, contractStorage, true)
+      break
+    }
     case AccountType.Account:
     case AccountType.ContractCode:
-    case AccountType.ContractStorage:
     case AccountType.Receipt:
       nestedCountersInstance.countEvent('binarySerialize', 'WrappedEVMAccount')
       serializeWrappedEVMAccount(serializedPayload, data as unknown as WrappedEVMAccount, true)
@@ -89,6 +100,11 @@ export const accountDeserializer = <T extends BaseAccount>(data: Buffer): T => {
     case TypeIdentifierEnum.cWrappedEVMAccount:
       nestedCountersInstance.countEvent('binaryDeserialize', 'WrappedEVMAccount')
       return deserializeWrappedEVMAccount(payloadStream) as unknown as T
+    case TypeIdentifierEnum.cContractStorageAccount: {
+      nestedCountersInstance.countEvent('binaryDeserialize', 'ContractStorageAccount')
+      const contractStorage = deserializeContractStorageAccount(payloadStream)
+      return toWrappedEVMAccount(contractStorage) as unknown as T
+    }
     default:
       nestedCountersInstance.countEvent('binaryDeserialize', `UnknownAccType-${payloadType}`)
       return Utils.safeJsonParse(payloadStream.readString()) as unknown as T
