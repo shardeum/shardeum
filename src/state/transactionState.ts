@@ -12,6 +12,7 @@ import { RLP } from '@ethereumjs/rlp'
 import { Utils } from '@shardeum-foundation/lib-types'
 import { shardeumGetTime } from '..'
 import { nestedCountersInstance } from '@shardeum-foundation/core'
+import { logFlags } from '../index'
 
 export type accountEvent = (transactionState: TransactionState, address: string) => Promise<boolean>
 export type contractStorageEvent = (
@@ -429,6 +430,7 @@ export default class TransactionState {
       if (this.debugTrace) {
         this.debugTraceLog(`getAccount: addr:${addressString} v:notFound. failOnUnexpected EOA/CA account`)
       }
+      /* prettier-ignore */ if (logFlags.dapp_verbose) console.log(`[getAccount] EOA/CA account miss during apply() - tx:${this.linkedTX} addr:${addressString} codeBytesInvolved:${codeBytesInvolved} firstContractBytesReads:${this.firstContractBytesReads.size} allContractBytesWrites:${this.allContractBytesWrites.size}`)
       nestedCountersInstance.countEvent('transactionState', 'getAccountFailOnUnexpectedAccount')
       throw new Error('EOA/CA account miss during apply()')
     }
@@ -443,8 +445,11 @@ export default class TransactionState {
     const accountShardusAddress = toShardusAddress(address.toString(), AccountType.Account)
     const wrappedAccount = await AccountsStorage.getAccount(accountShardusAddress)
     if (wrappedAccount != null) {
+      /* prettier-ignore */ if (logFlags.dapp_verbose) console.log(`[getAccount] Account found in local storage - tx:${this.linkedTX} addr:${addressString} accountType:${wrappedAccount.accountType} timestamp:${wrappedAccount.timestamp}`)
       fixDeserializedWrappedEVMAccount(wrappedAccount)
       account = Account.fromAccountData(wrappedAccount.account)
+    } else {
+      /* prettier-ignore */ if (logFlags.dapp_verbose) console.log(`[getAccount] Account NOT found in local storage - tx:${this.linkedTX} addr:${addressString} shardusAddr:${accountShardusAddress}`)
     }
 
     if (account != null) {
@@ -459,6 +464,7 @@ export default class TransactionState {
     //attempt to get data from tryGetRemoteAccountCB
     //this can be a long wait only suitable in some cases
     if (account == undefined) {
+      /* prettier-ignore */ if (logFlags.dapp_verbose) console.log(`[getAccount] Attempting tryGetRemoteAccountCB for account - tx:${this.linkedTX} addr:${addressString} runType:${this.runType}`)
       const wrappedEVMAccount = await this.tryGetRemoteAccountCB(this, AccountType.Account, addressString, null)
       if (
         this.runType === RunType.Apply &&
@@ -468,6 +474,7 @@ export default class TransactionState {
         if (this.debugTrace) {
           this.debugTraceLog(`getAccount: addr:${addressString} v:notFound. failOnUnexpected EOA/CA account2`)
         }
+        /* prettier-ignore */ if (logFlags.dapp_verbose) console.log(`getAccount: addr:${addressString} v:notFound. failOnUnexpected EOA/CA account2`)
         nestedCountersInstance.countEvent('transactionState', 'getAccountFailOnUnexpectedAccount 2')
         throw new Error('storage account miss during apply()')
       }
@@ -475,6 +482,7 @@ export default class TransactionState {
         //get account aout of the wrapped evm account
         account = wrappedEVMAccount.account
         storedRlp = account.serialize()
+        /* prettier-ignore */ if (logFlags.dapp_verbose) console.log(`[getAccount] Account found via tryGetRemoteAccountCB - tx:${this.linkedTX} addr:${addressString} accountType:${wrappedEVMAccount.accountType} timestamp:${wrappedEVMAccount.timestamp}`)
 
         if (this.debugTrace)
           this.debugTraceLog(
@@ -637,6 +645,7 @@ export default class TransactionState {
           `getContractCode: addr:${addressString} codeHash: ${codeHashStr} v:notFound. failOnUnexpected codeByte account`
         )
       }
+      /* prettier-ignore */ if (logFlags.dapp_verbose) console.log(`[getContractCode] Codebyte miss during apply() - tx:${this.linkedTX} addr:${addressString} codeHash:${codeHashStr} isEmptyCode:${isEmptyCode} codeBytesInvolved:${codeBytesInvolved} firstContractBytesReads:${this.firstContractBytesReads.size} allContractBytesWrites:${this.allContractBytesWrites.size}`)
       nestedCountersInstance.countEvent('transactionState', 'getContractCodeFailOnUnexpectedAccount')
       throw new Error('codebyte miss during apply()')
     }
@@ -651,14 +660,19 @@ export default class TransactionState {
     const bytesShardusAddress = toShardusAddressWithKey(addressString, codeHashStr, AccountType.ContractCode)
     const wrappedAccount = await AccountsStorage.getAccount(bytesShardusAddress)
     if (wrappedAccount != null) {
+      /* prettier-ignore */ if (logFlags.dapp_verbose) console.log(`[getContractCode] Codebyte found in local storage - tx:${this.linkedTX} addr:${addressString} codeHash:${codeHashStr} timestamp:${wrappedAccount.timestamp} codeByteLength:${wrappedAccount.codeByte?.length}`)
       fixDeserializedWrappedEVMAccount(wrappedAccount)
       storedCodeByte = wrappedAccount.codeByte
       codeBytes = storedCodeByte
+    } else {
+      /* prettier-ignore */ if (logFlags.dapp_verbose) console.log(`[getContractCode] Codebyte NOT found in local storage - tx:${this.linkedTX} addr:${addressString} codeHash:${codeHashStr} shardusAddr:${bytesShardusAddress}`)
     }
 
     //attempt to get data from tryGetRemoteAccountCB
     //this can be a long wait only suitable in some cases
     if (codeBytes == undefined) {
+      /* prettier-ignore */ if (logFlags.dapp_verbose) console.log(`[getContractCode] Attempting tryGetRemoteAccountCB for codebyte - tx:${this.linkedTX} addr:${addressString} codeHash:${codeHashStr} runType:${this.runType}`)
+      this.tryRemoteHistory.codeBytes.push(`${addressString}:${codeHashStr}`)
       const wrappedEVMAccount = await this.tryGetRemoteAccountCB(
         this,
         AccountType.ContractCode,
@@ -668,15 +682,19 @@ export default class TransactionState {
       if (wrappedEVMAccount != undefined && wrappedEVMAccount.codeByte) {
         //get account aout of the wrapped evm account
         codeBytes = wrappedEVMAccount.codeByte
+        /* prettier-ignore */ if (logFlags.dapp_verbose) console.log(`[getContractCode] Codebyte found via tryGetRemoteAccountCB - tx:${this.linkedTX} addr:${addressString} codeHash:${codeHashStr} codeByteLength:${codeBytes.length} timestamp:${wrappedEVMAccount.timestamp}`)
+      } else {
+        /* prettier-ignore */ if (logFlags.dapp_verbose) console.log(`[getContractCode] Codebyte NOT found via tryGetRemoteAccountCB - tx:${this.linkedTX} addr:${addressString} codeHash:${codeHashStr} wrappedEVMAccount:${wrappedEVMAccount != undefined}`)
       }
     }
 
     //Storage miss!!!, account not on this shard
     if (codeBytes == undefined) {
+      /* prettier-ignore */ if (logFlags.dapp_verbose) console.log(`[getContractCode] Storage miss, account not on this shard`)
       //event callback to inidicate we do not have the account in this shard
       // not 100% if we should await this, may need some group discussion
       const isRemoteShard = await this.accountMissCB(this, codeHashStr)
-
+      /* prettier-ignore */ if (logFlags.dapp_verbose) console.log("[getContractCode] codeBytes in remote shard, abort")
       if (this.debugTrace)
         this.debugTraceLog(
           `getContractCode: addr:${addressString} codeHashStr:${codeHashStr} v:undefined isRemoteShard:${isRemoteShard}`
@@ -684,6 +702,7 @@ export default class TransactionState {
 
       if (canThrow && isRemoteShard) throw new Error('codeBytes in remote shard, abort') //todo smarter throw?
 
+      /* prettier-ignore */ if (logFlags.dapp_verbose) console.log("[getContractCode] codeBytes in remote shard, return unitiazlied new code bytes")
       //return unitiazlied new code bytes
       //todo need to insert it into a map of new / virtual accounts?
       return new Uint8Array(0)
@@ -719,6 +738,14 @@ export default class TransactionState {
       contractByte: codeByte,
       codeHash,
       contractAddress,
+    }
+
+    // Check if this exact same codebyte hash already exists (shared codebyte)
+    const existingWrite = this.allContractBytesWrites.get(codeHashStr)
+    if (existingWrite) {
+      /* prettier-ignore */ if (logFlags.dapp_verbose) console.log(`[putContractCode] Codebyte deduplication - tx:${this.linkedTX} addr:${addressString} codeHash:${codeHashStr} existing from addr:${existingWrite.contractAddress.toString()} codeByteLength:${codeByte.length}`)
+    } else {
+      /* prettier-ignore */ if (logFlags.dapp_verbose) console.log(`[putContractCode] New codebyte stored - tx:${this.linkedTX} addr:${addressString} codeHash:${codeHashStr} codeByteLength:${codeByte.length}`)
     }
 
     if (this.debugTrace)
@@ -758,6 +785,17 @@ export default class TransactionState {
     originalOnly: boolean,
     canThrow: boolean
   ): Promise<Uint8Array> {
+    /* prettier-ignore */ if (logFlags.dapp_verbose) console.log(`[getContractStorage] ENTER: contractAddress=${contractAddress.toString()} key=${bytesToHex(key)} originalOnly=${originalOnly} canThrow=${canThrow}`);
+    const logContext = {
+      contractAddress: contractAddress.toString(),
+      key: bytesToHex(key),
+      originalOnly,
+      canThrow,
+      runType: this.runType,
+      evmFailOnUnexpectedAccount: ShardeumFlags.evmFailOnUnexpectedAccount,
+      smartContractSupport: AccountsStorage.cachedNetworkAccount?.current?.smartContractSupport
+    };
+
     const addressString = contractAddress.toString()
     const keyString = bytesToHex(key)
 
@@ -767,6 +805,7 @@ export default class TransactionState {
         if (contractStorageWrites.has(keyString)) {
           const storedRlp = contractStorageWrites.get(keyString)
           const returnValue = storedRlp ? (RLP.decode(storedRlp ?? new Uint8Array(0)) as Uint8Array) : undefined
+          /* prettier-ignore */ if (logFlags.dapp_verbose) console.log(`[getContractStorage] HIT allContractStorageWrites:`, { ...logContext, source: 'allContractStorageWrites', value: returnValue ? bytesToHex(returnValue) : undefined });
           if (this.debugTrace)
             this.debugTraceLog(
               `getContractStorage: (contractStorageWrites) addr:${addressString} key:${keyString} v:${
@@ -776,12 +815,14 @@ export default class TransactionState {
           return returnValue
         }
       }
+      /* prettier-ignore */ if (logFlags.dapp_verbose) console.log(`[getContractStorage] MISS allContractStorageWrites:`, { ...logContext });
     }
     if (this.firstContractStorageReads.has(addressString)) {
       const contractStorageReads = this.firstContractStorageReads.get(addressString)
       if (contractStorageReads.has(keyString)) {
         const storedRlp = contractStorageReads.get(keyString)
         const returnValue = storedRlp ? (RLP.decode(storedRlp ?? new Uint8Array(0)) as Uint8Array) : undefined
+        /* prettier-ignore */ if (logFlags.dapp_verbose) console.log(`[getContractStorage] HIT firstContractStorageReads:`, { ...logContext, source: 'firstContractStorageReads', value: returnValue ? bytesToHex(returnValue) : undefined });
         if (this.debugTrace)
           this.debugTraceLog(
             `getContractStorage: (contractStorageReads) addr:${addressString} key:${keyString} v:${
@@ -790,9 +831,11 @@ export default class TransactionState {
           )
         return returnValue
       }
+      /* prettier-ignore */ if (logFlags.dapp_verbose) console.log(`[getContractStorage] MISS firstContractStorageReads:`, { ...logContext });
     }
 
     if (this.contractStorageInvolvedCB(this, addressString, keyString, false) === false) {
+      /* prettier-ignore */ if (logFlags.dapp_verbose) console.log(`[getContractStorage] ERROR: contractStorageInvolvedCB returned false`, { ...logContext });
       throw new Error('unable to proceed, cant involve contract storage')
     }
     //  check this before trying to read from local db at this point
@@ -801,6 +844,19 @@ export default class TransactionState {
       ShardeumFlags.evmFailOnUnexpectedAccount &&
       AccountsStorage.cachedNetworkAccount?.current?.smartContractSupport
     ) {
+      // Log access lists and all relevant state ONLY when error is about to be thrown
+      /* prettier-ignore */ if (logFlags.dapp_verbose) console.log(`[getContractStorage] ERROR: storage account miss during apply() - failOnUnexpected triggered`, { ...logContext });
+      /* prettier-ignore */ if (logFlags.dapp_verbose) console.log(`[getContractStorage] DEBUG: allContractStorageWrites keys:`, Array.from(this.allContractStorageWrites.keys()));
+      if (this.allContractStorageWrites.has(contractAddress.toString())) {
+        const csw = this.allContractStorageWrites.get(contractAddress.toString());
+        /* prettier-ignore */ if (logFlags.dapp_verbose) console.log(`[getContractStorage] DEBUG: allContractStorageWrites[${contractAddress.toString()}] keys:`, csw ? Array.from(csw.keys()) : 'undefined');
+      }
+      /* prettier-ignore */ if (logFlags.dapp_verbose) console.log(`[getContractStorage] DEBUG: firstContractStorageReads keys:`, Array.from(this.firstContractStorageReads.keys()));
+      if (this.firstContractStorageReads.has(contractAddress.toString())) {
+        const fcsr = this.firstContractStorageReads.get(contractAddress.toString());
+        /* prettier-ignore */ if (logFlags.dapp_verbose) console.log(`[getContractStorage] DEBUG: firstContractStorageReads[${contractAddress.toString()}] keys:`, fcsr ? Array.from(fcsr.keys()) : 'undefined');
+      }
+      // Log committedAccountWrites and other relevant maps if needed
       if (this.debugTrace) {
         this.debugTraceLog(
           `getContractStorage: addr:${addressString} key:${keyString} v:notFound. failOnUnexpected storage account`
@@ -819,14 +875,19 @@ export default class TransactionState {
     const storageShardusAddress = toShardusAddressWithKey(addressString, keyString, AccountType.ContractStorage)
     const wrappedAccount = await AccountsStorage.getAccount(storageShardusAddress)
     if (wrappedAccount != null) {
+      /* prettier-ignore */ if (logFlags.dapp_verbose) console.log(`[getContractStorage] Contract storage found in local storage - tx:${this.linkedTX} addr:${addressString} key:${keyString} timestamp:${wrappedAccount.timestamp} valueLength:${wrappedAccount.value?.length}`)
       fixDeserializedWrappedEVMAccount(wrappedAccount)
       storedRlp = wrappedAccount.value
       storedValue = storedRlp ? RLP.decode(storedRlp) : undefined
+    } else {
+      /* prettier-ignore */ if (logFlags.dapp_verbose) console.log(`[getContractStorage] Contract storage NOT found in local storage - tx:${this.linkedTX} addr:${addressString} key:${keyString} shardusAddr:${storageShardusAddress}`)
     }
 
     //attempt to get data from tryGetRemoteAccountCB
     //this can be a long wait only suitable in some cases
     if (storedValue == undefined) {
+      /* prettier-ignore */ if (logFlags.dapp_verbose) console.log(`[getContractStorage] Attempting tryGetRemoteAccountCB for contract storage - tx:${this.linkedTX} addr:${addressString} key:${keyString} runType:${this.runType}`)
+      this.tryRemoteHistory.storage.push(`${addressString}:${keyString}`)
       const wrappedEVMAccount = await this.tryGetRemoteAccountCB(
         this,
         AccountType.ContractStorage,
@@ -837,10 +898,14 @@ export default class TransactionState {
         //get account aout of the wrapped evm account
         storedRlp = wrappedEVMAccount.value
         storedValue = storedRlp ? RLP.decode(storedRlp) : undefined
+        /* prettier-ignore */ if (logFlags.dapp_verbose) console.log(`[getContractStorage] Contract storage found via tryGetRemoteAccountCB - tx:${this.linkedTX} addr:${addressString} key:${keyString} valueLength:${wrappedEVMAccount.value?.length} timestamp:${wrappedEVMAccount.timestamp}`)
+      } else {
+        /* prettier-ignore */ if (logFlags.dapp_verbose) console.log(`[getContractStorage] Contract storage NOT found via tryGetRemoteAccountCB - tx:${this.linkedTX} addr:${addressString} key:${keyString} wrappedEVMAccount:${wrappedEVMAccount != undefined}`)
       }
 
       //need to know if we got a trustable null or if there was an error giving us a null!
       if (wrappedEVMAccount == null) {
+        /* prettier-ignore */ if (logFlags.dapp_verbose) console.log(`[getContractStorage] Contract storage trustable null from tryGetRemoteAccountCB - tx:${this.linkedTX} addr:${addressString} key:${keyString}`)
         storedRlp = RLP.encode(Uint8Array.from([]))
         storedValue = Uint8Array.from([])
 
@@ -861,11 +926,12 @@ export default class TransactionState {
     if (storedValue == undefined) {
       //event callback to inidicate we do not have the account in this shard
       const isRemoteShard = await this.contractStorageMissCB(this, addressString, keyString)
-
+      /* prettier-ignore */ if (logFlags.dapp_verbose)  console.log("[getContractStorage] Storage miss, account not on this shard")
       if (this.debugTrace) this.debugTraceLog(`getContractStorage: addr:${addressString} key:${keyString} v:notFound`)
 
       if (canThrow && isRemoteShard) throw new Error('account not available') //todo smarter throw?
 
+      /* prettier-ignore */ if (logFlags.dapp_verbose)  console.log("[getContractStorage] Storage miss, returning empty account")
       //RLP.decode(null) returns this:
       return Uint8Array.from([])
     }
