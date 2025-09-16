@@ -14,7 +14,7 @@ export function precompile02(opts: PrecompileInput): ExecResult {
 
   if (opts._debug !== undefined) {
     opts._debug(
-      `Run KECCAK256 (0x02) precompile data=${short(opts.data)} length=${opts.data.length} gasLimit=${
+      `Run SHA256 (0x02) precompile data=${short(opts.data)} length=${opts.data.length} gasLimit=${
         opts.gasLimit
       } gasUsed=${gasUsed}`
     )
@@ -22,18 +22,18 @@ export function precompile02(opts: PrecompileInput): ExecResult {
 
   if (opts.gasLimit < gasUsed) {
     if (opts._debug !== undefined) {
-      opts._debug(`KECCAK256 (0x02) failed: OOG`)
+      opts._debug(`SHA256 (0x02) failed: OOG`)
     }
     return OOGResult(opts.gasLimit)
   }
 
   const hash = sha256(data)
   if (opts._debug !== undefined) {
-    opts._debug(`KECCAK256 (0x02) return hash=${bytesToHex(hash)}`)
+    opts._debug(`SHA256 (0x02) return hash=${bytesToHex(hash)}`)
   }
 
   return {
     executionGasUsed: gasUsed,
-    returnValue: sha256(data),
+    returnValue: hash,
   }
 }
