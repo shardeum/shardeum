@@ -5944,6 +5944,11 @@ const shardusSetup = (): void => {
 
         //also run access list generation if needed
         if (shouldGenerateAccesslist) {
+          const gasPrice = calculateGasPrice(
+            ShardeumFlags.baselineTxFee,
+            ShardeumFlags.baselineTxGasUsage,
+            AccountsStorage.cachedNetworkAccount
+          )
           let success = true
           //early pass on balance check to avoid expensive access list generation.
           if (ShardeumFlags.txBalancePreCheck && appData != null) {
@@ -5952,7 +5957,7 @@ const shardusSetup = (): void => {
               const minBalanceUsd = BigInt(ShardeumFlags.constantTxFeeUsd)
               minBalance =
                 scaleByStabilityFactor(minBalanceUsd, AccountsStorage.cachedNetworkAccount) + transaction.value
-            } else minBalance = transaction.getUpfrontCost() // tx.gasLimit * tx.gasPrice + tx.value
+            } else minBalance = transaction.gasLimit * gasPrice + transaction.value // tx.gasLimit * tx.gasPrice + tx.value
             const accountBalance = appData.balance
             if (accountBalance < minBalance) {
               success = false

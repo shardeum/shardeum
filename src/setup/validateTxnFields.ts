@@ -27,6 +27,7 @@ import {
   emptyCodeHash,
   isStakingEVMTx,
   formatErrorMessage,
+  calculateGasPrice,
 } from '../utils'
 import {
   crypto,
@@ -389,12 +390,17 @@ export const validateTxnFields =
           }
         }
 
+        const gasPrice = calculateGasPrice(
+          ShardeumFlags.baselineTxFee,
+          ShardeumFlags.baselineTxGasUsage,
+          AccountsStorage.cachedNetworkAccount
+        )
         if (ShardeumFlags.txBalancePreCheck && appData != null) {
           let minBalance: bigint // Calculate the minimun balance with the transaction value added in
           if (ShardeumFlags.chargeConstantTxFee) {
             const minBalanceUsd = BigInt(ShardeumFlags.constantTxFeeUsd)
             minBalance = scaleByStabilityFactor(minBalanceUsd, AccountsStorage.cachedNetworkAccount) + transaction.value
-          } else minBalance = transaction.getUpfrontCost() // tx.gasLimit * tx.gasPrice + tx.value
+          } else minBalance = transaction.gasLimit * gasPrice + transaction.value // tx.gasLimit * tx.gasPrice + tx.value
           const accountBalance = appData.balance
           if (accountBalance == null) {
             success = false
