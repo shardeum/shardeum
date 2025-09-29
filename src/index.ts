@@ -185,6 +185,7 @@ import { buildFetchNetworkAccountFromArchiver } from './shardeum/services/networ
 import { customGot } from './utils/customHttpFunctions'
 import { logEnvSetup } from './setup/environment'
 import { fireAndForget } from './utils/promises'
+import { preloadStorageSlots, enhanceGasEstimate } from './gas/gasEstimator'
 
 let latestBlock = 0
 export const blocks: BlockMap = {}
@@ -3654,6 +3655,13 @@ async function estimateGas(
         }
       }
     }
+
+    // Preload storage slots for better gas estimation
+    await preloadStorageSlots(
+      transaction,
+      contractAccount,
+      preRunTxState._transactionState
+    )
   }
 
   const customEVM = new EthereumVirtualMachine({
@@ -3711,17 +3719,15 @@ async function estimateGas(
   }
   const estimate = runTxResult.totalGasSpent // already refund-capped
 
-  // Add a 10% buffer on top of cold access adjustments
-  const estimateWithBuffer = (estimate * BigInt(110)) / BigInt(100)
+  // Use the gas estimator module to enhance the estimate
+  const gasEstimationResult = await enhanceGasEstimate(
+    estimate,
+    transaction,
+    runTxResult,
+    preRunTxState._transactionState
+  )
 
-  if (ShardeumFlags.VerboseLogs) {
-    console.log('EstimateGas: Final calculation:', {
-      baseEstimate: estimate,
-      finalWithBuffer: estimateWithBuffer,
-    })
-  }
-
-  return { estimateGas: bigIntToHex(estimateWithBuffer) }
+  return { estimateGas: bigIntToHex(gasEstimationResult.totalGas) }
 }
 
 type CodeHashObj = { codeHash: string; contractAddress: string }
