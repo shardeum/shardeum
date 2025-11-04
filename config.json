@@ -10,6 +10,7 @@
         }
       ]
     },
+    "trustedProxies": [],
     "ip": {
       "externalIp": "127.0.0.1",
       "externalPort": 9001,

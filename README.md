@@ -85,6 +85,10 @@ For instance, if your local shardeum repo is on this path `/Users/john/Desktop/p
 export LOAD_JSON_CONFIGS=/Users/john/Desktop/projects/shardeum/debug-10-nodes.config.json
 ```
 
+If your deployment is behind a reverse proxy, you can specify a comma-separated
+list of trusted proxy IP ranges using the `TRUSTED_PROXIES` environment
+variable or the `trustedProxies` option in `config.json`.
+
 Learn more about the different config options [here](local-environment-setup.md)
 
 4. Compile project

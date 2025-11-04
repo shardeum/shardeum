@@ -31,6 +31,7 @@ export interface Config {
     sharding?: {
       nodesPerConsensusGroup: number
     }
+    trustedProxies?: string[]
     features?: {
       tickets?: {
         updateTicketListTimeInMs?: number
@@ -48,6 +49,7 @@ let config: Config = {
   server: {
     globalAccount: '1000000000000000000000000000000000000000000000000000000000000001',
     baseDir: './',
+    trustedProxies: [],
   },
 }
 
@@ -463,6 +465,19 @@ if (process.env.APP_IP) {
           externalIp: process.env.APP_IP,
           internalIp: process.env.APP_IP,
         },
+      },
+    },
+    { arrayMerge: overwriteMerge }
+  )
+}
+
+if (process.env.TRUSTED_PROXIES) {
+  const proxies = process.env.TRUSTED_PROXIES.split(',').map(p => p.trim()).filter(p => p)
+  config = merge(
+    config,
+    {
+      server: {
+        trustedProxies: proxies,
       },
     },
     { arrayMerge: overwriteMerge }

@@ -142,7 +142,7 @@ import {
 } from './setup/helpers'
 import { onActiveVersionChange } from './versioning'
 import { shardusFactory } from '@shardeum-foundation/core'
-import { unsafeGetClientIp } from './utils/requests'
+import { getClientIp } from './utils/requests'
 import { initialNetworkParamters } from './shardeum/initialNetworkParameters'
 import { oneSHM, networkAccount, ONE_SECOND } from './shardeum/shardeumConstants'
 import { applyPenaltyTX, clearOldPenaltyTxs } from './tx/penalty/transaction'
@@ -323,7 +323,7 @@ function trySpendServicePoints(points: number, req, key: string): boolean {
   if (ShardeumFlags.logServicePointSenders) {
     let requestIP = 'null-req'
     if (req != null) {
-      requestIP = unsafeGetClientIp(req) || 'cant-get-ip'
+      requestIP = getClientIp(req, config.server.trustedProxies || []) || 'cant-get-ip'
     }
 
     let serviePointSpenders: Map<string, number> = debugServicePointSpendersByType.get(key)
@@ -1257,7 +1257,7 @@ const configShardusEndpoints = (): void => {
       }
 
       // Find IP of request sender
-      const ipAddress: string | undefined = req.ip || req.socket.remoteAddress
+      const ipAddress: string | undefined = getClientIp(req, config.server.trustedProxies || [])
 
       await handleInject(tx, appData, res, ipAddress)
     } catch (error) {
@@ -1394,7 +1394,7 @@ const configShardusEndpoints = (): void => {
       }
 
       // Find IP of request sender
-      const ipAddress: string | undefined = req.ip || req.socket.remoteAddress
+      const ipAddress: string | undefined = getClientIp(req, config.server.trustedProxies || [])
       await handleInject(tx, appData, res, ipAddress)
     } catch (err) {
       if (ShardeumFlags.VerboseLogs) console.log('Failed to inject tx: ', err)
