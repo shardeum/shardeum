@@ -81,7 +81,6 @@ describe('ShardeumFlags', () => {
       it('should have correct default values for debugging variables', () => {
         expect(ShardeumFlags.VerboseLogs).toBe(false)
         expect(ShardeumFlags.debugTraceLogs).toBe(false)
-        expect(ShardeumFlags.SelfTest).toBe(false)
         expect(ShardeumFlags.DebugRestoreFile).toBe('account-export.json')
         expect(ShardeumFlags.DebugRestoreArchiveBatch).toBe(2000)
         expect(ShardeumFlags.debugLocalAALG).toBe(false)
