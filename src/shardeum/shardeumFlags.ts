@@ -353,6 +353,7 @@ export const enum FilePaths {
   DB = 'db.sqlite',
   HISTORY_DB = 'history.sqlite',
   ACCOUNT_EXPORT = 'account-export.json',
+  PENALTY_TXS = 'penaltyTxs.json',
   CONFIG = 'config.json',
   CLI_PACKAGE = '/home/node/app/cli/package.json',
   GUI_PACKAGE = '/home/node/app/gui/package.json',

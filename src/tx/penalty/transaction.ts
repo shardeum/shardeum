@@ -25,8 +25,12 @@ import * as AccountsStorage from '../../storage/accountStorage'
 import config from '../../config'
 import { verifyPayload } from '../../types/ajv/Helpers'
 import { AJVSchemaEnum } from '../../types/enum/AJVSchemaEnum'
-
-const penaltyTxsMap: Map<string, PenaltyTX> = new Map()
+import {
+  recordPenaltyTx,
+  getPenaltyTx,
+  deletePenaltyTx,
+  entries as penaltyEntries,
+} from './penaltyTxStorage'
 
 export async function injectPenaltyTX(
   shardus: Shardus,
@@ -85,7 +89,12 @@ export async function injectPenaltyTX(
 
   const signedTx = shardus.signAsNode(unsignedTx) as PenaltyTX
   const txId = generateTxId(unsignedTx)
-  // store the unsignedTx to local map for later use
+  // prevent duplicate injection after restart
+  if (getPenaltyTx(txId)) {
+    if (ShardeumFlags.VerboseLogs) console.log(`injectPenaltyTX: already injected`, txId)
+    return
+  }
+  // store the unsignedTx to persistent storage for later validation
   recordPenaltyTX(txId, signedTx)
 
   // Limit the nodes that send this to the <ShardeumFlags.numberOfNodesToInjectPenaltyTx> closest to the node address ( publicKey )
@@ -110,9 +119,7 @@ export async function injectPenaltyTX(
 }
 
 function recordPenaltyTX(txId: string, tx: PenaltyTX): void {
-  if (penaltyTxsMap.has(txId) === false) {
-    penaltyTxsMap.set(txId, tx)
-  }
+  recordPenaltyTx(txId, tx)
 }
 
 /**
@@ -151,12 +158,13 @@ function isProcessedPenaltyTx(tx: PenaltyTX, nodeAccount: NodeAccount2): { isPro
 
 export function clearOldPenaltyTxs(shardus: Shardus): void {
   let deleteCount = 0
-  /* prettier-ignore */ nestedCountersInstance.countEvent('shardeum-penalty', `clearOldPenaltyTxs mapSize:${penaltyTxsMap.size}`)
+  const currentSize = Array.from(penaltyEntries()).length
+  /* prettier-ignore */ nestedCountersInstance.countEvent('shardeum-penalty', `clearOldPenaltyTxs mapSize:${currentSize}`)
   const now = shardus.shardusGetTime()
-  for (const [txId, tx] of penaltyTxsMap.entries()) {
+  for (const [txId, tx] of penaltyEntries()) {
     const cycleDuration = config.server.p2p.cycleDuration * 1000
     if (now - tx.timestamp > 5 * cycleDuration) {
-      penaltyTxsMap.delete(txId)
+      deletePenaltyTx(txId)
       deleteCount++
     }
   }
@@ -171,11 +179,11 @@ export function validatePenaltyTX(txId: string, tx: PenaltyTX, isApply = false):
   }
   // this check should happen only for exe nodes applying the penalty tx
   if (isApply) {
-    // check if we have this penalty tx stored in the Map
-    const preRecordedfPenaltyTX = penaltyTxsMap.get(txId)
+    // check if we have this penalty tx stored
+    const preRecordedfPenaltyTX = getPenaltyTx(txId)
 
     if (preRecordedfPenaltyTX == null) {
-      return { isValid: false, reason: 'Penalty TX not found in penaltyTxsMap of exe node' }
+      return { isValid: false, reason: 'Penalty TX not found in local penalty record' }
     }
   }
 

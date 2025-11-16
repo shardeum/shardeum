@@ -131,6 +131,7 @@ import {
 } from './handlers/queryCertificate'
 import * as InitRewardTimesTx from './tx/initRewardTimes'
 import * as PenaltyTx from './tx/penalty/transaction'
+import { initPenaltyTxStorage } from './tx/penalty/penaltyTxStorage'
 import {
   isDebugTx,
   isDestLimitTx,
@@ -490,6 +491,7 @@ if (ShardeumFlags.UseDBForAccounts === true) {
   AccountsStorage.init(config.server.baseDir, `${FilePaths.SHARDEUM_DB}`)
   if (isServiceMode()) AccountsStorage.lazyInit()
 }
+initPenaltyTxStorage()
 
 //let accounts: WrappedEVMAccountMap = {} //relocated
 
