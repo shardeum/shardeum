@@ -166,9 +166,18 @@ export default class Cache {
 
   /**
    * Revert changes to cache last checkpoint (no effect on trie).
-   */
+  */
   revert(): void {
-    this._cache = this._checkpoints.pop()
+    if (this._checkpoints.length > 0) {
+      const checkpoint = this._checkpoints.pop()
+      if (checkpoint) {
+        this._cache = checkpoint
+      } else {
+        console.warn('[Cache] revert called but checkpoint was undefined')
+      }
+    } else {
+      console.warn('[Cache] revert called with no checkpoint')
+    }
   }
 
   /**
