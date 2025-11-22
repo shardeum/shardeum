@@ -8,7 +8,12 @@ import { BlobEIP4844Transaction } from '@ethereumjs/tx'
 import { Address, GWEI_TO_WEI, TypeOutput, Withdrawal, toBytes, toType, zeros } from '@ethereumjs/util'
 
 import { Bloom } from './bloom/index.js'
-import { accumulateParentBeaconBlockRoot, calculateMinerReward, encodeReceipt, rewardAccount } from './runBlock.js'
+import {
+  accumulateParentBeaconBlockRoot,
+  calculateMinerReward,
+  encodeReceipt,
+  rewardAccount,
+} from '@ethereumjs/vm/dist/esm/runBlock.js'
 
 import type {
   BuildBlockOpts,
