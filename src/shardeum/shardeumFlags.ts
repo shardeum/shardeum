@@ -71,7 +71,6 @@ export interface ShardeumFlags {
   allowForceUnstake: boolean
   ClaimRewardRetryCount: number
   shardeumTimeout: number
-  FailedTxLinearBackOffConstantInSecs: number
   fixExtraStakeLessThanMin: boolean
   unstakeCertCheckFix: boolean
   fixCertExpRenew: boolean
@@ -196,7 +195,6 @@ export const ShardeumFlags: ShardeumFlags = {
   minNodesEVMtx: 5,
   ClaimRewardRetryCount: 20,
   shardeumTimeout: 50000,
-  FailedTxLinearBackOffConstantInSecs: 30,
   logServicePointSenders: false,
   labTest: false,
   lowStakePercent: 0.2,

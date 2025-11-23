@@ -223,7 +223,6 @@ describe('ShardeumFlags', () => {
         expect(ShardeumFlags.accesslistNonceFix).toBe(true)
         expect(ShardeumFlags.internalTxTimestampFix).toBe(true)
         expect(ShardeumFlags.expiredTransactionStateFix).toBe(false)
-        expect(ShardeumFlags.FailedTxLinearBackOffConstantInSecs).toBe(30)
       })
     })
 
