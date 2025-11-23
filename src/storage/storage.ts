@@ -11,6 +11,7 @@ import { Utils } from '@shardeum-foundation/lib-types'
 export interface AccountsEntry {
   accountId: string
   timestamp: number
+  txId?: string
   data: string | WrappedEVMAccount
 }
 
@@ -47,13 +48,15 @@ class Storage {
     if (!isServiceMode()) {
       //would be neat if this wasn't needed here (refactor so storage stays more generic?)
       await this.storage.runCreate(
-        'CREATE TABLE if not exists `accountsEntry` (`accountId` VARCHAR(255) NOT NULL, `timestamp` BIGINT NOT NULL, `data` JSON NOT NULL, PRIMARY KEY (`accountId`))'
+        'CREATE TABLE if not exists `accountsEntry` (`accountId` VARCHAR(255) NOT NULL, `timestamp` BIGINT NOT NULL, `txId` VARCHAR(255) NOT NULL, `data` JSON NOT NULL, PRIMARY KEY (`accountId`))'
       )
 
       if (ShardeumFlags.NewStorageIndex) {
         //add index to timestamp
         await this.storage.run('CREATE INDEX IF NOT EXISTS timestamp1 ON accountsEntry(timestamp)')
       }
+
+      await this.storage.run('CREATE UNIQUE INDEX IF NOT EXISTS txIdIdx ON accountsEntry(txId)')
 
       if (ShardeumFlags.enableRIAccountsCache) {
         await this.storage.runCreate(
