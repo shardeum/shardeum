@@ -111,7 +111,7 @@ export function isNonKeyChange(
  *
  * @param oldConfig The current configuration
  * @param newConfig The proposed configuration change
- * @param keyType The type of keys to check ('multisigKeys' or 'devKeys')
+ * @param keyType The type of keys to check ('multisigKeys' or 'devPublicKeys')
  * @returns True if the key list is being modified, false otherwise
  */
 export function isKeyChangeDetailed(oldConfig: any, newConfig: any, keyType: string): boolean {
@@ -167,7 +167,7 @@ export function isMultisigKeyChangeDetailed(oldConfig: any, newConfig: any): boo
  * @returns True if the dev key list is being modified, false otherwise
  */
 export function isDevKeyChangeDetailed(oldConfig: any, newConfig: any): boolean {
-  return isKeyChangeDetailed(oldConfig, newConfig, 'devKeys')
+  return isKeyChangeDetailed(oldConfig, newConfig, 'devPublicKeys')
 }
 
 /**
