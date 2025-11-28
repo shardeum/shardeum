@@ -47,6 +47,9 @@ export const replacer = <T, K, V>(
 // From: https://stackoverflow.com/a/19270021
 export function getRandom<T>(arr: T[], n: number): T[] {
   let len = arr.length
+  if (n < 0) {
+    n = 0
+  }
   const taken = new Array(len)
   if (n > len) {
     n = len
