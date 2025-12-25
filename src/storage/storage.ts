@@ -140,6 +140,9 @@ class Storage {
     try {
       const query = `SELECT COUNT(*) FROM riAccountsCache`
       const result = await this._query(query, [])
+      if (result.length === 0) {
+        return 0
+      }
       return result[0]['COUNT(*)']
     } catch (e) {
       throw new Error(e)
