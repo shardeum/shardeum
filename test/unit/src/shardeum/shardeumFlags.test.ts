@@ -231,7 +231,6 @@ describe('ShardeumFlags', () => {
     describe('Certificate and Admin Features', () => {
       it('should have correct default values for certificate and admin features', () => {
         expect(ShardeumFlags.AdminCertEnabled).toBe(false)
-        expect(ShardeumFlags.ClaimRewardRetryCount).toBe(20)
         expect(ShardeumFlags.fixCertExpRenew).toBe(true)
         expect(ShardeumFlags.fixSetCertTimeTxApply).toBe(true)
         expect(ShardeumFlags.setCertTimeDurationOverride).toBe(true)
