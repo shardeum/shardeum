@@ -66,6 +66,7 @@ describe('setCertTime', () => {
             signAsNode: jest.fn(),
             applyResponseSetFailed: jest.fn(),
             applyResponseAddChangedAccount: jest.fn(),
+            getLatestCycles: jest.fn().mockReturnValue([{ start: 0, duration: 30 }]),
         } as any
 
         // Setup mock network account

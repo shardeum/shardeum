@@ -17,7 +17,7 @@ import {
 import * as WrappedEVMAccountFunctions from '../shardeum/wrappedEVMAccountFunctions'
 import { fixDeserializedWrappedEVMAccount } from '../shardeum/wrappedEVMAccountFunctions'
 import * as AccountsStorage from '../storage/accountStorage'
-import { getRandom, scaleByStabilityFactor, _base16BNParser, _readableSHM } from '../utils'
+import { getRandom, scaleByStabilityFactor, _base16BNParser, _readableSHM, sleep } from '../utils'
 
 import { createInternalTxReceipt, logFlags, shardeumGetTime } from '..'
 import { bigIntToHex, isValidAddress } from '@ethereumjs/util'
@@ -76,6 +76,19 @@ export async function injectSetCertTimeTx(
     nominator,
     duration: getCertCycleDuration(), //temp setting to 20 to make debugging easier
     timestamp: shardeumGetTime(),
+  }
+
+  if (ShardeumFlags.txHashingFix) {
+    const latestCycle = shardus.getLatestCycles(1)[0]
+    if (latestCycle) {
+      let futureTimestamp = (latestCycle.start + latestCycle.duration) * ONE_SECOND
+      while (futureTimestamp < shardeumGetTime()) {
+        futureTimestamp += 30 * ONE_SECOND
+      }
+      const waitTime = futureTimestamp - shardeumGetTime()
+      tx.timestamp = futureTimestamp
+      await sleep(waitTime)
+    }
   }
   tx = shardus.signAsNode(tx)
   const result = await InjectTxToConsensor([randomConsensusNode], tx)
