@@ -747,13 +747,17 @@ function tryGetRemoteAccountCBNoOp(
 ): Promise<WrappedEVMAccount> {
   if (ShardeumFlags.VerboseLogs) {
     if (type === AccountType.Account) {
-      console.log(`account miss: ${address} tx:${this.linkedTX}`)
+      console.log(`account miss: ${address} tx:${transactionState.linkedTX}`)
       transactionState.tryRemoteHistory.account.push(address)
     } else if (type === AccountType.ContractCode) {
-      console.log(`account bytes miss: ${address} key: ${key} tx:${this.linkedTX}`)
+      console.log(
+        `account bytes miss: ${address} key: ${key} tx:${transactionState.linkedTX}`
+      )
       transactionState.tryRemoteHistory.codeBytes.push(`${address}_${key}`)
     } else if (type === AccountType.ContractStorage) {
-      console.log(`account storage miss: ${address} key: ${key} tx:${this.linkedTX}`)
+      console.log(
+        `account storage miss: ${address} key: ${key} tx:${transactionState.linkedTX}`
+      )
       transactionState.tryRemoteHistory.storage.push(`${address}_${key}`)
     }
     logAccessList('tryGetRemoteAccountCBNoOp access list:', transactionState.appData)
