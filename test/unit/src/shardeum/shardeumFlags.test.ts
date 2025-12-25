@@ -293,12 +293,11 @@ describe('ShardeumFlags', () => {
       expect(ReloadedFlags.ChainID).toBe(8082)
     })
 
-    it('should handle invalid CHAIN_ID environment variable', () => {
+    it('should fallback to default when CHAIN_ID is invalid', () => {
       process.env.CHAIN_ID = 'not-a-number'
       jest.resetModules()
       const { ShardeumFlags: ReloadedFlags } = require('../../../../src/shardeum/shardeumFlags')
-      // Should use NaN or default, depending on implementation
-      expect(isNaN(ReloadedFlags.ChainID) || ReloadedFlags.ChainID === 8082).toBeTruthy()
+      expect(ReloadedFlags.ChainID).toBe(8082)
     })
   })
 
