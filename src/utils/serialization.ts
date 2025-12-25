@@ -59,8 +59,16 @@ export const _base16BNParser = (value: bigint | HexString | { __BigInt__: string
   throw new Error(`_base16BNParser: Unacceptable parameter value ${value}  typeof ${typeof value}`)
 }
 
+/**
+ * Parse a decimal string or bigint into a bigint.
+ *
+ * Empty strings are considered invalid and will throw an error.
+ */
 export const _base10BNParser = (value: bigint | DecimalString): bigint => {
   if (typeof value == 'string' && value.slice(0, 2) == '0x') {
+    throw new Error('Parameter value does not seem to be a valid base 10 (decimal)')
+  }
+  if (typeof value === 'string' && value.trim() === '') {
     throw new Error('Parameter value does not seem to be a valid base 10 (decimal)')
   }
   if (typeof value === 'string' && isNaN(value as unknown as number)) {
@@ -83,9 +91,12 @@ export const _readableSHM = (bnum: bigint, autoDecimal = true): string => {
   const unit_SHM = ' shm'
   const unit_WEI = ' wei'
 
-  if (!autoDecimal) return bnum.toString() + unit_WEI
+  const isNegative = bnum < BigInt(0)
+  const absNum = isNegative ? -bnum : bnum
 
-  const numString = bnum.toString()
+  if (!autoDecimal) return (isNegative ? '-' : '') + absNum.toString() + unit_WEI
+
+  const numString = absNum.toString()
   // 1 eth or 1 SHM === 10^18 wei
   // if wei value gets too big let's convert to SHM in a floating point precision.
   // 14 is where we set this threshold. hardcoded for now.
@@ -94,15 +105,15 @@ export const _readableSHM = (bnum: bigint, autoDecimal = true): string => {
 
     if (floating_index <= 0) {
       const mantissa = '0'.repeat(Math.abs(floating_index)) + numString
-      return '0.' + mantissa + unit_SHM
+      return (isNegative ? '-' : '') + '0.' + mantissa + unit_SHM
     }
 
     const mantissa = numString.slice(floating_index, numString.length)
     const base = numString.slice(0, floating_index)
-    return base + '.' + mantissa + unit_SHM
+    return (isNegative ? '-' : '') + base + '.' + mantissa + unit_SHM
   }
 
-  return bnum.toString() + unit_WEI
+  return (isNegative ? '-' : '') + absNum.toString() + unit_WEI
 }
 
 export function debug_map_replacer<T, K, V>(key, value: T | Map<K, V>): T | [K, V][] {

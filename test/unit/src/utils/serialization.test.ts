@@ -140,10 +140,9 @@ describe('Serialization Utility Functions', () => {
       expect(() => _base10BNParser(null as any)).toThrow('Unacceptable parameter value')
     })
 
-    // TODO: fix the code to handle empty string input
-    // it('should throw an error for empty string input', () => {
-    //   expect(() => _base10BNParser('')).toThrow()
-    // })
+    it('should throw an error for empty string input', () => {
+      expect(() => _base10BNParser('')).toThrow()
+    })
 
     it('should throw an error for non-numeric string input', () => {
       expect(() => _base10BNParser('abc')).toThrow('valid base 10')
@@ -187,11 +186,10 @@ describe('Serialization Utility Functions', () => {
       expect(() => _readableSHM(123 as any)).toThrow('valid bigint instance')
     })
 
-    // TODO: fix the code to handle negative bigint values
-    // it('should handle negative bigint values', () => {
-    //   const num = BigInt(-12345678901234567890123)
-    //   expect(_readableSHM(num)).toBe('-12345.678901234567890123 shm')
-    // })
+    it('should handle negative bigint values', () => {
+      const num = BigInt('-12345678901234567890123')
+      expect(_readableSHM(num)).toBe('-12345.678901234567890123 shm')
+    })
 
     it('should handle zero value', () => {
       expect(_readableSHM(BigInt(0))).toBe('0 wei')
