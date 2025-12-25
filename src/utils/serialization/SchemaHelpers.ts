@@ -8,6 +8,11 @@ ajv.addKeyword('isBigInt', {
 const schemaMap: Map<string, object> = new Map()
 const verifyFunctions: Map<string, Ajv.ValidateFunction> = new Map()
 
+export function clearSchemas(): void {
+  schemaMap.clear()
+  verifyFunctions.clear()
+}
+
 export function addSchema(name: string, schema: object): void {
   if (schemaMap.has(name)) {
     throw new Error(`error already registered ${name}`)
