@@ -205,7 +205,6 @@ describe('ShardeumFlags', () => {
         expect(ShardeumFlags.EVMReceiptsAsAccounts).toBe(false)
         expect(ShardeumFlags.useAccountWrites).toBe(true)
         expect(ShardeumFlags.useShardeumVM).toBe(true)
-        expect(ShardeumFlags.UseBase64BufferEncoding).toBe(true)
         expect(ShardeumFlags.NewStorageIndex).toBe(true)
         expect(ShardeumFlags.shardeumVMPrecompiledFix).toBe(true)
         expect(ShardeumFlags.removeTokenBalanceCache).toBe(true)

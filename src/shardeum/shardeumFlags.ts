@@ -49,7 +49,6 @@ export interface ShardeumFlags {
   CheckpointRevertSupport: boolean
   UseTXPreCrack: boolean
   NewStorageIndex: boolean
-  UseBase64BufferEncoding: boolean
   useAccountWrites: boolean
   useShardeumVM: boolean
   chargeConstantTxFee: boolean
@@ -161,7 +160,6 @@ export const ShardeumFlags: ShardeumFlags = {
   CheckpointRevertSupport: true,
   UseTXPreCrack: true,
   NewStorageIndex: true,
-  UseBase64BufferEncoding: true,
   useAccountWrites: true,
   useShardeumVM: true,
 
