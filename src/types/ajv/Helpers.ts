@@ -19,6 +19,7 @@ import { initClaimRewardTx } from './ClaimRewardTxSchema'
 import { initTransferFromSecureAccountTx } from './TransferFromSecureAccountTxSchema'
 import { initUnstakeTx } from './UnstakeTxSchema'
 import { initInitNetworkTx } from './InitNetworkTxSchema'
+import { initContractCallReq } from './ContractCallSchema'
 
 export function initAjvSchemas(): void {
   initSign()
@@ -39,6 +40,7 @@ export function initAjvSchemas(): void {
   initStakeTx()
   initUnstakeTx()
   initTransferFromSecureAccountTx()
+  initContractCallReq()
 }
 
 export function verifyPayload<T>(name: string, payload: T): string[] | null {

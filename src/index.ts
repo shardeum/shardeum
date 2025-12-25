@@ -1867,6 +1867,11 @@ const configShardusEndpoints = (): void => {
 
     try {
       const callObj = req.body
+      const errors = verifyPayload(AJVSchemaEnum.ContractCallReq, callObj)
+      if (errors) {
+        res.status(400).json({ error: 'Invalid call object', details: isDebugMode() ? errors : undefined })
+        return
+      }
       if (ShardeumFlags.VerboseLogs) console.log('callObj', callObj)
       const opt = {
         to: Address.fromString(callObj.to),
