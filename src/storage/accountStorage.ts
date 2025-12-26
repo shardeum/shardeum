@@ -47,7 +47,7 @@ export async function fetchAccountDataFromCollector(
     if (!response.data.success) {
       throw new Error('Collector failed to return account data')
     }
-    if (!response.data.accounts && response.data.accounts.length === 0) {
+    if (!response.data.accounts || response.data.accounts.length === 0) {
       throw new Error('Collector returned no account data')
     }
     return response.data.accounts[0].account
