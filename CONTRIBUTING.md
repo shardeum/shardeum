@@ -1,57 +1,108 @@
-# Contrubution guide
-This is a contribution guide for this repository. Recommend to read this before working on the project.
+# Contribution Guide
 
-# Branch Organization
+Welcome to the Shardeum contribution guide! This document provides the essential information needed to contribute effectively to our repository. Whether you're fixing a bug, adding a new feature, or improving documentation, following these guidelines will streamline the process and ensure smooth collaboration. Please read this guide carefully before contributing.
 
-- This repo has two long running branch, `main` and `dev`. 
-- The two branch are protected.
-- All new branch must be on top of or fork from developement branch `dev`.
-- All branches submiting to development branch must be tested.
+---
 
-This repo try to keep a clean single straight git history line.
+## Branch Organization
 
-# Pull Requests
+- **Branching Strategy:**
+  - The repository uses two primary branches:
+    - `main` for stable releases.
+    - `dev` for ongoing development.
+  - Both branches are **protected** to prevent direct commits. All changes must be introduced via pull requests.
 
-- Always start PR creation with `Draft` state.
-- Commit should be atomic. 
-- It's okay to commit and push frequeuntly to your branch as long as the branch is rebase and commit are squash before PR.
-- It's okay to have multiple commits if logical. But must keep squashing to single commit as much as possible for PR reviews efficiency. 
-- Recommend to use git commit convention when adding messages to commits but this is not mandatory. [(Read Commit Convention Guide)](https://www.conventionalcommits.org/en/v1.0.0/)
-- Make sure your code comply with formatting/linting configs set by the project.
-- Branches must be tested at least with smoke test mannually.
-- Must include test coverage.
-- Must pass CI/CD pipelines.
-- Reqularly pull updates from develeopment branch `dev` by `--rebase`.
-- Do not merge branches outside of a PR, use rebase.
-- Do not submit to `main`.
-- Undraft and request for review when ready.
+- **New Branch Creation:**
+  - Always base new branches on the `dev` branch to ensure features are built on the most recent development work.
 
-# Formatting
-- Uses google typescript prettier settings for the most part.
-- `/*prettier-ignore*/` is often used to bypass really long debug code lines, this is a tip, not an instruction.
-- Do not abuse `/*prettier-ignore*/`.
+- **Testing Requirement:**
+  - All changes must be thoroughly tested before submission. This includes:
+    - Unit tests.
+    - Integration tests.
+    - Manual checks, as necessary.
 
-## Using `/* prettier-ignore */`
+- **Repository History:**
+  - Keep the repository history clean and linear by using **rebase** and **squash** strategies effectively.
 
-### What is `/* prettier-ignore */`?
+---
 
-`/* prettier-ignore */` is a directive used in Prettier to prevent the code formatter from formatting a specific piece of code. This can be useful when you have lines of code that should remain unchanged for readability, debugging, or other specific reasons.
+## Pull Request Guidelines
 
-### When to Use `/* prettier-ignore */`
+1. **Draft Stage:**
+   - Begin each pull request (PR) in the `Draft` state to allow for incremental changes and early feedback.
 
-There are a few common scenarios where you might want to use `/* prettier-ignore */`:
+2. **Commit Best Practices:**
+   - Use **atomic commits**: Each commit should represent a single logical change.
+   - Commit frequently to track progress and facilitate collaboration.
 
-1. **Long Debug Lines**: When you have long lines of code for debugging purposes that you want to keep on a single line for easier readability.
-2. **Special Formatting**: When you have specific formatting that you want to maintain that Prettier would otherwise change.
-3. **Temporary Code**: When you have temporary code that is meant for testing and you don’t want it to be auto-formatted.
+3. **Rebase and Squash:**
+   - Before moving a PR out of the draft stage:
+     - Rebase your branch onto the latest `dev` branch.
+     - Squash commits to streamline the history. Multiple commits can remain if they represent logical steps.
 
-### How to Use `/* prettier-ignore */`
+4. **Code Compliance:**
+   - Ensure your code adheres to the project’s formatting and linting guidelines.
 
-To use `/* prettier-ignore */`, simply place the comment on the line before the code you want to ignore. Here is an example:
+5. **Testing:**
+   - Include test coverage and ensure your branch passes all required tests and CI/CD pipelines.
 
-#### Example
+6. **Branch Updates:**
+   - Regularly update your branch with the latest changes from `dev` using `--rebase` to avoid conflicts.
 
-```javascript
-/* prettier-ignore */
-if (ShardeumFlags.VerboseLogs) console.log('Lengths of blocks after pruning', Object.keys(blocksByHash).length, Object.keys(readableBlocks).length)
-```
+7. **Integration Guidelines:**
+   - Use **rebase** instead of merge to integrate changes from `dev` and maintain a clean history.
+   - Direct submissions to the `main` branch are **prohibited**. All changes must go through `dev` first.
+
+8. **PR Reviews:**
+   - Once your PR is ready, undraft it and request reviews.
+   - Be receptive to feedback and make necessary adjustments promptly.
+
+---
+
+## Standardized Formatting Guidelines
+
+To ensure code consistency and maintainability, all contributors must adhere to the following formatting standards:
+
+1. **Prettier Configuration:**
+   - Use **Google TypeScript Prettier settings** to ensure a uniform style for all TypeScript files.
+
+2. **Minimal Use of Prettier Ignores:**
+   - Use `/* prettier-ignore */` sparingly to avoid inconsistent code styles across the project.
+
+3. **Linting:**
+   - Run the project's linter before submitting a pull request.
+   - Ensure your code complies with all linting rules defined in the project configuration.
+
+4. **Code Readability:**
+   - Write clear, readable code:
+     - Use meaningful variable and function names.
+     - Include comments where necessary to explain the purpose of code blocks.
+
+5. **Project Conventions:**
+   - Adhere to additional formatting and coding standards documented in the repository.
+
+6. **Commit Messages:**
+   - Follow a conventional commit message format for clarity and consistency. Refer to the [Commit Convention Guide](https://www.conventionalcommits.org/en/v1.0.0/).
+
+---
+
+## Additional Guidelines
+
+- **Coding Standards:**
+  - Follow the project's coding standards or style guide wherever possible.
+
+- **Testing:**
+  - Ensure all tests pass before submission, and provide adequate test coverage for your changes.
+
+- **Documentation:**
+  - Update documentation if your changes introduce new features or modify existing functionality.
+
+- **Community & Review Process:**
+  - Be respectful and receptive to feedback during the review process.
+  - Make necessary adjustments promptly based on reviewer suggestions.
+
+---
+
+## Summary
+
+By following this guide, you'll help ensure a smooth and efficient contribution process while maintaining the quality and consistency of the repository. Thank you for contributing to Shardeum!
