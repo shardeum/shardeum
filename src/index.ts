@@ -530,6 +530,9 @@ let shardusAddressToEVMAccountInfo: Map<string, EVMAccountInfo>
 export let evmCommon
 
 let debugAppdata: Map<string, unknown>
+// Track which transaction receipts have already been sent to avoid duplicates
+const processedReceipts = new Set<string>()
+const processedReceiptsMaxSize = 1000
 
 //todo refactor some object init into here
 async function initEVMSingletons(): Promise<void> {
@@ -3265,15 +3268,23 @@ async function _transactionReceiptPass(
   }
 
   if (appReceiptData) {
-    const dataId = toShardusAddressWithKey(appReceiptData.data.readableReceipt.transactionHash, '', AccountType.Receipt)
-    await shardus.sendCorrespondingCachedAppData(
-      'receipt',
-      dataId,
-      appReceiptData,
-      shardus.stateManager.currentCycleShardData.cycleNumber,
-      appReceiptData.data.txFrom,
-      appReceiptData.data.txId
-    )
+    const txHash = appReceiptData.data.readableReceipt.transactionHash
+    if (!processedReceipts.has(txHash)) {
+      processedReceipts.add(txHash)
+      if (processedReceipts.size > processedReceiptsMaxSize) {
+        const oldest = processedReceipts.values().next().value
+        processedReceipts.delete(oldest)
+      }
+      const dataId = toShardusAddressWithKey(txHash, '', AccountType.Receipt)
+      await shardus.sendCorrespondingCachedAppData(
+        'receipt',
+        dataId,
+        appReceiptData,
+        shardus.stateManager.currentCycleShardData.cycleNumber,
+        appReceiptData.data.txFrom,
+        appReceiptData.data.txId
+      )
+    }
   }
 
   //If this apply response has a global message defined then call setGlobal()
