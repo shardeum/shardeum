@@ -26,8 +26,10 @@ export const getExternalApiMiddleware = (): Handler => {
 function checkIfRequestIsAllowed(requestPath, requestMethod, allowedEndpoints): boolean {
   const endpointMatch = allowedEndpoints.find((endpoint) => {
     const [allowedMethod, allowedPattern] = endpoint.split(' ')
+    // Escape regex metacharacters, then replace '*' wildcards with '.*'
+    const escapedPattern = allowedPattern.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
     // eslint-disable-next-line security/detect-non-literal-regexp
-    const pathRegex = new RegExp(`^${allowedPattern.replace(/\*/g, '.*')}$`)
+    const pathRegex = new RegExp(`^${escapedPattern.replace(/\\\*/g, '.*')}$`)
 
     return requestMethod === allowedMethod && pathRegex.test(requestPath)
   })
