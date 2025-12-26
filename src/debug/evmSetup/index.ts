@@ -3,6 +3,7 @@ import { ShardeumFlags } from '../../shardeum/shardeumFlags'
 import { ShardeumBlock } from '../block/blockchain'
 import { VM } from '../../vm_v7/vm'
 import { ShardeumState } from '../state'
+import { LRUCache } from 'lru-cache'
 import { EVMAccountInfo } from '../../shardeum/shardeumTypes'
 import { ShardusTypes } from '@shardeum-foundation/core'
 import { EVM as EthereumVirtualMachine } from '../../evm_v2'
@@ -11,7 +12,7 @@ import { oneSHM } from '../../shardeum/shardeumConstants'
 let shardeumBlock: ShardeumBlock
 export let evmCommon: Common
 export let EVM: { -readonly [P in keyof VM] }
-export let shardeumStateTXMap: Map<string, ShardeumState>
+export let shardeumStateTXMap: LRUCache<string, ShardeumState>
 export let shardusAddressToEVMAccountInfo: Map<string, EVMAccountInfo>
 export let debugAppdata: Map<string, unknown>
 
@@ -86,8 +87,11 @@ export async function initEVMSingletons(): Promise<void> {
   //todo need to evict old data
   ////transactionStateMap = new Map<string, TransactionState>()
 
-  // a map of txID or ethcallID to shardeumState, todo need to evict old data
-  shardeumStateTXMap = new Map<string, ShardeumState>()
+  // a map of txID or ethcallID to shardeumState
+  shardeumStateTXMap = new LRUCache<string, ShardeumState>({
+    max: 1000,
+    ttl: 60_000,
+  })
   // a map of txID or ethcallID to shardeumState, todo need to evict old data
   //shardeumStateCallMap = new Map<string, ShardeumState>()
 

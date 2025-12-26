@@ -31,6 +31,7 @@ import { EVMResult } from './evm_v2/types'
 import { Response as GotResponse } from 'got'
 import 'dotenv/config'
 import { ShardeumState, TransactionState } from './state'
+import { LRUCache } from 'lru-cache'
 import {
   __ShardFunctions,
   nestedCountersInstance,
@@ -520,7 +521,7 @@ let shardeumBlock: ShardeumBlock
 //let transactionStateMap:Map<string, TransactionState>
 
 //Per TX or Eth call shardeum State.  Note the key is the shardus transaction id
-let shardeumStateTXMap: Map<string, ShardeumState>
+let shardeumStateTXMap: LRUCache<string, ShardeumState>
 //let shardeumStateCallMap:Map<string, ShardeumState>
 //let shardeumStatePool:ShardeumState[]
 // const debugShardeumState: ShardeumState = null
@@ -576,8 +577,11 @@ async function initEVMSingletons(): Promise<void> {
   //todo need to evict old data
   ////transactionStateMap = new Map<string, TransactionState>()
 
-  // a map of txID or ethcallID to shardeumState, todo need to evict old data
-  shardeumStateTXMap = new Map<string, ShardeumState>()
+  // a map of txID or ethcallID to shardeumState
+  shardeumStateTXMap = new LRUCache<string, ShardeumState>({
+    max: 1000,
+    ttl: 60_000,
+  })
   // a map of txID or ethcallID to shardeumState, todo need to evict old data
   //shardeumStateCallMap = new Map<string, ShardeumState>()
 
@@ -8803,21 +8807,6 @@ const shardusSetup = (): void => {
   shardus.registerExceptionHandler()
 }
 
-//Note, this functionality was disabled 10 months ago.
-//now that we are moving away from TX expiration we would need to be safe if we ever
-//turn this back on.  (note, disabled by having setTimeout not called again)
-function periodicMemoryCleanup(): void {
-  const keys = shardeumStateTXMap.keys()
-  //todo any provisions needed for TXs that can hop and extend the timer
-  const maxAge = shardeumGetTime() - 60000
-  for (const key of keys) {
-    const shardeumState = shardeumStateTXMap.get(key)
-    if (shardeumState._transactionState.createdTimestamp < maxAge) {
-      shardeumStateTXMap.delete(key)
-    }
-  }
-  // setTimeout(periodicMemoryCleanup, 60000)
-}
 
 async function fetchNetworkAccountFromArchiver(): Promise<WrappedAccount> {
   const built = buildFetchNetworkAccountFromArchiver({
@@ -8892,7 +8881,6 @@ export function shardeumGetTime(): number {
  * Ok to log things without a verbose check here as this is a startup function
  */
 ;(async (): Promise<void> => {
-  setTimeout(periodicMemoryCleanup, 60000)
 
   await setupArchiverDiscovery({
     customArchiverList: config.server.p2p?.existingArchivers,
