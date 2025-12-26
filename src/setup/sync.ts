@@ -397,13 +397,13 @@ function contractStorageInvolvedNoOp(
   return true
 }
 
-function tryGetRemoteAccountCBNoOp(
+async function tryGetRemoteAccountCBNoOp(
   _transactionState: TransactionState,
   _type: AccountType,
   _address: string,
   _key: string
 ): Promise<WrappedEVMAccount> {
-  return undefined
+  return Promise.resolve(undefined)
 }
 /* eslint-enable @typescript-eslint/no-unused-vars */
 
