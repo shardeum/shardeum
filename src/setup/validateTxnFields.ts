@@ -221,7 +221,7 @@ export const validateTxnFields =
             const is_array_sig = Array.isArray(tx.sign) === true
             const requiredSigs = Math.max(3, shardusConfig.debug.minMultiSigRequiredForGlobalTxs)
 
-            //this'll making sure old single sig / non-array are still compitable
+            //this'll making sure old single sig / non-array are still compatible
             const sigs: Sign[] = is_array_sig ? tx.sign : [tx.sign]
 
             const { sign, ...txWithoutSign } = tx
