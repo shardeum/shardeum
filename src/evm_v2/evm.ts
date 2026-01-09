@@ -246,7 +246,7 @@ export class EVM implements EVMInterface {
         //SHARDEUM FORK:
         //APF: only add to balance it there will be a change in balance.
         //it does not appear that this could mess up a payable endpoint
-        //TODO: need to review if this breaks functionality of createing an EOA via 0 balance transfer...
+        //TODO: need to review if this breaks functionality of creating an EOA via 0 balance transfer...
         //if it did break that would it matter?
         if (ShardeumFlags.VerboseLogs) {
           const to = message.to ? message.to.toString() : ''
