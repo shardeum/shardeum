@@ -61,8 +61,8 @@ source "$HOME/.cargo/env"
 3. Install and set the correct Rust version:
 
 ```bash
-rustup install 1.74.1
-rustup default 1.74.1
+rustup install 1.85.1
+rustup default 1.85.1
 ```
 
 ## Build Essentials
