@@ -25,6 +25,15 @@
     "@typescript-eslint/camelcase": "off",
     "@typescript-eslint/member-delimiter-style": "off",
     "@typescript-eslint/no-non-null-assertion": "off",
-    "@typescript-eslint/explicit-function-return-type": "error"
+    "@typescript-eslint/explicit-function-return-type": [
+      "error",
+      {
+        "allowExpressions": false,
+        "allowTypedFunctionExpressions": true,
+        "allowHigherOrderFunctions": true,
+        "allowDirectConstAssertionInArrowFunctions": true,
+        "allowConciseArrowFunctionExpressionsStartingWithVoid": true
+      }
+    ]
   }
 }
