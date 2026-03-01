@@ -1,18 +1,23 @@
 {
   "extends": "./node_modules/gts/tsconfig-google.json",
   "compilerOptions": {
-    "lib": ["DOM"],
-    "rootDir": ".",
-    "outDir": "dist",
+    "lib": ["DOM", "ESNext"], // Added ESNext for modern JavaScript features
+    "rootDir": "./src",       // Scoped rootDir to "src" for better organization
+    "outDir": "./dist",
     "allowJs": true,
     "skipLibCheck": true,
-    "strict": false,
-    "noEmitOnError": false,
+    "strict": true,           // Enabled strict mode for better type checking
+    "noEmitOnError": true,    // Prevents emitting files on compilation errors
     "esModuleInterop": true,
     "resolveJsonModule": true,
-    "noImplicitReturns": false,
-    "typeRoots": ["node_modules/@types"]
+    "noImplicitReturns": true,
+    "forceConsistentCasingInFileNames": true, // Ensures file name case consistency
+    "typeRoots": ["./node_modules/@types"],
+    "target": "ES2020",       // Updated target for modern JavaScript
+    "module": "CommonJS",     // Explicitly set module type to CommonJS
+    "moduleResolution": "Node", // Improved module resolution strategy
+    "incremental": true       // Speeds up builds by enabling incremental compilation
   },
   "include": ["src/**/*", "src/tests"],
-  "exclude": ["./node_modules", "dist"]
+  "exclude": ["node_modules", "dist", "**/*.test.ts"] // Explicitly excluded test files
 }
