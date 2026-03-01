@@ -10,6 +10,7 @@
   <a href="https://github.com/shardeum/shardeum/blob/main/LICENSE"><img src="https://img.shields.io/badge/License-MIT-blue.svg" alt="License"></a>
   <a href="https://discord.com/invite/shardeum"><img src="https://img.shields.io/discord/933959587462254612?logo=discord" alt="Discord"></a>
   <a href="https://x.com/Shardeum"><img src="https://img.shields.io/twitter/follow/Shardeum?style=social" alt="Twitter"></a>
+  <a href="https://gurubase.io/g/shardeum"><img src="https://img.shields.io/badge/Gurubase-Ask%20Shardeum%20Guru-006BFF" alt="Gurubase"></a>
 </p>
 
 ## Table of Contents
